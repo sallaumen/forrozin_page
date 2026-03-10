@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Forrózin do Tatá 🪗</title>
+  <title>O grupo de estudos.</title>
   <meta name="author" content="L. Tatá">
   <meta name="description" content="Enciclopédia pessoal de movimentos de forró roots por L. Tatá">
   <script>
@@ -80,7 +80,6 @@ const AUTHOR = {
   email: "lucas.c.tavano+forro@gmail.com",
   instagram: "@tavanooh",
   instagramUrl: "https://instagram.com/tavanooh",
-  bio: "Dançarino de forró roots. Esta é a minha enciclopédia pessoal de movimentos — construída passo a passo, dança a dança.",
 };
 
 const SECTIONS = [
@@ -565,10 +564,10 @@ function ForrozinApp() {
             <h1 style={{ fontSize: 42, fontWeight: 700, color: "#1a0e05", letterSpacing: -1, margin: 0 }}>L. Tavano</h1>
           </div>
           <p style={{ fontSize: 17, lineHeight: 1.9, color: "#3a2410", marginBottom: 32 }}>
-            Esta enciclopédia nasceu de uma necessidade simples: não perder o que a dança ensina. Cada passo anotado aqui foi vivido no chão de dança, construído em parceria com músicas e parceiras, refinado pela repetição e pela escuta.
+            Isso aqui é minha forma de contribuir com a cena de forró roots em Curitiba. A ideia é simples: juntar tudo num lugar só pra que mais gente estude, troque e se jogue. Se esse material ajudar uma pessoa a entender um passo novo, já valeu o trabalho.
           </p>
           <p style={{ fontSize: 17, lineHeight: 1.9, color: "#3a2410", marginBottom: 48 }}>
-            O forró roots é uma conversa de corpos. Este documento é a tentativa de colocar essa conversa em palavras — sabendo que a palavra sempre vai ficar devendo para o movimento.
+            Tem coisa aqui que aprendi em aula, tem coisa que inventei nome, tem coisa que vi num vídeo às 3h da manhã e tentei descrever no dia seguinte. Se algo tiver errado, parabéns: você sabe mais que eu. Manda um <a href={"mailto:" + AUTHOR.email + "?subject=Erro no Forrózin"} style={{ color: "#c0741a", textDecoration: "underline" }}>email</a> ou chega no <a href={AUTHOR.instagramUrl} target="_blank" rel="noreferrer" style={{ color: "#c0741a", textDecoration: "underline" }}>instagram</a>, dale melhorar esse projeto juntos :)
           </p>
           <div style={{ borderTop: "1px solid rgba(60,40,20,0.15)", paddingTop: 40 }}>
             <p style={{ fontSize: 11, letterSpacing: 3, color: "#9a7a5a", textTransform: "uppercase", marginBottom: 24 }}>Contato</p>
@@ -617,19 +616,17 @@ function ForrozinApp() {
         padding: "48px 24px 36px", background: "#f2ede4",
       }}>
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
-          <p style={{ fontSize: 11, letterSpacing: 3, color: "#9a7a5a", textTransform: "uppercase", marginBottom: 12 }}>Enciclopédia Pessoal · Forró Roots</p>
           <h1 style={{
             fontSize: 48, fontWeight: 700, color: "#1a0e05",
-            letterSpacing: -1.5, margin: "0 0 10px", lineHeight: 1.1
-          }}>Forrózin<br />do Tatá</h1>
-          <p style={{ fontSize: 14, color: "#7a5c3a", fontStyle: "italic", marginBottom: 24, lineHeight: 1.7, maxWidth: 480 }}>
-            {AUTHOR.bio}
+            letterSpacing: -1.5, margin: "0 0 16px", lineHeight: 1.1
+          }}>O grupo de estudos.</h1>
+          <p style={{ fontSize: 15, color: "#5a4230", marginBottom: 10, lineHeight: 1.7, maxWidth: 540 }}>
+            Acervo de {totalMoves} passos de forró catalogados na raça e na cara-de-pau.
+            Nomes inventados, descrições duvidosas e zero garantia de que qualquer coisa aqui esteja certa.
           </p>
-          <div style={{ display: "flex", gap: 20, fontSize: 12, color: "#9a7a5a" }}>
-            <span><strong style={{ color: "#2c1a0e" }}>{totalMoves}</strong> movimentos</span>
-            <span>·</span>
-            <span>v2</span>
-          </div>
+          <p style={{ fontSize: 13, color: "#9a7a5a", fontStyle: "italic", marginBottom: 20, lineHeight: 1.7, maxWidth: 540 }}>
+            Obra eternamente em construção. Achou um erro? Niceee, <a href={"mailto:" + AUTHOR.email + "?subject=Erro no Forrózin"} style={{ color: "#c0741a", textDecoration: "underline" }}>manda um email</a> um dia eu vejo, quem sabe {"<3"}
+          </p>
         </div>
       </div>
 
@@ -683,13 +680,13 @@ function ForrozinApp() {
         borderTop: "2px solid rgba(60,40,20,0.1)", padding: "32px 24px",
         textAlign: "center", background: "#ede8df",
       }}>
-        <p style={{ fontSize: 12, color: "#9a7a5a", fontStyle: "italic", marginBottom: 8 }}>
-          Forrózin do Tavano · Forró Roots · {new Date().getFullYear()}
+        <p style={{ fontSize: 13, color: "#7a5c3a", marginBottom: 6 }}>
+          feito por <strong>{AUTHOR.name}</strong> · {new Date().getFullYear()}
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: 20, fontSize: 12 }}>
-          <a href={"mailto:" + AUTHOR.email} style={{ color: "#7a5c3a", textDecoration: "none" }}>{AUTHOR.email}</a>
+          <a href={"mailto:" + AUTHOR.email} style={{ color: "#9a7a5a", textDecoration: "none" }}>email</a>
           <span style={{ color: "#bba88a" }}>·</span>
-          <a href={AUTHOR.instagramUrl} target="_blank" rel="noreferrer" style={{ color: "#7a5c3a", textDecoration: "none" }}>{AUTHOR.instagram}</a>
+          <a href={AUTHOR.instagramUrl} target="_blank" rel="noreferrer" style={{ color: "#9a7a5a", textDecoration: "none" }}>{AUTHOR.instagram}</a>
         </div>
       </div>
     </div>
