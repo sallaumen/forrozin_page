@@ -17,17 +17,21 @@ defmodule ForrozinWeb.GrafoLiveTest do
     test "redireciona para /entrar se não autenticado", %{conn: conn} do
       {:error, {:redirect, %{to: "/entrar"}}} = live(conn, ~p"/grafo")
     end
+
+    test "redireciona usuário comum para /grafo/visual", %{conn: conn} do
+      {:error, {:redirect, %{to: "/grafo/visual"}}} = live(conn_logado(conn), ~p"/grafo")
+    end
   end
 
-  describe "mount — autenticado" do
+  describe "mount — admin" do
     test "renderiza o título Grafo de Passos", %{conn: conn} do
-      {:ok, _lv, html} = live(conn_logado(conn), ~p"/grafo")
+      {:ok, _lv, html} = live(conn_admin(conn), ~p"/grafo")
       assert html =~ "Grafo de Passos"
     end
 
     test "exibe o código de um passo público", %{conn: conn} do
       insert(:passo, codigo: "BF", nome: "Base frontal")
-      {:ok, _lv, html} = live(conn_logado(conn), ~p"/grafo")
+      {:ok, _lv, html} = live(conn_admin(conn), ~p"/grafo")
       assert html =~ "BF"
     end
 
@@ -35,19 +39,19 @@ defmodule ForrozinWeb.GrafoLiveTest do
       passo_a = insert(:passo, codigo: "BF", nome: "Base frontal")
       passo_b = insert(:passo, codigo: "SC", nome: "Sacada simples")
       insert(:conexao, passo_origem: passo_a, passo_destino: passo_b, tipo: "saida")
-      {:ok, _lv, html} = live(conn_logado(conn), ~p"/grafo")
+      {:ok, _lv, html} = live(conn_admin(conn), ~p"/grafo")
       assert html =~ "BF"
       assert html =~ "SC"
     end
 
     test "não exibe passo wip", %{conn: conn} do
       insert(:passo, codigo: "HF-SRS", nome: "Sacada Rotativa Suspensa", wip: true)
-      {:ok, _lv, html} = live(conn_logado(conn), ~p"/grafo")
+      {:ok, _lv, html} = live(conn_admin(conn), ~p"/grafo")
       refute html =~ "HF-SRS"
     end
 
     test "contém div#graph-canvas com data-graph JSON válido", %{conn: conn} do
-      {:ok, _lv, html} = live(conn_logado(conn), ~p"/grafo")
+      {:ok, _lv, html} = live(conn_admin(conn), ~p"/grafo")
       assert html =~ ~s(id="graph-canvas")
       assert html =~ "data-graph"
       # Extrai o JSON do atributo e valida
@@ -64,9 +68,8 @@ defmodule ForrozinWeb.GrafoLiveTest do
       assert html =~ "Editar conexões"
     end
 
-    test "usuário comum não vê botão de editar conexões", %{conn: conn} do
-      {:ok, _lv, html} = live(conn_logado(conn), ~p"/grafo")
-      refute html =~ "Editar conexões"
+    test "usuário comum é redirecionado antes de ver o grafo", %{conn: conn} do
+      {:error, {:redirect, %{to: "/grafo/visual"}}} = live(conn_logado(conn), ~p"/grafo")
     end
 
     test "admin vê botão × nas arestas existentes", %{conn: conn} do
@@ -77,12 +80,8 @@ defmodule ForrozinWeb.GrafoLiveTest do
       assert html =~ "remover_conexao"
     end
 
-    test "usuário comum não vê botão × nas arestas", %{conn: conn} do
-      passo_a = insert(:passo, codigo: "BF")
-      passo_b = insert(:passo, codigo: "SC")
-      insert(:conexao, passo_origem: passo_a, passo_destino: passo_b, tipo: "saida")
-      {:ok, _lv, html} = live(conn_logado(conn), ~p"/grafo")
-      refute html =~ "remover_conexao"
+    test "usuário comum não acessa a tabela de conexões", %{conn: conn} do
+      {:error, {:redirect, %{to: "/grafo/visual"}}} = live(conn_logado(conn), ~p"/grafo")
     end
   end
 

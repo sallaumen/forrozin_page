@@ -14,12 +14,14 @@
       >
         Acervo
       </.link>
-      <.link
-        navigate={~p"/grafo"}
-        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
-      >
-        Lista
-      </.link>
+      <%= if @is_admin do %>
+        <.link
+          navigate={~p"/grafo"}
+          style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+        >
+          ↗ Conexões
+        </.link>
+      <% end %>
       <span style="font-size: 11px; color: #7a5c3a; letter-spacing: 1px;">
         {@current_user.nome_usuario}
       </span>

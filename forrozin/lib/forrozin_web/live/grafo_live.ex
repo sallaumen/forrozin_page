@@ -3,7 +3,7 @@ defmodule ForrozinWeb.GrafoLive do
 
   alias Forrozin.{Accounts, Admin, Admin.Backup, Enciclopedia}
 
-  on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
+  on_mount {ForrozinWeb.UserAuth, :ensure_admin}
 
   @impl true
   def mount(_params, _session, socket) do

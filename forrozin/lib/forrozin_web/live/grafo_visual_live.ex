@@ -1,7 +1,7 @@
 defmodule ForrozinWeb.GrafoVisualLive do
   use ForrozinWeb, :live_view
 
-  alias Forrozin.Enciclopedia
+  alias Forrozin.{Accounts, Enciclopedia}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -21,7 +21,8 @@ defmodule ForrozinWeb.GrafoVisualLive do
      |> assign(:page_title, "Mapa de Passos")
      |> assign(:graph_json, graph_json)
      |> assign(:n_nos, nos_conectados)
-     |> assign(:n_arestas, length(grafo.arestas))}
+     |> assign(:n_arestas, length(grafo.arestas))
+     |> assign(:is_admin, Accounts.admin?(socket.assigns.current_user))}
   end
 
   # ---------------------------------------------------------------------------

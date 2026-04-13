@@ -92,6 +92,26 @@ defmodule ForrozinWeb.UserAuth do
     end
   end
 
+  def on_mount(:ensure_admin, _params, session, socket) do
+    socket = mount_current_user(session, socket)
+
+    cond do
+      is_nil(socket.assigns.current_user) ->
+        socket =
+          socket
+          |> LiveView.put_flash(:error, "Você precisa estar autenticado para acessar esta página.")
+          |> LiveView.redirect(to: ~p"/entrar")
+
+        {:halt, socket}
+
+      Accounts.admin?(socket.assigns.current_user) ->
+        {:cont, socket}
+
+      true ->
+        {:halt, LiveView.redirect(socket, to: ~p"/grafo/visual")}
+    end
+  end
+
   def on_mount(:redirect_if_authenticated, _params, session, socket) do
     socket = mount_current_user(session, socket)
 
