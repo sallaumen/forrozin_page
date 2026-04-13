@@ -1,0 +1,114 @@
+<style>
+  @media (max-width: 720px) {
+    .auth-layout { flex-direction: column !important; }
+    .auth-side { display: none !important; }
+    .auth-main { padding: 48px 28px !important; }
+  }
+</style>
+
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
+      Forrózin
+    </a>
+    <a
+      href={~p"/entrar"}
+      style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+    >
+      ← Entrar
+    </a>
+  </header>
+
+  <%!-- Split layout --%>
+  <div class="auth-layout" style="flex: 1; display: flex;">
+    <%!-- Left: branding --%>
+    <div
+      class="auth-side"
+      style="width: 42%; background: #1a0e05; padding: 64px 56px; display: flex; flex-direction: column; justify-content: center;"
+    >
+      <p style="font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #7a5840; margin-bottom: 28px;">
+        O grupo de estudos
+      </p>
+      <h1 style="font-size: 42px; font-weight: 700; color: #f2ede4; line-height: 1.1; letter-spacing: -1.5px; margin: 0 0 24px;">
+        Forró roots,<br />na veia.
+      </h1>
+      <p style="font-size: 15px; line-height: 1.9; color: #bba88a; margin-bottom: 0;">
+        Acervo de passos catalogados na raça e na cara-de-pau.
+        Nomes inventados, descrições duvidosas — e nenhum arrependimento.
+      </p>
+    </div>
+
+    <%!-- Right: form --%>
+    <div
+      class="auth-main"
+      style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 64px 72px;"
+    >
+      <div style="width: 100%; max-width: 420px;">
+        <h2 style="font-size: 28px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 8px;">
+          Criar conta
+        </h2>
+        <p style="font-size: 14px; color: #9a7a5a; margin-bottom: 36px;">
+          Após o cadastro, enviaremos um email de confirmação.
+        </p>
+
+        <.form
+          for={@form}
+          phx-submit="registrar"
+          style="display: flex; flex-direction: column; gap: 18px;"
+        >
+          <div>
+            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+              Usuário
+            </label>
+            <.input
+              field={@form[:nome_usuario]}
+              type="text"
+              autocomplete="username"
+              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+            />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+              Email
+            </label>
+            <.input
+              field={@form[:email]}
+              type="email"
+              autocomplete="email"
+              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+            />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+              Senha <span style="color: #bba88a; font-size: 10px;">(mínimo 8 caracteres)</span>
+            </label>
+            <.input
+              field={@form[:senha]}
+              type="password"
+              autocomplete="new-password"
+              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+            />
+          </div>
+
+          <button
+            type="submit"
+            style="width: 100%; padding: 14px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 1px; cursor: pointer; margin-top: 8px;"
+          >
+            Criar conta
+          </button>
+        </.form>
+
+        <p style="text-align: center; margin-top: 28px; font-size: 14px; color: #9a7a5a;">
+          Já tem conta?
+          <a href={~p"/entrar"} style="color: #c0741a; text-decoration: underline;">Entrar</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

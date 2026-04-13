@@ -1,0 +1,72 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
+      Forrózin
+    </a>
+  </header>
+
+  <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px;">
+    <div style="max-width: 480px; width: 100%; text-align: center;">
+      <%= if @ok do %>
+        <p style="font-size: 36px; margin-bottom: 20px;">✓</p>
+        <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; margin: 0 0 16px; letter-spacing: -0.5px;">
+          Email confirmado
+        </h1>
+        <p style="font-size: 16px; line-height: 1.8; color: #5a4230; margin-bottom: 36px;">
+          Conta ativa. Você já pode acessar o acervo.
+        </p>
+        <a
+          href={~p"/entrar"}
+          style="display: inline-block; padding: 14px 36px; background: #1a0e05; color: #f2ede4; text-decoration: none; font-family: Georgia, serif; font-size: 14px; font-weight: 700; letter-spacing: 1px; border-radius: 4px;"
+        >
+          Entrar
+        </a>
+      <% else %>
+        <p style="font-size: 36px; margin-bottom: 20px;">✗</p>
+        <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; margin: 0 0 16px; letter-spacing: -0.5px;">
+          Link inválido
+        </h1>
+        <p style="font-size: 16px; line-height: 1.8; color: #5a4230; margin-bottom: 12px;">
+          Esse link de confirmação já foi utilizado ou não existe.
+        </p>
+        <p style="font-size: 14px; color: #9a7a5a; margin-bottom: 36px;">
+          Se sua conta ainda não foi confirmada, entre em contato.
+        </p>
+        <a
+          href={~p"/entrar"}
+          style="display: inline-block; padding: 14px 36px; background: #1a0e05; color: #f2ede4; text-decoration: none; font-family: Georgia, serif; font-size: 14px; font-weight: 700; letter-spacing: 1px; border-radius: 4px;"
+        >
+          Ir para o login
+        </a>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Footer --%>
+  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 20px 24px; text-align: center; background: #ede8df;">
+    <p style="font-size: 13px; color: #7a5c3a; margin-bottom: 6px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
+    <div style="display: flex; justify-content: center; gap: 20px; font-size: 12px;">
+      <a
+        href="mailto:lucas.c.tavano+forro@gmail.com"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        email
+      </a>
+      <span style="color: #bba88a;">·</span>
+      <a
+        href="https://instagram.com/tavanooh"
+        target="_blank"
+        rel="noreferrer"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        @tavanooh
+      </a>
+    </div>
+  </footer>
+</div>

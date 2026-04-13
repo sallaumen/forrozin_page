@@ -1,0 +1,15 @@
+# Editors & AI tools
+.claude/
+.cursor/
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Arquivos de backup locais
+*.bak
+*.swp
+*.swo

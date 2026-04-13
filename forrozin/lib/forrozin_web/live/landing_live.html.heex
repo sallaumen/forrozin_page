@@ -1,0 +1,209 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
+    <span style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase;">
+      Forrózin
+    </span>
+    <nav style="display: flex; gap: 20px; align-items: center;">
+      <%= if @current_user do %>
+        <a
+          href={~p"/grafo"}
+          style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+        >
+          Grafo
+        </a>
+        <a
+          href={~p"/acervo"}
+          style="font-family: Georgia, serif; font-size: 12px; color: #d4a054; text-decoration: none; letter-spacing: 1px; font-weight: 700;"
+        >
+          Acervo →
+        </a>
+      <% else %>
+        <a
+          href={~p"/entrar"}
+          style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+        >
+          Entrar
+        </a>
+        <a
+          href={~p"/cadastro"}
+          style="font-family: Georgia, serif; font-size: 12px; color: #f2ede4; text-decoration: none; letter-spacing: 1px;"
+        >
+          Cadastrar-se
+        </a>
+      <% end %>
+    </nav>
+  </header>
+
+  <%!-- Hero --%>
+  <div style="background: #1a0e05; padding: 80px 24px 72px;">
+    <div style="max-width: 760px; margin: 0 auto;">
+      <p style="font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #7a5840; text-transform: uppercase; margin-bottom: 20px;">
+        O grupo de estudos
+      </p>
+      <h1 style="font-size: 56px; font-weight: 700; color: #f2ede4; line-height: 1.05; letter-spacing: -2px; margin: 0 0 28px;">
+        Forró roots,<br />na veia.
+      </h1>
+      <p style="font-size: 17px; line-height: 1.9; color: #bba88a; max-width: 540px; margin-bottom: 12px;">
+        {@total_passos} passos catalogados na raça e na cara-de-pau.
+        Nomes inventados, descrições duvidosas —
+        e zero garantia de que qualquer coisa aqui esteja certa.
+      </p>
+      <p style="font-size: 14px; color: #7a5840; font-style: italic; margin-bottom: 44px;">
+        Obra eternamente em construção.
+      </p>
+      <%= if @current_user do %>
+        <a
+          href={~p"/acervo"}
+          style="display: inline-block; padding: 14px 32px; background: #d4a054; color: #1a0e05; text-decoration: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;"
+        >
+          Ir para o acervo →
+        </a>
+      <% else %>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <a
+            href={~p"/cadastro"}
+            style="display: inline-block; padding: 14px 32px; background: #d4a054; color: #1a0e05; text-decoration: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;"
+          >
+            Quero estudar
+          </a>
+          <a
+            href={~p"/entrar"}
+            style="display: inline-block; padding: 14px 28px; background: transparent; color: #bba88a; text-decoration: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; border: 1px solid rgba(255,255,255,0.15);"
+          >
+            Já tenho conta
+          </a>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- O que é --%>
+  <div style="border-bottom: 1px solid rgba(60,40,20,0.12); padding: 72px 24px;">
+    <div style="max-width: 760px; margin: 0 auto; display: flex; gap: 64px; align-items: flex-start; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 260px;">
+        <p style="font-size: 11px; letter-spacing: 3px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 20px;">
+          O que é isso
+        </p>
+        <h2 style="font-size: 26px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 20px; line-height: 1.2;">
+          Um acervo colaborativo de passos de forró roots
+        </h2>
+        <p style="font-size: 15px; line-height: 1.9; color: #5a4230;">
+          Seções, subseções, conexões entre passos, imagens e descrições mecânicas.
+          Tudo organizado pra você navegar, estudar e tirar dúvidas na hora da aula.
+        </p>
+      </div>
+      <div style="flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 20px;">
+        <div style="padding: 20px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px;">
+          <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 6px;">
+            Passos catalogados
+          </p>
+          <p style="font-size: 36px; font-weight: 700; color: #1a0e05; margin: 0;">
+            {@total_passos}
+          </p>
+        </div>
+        <div style="padding: 20px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px;">
+          <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 6px;">
+            Usado em
+          </p>
+          <p style="font-size: 15px; color: #3a2410; margin: 0; font-style: italic;">
+            Aulas de forró roots em Curitiba
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Autor --%>
+  <div style="padding: 72px 24px;">
+    <div style="max-width: 760px; margin: 0 auto;">
+      <p style="font-size: 11px; letter-spacing: 3px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 20px;">
+        Quem faz
+      </p>
+      <div style="border-left: 3px solid #d4a054; padding-left: 28px;">
+        <h2 style="font-size: 28px; font-weight: 700; color: #1a0e05; margin: 0 0 20px; letter-spacing: -0.5px;">
+          L. Tavano
+        </h2>
+        <p style="font-size: 16px; line-height: 1.9; color: #3a2410; margin-bottom: 20px;">
+          Isso aqui é minha forma de contribuir com a cena de forró roots em Curitiba.
+          A ideia é simples: juntar tudo num lugar só pra que mais gente estude, troque e se jogue.
+          Se esse material ajudar uma pessoa a entender um passo novo, já valeu o trabalho.
+        </p>
+        <p style="font-size: 15px; line-height: 1.9; color: #5a4230;">
+          Tem coisa que aprendi em aula, tem coisa que inventei nome, tem coisa que vi num vídeo
+          às 3h da manhã e tentei descrever no dia seguinte. Se algo tiver errado, parabéns — você sabe mais que eu.
+          Manda um
+          <a
+            href="mailto:lucas.c.tavano+forro@gmail.com?subject=Erro no Forrózin"
+            style="color: #c0741a;"
+          >
+            email
+          </a>
+          ou aparece no
+          <a
+            href="https://instagram.com/tavanooh"
+            target="_blank"
+            rel="noreferrer"
+            style="color: #c0741a;"
+          >
+            instagram
+          </a>
+          :)
+        </p>
+      </div>
+
+      <div style="margin-top: 40px; display: flex; gap: 14px; flex-wrap: wrap;">
+        <a
+          href="mailto:lucas.c.tavano+forro@gmail.com"
+          style="display: flex; align-items: center; gap: 12px; text-decoration: none; padding: 14px 20px; border: 1px solid rgba(60,40,20,0.15); border-radius: 4px; background: #fffef9; flex: 1; min-width: 220px;"
+        >
+          <span style="font-size: 18px;">✉️</span>
+          <div>
+            <div style="font-size: 10px; color: #9a7a5a; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px;">
+              Email
+            </div>
+            <div style="font-size: 13px; color: #2c1a0e;">lucas.c.tavano+forro@gmail.com</div>
+          </div>
+        </a>
+        <a
+          href="https://instagram.com/tavanooh"
+          target="_blank"
+          rel="noreferrer"
+          style="display: flex; align-items: center; gap: 12px; text-decoration: none; padding: 14px 20px; border: 1px solid rgba(60,40,20,0.15); border-radius: 4px; background: #fffef9; flex: 1; min-width: 220px;"
+        >
+          <span style="font-size: 18px;">📸</span>
+          <div>
+            <div style="font-size: 10px; color: #9a7a5a; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px;">
+              Instagram
+            </div>
+            <div style="font-size: 13px; color: #2c1a0e;">@tavanooh</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Footer --%>
+  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
+    <p style="font-size: 13px; color: #7a5c3a; margin-bottom: 6px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
+    <div style="display: flex; justify-content: center; gap: 20px; font-size: 12px;">
+      <a
+        href="mailto:lucas.c.tavano+forro@gmail.com"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        email
+      </a>
+      <span style="color: #bba88a;">·</span>
+      <a
+        href="https://instagram.com/tavanooh"
+        target="_blank"
+        rel="noreferrer"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        @tavanooh
+      </a>
+    </div>
+  </footer>
+</div>

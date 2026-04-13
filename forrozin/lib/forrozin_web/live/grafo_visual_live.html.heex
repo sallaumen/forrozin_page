@@ -1,0 +1,54 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
+      Forrózin
+    </a>
+    <nav style="display: flex; gap: 24px; align-items: center;">
+      <.link
+        navigate={~p"/acervo"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        Acervo
+      </.link>
+      <.link
+        navigate={~p"/grafo"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        Lista
+      </.link>
+      <span style="font-size: 11px; color: #7a5c3a; letter-spacing: 1px;">
+        {@current_user.nome_usuario}
+      </span>
+    </nav>
+  </header>
+
+  <%!-- Barra de info --%>
+  <div style="padding: 12px 24px; background: #fffef9; border-bottom: 1px solid rgba(60,40,20,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #9a7a5a; text-transform: uppercase; margin-right: 16px;">
+        Mapa de Passos
+      </span>
+      <span style="font-size: 12px; color: #7a5c3a;">
+        {@n_nos} passos · {@n_arestas} conexões
+      </span>
+    </div>
+    <span style="font-size: 11px; color: #bba88a; letter-spacing: 0.5px;">
+      scroll = zoom · arrastar = mover · clique = selecionar
+    </span>
+  </div>
+
+  <%!-- Canvas do grafo — fundo creme, ocupa o restante da tela --%>
+  <div style="flex: 1; position: relative; overflow: hidden;">
+    <div
+      id="grafo-canvas"
+      phx-hook="GrafoVisual"
+      data-graph={@graph_json}
+      style="width: 100%; height: calc(100vh - 100px); background: #f7f3ec;"
+    >
+    </div>
+  </div>
+</div>
