@@ -60,9 +60,9 @@
     <%!-- Color legend — bottom bar --%>
     <div
       id="graph-legend"
-      style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 16px; padding: 8px 20px; background: rgba(255,254,249,0.92); border-radius: 20px; border: 1px solid rgba(60,40,20,0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.06); z-index: 10; flex-wrap: wrap; justify-content: center;"
+      style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; padding: 6px 16px; background: rgba(255,254,249,0.92); border-radius: 20px; border: 1px solid rgba(60,40,20,0.1); box-shadow: 0 2px 8px rgba(0,0,0,0.06); z-index: 10; flex-wrap: nowrap; align-items: center; max-width: 95vw;"
     >
-      <span style="font-size: 10px; color: #9a7a5a; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 2px 0; align-self: center;">
+      <span style="font-size: 9px; color: #9a7a5a; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap;">
         {@node_count} passos · {@edge_count} conexões
       </span>
       <span style="width: 1px; background: rgba(60,40,20,0.15); margin: 0 4px;"></span>
@@ -70,7 +70,7 @@
         <button
           id={"legend-#{cat.name}"}
           data-category={cat.name}
-          style={"display: flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 12px; border: 1px solid #{cat.color}30; background: transparent; cursor: pointer; font-family: Georgia, serif; font-size: 10px; color: #5c3a1a; letter-spacing: 0.5px; transition: background 0.15s;"}
+          style={"display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; border: 1px solid #{cat.color}30; background: transparent; cursor: pointer; font-family: Georgia, serif; font-size: 9px; color: #5c3a1a; letter-spacing: 0.3px; transition: background 0.15s; white-space: nowrap;"}
         >
           <span style={"width: 8px; height: 8px; border-radius: 50%; background: #{cat.color}; flex-shrink: 0;"}></span>
           {cat.label}
