@@ -86,7 +86,7 @@
 
           <div>
             <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
-              Senha <span style="color: #bba88a; font-size: 10px;">(mínimo 8 caracteres)</span>
+              Senha
             </label>
             <.input
               field={@form[:password]}
@@ -94,6 +94,10 @@
               autocomplete="new-password"
               style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
             />
+            <p style="font-size: 11px; color: #9a7a5a; font-style: italic; margin: 4px 0 0; line-height: 1.5;">
+              Mínimo 8 caracteres, sem frescura. Não precisa de caractere especial, número, letra maiúscula nem nada.
+              Mas por favor, use uma senha que você não usa em nenhum outro site — a gente faz o nosso melhor, mas não somos especialistas em segurança ;)
+            </p>
           </div>
 
           <div style="display: flex; gap: 12px;">

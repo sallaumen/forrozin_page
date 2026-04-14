@@ -35,6 +35,7 @@ defmodule ForrozinWeb.Router do
     live "/", LandingLive
     delete "/logout", UserSessionController, :delete
     get "/confirm/:token", UserConfirmationController, :confirm
+    get "/auto-login/:user_id", UserSessionController, :auto_login
   end
 
   scope "/", ForrozinWeb do

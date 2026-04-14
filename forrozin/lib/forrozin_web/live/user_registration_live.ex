@@ -15,11 +15,11 @@ defmodule ForrozinWeb.UserRegistrationLive do
   @impl true
   def handle_event("register", %{"user" => params}, socket) do
     case Accounts.register_user(params) do
-      {:ok, _user} ->
+      {:ok, user} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Conta criada! Faça login para acessar o acervo.")
-         |> redirect(to: ~p"/login")}
+         |> put_flash(:info, "Bem-vindo ao Forrózin, #{user.username}!")
+         |> redirect(to: ~p"/auto-login/#{user.id}")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, as: :user))}

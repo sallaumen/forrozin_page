@@ -23,6 +23,18 @@ defmodule ForrozinWeb.UserSessionController do
     end
   end
 
+  def auto_login(conn, %{"user_id" => user_id}) do
+    case Accounts.get_user_by_id(user_id) do
+      nil ->
+        conn |> redirect(to: ~p"/login")
+
+      user ->
+        conn
+        |> UserAuth.login(user)
+        |> redirect(to: ~p"/collection")
+    end
+  end
+
   def delete(conn, _params) do
     conn
     |> UserAuth.logout()

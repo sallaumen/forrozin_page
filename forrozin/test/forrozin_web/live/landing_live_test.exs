@@ -23,12 +23,10 @@ defmodule ForrozinWeb.LandingLiveTest do
   end
 
   describe "mount — authenticated" do
-    test "displays link to collection instead of signup CTAs", %{conn: conn} do
+    test "redirects to /collection when logged in", %{conn: conn} do
       user = insert(:user)
       conn = log_in_user(conn, user)
-      {:ok, _lv, html} = live(conn, ~p"/")
-      assert html =~ "Ir para o acervo"
-      refute html =~ "Quero estudar"
+      {:error, {:redirect, %{to: "/collection"}}} = live(conn, ~p"/")
     end
   end
 end

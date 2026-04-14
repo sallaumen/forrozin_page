@@ -20,7 +20,7 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
   end
 
   describe "user registration" do
-    test "creates account and redirects to /login", %{conn: conn} do
+    test "creates account and auto-logs in", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/signup")
 
       result =
@@ -36,7 +36,8 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
         )
         |> render_submit()
 
-      assert {:error, {:redirect, %{to: "/login"}}} = result
+      # Redirects to auto-login endpoint
+      assert {:error, {:redirect, %{to: "/auto-login/" <> _user_id}}} = result
     end
 
     test "displays errors with invalid data", %{conn: conn} do

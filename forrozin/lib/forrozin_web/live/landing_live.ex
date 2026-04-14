@@ -9,7 +9,11 @@ defmodule ForrozinWeb.LandingLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    total = Encyclopedia.count_public_steps()
-    {:ok, assign(socket, page_title: "O grupo de estudos", total_steps: total)}
+    if socket.assigns[:current_user] do
+      {:ok, redirect(socket, to: ~p"/collection")}
+    else
+      total = Encyclopedia.count_public_steps()
+      {:ok, assign(socket, page_title: "O grupo de estudos", total_steps: total)}
+    end
   end
 end
