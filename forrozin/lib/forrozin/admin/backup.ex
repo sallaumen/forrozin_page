@@ -47,11 +47,11 @@ defmodule Forrozin.Admin.Backup do
     path = Path.join(dir, filename())
 
     data = %{
-      "versao" => "1",
-      "criado_em" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "tabelas" =>
-        Map.new(@ordered_schemas, fn {nome, schema} ->
-          {nome, dump_schema(schema)}
+      "version" => "1",
+      "created_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "tables" =>
+        Map.new(@ordered_schemas, fn {name, schema} ->
+          {name, dump_schema(schema)}
         end)
         |> Map.put("concept_steps", dump_join_table())
     }
@@ -69,11 +69,11 @@ defmodule Forrozin.Admin.Backup do
   """
   def restore_backup!(path) do
     data = path |> File.read!() |> Jason.decode!()
-    tables = data["tabelas"]
+    tables = data["tables"]
 
     Repo.transaction(fn ->
-      for {nome, schema} <- @ordered_schemas do
-        restore_schema(schema, tables[nome] || [])
+      for {name, schema} <- @ordered_schemas do
+        restore_schema(schema, tables[name] || [])
       end
 
       restore_join_table(tables["concept_steps"] || [])

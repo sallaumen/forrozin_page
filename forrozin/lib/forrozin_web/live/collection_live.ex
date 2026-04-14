@@ -36,13 +36,13 @@ defmodule ForrozinWeb.CollectionLive do
   end
 
   @impl true
-  def handle_event("search", %{"termo" => term}, socket) do
+  def handle_event("search", %{"term" => term}, socket) do
     admin = Accounts.admin?(socket.assigns.current_user)
     results = if term == "", do: [], else: Encyclopedia.search_steps(term, admin: admin)
     {:noreply, assign(socket, search: term, search_results: results)}
   end
 
-  def handle_event("filter", %{"categoria" => category}, socket) do
+  def handle_event("filter", %{"category" => category}, socket) do
     {:noreply, assign(socket, category_filter: category)}
   end
 

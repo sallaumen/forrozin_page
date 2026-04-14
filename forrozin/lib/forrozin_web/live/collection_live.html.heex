@@ -71,7 +71,7 @@
           ⌕
         </span>
         <input
-          name="termo"
+          name="term"
           value={@search}
           placeholder="Buscar por sigla, nome..."
           autocomplete="off"
@@ -84,7 +84,7 @@
       <div style="display: flex; gap: 6px; flex-wrap: wrap;">
         <button
           phx-click="filter"
-          phx-value-categoria="all"
+          phx-value-category="all"
           style={"font-size: 10px; padding: 5px 11px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-style: italic; letter-spacing: 0.3px; background: #{if @category_filter == "all", do: "#2c1a0e", else: "rgba(60,40,20,0.06)"}; color: #{if @category_filter == "all", do: "#f7f3ec", else: "#7a5c3a"}; border: 1px solid #{if @category_filter == "all", do: "transparent", else: "rgba(60,40,20,0.15)"}; font-weight: #{if @category_filter == "all", do: 700, else: 400};"}
         >
           Todos
@@ -92,7 +92,7 @@
         <%= for cat <- @categories do %>
           <button
             phx-click="filter"
-            phx-value-categoria={cat.name}
+            phx-value-category={cat.name}
             style={"font-size: 10px; padding: 5px 11px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-style: italic; letter-spacing: 0.3px; background: #{if @category_filter == cat.name, do: cat.color, else: "rgba(60,40,20,0.06)"}; color: #{if @category_filter == cat.name, do: "#f7f3ec", else: "#7a5c3a"}; border: 1px solid #{if @category_filter == cat.name, do: "transparent", else: "rgba(60,40,20,0.15)"}; font-weight: #{if @category_filter == cat.name, do: 700, else: 400};"}
           >
             {cat.label}
