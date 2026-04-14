@@ -114,41 +114,9 @@ function runHybridLayout(cy) {
     })
   })
 
-  // 4. Run Cola PER CATEGORY — keeps clusters tight without mixing
-  const allCats = ["bases", ...outerCats].filter(c => byCat[c]?.length > 1)
-  let remaining = allCats.length
-
-  function onDone() {
-    // No global Cola — per-category layout is final
-    cy.fit(undefined, 60)
-    drawCategoryZones(cy, sectorCenters, byCat)
-  }
-
-  if (remaining === 0) { onDone(); return sectorCenters }
-
-  allCats.forEach(cat => {
-    const catNodeIds = new Set((byCat[cat] || []).map(n => n.id()))
-    const catEdges = cy.edges().filter(e =>
-      catNodeIds.has(e.source().id()) && catNodeIds.has(e.target().id())
-    )
-    const catNodes = cy.nodes().filter(n => catNodeIds.has(n.id()))
-    const catElements = cy.collection().merge(catNodes).merge(catEdges)
-
-    // Lock BF during bases layout so it stays at center
-    if (cat === "bases" && bf.length > 0) bf.lock()
-
-    catElements.layout({
-      name: "cola", animate: false, maxSimulationTime: 400,
-      randomize: false, fit: false, avoidOverlaps: true,
-      nodeDimensionsIncludeLabels: true, nodeSpacing: 25,
-      edgeLength: 70, gravity: 0.8, convergenceThreshold: 0.05, infinite: false
-    }).run()
-
-    if (cat === "bases" && bf.length > 0) bf.unlock()
-
-    remaining--
-    if (remaining === 0) onDone()
-  })
+  // 4. No Cola — preset positions are final. Clean and predictable.
+  cy.fit(undefined, 60)
+  drawCategoryZones(cy, sectorCenters, byCat)
 
   return sectorCenters
 }
