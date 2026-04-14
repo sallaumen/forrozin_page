@@ -43,7 +43,7 @@ const CATEGORY_ORDER = [
 // ---------------------------------------------------------------------------
 function computeSectorPositions(cy) {
   const byCat = {}
-  cy.nodes("[^category_zone]").forEach(n => {
+  cy.nodes().forEach(n => {
     const cat = n.data("categoriaName") || "outros"
     ;(byCat[cat] = byCat[cat] || []).push(n)
   })
@@ -85,6 +85,73 @@ function computeSectorPositions(cy) {
   })
 
   return positions
+}
+
+// ---------------------------------------------------------------------------
+// Category zone overlay: draw translucent ellipses behind each cluster
+// ---------------------------------------------------------------------------
+function drawCategoryZones(cy) {
+  const existingCanvas = cy.container().querySelector(".zone-canvas")
+  if (existingCanvas) existingCanvas.remove()
+
+  const container = cy.container()
+  const canvas = document.createElement("canvas")
+  canvas.className = "zone-canvas"
+  canvas.width = container.offsetWidth
+  canvas.height = container.offsetHeight
+  canvas.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:0;"
+  container.insertBefore(canvas, container.firstChild)
+
+  const ctx = canvas.getContext("2d")
+  const pan = cy.pan()
+  const zoom = cy.zoom()
+
+  // Group nodes by category
+  const byCat = {}
+  cy.nodes().forEach(n => {
+    const cat = n.data("categoriaName") || "outros"
+    ;(byCat[cat] = byCat[cat] || []).push(n)
+  })
+
+  Object.entries(byCat).forEach(([cat, catNodes]) => {
+    if (catNodes.length < 2) return
+    const cor = catNodes[0].data("cor") || "#9a7a5a"
+
+    // Compute bounding box of category nodes in rendered coords
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    catNodes.forEach(n => {
+      const pos = n.renderedPosition()
+      const w = n.renderedWidth() / 2
+      const h = n.renderedHeight() / 2
+      minX = Math.min(minX, pos.x - w)
+      minY = Math.min(minY, pos.y - h)
+      maxX = Math.max(maxX, pos.x + w)
+      maxY = Math.max(maxY, pos.y + h)
+    })
+
+    const padding = 50
+    const cx = (minX + maxX) / 2
+    const cy_ = (minY + maxY) / 2
+    const rx = (maxX - minX) / 2 + padding
+    const ry = (maxY - minY) / 2 + padding
+
+    ctx.beginPath()
+    ctx.ellipse(cx, cy_, rx, ry, 0, 0, 2 * Math.PI)
+    ctx.fillStyle = cor + "0A" // ~4% opacity via hex alpha
+    ctx.fill()
+  })
+}
+
+// Redraw zones on pan/zoom
+function setupZoneRedraw(cy) {
+  let rafId = null
+  const redraw = () => {
+    if (rafId) cancelAnimationFrame(rafId)
+    rafId = requestAnimationFrame(() => drawCategoryZones(cy))
+  }
+  cy.on("pan zoom resize", redraw)
+  // Initial draw after layout
+  cy.one("layoutstop", () => setTimeout(() => drawCategoryZones(cy), 100))
 }
 
 // ---------------------------------------------------------------------------
@@ -171,7 +238,7 @@ function closeDrawer() {
 // ---------------------------------------------------------------------------
 function applySpotlight(cy, node) {
   cy.batch(() => {
-    cy.elements("[^category_zone]").style({ opacity: 0.08 })
+    cy.elements().style({ opacity: 0.08 })
     const nh = node.closedNeighborhood()
     nh.style({ opacity: 1 })
     nh.edges().style({ opacity: 0.85, width: 2.5 })
@@ -181,14 +248,14 @@ function applySpotlight(cy, node) {
 
 function clearSpotlight(cy) {
   cy.batch(() => {
-    cy.nodes("[^category_zone]").style({ opacity: 1 })
+    cy.nodes().style({ opacity: 1 })
     cy.edges().style({ opacity: 0.45, width: 1.5 })
   })
 }
 
 function applyCategorySpotlight(cy, categoryName) {
   cy.batch(() => {
-    cy.elements("[^category_zone]").style({ opacity: 0.08 })
+    cy.elements().style({ opacity: 0.08 })
     const catNodes = cy.nodes(`[categoriaName = "${categoryName}"]`)
     catNodes.style({ opacity: 1 })
     catNodes.connectedEdges().style({ opacity: 0.7, width: 2 })
@@ -212,24 +279,15 @@ const GraphVisual = {
     const { nodes, edges } = JSON.parse(raw)
     if (this._cy) { this._cy.destroy(); this._cy = null }
 
-    // Build elements: category zone parents + step nodes + edges
-    const categorySet = new Set(nodes.map(n => n.categoriaName))
+    // Build elements: step nodes + edges (no compound parents)
     const elements = []
-
-    categorySet.forEach(catName => {
-      const sample = nodes.find(n => n.categoriaName === catName)
-      elements.push({
-        data: { id: `zone-${catName}`, cor: sample?.cor || "#9a7a5a", category_zone: true },
-        classes: "category-zone"
-      })
-    })
 
     nodes.forEach(n => {
       elements.push({
         data: {
           id: n.id, label: n.nome, categoria: n.categoria,
           categoriaName: n.categoriaName, cor: n.cor || "#9a7a5a",
-          nota: n.nota, parent: `zone-${n.categoriaName}`
+          nota: n.nota
         }
       })
     })
@@ -245,15 +303,7 @@ const GraphVisual = {
       elements,
       style: [
         {
-          selector: "node.category-zone",
-          style: {
-            "background-color": "data(cor)", "background-opacity": 0.04,
-            "border-width": 0, "shape": "ellipse", "padding": "55px",
-            "label": "", "events": "no"
-          }
-        },
-        {
-          selector: "node[^category_zone]",
+          selector: "node",
           style: {
             "shape": "roundrectangle",
             "width": "label",
@@ -291,7 +341,7 @@ const GraphVisual = {
           }
         },
         {
-          selector: "node[^category_zone]:selected",
+          selector: "node:selected",
           style: {
             "background-color": "data(cor)", "background-opacity": 0.15,
             "border-width": 3, "border-opacity": 1, "shadow-blur": 16, "shadow-opacity": 1
@@ -338,7 +388,6 @@ const GraphVisual = {
       randomize: false, fit: true, padding: 60, avoidOverlaps: true,
       nodeDimensionsIncludeLabels: true,
       nodeSpacing: function(node) {
-        if (node.hasClass("category-zone")) return 0
         return 45 + (node.degree() * 6)
       },
       edgeLength: function(e) {
@@ -349,9 +398,10 @@ const GraphVisual = {
     }
     cy.layout(colaOpts).run()
     cy.one("layoutstop", () => { cy.fit(undefined, 60) })
+    setupZoneRedraw(cy)
 
     // ── Phase 3: drag-release local cola ──
-    cy.on("dragfreeon", "node[^category_zone]", () => {
+    cy.on("dragfreeon", "node", () => {
       cy.layout(Object.assign({}, colaOpts, {
         animationDuration: 400, maxSimulationTime: 600,
         fit: false, convergenceThreshold: 0.1
@@ -361,7 +411,7 @@ const GraphVisual = {
     // ── Interactions ──
     let activeCategory = null
 
-    cy.on("tap", "node[^category_zone]", function(evt) {
+    cy.on("tap", "node", function(evt) {
       activeCategory = null
       applySpotlight(cy, evt.target)
       openDrawer(evt.target, cy)
@@ -373,17 +423,17 @@ const GraphVisual = {
       }
     })
 
-    cy.on("mouseover", "node[^category_zone]", function(evt) {
+    cy.on("mouseover", "node", function(evt) {
       if (document.getElementById("graph-drawer").style.right === "0px") return
       const node = evt.target
       cy.batch(() => {
-        cy.elements("[^category_zone]").style({ opacity: 0.15 })
+        cy.elements().style({ opacity: 0.15 })
         const nh = node.closedNeighborhood()
         nh.style({ opacity: 1 }); nh.edges().style({ opacity: 0.7 })
       })
     })
 
-    cy.on("mouseout", "node[^category_zone]", function() {
+    cy.on("mouseout", "node", function() {
       if (document.getElementById("graph-drawer").style.right === "0px") return
       if (!activeCategory) clearSpotlight(cy)
     })
