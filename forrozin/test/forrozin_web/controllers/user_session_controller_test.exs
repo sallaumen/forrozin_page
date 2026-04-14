@@ -19,6 +19,7 @@ defmodule ForrozinWeb.UserSessionControllerTest do
       {:ok, user} =
         Forrozin.Accounts.register_user(%{
           username: "logintest",
+          name: "Login Teste",
           email: "logintest@example.com",
           password: "senhasegura123",
           country: "BR",

@@ -27,6 +27,7 @@ defmodule Forrozin.Accounts.User do
     field :role, :string, default: "user"
     field :confirmation_token, :string
     field :confirmed_at, :naive_datetime
+    field :name, :string
     field :country, :string, default: "BR"
     field :state, :string
     field :city, :string
@@ -37,8 +38,9 @@ defmodule Forrozin.Accounts.User do
   @doc "Changeset for new user registration."
   def registration_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :email, :password, :role, :confirmation_token, :country, :state, :city])
-    |> validate_required([:username, :email, :password, :country, :city])
+    |> cast(attrs, [:username, :email, :password, :role, :confirmation_token, :name, :country, :state, :city])
+    |> validate_required([:username, :email, :password, :name, :country, :city])
+    |> validate_name_has_two_words()
     |> validate_length(:username, min: 3, max: 30)
     |> validate_format(:username, ~r/^[a-z0-9_]+$/,
       message: "use apenas letras minúsculas, números e _"
@@ -57,6 +59,22 @@ defmodule Forrozin.Accounts.User do
   def confirmation_changeset(user) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
     change(user, confirmed_at: now, confirmation_token: nil)
+  end
+
+  defp validate_name_has_two_words(changeset) do
+    case get_change(changeset, :name) do
+      nil ->
+        changeset
+
+      name ->
+        words = name |> String.trim() |> String.split(~r/\s+/)
+
+        if length(words) >= 2 do
+          changeset
+        else
+          add_error(changeset, :name, "informe nome e sobrenome")
+        end
+    end
   end
 
   defp validate_state_for_brazil(changeset) do

@@ -28,6 +28,7 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
         |> form("form",
           user: %{
             username: "novousuario",
+            name: "Novo Usuário",
             email: "novo@example.com",
             password: "senhasegura123",
             country: "BR",

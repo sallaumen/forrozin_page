@@ -8,6 +8,7 @@ defmodule Forrozin.Factory do
   def user_factory do
     %User{
       username: sequence(:username, &"usuario#{&1}"),
+      name: sequence(:name, &"Usuário Teste #{&1}"),
       email: sequence(:email, &"usuario#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
       role: "user",
@@ -21,6 +22,7 @@ defmodule Forrozin.Factory do
   def admin_factory do
     %User{
       username: sequence(:username, &"admin#{&1}"),
+      name: sequence(:name, &"Admin Teste #{&1}"),
       email: sequence(:email, &"admin#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
       role: "admin",

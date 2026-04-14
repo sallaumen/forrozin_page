@@ -28,9 +28,9 @@
           <%= if @edit_mode, do: "✕ Sair edição", else: "✏ Editar" %>
         </button>
       <% end %>
-      <span style="font-size: 12px; color: #f2ede4; letter-spacing: 0.5px;">
-        Olá, <strong>{@current_user.username}</strong>
-      </span>
+      <.link navigate={~p"/users/#{@current_user.username}"} style="font-size: 12px; color: #f2ede4; letter-spacing: 0.5px; text-decoration: none;">
+        Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
+      </.link>
     </nav>
   </header>
 

@@ -73,4 +73,10 @@ defmodule Forrozin.Accounts do
   def admin?(%User{role: "admin"}), do: true
   def admin?(_), do: false
 
+  @doc "Returns the user's first name."
+  def first_name(%User{name: name}) when is_binary(name), do: name |> String.split(" ") |> hd()
+  def first_name(%User{username: u}), do: u
+
+  @doc "Finds a user by username."
+  def get_user_by_username(username), do: Repo.get_by(User, username: username)
 end
