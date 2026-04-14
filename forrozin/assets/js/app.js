@@ -202,7 +202,7 @@ function escapeHTML(str) {
   return div.innerHTML
 }
 
-function buildDrawerHTML(d, outEdges, inEdges, degree) {
+function buildDrawerHTML(d, outEdges, inEdges, degree, editMode) {
   const parts = []
 
   parts.push(`<div style="margin-bottom: 20px;">`)
@@ -222,8 +222,10 @@ function buildDrawerHTML(d, outEdges, inEdges, degree) {
     outEdges.forEach(e => {
       const t = e.target()
       const lb = e.data("label") ? ` <span style="color: #9a7a5a; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
-      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(t.id())}" style="padding: 6px 0; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 12px; color: #2c1a0e; cursor: pointer;">`)
-      parts.push(`<code style="font-size: 10px; color: ${escapeHTML(t.data("cor"))}; margin-right: 6px;">${escapeHTML(t.id())}</code>${escapeHTML(t.data("label"))}${lb}</div>`)
+      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(d.id)}" data-target="${escapeHTML(t.id())}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">×</button>` : ""
+      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">`)
+      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(t.id())}" style="font-size: 12px; color: #2c1a0e; cursor: pointer; flex:1;">`)
+      parts.push(`<code style="font-size: 10px; color: ${escapeHTML(t.data("cor"))}; margin-right: 6px;">${escapeHTML(t.id())}</code>${escapeHTML(t.data("label"))}${lb}</div>${deleteBtn}</div>`)
     })
   }
 
@@ -232,8 +234,10 @@ function buildDrawerHTML(d, outEdges, inEdges, degree) {
     inEdges.forEach(e => {
       const s = e.source()
       const lb = e.data("label") ? ` <span style="color: #9a7a5a; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
-      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(s.id())}" style="padding: 6px 0; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 12px; color: #2c1a0e; cursor: pointer;">`)
-      parts.push(`<code style="font-size: 10px; color: ${escapeHTML(s.data("cor"))}; margin-right: 6px;">${escapeHTML(s.id())}</code>${escapeHTML(s.data("label"))}${lb}</div>`)
+      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(s.id())}" data-target="${escapeHTML(d.id)}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">×</button>` : ""
+      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">`)
+      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(s.id())}" style="font-size: 12px; color: #2c1a0e; cursor: pointer; flex:1;">`)
+      parts.push(`<code style="font-size: 10px; color: ${escapeHTML(s.data("cor"))}; margin-right: 6px;">${escapeHTML(s.id())}</code>${escapeHTML(s.data("label"))}${lb}</div>${deleteBtn}</div>`)
     })
   }
 
@@ -242,26 +246,64 @@ function buildDrawerHTML(d, outEdges, inEdges, degree) {
   return parts.join("")
 }
 
-function openDrawer(node, cy) {
+function openDrawer(node, cy, editMode, hook) {
   const el = document.getElementById("graph-drawer")
   const content = document.getElementById("drawer-content")
   if (!el || !content) return
 
   const d = node.data()
-  content.innerHTML = buildDrawerHTML(d, node.outgoers("edge"), node.incomers("edge"), node.degree())
+  content.innerHTML = buildDrawerHTML(d, node.outgoers("edge"), node.incomers("edge"), node.degree(), editMode)
   el.style.right = "0px"
 
+  // Navigation links
   content.querySelectorAll(".drawer-link").forEach(link => {
     link.addEventListener("click", () => {
       const targetNode = cy.getElementById(link.dataset.nodeId)
       if (targetNode.length > 0) {
         cy.animate({ center: { eles: targetNode }, duration: 300 })
         targetNode.select()
-        openDrawer(targetNode, cy)
+        openDrawer(targetNode, cy, editMode, hook)
         applySpotlight(cy, targetNode)
       }
     })
   })
+
+  // Delete buttons (edit mode only)
+  if (editMode && hook) {
+    content.querySelectorAll(".delete-connection-btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const source = this.dataset.source
+        const target = this.dataset.target
+        const row = this.closest(".connection-row")
+
+        // Show confirmation inline
+        const confirmDiv = document.createElement("div")
+        confirmDiv.style.cssText = "padding:6px 0;font-size:11px;color:#c0392b;"
+        const confirmText = document.createTextNode(`Remover ${source} → ${target}? `)
+        const confirmBtn = document.createElement("button")
+        confirmBtn.textContent = "Confirmar"
+        confirmBtn.style.cssText = "background:#c0392b;color:white;border:none;padding:3px 10px;border-radius:3px;cursor:pointer;font-family:Georgia,serif;font-size:11px;margin-right:6px;"
+        const cancelBtn = document.createElement("button")
+        cancelBtn.textContent = "Cancelar"
+        cancelBtn.style.cssText = "background:transparent;color:#9a7a5a;border:1px solid #9a7a5a40;padding:3px 10px;border-radius:3px;cursor:pointer;font-family:Georgia,serif;font-size:11px;"
+
+        confirmDiv.appendChild(confirmText)
+        confirmDiv.appendChild(confirmBtn)
+        confirmDiv.appendChild(cancelBtn)
+
+        row.textContent = ""
+        row.appendChild(confirmDiv)
+
+        confirmBtn.addEventListener("click", () => {
+          hook.pushEvent("delete_connection", { source, target })
+        })
+        cancelBtn.addEventListener("click", () => {
+          // Re-open drawer to restore original state
+          openDrawer(node, cy, editMode, hook)
+        })
+      })
+    })
+  }
 }
 
 function closeDrawer() {
@@ -304,8 +346,64 @@ function applyCategorySpotlight(cy, categoryName) {
 // Hook: GraphVisual — sector layout + cola physics + spotlight + drawer
 // ---------------------------------------------------------------------------
 const GraphVisual = {
-  mounted() { this._initGraph() },
+  mounted() {
+    this._initGraph()
+
+    // Listen for server push events
+    this.handleEvent("graph_updated", ({ graph_json, edit_mode, orphans }) => {
+      this.el.dataset.graph = graph_json
+      this.el.dataset.editMode = edit_mode
+      this._initGraph()
+      if (orphans) this._renderOrphans(JSON.parse(orphans))
+    })
+
+    this.handleEvent("graph_error", ({ message }) => {
+      this._showToast(message)
+    })
+  },
+
   updated() { this._initGraph() },
+
+  _showToast(message) {
+    const toast = document.createElement("div")
+    toast.textContent = message
+    toast.style.cssText = "position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#c0392b;color:white;padding:8px 20px;border-radius:6px;font-family:Georgia,serif;font-size:12px;z-index:200;opacity:0;transition:opacity 0.3s;"
+    document.body.appendChild(toast)
+    requestAnimationFrame(() => { toast.style.opacity = "1" })
+    setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.remove(), 300) }, 2500)
+  },
+
+  _renderOrphans(orphans) {
+    const list = document.getElementById("orphan-list")
+    if (!list) return
+    if (!orphans || orphans.length === 0) {
+      list.textContent = "Nenhum passo órfão"
+      list.style.cssText = "font-size:11px;color:#9a7a5a;font-style:italic;padding:8px 0;"
+      return
+    }
+
+    list.textContent = ""
+    const hook = this
+
+    orphans.forEach(o => {
+      const btn = document.createElement("button")
+      btn.style.cssText = `display:flex;align-items:center;gap:6px;width:100%;padding:6px 8px;margin-bottom:4px;border:1px solid ${o.cor}40;border-radius:4px;background:white;cursor:pointer;font-family:Georgia,serif;font-size:11px;color:#2c1a0e;text-align:left;`
+      const dot = document.createElement("span")
+      dot.style.cssText = `width:6px;height:6px;border-radius:50%;background:${o.cor};flex-shrink:0;`
+      const label = document.createElement("span")
+      label.textContent = `${o.id} — ${o.nome}`
+      btn.appendChild(dot)
+      btn.appendChild(label)
+
+      btn.addEventListener("click", () => {
+        // Start connection creation from this orphan
+        hook._startConnectionFrom = o.id
+        hook._showToast(`Clique num passo no grafo para conectar ${o.id} →`)
+      })
+
+      list.appendChild(btn)
+    })
+  },
 
   _initGraph() {
     const el = this.el
@@ -438,15 +536,54 @@ const GraphVisual = {
 
     // ── Interactions ──
     let activeCategory = null
+    const hook = this
+    const isAdmin = el.dataset.admin === "true"
+    const isEditMode = el.dataset.editMode === "true"
+    let ghostSourceId = this._startConnectionFrom || null
+    this._startConnectionFrom = null
+
+    // Ghost edge line (canvas overlay for connection creation)
+    let ghostLine = null
+    if (isEditMode && ghostSourceId) {
+      // Highlight that we're waiting for target
+      hook._showToast(`Clique num passo para conectar ${ghostSourceId} →`)
+    }
+
+    function cancelGhost() {
+      ghostSourceId = null
+      if (ghostLine) { ghostLine.remove(); ghostLine = null }
+      cy.nodes().style({ "border-style": "solid" })
+    }
 
     cy.on("tap", "node", function(evt) {
+      const node = evt.target
+
+      // Edit mode: connection creation flow
+      if (isEditMode && isAdmin) {
+        if (ghostSourceId) {
+          // Second click — create connection
+          const targetId = node.id()
+          if (targetId !== ghostSourceId) {
+            hook.pushEvent("create_connection", { source: ghostSourceId, target: targetId })
+          }
+          cancelGhost()
+          return
+        } else {
+          // First click — start ghost edge
+          ghostSourceId = node.id()
+          node.style({ "border-style": "dashed", "border-width": 4 })
+          hook._showToast(`${node.id()} selecionado — clique no destino`)
+        }
+      }
+
       activeCategory = null
-      applySpotlight(cy, evt.target)
-      openDrawer(evt.target, cy)
+      applySpotlight(cy, node)
+      openDrawer(node, cy, isEditMode && isAdmin, hook)
     })
 
     cy.on("tap", function(evt) {
       if (evt.target === cy) {
+        if (ghostSourceId) { cancelGhost(); return }
         clearSpotlight(cy); closeDrawer(); activeCategory = null; resetLegend()
       }
     })
@@ -467,11 +604,14 @@ const GraphVisual = {
     })
 
     document.getElementById("drawer-close")?.addEventListener("click", () => {
-      closeDrawer(); clearSpotlight(cy)
+      closeDrawer(); clearSpotlight(cy); cancelGhost()
     })
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { closeDrawer(); clearSpotlight(cy); activeCategory = null; resetLegend() }
+      if (e.key === "Escape") {
+        cancelGhost()
+        closeDrawer(); clearSpotlight(cy); activeCategory = null; resetLegend()
+      }
     })
 
     // Legend buttons

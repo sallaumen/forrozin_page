@@ -16,26 +16,11 @@ defmodule Forrozin.AdminTest do
                Admin.create_connection(%{
                  source_step_id: source.id,
                  target_step_id: target.id,
-                 type: "exit"
+                 
                })
 
       assert connection.source_step_id == source.id
       assert connection.target_step_id == target.id
-      assert connection.type == "exit"
-    end
-
-    test "returns error for invalid type" do
-      source = insert(:step, code: "BF")
-      target = insert(:step, code: "SC")
-
-      assert {:error, changeset} =
-               Admin.create_connection(%{
-                 source_step_id: source.id,
-                 target_step_id: target.id,
-                 type: "invalido"
-               })
-
-      assert "is invalid" in errors_on(changeset).type
     end
 
     test "returns error when source step does not exist" do
@@ -46,7 +31,7 @@ defmodule Forrozin.AdminTest do
                Admin.create_connection(%{
                  source_step_id: nonexistent_id,
                  target_step_id: target.id,
-                 type: "exit"
+                 
                })
 
       assert changeset.errors[:source_step_id] != nil
@@ -55,13 +40,13 @@ defmodule Forrozin.AdminTest do
     test "returns constraint error for duplicate connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
-      insert(:connection, source_step: source, target_step: target, type: "exit")
+      insert(:connection, source_step: source, target_step: target)
 
       assert {:error, changeset} =
                Admin.create_connection(%{
                  source_step_id: source.id,
                  target_step_id: target.id,
-                 type: "exit"
+                 
                })
 
       assert changeset.errors[:source_step_id] != nil or
@@ -76,7 +61,6 @@ defmodule Forrozin.AdminTest do
                Admin.create_connection(%{
                  source_step_id: source.id,
                  target_step_id: target.id,
-                 type: "exit",
                  label: "Trava Armada",
                  description: "Ambos jogam centro de massa para direita gerando elástico."
                })
@@ -94,7 +78,7 @@ defmodule Forrozin.AdminTest do
     test "updates label of an existing connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
-      connection = insert(:connection, source_step: source, target_step: target, type: "exit")
+      connection = insert(:connection, source_step: source, target_step: target)
 
       assert {:ok, updated} = Admin.update_connection(connection.id, %{label: "Trava Armada"})
       assert updated.label == "Trava Armada"
@@ -103,7 +87,7 @@ defmodule Forrozin.AdminTest do
     test "updates description of an existing connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
-      connection = insert(:connection, source_step: source, target_step: target, type: "exit")
+      connection = insert(:connection, source_step: source, target_step: target)
 
       assert {:ok, updated} =
                Admin.update_connection(connection.id, %{description: "Nova descrição."})
@@ -124,7 +108,7 @@ defmodule Forrozin.AdminTest do
     test "removes an existing connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
-      connection = insert(:connection, source_step: source, target_step: target, type: "exit")
+      connection = insert(:connection, source_step: source, target_step: target)
 
       assert {:ok, deleted} = Admin.delete_connection(connection.id)
       assert deleted.id == connection.id

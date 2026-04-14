@@ -38,7 +38,7 @@ defmodule ForrozinWeb.GraphLiveTest do
     test "displays edge between two steps", %{conn: conn} do
       step_a = insert(:step, code: "BF", name: "Base frontal")
       step_b = insert(:step, code: "SC", name: "Sacada simples")
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
       assert html =~ "BF"
       assert html =~ "SC"
@@ -75,7 +75,7 @@ defmodule ForrozinWeb.GraphLiveTest do
     test "admin sees × button on existing edges", %{conn: conn} do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
       assert html =~ "delete_connection"
     end
@@ -108,7 +108,7 @@ defmodule ForrozinWeb.GraphLiveTest do
     test "creating duplicate connection does not raise error and keeps graph stable", %{conn: conn} do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
       render_click(lv, "toggle_edit_mode", %{})
       render_click(lv, "select_source", %{"step_id" => step_a.id})
@@ -122,7 +122,7 @@ defmodule ForrozinWeb.GraphLiveTest do
     test "admin clicks × and edge count drops to zero", %{conn: conn} do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
-      connection = insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      connection = insert(:connection, source_step: step_a, target_step: step_b)
       {:ok, lv, html} = live(admin_conn(conn), ~p"/graph")
       assert html =~ "1 arestas"
       html = render_click(lv, "delete_connection", %{"connection_id" => connection.id})

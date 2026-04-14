@@ -175,7 +175,7 @@ defmodule Forrozin.EncyclopediaTest do
     test ":edges contains connections with source_step and target_step preloaded" do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
       graph = Encyclopedia.build_graph()
       assert length(graph.edges) == 1
       [edge] = graph.edges
@@ -195,7 +195,7 @@ defmodule Forrozin.EncyclopediaTest do
     test "does not include edges where target_step is wip" do
       step_pub = insert(:step, code: "BF", wip: false)
       step_wip = insert(:step, code: "HF-SRS", wip: true)
-      insert(:connection, source_step: step_pub, target_step: step_wip, type: "exit")
+      insert(:connection, source_step: step_pub, target_step: step_wip)
       graph = Encyclopedia.build_graph()
       assert graph.edges == []
     end
@@ -203,7 +203,7 @@ defmodule Forrozin.EncyclopediaTest do
     test ":edges include label when present" do
       step_a = insert(:step, code: "ARM-D")
       step_b = insert(:step, code: "TR-ARM")
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit", label: "Trava Armada")
+      insert(:connection, source_step: step_a, target_step: step_b, label: "Trava Armada")
       graph = Encyclopedia.build_graph()
       [edge] = graph.edges
       assert edge.label == "Trava Armada"
@@ -212,7 +212,7 @@ defmodule Forrozin.EncyclopediaTest do
     test "does not include edges where source_step is wip" do
       step_wip = insert(:step, code: "HF-SRS", wip: true)
       step_pub = insert(:step, code: "BF", wip: false)
-      insert(:connection, source_step: step_wip, target_step: step_pub, type: "exit")
+      insert(:connection, source_step: step_wip, target_step: step_pub)
       graph = Encyclopedia.build_graph()
       assert graph.edges == []
     end

@@ -195,7 +195,7 @@ defmodule Mix.Tasks.Forrozin.ExtractConnections do
   end
 
   defp insert_connection(admin, source_id, target_id, source_code, target_code) do
-    case admin.create_connection(%{source_step_id: source_id, target_step_id: target_id, type: "exit"}) do
+    case admin.create_connection(%{source_step_id: source_id, target_step_id: target_id}) do
       {:ok, _} -> {:inserted, "#{source_code} → #{target_code}"}
       {:error, _} -> {:duplicated, "#{source_code} → #{target_code}"}
     end

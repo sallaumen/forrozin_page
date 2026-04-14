@@ -14,7 +14,7 @@ defmodule ForrozinWeb.GraphVisualLiveTest do
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", name: "Base frontal", note: "Test note", section: section, category: cat)
       step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
 
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
@@ -27,7 +27,7 @@ defmodule ForrozinWeb.GraphVisualLiveTest do
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", name: "Base frontal", note: "Mechanical note here", section: section, category: cat)
       step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
 
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
@@ -48,7 +48,7 @@ defmodule ForrozinWeb.GraphVisualLiveTest do
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", name: "Base frontal", section: section, category: cat)
       step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
 
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 

@@ -7,12 +7,10 @@ defmodule Forrozin.Encyclopedia.Connection do
 
   alias Forrozin.Encyclopedia.Step
 
-  @valid_types ["exit", "entry"]
-  @required_fields [:source_step_id, :target_step_id, :type]
+  @required_fields [:source_step_id, :target_step_id]
   @optional_fields [:label, :description]
 
   schema "step_connections" do
-    field :type, :string
     field :label, :string
     field :description, :string
 
@@ -26,9 +24,8 @@ defmodule Forrozin.Encyclopedia.Connection do
     connection
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(:type, @valid_types)
-    |> unique_constraint([:source_step_id, :target_step_id, :type],
-      name: :step_connections_source_step_id_target_step_id_type_index
+    |> unique_constraint([:source_step_id, :target_step_id],
+      name: :step_connections_source_target_index
     )
     |> foreign_key_constraint(:source_step_id)
     |> foreign_key_constraint(:target_step_id)

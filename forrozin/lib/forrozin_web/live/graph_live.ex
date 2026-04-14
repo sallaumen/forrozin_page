@@ -64,7 +64,6 @@ defmodule ForrozinWeb.GraphLive do
         Admin.create_connection(%{
           source_step_id: source_id,
           target_step_id: target_id,
-          type: "exit",
           label: label
         })
       end
@@ -122,7 +121,7 @@ defmodule ForrozinWeb.GraphLive do
         nodes: Enum.map(nodes, fn p -> %{id: p.code, nome: p.name} end),
         edges:
           Enum.map(edges, fn c ->
-            %{from: c.source_step.code, to: c.target_step.code, tipo: c.type}
+            %{from: c.source_step.code, to: c.target_step.code}
           end)
       })
 

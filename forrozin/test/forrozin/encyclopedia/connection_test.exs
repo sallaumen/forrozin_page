@@ -12,7 +12,6 @@ defmodule Forrozin.Encyclopedia.ConnectionTest do
         Connection.changeset(%Connection{}, %{
           source_step_id: source.id,
           target_step_id: target.id,
-          type: "exit",
           label: "Trava Armada",
           description: "Ambos jogam centro de massa para direita gerando elástico."
         })
@@ -30,7 +29,7 @@ defmodule Forrozin.Encyclopedia.ConnectionTest do
         Connection.changeset(%Connection{}, %{
           source_step_id: source.id,
           target_step_id: target.id,
-          type: "exit"
+          
         })
 
       assert changeset.valid?

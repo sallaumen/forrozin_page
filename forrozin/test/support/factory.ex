@@ -61,7 +61,6 @@ defmodule Forrozin.Factory do
 
   def connection_factory do
     %Connection{
-      type: "exit",
       source_step: build(:step),
       target_step: build(:step)
     }

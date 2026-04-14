@@ -43,7 +43,7 @@ defmodule Forrozin.Admin.BackupTest do
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", section: section, category: cat)
       step_b = insert(:step, code: "SC", section: section, category: cat)
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
 
       path = Backup.create_backup!(dir)
       data = path |> File.read!() |> Jason.decode!()
@@ -79,7 +79,7 @@ defmodule Forrozin.Admin.BackupTest do
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", section: section, category: cat)
       step_b = insert(:step, code: "SC", section: section, category: cat)
-      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
+      insert(:connection, source_step: step_a, target_step: step_b)
 
       path = Backup.create_backup!(dir)
 

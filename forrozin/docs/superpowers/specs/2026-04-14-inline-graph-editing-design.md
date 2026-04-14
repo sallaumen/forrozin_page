@@ -135,7 +135,31 @@ this.handleEvent("graph_error", ({message}) => {
 
 ---
 
-## Section 4 — What Does NOT Change
+## Section 4 — Orphan Steps Panel (Edit Mode Only)
+
+When edit mode is activated, the server sends ALL published steps (not just connected ones). Steps without any connections appear in a panel on the left side of the screen with a light red background.
+
+### Panel behavior
+
+- Only visible in edit mode.
+- Lists orphan steps grouped by category, showing code + name.
+- Clicking an orphan step starts the "create connection" flow — the orphan becomes the source, and the admin clicks a target node on the graph.
+- After connection is created, the orphan disappears from the panel (now has a connection) and appears on the graph in its category sector.
+- The panel shows a count: "12 passos sem conexão".
+
+### Server-side
+
+When `edit_mode` is toggled ON, the LiveView sends a `"edit_mode_changed"` push event with `graph_json` that includes ALL nodes (not filtered by connected_codes). The JS rebuilds with the full node set.
+
+When toggled OFF, sends the normal filtered graph_json (only connected nodes).
+
+### LiveView event
+
+New event `"toggle_edit_mode"` — flips a boolean assign, rebuilds graph with or without orphans, pushes updated JSON.
+
+---
+
+## Section 5 — What Does NOT Change
 
 - Non-admin users see no difference — drawer is read-only, no edit toggle.
 - The graph layout algorithm (preset sectors, no Cola) is unchanged.
