@@ -411,8 +411,14 @@ const GraphVisual = {
 
     this._cy = cy
 
-    // Inherit source category color to edges
-    cy.edges().forEach(edge => { edge.data("cor", edge.source().data("cor") || "#9a7a5a") })
+    // Inherit source category color to edges — except edges pointing to BF get black
+    cy.edges().forEach(edge => {
+      if (edge.target().id() === CENTER_CODE) {
+        edge.data("cor", "#1a1a1a")
+      } else {
+        edge.data("cor", edge.source().data("cor") || "#9a7a5a")
+      }
+    })
 
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)

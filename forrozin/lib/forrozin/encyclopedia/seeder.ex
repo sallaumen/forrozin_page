@@ -27,10 +27,10 @@ defmodule Forrozin.Encyclopedia.Seeder do
     {"pescadas", "Pescadas", "#d35400"},
     {"inversao", "Inversão", "#c0392b"},
     {"bases", "Bases", "#16a085"},
-    {"outros", "Outros", "#7f8c8d"},
+    {"outros", "Outros", "#e74c3c"},
     {"footwork", "Forró Footwork", "#e67e22"},
     {"conceitos", "Conceitos", "#f39c12"},
-    {"convencoes", "Convenções", "#95a5a6"}
+    {"convencoes", "Convenções", "#f1c40f"}
   ]
 
   @sections [
