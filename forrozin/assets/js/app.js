@@ -56,8 +56,8 @@ function computeSectorPositions(cy) {
   const numCats = activeCats.length
   const positions = {}
   const R_BASE = 460
-  const NODE_GAP = 165
-  const ROW_GAP = 155
+  const NODE_GAP = 130
+  const ROW_GAP = 120
 
   activeCats.forEach((cat, i) => {
     const group = byCat[cat]
@@ -392,7 +392,7 @@ const GraphVisual = {
       },
       edgeLength: function(e) {
         const same = e.source().data("categoriaName") === e.target().data("categoriaName")
-        return same ? 140 : 340
+        return same ? 90 : 340
       },
       gravity: 0.12, convergenceThreshold: 0.05, infinite: false
     }
