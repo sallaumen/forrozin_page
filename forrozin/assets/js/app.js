@@ -55,9 +55,9 @@ function computeSectorPositions(cy) {
 
   const numCats = activeCats.length
   const positions = {}
-  const R_BASE = 420
-  const NODE_GAP = 160
-  const ROW_GAP = 160
+  const R_BASE = 550
+  const NODE_GAP = 190
+  const ROW_GAP = 180
 
   activeCats.forEach((cat, i) => {
     const group = byCat[cat]
@@ -248,7 +248,7 @@ const GraphVisual = {
           selector: "node.category-zone",
           style: {
             "background-color": "data(cor)", "background-opacity": 0.04,
-            "border-width": 0, "shape": "roundrectangle", "padding": "40px",
+            "border-width": 0, "shape": "roundrectangle", "padding": "60px",
             "label": "", "events": "no"
           }
         },
@@ -256,8 +256,9 @@ const GraphVisual = {
           selector: "node[^category_zone]",
           style: {
             "shape": "roundrectangle",
-            "width": function(e) { return 90 + Math.min(e.degree() * 3, 40) },
-            "height": function(e) { return 36 + Math.min(e.degree() * 1.5, 20) },
+            "width": "label",
+            "height": "label",
+            "padding": function(e) { return e.degree() >= 10 ? "12px 18px" : "8px 14px" },
             "background-color": "#fffef9",
             "border-width": function(e) { return e.degree() >= 10 ? 3 : 2 },
             "border-color": "data(cor)", "border-opacity": 0.85,
@@ -265,7 +266,8 @@ const GraphVisual = {
             "text-wrap": "wrap", "text-halign": "center", "text-valign": "center",
             "font-family": "Georgia, serif",
             "font-size": function(e) { const d = e.degree(); return d >= 15 ? 13 : d >= 8 ? 11.5 : 10 },
-            "color": "#1a0e05", "text-max-width": "140px",
+            "color": "#1a0e05", "text-max-width": "180px",
+            "min-width": "80px",
             "shadow-blur": function(e) { return e.degree() >= 10 ? 10 : 4 },
             "shadow-color": "rgba(60,40,20,0.12)",
             "shadow-offset-x": 0, "shadow-offset-y": 2, "shadow-opacity": 1
@@ -315,18 +317,18 @@ const GraphVisual = {
 
     // ── Phase 2: cola with degree-based spacing ──
     const colaOpts = {
-      name: "cola", animate: true, animationDuration: 900, maxSimulationTime: 3000,
+      name: "cola", animate: true, animationDuration: 1200, maxSimulationTime: 4000,
       randomize: false, fit: true, padding: 60, avoidOverlaps: true,
       nodeDimensionsIncludeLabels: true,
       nodeSpacing: function(node) {
         if (node.hasClass("category-zone")) return 0
-        return 40 + (node.degree() * 8)
+        return 50 + (node.degree() * 10)
       },
       edgeLength: function(e) {
         const same = e.source().data("categoriaName") === e.target().data("categoriaName")
-        return same ? 140 : 420
+        return same ? 160 : 500
       },
-      gravity: 0.15, convergenceThreshold: 0.05, infinite: false
+      gravity: 0.08, convergenceThreshold: 0.05, infinite: false
     }
     cy.layout(colaOpts).run()
     cy.one("layoutstop", () => { cy.fit(undefined, 60) })
