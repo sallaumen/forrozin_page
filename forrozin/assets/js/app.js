@@ -55,9 +55,9 @@ function computeSectorPositions(cy) {
 
   const numCats = activeCats.length
   const positions = {}
-  const R_BASE = 550
-  const NODE_GAP = 190
-  const ROW_GAP = 180
+  const R_BASE = 460
+  const NODE_GAP = 165
+  const ROW_GAP = 155
 
   activeCats.forEach((cat, i) => {
     const group = byCat[cat]
@@ -248,7 +248,7 @@ const GraphVisual = {
           selector: "node.category-zone",
           style: {
             "background-color": "data(cor)", "background-opacity": 0.04,
-            "border-width": 0, "shape": "roundrectangle", "padding": "60px",
+            "border-width": 0, "shape": "roundrectangle", "padding": "45px",
             "label": "", "events": "no"
           }
         },
@@ -317,18 +317,18 @@ const GraphVisual = {
 
     // ── Phase 2: cola with degree-based spacing ──
     const colaOpts = {
-      name: "cola", animate: true, animationDuration: 1200, maxSimulationTime: 4000,
+      name: "cola", animate: true, animationDuration: 900, maxSimulationTime: 2500,
       randomize: false, fit: true, padding: 60, avoidOverlaps: true,
       nodeDimensionsIncludeLabels: true,
       nodeSpacing: function(node) {
         if (node.hasClass("category-zone")) return 0
-        return 50 + (node.degree() * 10)
+        return 45 + (node.degree() * 6)
       },
       edgeLength: function(e) {
         const same = e.source().data("categoriaName") === e.target().data("categoriaName")
-        return same ? 160 : 500
+        return same ? 140 : 340
       },
-      gravity: 0.08, convergenceThreshold: 0.05, infinite: false
+      gravity: 0.12, convergenceThreshold: 0.05, infinite: false
     }
     cy.layout(colaOpts).run()
     cy.one("layoutstop", () => { cy.fit(undefined, 60) })
