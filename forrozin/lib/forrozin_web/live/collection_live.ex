@@ -39,7 +39,9 @@ defmodule ForrozinWeb.CollectionLive do
         drawer_type: nil,
         drawer_item: nil,
         drawer_connections_out: [],
-        drawer_connections_in: []
+        drawer_connections_in: [],
+        connection_search: "",
+        connection_suggestions: []
       )
 
     {:ok, socket}
@@ -168,6 +170,30 @@ defmodule ForrozinWeb.CollectionLive do
           {:noreply, put_flash(socket, :error, "Erro ao salvar seção")}
       end
     end
+  end
+
+  def handle_event("search_connection", %{"target_code" => term}, socket) do
+    if not socket.assigns.is_admin or String.length(term) < 1 do
+      {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
+    else
+      term_lower = String.downcase(term)
+
+      suggestions =
+        Repo.all(
+          from s in Step,
+            where: s.status == "published",
+            where: fragment("lower(?) LIKE ? OR lower(?) LIKE ?", s.code, ^"%#{term_lower}%", s.name, ^"%#{term_lower}%"),
+            order_by: [asc: s.name],
+            limit: 8,
+            preload: [:category]
+        )
+
+      {:noreply, assign(socket, connection_search: term, connection_suggestions: suggestions)}
+    end
+  end
+
+  def handle_event("select_connection_target", %{"code" => code}, socket) do
+    {:noreply, assign(socket, connection_search: code, connection_suggestions: [])}
   end
 
   def handle_event("create_step_connection", %{"target_code" => target_code}, socket) do

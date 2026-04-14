@@ -203,13 +203,13 @@
       <% end %>
 
       <%!-- Connections --%>
-      <div style="font-size: 11px; color: #7a5c3a; margin-bottom: 12px;">{length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas</div>
+      <div style="font-size: 12px; color: #2c1a0e; margin-bottom: 12px; font-weight: 600;">{length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas</div>
 
       <%= if @drawer_connections_out != [] do %>
         <div style="font-size: 10px; font-weight: 700; color: #9a7a5a; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">Saídas →</div>
         <%= for conn <- @drawer_connections_out do %>
           <div style="display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">
-            <span phx-click="open_step" phx-value-code={conn.target_step.code} style="font-size: 12px; color: #2c1a0e; cursor: pointer; flex: 1;">
+            <span phx-click="open_step" phx-value-code={conn.target_step.code} style="font-size: 13px; color: #1a0e05; cursor: pointer; flex: 1;">
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">{conn.target_step.code}</code> {conn.target_step.name}
             </span>
             <%= if @edit_mode do %>
@@ -223,7 +223,7 @@
         <div style="font-size: 10px; font-weight: 700; color: #9a7a5a; text-transform: uppercase; letter-spacing: 2px; margin: 10px 0 6px;">← Entradas</div>
         <%= for conn <- @drawer_connections_in do %>
           <div style="display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">
-            <span phx-click="open_step" phx-value-code={conn.source_step.code} style="font-size: 12px; color: #2c1a0e; cursor: pointer; flex: 1;">
+            <span phx-click="open_step" phx-value-code={conn.source_step.code} style="font-size: 13px; color: #1a0e05; cursor: pointer; flex: 1;">
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">{conn.source_step.code}</code> {conn.source_step.name}
             </span>
             <%= if @edit_mode do %>
@@ -234,10 +234,39 @@
       <% end %>
 
       <%= if @edit_mode do %>
-        <form phx-submit="create_step_connection" style="margin-top: 10px; display: flex; gap: 6px;">
-          <input type="text" name="target_code" placeholder="Código destino" style="flex: 1; padding: 6px 10px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: monospace; font-size: 12px;" />
-          <button type="submit" style="padding: 6px 12px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">+ Conexão</button>
-        </form>
+        <div style="margin-top: 10px; position: relative;">
+          <form phx-submit="create_step_connection" phx-change="search_connection" style="display: flex; gap: 6px;">
+            <input
+              type="text"
+              name="target_code"
+              value={@connection_search}
+              placeholder="Buscar passo por código ou nome..."
+              autocomplete="off"
+              phx-debounce="150"
+              style="flex: 1; padding: 8px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05;"
+            />
+            <button type="submit" style="padding: 8px 14px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">+ Conexão</button>
+          </form>
+          <%= if @connection_suggestions != [] do %>
+            <div style="position: absolute; top: 42px; left: 0; right: 60px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
+              <%= for step <- @connection_suggestions do %>
+                <div
+                  phx-click="select_connection_target"
+                  phx-value-code={step.code}
+                  style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
+                  onmouseover="this.style.background='rgba(60,40,20,0.04)'"
+                  onmouseout="this.style.background='transparent'"
+                >
+                  <code style={"font-size: 11px; color: #{if step.category, do: step.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>{step.code}</code>
+                  {step.name}
+                  <%= if step.category do %>
+                    <span style={"font-size: 10px; color: #{step.category.color}; font-style: italic; margin-left: 6px;"}>{step.category.label}</span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
       <% end %>
 
     <% end %>
