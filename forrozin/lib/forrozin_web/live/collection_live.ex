@@ -42,7 +42,10 @@ defmodule ForrozinWeb.CollectionLive do
         connection_search: "",
         connection_suggestions: [],
         suggest_mode: false,
-        can_edit_drawer: false
+        can_edit_drawer: false,
+        active_tab: "acervo",
+        my_steps: [],
+        suggested_steps: Encyclopedia.list_suggested_steps()
       )
 
     {:ok, socket}
@@ -72,6 +75,22 @@ defmodule ForrozinWeb.CollectionLive do
   def handle_event("collapse_all", _params, socket) do
     open_sections = Map.new(socket.assigns.sections, fn s -> {s.id, false} end)
     {:noreply, assign(socket, open_sections: open_sections)}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Tabs
+  # ---------------------------------------------------------------------------
+
+  def handle_event("switch_tab", %{"tab" => tab}, socket) do
+    socket =
+      if tab == "meus_passos" do
+        my_steps = Encyclopedia.list_user_steps(socket.assigns.current_user.id)
+        assign(socket, active_tab: tab, my_steps: my_steps)
+      else
+        assign(socket, active_tab: tab)
+      end
+
+    {:noreply, socket}
   end
 
   # ---------------------------------------------------------------------------
@@ -319,7 +338,12 @@ defmodule ForrozinWeb.CollectionLive do
   defp reload_sections(socket) do
     sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
     open = Map.new(sections, fn s -> {s.id, Map.get(socket.assigns.open_sections, s.id, false)} end)
-    assign(socket, sections: sections, open_sections: open)
+
+    assign(socket,
+      sections: sections,
+      open_sections: open,
+      suggested_steps: Encyclopedia.list_suggested_steps()
+    )
   end
 
   defp reopen_step_drawer(socket, code) do
@@ -341,6 +365,7 @@ defmodule ForrozinWeb.CollectionLive do
   attr :section, :map, required: true
   attr :open, :boolean, required: true
   attr :edit_mode, :boolean, default: false
+  attr :current_user_id, :string, default: nil
 
   def section_card(assigns) do
     ~H"""
@@ -394,7 +419,7 @@ defmodule ForrozinWeb.CollectionLive do
             </div>
           <% end %>
           <%= for step <- @section.steps do %>
-            <.step_item step={step} />
+            <.step_item step={step} current_user_id={@current_user_id} />
           <% end %>
           <%= for subsection <- @section.subsections do %>
             <div style="margin-top: 16px;">
@@ -407,7 +432,7 @@ defmodule ForrozinWeb.CollectionLive do
                 </p>
               <% end %>
               <%= for step <- subsection.steps do %>
-                <.step_item step={step} />
+                <.step_item step={step} current_user_id={@current_user_id} />
               <% end %>
             </div>
           <% end %>
@@ -418,13 +443,15 @@ defmodule ForrozinWeb.CollectionLive do
   end
 
   attr :step, :map, required: true
+  attr :current_user_id, :string, default: nil
 
   def step_item(assigns) do
     ~H"""
+    <% is_mine = @step.suggested_by_id != nil and @step.suggested_by_id == @current_user_id %>
     <div
       phx-click="open_step"
       phx-value-code={@step.code}
-      style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(60,40,20,0.12); cursor: pointer;"
+      style={"display: flex; gap: 14px; padding: 12px; border-bottom: 1px solid rgba(60,40,20,0.12); cursor: pointer; border-radius: 6px; margin-bottom: 2px; background: #{if is_mine, do: "#fce4ec", else: "transparent"};"}
     >
       <%= if @step.image_path do %>
         <img

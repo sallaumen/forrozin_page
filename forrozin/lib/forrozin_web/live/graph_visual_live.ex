@@ -167,6 +167,7 @@ defmodule ForrozinWeb.GraphVisualLive do
             nota: truncate_note(p.note, 300),
             highlighted: p.highlighted || false,
             suggested: p.suggested_by_id != nil,
+            suggested_by_id: p.suggested_by_id,
             orphan: not MapSet.member?(connected_codes, p.code)
           }
         end),

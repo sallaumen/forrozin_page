@@ -235,4 +235,27 @@ defmodule Forrozin.Encyclopedia do
     |> order_by([c], asc: c.title)
     |> Repo.all()
   end
+
+  # ---------------------------------------------------------------------------
+  # Suggested steps
+  # ---------------------------------------------------------------------------
+
+  @doc "Lists all suggested steps (community contributions)."
+  def list_suggested_steps do
+    Step
+    |> where([s], not is_nil(s.suggested_by_id))
+    |> where([s], s.status == "published")
+    |> order_by([s], desc: s.inserted_at)
+    |> preload([:category, :suggested_by])
+    |> Repo.all()
+  end
+
+  @doc "Lists steps suggested by a specific user."
+  def list_user_steps(user_id) do
+    Step
+    |> where([s], s.suggested_by_id == ^user_id)
+    |> order_by([s], desc: s.inserted_at)
+    |> preload([:category, :suggested_by])
+    |> Repo.all()
+  end
 end

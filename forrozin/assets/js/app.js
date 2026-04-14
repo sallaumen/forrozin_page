@@ -425,6 +425,8 @@ const GraphVisual = {
     const { nodes, edges } = JSON.parse(raw)
     if (this._cy) { this._cy.destroy(); this._cy = null }
 
+    const currentUserId = el.dataset.userId
+
     // Build elements: step nodes + edges (no compound parents)
     const elements = []
 
@@ -435,7 +437,8 @@ const GraphVisual = {
           categoriaName: n.categoriaName, cor: n.cor || "#9a7a5a",
           nota: n.nota,
           highlighted: n.highlighted || false,
-          suggested: n.suggested || false
+          suggested: n.suggested || false,
+          suggestedById: n.suggested_by_id
         }
       })
     })
@@ -460,7 +463,9 @@ const GraphVisual = {
               if (e.data("highlighted")) return "20px 30px"
               return e.degree() >= 10 ? "12px 18px" : "8px 14px"
             },
-            "background-color": "#fffef9",
+            "background-color": function(e) {
+              return (e.data("suggestedById") && e.data("suggestedById") === currentUserId) ? "#fce4ec" : "#fffef9"
+            },
             "border-width": function(e) {
               if (e.data("highlighted")) return 5
               return e.degree() >= 10 ? 3 : 2

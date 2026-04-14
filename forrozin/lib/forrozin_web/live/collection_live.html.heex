@@ -160,21 +160,57 @@
     </div>
   <% end %>
 
+  <%!-- Tabs --%>
+  <div style="max-width: 860px; margin: 0 auto; padding: 0 16px;">
+    <div style="display: flex; gap: 0; border-bottom: 2px solid rgba(60,40,20,0.1); margin-top: 12px;">
+      <button
+        phx-click="switch_tab"
+        phx-value-tab="acervo"
+        style={"padding: 10px 24px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; border: none; background: transparent; color: #{if @active_tab == "acervo", do: "#1a0e05", else: "#9a7a5a"}; border-bottom: 2px solid #{if @active_tab == "acervo", do: "#1a0e05", else: "transparent"}; font-weight: #{if @active_tab == "acervo", do: "700", else: "400"}; margin-bottom: -2px;"}
+      >
+        Acervo
+      </button>
+      <button
+        phx-click="switch_tab"
+        phx-value-tab="meus_passos"
+        style={"padding: 10px 24px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; border: none; background: transparent; color: #{if @active_tab == "meus_passos", do: "#8e44ad", else: "#9a7a5a"}; border-bottom: 2px solid #{if @active_tab == "meus_passos", do: "#8e44ad", else: "transparent"}; font-weight: #{if @active_tab == "meus_passos", do: "700", else: "400"}; margin-bottom: -2px;"}
+      >
+        Meus passos
+      </button>
+    </div>
+  </div>
+
   <%!-- Conteúdo --%>
   <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; width: 100%; box-sizing: border-box;">
-    <%= if @search != "" do %>
-      <%= if @search_results == [] do %>
-        <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
-          Nenhum resultado para "{@search}"
+    <%= if @active_tab == "meus_passos" do %>
+      <%!-- Meus passos tab --%>
+      <%= if @my_steps == [] do %>
+        <div style="text-align: center; padding: 60px 20px; color: #9a7a5a; font-style: italic;">
+          Você ainda não sugeriu nenhum passo. Use o botão "+ Sugerir passo" acima!
         </div>
       <% else %>
-        <p style="font-size: 12px; color: #9a7a5a; margin-bottom: 16px; font-family: monospace;">
-          {length(@search_results)} resultado(s)
+        <p style="font-size: 12px; color: #8e44ad; margin-bottom: 16px; font-weight: 600;">
+          {length(@my_steps)} passo(s) sugerido(s) por você
         </p>
-        <%= for step <- @search_results do %>
-          <.step_item step={step} />
+        <%= for step <- @my_steps do %>
+          <.step_item step={step} current_user_id={@current_user.id} />
         <% end %>
       <% end %>
+    <% else %>
+      <%!-- Acervo tab --%>
+      <%= if @search != "" do %>
+        <%= if @search_results == [] do %>
+          <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+            Nenhum resultado para "{@search}"
+          </div>
+        <% else %>
+          <p style="font-size: 12px; color: #9a7a5a; margin-bottom: 16px; font-family: monospace;">
+            {length(@search_results)} resultado(s)
+          </p>
+          <%= for step <- @search_results do %>
+            <.step_item step={step} current_user_id={@current_user.id} />
+          <% end %>
+        <% end %>
     <% else %>
       <%= if filtered_sections(@sections, @category_filter) == [] do %>
         <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
@@ -182,9 +218,22 @@
         </div>
       <% else %>
         <%= for section <- filtered_sections(@sections, @category_filter) do %>
-          <.section_card section={section} open={Map.get(@open_sections, section.id, false)} edit_mode={@edit_mode} />
+          <.section_card section={section} open={Map.get(@open_sections, section.id, false)} edit_mode={@edit_mode} current_user_id={@current_user.id} />
+        <% end %>
+
+        <%!-- Sugestões da comunidade --%>
+        <%= if @suggested_steps != [] and @category_filter == "all" do %>
+          <div style="margin-top: 24px; border-top: 2px solid #8e44ad20; padding-top: 20px;">
+            <div style="font-size: 11px; font-weight: 700; color: #8e44ad; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+              Sugestões da comunidade ({length(@suggested_steps)})
+            </div>
+            <%= for step <- @suggested_steps do %>
+              <.step_item step={step} current_user_id={@current_user.id} />
+            <% end %>
+          </div>
         <% end %>
       <% end %>
+    <% end %>
     <% end %>
   </div>
 
