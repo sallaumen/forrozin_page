@@ -24,12 +24,12 @@ defmodule Forrozin.Admin.Backup do
   @max_backups 48
 
   @ordered_schemas [
-    {"categorias", Category},
-    {"secoes", Section},
-    {"subsecoes", Subsection},
-    {"passos", Step},
-    {"conceitos_tecnicos", TechnicalConcept},
-    {"conexoes_passos", Connection}
+    {"categories", Category},
+    {"sections", Section},
+    {"subsections", Subsection},
+    {"steps", Step},
+    {"technical_concepts", TechnicalConcept},
+    {"step_connections", Connection}
   ]
 
   # ---------------------------------------------------------------------------
@@ -53,7 +53,7 @@ defmodule Forrozin.Admin.Backup do
         Map.new(@ordered_schemas, fn {nome, schema} ->
           {nome, dump_schema(schema)}
         end)
-        |> Map.put("conceitos_passos", dump_join_table())
+        |> Map.put("concept_steps", dump_join_table())
     }
 
     File.write!(path, Jason.encode!(data, pretty: true))
@@ -76,7 +76,7 @@ defmodule Forrozin.Admin.Backup do
         restore_schema(schema, tables[nome] || [])
       end
 
-      restore_join_table(tables["conceitos_passos"] || [])
+      restore_join_table(tables["concept_steps"] || [])
     end)
 
     :ok
@@ -115,7 +115,7 @@ defmodule Forrozin.Admin.Backup do
 
   defp dump_join_table do
     %{rows: rows, columns: cols} =
-      Repo.query!("SELECT conceito_id::text, passo_id::text FROM conceitos_passos")
+      Repo.query!("SELECT concept_id::text, step_id::text FROM concept_steps")
 
     Enum.map(rows, fn row -> Map.new(Enum.zip(cols, row)) end)
   end
@@ -146,12 +146,12 @@ defmodule Forrozin.Admin.Backup do
 
   defp restore_join_table(records) do
     rows =
-      Enum.map(records, fn %{"conceito_id" => c, "passo_id" => p} ->
-        %{conceito_id: c, passo_id: p}
+      Enum.map(records, fn %{"concept_id" => c, "step_id" => p} ->
+        %{concept_id: c, step_id: p}
       end)
 
     unless rows == [] do
-      Repo.insert_all("conceitos_passos", rows, on_conflict: :nothing)
+      Repo.insert_all("concept_steps", rows, on_conflict: :nothing)
     end
   end
 

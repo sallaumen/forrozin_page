@@ -18,7 +18,7 @@ defmodule Forrozin.Accounts.User do
   @valid_roles ~w(user admin)
   @min_password 8
 
-  schema "usuarios" do
+  schema "users" do
     field :username, :string
     field :email, :string
     field :password, :string, virtual: true

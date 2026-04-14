@@ -13,7 +13,7 @@ defmodule Forrozin.Encyclopedia.Step do
     :category_id, :section_id, :subsection_id
   ]
 
-  schema "passos" do
+  schema "steps" do
     field :code, :string
     field :name, :string
     field :note, :string
@@ -27,8 +27,8 @@ defmodule Forrozin.Encyclopedia.Step do
     belongs_to :subsection, Subsection
 
     many_to_many :technical_concepts, TechnicalConcept,
-      join_through: "conceitos_passos",
-      join_keys: [passo_id: :id, conceito_id: :id]
+      join_through: "concept_steps",
+      join_keys: [step_id: :id, concept_id: :id]
 
     has_many :connections_as_source, Connection, foreign_key: :source_step_id
     has_many :connections_as_target, Connection, foreign_key: :target_step_id

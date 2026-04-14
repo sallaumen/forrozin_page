@@ -7,7 +7,7 @@ defmodule Forrozin.Encyclopedia.TechnicalConcept do
 
   @required_fields [:title, :description]
 
-  schema "conceitos_tecnicos" do
+  schema "technical_concepts" do
     field :title, :string
     field :description, :string
     timestamps()

@@ -10,7 +10,7 @@ defmodule Forrozin.Encyclopedia.Subsection do
   @required_fields [:title, :position, :section_id]
   @optional_fields [:note]
 
-  schema "subsecoes" do
+  schema "subsections" do
     field :title, :string
     field :note, :string
     field :position, :integer

@@ -58,8 +58,8 @@ defmodule Mix.Tasks.Forrozin.RestoreBackup do
     repo = Forrozin.Repo
 
     # Reverse order of FK constraints
-    repo.query!("DELETE FROM conceitos_passos")
-    repo.query!("DELETE FROM conexoes_passos")
+    repo.query!("DELETE FROM concept_steps")
+    repo.query!("DELETE FROM step_connections")
     repo.delete_all(Forrozin.Encyclopedia.Step)
     repo.delete_all(Forrozin.Encyclopedia.TechnicalConcept)
     repo.delete_all(Forrozin.Encyclopedia.Subsection)

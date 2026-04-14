@@ -7,7 +7,7 @@ defmodule Forrozin.Encyclopedia.Category do
 
   @required_fields [:name, :label, :color]
 
-  schema "categorias" do
+  schema "categories" do
     field :name, :string
     field :label, :string
     field :color, :string
