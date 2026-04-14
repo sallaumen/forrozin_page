@@ -71,6 +71,9 @@ defmodule Forrozin.Encyclopedia.StepQuery do
   defp shared_reducer({:has_suggestions, true}, q),
     do: where(q, [step: s], not is_nil(s.suggested_by_id))
 
+  defp shared_reducer({:approved_only, true}, q),
+    do: where(q, [step: s], s.approved == true)
+
   defp shared_reducer({:step_ids, ids}, q),
     do: where(q, [step: s], s.id in ^ids)
 

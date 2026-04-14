@@ -13,7 +13,7 @@ defmodule Forrozin.Sequences.GeneratorTest do
   defp build_linear_chain(n) when n >= 2 do
     steps =
       for i <- 0..(n - 1) do
-        insert(:step, code: "C#{i}", name: "Chain Step #{i}", wip: false, status: "published")
+        insert(:step, code: "C#{i}", name: "Chain Step #{i}", wip: false, status: "published", approved: true)
       end
 
     # Connect each step to the next
@@ -199,7 +199,7 @@ defmodule Forrozin.Sequences.GeneratorTest do
       # Rename steps to avoid code collision with chain helper
       _steps_b =
         for i <- 3..5 do
-          insert(:step, code: "D#{i}", name: "Dead Step #{i}", wip: false, status: "published")
+          insert(:step, code: "D#{i}", name: "Dead Step #{i}", wip: false, status: "published", approved: true)
         end
 
       # D3, D4, D5 connected among themselves but not to C0..C2
@@ -233,11 +233,11 @@ defmodule Forrozin.Sequences.GeneratorTest do
       # Build a branching graph so multiple paths exist
       # B0 -> B1, B0 -> B2, B1 -> B3, B2 -> B4
       # Two distinct paths of length 3: B0->B1->B3 and B0->B2->B4
-      s0 = insert(:step, code: "B0", name: "Branch 0", wip: false, status: "published")
-      s1 = insert(:step, code: "B1", name: "Branch 1", wip: false, status: "published")
-      s2 = insert(:step, code: "B2", name: "Branch 2", wip: false, status: "published")
-      s3 = insert(:step, code: "B3", name: "Branch 3", wip: false, status: "published")
-      s4 = insert(:step, code: "B4", name: "Branch 4", wip: false, status: "published")
+      s0 = insert(:step, code: "B0", name: "Branch 0", wip: false, status: "published", approved: true)
+      s1 = insert(:step, code: "B1", name: "Branch 1", wip: false, status: "published", approved: true)
+      s2 = insert(:step, code: "B2", name: "Branch 2", wip: false, status: "published", approved: true)
+      s3 = insert(:step, code: "B3", name: "Branch 3", wip: false, status: "published", approved: true)
+      s4 = insert(:step, code: "B4", name: "Branch 4", wip: false, status: "published", approved: true)
 
       insert(:connection, source_step: s0, target_step: s1)
       insert(:connection, source_step: s0, target_step: s2)
