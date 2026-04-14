@@ -1,25 +1,25 @@
-defmodule ForrozinWeb.Emails.ConfirmacaoEmail do
-  @moduledoc "Email de confirmação de conta enviado após o cadastro."
+defmodule ForrozinWeb.Emails.ConfirmationEmail do
+  @moduledoc "Confirmation email sent to the user after registration."
 
   alias Swoosh.Email
 
   use ForrozinWeb, :verified_routes
 
-  @remetente {"Forrózin", "noreply@forrozin.com.br"}
+  @sender {"Forrózin", "noreply@forrozin.com.br"}
 
-  @doc "Cria o email de confirmação para o usuário."
-  def novo(user) do
-    link = url(~p"/confirmar/#{user.confirmation_token}")
+  @doc "Builds the confirmation email for the given user."
+  def new(user) do
+    link = url(~p"/confirm/#{user.confirmation_token}")
 
     Email.new()
-    |> Email.to({user.nome_usuario, user.email})
-    |> Email.from(@remetente)
+    |> Email.to({user.username, user.email})
+    |> Email.from(@sender)
     |> Email.subject("Confirme seu email — Forrózin")
-    |> Email.html_body(html(user.nome_usuario, link))
-    |> Email.text_body(texto(user.nome_usuario, link))
+    |> Email.html_body(html(user.username, link))
+    |> Email.text_body(text(user.username, link))
   end
 
-  defp html(nome, link) do
+  defp html(name, link) do
     """
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -33,7 +33,7 @@ defmodule ForrozinWeb.Emails.ConfirmacaoEmail do
           Confirme seu email
         </h1>
         <p style="font-size:14px;color:#5c3a1a;line-height:1.7;">
-          Olá, #{nome}! Clique no botão abaixo para confirmar seu email e acessar o acervo.
+          Olá, #{name}! Clique no botão abaixo para confirmar seu email e acessar o acervo.
         </p>
         <a href="#{link}"
            style="display:inline-block;margin:24px 0;padding:12px 28px;background:#1a0e05;color:#f2ede4;text-decoration:none;font-family:Georgia,serif;font-size:14px;font-weight:700;letter-spacing:1px;border-radius:4px;">
@@ -48,11 +48,11 @@ defmodule ForrozinWeb.Emails.ConfirmacaoEmail do
     """
   end
 
-  defp texto(nome, link) do
+  defp text(name, link) do
     """
     Forrózin — Confirme seu email
 
-    Olá, #{nome}!
+    Olá, #{name}!
 
     Confirme seu email acessando o link abaixo:
     #{link}

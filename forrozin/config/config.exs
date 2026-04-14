@@ -60,7 +60,7 @@ config :forrozin, Oban,
     {Oban.Plugins.Cron,
      crontab: [
        # Backup completo do banco a cada hora
-       {"0 * * * *", Forrozin.Workers.BackupPeriodico}
+       {"0 * * * *", Forrozin.Workers.PeriodicBackup}
      ]}
   ]
 
