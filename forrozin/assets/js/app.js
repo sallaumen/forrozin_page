@@ -248,7 +248,7 @@ const GraphVisual = {
           selector: "node.category-zone",
           style: {
             "background-color": "data(cor)", "background-opacity": 0.04,
-            "border-width": 0, "shape": "roundrectangle", "padding": "45px",
+            "border-width": 0, "shape": "ellipse", "padding": "55px",
             "label": "", "events": "no"
           }
         },
@@ -260,13 +260,13 @@ const GraphVisual = {
             "height": "label",
             "padding": function(e) {
               const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return "16px 24px"
+              if (HUB_CODES.includes(e.id())) return "20px 30px"
               return e.degree() >= 10 ? "12px 18px" : "8px 14px"
             },
             "background-color": "#fffef9",
             "border-width": function(e) {
               const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return 4
+              if (HUB_CODES.includes(e.id())) return 5
               return e.degree() >= 10 ? 3 : 2
             },
             "border-color": "data(cor)", "border-opacity": 0.85,
@@ -275,7 +275,7 @@ const GraphVisual = {
             "font-family": "Georgia, serif",
             "font-size": function(e) {
               const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return 17
+              if (HUB_CODES.includes(e.id())) return 19
               const d = e.degree()
               return d >= 12 ? 15 : d >= 6 ? 14 : 13
             },
@@ -283,7 +283,7 @@ const GraphVisual = {
             "min-width": "80px",
             "shadow-blur": function(e) {
               const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return 16
+              if (HUB_CODES.includes(e.id())) return 20
               return e.degree() >= 10 ? 10 : 4
             },
             "shadow-color": "rgba(60,40,20,0.12)",
