@@ -172,10 +172,10 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
 
     ctx.beginPath()
     ctx.arc(cx, cy_, r, 0, 2 * Math.PI)
-    ctx.fillStyle = cor + "06"
+    ctx.fillStyle = cor + "15"
     ctx.fill()
-    ctx.strokeStyle = cor + "18"
-    ctx.lineWidth = 1.5
+    ctx.strokeStyle = cor + "35"
+    ctx.lineWidth = 2
     ctx.stroke()
   })
 }
