@@ -34,8 +34,8 @@ cytoscape.use(cytoscapeCola)
 // Canonical category order for radial sectors.
 // ---------------------------------------------------------------------------
 const CATEGORY_ORDER = [
-  "bases", "sacadas", "travas", "pescadas",
-  "caminhadas", "giros", "inversao", "outros",
+  "sacadas", "travas", "pescadas", "caminhadas",
+  "giros", "convencoes", "inversao", "outros",
 ]
 
 // The ONE central node — Base frontal is the center of everything
@@ -68,7 +68,7 @@ function runHybridLayout(cy) {
   const totalNodes = Object.values(byCat).reduce((s, g) => s + g.length, 0)
   const hasOrphans = cy.nodes().some(n => n.connectedEdges().length === 0)
   // Normal mode: compact. Edit mode with orphans: expand to fit
-  const R_OUTER = hasOrphans ? Math.max(800, 500 + totalNodes * 6) : 700
+  const R_OUTER = hasOrphans ? Math.max(900, 600 + totalNodes * 6) : 850
   const R_BASES = 200
   const NODE_GAP = 155
   const ROW_GAP = 130
@@ -163,7 +163,7 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
       maxY = Math.max(maxY, pos.y + h)
     })
 
-    const padding = 30
+    const padding = 50
     const cx = (minX + maxX) / 2
     const cy_ = (minY + maxY) / 2
     const rx = (maxX - minX) / 2 + padding
