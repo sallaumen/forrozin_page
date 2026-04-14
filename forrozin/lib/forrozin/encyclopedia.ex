@@ -53,13 +53,23 @@ defmodule Forrozin.Encyclopedia do
   def list_sections_with_steps(opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
 
-    visible_steps =
+    visibility_filter =
+      if admin,
+        do: dynamic([p], p.status == "published"),
+        else: dynamic([p], p.wip == false and p.status == "published")
+
+    # Direct steps: only those NOT in a subsection (avoids duplicates)
+    direct_steps =
       from(p in Step,
-        where:
-          ^if(admin,
-            do: dynamic([p], p.status == "published"),
-            else: dynamic([p], p.wip == false and p.status == "published")
-          ),
+        where: ^visibility_filter,
+        where: is_nil(p.subsection_id),
+        order_by: [asc: p.position]
+      )
+
+    # Subsection steps: all visible steps in subsections
+    subsection_steps =
+      from(p in Step,
+        where: ^visibility_filter,
         order_by: [asc: p.position]
       )
 
@@ -68,8 +78,8 @@ defmodule Forrozin.Encyclopedia do
     |> Repo.all()
     |> Repo.preload([
       :category,
-      steps: visible_steps,
-      subsections: [steps: visible_steps]
+      steps: direct_steps,
+      subsections: [steps: subsection_steps]
     ])
   end
 
