@@ -634,6 +634,7 @@ const GraphVisual = {
 
     cy.on("mouseover", "node", function(evt) {
       if (document.getElementById("graph-drawer").style.right === "0px") return
+      if (hook._seqHighlightActive) return // Don't interfere with sequence highlight
       const node = evt.target
       cy.batch(() => {
         cy.elements().style({ opacity: 0.25 })
@@ -644,6 +645,7 @@ const GraphVisual = {
 
     cy.on("mouseout", "node", function() {
       if (document.getElementById("graph-drawer").style.right === "0px") return
+      if (hook._seqHighlightActive) return // Don't clear sequence highlight
       if (!activeCategory) clearSpotlight(cy)
     })
 
@@ -707,7 +709,9 @@ const GraphVisual = {
                              "⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"]
         const prefix = num <= 20 ? circledNums[num - 1] : `${num}.`
 
-        node.data("label", `${prefix} ${node.id()}\n${node.data("nome") || node.id()}`)
+        // The style function renders: e.id() + "\n" + e.data("label")
+        // So we only set label to the prefixed name (no code — style adds it)
+        node.data("label", `${prefix} ${node.data("_origLabel")}`)
         node.style({
           opacity: 1,
           "border-color": "#e67e22",

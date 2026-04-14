@@ -49,9 +49,11 @@ defmodule ForrozinWeb.GraphVisualLive do
 
   def handle_event("generate_sequences", params, socket) do
     start_code = Map.get(params, "start_code", "") |> String.trim()
-    length_val = parse_int(Map.get(params, "length", "6"), 6)
-    count_val = parse_int(Map.get(params, "count", "3"), 3)
     allow_repeats = Map.get(params, "allow_repeats") in ["true", "on"]
+    cyclic = Map.get(params, "cyclic") in ["true", "on"]
+    min_length = if allow_repeats, do: 8, else: 4
+    length_val = parse_int(Map.get(params, "length", "6"), 6) |> max(min_length)
+    count_val = parse_int(Map.get(params, "count", "3"), 3)
 
     required_codes = socket.assigns.seq_required_codes
 
@@ -60,7 +62,8 @@ defmodule ForrozinWeb.GraphVisualLive do
       length: length_val,
       count: count_val,
       required_codes: required_codes,
-      allow_repeats: allow_repeats
+      allow_repeats: allow_repeats,
+      cyclic: cyclic
     }
 
     {:ok, sequences, warnings} = Sequences.generate(gen_params)

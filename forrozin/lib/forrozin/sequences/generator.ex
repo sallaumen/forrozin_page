@@ -3,8 +3,7 @@ defmodule Forrozin.Sequences.Generator do
   Generates step sequences by traversing the directed connection graph.
 
   Uses randomized DFS with backtracking and weighted selection for required
-  steps. Each call to `generate/1` returns a list of distinct sequences and
-  any warnings about constraints that could not be satisfied.
+  steps. Supports cyclic sequences (start == end) and loop limiting.
   """
 
   alias Forrozin.Encyclopedia.{ConnectionQuery, StepQuery}
@@ -18,27 +17,30 @@ defmodule Forrozin.Sequences.Generator do
           length: pos_integer(),
           count: pos_integer(),
           required_codes: [String.t()],
-          allow_repeats: boolean()
+          allow_repeats: boolean(),
+          cyclic: boolean()
         }
 
   @required_weight 5
-  @max_attempts_per_sequence 50
+  @max_attempts_per_sequence 100
+  @max_same_pair_loops 3
 
   @doc """
   Generate sequences traversing the step connection graph.
 
-  Returns `{:ok, sequences, warnings}` where:
-  - `sequences` is a list of step lists (each step has `:id`, `:code`, `:name`)
-  - `warnings` is a list of messages about constraints not met
+  Options:
+  - `cyclic: true` (default) — sequence must end at `start_code`
+  - `allow_repeats: true` — steps can appear multiple times (max #{@max_same_pair_loops} identical transitions)
+  - `required_codes` — best-effort inclusion of these steps
   """
   @spec generate(params()) :: result()
   def generate(params) do
+    params = Map.put_new(params, :cyclic, true)
     steps = StepQuery.list_by(public_only: true, preload: [:category])
     connections = ConnectionQuery.list_by(preload: [])
 
     step_map = Map.new(steps, &{&1.id, &1})
     code_to_id = Map.new(steps, &{&1.code, &1.id})
-
     adjacency = build_adjacency(connections)
 
     start_id = Map.get(code_to_id, params.start_code)
@@ -51,20 +53,12 @@ defmodule Forrozin.Sequences.Generator do
       sequences =
         1..params.count
         |> Enum.map(fn _ ->
-          generate_one(
-            start_id,
-            params.length,
-            adjacency,
-            required_id_set,
-            params.allow_repeats,
-            step_map
-          )
+          generate_one(start_id, params.length, adjacency, required_id_set, params.allow_repeats, params.cyclic, step_map)
         end)
         |> Enum.reject(&is_nil/1)
         |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
 
       warnings = build_warnings(sequences, required_ids, step_map, params)
-
       {:ok, sequences, warnings}
     end
   end
@@ -87,32 +81,108 @@ defmodule Forrozin.Sequences.Generator do
     end)
   end
 
-  defp generate_one(start_id, length, adjacency, required_ids, allow_repeats, step_map) do
+  defp generate_one(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map) do
     Enum.reduce_while(1..@max_attempts_per_sequence, nil, fn _, _acc ->
-      path = walk(start_id, length, adjacency, required_ids, allow_repeats, step_map)
+      path = walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map)
 
-      if path && length(path) == length do
-        {:halt, path}
-      else
-        {:cont, nil}
-      end
+      valid =
+        cond do
+          is_nil(path) -> false
+          length(path) != target_length -> false
+          cyclic and List.last(path).id != start_id -> false
+          true -> true
+        end
+
+      if valid, do: {:halt, path}, else: {:cont, nil}
     end)
   end
 
-  defp walk(start_id, target_length, adjacency, required_ids, allow_repeats, step_map) do
-    do_walk(
-      [start_id],
-      target_length,
-      adjacency,
-      required_ids,
-      allow_repeats,
-      step_map,
-      MapSet.new([start_id])
-    )
+  defp walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map) do
+    # For cyclic: we need length-1 internal steps + return to start
+    state = %{
+      visited: MapSet.new([start_id]),
+      pair_counts: %{},
+      adjacency: adjacency,
+      required_ids: required_ids,
+      allow_repeats: allow_repeats,
+      cyclic: cyclic,
+      start_id: start_id,
+      step_map: step_map,
+      target_length: target_length
+    }
+
+    do_walk([start_id], state)
   end
 
-  defp do_walk(path, target_length, _adjacency, _required_ids, _allow_repeats, step_map, _visited)
-       when length(path) == target_length do
+  defp do_walk(path, state) when length(path) == state.target_length do
+    if state.cyclic do
+      # Last step must be start — check if we can reach start from current
+      [current | _] = path
+
+      if current == state.start_id do
+        # Already at start — this works
+        format_path(path, state.step_map)
+      else
+        nil
+      end
+    else
+      format_path(path, state.step_map)
+    end
+  end
+
+  defp do_walk([current | _rest] = path, state) do
+    neighbors = Map.get(state.adjacency, current, [])
+    steps_remaining = state.target_length - length(path)
+
+    valid_neighbors = filter_neighbors(neighbors, current, path, state, steps_remaining)
+
+    if valid_neighbors == [] do
+      nil
+    else
+      remaining_required = MapSet.difference(state.required_ids, state.visited)
+
+      # If cyclic and near the end, weight start_id heavily
+      weighted =
+        Enum.flat_map(valid_neighbors, fn n ->
+          weight = cond do
+            state.cyclic and steps_remaining == 1 and n == state.start_id -> 20
+            MapSet.member?(remaining_required, n) -> @required_weight
+            true -> 1
+          end
+          List.duplicate(n, weight)
+        end)
+
+      next = Enum.random(weighted)
+      pair = {current, next}
+
+      new_state = %{state |
+        visited: MapSet.put(state.visited, next),
+        pair_counts: Map.update(state.pair_counts, pair, 1, &(&1 + 1))
+      }
+
+      do_walk([next | path], new_state)
+    end
+  end
+
+  defp filter_neighbors(neighbors, current, _path, state, steps_remaining) do
+    Enum.filter(neighbors, fn n ->
+      # Check repeat rules
+      repeat_ok =
+        if state.allow_repeats do
+          # Allow repeats but limit same pair to @max_same_pair_loops
+          pair_count = Map.get(state.pair_counts, {current, n}, 0)
+          pair_count < @max_same_pair_loops
+        else
+          # No repeats except returning to start on last step if cyclic
+          not MapSet.member?(state.visited, n) or
+            (state.cyclic and n == state.start_id and steps_remaining == 1)
+        end
+
+      repeat_ok
+    end)
+  end
+
+  defp format_path(path, step_map) do
     path
     |> Enum.reverse()
     |> Enum.map(fn id ->
@@ -120,42 +190,6 @@ defmodule Forrozin.Sequences.Generator do
       if step, do: %{id: step.id, code: step.code, name: step.name}, else: nil
     end)
     |> Enum.reject(&is_nil/1)
-  end
-
-  defp do_walk(
-         [current | _rest] = path,
-         target_length,
-         adjacency,
-         required_ids,
-         allow_repeats,
-         step_map,
-         visited
-       ) do
-    neighbors = Map.get(adjacency, current, [])
-
-    valid_neighbors =
-      if allow_repeats do
-        neighbors
-      else
-        Enum.reject(neighbors, &MapSet.member?(visited, &1))
-      end
-
-    if valid_neighbors == [] do
-      nil
-    else
-      remaining_required = MapSet.difference(required_ids, visited)
-
-      weighted =
-        Enum.flat_map(valid_neighbors, fn n ->
-          weight = if MapSet.member?(remaining_required, n), do: @required_weight, else: 1
-          List.duplicate(n, weight)
-        end)
-
-      next = Enum.random(weighted)
-      new_visited = MapSet.put(visited, next)
-
-      do_walk([next | path], target_length, adjacency, required_ids, allow_repeats, step_map, new_visited)
-    end
   end
 
   defp build_warnings(sequences, required_ids, step_map, params) do

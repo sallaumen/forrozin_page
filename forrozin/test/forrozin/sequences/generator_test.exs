@@ -38,7 +38,8 @@ defmodule Forrozin.Sequences.GeneratorTest do
       length: Keyword.get(opts, :length, 3),
       count: Keyword.get(opts, :count, 1),
       required_codes: Keyword.get(opts, :required_codes, []),
-      allow_repeats: Keyword.get(opts, :allow_repeats, false)
+      allow_repeats: Keyword.get(opts, :allow_repeats, false),
+      cyclic: Keyword.get(opts, :cyclic, false)
     }
   end
 
