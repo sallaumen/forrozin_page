@@ -25,5 +25,6 @@ defmodule Forrozin.Encyclopedia.Subsection do
     subsection
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> foreign_key_constraint(:section_id)
   end
 end
