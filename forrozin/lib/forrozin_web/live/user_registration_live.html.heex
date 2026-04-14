@@ -16,7 +16,7 @@
       Forrózin
     </a>
     <a
-      href={~p"/entrar"}
+      href={~p"/login"}
       style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
     >
       ← Entrar
@@ -65,7 +65,7 @@
               Usuário
             </label>
             <.input
-              field={@form[:nome_usuario]}
+              field={@form[:username]}
               type="text"
               autocomplete="username"
               style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
@@ -89,7 +89,7 @@
               Senha <span style="color: #bba88a; font-size: 10px;">(mínimo 8 caracteres)</span>
             </label>
             <.input
-              field={@form[:senha]}
+              field={@form[:password]}
               type="password"
               autocomplete="new-password"
               style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
@@ -106,7 +106,7 @@
 
         <p style="text-align: center; margin-top: 28px; font-size: 14px; color: #9a7a5a;">
           Já tem conta?
-          <a href={~p"/entrar"} style="color: #c0741a; text-decoration: underline;">Entrar</a>
+          <a href={~p"/login"} style="color: #c0741a; text-decoration: underline;">Entrar</a>
         </p>
       </div>
     </div>

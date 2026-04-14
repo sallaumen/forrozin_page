@@ -14,12 +14,12 @@ defmodule ForrozinWeb.UserRegistrationLive do
 
   @impl true
   def handle_event("registrar", %{"usuario" => params}, socket) do
-    case Accounts.registrar_usuario(params) do
+    case Accounts.register_user(params) do
       {:ok, _user} ->
         {:noreply,
          socket
          |> put_flash(:info, "Conta criada! Verifique seu email para confirmar o cadastro.")
-         |> redirect(to: ~p"/entrar")}
+         |> redirect(to: ~p"/login")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, as: :usuario))}
