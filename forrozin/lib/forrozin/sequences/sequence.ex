@@ -8,6 +8,7 @@ defmodule Forrozin.Sequences.Sequence do
   schema "sequences" do
     field :name, :string
     field :allow_repeats, :boolean, default: false
+    field :public, :boolean, default: true
 
     belongs_to :user, Forrozin.Accounts.User
     has_many :sequence_steps, Forrozin.Sequences.SequenceStep, preload_order: [asc: :position]
@@ -17,7 +18,7 @@ defmodule Forrozin.Sequences.Sequence do
 
   def changeset(sequence, attrs) do
     sequence
-    |> cast(attrs, [:name, :user_id, :allow_repeats])
+    |> cast(attrs, [:name, :user_id, :allow_repeats, :public])
     |> validate_required([:name, :user_id])
     |> validate_length(:name, min: 1, max: 100)
     |> foreign_key_constraint(:user_id)

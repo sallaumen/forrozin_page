@@ -66,6 +66,11 @@ defmodule Forrozin.Sequences do
     SequenceQuery.list_by(user_id: user_id, preload: [sequence_steps: :step])
   end
 
+  @doc "Lists all public sequences belonging to a user, with steps preloaded."
+  def list_public_user_sequences(user_id) do
+    SequenceQuery.list_by(user_id: user_id, public: true, preload: [sequence_steps: :step])
+  end
+
   @doc "Fetches a single sequence by id, with steps preloaded. Returns `nil` if not found."
   def get_sequence(id) do
     SequenceQuery.get_by(id: id, preload: [sequence_steps: :step])

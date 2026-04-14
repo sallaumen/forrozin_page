@@ -4,6 +4,7 @@ defmodule Forrozin.Factory do
 
   alias Forrozin.Accounts.User
   alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section, Subsection}
+  alias Forrozin.Engagement.Like
   alias Forrozin.Sequences.{Sequence, SequenceStep}
 
   def user_factory do
@@ -95,6 +96,14 @@ defmodule Forrozin.Factory do
       position: sequence(:sequence_step_position, & &1),
       sequence: build(:sequence),
       step: build(:step)
+    }
+  end
+
+  def like_factory do
+    %Like{
+      likeable_type: "step",
+      likeable_id: Ecto.UUID.generate(),
+      user: build(:user)
     }
   end
 end

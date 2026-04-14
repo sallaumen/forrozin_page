@@ -61,35 +61,99 @@
 
     <%!-- Steps contributed --%>
     <%= if @user_steps != [] do %>
-      <div>
+      <div style="margin-bottom: 40px;">
         <h2 style="font-size: 16px; font-weight: 700; color: #1a0e05; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid rgba(60,40,20,0.1);">
           Passos contribuídos
         </h2>
         <%= for step <- @user_steps do %>
-          <.link
-            navigate={~p"/collection"}
-            style="display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(60,40,20,0.08); text-decoration: none; color: inherit;"
-          >
-            <code style="font-family: monospace; font-size: 12px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 2px 8px; border-radius: 3px; align-self: baseline;">
-              {step.code}
-            </code>
-            <div>
-              <div style="font-size: 14px; color: #1a0e05;">{step.name}</div>
-              <%= if step.category do %>
-                <span style={"font-size: 10px; color: #{step.category.color}; font-style: italic;"}>{step.category.label}</span>
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(60,40,20,0.08);">
+            <.link
+              navigate={~p"/collection"}
+              style="display: flex; gap: 12px; flex: 1; text-decoration: none; color: inherit;"
+            >
+              <code style="font-family: monospace; font-size: 12px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 2px 8px; border-radius: 3px; align-self: baseline;">
+                {step.code}
+              </code>
+              <div>
+                <div style="font-size: 14px; color: #1a0e05;">{step.name}</div>
+                <%= if step.category do %>
+                  <span style={"font-size: 10px; color: #{step.category.color}; font-style: italic;"}>{step.category.label}</span>
+                <% end %>
+              </div>
+            </.link>
+            <%!-- Like button for step --%>
+            <button
+              phx-click="toggle_like"
+              phx-value-type="step"
+              phx-value-id={step.id}
+              style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 14px; color: #{if MapSet.member?(@step_likes.liked_ids, step.id), do: "#c0392b", else: "#9a7a5a"}; padding: 4px 8px; border-radius: 4px; transition: color 0.15s;"}
+              title={if MapSet.member?(@step_likes.liked_ids, step.id), do: "Remover like", else: "Curtir"}
+            >
+              <%= if MapSet.member?(@step_likes.liked_ids, step.id) do %>
+                &#9829;
+              <% else %>
+                &#9825;
               <% end %>
-            </div>
-          </.link>
+              <span style="font-size: 12px;">{Map.get(@step_likes.counts, step.id, 0)}</span>
+            </button>
+          </div>
         <% end %>
       </div>
     <% else %>
-      <p style="text-align: center; padding: 40px; color: #9a7a5a; font-style: italic;">
+      <p style="text-align: center; padding: 40px; color: #9a7a5a; font-style: italic; margin-bottom: 40px;">
         <%= if @is_own_profile do %>
           Você ainda não contribuiu com nenhum passo. Que tal sugerir um?
         <% else %>
           Este usuário ainda não contribuiu com passos.
         <% end %>
       </p>
+    <% end %>
+
+    <%!-- Sequences --%>
+    <%= if @user_sequences != [] do %>
+      <div>
+        <h2 style="font-size: 16px; font-weight: 700; color: #1a0e05; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid rgba(60,40,20,0.1);">
+          Sequências salvas
+        </h2>
+        <%= for seq <- @user_sequences do %>
+          <div style="padding: 16px; margin-bottom: 12px; background: #fffef9; border-radius: 8px; border: 1px solid rgba(60,40,20,0.1);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 15px; font-weight: 700; color: #1a0e05; margin-bottom: 6px;">
+                  {seq.name}
+                </div>
+                <div style="font-size: 12px; color: #9a7a5a; margin-bottom: 8px;">
+                  {length(seq.sequence_steps)} passo(s)
+                </div>
+                <%= if seq.sequence_steps != [] do %>
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <%= for ss <- seq.sequence_steps do %>
+                      <code style="font-family: monospace; font-size: 11px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 1px 6px; border-radius: 3px;">
+                        {ss.step.code}
+                      </code>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+              <%!-- Like button for sequence --%>
+              <button
+                phx-click="toggle_like"
+                phx-value-type="sequence"
+                phx-value-id={seq.id}
+                style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 16px; color: #{if MapSet.member?(@sequence_likes.liked_ids, seq.id), do: "#c0392b", else: "#9a7a5a"}; padding: 4px 8px; border-radius: 4px; transition: color 0.15s; flex-shrink: 0;"}
+                title={if MapSet.member?(@sequence_likes.liked_ids, seq.id), do: "Remover like", else: "Curtir"}
+              >
+                <%= if MapSet.member?(@sequence_likes.liked_ids, seq.id) do %>
+                  &#9829;
+                <% else %>
+                  &#9825;
+                <% end %>
+                <span style="font-size: 12px;">{Map.get(@sequence_likes.counts, seq.id, 0)}</span>
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
     <% end %>
   </div>
 </div>

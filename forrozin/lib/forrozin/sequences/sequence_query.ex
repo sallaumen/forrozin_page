@@ -30,6 +30,7 @@ defmodule Forrozin.Sequences.SequenceQuery do
 
   defp shared_reducer({:id, id}, q), do: where(q, [sequence: s], s.id == ^id)
   defp shared_reducer({:user_id, id}, q), do: where(q, [sequence: s], s.user_id == ^id)
+  defp shared_reducer({:public, val}, q), do: where(q, [sequence: s], s.public == ^val)
   defp shared_reducer({:order_by, ordering}, q), do: order_by(q, ^ordering)
   defp shared_reducer({:preload, preloads}, q), do: preload(q, ^preloads)
 end
