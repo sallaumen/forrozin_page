@@ -16,13 +16,13 @@ defmodule Forrozin.Admin.BackupTest do
   # ---------------------------------------------------------------------------
 
   describe "create_backup!/1" do
-    test "cria arquivo JSON no diretório especificado", %{dir: dir} do
+    test "creates JSON file in the specified directory", %{dir: dir} do
       path = Backup.create_backup!(dir)
       assert File.exists?(path)
       assert String.ends_with?(path, ".json")
     end
 
-    test "o JSON contém todas as tabelas esperadas", %{dir: dir} do
+    test "JSON contains all expected tables", %{dir: dir} do
       path = Backup.create_backup!(dir)
       data = path |> File.read!() |> Jason.decode!()
 
@@ -38,7 +38,7 @@ defmodule Forrozin.Admin.BackupTest do
       assert Map.has_key?(tables, "concept_steps")
     end
 
-    test "o JSON inclui dados presentes no banco", %{dir: dir} do
+    test "JSON includes data present in the database", %{dir: dir} do
       cat = insert(:category, name: "bases")
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", section: section, category: cat)
@@ -54,8 +54,8 @@ defmodule Forrozin.Admin.BackupTest do
       assert length(data["tables"]["step_connections"]) == 1
     end
 
-    test "remove arquivos antigos mantendo apenas os últimos 48", %{dir: dir} do
-      # Cria 50 arquivos fictícios de backup mais antigos
+    test "removes old files keeping only the last 48", %{dir: dir} do
+      # Creates 50 fake older backup files
       for i <- 1..50 do
         name = "backup_20260101_#{String.pad_leading(to_string(i), 6, "0")}.json"
         File.write!(Path.join(dir, name), "{}")
@@ -73,8 +73,8 @@ defmodule Forrozin.Admin.BackupTest do
   # ---------------------------------------------------------------------------
 
   describe "restore_backup!/1" do
-    test "insere dados num banco vazio", %{dir: dir} do
-      # Cria dados, gera backup, depois verifica que restaurar é idempotente
+    test "inserts data into an empty database", %{dir: dir} do
+      # Creates data, generates backup, then verifies restoring is idempotent
       cat = insert(:category, name: "bases")
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", section: section, category: cat)
@@ -83,16 +83,16 @@ defmodule Forrozin.Admin.BackupTest do
 
       path = Backup.create_backup!(dir)
 
-      # Restaurar com dados já presentes (on_conflict: :nothing)
+      # Restore with data already present (on_conflict: :nothing)
       assert :ok = Backup.restore_backup!(path)
 
-      # Os dados devem continuar lá
+      # Data must still be there
       assert Repo.aggregate(Forrozin.Encyclopedia.Category, :count) >= 1
       assert Repo.aggregate(Forrozin.Encyclopedia.Step, :count) >= 2
       assert Repo.aggregate(Forrozin.Encyclopedia.Connection, :count) >= 1
     end
 
-    test "é idempotente — restaurar duas vezes não duplica dados", %{dir: dir} do
+    test "idempotent — second restore does not duplicate data", %{dir: dir} do
       cat = insert(:category, name: "sacadas")
       section = insert(:section, category: cat)
       insert(:step, code: "SC", section: section, category: cat)
@@ -112,11 +112,11 @@ defmodule Forrozin.Admin.BackupTest do
   # ---------------------------------------------------------------------------
 
   describe "list_backups/1" do
-    test "retorna lista vazia quando não há backups", %{dir: dir} do
+    test "returns empty list when there are no backups", %{dir: dir} do
       assert Backup.list_backups(dir) == []
     end
 
-    test "retorna arquivos ordenados do mais recente para o mais antigo", %{dir: dir} do
+    test "returns files sorted from most recent to oldest", %{dir: dir} do
       File.write!(Path.join(dir, "backup_20260101_120000.json"), "{}")
       File.write!(Path.join(dir, "backup_20260101_130000.json"), "{}")
       File.write!(Path.join(dir, "backup_20260101_110000.json"), "{}")

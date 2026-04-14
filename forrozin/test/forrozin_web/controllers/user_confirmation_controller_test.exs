@@ -4,7 +4,7 @@ defmodule ForrozinWeb.UserConfirmationControllerTest do
   alias Forrozin.Accounts
 
   describe "GET /confirm/:token" do
-    test "exibe página de sucesso com token válido", %{conn: conn} do
+    test "displays success page with valid token", %{conn: conn} do
       {:ok, user} =
         Accounts.register_user(%{
           username: "confirmavel",
@@ -17,13 +17,13 @@ defmodule ForrozinWeb.UserConfirmationControllerTest do
       assert html_response(conn, 200) =~ "Email confirmado"
     end
 
-    test "exibe página de erro com token inválido", %{conn: conn} do
+    test "displays error page with invalid token", %{conn: conn} do
       conn = get(conn, ~p"/confirm/token_invalido")
 
       assert html_response(conn, 200) =~ "Link inválido"
     end
 
-    test "exibe página de erro ao reutilizar token já utilizado", %{conn: conn} do
+    test "displays error page when reusing an already used token", %{conn: conn} do
       {:ok, user} =
         Accounts.register_user(%{
           username: "reutiliza",

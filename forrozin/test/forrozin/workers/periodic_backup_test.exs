@@ -13,7 +13,7 @@ defmodule Forrozin.Workers.PeriodicBackupTest do
   end
 
   describe "perform/1" do
-    test "retorna :ok e cria arquivo de backup", %{dir: dir} do
+    test "returns :ok and creates backup file", %{dir: dir} do
       assert :ok = perform_job(PeriodicBackup, %{"dir" => dir})
       files = File.ls!(dir) |> Enum.filter(&String.ends_with?(&1, ".json"))
       assert length(files) == 1

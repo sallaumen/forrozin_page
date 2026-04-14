@@ -3,15 +3,15 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
 
   import Phoenix.LiveViewTest
 
-  describe "página de cadastro" do
-    test "renderiza formulário", %{conn: conn} do
+  describe "signup page" do
+    test "renders form", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/signup")
       assert html =~ "Criar conta"
       assert html =~ "Usuário"
       assert html =~ "Senha"
     end
 
-    test "redireciona para /collection se já autenticado", %{conn: conn} do
+    test "redirects to /collection when already authenticated", %{conn: conn} do
       user = insert(:user)
       conn = conn |> log_in_user(user)
 
@@ -19,8 +19,8 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
     end
   end
 
-  describe "cadastro de usuário" do
-    test "cria conta e redireciona para /login", %{conn: conn} do
+  describe "user registration" do
+    test "creates account and redirects to /login", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/signup")
 
       result =
@@ -37,7 +37,7 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
       assert {:error, {:redirect, %{to: "/login"}}} = result
     end
 
-    test "exibe erros com dados inválidos", %{conn: conn} do
+    test "displays errors with invalid data", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/signup")
 
       html =

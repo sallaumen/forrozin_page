@@ -4,27 +4,27 @@ defmodule Forrozin.Encyclopedia.CategoryTest do
   alias Forrozin.Encyclopedia.Category
 
   describe "changeset/2" do
-    test "válido com todos os campos obrigatórios" do
+    test "valid with all required fields" do
       attrs = %{name: "sacadas", label: "Sacadas", color: "#c0392b"}
       assert %{valid?: true} = Category.changeset(%Category{}, attrs)
     end
 
-    test "inválido sem nome" do
+    test "invalid without name" do
       changeset = Category.changeset(%Category{}, %{label: "Sacadas", color: "#c0392b"})
       assert "can't be blank" in errors_on(changeset).name
     end
 
-    test "inválido sem rótulo" do
+    test "invalid without label" do
       changeset = Category.changeset(%Category{}, %{name: "sacadas", color: "#c0392b"})
       assert "can't be blank" in errors_on(changeset).label
     end
 
-    test "inválido sem cor" do
+    test "invalid without color" do
       changeset = Category.changeset(%Category{}, %{name: "sacadas", label: "Sacadas"})
       assert "can't be blank" in errors_on(changeset).color
     end
 
-    test "nome deve ser único no banco" do
+    test "name must be unique in the database" do
       insert(:category, name: "sacadas")
 
       {:error, changeset} =

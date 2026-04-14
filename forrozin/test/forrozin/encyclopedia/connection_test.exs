@@ -4,7 +4,7 @@ defmodule Forrozin.Encyclopedia.ConnectionTest do
   alias Forrozin.Encyclopedia.Connection
 
   describe "changeset/2" do
-    test "aceita label e description opcionais" do
+    test "accepts optional label and description" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
 
@@ -22,7 +22,7 @@ defmodule Forrozin.Encyclopedia.ConnectionTest do
       assert changeset.changes.description == "Ambos jogam centro de massa para direita gerando elástico."
     end
 
-    test "é válido sem label e description" do
+    test "valid without label and description" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
 

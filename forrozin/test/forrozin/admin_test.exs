@@ -8,7 +8,7 @@ defmodule Forrozin.AdminTest do
   # ---------------------------------------------------------------------------
 
   describe "create_connection/1" do
-    test "cria conexão válida entre dois passos" do
+    test "creates valid connection between two steps" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
 
@@ -24,7 +24,7 @@ defmodule Forrozin.AdminTest do
       assert connection.type == "exit"
     end
 
-    test "retorna erro para tipo inválido" do
+    test "returns error for invalid type" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
 
@@ -38,7 +38,7 @@ defmodule Forrozin.AdminTest do
       assert "is invalid" in errors_on(changeset).type
     end
 
-    test "retorna erro quando passo de origem não existe" do
+    test "returns error when source step does not exist" do
       target = insert(:step, code: "SC")
       nonexistent_id = Ecto.UUID.generate()
 
@@ -52,7 +52,7 @@ defmodule Forrozin.AdminTest do
       assert changeset.errors[:source_step_id] != nil
     end
 
-    test "retorna erro de constraint para conexão duplicada" do
+    test "returns constraint error for duplicate connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
       insert(:connection, source_step: source, target_step: target, type: "exit")
@@ -68,7 +68,7 @@ defmodule Forrozin.AdminTest do
                changeset.errors[:target_step_id] != nil
     end
 
-    test "cria conexão com label e description opcionais" do
+    test "creates connection with optional label and description" do
       source = insert(:step, code: "ARM-D")
       target = insert(:step, code: "TR-ARM")
 
@@ -91,7 +91,7 @@ defmodule Forrozin.AdminTest do
   # ---------------------------------------------------------------------------
 
   describe "update_connection/2" do
-    test "atualiza label de uma conexão existente" do
+    test "updates label of an existing connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
       connection = insert(:connection, source_step: source, target_step: target, type: "exit")
@@ -100,7 +100,7 @@ defmodule Forrozin.AdminTest do
       assert updated.label == "Trava Armada"
     end
 
-    test "atualiza description de uma conexão existente" do
+    test "updates description of an existing connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
       connection = insert(:connection, source_step: source, target_step: target, type: "exit")
@@ -111,7 +111,7 @@ defmodule Forrozin.AdminTest do
       assert updated.description == "Nova descrição."
     end
 
-    test "retorna erro para ID inexistente" do
+    test "returns error for nonexistent ID" do
       assert {:error, :not_found} = Admin.update_connection(Ecto.UUID.generate(), %{label: "X"})
     end
   end
@@ -121,7 +121,7 @@ defmodule Forrozin.AdminTest do
   # ---------------------------------------------------------------------------
 
   describe "delete_connection/1" do
-    test "remove uma conexão existente" do
+    test "removes an existing connection" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
       connection = insert(:connection, source_step: source, target_step: target, type: "exit")
@@ -131,7 +131,7 @@ defmodule Forrozin.AdminTest do
       assert Forrozin.Repo.get(Forrozin.Encyclopedia.Connection, connection.id) == nil
     end
 
-    test "retorna erro para ID inexistente" do
+    test "returns error for nonexistent ID" do
       assert {:error, :not_found} = Admin.delete_connection(Ecto.UUID.generate())
     end
   end

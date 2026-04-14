@@ -8,11 +8,11 @@ defmodule Forrozin.EncyclopediaTest do
   # ---------------------------------------------------------------------------
 
   describe "list_categories/0" do
-    test "retorna lista vazia quando não há categorias" do
+    test "returns empty list when there are no categories" do
       assert Encyclopedia.list_categories() == []
     end
 
-    test "retorna todas as categorias ordenadas por label" do
+    test "returns all categories ordered by label" do
       insert(:category, name: "sacadas", label: "Sacadas")
       insert(:category, name: "bases", label: "Bases")
 
@@ -23,12 +23,12 @@ defmodule Forrozin.EncyclopediaTest do
   end
 
   describe "get_category_by_name/1" do
-    test "retorna a categoria quando existe" do
+    test "returns the category when it exists" do
       insert(:category, name: "sacadas", label: "Sacadas")
       assert {:ok, %{name: "sacadas"}} = Encyclopedia.get_category_by_name("sacadas")
     end
 
-    test "retorna erro quando não existe" do
+    test "returns error when it does not exist" do
       assert {:error, :not_found} = Encyclopedia.get_category_by_name("inexistente")
     end
   end
@@ -38,11 +38,11 @@ defmodule Forrozin.EncyclopediaTest do
   # ---------------------------------------------------------------------------
 
   describe "list_sections/0" do
-    test "retorna lista vazia quando não há seções" do
+    test "returns empty list when there are no sections" do
       assert Encyclopedia.list_sections() == []
     end
 
-    test "retorna seções ordenadas por posição" do
+    test "returns sections ordered by position" do
       insert(:section, title: "Sacadas", position: 2)
       insert(:section, title: "Bases", position: 1)
 
@@ -53,7 +53,7 @@ defmodule Forrozin.EncyclopediaTest do
   end
 
   describe "list_sections_with_steps/0" do
-    test "retorna seções com passos e subseções pré-carregados" do
+    test "returns sections with steps and subsections preloaded" do
       section = insert(:section)
       insert(:step, section: section, code: "BF", name: "Base frontal")
 
@@ -64,7 +64,7 @@ defmodule Forrozin.EncyclopediaTest do
       assert hd(result.steps).code == "BF"
     end
 
-    test "não inclui passos wip para leitura pública" do
+    test "does not include wip steps in public reads" do
       section = insert(:section)
       insert(:step, section: section, code: "BF", name: "Base frontal", wip: false)
       insert(:step, section: section, code: "HF-SRS", name: "Sacada Rotativa", wip: true)
@@ -76,7 +76,7 @@ defmodule Forrozin.EncyclopediaTest do
       refute "HF-SRS" in codes
     end
 
-    test "não inclui passos com status draft" do
+    test "does not include draft steps" do
       section = insert(:section)
       insert(:step, section: section, code: "BF", name: "Base frontal", status: "published")
       insert(:step, section: section, code: "BQ", name: "Base quadrada", status: "draft")
@@ -94,25 +94,25 @@ defmodule Forrozin.EncyclopediaTest do
   # ---------------------------------------------------------------------------
 
   describe "get_step_by_code/1" do
-    test "retorna o passo quando existe e é público" do
+    test "returns the step when it exists and is public" do
       insert(:step, code: "BF", name: "Base frontal")
 
       assert {:ok, %{code: "BF"}} = Encyclopedia.get_step_by_code("BF")
     end
 
-    test "retorna erro para passo wip" do
+    test "returns error for wip step" do
       insert(:step, code: "HF-SRS", name: "Sacada Rotativa", wip: true)
 
       assert {:error, :not_found} = Encyclopedia.get_step_by_code("HF-SRS")
     end
 
-    test "retorna erro quando não existe" do
+    test "returns error when step does not exist" do
       assert {:error, :not_found} = Encyclopedia.get_step_by_code("INEXISTENTE")
     end
   end
 
   describe "search_steps/1" do
-    test "retorna passos que contêm o termo no nome" do
+    test "returns steps containing the term in the name" do
       insert(:step, code: "BF", name: "Base frontal")
       insert(:step, code: "BQ", name: "Base quadrada")
       insert(:step, code: "SC", name: "Sacada simples")
@@ -125,7 +125,7 @@ defmodule Forrozin.EncyclopediaTest do
       refute "SC" in codes
     end
 
-    test "busca é case-insensitive" do
+    test "search is case-insensitive" do
       insert(:step, code: "BF", name: "Base frontal")
 
       results = Encyclopedia.search_steps("BASE")
@@ -133,7 +133,7 @@ defmodule Forrozin.EncyclopediaTest do
       assert length(results) == 1
     end
 
-    test "não retorna passos wip na busca pública" do
+    test "does not return wip steps in public search" do
       insert(:step, code: "BF", name: "Base frontal", wip: false)
       insert(:step, code: "HF-SRS", name: "Base rotativa suspensa", wip: true)
 
@@ -144,7 +144,7 @@ defmodule Forrozin.EncyclopediaTest do
       refute "HF-SRS" in codes
     end
 
-    test "retorna lista vazia quando não há correspondência" do
+    test "returns empty list when there are no matches" do
       insert(:step, code: "BF", name: "Base frontal")
 
       assert Encyclopedia.search_steps("xyzzyqwerty_inexistente") == []
@@ -156,13 +156,13 @@ defmodule Forrozin.EncyclopediaTest do
   # ---------------------------------------------------------------------------
 
   describe "build_graph/1" do
-    test "retorna mapa com chaves :nodes e :edges" do
+    test "returns map with :nodes and :edges keys" do
       graph = Encyclopedia.build_graph()
       assert Map.has_key?(graph, :nodes)
       assert Map.has_key?(graph, :edges)
     end
 
-    test ":nodes contém passos públicos com categoria precarregada" do
+    test ":nodes contains public steps with category preloaded" do
       cat = insert(:category)
       insert(:step, code: "BF-TEST", name: "Base frontal", category: cat)
       graph = Encyclopedia.build_graph()
@@ -172,7 +172,7 @@ defmodule Forrozin.EncyclopediaTest do
       assert node.category.id == cat.id
     end
 
-    test ":edges contém conexões com source_step e target_step precarregados" do
+    test ":edges contains connections with source_step and target_step preloaded" do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
       insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
@@ -183,7 +183,7 @@ defmodule Forrozin.EncyclopediaTest do
       assert edge.target_step.code == "SC"
     end
 
-    test "não inclui passos wip nos nós" do
+    test "does not include wip steps in nodes" do
       insert(:step, code: "BF", wip: false)
       insert(:step, code: "HF-SRS", wip: true)
       graph = Encyclopedia.build_graph()
@@ -192,7 +192,7 @@ defmodule Forrozin.EncyclopediaTest do
       refute "HF-SRS" in codes
     end
 
-    test "não inclui arestas onde target_step é wip" do
+    test "does not include edges where target_step is wip" do
       step_pub = insert(:step, code: "BF", wip: false)
       step_wip = insert(:step, code: "HF-SRS", wip: true)
       insert(:connection, source_step: step_pub, target_step: step_wip, type: "exit")
@@ -200,7 +200,7 @@ defmodule Forrozin.EncyclopediaTest do
       assert graph.edges == []
     end
 
-    test ":edges incluem label quando presente" do
+    test ":edges include label when present" do
       step_a = insert(:step, code: "ARM-D")
       step_b = insert(:step, code: "TR-ARM")
       insert(:connection, source_step: step_a, target_step: step_b, type: "exit", label: "Trava Armada")
@@ -209,7 +209,7 @@ defmodule Forrozin.EncyclopediaTest do
       assert edge.label == "Trava Armada"
     end
 
-    test "não inclui arestas onde source_step é wip" do
+    test "does not include edges where source_step is wip" do
       step_wip = insert(:step, code: "HF-SRS", wip: true)
       step_pub = insert(:step, code: "BF", wip: false)
       insert(:connection, source_step: step_wip, target_step: step_pub, type: "exit")
@@ -217,7 +217,7 @@ defmodule Forrozin.EncyclopediaTest do
       assert graph.edges == []
     end
 
-    test "com [admin: true] inclui passos wip nos nós" do
+    test "with [admin: true] includes wip steps in nodes" do
       insert(:step, code: "BF", wip: false)
       insert(:step, code: "HF-SRS", wip: true)
       graph = Encyclopedia.build_graph(admin: true)
@@ -232,11 +232,11 @@ defmodule Forrozin.EncyclopediaTest do
   # ---------------------------------------------------------------------------
 
   describe "list_technical_concepts/0" do
-    test "retorna lista vazia quando não há conceitos" do
+    test "returns empty list when there are no concepts" do
       assert Encyclopedia.list_technical_concepts() == []
     end
 
-    test "retorna conceitos ordenados por título" do
+    test "returns concepts ordered by title" do
       insert(:technical_concept, title: "Transferência de peso")
       insert(:technical_concept, title: "Elástico")
 

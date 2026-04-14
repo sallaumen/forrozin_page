@@ -2,12 +2,12 @@ defmodule ForrozinWeb.UserSessionControllerTest do
   use ForrozinWeb.ConnCase, async: true
 
   describe "GET /login" do
-    test "renderiza formulário de login", %{conn: conn} do
+    test "renders login form", %{conn: conn} do
       conn = get(conn, ~p"/login")
       assert html_response(conn, 200) =~ "Entrar"
     end
 
-    test "redireciona para /collection se já autenticado", %{conn: conn} do
+    test "redirects to /collection when already authenticated", %{conn: conn} do
       user = insert(:user)
       conn = conn |> log_in_user(user) |> get(~p"/login")
       assert redirected_to(conn) == ~p"/collection"
@@ -26,7 +26,7 @@ defmodule ForrozinWeb.UserSessionControllerTest do
       %{user: user}
     end
 
-    test "loga o usuário com credenciais corretas", %{conn: conn, user: user} do
+    test "logs in user with correct credentials", %{conn: conn, user: user} do
       conn =
         post(conn, ~p"/login", %{
           "session" => %{"username" => user.username, "password" => "senhasegura123"}
@@ -36,7 +36,7 @@ defmodule ForrozinWeb.UserSessionControllerTest do
       assert get_session(conn, :user_id) == user.id
     end
 
-    test "exibe erro com credenciais inválidas", %{conn: conn} do
+    test "displays error with invalid credentials", %{conn: conn} do
       conn =
         post(conn, ~p"/login", %{
           "session" => %{"username" => "logintest", "password" => "senhaerrada"}
@@ -47,7 +47,7 @@ defmodule ForrozinWeb.UserSessionControllerTest do
   end
 
   describe "DELETE /logout" do
-    test "encerra a sessão e redireciona", %{conn: conn} do
+    test "ends session and redirects", %{conn: conn} do
       user = insert(:user)
 
       conn =
