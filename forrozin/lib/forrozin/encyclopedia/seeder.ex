@@ -20,14 +20,14 @@ defmodule Forrozin.Encyclopedia.Seeder do
   )
 
   @categories [
-    {"sacadas", "Sacadas", "#c0392b"},
+    {"sacadas", "Sacadas", "#e91e63"},
     {"travas", "Travas", "#2980b9"},
     {"caminhadas", "Caminhadas", "#27ae60"},
     {"giros", "Giros", "#8e44ad"},
     {"pescadas", "Pescadas", "#d35400"},
     {"inversao", "Inversão", "#c0392b"},
     {"bases", "Bases", "#16a085"},
-    {"outros", "Outros", "#e74c3c"},
+    {"outros", "Outros", "#ff9800"},
     {"footwork", "Forró Footwork", "#e67e22"},
     {"conceitos", "Conceitos", "#f39c12"},
     {"convencoes", "Convenções", "#f1c40f"}
