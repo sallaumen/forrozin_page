@@ -52,7 +52,7 @@
           Criar conta
         </h2>
         <p style="font-size: 14px; color: #9a7a5a; margin-bottom: 36px;">
-          Após o cadastro, enviaremos um email de confirmação.
+          Crie sua conta para acessar o acervo de passos.
         </p>
 
         <.form
@@ -95,6 +95,40 @@
               style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
             />
           </div>
+
+          <div style="display: flex; gap: 12px;">
+            <div style="width: 120px;">
+              <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+                Estado
+              </label>
+              <select
+                id="state-select"
+                name="user[state]"
+                phx-hook="CityAutocomplete"
+                style="width: 100%; padding: 13px 8px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+              >
+                <option value="">UF</option>
+                <option :for={uf <- ~w(AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO)} value={uf}>{uf}</option>
+              </select>
+            </div>
+            <div style="flex: 1; position: relative;">
+              <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+                Cidade
+              </label>
+              <input
+                id="city-input"
+                type="text"
+                name="user[city]"
+                autocomplete="off"
+                placeholder="Selecione o estado primeiro"
+                style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+              />
+              <div id="city-suggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fffef9; border: 1px solid rgba(180,120,40,0.3); border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.08);"></div>
+            </div>
+          </div>
+          <p style="font-size: 11px; color: #9a7a5a; font-style: italic; margin: -8px 0 0; line-height: 1.5;">
+            No futuro, vamos sugerir professores e contatos na sua região.
+          </p>
 
           <button
             type="submit"

@@ -653,11 +653,79 @@ const GraphVisual = {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Hook: CityAutocomplete — state select + city input with IBGE data
+// ---------------------------------------------------------------------------
+const CityAutocomplete = {
+  mounted() {
+    this._citiesData = null
+    this._loadCities()
+
+    const stateSelect = this.el
+    const cityInput = document.getElementById("city-input")
+    const suggestions = document.getElementById("city-suggestions")
+    if (!cityInput || !suggestions) return
+
+    stateSelect.addEventListener("change", () => {
+      cityInput.value = ""
+      cityInput.placeholder = stateSelect.value ? "Digite o nome da cidade..." : "Selecione o estado primeiro"
+      suggestions.style.display = "none"
+    })
+
+    cityInput.addEventListener("input", () => {
+      const state = stateSelect.value
+      const term = cityInput.value.toLowerCase()
+      if (!state || !this._citiesData || term.length < 1) {
+        suggestions.style.display = "none"
+        return
+      }
+
+      const cities = (this._citiesData[state] || [])
+        .filter(c => c.toLowerCase().includes(term))
+        .slice(0, 10)
+
+      if (cities.length === 0) {
+        suggestions.style.display = "none"
+        return
+      }
+
+      suggestions.style.display = "block"
+      suggestions.textContent = ""
+      cities.forEach(city => {
+        const div = document.createElement("div")
+        div.textContent = city
+        div.style.cssText = "padding: 10px 16px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; border-bottom: 1px solid rgba(180,120,40,0.1);"
+        div.addEventListener("mousedown", (e) => {
+          e.preventDefault()
+          cityInput.value = city
+          suggestions.style.display = "none"
+        })
+        div.addEventListener("mouseover", () => { div.style.background = "rgba(180,120,40,0.06)" })
+        div.addEventListener("mouseout", () => { div.style.background = "transparent" })
+        suggestions.appendChild(div)
+      })
+    })
+
+    cityInput.addEventListener("blur", () => {
+      setTimeout(() => { suggestions.style.display = "none" }, 150)
+    })
+  },
+
+  async _loadCities() {
+    try {
+      const resp = await fetch("/data/ibge_cities.json")
+      this._citiesData = await resp.json()
+    } catch (e) {
+      console.warn("Could not load IBGE cities:", e)
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual},
+  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete},
 })
 
 // Show progress bar on live navigation and form submits

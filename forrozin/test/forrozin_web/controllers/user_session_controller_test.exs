@@ -20,7 +20,9 @@ defmodule ForrozinWeb.UserSessionControllerTest do
         Forrozin.Accounts.register_user(%{
           username: "logintest",
           email: "logintest@example.com",
-          password: "senhasegura123"
+          password: "senhasegura123",
+          state: "PR",
+          city: "Curitiba"
         })
 
       %{user: user}

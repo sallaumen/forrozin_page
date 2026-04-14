@@ -26,6 +26,8 @@ defmodule Forrozin.Accounts.User do
     field :role, :string, default: "user"
     field :confirmation_token, :string
     field :confirmed_at, :naive_datetime
+    field :state, :string
+    field :city, :string
 
     timestamps()
   end
@@ -33,13 +35,15 @@ defmodule Forrozin.Accounts.User do
   @doc "Changeset for new user registration."
   def registration_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :email, :password, :role, :confirmation_token])
-    |> validate_required([:username, :email, :password])
+    |> cast(attrs, [:username, :email, :password, :role, :confirmation_token, :state, :city])
+    |> validate_required([:username, :email, :password, :state, :city])
     |> validate_length(:username, min: 3, max: 30)
     |> validate_format(:username, ~r/^[a-z0-9_]+$/,
       message: "use apenas letras minúsculas, números e _"
     )
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/, message: "formato inválido")
+    |> validate_length(:state, is: 2, message: "selecione um estado")
+    |> validate_length(:city, min: 2, message: "selecione uma cidade")
     |> validate_length(:password, min: @min_password)
     |> validate_inclusion(:role, @valid_roles)
     |> unique_constraint(:username, message: "nome de usuário já existe")

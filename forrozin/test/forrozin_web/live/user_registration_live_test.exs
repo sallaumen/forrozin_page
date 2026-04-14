@@ -29,7 +29,9 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
           user: %{
             username: "novousuario",
             email: "novo@example.com",
-            password: "senhasegura123"
+            password: "senhasegura123",
+            state: "PR",
+            city: "Curitiba"
           }
         )
         |> render_submit()

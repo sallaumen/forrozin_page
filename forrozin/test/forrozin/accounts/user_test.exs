@@ -3,7 +3,7 @@ defmodule Forrozin.Accounts.UserTest do
 
   alias Forrozin.Accounts.User
 
-  @valid_attrs %{username: "tata", email: "tata@example.com", password: "senhasegura"}
+  @valid_attrs %{username: "tata", email: "tata@example.com", password: "senhasegura", state: "PR", city: "Curitiba"}
 
   describe "registration_changeset/2" do
     test "valid with correct data" do
