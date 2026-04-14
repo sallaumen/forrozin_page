@@ -4,6 +4,7 @@ defmodule Forrozin.Factory do
 
   alias Forrozin.Accounts.User
   alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section, Subsection}
+  alias Forrozin.Sequences.{Sequence, SequenceStep}
 
   def user_factory do
     %User{
@@ -78,6 +79,22 @@ defmodule Forrozin.Factory do
     %TechnicalConcept{
       title: sequence(:concept_title, &"Concept #{&1}"),
       description: "Technical description of the concept."
+    }
+  end
+
+  def sequence_factory do
+    %Sequence{
+      name: sequence(:sequence_name, &"Sequência #{&1}"),
+      allow_repeats: false,
+      user: build(:user)
+    }
+  end
+
+  def sequence_step_factory do
+    %SequenceStep{
+      position: sequence(:sequence_step_position, & &1),
+      sequence: build(:sequence),
+      step: build(:step)
     }
   end
 end
