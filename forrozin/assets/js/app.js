@@ -69,9 +69,9 @@ function runHybridLayout(cy) {
   //    Other categories go to outer sectors with proportional angular size
   const outerCats = activeCats.filter(c => c !== "bases")
   const R_OUTER = 520
-  const R_BASES = 190
-  const NODE_GAP = 110
-  const ROW_GAP = 100
+  const R_BASES = 200
+  const NODE_GAP = 155
+  const ROW_GAP = 130
 
   const sectorCenters = {}
 
