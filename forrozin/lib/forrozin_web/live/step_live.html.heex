@@ -103,9 +103,16 @@
               </label>
             </div>
           </div>
-          <button type="submit" style="padding: 10px 20px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; align-self: flex-start;">
-            Salvar alterações
-          </button>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button type="submit" style="padding: 10px 20px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">
+              Salvar alterações
+            </button>
+            <%= if @is_admin do %>
+              <button type="button" phx-click="delete_step" data-confirm={"Tem certeza que deseja deletar o passo \"#{@step.name}\" (#{@step.code})? Todas as conexões serão removidas. Esta ação é irreversível."} style="padding: 10px 20px; background: transparent; color: #c0392b; border: 2px solid #c0392b; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">
+                Deletar passo
+              </button>
+            <% end %>
+          </div>
         </div>
       </form>
     <% else %>

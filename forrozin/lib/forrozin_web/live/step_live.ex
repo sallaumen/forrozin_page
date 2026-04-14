@@ -64,6 +64,28 @@ defmodule ForrozinWeb.StepLive do
     end
   end
 
+  def handle_event("delete_step", _params, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      step = socket.assigns.step
+
+      # Delete all connections first (cascade)
+      Repo.delete_all(from c in Connection, where: c.source_step_id == ^step.id or c.target_step_id == ^step.id)
+
+      case Admin.delete_step(step) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Passo \"#{step.name}\" deletado.")
+           |> redirect(to: ~p"/collection")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Erro ao deletar passo")}
+      end
+    end
+  end
+
   def handle_event("search_connection", %{"target_code" => term}, socket) do
     if not socket.assigns.can_edit or String.length(term) < 1 do
       {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
