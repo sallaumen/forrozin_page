@@ -1,15 +1,15 @@
-defmodule Mix.Tasks.Forrozin.ExtrairConexoes do
-  @shortdoc "Extrai conexões implícitas nas notas dos passos e insere no banco"
+defmodule Mix.Tasks.Forrozin.ExtractConnections do
+  @shortdoc "Extracts implicit connections from step notes and inserts them into the database"
 
   @moduledoc """
-  Interpreta os campos `nota` dos passos do semeador e insere as conexões
-  que estão descritas textualmente (Entradas:/Saídas:) como arestas no grafo.
+  Interprets the `note` fields of seeder steps and inserts connections
+  described textually (Entries:/Exits:) as edges in the graph.
 
-  Idempotente: usa `on_conflict: :nothing`.
+  Idempotent: uses `on_conflict: :nothing`.
 
-  ## Uso
+  ## Usage
 
-      mix forrozin.extrair_conexoes
+      mix forrozin.extract_connections
 
   """
 
@@ -17,10 +17,10 @@ defmodule Mix.Tasks.Forrozin.ExtrairConexoes do
 
   @requirements ["app.start"]
 
-  # Conexões extraídas manualmente das notas do semeador.
-  # Formato: {codigo_origem, codigo_destino}
-  # Resolução de ambiguidades: "CA" → CA-E, "PE" → PE-E-E, "base" → BF
-  @conexoes [
+  # Connections extracted manually from seeder notes.
+  # Format: {source_code, target_code}
+  # Disambiguation: "CA" → CA-E, "PE" → PE-E-E, "base" → BF
+  @connections [
     # SC — Sacada simples: "Saídas: GP, TRD, PE, CA, PI"
     {"SC", "GP"},
     {"SC", "TRD"},
@@ -157,47 +157,47 @@ defmodule Mix.Tasks.Forrozin.ExtrairConexoes do
 
   @impl Mix.Task
   def run(_args) do
-    alias Forrozin.{Admin, Enciclopedia}
+    alias Forrozin.{Admin, Encyclopedia}
 
-    Mix.shell().info("Extraindo conexões implícitas das notas...")
+    Mix.shell().info("Extracting implicit connections from notes...")
 
-    passos = Enciclopedia.listar_todos_passos_mapa()
+    steps = Encyclopedia.list_all_steps_map()
 
-    resultados =
-      @conexoes
+    results =
+      @connections
       |> Enum.uniq()
-      |> Enum.map(fn {orig, dest} ->
-        with {:origem, %{id: orig_id}} <- {:origem, Map.get(passos, orig)},
-             {:destino, %{id: dest_id}} <- {:destino, Map.get(passos, dest)} do
-          inserir_conexao(Admin, orig_id, dest_id, orig, dest)
+      |> Enum.map(fn {source_code, target_code} ->
+        with {:source, %{id: source_id}} <- {:source, Map.get(steps, source_code)},
+             {:target, %{id: target_id}} <- {:target, Map.get(steps, target_code)} do
+          insert_connection(Admin, source_id, target_id, source_code, target_code)
         else
-          {:origem, nil} -> {:passo_nao_encontrado, "#{orig} (origem)"}
-          {:destino, nil} -> {:passo_nao_encontrado, "#{dest} (destino)"}
+          {:source, nil} -> {:step_not_found, "#{source_code} (source)"}
+          {:target, nil} -> {:step_not_found, "#{target_code} (target)"}
         end
       end)
 
-    inseridas = Enum.count(resultados, &match?({:inserida, _}, &1))
-    duplicadas = Enum.count(resultados, &match?({:duplicada, _}, &1))
-    nao_encontradas = Enum.filter(resultados, &match?({:passo_nao_encontrado, _}, &1))
+    inserted = Enum.count(results, &match?({:inserted, _}, &1))
+    duplicated = Enum.count(results, &match?({:duplicated, _}, &1))
+    not_found = Enum.filter(results, &match?({:step_not_found, _}, &1))
 
-    Mix.shell().info("  ✓ #{inseridas} conexões inseridas")
-    Mix.shell().info("  · #{duplicadas} já existiam (ignoradas)")
+    Mix.shell().info("  ✓ #{inserted} connections inserted")
+    Mix.shell().info("  · #{duplicated} already existed (ignored)")
 
-    if nao_encontradas != [] do
-      Mix.shell().info("\n  ⚠ Passos não encontrados no banco:")
+    if not_found != [] do
+      Mix.shell().info("\n  ⚠ Steps not found in database:")
 
-      Enum.each(nao_encontradas, fn {_, msg} ->
+      Enum.each(not_found, fn {_, msg} ->
         Mix.shell().info("    - #{msg}")
       end)
     end
 
-    Mix.shell().info("\nPronto. Rode `mix forrozin.restaurar_backup` para salvar em backup.")
+    Mix.shell().info("\nDone. Run `mix forrozin.restore_backup` to save a backup.")
   end
 
-  defp inserir_conexao(admin, orig_id, dest_id, orig, dest) do
-    case admin.criar_conexao(%{passo_origem_id: orig_id, passo_destino_id: dest_id, tipo: "saida"}) do
-      {:ok, _} -> {:inserida, "#{orig} → #{dest}"}
-      {:error, _} -> {:duplicada, "#{orig} → #{dest}"}
+  defp insert_connection(admin, source_id, target_id, source_code, target_code) do
+    case admin.create_connection(%{source_step_id: source_id, target_step_id: target_id, type: "exit"}) do
+      {:ok, _} -> {:inserted, "#{source_code} → #{target_code}"}
+      {:error, _} -> {:duplicated, "#{source_code} → #{target_code}"}
     end
   end
 end
