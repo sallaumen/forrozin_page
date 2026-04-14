@@ -38,12 +38,18 @@ const CATEGORY_ORDER = [
   "caminhadas", "giros", "inversao", "outros",
 ]
 
+// Hub step codes — placed at graph center, outside category zones
+const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
+
 // ---------------------------------------------------------------------------
-// Compute sector positions: each category = one sector of a circle.
+// Hybrid layout: hubs at center + per-category Cola in fixed sectors
 // ---------------------------------------------------------------------------
-function computeSectorPositions(cy) {
+function runHybridLayout(cy) {
+  // 1. Classify nodes: hubs vs category members
+  const hubs = cy.nodes().filter(n => HUB_CODES.includes(n.id()))
   const byCat = {}
   cy.nodes().forEach(n => {
+    if (HUB_CODES.includes(n.id())) return
     const cat = n.data("categoriaName") || "outros"
     ;(byCat[cat] = byCat[cat] || []).push(n)
   })
@@ -53,22 +59,39 @@ function computeSectorPositions(cy) {
     if (!activeCats.includes(c)) activeCats.push(c)
   })
 
+  // 2. Position hubs in a small circle at center
+  const hubRadius = 120
+  hubs.forEach((hub, i) => {
+    const theta = (2 * Math.PI * i / hubs.length) - Math.PI / 2
+    hub.position({ x: hubRadius * Math.cos(theta), y: hubRadius * Math.sin(theta) })
+  })
+
+  // 3. Compute sector centers for each category
   const numCats = activeCats.length
-  const positions = {}
-  const R_BASE = 580
-  const NODE_GAP = 130
-  const ROW_GAP = 120
+  const R_BASE = 500
+  const sectorCenters = {}
 
   activeCats.forEach((cat, i) => {
+    const theta = (2 * Math.PI * i / numCats) - Math.PI / 2
+    sectorCenters[cat] = {
+      x: R_BASE * Math.cos(theta),
+      y: R_BASE * Math.sin(theta),
+      theta: theta
+    }
+  })
+
+  // 4. Place category nodes at their sector center (initial position)
+  const NODE_GAP = 120
+  const ROW_GAP = 110
+
+  activeCats.forEach(cat => {
     const group = byCat[cat]
     const n = group.length
-    const theta = (2 * Math.PI * i / numCats) - Math.PI / 2
-    const rHat = { x: Math.cos(theta), y: Math.sin(theta) }
-    const tHat = { x: -Math.sin(theta), y: Math.cos(theta) }
+    const center = sectorCenters[cat]
+    const rHat = { x: Math.cos(center.theta), y: Math.sin(center.theta) }
+    const tHat = { x: -Math.sin(center.theta), y: Math.cos(center.theta) }
     const perRow = Math.min(4, Math.ceil(Math.sqrt(n)))
     const rows = Math.ceil(n / perRow)
-    const cx = R_BASE * rHat.x
-    const cy_ = R_BASE * rHat.y
 
     group.forEach((node, j) => {
       const row = Math.floor(j / perRow)
@@ -77,22 +100,90 @@ function computeSectorPositions(cy) {
       const colOffset = (col - (colsInRow - 1) / 2) * NODE_GAP
       const rowOffset = (row - (rows - 1) / 2) * ROW_GAP
 
-      positions[node.id()] = {
-        x: cx + tHat.x * colOffset + rHat.x * rowOffset,
-        y: cy_ + tHat.y * colOffset + rHat.y * rowOffset
-      }
+      node.position({
+        x: center.x + tHat.x * colOffset + rHat.x * rowOffset,
+        y: center.y + tHat.y * colOffset + rHat.y * rowOffset
+      })
     })
   })
 
-  return positions
+  // 5. Run Cola PER CATEGORY (only intra-category edges)
+  //    This keeps each cluster tight without mixing categories
+  let layoutsRemaining = activeCats.length
+
+  function onAllLayoutsDone() {
+    // Lock hub positions, then run a very brief global Cola
+    // just to adjust hub placement relative to their connections
+    hubs.forEach(h => h.lock())
+
+    cy.layout({
+      name: "cola",
+      animate: false,
+      maxSimulationTime: 500,
+      randomize: false,
+      fit: false,
+      avoidOverlaps: true,
+      nodeDimensionsIncludeLabels: true,
+      nodeSpacing: 30,
+      edgeLength: 200,
+      gravity: 0.01,
+      convergenceThreshold: 0.1,
+      infinite: false
+    }).run()
+
+    hubs.forEach(h => h.unlock())
+    cy.fit(undefined, 60)
+    drawCategoryZones(cy, sectorCenters, byCat)
+  }
+
+  if (activeCats.length === 0) {
+    onAllLayoutsDone()
+    return sectorCenters
+  }
+
+  activeCats.forEach(cat => {
+    const catNodeIds = new Set(byCat[cat].map(n => n.id()))
+    const catEdges = cy.edges().filter(e =>
+      catNodeIds.has(e.source().id()) && catNodeIds.has(e.target().id())
+    )
+    const catElements = cy.collection().merge(cy.nodes().filter(n => catNodeIds.has(n.id()))).merge(catEdges)
+
+    if (catElements.nodes().length < 2) {
+      layoutsRemaining--
+      if (layoutsRemaining === 0) onAllLayoutsDone()
+      return
+    }
+
+    catElements.layout({
+      name: "cola",
+      animate: false,
+      maxSimulationTime: 800,
+      randomize: false,
+      fit: false,
+      avoidOverlaps: true,
+      nodeDimensionsIncludeLabels: true,
+      nodeSpacing: 35,
+      edgeLength: 90,
+      gravity: 0.3,
+      convergenceThreshold: 0.05,
+      infinite: false
+    }).run()
+
+    layoutsRemaining--
+    if (layoutsRemaining === 0) onAllLayoutsDone()
+  })
+
+  return sectorCenters
 }
 
 // ---------------------------------------------------------------------------
-// Category zone overlay: draw translucent ellipses behind each cluster
+// Category zone overlay: ellipses at fixed sector positions (not bounding box)
 // ---------------------------------------------------------------------------
-function drawCategoryZones(cy) {
+function drawCategoryZones(cy, sectorCenters, byCat) {
   const existingCanvas = cy.container().querySelector(".zone-canvas")
   if (existingCanvas) existingCanvas.remove()
+
+  if (!sectorCenters || !byCat) return
 
   const container = cy.container()
   const canvas = document.createElement("canvas")
@@ -106,18 +197,11 @@ function drawCategoryZones(cy) {
   const pan = cy.pan()
   const zoom = cy.zoom()
 
-  // Group nodes by category
-  const byCat = {}
-  cy.nodes().forEach(n => {
-    const cat = n.data("categoriaName") || "outros"
-    ;(byCat[cat] = byCat[cat] || []).push(n)
-  })
-
   Object.entries(byCat).forEach(([cat, catNodes]) => {
     if (catNodes.length < 2) return
     const cor = catNodes[0].data("cor") || "#9a7a5a"
 
-    // Compute bounding box of category nodes in rendered coords
+    // Use actual bounding box of category nodes (which are now properly clustered)
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     catNodes.forEach(n => {
       const pos = n.renderedPosition()
@@ -129,32 +213,30 @@ function drawCategoryZones(cy) {
       maxY = Math.max(maxY, pos.y + h)
     })
 
-    const padding = 35
+    const padding = 30
     const cx = (minX + maxX) / 2
     const cy_ = (minY + maxY) / 2
     const rx = (maxX - minX) / 2 + padding
     const ry = (maxY - minY) / 2 + padding
 
     ctx.beginPath()
-    ctx.ellipse(cx, cy_, rx, ry, 0, 0, 2 * Math.PI)
-    ctx.fillStyle = cor + "08" // ~3% opacity via hex alpha
+    ctx.ellipse(cx, cy_, Math.max(rx, 40), Math.max(ry, 40), 0, 0, 2 * Math.PI)
+    ctx.fillStyle = cor + "0A"
     ctx.fill()
-    ctx.strokeStyle = cor + "20" // ~12% opacity border
+    ctx.strokeStyle = cor + "25"
     ctx.lineWidth = 1.5
     ctx.stroke()
   })
 }
 
 // Redraw zones on pan/zoom
-function setupZoneRedraw(cy) {
+function setupZoneRedraw(cy, sectorCenters, byCat) {
   let rafId = null
   const redraw = () => {
     if (rafId) cancelAnimationFrame(rafId)
-    rafId = requestAnimationFrame(() => drawCategoryZones(cy))
+    rafId = requestAnimationFrame(() => drawCategoryZones(cy, sectorCenters, byCat))
   }
   cy.on("pan zoom resize", redraw)
-  // Initial draw after layout
-  cy.one("layoutstop", () => setTimeout(() => drawCategoryZones(cy), 100))
 }
 
 // ---------------------------------------------------------------------------
@@ -381,34 +463,27 @@ const GraphVisual = {
     // Inherit source category color to edges
     cy.edges().forEach(edge => { edge.data("cor", edge.source().data("cor") || "#9a7a5a") })
 
-    // ── Phase 1: preset sector positions ──
-    const positions = computeSectorPositions(cy)
-    cy.layout({ name: "preset", positions, animate: false }).run()
+    // ── Hybrid layout: hubs at center + per-category Cola ──
+    const sectorCenters = runHybridLayout(cy)
 
-    // ── Phase 2: cola with degree-based spacing ──
-    const colaOpts = {
-      name: "cola", animate: true, animationDuration: 900, maxSimulationTime: 2500,
-      randomize: false, fit: true, padding: 60, avoidOverlaps: true,
-      nodeDimensionsIncludeLabels: true,
-      nodeSpacing: function(node) {
-        return 45 + (node.degree() * 6)
-      },
-      edgeLength: function(e) {
-        const same = e.source().data("categoriaName") === e.target().data("categoriaName")
-        return same ? 90 : 450
-      },
-      gravity: 0.12, convergenceThreshold: 0.05, infinite: false
-    }
-    cy.layout(colaOpts).run()
-    cy.one("layoutstop", () => { cy.fit(undefined, 60) })
-    setupZoneRedraw(cy)
+    // Collect byCat for zone redraw (excluding hubs)
+    const byCat = {}
+    cy.nodes().forEach(n => {
+      if (HUB_CODES.includes(n.id())) return
+      const cat = n.data("categoriaName") || "outros"
+      ;(byCat[cat] = byCat[cat] || []).push(n)
+    })
+    setupZoneRedraw(cy, sectorCenters, byCat)
 
-    // ── Phase 3: drag-release local cola ──
+    // ── Drag-release: local anti-overlap only ──
     cy.on("dragfreeon", "node", () => {
-      cy.layout(Object.assign({}, colaOpts, {
-        animationDuration: 400, maxSimulationTime: 600,
-        fit: false, convergenceThreshold: 0.1
-      })).run()
+      cy.layout({
+        name: "cola", animate: true, animationDuration: 400, maxSimulationTime: 500,
+        randomize: false, fit: false, avoidOverlaps: true,
+        nodeDimensionsIncludeLabels: true, nodeSpacing: 30,
+        edgeLength: 120, gravity: 0.01, convergenceThreshold: 0.1, infinite: false
+      }).run()
+      setTimeout(() => drawCategoryZones(cy, sectorCenters, byCat), 600)
     })
 
     // ── Interactions ──
