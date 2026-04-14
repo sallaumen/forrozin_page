@@ -258,14 +258,26 @@ defmodule ForrozinWeb.CollectionLiveTest do
   end
 
   describe "step suggestions" do
-    test "user can suggest a new step", %{conn: conn} do
+    test "user can suggest a new step with section", %{conn: conn} do
       cat = insert(:category, name: "bases", label: "Bases")
-      insert(:section, title: "Bases", position: 1, category: cat)
+      section = insert(:section, title: "Bases", position: 1, category: cat)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       render_click(lv, "toggle_suggest", %{})
-      render_submit(lv, "create_suggested_step", %{"step" => %{"name" => "Meu passo", "code" => "MP-1", "category_id" => cat.id}})
-      # Step is created in DB
-      assert Forrozin.Repo.get_by(Forrozin.Encyclopedia.Step, code: "MP-1") != nil
+      render_submit(lv, "create_suggested_step", %{"step" => %{"name" => "Meu passo", "code" => "MP-1", "category_id" => cat.id, "section_id" => section.id}})
+      step = Forrozin.Repo.get_by(Forrozin.Encyclopedia.Step, code: "MP-1")
+      assert step != nil
+      assert step.section_id == section.id
+      assert step.suggested_by_id != nil
+    end
+
+    test "suggested step appears in its section when expanded", %{conn: conn} do
+      user = insert(:user)
+      section = insert(:section, title: "Pescadas", position: 1)
+      insert(:step, section: section, code: "PE-T", name: "Pescada teste", suggested_by: user)
+      {:ok, lv, _html} = live(log_in_user(build_conn(), user), ~p"/collection")
+      html = render_click(lv, "expand_all", %{})
+      assert html =~ "Pescada teste"
+      assert html =~ "Sugestão de"
     end
 
     test "suggested step shows badge in list", %{conn: conn} do

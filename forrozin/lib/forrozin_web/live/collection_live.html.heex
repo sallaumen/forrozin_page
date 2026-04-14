@@ -151,6 +151,15 @@
             <% end %>
           </select>
         </div>
+        <div style="width: 180px;">
+          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Seção</label>
+          <select name="step[section_id]" required style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;">
+            <option value="">Selecione...</option>
+            <%= for section <- @sections do %>
+              <option value={section.id}>{section.title}</option>
+            <% end %>
+          </select>
+        </div>
         <button type="submit" style="padding: 8px 16px; background: #8e44ad; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.5px;">
           Sugerir
         </button>
