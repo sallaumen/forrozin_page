@@ -1,4 +1,4 @@
-defmodule Forrozin.Enciclopedia.Semeador do
+defmodule Forrozin.Encyclopedia.Seeder do
   @moduledoc """
   Seed inicial da enciclopédia de forró roots.
 
@@ -7,7 +7,7 @@ defmodule Forrozin.Enciclopedia.Semeador do
   subsequentes retornam `:already_seeded` sem modificar o banco.
   """
 
-  alias Forrozin.Enciclopedia.{Categoria, ConceitoTecnico, Passo, Secao, Subsecao}
+  alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Step, Section, Subsection}
   alias Forrozin.Repo
 
   # Códigos HF com imagem em images/
@@ -19,7 +19,7 @@ defmodule Forrozin.Enciclopedia.Semeador do
     HF-STS HF-TAS HF-TAV HF-TDC HF-WO5 HF-YNK
   )
 
-  @categorias [
+  @categories [
     {"sacadas", "Sacadas", "#c0392b"},
     {"travas", "Travas", "#2980b9"},
     {"caminhadas", "Caminhadas", "#27ae60"},
@@ -33,7 +33,7 @@ defmodule Forrozin.Enciclopedia.Semeador do
     {"convencoes", "Convenções", "#95a5a6"}
   ]
 
-  @secoes [
+  @sections [
     %{
       titulo: "Convenções da Notação",
       num: nil,
@@ -877,15 +877,15 @@ defmodule Forrozin.Enciclopedia.Semeador do
   Executa o seed inicial da enciclopédia. Retorna `:ok` na primeira execução e
   `:already_seeded` nas subsequentes — seguro chamar múltiplas vezes.
   """
-  def semear! do
-    if Repo.exists?(Categoria) do
+  def seed! do
+    if Repo.exists?(Category) do
       :already_seeded
     else
       {:ok, _} =
         Repo.transaction(fn ->
-          cats = semear_categorias!()
-          semear_secoes!(cats)
-          semear_conceitos!()
+          categories_map = seed_categories!()
+          seed_sections!(categories_map)
+          seed_technical_concepts!()
         end)
 
       :ok
@@ -896,14 +896,14 @@ defmodule Forrozin.Enciclopedia.Semeador do
   # Privado — categorias
   # ---------------------------------------------------------------------------
 
-  defp semear_categorias! do
-    Enum.reduce(@categorias, %{}, fn {nome, rotulo, cor}, acc ->
+  defp seed_categories! do
+    Enum.reduce(@categories, %{}, fn {name, label, color}, acc ->
       cat =
-        %Categoria{}
-        |> Categoria.changeset(%{nome: nome, rotulo: rotulo, cor: cor})
+        %Category{}
+        |> Category.changeset(%{name: name, label: label, color: color})
         |> Repo.insert!()
 
-      Map.put(acc, nome, cat.id)
+      Map.put(acc, name, cat.id)
     end)
   end
 
@@ -911,67 +911,67 @@ defmodule Forrozin.Enciclopedia.Semeador do
   # Privado — seções, subseções e passos
   # ---------------------------------------------------------------------------
 
-  defp semear_secoes!(cats) do
-    @secoes
+  defp seed_sections!(categories_map) do
+    @sections
     |> Enum.with_index(1)
-    |> Enum.each(fn {secao_data, posicao} ->
-      cat_id = cats[secao_data.categoria]
+    |> Enum.each(fn {section_data, position} ->
+      cat_id = categories_map[section_data.categoria]
 
-      secao =
-        %Secao{}
-        |> Secao.changeset(%{
-          titulo: secao_data.titulo,
-          codigo: secao_data[:codigo],
-          num: secao_data[:num],
-          descricao: secao_data[:descricao],
-          nota: secao_data[:nota],
-          posicao: posicao,
-          categoria_id: cat_id
+      section =
+        %Section{}
+        |> Section.changeset(%{
+          title: section_data.titulo,
+          code: section_data[:codigo],
+          num: section_data[:num],
+          description: section_data[:descricao],
+          note: section_data[:nota],
+          position: position,
+          category_id: cat_id
         })
         |> Repo.insert!()
 
-      semear_passos!(secao_data[:passos] || [], secao.id, nil, cat_id)
+      seed_steps!(section_data[:passos] || [], section.id, nil, cat_id)
 
-      (secao_data[:subsecoes] || [])
+      (section_data[:subsecoes] || [])
       |> Enum.with_index(1)
-      |> Enum.each(fn {sub_data, spos} ->
-        sub =
-          %Subsecao{}
-          |> Subsecao.changeset(%{
-            titulo: sub_data.titulo,
-            nota: sub_data[:nota],
-            posicao: spos,
-            secao_id: secao.id
+      |> Enum.each(fn {subsection_data, sub_position} ->
+        subsection =
+          %Subsection{}
+          |> Subsection.changeset(%{
+            title: subsection_data.titulo,
+            note: subsection_data[:nota],
+            position: sub_position,
+            section_id: section.id
           })
           |> Repo.insert!()
 
-        semear_passos!(sub_data[:passos] || [], secao.id, sub.id, cat_id)
+        seed_steps!(subsection_data[:passos] || [], section.id, subsection.id, cat_id)
       end)
     end)
   end
 
-  defp semear_passos!(passos, secao_id, subsecao_id, cat_id) do
-    passos
+  defp seed_steps!(steps, section_id, subsection_id, cat_id) do
+    steps
     |> Enum.with_index(1)
-    |> Enum.each(fn {passo_data, posicao} ->
-      codigo = passo_data.codigo
-      wip = Map.get(passo_data, :wip, false) or String.starts_with?(codigo, "HF-")
-      caminho_imagem = if codigo in @hf_cards, do: "images/#{codigo}.jpg"
+    |> Enum.each(fn {step_data, position} ->
+      code = step_data.codigo
+      wip = Map.get(step_data, :wip, false) or String.starts_with?(code, "HF-")
+      image_path = if code in @hf_cards, do: "images/#{code}.jpg"
 
-      %Passo{}
-      |> Passo.changeset(%{
-        codigo: codigo,
-        nome: passo_data.nome,
-        nota: passo_data[:nota],
+      %Step{}
+      |> Step.changeset(%{
+        code: code,
+        name: step_data.nome,
+        note: step_data[:nota],
         wip: wip,
-        caminho_imagem: caminho_imagem,
-        status: "publicado",
-        posicao: posicao,
-        secao_id: secao_id,
-        subsecao_id: subsecao_id,
-        categoria_id: cat_id
+        image_path: image_path,
+        status: "published",
+        position: position,
+        section_id: section_id,
+        subsection_id: subsection_id,
+        category_id: cat_id
       })
-      |> Repo.insert(on_conflict: :nothing, conflict_target: :codigo)
+      |> Repo.insert(on_conflict: :nothing, conflict_target: :code)
     end)
   end
 
@@ -979,10 +979,10 @@ defmodule Forrozin.Enciclopedia.Semeador do
   # Privado — conceitos técnicos
   # ---------------------------------------------------------------------------
 
-  defp semear_conceitos! do
+  defp seed_technical_concepts! do
     Enum.each(@conceitos, fn {titulo, descricao} ->
-      %ConceitoTecnico{}
-      |> ConceitoTecnico.changeset(%{titulo: titulo, descricao: descricao})
+      %TechnicalConcept{}
+      |> TechnicalConcept.changeset(%{title: titulo, description: descricao})
       |> Repo.insert!()
     end)
   end

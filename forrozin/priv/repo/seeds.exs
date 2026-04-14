@@ -10,7 +10,7 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
-result = Forrozin.Enciclopedia.Semeador.semear!()
+result = Forrozin.Encyclopedia.Seeder.seed!()
 IO.puts("Seed: #{result}")
 
 # Admin padrão — pré-confirmado, sem email de verificação
