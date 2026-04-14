@@ -17,7 +17,7 @@ defmodule ForrozinWeb.GraphLive do
      |> assign(:targets, MapSet.new())
      |> assign(:last_backup, nil)
      |> assign(:connection_label, "")
-     |> assign(:page_title, "Grafo de Passos")
+     |> assign(:page_title, "Mapa de Passos")
      |> load_graph(graph)}
   end
 

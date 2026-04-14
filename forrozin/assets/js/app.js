@@ -38,9 +38,6 @@ const CATEGORY_ORDER = [
   "caminhadas", "giros", "inversao", "outros",
 ]
 
-// Hub step codes — visually prominent nodes
-const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-
 // The ONE central node — Base frontal is the center of everything
 const CENTER_CODE = "BF"
 
@@ -429,7 +426,8 @@ const GraphVisual = {
         data: {
           id: n.id, label: n.nome, categoria: n.categoria,
           categoriaName: n.categoriaName, cor: n.cor || "#9a7a5a",
-          nota: n.nota
+          nota: n.nota,
+          highlighted: n.highlighted || false
         }
       })
     })
@@ -451,14 +449,12 @@ const GraphVisual = {
             "width": "label",
             "height": "label",
             "padding": function(e) {
-              const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return "20px 30px"
+              if (e.data("highlighted")) return "20px 30px"
               return e.degree() >= 10 ? "12px 18px" : "8px 14px"
             },
             "background-color": "#fffef9",
             "border-width": function(e) {
-              const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return 5
+              if (e.data("highlighted")) return 5
               return e.degree() >= 10 ? 3 : 2
             },
             "border-color": "data(cor)", "border-opacity": 0.85,
@@ -466,16 +462,14 @@ const GraphVisual = {
             "text-wrap": "wrap", "text-halign": "center", "text-valign": "center",
             "font-family": "Georgia, serif",
             "font-size": function(e) {
-              const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return 19
+              if (e.data("highlighted")) return 19
               const d = e.degree()
               return d >= 12 ? 15 : d >= 6 ? 14 : 13
             },
             "color": "#1a0e05", "text-max-width": "180px",
             "min-width": "80px",
             "shadow-blur": function(e) {
-              const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
-              if (HUB_CODES.includes(e.id())) return 20
+              if (e.data("highlighted")) return 20
               return e.degree() >= 10 ? 10 : 4
             },
             "shadow-color": "rgba(60,40,20,0.12)",

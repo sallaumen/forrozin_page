@@ -24,9 +24,9 @@ defmodule ForrozinWeb.GraphLiveTest do
   end
 
   describe "mount — admin" do
-    test "renders the Grafo de Passos title", %{conn: conn} do
+    test "renders the Mapa de Passos title", %{conn: conn} do
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
-      assert html =~ "Grafo de Passos"
+      assert html =~ "Mapa de Passos"
     end
 
     test "displays code of a public step", %{conn: conn} do

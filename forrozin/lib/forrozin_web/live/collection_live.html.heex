@@ -12,7 +12,7 @@
         navigate={~p"/graph/visual"}
         style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
       >
-        Grafo
+        Mapa de Passos
       </.link>
       <%= if @is_admin do %>
         <button
@@ -192,6 +192,10 @@
             <label style="font-size: 11px; color: #5c3a1a; display: flex; align-items: center; gap: 4px;">
               <input type="hidden" name="step[wip]" value="false" />
               <input type="checkbox" name="step[wip]" value="true" checked={@drawer_item.wip} /> WIP
+            </label>
+            <label style="font-size: 11px; color: #5c3a1a; display: flex; align-items: center; gap: 4px;">
+              <input type="hidden" name="step[highlighted]" value="false" />
+              <input type="checkbox" name="step[highlighted]" value="true" checked={@drawer_item.highlighted} /> Destacado no mapa
             </label>
           </div>
           <button type="submit" style="padding: 8px 16px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px;">Salvar passo</button>
