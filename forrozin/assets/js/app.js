@@ -38,58 +38,65 @@ const CATEGORY_ORDER = [
   "caminhadas", "giros", "inversao", "outros",
 ]
 
-// Hub step codes — placed at graph center, outside category zones
+// Hub step codes — visually prominent nodes
 const HUB_CODES = ["BF", "GS", "GP", "IV", "SC", "CM-F"]
+
+// The ONE central node — Base frontal is the center of everything
+const CENTER_CODE = "BF"
 
 // ---------------------------------------------------------------------------
 // Hybrid layout: hubs at center + per-category Cola in fixed sectors
 // ---------------------------------------------------------------------------
 function runHybridLayout(cy) {
-  // 1. Classify nodes: hubs vs category members
-  const hubs = cy.nodes().filter(n => HUB_CODES.includes(n.id()))
+  // 1. Classify: BF at center, all others stay in their category
   const byCat = {}
   cy.nodes().forEach(n => {
-    if (HUB_CODES.includes(n.id())) return
     const cat = n.data("categoriaName") || "outros"
     ;(byCat[cat] = byCat[cat] || []).push(n)
   })
 
+  // "bases" category includes BF — BF goes to origin, rest of bases around it
   const activeCats = CATEGORY_ORDER.filter(c => byCat[c]?.length > 0)
   Object.keys(byCat).forEach(c => {
     if (!activeCats.includes(c)) activeCats.push(c)
   })
 
-  // 2. Position hubs in a small circle at center
-  const hubRadius = 120
-  hubs.forEach((hub, i) => {
-    const theta = (2 * Math.PI * i / hubs.length) - Math.PI / 2
-    hub.position({ x: hubRadius * Math.cos(theta), y: hubRadius * Math.sin(theta) })
-  })
+  // 2. Position BF at absolute center
+  const bf = cy.getElementById(CENTER_CODE)
+  if (bf.length > 0) bf.position({ x: 0, y: 0 })
 
-  // 3. Compute sector centers for each category
-  const numCats = activeCats.length
-  const R_BASE = 500
+  // 3. "bases" cluster radiates directly around BF at a shorter radius
+  //    Other categories go to outer sectors
+  const outerCats = activeCats.filter(c => c !== "bases")
+  const numOuter = outerCats.length
+  const R_OUTER = 550
+  const R_BASES = 180 // bases cluster close to BF at center
+  const NODE_GAP = 110
+  const ROW_GAP = 100
+
   const sectorCenters = {}
 
-  activeCats.forEach((cat, i) => {
-    const theta = (2 * Math.PI * i / numCats) - Math.PI / 2
-    sectorCenters[cat] = {
-      x: R_BASE * Math.cos(theta),
-      y: R_BASE * Math.sin(theta),
-      theta: theta
-    }
+  // Bases: small ring around center (BF already at 0,0)
+  sectorCenters["bases"] = { x: 0, y: 0, theta: -Math.PI / 2 }
+  const basesNodes = (byCat["bases"] || []).filter(n => n.id() !== CENTER_CODE)
+  basesNodes.forEach((node, i) => {
+    const theta = (2 * Math.PI * i / basesNodes.length) - Math.PI / 2
+    node.position({
+      x: R_BASES * Math.cos(theta),
+      y: R_BASES * Math.sin(theta)
+    })
   })
 
-  // 4. Place category nodes at their sector center (initial position)
-  const NODE_GAP = 120
-  const ROW_GAP = 110
+  // Other categories: outer ring sectors
+  outerCats.forEach((cat, i) => {
+    const theta = (2 * Math.PI * i / numOuter) - Math.PI / 2
+    sectorCenters[cat] = { x: R_OUTER * Math.cos(theta), y: R_OUTER * Math.sin(theta), theta }
 
-  activeCats.forEach(cat => {
-    const group = byCat[cat]
+    const group = byCat[cat] || []
     const n = group.length
     const center = sectorCenters[cat]
-    const rHat = { x: Math.cos(center.theta), y: Math.sin(center.theta) }
-    const tHat = { x: -Math.sin(center.theta), y: Math.cos(center.theta) }
+    const rHat = { x: Math.cos(theta), y: Math.sin(theta) }
+    const tHat = { x: -Math.sin(theta), y: Math.cos(theta) }
     const perRow = Math.min(4, Math.ceil(Math.sqrt(n)))
     const rows = Math.ceil(n / perRow)
 
@@ -107,70 +114,49 @@ function runHybridLayout(cy) {
     })
   })
 
-  // 5. Run Cola PER CATEGORY (only intra-category edges)
-  //    This keeps each cluster tight without mixing categories
-  let layoutsRemaining = activeCats.length
+  // 4. Run Cola PER CATEGORY — keeps clusters tight without mixing
+  const allCats = ["bases", ...outerCats].filter(c => byCat[c]?.length > 1)
+  let remaining = allCats.length
 
-  function onAllLayoutsDone() {
-    // Lock hub positions, then run a very brief global Cola
-    // just to adjust hub placement relative to their connections
-    hubs.forEach(h => h.lock())
-
+  function onDone() {
+    // Lock BF at center, brief global Cola for overlap only
+    if (bf.length > 0) bf.lock()
     cy.layout({
-      name: "cola",
-      animate: false,
-      maxSimulationTime: 500,
-      randomize: false,
-      fit: false,
-      avoidOverlaps: true,
-      nodeDimensionsIncludeLabels: true,
-      nodeSpacing: 30,
-      edgeLength: 200,
-      gravity: 0.01,
-      convergenceThreshold: 0.1,
-      infinite: false
+      name: "cola", animate: false, maxSimulationTime: 400,
+      randomize: false, fit: false, avoidOverlaps: true,
+      nodeDimensionsIncludeLabels: true, nodeSpacing: 25,
+      edgeLength: 180, gravity: 0.005, convergenceThreshold: 0.1, infinite: false
     }).run()
+    if (bf.length > 0) bf.unlock()
 
-    hubs.forEach(h => h.unlock())
     cy.fit(undefined, 60)
     drawCategoryZones(cy, sectorCenters, byCat)
   }
 
-  if (activeCats.length === 0) {
-    onAllLayoutsDone()
-    return sectorCenters
-  }
+  if (remaining === 0) { onDone(); return sectorCenters }
 
-  activeCats.forEach(cat => {
-    const catNodeIds = new Set(byCat[cat].map(n => n.id()))
+  allCats.forEach(cat => {
+    const catNodeIds = new Set((byCat[cat] || []).map(n => n.id()))
     const catEdges = cy.edges().filter(e =>
       catNodeIds.has(e.source().id()) && catNodeIds.has(e.target().id())
     )
-    const catElements = cy.collection().merge(cy.nodes().filter(n => catNodeIds.has(n.id()))).merge(catEdges)
+    const catNodes = cy.nodes().filter(n => catNodeIds.has(n.id()))
+    const catElements = cy.collection().merge(catNodes).merge(catEdges)
 
-    if (catElements.nodes().length < 2) {
-      layoutsRemaining--
-      if (layoutsRemaining === 0) onAllLayoutsDone()
-      return
-    }
+    // Lock BF during bases layout so it stays at center
+    if (cat === "bases" && bf.length > 0) bf.lock()
 
     catElements.layout({
-      name: "cola",
-      animate: false,
-      maxSimulationTime: 800,
-      randomize: false,
-      fit: false,
-      avoidOverlaps: true,
-      nodeDimensionsIncludeLabels: true,
-      nodeSpacing: 35,
-      edgeLength: 90,
-      gravity: 0.3,
-      convergenceThreshold: 0.05,
-      infinite: false
+      name: "cola", animate: false, maxSimulationTime: 600,
+      randomize: false, fit: false, avoidOverlaps: true,
+      nodeDimensionsIncludeLabels: true, nodeSpacing: 30,
+      edgeLength: 80, gravity: 0.2, convergenceThreshold: 0.05, infinite: false
     }).run()
 
-    layoutsRemaining--
-    if (layoutsRemaining === 0) onAllLayoutsDone()
+    if (cat === "bases" && bf.length > 0) bf.unlock()
+
+    remaining--
+    if (remaining === 0) onDone()
   })
 
   return sectorCenters
@@ -466,10 +452,9 @@ const GraphVisual = {
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)
 
-    // Collect byCat for zone redraw (excluding hubs)
+    // Collect byCat for zone redraw
     const byCat = {}
     cy.nodes().forEach(n => {
-      if (HUB_CODES.includes(n.id())) return
       const cat = n.data("categoriaName") || "outros"
       ;(byCat[cat] = byCat[cat] || []).push(n)
     })
