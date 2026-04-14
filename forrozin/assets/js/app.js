@@ -68,7 +68,9 @@ function runHybridLayout(cy) {
   // 3. "bases" cluster radiates directly around BF at a shorter radius
   //    Other categories go to outer sectors with proportional angular size
   const outerCats = activeCats.filter(c => c !== "bases")
-  const R_OUTER = 700
+  const totalNodes = Object.values(byCat).reduce((s, g) => s + g.length, 0)
+  // Scale radius with total node count — more nodes need more space
+  const R_OUTER = Math.max(700, 500 + totalNodes * 6)
   const R_BASES = 200
   const NODE_GAP = 155
   const ROW_GAP = 130
@@ -172,9 +174,9 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
 
     ctx.beginPath()
     ctx.arc(cx, cy_, r, 0, 2 * Math.PI)
-    ctx.fillStyle = cor + "0A"
+    ctx.fillStyle = cor + "06"
     ctx.fill()
-    ctx.strokeStyle = cor + "25"
+    ctx.strokeStyle = cor + "18"
     ctx.lineWidth = 1.5
     ctx.stroke()
   })
@@ -316,7 +318,7 @@ function closeDrawer() {
 // ---------------------------------------------------------------------------
 function applySpotlight(cy, node) {
   cy.batch(() => {
-    cy.elements().style({ opacity: 0.08 })
+    cy.elements().style({ opacity: 0.2 })
     const nh = node.closedNeighborhood()
     nh.style({ opacity: 1 })
     nh.edges().style({ opacity: 0.85, width: 2.5 })
@@ -333,7 +335,7 @@ function clearSpotlight(cy) {
 
 function applyCategorySpotlight(cy, categoryName) {
   cy.batch(() => {
-    cy.elements().style({ opacity: 0.08 })
+    cy.elements().style({ opacity: 0.15 })
     const catNodes = cy.nodes(`[categoriaName = "${categoryName}"]`)
     catNodes.style({ opacity: 1 })
     catNodes.connectedEdges().style({ opacity: 0.7, width: 2 })
@@ -605,9 +607,9 @@ const GraphVisual = {
       if (document.getElementById("graph-drawer").style.right === "0px") return
       const node = evt.target
       cy.batch(() => {
-        cy.elements().style({ opacity: 0.15 })
+        cy.elements().style({ opacity: 0.25 })
         const nh = node.closedNeighborhood()
-        nh.style({ opacity: 1 }); nh.edges().style({ opacity: 0.7 })
+        nh.style({ opacity: 1 }); nh.edges().style({ opacity: 0.75 })
       })
     })
 
