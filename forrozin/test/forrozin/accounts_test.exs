@@ -5,7 +5,7 @@ defmodule Forrozin.AccountsTest do
 
   alias Forrozin.Accounts
 
-  @valid_attrs %{username: "novousuario", email: "novo@example.com", password: "senhasegura", state: "PR", city: "Curitiba"}
+  @valid_attrs %{username: "novousuario", email: "novo@example.com", password: "senhasegura", country: "BR", state: "PR", city: "Curitiba"}
 
   describe "register_user/1" do
     test "creates user with valid data and auto-confirms" do
@@ -82,6 +82,7 @@ defmodule Forrozin.AccountsTest do
           username: "loginuser",
           email: "login@example.com",
           password: "senhasegura123",
+          country: "BR",
           state: "SP",
           city: "São Paulo"
         })

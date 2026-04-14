@@ -21,6 +21,7 @@ defmodule ForrozinWeb.UserSessionControllerTest do
           username: "logintest",
           email: "logintest@example.com",
           password: "senhasegura123",
+          country: "BR",
           state: "PR",
           city: "Curitiba"
         })

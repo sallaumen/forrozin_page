@@ -663,13 +663,37 @@ const CityAutocomplete = {
     this._citiesData = null
     this._selectedIndex = -1
     this._currentCities = []
+    this._isBrazil = true
     this._loadCities()
 
-    const stateSelect = this.el
+    const countrySelect = this.el
+    const stateSelect = document.getElementById("state-select")
+    const stateWrapper = document.getElementById("state-wrapper")
     const cityInput = document.getElementById("city-input")
     const suggestions = document.getElementById("city-suggestions")
-    const form = stateSelect.closest("form")
-    if (!cityInput || !suggestions) return
+    const form = countrySelect.closest("form")
+    if (!cityInput || !suggestions || !stateSelect) return
+
+    const updateCountry = () => {
+      this._isBrazil = countrySelect.value === "BR"
+      cityInput.value = ""
+      suggestions.style.display = "none"
+      this._currentCities = []
+
+      if (this._isBrazil) {
+        stateWrapper.style.display = "block"
+        stateSelect.required = true
+        cityInput.placeholder = stateSelect.value ? "Digite o nome da cidade..." : "Selecione o estado primeiro"
+      } else {
+        stateWrapper.style.display = "none"
+        stateSelect.value = ""
+        stateSelect.required = false
+        cityInput.placeholder = "Digite o nome da sua cidade"
+      }
+    }
+
+    countrySelect.addEventListener("change", updateCountry)
+    updateCountry()
 
     stateSelect.addEventListener("change", () => {
       cityInput.value = ""
@@ -679,6 +703,12 @@ const CityAutocomplete = {
     })
 
     const showSuggestions = () => {
+      if (!this._isBrazil) {
+        suggestions.style.display = "none"
+        this._currentCities = []
+        return
+      }
+
       const state = stateSelect.value
       const term = cityInput.value.toLowerCase()
       if (!state || !this._citiesData || term.length < 1) {
@@ -759,32 +789,36 @@ const CityAutocomplete = {
       setTimeout(() => { suggestions.style.display = "none" }, 200)
     })
 
-    // Form validation: prevent submit if city is not in the list
+    // Form validation: prevent submit if city is invalid
     if (form) {
       form.addEventListener("submit", (e) => {
-        const state = stateSelect.value
         const city = cityInput.value.trim()
 
-        if (!state) {
+        if (!city) {
           e.preventDefault()
-          stateSelect.style.borderColor = "#c0392b"
+          cityInput.style.borderColor = "#c0392b"
+          cityInput.placeholder = "Informe sua cidade"
           return
         }
 
-        if (!this._citiesData || !city) {
-          e.preventDefault()
-          cityInput.style.borderColor = "#c0392b"
-          return
-        }
+        // Only validate against IBGE list for Brazil
+        if (this._isBrazil) {
+          const state = stateSelect.value
+          if (!state) {
+            e.preventDefault()
+            stateSelect.style.borderColor = "#c0392b"
+            return
+          }
 
-        const validCities = this._citiesData[state] || []
-        if (!validCities.includes(city)) {
-          e.preventDefault()
-          cityInput.style.borderColor = "#c0392b"
-          cityInput.value = ""
-          cityInput.placeholder = "Selecione uma cidade válida da lista"
-          cityInput.focus()
-          showSuggestions()
+          const validCities = (this._citiesData || {})[state] || []
+          if (!validCities.includes(city)) {
+            e.preventDefault()
+            cityInput.style.borderColor = "#c0392b"
+            cityInput.value = ""
+            cityInput.placeholder = "Selecione uma cidade válida da lista"
+            cityInput.focus()
+            showSuggestions()
+          }
         }
       })
     }

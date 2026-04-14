@@ -30,6 +30,7 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
             username: "novousuario",
             email: "novo@example.com",
             password: "senhasegura123",
+            country: "BR",
             state: "PR",
             city: "Curitiba"
           }

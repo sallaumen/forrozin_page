@@ -11,6 +11,7 @@ defmodule Forrozin.Factory do
       email: sequence(:email, &"usuario#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
       role: "user",
+      country: "BR",
       state: "PR",
       city: "Curitiba",
       confirmed_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
@@ -23,6 +24,7 @@ defmodule Forrozin.Factory do
       email: sequence(:email, &"admin#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
       role: "admin",
+      country: "BR",
       state: "PR",
       city: "Curitiba",
       confirmed_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
