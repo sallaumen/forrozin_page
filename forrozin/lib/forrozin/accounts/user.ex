@@ -2,11 +2,11 @@ defmodule Forrozin.Accounts.User do
   @moduledoc """
   Schema de usuário da plataforma.
 
-  O papel (`papel`) define o nível de acesso:
-  - `"user"` — acesso à enciclopédia (padrão)
-  - `"admin"` — acesso à enciclopédia + conteúdo wip + painel admin
+  The role (`role`) defines the access level:
+  - `"user"` — access to the encyclopedia (default)
+  - `"admin"` — access to the encyclopedia + wip content + admin panel
 
-  Promoção a admin é feita diretamente no banco — sem interface.
+  Promotion to admin is done directly in the database — no interface.
   """
 
   use Ecto.Schema
@@ -15,50 +15,50 @@ defmodule Forrozin.Accounts.User do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @papeis_validos ~w(user admin)
-  @min_senha 8
+  @valid_roles ~w(user admin)
+  @min_password 8
 
   schema "usuarios" do
-    field :nome_usuario, :string
+    field :username, :string
     field :email, :string
-    field :senha, :string, virtual: true
-    field :senha_hash, :string
-    field :papel, :string, default: "user"
+    field :password, :string, virtual: true
+    field :password_hash, :string
+    field :role, :string, default: "user"
     field :confirmation_token, :string
     field :confirmed_at, :naive_datetime
 
     timestamps()
   end
 
-  @doc "Changeset para registro de novo usuário."
-  def changeset_registro(user, attrs) do
+  @doc "Changeset for new user registration."
+  def registration_changeset(user, attrs) do
     user
-    |> cast(attrs, [:nome_usuario, :email, :senha, :papel, :confirmation_token])
-    |> validate_required([:nome_usuario, :email, :senha])
-    |> validate_length(:nome_usuario, min: 3, max: 30)
-    |> validate_format(:nome_usuario, ~r/^[a-z0-9_]+$/,
+    |> cast(attrs, [:username, :email, :password, :role, :confirmation_token])
+    |> validate_required([:username, :email, :password])
+    |> validate_length(:username, min: 3, max: 30)
+    |> validate_format(:username, ~r/^[a-z0-9_]+$/,
       message: "use apenas letras minúsculas, números e _"
     )
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/, message: "formato inválido")
-    |> validate_length(:senha, min: @min_senha)
-    |> validate_inclusion(:papel, @papeis_validos)
-    |> unique_constraint(:nome_usuario, message: "nome de usuário já existe")
+    |> validate_length(:password, min: @min_password)
+    |> validate_inclusion(:role, @valid_roles)
+    |> unique_constraint(:username, message: "nome de usuário já existe")
     |> unique_constraint(:email, message: "email já cadastrado")
-    |> hash_senha()
+    |> hash_password()
   end
 
-  @doc "Changeset que marca o email como confirmado e invalida o token."
-  def changeset_confirmacao(user) do
+  @doc "Changeset that marks the email as confirmed and invalidates the token."
+  def confirmation_changeset(user) do
     change(user,
       confirmed_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
       confirmation_token: nil
     )
   end
 
-  defp hash_senha(changeset) do
-    case get_change(changeset, :senha) do
+  defp hash_password(changeset) do
+    case get_change(changeset, :password) do
       nil -> changeset
-      senha -> put_change(changeset, :senha_hash, Argon2.hash_pwd_salt(senha))
+      password -> put_change(changeset, :password_hash, Argon2.hash_pwd_salt(password))
     end
   end
 end
