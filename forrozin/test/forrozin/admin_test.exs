@@ -105,14 +105,34 @@ defmodule Forrozin.AdminTest do
   # ---------------------------------------------------------------------------
 
   describe "delete_connection/1" do
-    test "removes an existing connection" do
+    test "soft-deletes an existing connection by setting deleted_at" do
       source = insert(:step, code: "BF")
       target = insert(:step, code: "SC")
       connection = insert(:connection, source_step: source, target_step: target)
 
       assert {:ok, deleted} = Admin.delete_connection(connection.id)
       assert deleted.id == connection.id
-      assert Forrozin.Repo.get(Forrozin.Encyclopedia.Connection, connection.id) == nil
+      assert deleted.deleted_at != nil
+
+      # Row still exists in the database
+      row = Forrozin.Repo.get(Forrozin.Encyclopedia.Connection, connection.id)
+      assert row != nil
+      assert row.deleted_at != nil
+    end
+
+    test "excluded from default queries after soft delete" do
+      source = insert(:step, code: "BF")
+      target = insert(:step, code: "SC")
+      connection = insert(:connection, source_step: source, target_step: target)
+
+      {:ok, _} = Admin.delete_connection(connection.id)
+
+      assert is_nil(
+               Forrozin.Encyclopedia.ConnectionQuery.get_by(
+                 source_step_id: source.id,
+                 target_step_id: target.id
+               )
+             )
     end
 
     test "returns error for nonexistent ID" do
@@ -125,6 +145,36 @@ defmodule Forrozin.AdminTest do
       step = insert(:step, code: "BF", name: "Base frontal")
       assert {:ok, updated} = Admin.update_step(step, %{name: "Base frontal v2"})
       assert updated.name == "Base frontal v2"
+    end
+  end
+
+  describe "delete_step/1" do
+    test "soft-deletes a step by setting deleted_at" do
+      step = insert(:step, code: "BF")
+
+      assert {:ok, deleted} = Admin.delete_step(step)
+      assert deleted.deleted_at != nil
+
+      # Row still exists in the database
+      row = Forrozin.Repo.get(Forrozin.Encyclopedia.Step, step.id)
+      assert row != nil
+      assert row.deleted_at != nil
+    end
+
+    test "excluded from default StepQuery after soft delete" do
+      step = insert(:step, code: "BF")
+
+      {:ok, _} = Admin.delete_step(step)
+
+      assert is_nil(Forrozin.Encyclopedia.StepQuery.get_by(code: "BF"))
+    end
+
+    test "visible with include_deleted: true after soft delete" do
+      step = insert(:step, code: "BF")
+
+      {:ok, _} = Admin.delete_step(step)
+
+      assert Forrozin.Encyclopedia.StepQuery.get_by(code: "BF", include_deleted: true) != nil
     end
   end
 

@@ -67,8 +67,8 @@ defmodule ForrozinWeb.StepLive do
     else
       step = socket.assigns.step
 
-      # Delete all connections first (cascade)
-      ConnectionQuery.delete_all_by(either_step_id: step.id)
+      # Soft-delete all connections first (cascade)
+      ConnectionQuery.soft_delete_by(either_step_id: step.id)
 
       case Admin.delete_step(step) do
         {:ok, _} ->

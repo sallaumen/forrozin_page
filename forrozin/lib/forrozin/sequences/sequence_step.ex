@@ -7,6 +7,7 @@ defmodule Forrozin.Sequences.SequenceStep do
 
   schema "sequence_steps" do
     field :position, :integer
+    field :deleted_at, :naive_datetime
 
     belongs_to :sequence, Forrozin.Sequences.Sequence
     belongs_to :step, Forrozin.Encyclopedia.Step
@@ -16,7 +17,7 @@ defmodule Forrozin.Sequences.SequenceStep do
 
   def changeset(seq_step, attrs) do
     seq_step
-    |> cast(attrs, [:position, :sequence_id, :step_id])
+    |> cast(attrs, [:position, :sequence_id, :step_id, :deleted_at])
     |> validate_required([:position, :sequence_id, :step_id])
     |> unique_constraint([:sequence_id, :position])
     |> foreign_key_constraint(:step_id)

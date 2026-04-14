@@ -18,6 +18,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
   @doc "Returns the first connection matching `opts`, or `nil`."
   def get_by(opts) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.one()
   end
@@ -25,6 +26,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
   @doc "Returns all connections matching `opts`."
   def list_by(opts \\ []) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.all()
   end
@@ -32,8 +34,19 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
   @doc "Deletes all connections matching `opts`. Returns `{count, nil}`."
   def delete_all_by(opts) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.delete_all()
+  end
+
+  @doc "Soft-deletes all connections matching `opts` by setting deleted_at. Returns `{count, nil}`."
+  def soft_delete_by(opts) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+    opts
+    |> Keyword.put_new(:include_deleted, false)
+    |> Enum.reduce(default_scope(), &shared_reducer/2)
+    |> Repo.update_all(set: [deleted_at: now])
   end
 
   # ---------------------------------------------------------------------------
@@ -45,6 +58,9 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
   # ---------------------------------------------------------------------------
   # Shared reducer — one clause per filter
   # ---------------------------------------------------------------------------
+
+  defp shared_reducer({:include_deleted, true}, q), do: q
+  defp shared_reducer({:include_deleted, false}, q), do: where(q, [connection: c], is_nil(c.deleted_at))
 
   defp shared_reducer({:source_step_id, id}, q),
     do: where(q, [connection: c], c.source_step_id == ^id)

@@ -76,9 +76,10 @@ defmodule Forrozin.Sequences do
     SequenceQuery.get_by(id: id, preload: [sequence_steps: :step])
   end
 
-  @doc "Deletes a sequence (cascade removes sequence_steps via DB constraint)."
+  @doc "Soft-deletes a sequence by setting deleted_at. The sequence is excluded from all default queries."
   def delete_sequence(%Sequence{} = sequence) do
-    Repo.delete(sequence)
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    sequence |> Ecto.Changeset.change(deleted_at: now) |> Repo.update()
   end
 
   @doc "Updates a sequence's attributes."

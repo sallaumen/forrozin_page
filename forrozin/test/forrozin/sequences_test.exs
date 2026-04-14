@@ -150,16 +150,24 @@ defmodule Forrozin.SequencesTest do
   # ---------------------------------------------------------------------------
 
   describe "delete_sequence/1" do
-    test "removes the sequence from the database" do
+    test "soft-deletes the sequence by setting deleted_at" do
       user = insert(:user)
       sequence = insert(:sequence, user: user)
 
-      assert {:ok, _} = Sequences.delete_sequence(sequence)
+      assert {:ok, deleted} = Sequences.delete_sequence(sequence)
+      assert deleted.deleted_at != nil
+    end
+
+    test "excluded from default queries after soft delete" do
+      user = insert(:user)
+      sequence = insert(:sequence, user: user)
+
+      {:ok, _} = Sequences.delete_sequence(sequence)
 
       assert is_nil(Sequences.get_sequence(sequence.id))
     end
 
-    test "cascades deletion of sequence_steps" do
+    test "sequence_steps still exist in DB after soft delete" do
       user = insert(:user)
       step = insert(:step)
       sequence = insert(:sequence, user: user)
@@ -167,10 +175,10 @@ defmodule Forrozin.SequencesTest do
 
       {:ok, _} = Sequences.delete_sequence(sequence)
 
-      # Verify sequence is gone
+      # Sequence no longer visible via default query
       assert is_nil(Sequences.get_sequence(sequence.id))
 
-      # Verify sequence_steps are gone (cascade)
+      # sequence_steps row is NOT removed (soft delete only marks the sequence)
       count =
         Forrozin.Repo.aggregate(
           Ecto.Query.from(ss in Forrozin.Sequences.SequenceStep,
@@ -179,7 +187,7 @@ defmodule Forrozin.SequencesTest do
           :count
         )
 
-      assert count == 0
+      assert count == 1
     end
   end
 

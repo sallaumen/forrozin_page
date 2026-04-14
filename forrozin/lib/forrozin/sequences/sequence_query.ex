@@ -14,6 +14,7 @@ defmodule Forrozin.Sequences.SequenceQuery do
   @doc "Returns the first sequence matching `opts`, or `nil`."
   def get_by(opts) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.one()
   end
@@ -21,12 +22,16 @@ defmodule Forrozin.Sequences.SequenceQuery do
   @doc "Returns all sequences matching `opts`, ordered by inserted_at desc by default."
   def list_by(opts \\ []) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Keyword.put_new(:order_by, desc: :inserted_at)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.all()
   end
 
   defp default_scope, do: from(s in Sequence, as: :sequence)
+
+  defp shared_reducer({:include_deleted, true}, q), do: q
+  defp shared_reducer({:include_deleted, false}, q), do: where(q, [sequence: s], is_nil(s.deleted_at))
 
   defp shared_reducer({:id, id}, q), do: where(q, [sequence: s], s.id == ^id)
   defp shared_reducer({:user_id, id}, q), do: where(q, [sequence: s], s.user_id == ^id)

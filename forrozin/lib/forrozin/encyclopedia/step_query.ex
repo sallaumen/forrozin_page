@@ -18,6 +18,7 @@ defmodule Forrozin.Encyclopedia.StepQuery do
   @doc "Returns the first step matching `opts`, or `nil`."
   def get_by(opts) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.one()
   end
@@ -25,6 +26,7 @@ defmodule Forrozin.Encyclopedia.StepQuery do
   @doc "Returns all steps matching `opts`, ordered by name by default."
   def list_by(opts \\ []) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Keyword.put_new(:order_by, asc: :name)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.all()
@@ -33,6 +35,7 @@ defmodule Forrozin.Encyclopedia.StepQuery do
   @doc "Counts steps matching `opts`."
   def count_by(opts \\ []) do
     opts
+    |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
     |> Repo.aggregate(:count)
   end
@@ -46,6 +49,9 @@ defmodule Forrozin.Encyclopedia.StepQuery do
   # ---------------------------------------------------------------------------
   # Shared reducer — one clause per filter
   # ---------------------------------------------------------------------------
+
+  defp shared_reducer({:include_deleted, true}, q), do: q
+  defp shared_reducer({:include_deleted, false}, q), do: where(q, [step: s], is_nil(s.deleted_at))
 
   defp shared_reducer({:code, code}, q),
     do: where(q, [step: s], s.code == ^code)

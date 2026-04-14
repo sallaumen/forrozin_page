@@ -33,14 +33,18 @@ defmodule Forrozin.Admin do
   end
 
   @doc """
-  Removes a connection by ID.
+  Soft-deletes a connection by ID (sets deleted_at).
 
   Returns `{:ok, connection}` or `{:error, :not_found}`.
   """
   def delete_connection(id) do
     case Repo.get(Connection, id) do
-      nil -> {:error, :not_found}
-      connection -> Repo.delete(connection)
+      nil ->
+        {:error, :not_found}
+
+      connection ->
+        now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+        connection |> Ecto.Changeset.change(deleted_at: now) |> Repo.update()
     end
   end
 
@@ -56,7 +60,10 @@ defmodule Forrozin.Admin do
     step |> Step.changeset(attrs) |> Repo.update()
   end
 
-  def delete_step(%Step{} = step), do: Repo.delete(step)
+  def delete_step(%Step{} = step) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    step |> Ecto.Changeset.change(deleted_at: now) |> Repo.update()
+  end
 
   # ---------------------------------------------------------------------------
   # Sections
