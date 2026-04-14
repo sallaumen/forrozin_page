@@ -155,16 +155,15 @@ defmodule ForrozinWeb.CollectionLiveTest do
       html = render_click(lv, "open_step", %{"code" => "BF"})
       assert html =~ "Base frontal"
       assert html =~ "Mechanical note"
-      assert html =~ "Ver passo completo"
     end
 
     test "close_drawer hides the panel", %{conn: conn} do
       section = insert(:section, title: "Bases", position: 1)
-      insert(:step, section: section, code: "BF", name: "Base frontal")
+      insert(:step, section: section, code: "BF", name: "Base frontal", note: "Test note")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       render_click(lv, "open_step", %{"code" => "BF"})
       html = render_click(lv, "close_drawer", %{})
-      refute html =~ "Ver passo completo"
+      refute html =~ "Test note"
     end
 
     test "shows outgoing connections in drawer", %{conn: conn} do

@@ -157,7 +157,7 @@
   </div>
 
   <%!-- Drawer --%>
-  <div style={"position: fixed; top: 0; right: #{if @drawer_open, do: "0", else: "-400px"}; width: 380px; height: 100vh; background: #fffef9; border-left: 1px solid rgba(60,40,20,0.12); box-shadow: -4px 0 16px rgba(0,0,0,0.06); z-index: 300; transition: right 0.2s ease; overflow-y: auto; padding: 24px; font-family: Georgia, serif;"}>
+  <div style={"position: fixed; top: 110px; right: #{if @drawer_open, do: "0", else: "-400px"}; width: 380px; height: calc(100vh - 110px); background: #fffef9; border-left: 1px solid rgba(60,40,20,0.12); box-shadow: -4px 0 16px rgba(0,0,0,0.06); z-index: 150; transition: right 0.2s ease; overflow-y: auto; padding: 24px; font-family: Georgia, serif;"}>
     <button phx-click="close_drawer" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; color: #9a7a5a; cursor: pointer;">×</button>
 
     <%= if @drawer_type == :step and @drawer_item do %>
@@ -240,7 +240,6 @@
         </form>
       <% end %>
 
-      <a href={~p"/steps/#{@drawer_item.code}"} style="display: block; margin-top: 16px; padding: 10px 16px; text-align: center; background: rgba(60,40,20,0.06); color: #5c3a1a; border-radius: 6px; text-decoration: none; font-size: 12px; border: 1px solid rgba(60,40,20,0.1);">Ver passo completo →</a>
     <% end %>
 
     <%= if @drawer_type == :section and @drawer_item do %>
