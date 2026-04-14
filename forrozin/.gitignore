@@ -37,4 +37,8 @@ npm-debug.log
 
 # Backups locais do banco — nunca subir dados para o git
 /priv/backups/
+/priv/repo/backup_*.sql
+
+# Superpowers plans (generated, not source of truth)
+/docs/superpowers/plans/
 
