@@ -1,0 +1,247 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
+      Forrózin
+    </a>
+    <nav style="display: flex; gap: 24px; align-items: center;">
+      <.link
+        navigate={~p"/collection"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        ← Acervo
+      </.link>
+      <.link
+        navigate={~p"/graph/visual"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        ↗ Mapa visual
+      </.link>
+      <span style="font-size: 11px; color: #7a5c3a; letter-spacing: 1px;">
+        {@current_user.username}
+      </span>
+    </nav>
+  </header>
+
+  <%!-- Conteúdo --%>
+  <div style="max-width: 960px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; box-sizing: border-box;">
+    <%!-- Título + botão de edição (admin) --%>
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 40px; flex-wrap: wrap;">
+      <div>
+        <p style="font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 12px;">
+          Enciclopédia
+        </p>
+        <h1 style="font-size: 36px; font-weight: 700; color: #1a0e05; letter-spacing: -1px; margin: 0 0 12px;">
+          Grafo de Passos
+        </h1>
+        <p style="font-size: 15px; color: #5a4230; line-height: 1.7; max-width: 560px;">
+          Conexões direcionais entre passos — de onde vem e para onde vai cada movimento. {length(
+            @nodes
+          )} nós · {Enum.reduce(@edges_by_source, 0, fn {_, v}, acc -> acc + length(v) end)} arestas
+        </p>
+      </div>
+      <%= if @is_admin do %>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+          <div style="display: flex; gap: 8px;">
+            <button
+              phx-click="create_backup"
+              style="font-family: Georgia, serif; font-size: 12px; padding: 8px 16px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid rgba(60,40,20,0.3); background: transparent; color: #7a5c3a;"
+            >
+              ↓ Backup
+            </button>
+            <button
+              phx-click="toggle_edit_mode"
+              style={"font-family: Georgia, serif; font-size: 12px; padding: 8px 16px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "rgba(60,40,20,0.3)", else: "#d4a054"}; background: #{if @edit_mode, do: "transparent", else: "#d4a054"}; color: #{if @edit_mode, do: "#7a5c3a", else: "#1a0e05"};"}
+            >
+              {if @edit_mode, do: "Fechar edição", else: "Editar conexões"}
+            </button>
+          </div>
+          <%= if @last_backup do %>
+            <span style="font-size: 11px; color: #7a5c3a; letter-spacing: 0.5px;">
+              ✓ {@last_backup}
+            </span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Painel de edição (admin, edit_mode = true) --%>
+    <%= if @is_admin and @edit_mode do %>
+      <div style="background: #fffef9; border: 1px solid rgba(192,116,26,0.3); border-radius: 6px; padding: 24px; margin-bottom: 32px;">
+        <p style="font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 20px;">
+          Nova conexão
+        </p>
+
+        <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+          <%!-- Painel Sources --%>
+          <div style="flex: 1; min-width: 240px;">
+            <p style="font-size: 11px; color: #9a7a5a; letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase;">
+              Origens ({MapSet.size(@sources)} selecionadas)
+            </p>
+            <div style="max-height: 280px; overflow-y: auto; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; background: #faf8f4;">
+              <%= for node <- @nodes do %>
+                <button
+                  phx-click="select_source"
+                  phx-value-step_id={node.id}
+                  style={"width: 100%; text-align: left; padding: 8px 12px; background: #{if MapSet.member?(@sources, node.id), do: "rgba(192,116,26,0.15)", else: "transparent"}; border: none; border-bottom: 1px solid rgba(60,40,20,0.06); cursor: pointer; display: flex; gap: 10px; align-items: center; font-family: Georgia, serif;"}
+                >
+                  <div style="display: flex; flex-direction: column; gap: 1px; min-width: 72px;">
+                    <span style={"font-size: 9px; font-weight: 700; letter-spacing: 0.8px; color: #{if MapSet.member?(@sources, node.id), do: "#c0741a", else: "#9a7a5a"}; text-transform: uppercase;"}>
+                      {if node.category, do: node.category.label, else: "—"}
+                    </span>
+                    <code style={"font-size: 11px; font-weight: 700; color: #{if MapSet.member?(@sources, node.id), do: "#c0741a", else: "#5c3a1a"};"}>
+                      {node.code}
+                    </code>
+                  </div>
+                  <span style="font-size: 12px; color: #5a4230;">{node.name}</span>
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Seta central --%>
+          <div style="display: flex; align-items: center; padding-top: 32px; color: #9a7a5a; font-size: 20px;">
+            →
+          </div>
+
+          <%!-- Painel Targets --%>
+          <div style="flex: 1; min-width: 240px;">
+            <p style="font-size: 11px; color: #9a7a5a; letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase;">
+              Destinos ({MapSet.size(@targets)} selecionados)
+            </p>
+            <div style="max-height: 280px; overflow-y: auto; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; background: #faf8f4;">
+              <%= for node <- @nodes do %>
+                <button
+                  phx-click="select_target"
+                  phx-value-step_id={node.id}
+                  style={"width: 100%; text-align: left; padding: 8px 12px; background: #{if MapSet.member?(@targets, node.id), do: "rgba(192,116,26,0.15)", else: "transparent"}; border: none; border-bottom: 1px solid rgba(60,40,20,0.06); cursor: pointer; display: flex; gap: 10px; align-items: center; font-family: Georgia, serif;"}
+                >
+                  <div style="display: flex; flex-direction: column; gap: 1px; min-width: 72px;">
+                    <span style={"font-size: 9px; font-weight: 700; letter-spacing: 0.8px; color: #{if MapSet.member?(@targets, node.id), do: "#c0741a", else: "#9a7a5a"}; text-transform: uppercase;"}>
+                      {if node.category, do: node.category.label, else: "—"}
+                    </span>
+                    <code style={"font-size: 11px; font-weight: 700; color: #{if MapSet.member?(@targets, node.id), do: "#c0741a", else: "#5c3a1a"};"}>
+                      {node.code}
+                    </code>
+                  </div>
+                  <span style="font-size: 12px; color: #5a4230;">{node.name}</span>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Rótulo opcional + botão conectar --%>
+        <% n_sources = MapSet.size(@sources) %>
+        <% n_targets = MapSet.size(@targets) %>
+        <% pode_conectar = n_sources > 0 and n_targets > 0 %>
+        <form phx-submit="create_connections" phx-change="update_label" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <input
+            type="text"
+            name="label"
+            value={@connection_label}
+            placeholder="Rótulo da conexão (opcional)"
+            style="font-family: Georgia, serif; font-size: 13px; padding: 9px 14px; border-radius: 4px; border: 1px solid rgba(60,40,20,0.25); background: #fdf9f3; color: #1a0e05; width: 260px; outline: none;"
+          />
+          <button
+            type="submit"
+            disabled={not pode_conectar}
+            style={"font-family: Georgia, serif; font-size: 13px; padding: 10px 24px; border-radius: 4px; cursor: #{if pode_conectar, do: "pointer", else: "not-allowed"}; border: none; background: #{if pode_conectar, do: "#d4a054", else: "rgba(60,40,20,0.1)"}; color: #{if pode_conectar, do: "#1a0e05", else: "#9a7a5a"}; font-weight: #{if pode_conectar, do: 700, else: 400};"}
+          >
+            Conectar {n_sources} → {n_targets}
+          </button>
+        </form>
+      </div>
+    <% end %>
+
+    <%!-- Âncora para futura visualização D3/Three.js --%>
+    <div id="graph-canvas" data-graph={@graph_json} style="display: none;"></div>
+
+    <%!-- Lista de adjacência --%>
+    <%= if @nodes == [] do %>
+      <p style="font-size: 15px; color: #9a7a5a; font-style: italic;">
+        Nenhum passo publicado ainda.
+      </p>
+    <% else %>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <%= for node <- @nodes do %>
+          <div style="background: #fffef9; border: 1px solid rgba(60,40,20,0.1); border-radius: 4px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <%!-- Código + categoria do passo --%>
+            <div style="display: flex; flex-direction: column; gap: 1px; min-width: 120px;">
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #9a7a5a; text-transform: uppercase;">
+                {if node.category, do: node.category.label, else: "—"}
+              </span>
+              <.link
+                navigate={~p"/steps/#{node.code}"}
+                style="font-family: monospace; font-size: 13px; font-weight: 700; color: #1a0e05; text-decoration: none; white-space: nowrap;"
+              >
+                {node.code}
+              </.link>
+            </div>
+
+            <span style="font-size: 13px; color: #5a4230; min-width: 160px;">{node.name}</span>
+
+            <%!-- Arestas de saída com botão × para admin --%>
+            <%= if edges = Map.get(@edges_by_source, node.id) do %>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1;">
+                <span style="font-size: 12px; color: #9a7a5a;">→</span>
+                <%= for edge <- edges do %>
+                  <span style="display: inline-flex; flex-direction: column; gap: 1px; background: rgba(192,116,26,0.08); border-radius: 3px; padding: 3px 6px;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <.link
+                        navigate={~p"/steps/#{edge.target_step.code}"}
+                        style="font-family: monospace; font-size: 12px; color: #c0741a; text-decoration: none; white-space: nowrap;"
+                      >
+                        {edge.target_step.code}
+                      </.link>
+                      <%= if @is_admin do %>
+                        <button
+                          phx-click="delete_connection"
+                          phx-value-connection_id={edge.id}
+                          style="background: none; border: none; cursor: pointer; color: #9a7a5a; font-size: 11px; padding: 0 2px; line-height: 1;"
+                          title="Remover conexão"
+                        >
+                          ×
+                        </button>
+                      <% end %>
+                    </span>
+                    <%= if edge.label do %>
+                      <span style="font-size: 10px; color: #7a5c3a; font-style: italic; letter-spacing: 0.3px;">
+                        {edge.label}
+                      </span>
+                    <% end %>
+                    <%= if @is_admin and @edit_mode do %>
+                      <form phx-submit="edit_connection_label" style="display: flex; gap: 4px; margin-top: 2px;">
+                        <input type="hidden" name="connection_id" value={edge.id} />
+                        <input
+                          type="text"
+                          name="label"
+                          value={edge.label || ""}
+                          placeholder="rótulo"
+                          style="font-family: Georgia, serif; font-size: 10px; padding: 2px 6px; border: 1px solid rgba(60,40,20,0.2); border-radius: 3px; background: #fdf9f3; color: #1a0e05; width: 120px; outline: none;"
+                        />
+                        <button
+                          type="submit"
+                          style="font-size: 10px; padding: 2px 6px; border: none; background: rgba(192,116,26,0.2); border-radius: 3px; cursor: pointer; color: #5c3a1a;"
+                        >
+                          ok
+                        </button>
+                      </form>
+                    <% end %>
+                  </span>
+                <% end %>
+              </div>
+            <% else %>
+              <span style="font-size: 12px; color: #bba88a; font-style: italic; flex: 1;">
+                sem saídas mapeadas
+              </span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

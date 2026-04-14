@@ -9,20 +9,20 @@ defmodule ForrozinWeb.UserRegistrationLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, page_title: "Cadastro", form: to_form(%{}, as: :usuario))}
+    {:ok, assign(socket, page_title: "Cadastro", form: to_form(%{}, as: :user))}
   end
 
   @impl true
-  def handle_event("registrar", %{"usuario" => params}, socket) do
-    case Accounts.registrar_usuario(params) do
+  def handle_event("register", %{"user" => params}, socket) do
+    case Accounts.register_user(params) do
       {:ok, _user} ->
         {:noreply,
          socket
          |> put_flash(:info, "Conta criada! Verifique seu email para confirmar o cadastro.")
-         |> redirect(to: ~p"/entrar")}
+         |> redirect(to: ~p"/login")}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset, as: :usuario))}
+        {:noreply, assign(socket, form: to_form(changeset, as: :user))}
     end
   end
 end

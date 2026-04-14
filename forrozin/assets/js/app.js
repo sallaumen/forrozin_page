@@ -115,9 +115,9 @@ function computeSectorPositions(cy) {
 }
 
 // ---------------------------------------------------------------------------
-// Hook: GrafoVisual — layout setorial por categoria + cola para overlap
+// Hook: GraphVisual — layout setorial por categoria + cola para overlap
 // ---------------------------------------------------------------------------
-const GrafoVisual = {
+const GraphVisual = {
   mounted() { this._initGraph() },
   updated() { this._initGraph() },
 
@@ -289,7 +289,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GrafoVisual},
+  hooks: {...colocatedHooks, GraphVisual},
 })
 
 // Show progress bar on live navigation and form submits

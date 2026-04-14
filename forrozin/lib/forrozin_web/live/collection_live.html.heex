@@ -1,0 +1,174 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; border-bottom: 2px solid #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 200;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
+      Forrózin
+    </a>
+    <nav style="display: flex; gap: 24px; align-items: center;">
+      <a
+        href={~p"/graph"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        Grafo
+      </a>
+      <span style="font-size: 11px; color: #7a5c3a; letter-spacing: 1px;">
+        {@current_user.username}
+      </span>
+      <form method="post" action={~p"/logout"} style="margin: 0;">
+        <input type="hidden" name="_method" value="delete" />
+        <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+        <button
+          type="submit"
+          style="font-family: Georgia, serif; font-size: 11px; color: #bba88a; background: none; border: none; cursor: pointer; letter-spacing: 1px;"
+        >
+          sair
+        </button>
+      </form>
+    </nav>
+  </header>
+
+  <%!-- Banner: email não confirmado --%>
+  <%= unless @email_confirmed do %>
+    <div style="background: rgba(192,116,26,0.12); border-bottom: 1px solid rgba(192,116,26,0.3); padding: 10px 24px; font-family: Georgia, serif;">
+      <span style="font-size: 13px; color: #8a4a0a;">
+        Confirme seu email para garantir o acesso à conta. Verifique sua caixa de entrada.
+      </span>
+    </div>
+  <% end %>
+
+  <%!-- Hero --%>
+  <div style="border-bottom: 1px solid rgba(60,40,20,0.12); padding: 48px 24px 36px; background: #f2ede4;">
+    <div style="max-width: 860px; margin: 0 auto;">
+      <h1 style="font-size: 48px; font-weight: 700; color: #1a0e05; letter-spacing: -1.5px; margin: 0 0 16px; line-height: 1.1;">
+        O grupo de estudos.
+      </h1>
+      <p style="font-size: 15px; color: #5a4230; margin-bottom: 10px; line-height: 1.7; max-width: 540px;">
+        Acervo de {total_steps(@sections)} passos de forró catalogados na raça e na cara-de-pau.
+        Nomes inventados, descrições duvidosas e zero garantia de que qualquer coisa aqui esteja certa.
+      </p>
+      <p style="font-size: 13px; color: #9a7a5a; font-style: italic; margin-bottom: 0; line-height: 1.7; max-width: 540px;">
+        Obra eternamente em construção. Achou um erro? Niceee,
+        <a
+          href="mailto:lucas.c.tavano+forro@gmail.com?subject=Erro no Forrózin"
+          style="color: #c0741a;"
+        >
+          manda um email
+        </a>
+        um dia eu vejo, quem sabe &lt;3
+      </p>
+    </div>
+  </div>
+
+  <%!-- Controles (sticky) --%>
+  <div style="position: sticky; top: 47px; z-index: 100; background: rgba(242,237,228,0.97); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(60,40,20,0.12); padding: 14px 24px;">
+    <div style="max-width: 860px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+      <%!-- Busca --%>
+      <form phx-change="search" style="flex: 1; min-width: 200px; position: relative;">
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9a7a5a; font-size: 13px;">
+          ⌕
+        </span>
+        <input
+          name="term"
+          value={@search}
+          placeholder="Buscar por sigla, nome..."
+          autocomplete="off"
+          phx-debounce="250"
+          style="width: 100%; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; padding: 8px 12px 8px 32px; color: #2c1a0e; font-size: 13px; outline: none; font-family: Georgia, serif; box-sizing: border-box;"
+        />
+      </form>
+
+      <%!-- Filtros de categoria --%>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button
+          phx-click="filter"
+          phx-value-category="all"
+          style={"font-size: 10px; padding: 5px 11px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-style: italic; letter-spacing: 0.3px; background: #{if @category_filter == "all", do: "#2c1a0e", else: "rgba(60,40,20,0.06)"}; color: #{if @category_filter == "all", do: "#f7f3ec", else: "#7a5c3a"}; border: 1px solid #{if @category_filter == "all", do: "transparent", else: "rgba(60,40,20,0.15)"}; font-weight: #{if @category_filter == "all", do: 700, else: 400};"}
+        >
+          Todos
+        </button>
+        <%= for cat <- @categories do %>
+          <button
+            phx-click="filter"
+            phx-value-category={cat.name}
+            style={"font-size: 10px; padding: 5px 11px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-style: italic; letter-spacing: 0.3px; background: #{if @category_filter == cat.name, do: cat.color, else: "rgba(60,40,20,0.06)"}; color: #{if @category_filter == cat.name, do: "#f7f3ec", else: "#7a5c3a"}; border: 1px solid #{if @category_filter == cat.name, do: "transparent", else: "rgba(60,40,20,0.15)"}; font-weight: #{if @category_filter == cat.name, do: 700, else: 400};"}
+          >
+            {cat.label}
+          </button>
+        <% end %>
+      </div>
+
+      <%!-- Expandir / recolher --%>
+      <%= if @search == "" do %>
+        <div style="display: flex; gap: 6px; margin-left: auto;">
+          <button
+            phx-click="expand_all"
+            style="font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; background: transparent; border: 1px solid rgba(60,40,20,0.2); color: #7a5c3a; font-family: Georgia, serif;"
+          >
+            + expandir
+          </button>
+          <button
+            phx-click="collapse_all"
+            style="font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; background: transparent; border: 1px solid rgba(60,40,20,0.2); color: #7a5c3a; font-family: Georgia, serif;"
+          >
+            − fechar
+          </button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Conteúdo --%>
+  <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; width: 100%; box-sizing: border-box;">
+    <%= if @search != "" do %>
+      <%= if @search_results == [] do %>
+        <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+          Nenhum resultado para "{@search}"
+        </div>
+      <% else %>
+        <p style="font-size: 12px; color: #9a7a5a; margin-bottom: 16px; font-family: monospace;">
+          {length(@search_results)} resultado(s)
+        </p>
+        <%= for step <- @search_results do %>
+          <.step_item step={step} />
+        <% end %>
+      <% end %>
+    <% else %>
+      <%= if filtered_sections(@sections, @category_filter) == [] do %>
+        <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+          Nenhuma seção encontrada para esta categoria.
+        </div>
+      <% else %>
+        <%= for section <- filtered_sections(@sections, @category_filter) do %>
+          <.section_card section={section} open={Map.get(@open_sections, section.id, false)} />
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%!-- Footer --%>
+  <footer style="border-top: 2px solid rgba(60,40,20,0.1); padding: 32px 24px; text-align: center; background: #ede8df;">
+    <p style="font-size: 13px; color: #7a5c3a; margin-bottom: 6px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
+    <div style="display: flex; justify-content: center; gap: 20px; font-size: 12px;">
+      <a
+        href="mailto:lucas.c.tavano+forro@gmail.com"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        email
+      </a>
+      <span style="color: #bba88a;">·</span>
+      <a
+        href="https://instagram.com/tavanooh"
+        target="_blank"
+        rel="noreferrer"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        @tavanooh
+      </a>
+    </div>
+  </footer>
+</div>

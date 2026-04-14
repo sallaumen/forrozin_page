@@ -1,51 +1,46 @@
 defmodule Forrozin.Admin do
   @moduledoc """
-  Contexto de ação administrativa.
+  Administrative action context.
 
-  Responsável por operações que modificam o estado da enciclopédia —
-  operações com efeitos colaterais restritas a usuários com papel `admin`.
-
-  A autorização é responsabilidade da camada Web (LiveViews/Plugs).
-  Este módulo executa as operações sem verificar permissões diretamente.
+  Responsible for operations that modify the encyclopedia state.
+  Authorization is the responsibility of the Web layer (LiveViews/Plugs).
   """
 
-  alias Forrozin.Enciclopedia.Conexao
+  alias Forrozin.Encyclopedia.Connection
   alias Forrozin.Repo
 
   @doc """
-  Cria uma conexão direcional entre dois passos.
+  Creates a directional connection between two steps.
 
-  Retorna `{:ok, conexao}` ou `{:error, changeset}` em caso de
-  dados inválidos ou violação de constraint de unicidade.
+  Returns `{:ok, connection}` or `{:error, changeset}`.
   """
-  def criar_conexao(attrs) do
-    %Conexao{}
-    |> Conexao.changeset(attrs)
+  def create_connection(attrs) do
+    %Connection{}
+    |> Connection.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Atualiza o rótulo ou descrição de uma conexão existente.
+  Updates the label or description of an existing connection.
 
-  Retorna `{:ok, conexao}` ou `{:error, :nao_encontrado}` se o ID não existir.
+  Returns `{:ok, connection}` or `{:error, :not_found}`.
   """
-  def editar_conexao(id, attrs) do
-    case Repo.get(Conexao, id) do
-      nil -> {:error, :nao_encontrado}
-      conexao -> conexao |> Conexao.changeset(attrs) |> Repo.update()
+  def update_connection(id, attrs) do
+    case Repo.get(Connection, id) do
+      nil -> {:error, :not_found}
+      connection -> connection |> Connection.changeset(attrs) |> Repo.update()
     end
   end
 
   @doc """
-  Remove uma conexão pelo ID.
+  Removes a connection by ID.
 
-  Retorna `{:ok, conexao}` se removida com sucesso,
-  ou `{:error, :nao_encontrado}` se o ID não existir.
+  Returns `{:ok, connection}` or `{:error, :not_found}`.
   """
-  def remover_conexao(id) do
-    case Repo.get(Conexao, id) do
-      nil -> {:error, :nao_encontrado}
-      conexao -> Repo.delete(conexao)
+  def delete_connection(id) do
+    case Repo.get(Connection, id) do
+      nil -> {:error, :not_found}
+      connection -> Repo.delete(connection)
     end
   end
 end

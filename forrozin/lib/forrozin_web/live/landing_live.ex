@@ -3,13 +3,13 @@ defmodule ForrozinWeb.LandingLive do
 
   use ForrozinWeb, :live_view
 
-  alias Forrozin.Enciclopedia
+  alias Forrozin.Encyclopedia
 
   on_mount {ForrozinWeb.UserAuth, :mount_current_user}
 
   @impl true
   def mount(_params, _session, socket) do
-    total = Enciclopedia.contar_passos_publicos()
-    {:ok, assign(socket, page_title: "O grupo de estudos", total_passos: total)}
+    total = Encyclopedia.count_public_steps()
+    {:ok, assign(socket, page_title: "O grupo de estudos", total_steps: total)}
   end
 end

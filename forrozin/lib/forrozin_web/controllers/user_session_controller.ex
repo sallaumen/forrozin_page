@@ -10,15 +10,15 @@ defmodule ForrozinWeb.UserSessionController do
     render(conn, :new, error: nil)
   end
 
-  def create(conn, %{"session" => %{"nome_usuario" => nome, "senha" => senha}}) do
-    case Accounts.autenticar_usuario(nome, senha) do
+  def create(conn, %{"session" => %{"username" => username, "password" => password}}) do
+    case Accounts.authenticate_user(username, password) do
       {:ok, user} ->
         conn
         |> UserAuth.login(user)
-        |> put_flash(:info, "Bem-vindo, #{user.nome_usuario}!")
-        |> redirect(to: ~p"/acervo")
+        |> put_flash(:info, "Bem-vindo, #{user.username}!")
+        |> redirect(to: ~p"/collection")
 
-      {:error, :credenciais_invalidas} ->
+      {:error, :invalid_credentials} ->
         render(conn, :new, error: "Nome de usuário ou senha inválidos.")
     end
   end
@@ -27,6 +27,6 @@ defmodule ForrozinWeb.UserSessionController do
     conn
     |> UserAuth.logout()
     |> put_flash(:info, "Sessão encerrada.")
-    |> redirect(to: ~p"/entrar")
+    |> redirect(to: ~p"/login")
   end
 end

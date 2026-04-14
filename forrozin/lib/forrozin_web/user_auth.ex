@@ -33,7 +33,7 @@ defmodule ForrozinWeb.UserAuth do
 
     user =
       if user_id do
-        Accounts.buscar_usuario_por_id(user_id)
+        Accounts.get_user_by_id(user_id)
       end
 
     assign(conn, :current_user, user)
@@ -46,7 +46,7 @@ defmodule ForrozinWeb.UserAuth do
     else
       conn
       |> put_flash(:error, "Você precisa estar autenticado para acessar esta página.")
-      |> redirect(to: ~p"/entrar")
+      |> redirect(to: ~p"/login")
       |> halt()
     end
   end
@@ -55,7 +55,7 @@ defmodule ForrozinWeb.UserAuth do
   def redirect_if_authenticated(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
-      |> redirect(to: ~p"/acervo")
+      |> redirect(to: ~p"/collection")
       |> halt()
     else
       conn
@@ -86,7 +86,7 @@ defmodule ForrozinWeb.UserAuth do
       socket =
         socket
         |> LiveView.put_flash(:error, "Você precisa estar autenticado para acessar esta página.")
-        |> LiveView.redirect(to: ~p"/entrar")
+        |> LiveView.redirect(to: ~p"/login")
 
       {:halt, socket}
     end
@@ -100,7 +100,7 @@ defmodule ForrozinWeb.UserAuth do
         socket =
           socket
           |> LiveView.put_flash(:error, "Você precisa estar autenticado para acessar esta página.")
-          |> LiveView.redirect(to: ~p"/entrar")
+          |> LiveView.redirect(to: ~p"/login")
 
         {:halt, socket}
 
@@ -108,7 +108,7 @@ defmodule ForrozinWeb.UserAuth do
         {:cont, socket}
 
       true ->
-        {:halt, LiveView.redirect(socket, to: ~p"/grafo/visual")}
+        {:halt, LiveView.redirect(socket, to: ~p"/graph/visual")}
     end
   end
 
@@ -116,7 +116,7 @@ defmodule ForrozinWeb.UserAuth do
     socket = mount_current_user(session, socket)
 
     if socket.assigns.current_user do
-      {:halt, LiveView.redirect(socket, to: ~p"/acervo")}
+      {:halt, LiveView.redirect(socket, to: ~p"/collection")}
     else
       {:cont, socket}
     end
@@ -126,7 +126,7 @@ defmodule ForrozinWeb.UserAuth do
     user =
       case session["user_id"] do
         nil -> nil
-        id -> Accounts.buscar_usuario_por_id(id)
+        id -> Accounts.get_user_by_id(id)
       end
 
     Phoenix.Component.assign(socket, current_user: user)

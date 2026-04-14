@@ -12,118 +12,118 @@ defmodule Forrozin.Admin.BackupTest do
   end
 
   # ---------------------------------------------------------------------------
-  # criar_backup!/1
+  # create_backup!/1
   # ---------------------------------------------------------------------------
 
-  describe "criar_backup!/1" do
-    test "cria arquivo JSON no diretório especificado", %{dir: dir} do
-      caminho = Backup.criar_backup!(dir)
-      assert File.exists?(caminho)
-      assert String.ends_with?(caminho, ".json")
+  describe "create_backup!/1" do
+    test "creates JSON file in the specified directory", %{dir: dir} do
+      path = Backup.create_backup!(dir)
+      assert File.exists?(path)
+      assert String.ends_with?(path, ".json")
     end
 
-    test "o JSON contém todas as tabelas esperadas", %{dir: dir} do
-      caminho = Backup.criar_backup!(dir)
-      dados = caminho |> File.read!() |> Jason.decode!()
+    test "JSON contains all expected tables", %{dir: dir} do
+      path = Backup.create_backup!(dir)
+      data = path |> File.read!() |> Jason.decode!()
 
-      assert dados["versao"] == "1"
-      assert is_binary(dados["criado_em"])
-      tabelas = dados["tabelas"]
-      assert Map.has_key?(tabelas, "categorias")
-      assert Map.has_key?(tabelas, "secoes")
-      assert Map.has_key?(tabelas, "subsecoes")
-      assert Map.has_key?(tabelas, "passos")
-      assert Map.has_key?(tabelas, "conexoes_passos")
-      assert Map.has_key?(tabelas, "conceitos_tecnicos")
-      assert Map.has_key?(tabelas, "conceitos_passos")
+      assert data["version"] == "1"
+      assert is_binary(data["created_at"])
+      tables = data["tables"]
+      assert Map.has_key?(tables, "categories")
+      assert Map.has_key?(tables, "sections")
+      assert Map.has_key?(tables, "subsections")
+      assert Map.has_key?(tables, "steps")
+      assert Map.has_key?(tables, "step_connections")
+      assert Map.has_key?(tables, "technical_concepts")
+      assert Map.has_key?(tables, "concept_steps")
     end
 
-    test "o JSON inclui dados presentes no banco", %{dir: dir} do
-      cat = insert(:categoria, nome: "bases")
-      secao = insert(:secao, categoria: cat)
-      passo_a = insert(:passo, codigo: "BF", secao: secao, categoria: cat)
-      passo_b = insert(:passo, codigo: "SC", secao: secao, categoria: cat)
-      insert(:conexao, passo_origem: passo_a, passo_destino: passo_b, tipo: "saida")
+    test "JSON includes data present in the database", %{dir: dir} do
+      cat = insert(:category, name: "bases")
+      section = insert(:section, category: cat)
+      step_a = insert(:step, code: "BF", section: section, category: cat)
+      step_b = insert(:step, code: "SC", section: section, category: cat)
+      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
 
-      caminho = Backup.criar_backup!(dir)
-      dados = caminho |> File.read!() |> Jason.decode!()
+      path = Backup.create_backup!(dir)
+      data = path |> File.read!() |> Jason.decode!()
 
-      codigos_passos = Enum.map(dados["tabelas"]["passos"], & &1["codigo"])
-      assert "BF" in codigos_passos
-      assert "SC" in codigos_passos
-      assert length(dados["tabelas"]["conexoes_passos"]) == 1
+      step_codes = Enum.map(data["tables"]["steps"], & &1["code"])
+      assert "BF" in step_codes
+      assert "SC" in step_codes
+      assert length(data["tables"]["step_connections"]) == 1
     end
 
-    test "remove arquivos antigos mantendo apenas os últimos 48", %{dir: dir} do
-      # Cria 50 arquivos fictícios de backup mais antigos
+    test "removes old files keeping only the last 48", %{dir: dir} do
+      # Creates 50 fake older backup files
       for i <- 1..50 do
-        nome = "backup_20260101_#{String.pad_leading(to_string(i), 6, "0")}.json"
-        File.write!(Path.join(dir, nome), "{}")
+        name = "backup_20260101_#{String.pad_leading(to_string(i), 6, "0")}.json"
+        File.write!(Path.join(dir, name), "{}")
       end
 
-      Backup.criar_backup!(dir)
+      Backup.create_backup!(dir)
 
-      arquivos = File.ls!(dir) |> Enum.filter(&String.ends_with?(&1, ".json"))
-      assert length(arquivos) == 48
+      files = File.ls!(dir) |> Enum.filter(&String.ends_with?(&1, ".json"))
+      assert length(files) == 48
     end
   end
 
   # ---------------------------------------------------------------------------
-  # restaurar_backup!/1
+  # restore_backup!/1
   # ---------------------------------------------------------------------------
 
-  describe "restaurar_backup!/1" do
-    test "insere dados num banco vazio", %{dir: dir} do
-      # Cria dados, gera backup, depois verifica que restaurar é idempotente
-      cat = insert(:categoria, nome: "bases")
-      secao = insert(:secao, categoria: cat)
-      passo_a = insert(:passo, codigo: "BF", secao: secao, categoria: cat)
-      passo_b = insert(:passo, codigo: "SC", secao: secao, categoria: cat)
-      insert(:conexao, passo_origem: passo_a, passo_destino: passo_b, tipo: "saida")
+  describe "restore_backup!/1" do
+    test "inserts data into an empty database", %{dir: dir} do
+      # Creates data, generates backup, then verifies restoring is idempotent
+      cat = insert(:category, name: "bases")
+      section = insert(:section, category: cat)
+      step_a = insert(:step, code: "BF", section: section, category: cat)
+      step_b = insert(:step, code: "SC", section: section, category: cat)
+      insert(:connection, source_step: step_a, target_step: step_b, type: "exit")
 
-      caminho = Backup.criar_backup!(dir)
+      path = Backup.create_backup!(dir)
 
-      # Restaurar com dados já presentes (on_conflict: :nothing)
-      assert :ok = Backup.restaurar_backup!(caminho)
+      # Restore with data already present (on_conflict: :nothing)
+      assert :ok = Backup.restore_backup!(path)
 
-      # Os dados devem continuar lá
-      assert Repo.aggregate(Forrozin.Enciclopedia.Categoria, :count) >= 1
-      assert Repo.aggregate(Forrozin.Enciclopedia.Passo, :count) >= 2
-      assert Repo.aggregate(Forrozin.Enciclopedia.Conexao, :count) >= 1
+      # Data must still be there
+      assert Repo.aggregate(Forrozin.Encyclopedia.Category, :count) >= 1
+      assert Repo.aggregate(Forrozin.Encyclopedia.Step, :count) >= 2
+      assert Repo.aggregate(Forrozin.Encyclopedia.Connection, :count) >= 1
     end
 
-    test "é idempotente — restaurar duas vezes não duplica dados", %{dir: dir} do
-      cat = insert(:categoria, nome: "sacadas")
-      secao = insert(:secao, categoria: cat)
-      insert(:passo, codigo: "SC", secao: secao, categoria: cat)
+    test "idempotent — second restore does not duplicate data", %{dir: dir} do
+      cat = insert(:category, name: "sacadas")
+      section = insert(:section, category: cat)
+      insert(:step, code: "SC", section: section, category: cat)
 
-      caminho = Backup.criar_backup!(dir)
-      contagem_antes = Repo.aggregate(Forrozin.Enciclopedia.Passo, :count)
+      path = Backup.create_backup!(dir)
+      count_before = Repo.aggregate(Forrozin.Encyclopedia.Step, :count)
 
-      Backup.restaurar_backup!(caminho)
-      contagem_depois = Repo.aggregate(Forrozin.Enciclopedia.Passo, :count)
+      Backup.restore_backup!(path)
+      count_after = Repo.aggregate(Forrozin.Encyclopedia.Step, :count)
 
-      assert contagem_antes == contagem_depois
+      assert count_before == count_after
     end
   end
 
   # ---------------------------------------------------------------------------
-  # listar_backups/1
+  # list_backups/1
   # ---------------------------------------------------------------------------
 
-  describe "listar_backups/1" do
-    test "retorna lista vazia quando não há backups", %{dir: dir} do
-      assert Backup.listar_backups(dir) == []
+  describe "list_backups/1" do
+    test "returns empty list when there are no backups", %{dir: dir} do
+      assert Backup.list_backups(dir) == []
     end
 
-    test "retorna arquivos ordenados do mais recente para o mais antigo", %{dir: dir} do
+    test "returns files sorted from most recent to oldest", %{dir: dir} do
       File.write!(Path.join(dir, "backup_20260101_120000.json"), "{}")
       File.write!(Path.join(dir, "backup_20260101_130000.json"), "{}")
       File.write!(Path.join(dir, "backup_20260101_110000.json"), "{}")
 
-      nomes = Backup.listar_backups(dir) |> Enum.map(&Path.basename/1)
+      names = Backup.list_backups(dir) |> Enum.map(&Path.basename/1)
 
-      assert nomes == [
+      assert names == [
                "backup_20260101_130000.json",
                "backup_20260101_120000.json",
                "backup_20260101_110000.json"

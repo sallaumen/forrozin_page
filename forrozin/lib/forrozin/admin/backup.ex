@@ -1,94 +1,94 @@
 defmodule Forrozin.Admin.Backup do
   @moduledoc """
-  Backup e restauração do banco de dados em formato JSON.
+  Database backup and restore in JSON format.
 
-  Gera snapshots das tabelas da enciclopédia em `priv/backups/`.
-  Cada arquivo é nomeado `backup_YYYYMMDD_HHMMSS.json`.
-  Mantém os últimos 48 arquivos (≈ 2 dias de backups por hora).
+  Generates snapshots of the encyclopedia tables in `priv/backups/`.
+  Each file is named `backup_YYYYMMDD_HHMMSS.json`.
+  Keeps the last 48 files (≈ 2 days of hourly backups).
 
-  ## Uso
+  ## Usage
 
-      # Gerar backup no diretório padrão
-      Forrozin.Admin.Backup.criar_backup!()
+      # Generate backup in the default directory
+      Forrozin.Admin.Backup.create_backup!()
 
-      # Listar backups disponíveis
-      Forrozin.Admin.Backup.listar_backups()
+      # List available backups
+      Forrozin.Admin.Backup.list_backups()
 
-      # Restaurar a partir de um arquivo
-      Forrozin.Admin.Backup.restaurar_backup!("priv/backups/backup_20260411_130000.json")
+      # Restore from a file
+      Forrozin.Admin.Backup.restore_backup!("priv/backups/backup_20260411_130000.json")
   """
 
-  alias Forrozin.Enciclopedia.{Categoria, ConceitoTecnico, Conexao, Passo, Secao, Subsecao}
+  alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section, Subsection}
   alias Forrozin.Repo
 
   @max_backups 48
 
-  @schemas_ordenados [
-    {"categorias", Categoria},
-    {"secoes", Secao},
-    {"subsecoes", Subsecao},
-    {"passos", Passo},
-    {"conceitos_tecnicos", ConceitoTecnico},
-    {"conexoes_passos", Conexao}
+  @ordered_schemas [
+    {"categories", Category},
+    {"sections", Section},
+    {"subsections", Subsection},
+    {"steps", Step},
+    {"technical_concepts", TechnicalConcept},
+    {"step_connections", Connection}
   ]
 
   # ---------------------------------------------------------------------------
-  # Público
+  # Public
   # ---------------------------------------------------------------------------
 
   @doc """
-  Cria um backup JSON no diretório especificado.
+  Creates a JSON backup in the specified directory.
 
-  Retorna o caminho do arquivo criado. Remove arquivos antigos mantendo
-  apenas os últimos `#{@max_backups}`.
+  Returns the path of the created file. Removes old files keeping
+  only the last `#{@max_backups}`.
   """
-  def criar_backup!(dir \\ default_dir()) do
+  def create_backup!(dir \\ default_dir()) do
     File.mkdir_p!(dir)
-    caminho = Path.join(dir, nome_arquivo())
+    path = Path.join(dir, filename())
 
-    dados = %{
-      "versao" => "1",
-      "criado_em" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "tabelas" =>
-        Map.new(@schemas_ordenados, fn {nome, schema} ->
-          {nome, dump_schema(schema)}
+    data = %{
+      "version" => "1",
+      "created_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "tables" =>
+        Map.new(@ordered_schemas, fn {name, schema} ->
+          {name, dump_schema(schema)}
         end)
-        |> Map.put("conceitos_passos", dump_join_table())
+        |> Map.put("concept_steps", dump_join_table())
     }
 
-    File.write!(caminho, Jason.encode!(dados, pretty: true))
-    limpar_antigos!(dir)
-    caminho
+    File.write!(path, Jason.encode!(data, pretty: true))
+    cleanup_old!(dir)
+    path
   end
 
   @doc """
-  Restaura dados a partir de um arquivo de backup.
+  Restores data from a backup file.
 
-  Usa `on_conflict: :nothing` — idempotente, não sobrescreve dados existentes.
-  Retorna `:ok`.
+  Uses `on_conflict: :nothing` — idempotent, does not overwrite existing data.
+  Returns `:ok`.
   """
-  def restaurar_backup!(path) do
-    dados = path |> File.read!() |> Jason.decode!()
-    tabelas = dados["tabelas"]
+  def restore_backup!(path) do
+    data = path |> File.read!() |> Jason.decode!()
+    tables = data["tables"]
 
     Repo.transaction(fn ->
-      for {nome, schema} <- @schemas_ordenados do
-        restaurar_schema(schema, tabelas[nome] || [])
+      for {name, schema} <- @ordered_schemas do
+        restore_schema(schema, tables[name] || [])
       end
 
-      restaurar_join_table(tabelas["conceitos_passos"] || [])
+      restore_join_table(tables["concept_steps"] || [])
     end)
 
     :ok
   end
 
   @doc """
-  Lista os arquivos de backup disponíveis no diretório, do mais recente ao mais antigo.
+  Lists available backup files in the directory, from most recent to oldest.
   """
-  def listar_backups(dir \\ default_dir()) do
+  def list_backups(dir \\ default_dir()) do
     case File.ls(dir) do
-      {:ok, arquivos} ->
-        arquivos
+      {:ok, files} ->
+        files
         |> Enum.filter(&String.ends_with?(&1, ".json"))
         |> Enum.sort(:desc)
         |> Enum.map(&Path.join(dir, &1))
@@ -99,88 +99,88 @@ defmodule Forrozin.Admin.Backup do
   end
 
   # ---------------------------------------------------------------------------
-  # Privado — dump
+  # Private — dump
   # ---------------------------------------------------------------------------
 
   defp dump_schema(schema) do
-    campos = schema.__schema__(:fields)
+    fields = schema.__schema__(:fields)
 
     Repo.all(schema)
-    |> Enum.map(fn registro ->
-      Map.new(campos, fn campo ->
-        {Atom.to_string(campo), serializar_valor(Map.get(registro, campo))}
+    |> Enum.map(fn record ->
+      Map.new(fields, fn field ->
+        {Atom.to_string(field), serialize_value(Map.get(record, field))}
       end)
     end)
   end
 
   defp dump_join_table do
     %{rows: rows, columns: cols} =
-      Repo.query!("SELECT conceito_id::text, passo_id::text FROM conceitos_passos")
+      Repo.query!("SELECT concept_id::text, step_id::text FROM concept_steps")
 
     Enum.map(rows, fn row -> Map.new(Enum.zip(cols, row)) end)
   end
 
-  defp serializar_valor(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
-  defp serializar_valor(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
-  defp serializar_valor(valor), do: valor
+  defp serialize_value(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
+  defp serialize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
+  defp serialize_value(value), do: value
 
   # ---------------------------------------------------------------------------
-  # Privado — restore
+  # Private — restore
   # ---------------------------------------------------------------------------
 
-  defp restaurar_schema(schema, registros) do
-    tipos =
-      Map.new(schema.__schema__(:fields), fn campo ->
-        {Atom.to_string(campo), schema.__schema__(:type, campo)}
+  defp restore_schema(schema, records) do
+    types =
+      Map.new(schema.__schema__(:fields), fn field ->
+        {Atom.to_string(field), schema.__schema__(:type, field)}
       end)
 
     rows =
-      Enum.map(registros, fn registro ->
-        Map.new(registro, fn {k, v} ->
-          {String.to_existing_atom(k), deserializar_valor(v, tipos[k])}
+      Enum.map(records, fn record ->
+        Map.new(record, fn {k, v} ->
+          {String.to_existing_atom(k), deserialize_value(v, types[k])}
         end)
       end)
 
     Repo.insert_all(schema, rows, on_conflict: :nothing)
   end
 
-  defp restaurar_join_table(registros) do
+  defp restore_join_table(records) do
     rows =
-      Enum.map(registros, fn %{"conceito_id" => c, "passo_id" => p} ->
-        %{conceito_id: c, passo_id: p}
+      Enum.map(records, fn %{"concept_id" => c, "step_id" => p} ->
+        %{concept_id: c, step_id: p}
       end)
 
     unless rows == [] do
-      Repo.insert_all("conceitos_passos", rows, on_conflict: :nothing)
+      Repo.insert_all("concept_steps", rows, on_conflict: :nothing)
     end
   end
 
-  defp deserializar_valor(v, :naive_datetime) when is_binary(v) do
+  defp deserialize_value(v, :naive_datetime) when is_binary(v) do
     {:ok, dt} = NaiveDateTime.from_iso8601(v)
     dt
   end
 
-  defp deserializar_valor(v, _tipo), do: v
+  defp deserialize_value(v, _type), do: v
 
   # ---------------------------------------------------------------------------
-  # Privado — utilitários
+  # Private — utilities
   # ---------------------------------------------------------------------------
 
-  defp nome_arquivo do
+  defp filename do
     now = NaiveDateTime.utc_now()
     ts = Calendar.strftime(now, "%Y%m%d_%H%M%S")
     "backup_#{ts}.json"
   end
 
-  defp limpar_antigos!(dir) do
-    arquivos =
+  defp cleanup_old!(dir) do
+    files =
       File.ls!(dir)
       |> Enum.filter(&String.ends_with?(&1, ".json"))
       |> Enum.sort(:desc)
 
-    arquivos
+    files
     |> Enum.drop(@max_backups)
-    |> Enum.each(fn nome -> File.rm!(Path.join(dir, nome)) end)
+    |> Enum.each(fn name -> File.rm!(Path.join(dir, name)) end)
   end
 
   defp default_dir do

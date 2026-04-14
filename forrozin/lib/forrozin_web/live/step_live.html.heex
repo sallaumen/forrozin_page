@@ -1,0 +1,187 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
+      Forrózin
+    </a>
+    <nav style="display: flex; gap: 24px; align-items: center;">
+      <.link
+        navigate={~p"/collection"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        ← Acervo
+      </.link>
+      <.link
+        navigate={~p"/graph"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        Grafo
+      </.link>
+      <span style="font-size: 11px; color: #7a5c3a; letter-spacing: 1px;">
+        {@current_user.username}
+      </span>
+    </nav>
+  </header>
+
+  <%!-- Conteúdo --%>
+  <div style="max-width: 760px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; box-sizing: border-box;">
+    <%!-- Breadcrumb --%>
+    <p style="font-size: 12px; color: #9a7a5a; margin-bottom: 24px; font-family: monospace; letter-spacing: 0.5px;">
+      <.link navigate={~p"/collection"} style="color: #9a7a5a; text-decoration: none;">acervo</.link>
+      <span style="margin: 0 6px;">›</span>
+      {@step.code}
+    </p>
+
+    <%!-- Cabeçalho do passo --%>
+    <div style="margin-bottom: 40px;">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+        <code style="font-family: 'Courier New', monospace; font-size: 14px; font-weight: 700; color: #{category_color(@step)}; background: #{category_color(@step)}15; padding: 4px 10px; border-radius: 3px; border: 1px solid #{category_color(@step)}35; letter-spacing: 1px;">
+          {@step.code}
+        </code>
+        <span style={"font-size: 12px; color: #{category_color(@step)}; background: #{category_color(@step)}15; padding: 3px 12px; border-radius: 10px; font-style: italic; border: 1px solid #{category_color(@step)}25;"}>
+          {category_label(@step)}
+        </span>
+        <%= if @step.wip do %>
+          <span style="font-size: 10px; color: #9a7a5a; background: rgba(60,40,20,0.08); padding: 3px 10px; border-radius: 10px; border: 1px solid rgba(60,40,20,0.15); letter-spacing: 1px; text-transform: uppercase;">
+            wip
+          </span>
+        <% end %>
+      </div>
+      <h1 style="font-size: 40px; font-weight: 700; color: #1a0e05; letter-spacing: -1px; margin: 0; line-height: 1.1;">
+        {@step.name}
+      </h1>
+    </div>
+
+    <%!-- Layout principal: imagem + nota --%>
+    <div style="display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 48px;">
+      <%!-- Imagem (se existir) --%>
+      <%= if @step.image_path do %>
+        <div style="flex-shrink: 0;">
+          <img
+            src={"/#{@step.image_path}"}
+            alt={@step.code}
+            style="width: 220px; height: 220px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(60,40,20,0.15); filter: sepia(15%);"
+          />
+        </div>
+      <% end %>
+
+      <%!-- Nota técnica --%>
+      <div style="flex: 1; min-width: 240px;">
+        <%= if @step.note do %>
+          <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 12px;">
+            Descrição técnica
+          </p>
+          <p style="font-size: 16px; line-height: 1.9; color: #3a2410;">
+            {@step.note}
+          </p>
+        <% else %>
+          <p style="font-size: 15px; color: #9a7a5a; font-style: italic;">
+            Sem descrição técnica ainda.
+          </p>
+        <% end %>
+      </div>
+    </div>
+
+    <%!-- Conceitos técnicos relacionados --%>
+    <%= if @step.technical_concepts != [] do %>
+      <div style="margin-bottom: 48px; padding: 24px; background: rgba(212,160,84,0.08); border: 1px solid rgba(212,160,84,0.25); border-left: 3px solid #d4a054; border-radius: 0 6px 6px 0;">
+        <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px;">
+          Conceitos relacionados
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <%= for concept <- @step.technical_concepts do %>
+            <div>
+              <p style="font-size: 14px; font-weight: 700; color: #2c1a0e; margin-bottom: 4px;">
+                {concept.title}
+              </p>
+              <p style="font-size: 13px; color: #5a4230; line-height: 1.7; margin: 0;">
+                {concept.description}
+              </p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Conexões --%>
+    <%= if @step.connections_as_source != [] or @step.connections_as_target != [] do %>
+      <div style="margin-bottom: 48px;">
+        <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 20px;">
+          Conexões
+        </p>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+          <%!-- Entradas: passos de onde este passo pode ser alcançado --%>
+          <%= if @step.connections_as_target != [] do %>
+            <div style="flex: 1; min-width: 200px;">
+              <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">
+                Vem de
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <%= for cx <- @step.connections_as_target do %>
+                  <.link
+                    navigate={~p"/steps/#{cx.source_step.code}"}
+                    style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none;"
+                  >
+                    <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">
+                      {cx.source_step.code}
+                    </code>
+                    <span style="font-size: 13px; color: #3a2410;">{cx.source_step.name}</span>
+                  </.link>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- Saídas: passos para onde este passo pode ir --%>
+          <%= if @step.connections_as_source != [] do %>
+            <div style="flex: 1; min-width: 200px;">
+              <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">
+                Vai para
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <%= for cx <- @step.connections_as_source do %>
+                  <.link
+                    navigate={~p"/steps/#{cx.target_step.code}"}
+                    style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none;"
+                  >
+                    <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">
+                      {cx.target_step.code}
+                    </code>
+                    <span style="font-size: 13px; color: #3a2410;">{cx.target_step.name}</span>
+                  </.link>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%!-- Footer --%>
+  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
+    <p style="font-size: 12px; color: #7a5c3a; margin-bottom: 4px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
+    <div style="display: flex; justify-content: center; gap: 20px; font-size: 12px;">
+      <a
+        href="mailto:lucas.c.tavano+forro@gmail.com"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        email
+      </a>
+      <span style="color: #bba88a;">·</span>
+      <a
+        href="https://instagram.com/tavanooh"
+        target="_blank"
+        rel="noreferrer"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        @tavanooh
+      </a>
+    </div>
+  </footer>
+</div>

@@ -3,46 +3,46 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
 
   import Phoenix.LiveViewTest
 
-  describe "página de cadastro" do
-    test "renderiza formulário", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, ~p"/cadastro")
+  describe "signup page" do
+    test "renders form", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/signup")
       assert html =~ "Criar conta"
       assert html =~ "Usuário"
       assert html =~ "Senha"
     end
 
-    test "redireciona para /acervo se já autenticado", %{conn: conn} do
+    test "redirects to /collection when already authenticated", %{conn: conn} do
       user = insert(:user)
       conn = conn |> log_in_user(user)
 
-      assert {:error, {:redirect, %{to: "/acervo"}}} = live(conn, ~p"/cadastro")
+      assert {:error, {:redirect, %{to: "/collection"}}} = live(conn, ~p"/signup")
     end
   end
 
-  describe "cadastro de usuário" do
-    test "cria conta e redireciona para /entrar", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/cadastro")
+  describe "user registration" do
+    test "creates account and redirects to /login", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/signup")
 
       result =
         lv
         |> form("form",
-          usuario: %{
-            nome_usuario: "novousuario",
+          user: %{
+            username: "novousuario",
             email: "novo@example.com",
-            senha: "senhasegura123"
+            password: "senhasegura123"
           }
         )
         |> render_submit()
 
-      assert {:error, {:redirect, %{to: "/entrar"}}} = result
+      assert {:error, {:redirect, %{to: "/login"}}} = result
     end
 
-    test "exibe erros com dados inválidos", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/cadastro")
+    test "displays errors with invalid data", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/signup")
 
       html =
         lv
-        |> form("form", usuario: %{nome_usuario: "ab", email: "invalido", senha: "curta"})
+        |> form("form", user: %{username: "ab", email: "invalido", password: "curta"})
         |> render_submit()
 
       assert html =~ "should be at least"

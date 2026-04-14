@@ -1,36 +1,29 @@
 defmodule Forrozin.Accounts do
   @moduledoc """
-  Contexto de ação responsável por usuários e autenticação.
-
-  Gerencia registro, confirmação de email, login e consulta de usuários.
-  A promoção de papel (user → admin) é feita diretamente no banco.
+  Action context responsible for users and authentication.
   """
 
   alias Forrozin.Accounts.User
   alias Forrozin.Repo
-  alias Forrozin.Workers.EnviarEmailConfirmacao
-
-  # ---------------------------------------------------------------------------
-  # Registro
-  # ---------------------------------------------------------------------------
+  alias Forrozin.Workers.SendConfirmationEmail
 
   @doc """
-  Registra um novo usuário e enfileira o email de confirmação.
+  Registers a new user and enqueues the confirmation email.
 
-  Retorna `{:ok, user}` ou `{:error, changeset}`.
+  Returns `{:ok, user}` or `{:error, changeset}`.
   """
-  def registrar_usuario(attrs) do
-    token = gerar_token()
+  def register_user(attrs) do
+    token = generate_token()
 
     changeset =
       %User{}
-      |> User.changeset_registro(attrs)
+      |> User.registration_changeset(attrs)
       |> Ecto.Changeset.put_change(:confirmation_token, token)
 
     case Repo.insert(changeset) do
       {:ok, user} ->
         %{user_id: user.id}
-        |> EnviarEmailConfirmacao.new()
+        |> SendConfirmationEmail.new()
         |> Oban.insert()
 
         {:ok, user}
@@ -40,79 +33,59 @@ defmodule Forrozin.Accounts do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Confirmação de email
-  # ---------------------------------------------------------------------------
-
   @doc """
-  Confirma o email de um usuário pelo token.
+  Confirms a user's email by token.
 
-  Retorna `{:ok, user}` ou `{:error, :token_invalido}`.
+  Returns `{:ok, user}` or `{:error, :invalid_token}`.
   """
-  def confirmar_email(token) do
+  def confirm_email(token) do
     case Repo.get_by(User, confirmation_token: token) do
-      nil ->
-        {:error, :token_invalido}
-
-      user ->
-        user
-        |> User.changeset_confirmacao()
-        |> Repo.update()
+      nil -> {:error, :invalid_token}
+      user -> user |> User.confirmation_changeset() |> Repo.update()
     end
   end
 
-  @doc "Retorna `true` se o usuário confirmou o email."
-  def email_confirmado?(%User{confirmed_at: confirmed_at}), do: confirmed_at != nil
-  def email_confirmado?(_), do: false
-
-  # ---------------------------------------------------------------------------
-  # Autenticação
-  # ---------------------------------------------------------------------------
+  @doc "Returns `true` if the user has confirmed their email."
+  def email_confirmed?(%User{confirmed_at: confirmed_at}), do: confirmed_at != nil
+  def email_confirmed?(_), do: false
 
   @doc """
-  Autentica um usuário pelo nome de usuário e senha.
+  Authenticates a user by username and password.
 
-  Retorna `{:ok, user}` se as credenciais forem válidas,
-  `{:error, :credenciais_invalidas}` caso contrário.
+  Returns `{:ok, user}` if credentials are valid,
+  `{:error, :invalid_credentials}` otherwise.
 
-  Sempre executa a verificação de senha para evitar timing attacks.
+  Always runs password verification to prevent timing attacks.
   """
-  def autenticar_usuario(nome_usuario, senha) do
-    user = Repo.get_by(User, nome_usuario: nome_usuario)
-    verificar_senha(user, senha)
+  def authenticate_user(username, password) do
+    user = Repo.get_by(User, username: username)
+    verify_password(user, password)
   end
 
-  defp verificar_senha(nil, _senha) do
+  defp verify_password(nil, _password) do
     Argon2.no_user_verify()
-    {:error, :credenciais_invalidas}
+    {:error, :invalid_credentials}
   end
 
-  defp verificar_senha(user, senha) do
-    if Argon2.verify_pass(senha, user.senha_hash) do
+  defp verify_password(user, password) do
+    if Argon2.verify_pass(password, user.password_hash) do
       {:ok, user}
     else
-      {:error, :credenciais_invalidas}
+      {:error, :invalid_credentials}
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Consultas
-  # ---------------------------------------------------------------------------
-
-  @doc "Busca um usuário pelo id. Retorna `nil` se não encontrado."
-  def buscar_usuario_por_id(id) do
+  @doc "Finds a user by id. Returns `nil` if not found."
+  def get_user_by_id(id) do
     Repo.get(User, id)
   end
 
-  @doc "Verifica se o usuário tem papel de admin."
-  def admin?(%User{papel: "admin"}), do: true
+  @doc "Checks if the user has the admin role."
+  def admin?(%User{role: "admin"}), do: true
   def admin?(_), do: false
 
-  # ---------------------------------------------------------------------------
-  # Privado
-  # ---------------------------------------------------------------------------
-
-  defp gerar_token do
-    :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+  defp generate_token do
+    random_bytes = :crypto.strong_rand_bytes(32)
+    Base.url_encode64(random_bytes, padding: false)
   end
 end
