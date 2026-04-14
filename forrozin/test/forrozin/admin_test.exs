@@ -119,4 +119,51 @@ defmodule Forrozin.AdminTest do
       assert {:error, :not_found} = Admin.delete_connection(Ecto.UUID.generate())
     end
   end
+
+  describe "update_step/2" do
+    test "updates step name" do
+      step = insert(:step, code: "BF", name: "Base frontal")
+      assert {:ok, updated} = Admin.update_step(step, %{name: "Base frontal v2"})
+      assert updated.name == "Base frontal v2"
+    end
+  end
+
+  describe "create_step/1" do
+    test "creates step with valid data" do
+      cat = insert(:category)
+      section = insert(:section, category: cat)
+      assert {:ok, step} = Admin.create_step(%{code: "NEW", name: "Novo", section_id: section.id, category_id: cat.id})
+      assert step.code == "NEW"
+    end
+  end
+
+  describe "update_section/2" do
+    test "updates section title" do
+      section = insert(:section, title: "Bases")
+      assert {:ok, updated} = Admin.update_section(section, %{title: "Bases v2"})
+      assert updated.title == "Bases v2"
+    end
+  end
+
+  describe "create_section/1" do
+    test "creates section with valid data" do
+      assert {:ok, section} = Admin.create_section(%{title: "Nova", position: 99})
+      assert section.title == "Nova"
+    end
+  end
+
+  describe "create_category/1" do
+    test "creates category with valid data" do
+      assert {:ok, cat} = Admin.create_category(%{name: "nova", label: "Nova", color: "#ff0000"})
+      assert cat.name == "nova"
+    end
+  end
+
+  describe "update_category/2" do
+    test "updates category label" do
+      cat = insert(:category, name: "bases", label: "Bases")
+      assert {:ok, updated} = Admin.update_category(cat, %{label: "Bases v2"})
+      assert updated.label == "Bases v2"
+    end
+  end
 end

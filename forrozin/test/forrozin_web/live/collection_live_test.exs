@@ -145,4 +145,116 @@ defmodule ForrozinWeb.CollectionLiveTest do
       refute html =~ "Base frontal"
     end
   end
+
+  describe "drawer — step details" do
+    test "opens drawer with step details on click", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      insert(:step, section: section, code: "BF", name: "Base frontal", note: "Mechanical note")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      render_click(lv, "expand_all", %{})
+      html = render_click(lv, "open_step", %{"code" => "BF"})
+      assert html =~ "Base frontal"
+      assert html =~ "Mechanical note"
+      assert html =~ "Ver passo completo"
+    end
+
+    test "close_drawer hides the panel", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      insert(:step, section: section, code: "BF", name: "Base frontal")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      render_click(lv, "open_step", %{"code" => "BF"})
+      html = render_click(lv, "close_drawer", %{})
+      refute html =~ "Ver passo completo"
+    end
+
+    test "shows outgoing connections in drawer", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      step_a = insert(:step, section: section, code: "BF", name: "Base frontal")
+      step_b = insert(:step, section: section, code: "SC", name: "Sacada simples")
+      insert(:connection, source_step: step_a, target_step: step_b)
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      html = render_click(lv, "open_step", %{"code" => "BF"})
+      assert html =~ "1 saídas"
+      assert html =~ "SC"
+    end
+
+    test "regular user does not see edit button", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/collection")
+      refute html =~ "Editar"
+    end
+  end
+
+  describe "drawer — admin editing" do
+    defp admin_conn(conn) do
+      admin = insert(:admin)
+      log_in_user(conn, admin)
+    end
+
+    test "admin sees edit button", %{conn: conn} do
+      {:ok, _lv, html} = live(admin_conn(conn), ~p"/collection")
+      assert html =~ "Editar"
+    end
+
+    test "admin updates step name via drawer", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      insert(:step, section: section, code: "BF", name: "Base frontal")
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
+      render_click(lv, "toggle_edit_mode", %{})
+      render_click(lv, "open_step", %{"code" => "BF"})
+      html = render_submit(lv, "update_step", %{"step" => %{"name" => "Base frontal v2", "code" => "BF"}})
+      assert html =~ "Base frontal v2"
+    end
+
+    test "admin updates section title via drawer", %{conn: conn} do
+      section = insert(:section, title: "Bases Antigas", position: 1)
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
+      render_click(lv, "toggle_edit_mode", %{})
+      render_click(lv, "open_section", %{"id" => section.id})
+      html = render_submit(lv, "update_section", %{"section" => %{"title" => "Bases Novas", "position" => "1"}})
+      assert html =~ "Bases Novas"
+    end
+
+    test "admin creates connection from drawer", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      insert(:step, section: section, code: "BF", name: "Base frontal")
+      insert(:step, section: section, code: "SC", name: "Sacada simples")
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
+      render_click(lv, "toggle_edit_mode", %{})
+      render_click(lv, "open_step", %{"code" => "BF"})
+      render_submit(lv, "create_step_connection", %{"target_code" => "SC"})
+      html = render_click(lv, "open_step", %{"code" => "BF"})
+      assert html =~ "1 saídas"
+    end
+
+    test "admin deletes connection from drawer", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      step_a = insert(:step, section: section, code: "BF", name: "Base frontal")
+      step_b = insert(:step, section: section, code: "SC", name: "Sacada simples")
+      insert(:connection, source_step: step_a, target_step: step_b)
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
+      render_click(lv, "toggle_edit_mode", %{})
+      render_click(lv, "open_step", %{"code" => "BF"})
+      _html = render_click(lv, "delete_step_connection", %{"source" => "BF", "target" => "SC"})
+      # Drawer refreshes — SC should no longer be in connections
+      html = render_click(lv, "open_step", %{"code" => "BF"})
+      assert html =~ "0 saídas"
+    end
+
+    test "admin creates new section", %{conn: conn} do
+      cat = insert(:category, name: "bases", label: "Bases")
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
+      render_click(lv, "toggle_edit_mode", %{})
+      html = render_submit(lv, "create_section", %{"section" => %{"title" => "Nova Seção", "position" => "99", "category_id" => cat.id}})
+      assert html =~ "Nova Seção"
+    end
+
+    test "admin creates new category", %{conn: conn} do
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
+      render_click(lv, "toggle_edit_mode", %{})
+      render_submit(lv, "create_category", %{"category" => %{"name" => "nova", "label" => "Nova Cat", "color" => "#ff0000"}})
+      # Category appears in filter bar
+      html = render(lv)
+      assert html =~ "Nova Cat"
+    end
+  end
 end

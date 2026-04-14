@@ -8,8 +8,11 @@ defmodule ForrozinWeb.CollectionLive do
 
   use ForrozinWeb, :live_view
 
-  alias Forrozin.Accounts
-  alias Forrozin.Encyclopedia
+  import Ecto.Query
+
+  alias Forrozin.{Accounts, Admin, Encyclopedia}
+  alias Forrozin.Encyclopedia.{Connection, Section, Step}
+  alias Forrozin.Repo
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -29,7 +32,14 @@ defmodule ForrozinWeb.CollectionLive do
         search_results: [],
         category_filter: "all",
         email_confirmed: Accounts.email_confirmed?(socket.assigns.current_user),
-        page_title: "Acervo"
+        is_admin: admin,
+        edit_mode: false,
+        page_title: "Acervo",
+        drawer_open: false,
+        drawer_type: nil,
+        drawer_item: nil,
+        drawer_connections_out: [],
+        drawer_connections_in: []
       )
 
     {:ok, socket}
@@ -62,11 +72,203 @@ defmodule ForrozinWeb.CollectionLive do
   end
 
   # ---------------------------------------------------------------------------
+  # Edit mode + drawer
+  # ---------------------------------------------------------------------------
+
+  def handle_event("toggle_edit_mode", _params, socket) do
+    if socket.assigns.is_admin do
+      {:noreply, assign(socket, edit_mode: not socket.assigns.edit_mode)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("open_step", %{"code" => code}, socket) do
+    case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
+      {:ok, step} ->
+        out = Repo.all(from c in Connection, where: c.source_step_id == ^step.id, preload: [:target_step])
+        inn = Repo.all(from c in Connection, where: c.target_step_id == ^step.id, preload: [:source_step])
+
+        {:noreply,
+         assign(socket,
+           drawer_open: true,
+           drawer_type: :step,
+           drawer_item: step,
+           drawer_connections_out: out,
+           drawer_connections_in: inn
+         )}
+
+      {:error, :not_found} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("open_section", %{"id" => id}, socket) do
+    case Repo.get(Section, id) do
+      nil ->
+        {:noreply, socket}
+
+      section ->
+        section = Repo.preload(section, :category)
+
+        {:noreply,
+         assign(socket,
+           drawer_open: true,
+           drawer_type: :section,
+           drawer_item: section,
+           drawer_connections_out: [],
+           drawer_connections_in: []
+         )}
+    end
+  end
+
+  def handle_event("close_drawer", _params, socket) do
+    {:noreply, assign(socket, drawer_open: false, drawer_type: nil, drawer_item: nil)}
+  end
+
+  def handle_event("update_step", %{"step" => params}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      step = socket.assigns.drawer_item
+
+      case Admin.update_step(step, params) do
+        {:ok, updated} ->
+          updated = Repo.preload(updated, [:category, :technical_concepts, connections_as_source: :target_step, connections_as_target: :source_step])
+
+          {:noreply,
+           socket
+           |> assign(drawer_item: updated)
+           |> reload_sections()
+           |> put_flash(:info, "Passo atualizado")}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Erro ao salvar passo")}
+      end
+    end
+  end
+
+  def handle_event("update_section", %{"section" => params}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      section = socket.assigns.drawer_item
+
+      case Admin.update_section(section, params) do
+        {:ok, updated} ->
+          updated = Repo.preload(updated, :category)
+
+          {:noreply,
+           socket
+           |> assign(drawer_item: updated)
+           |> reload_sections()
+           |> put_flash(:info, "Seção atualizada")}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Erro ao salvar seção")}
+      end
+    end
+  end
+
+  def handle_event("create_step_connection", %{"target_code" => target_code}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      step = socket.assigns.drawer_item
+      target = Repo.one(from s in Step, where: s.code == ^target_code)
+
+      if is_nil(target) do
+        {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+      else
+        case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
+          {:ok, _} ->
+            {:noreply, socket |> reopen_step_drawer(step.code) |> put_flash(:info, "Conexão criada")}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "Conexão já existe")}
+        end
+      end
+    end
+  end
+
+  def handle_event("delete_step_connection", %{"source" => source_code, "target" => target_code}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      connection =
+        Repo.one(
+          from c in Connection,
+            join: s in Step, on: c.source_step_id == s.id,
+            join: t in Step, on: c.target_step_id == t.id,
+            where: s.code == ^source_code and t.code == ^target_code
+        )
+
+      if is_nil(connection) do
+        {:noreply, put_flash(socket, :error, "Conexão não encontrada")}
+      else
+        {:ok, _} = Admin.delete_connection(connection.id)
+        {:noreply, socket |> reopen_step_drawer(socket.assigns.drawer_item.code) |> reload_sections()}
+      end
+    end
+  end
+
+  def handle_event("create_section", %{"section" => params}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      max_pos = socket.assigns.sections |> Enum.map(& &1.position) |> Enum.max(fn -> 0 end)
+
+      case Admin.create_section(Map.put(params, "position", max_pos + 1)) do
+        {:ok, _} -> {:noreply, socket |> reload_sections() |> put_flash(:info, "Seção criada")}
+        {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao criar seção")}
+      end
+    end
+  end
+
+  def handle_event("create_category", %{"category" => params}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      case Admin.create_category(params) do
+        {:ok, _} ->
+          categories = Encyclopedia.list_categories()
+          {:noreply, socket |> assign(:categories, categories) |> put_flash(:info, "Categoria criada")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Erro ao criar categoria")}
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Private helpers
+  # ---------------------------------------------------------------------------
+
+  defp reload_sections(socket) do
+    sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
+    open = Map.new(sections, fn s -> {s.id, Map.get(socket.assigns.open_sections, s.id, false)} end)
+    assign(socket, sections: sections, open_sections: open)
+  end
+
+  defp reopen_step_drawer(socket, code) do
+    case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
+      {:ok, step} ->
+        out = Repo.all(from c in Connection, where: c.source_step_id == ^step.id, preload: [:target_step])
+        inn = Repo.all(from c in Connection, where: c.target_step_id == ^step.id, preload: [:source_step])
+        assign(socket, drawer_item: step, drawer_connections_out: out, drawer_connections_in: inn)
+
+      _ ->
+        assign(socket, drawer_open: false)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Components
   # ---------------------------------------------------------------------------
 
   attr :section, :map, required: true
   attr :open, :boolean, required: true
+  attr :edit_mode, :boolean, default: false
 
   def section_card(assigns) do
     ~H"""
@@ -74,15 +276,16 @@ defmodule ForrozinWeb.CollectionLive do
       class="mb-2 rounded overflow-hidden"
       style={"border: 1px solid #{if @open, do: "rgba(60,40,20,0.2)", else: "rgba(60,40,20,0.1)"}; background: #{if @open, do: "#fffef9", else: "#fdfcf7"}"}
     >
-      <button
-        phx-click="toggle_section"
-        phx-value-section_id={@section.id}
-        class="w-full text-left flex items-center gap-3 px-5 py-3"
-        style="background: transparent; border: none; cursor: pointer;"
-      >
-        <span style={"color: #{category_color(@section)}; font-size: 10px; display: inline-block; transform: #{if @open, do: "rotate(90deg)", else: "rotate(0deg)"}; transition: transform 0.15s;"}>
-          ▶
-        </span>
+      <div class="flex items-center">
+        <button
+          phx-click="toggle_section"
+          phx-value-section_id={@section.id}
+          class="flex-1 text-left flex items-center gap-3 px-5 py-3"
+          style="background: transparent; border: none; cursor: pointer;"
+        >
+          <span style={"color: #{category_color(@section)}; font-size: 10px; display: inline-block; transform: #{if @open, do: "rotate(90deg)", else: "rotate(0deg)"}; transition: transform 0.15s;"}>
+            ▶
+          </span>
         <span class="flex items-center gap-3 flex-wrap flex-1">
           <%= if @section.num do %>
             <span style="font-size: 11px; color: #aaa; font-family: Georgia, serif; font-style: italic;">
@@ -101,7 +304,11 @@ defmodule ForrozinWeb.CollectionLive do
             {category_label(@section)}
           </span>
         </span>
-      </button>
+        </button>
+        <%= if @edit_mode do %>
+          <button phx-click="open_section" phx-value-id={@section.id} style="padding: 6px 12px; background: none; border: none; cursor: pointer; color: #9a7a5a; font-size: 12px;">✏</button>
+        <% end %>
+      </div>
       <%= if @open do %>
         <div style="padding: 4px 24px 20px 54px;">
           <%= if @section.description do %>
@@ -142,9 +349,10 @@ defmodule ForrozinWeb.CollectionLive do
 
   def step_item(assigns) do
     ~H"""
-    <.link
-      navigate={~p"/steps/#{@step.code}"}
-      style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(60,40,20,0.12); text-decoration: none; color: inherit;"
+    <div
+      phx-click="open_step"
+      phx-value-code={@step.code}
+      style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(60,40,20,0.12); cursor: pointer;"
     >
       <%= if @step.image_path do %>
         <img
@@ -169,7 +377,7 @@ defmodule ForrozinWeb.CollectionLive do
           </p>
         <% end %>
       </div>
-    </.link>
+    </div>
     """
   end
 

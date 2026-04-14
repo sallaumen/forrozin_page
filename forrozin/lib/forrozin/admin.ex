@@ -6,7 +6,7 @@ defmodule Forrozin.Admin do
   Authorization is the responsibility of the Web layer (LiveViews/Plugs).
   """
 
-  alias Forrozin.Encyclopedia.Connection
+  alias Forrozin.Encyclopedia.{Category, Connection, Section, Step, Subsection}
   alias Forrozin.Repo
 
   @doc """
@@ -42,5 +42,57 @@ defmodule Forrozin.Admin do
       nil -> {:error, :not_found}
       connection -> Repo.delete(connection)
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Steps
+  # ---------------------------------------------------------------------------
+
+  def create_step(attrs) do
+    %Step{} |> Step.changeset(attrs) |> Repo.insert()
+  end
+
+  def update_step(%Step{} = step, attrs) do
+    step |> Step.changeset(attrs) |> Repo.update()
+  end
+
+  def delete_step(%Step{} = step), do: Repo.delete(step)
+
+  # ---------------------------------------------------------------------------
+  # Sections
+  # ---------------------------------------------------------------------------
+
+  def create_section(attrs) do
+    %Section{} |> Section.changeset(attrs) |> Repo.insert()
+  end
+
+  def update_section(%Section{} = section, attrs) do
+    section |> Section.changeset(attrs) |> Repo.update()
+  end
+
+  def delete_section(%Section{} = section), do: Repo.delete(section)
+
+  # ---------------------------------------------------------------------------
+  # Subsections
+  # ---------------------------------------------------------------------------
+
+  def create_subsection(attrs) do
+    %Subsection{} |> Subsection.changeset(attrs) |> Repo.insert()
+  end
+
+  def update_subsection(%Subsection{} = sub, attrs) do
+    sub |> Subsection.changeset(attrs) |> Repo.update()
+  end
+
+  # ---------------------------------------------------------------------------
+  # Categories
+  # ---------------------------------------------------------------------------
+
+  def create_category(attrs) do
+    %Category{} |> Category.changeset(attrs) |> Repo.insert()
+  end
+
+  def update_category(%Category{} = cat, attrs) do
+    cat |> Category.changeset(attrs) |> Repo.update()
   end
 end
