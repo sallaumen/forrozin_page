@@ -68,7 +68,7 @@ function runHybridLayout(cy) {
   // 3. "bases" cluster radiates directly around BF at a shorter radius
   //    Other categories go to outer sectors with proportional angular size
   const outerCats = activeCats.filter(c => c !== "bases")
-  const R_OUTER = 520
+  const R_OUTER = 700
   const R_BASES = 200
   const NODE_GAP = 155
   const ROW_GAP = 130
