@@ -1,11 +1,8 @@
 defmodule ForrozinWeb.GraphVisualLive do
   use ForrozinWeb, :live_view
 
-  import Ecto.Query
-
   alias Forrozin.{Accounts, Admin, Encyclopedia}
-  alias Forrozin.Encyclopedia.{Connection, Step}
-  alias Forrozin.Repo
+  alias Forrozin.Encyclopedia.{ConnectionQuery, StepQuery}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -52,8 +49,8 @@ defmodule ForrozinWeb.GraphVisualLive do
     if not socket.assigns.is_admin do
       {:noreply, socket}
     else
-      with source when not is_nil(source) <- Repo.one(from s in Step, where: s.code == ^source_code),
-           target when not is_nil(target) <- Repo.one(from s in Step, where: s.code == ^target_code),
+      with source when not is_nil(source) <- StepQuery.get_by(code: source_code),
+           target when not is_nil(target) <- StepQuery.get_by(code: target_code),
            {:ok, _conn} <- Admin.create_connection(%{source_step_id: source.id, target_step_id: target.id}) do
         graph = Encyclopedia.build_graph()
         edit_mode = socket.assigns.edit_mode
@@ -82,13 +79,7 @@ defmodule ForrozinWeb.GraphVisualLive do
     if not socket.assigns.is_admin do
       {:noreply, socket}
     else
-      connection =
-        Repo.one(
-          from c in Connection,
-            join: s in Step, on: c.source_step_id == s.id,
-            join: t in Step, on: c.target_step_id == t.id,
-            where: s.code == ^source_code and t.code == ^target_code
-        )
+      connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
 
       case connection do
         nil ->

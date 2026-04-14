@@ -8,11 +8,8 @@ defmodule ForrozinWeb.CollectionLive do
 
   use ForrozinWeb, :live_view
 
-  import Ecto.Query
-
   alias Forrozin.{Accounts, Admin, Encyclopedia}
-  alias Forrozin.Encyclopedia.{Connection, Section, Step}
-  alias Forrozin.Repo
+  alias Forrozin.Encyclopedia.{ConnectionQuery, SectionQuery, StepQuery}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -107,10 +104,10 @@ defmodule ForrozinWeb.CollectionLive do
 
   def handle_event("open_step", %{"code" => code}, socket) do
     case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
-      {:ok, step} ->
-        step = Repo.preload(step, :suggested_by)
-        out = Repo.all(from c in Connection, where: c.source_step_id == ^step.id, preload: [:target_step])
-        inn = Repo.all(from c in Connection, where: c.target_step_id == ^step.id, preload: [:source_step])
+      {:ok, _} ->
+        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+        out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
+        inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 
         user_id = socket.assigns.current_user.id
         can_edit = socket.assigns.edit_mode or (step.suggested_by_id == user_id)
@@ -131,13 +128,11 @@ defmodule ForrozinWeb.CollectionLive do
   end
 
   def handle_event("open_section", %{"id" => id}, socket) do
-    case Repo.get(Section, id) do
+    case SectionQuery.get_by(id: id, preload: [:category]) do
       nil ->
         {:noreply, socket}
 
       section ->
-        section = Repo.preload(section, :category)
-
         {:noreply,
          assign(socket,
            drawer_open: true,
@@ -161,7 +156,7 @@ defmodule ForrozinWeb.CollectionLive do
 
       case Admin.update_step(step, params) do
         {:ok, updated} ->
-          updated = Repo.preload(updated, [:category, :technical_concepts, connections_as_source: :target_step, connections_as_target: :source_step])
+          updated = StepQuery.get_by(code: updated.code, preload: [:category, :technical_concepts, connections_as_source: :target_step, connections_as_target: :source_step])
 
           {:noreply,
            socket
@@ -183,7 +178,7 @@ defmodule ForrozinWeb.CollectionLive do
 
       case Admin.update_section(section, params) do
         {:ok, updated} ->
-          updated = Repo.preload(updated, :category)
+          updated = SectionQuery.get_by(id: updated.id, preload: [:category])
 
           {:noreply,
            socket
@@ -201,16 +196,13 @@ defmodule ForrozinWeb.CollectionLive do
     if not socket.assigns.is_admin or String.length(term) < 1 do
       {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
     else
-      term_lower = String.downcase(term)
-
       suggestions =
-        Repo.all(
-          from s in Step,
-            where: s.status == "published",
-            where: fragment("lower(?) LIKE ? OR lower(?) LIKE ?", s.code, ^"%#{term_lower}%", s.name, ^"%#{term_lower}%"),
-            order_by: [asc: s.name],
-            limit: 8,
-            preload: [:category]
+        StepQuery.list_by(
+          status: "published",
+          search: term,
+          order_by: [asc: :name],
+          limit: 8,
+          preload: [:category]
         )
 
       {:noreply, assign(socket, connection_search: term, connection_suggestions: suggestions)}
@@ -226,7 +218,7 @@ defmodule ForrozinWeb.CollectionLive do
       {:noreply, socket}
     else
       step = socket.assigns.drawer_item
-      target = Repo.one(from s in Step, where: s.code == ^target_code)
+      target = StepQuery.get_by(code: target_code)
 
       if is_nil(target) do
         {:noreply, put_flash(socket, :error, "Passo não encontrado")}
@@ -246,13 +238,7 @@ defmodule ForrozinWeb.CollectionLive do
     if not socket.assigns.is_admin do
       {:noreply, socket}
     else
-      connection =
-        Repo.one(
-          from c in Connection,
-            join: s in Step, on: c.source_step_id == s.id,
-            join: t in Step, on: c.target_step_id == t.id,
-            where: s.code == ^source_code and t.code == ^target_code
-        )
+      connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
 
       if is_nil(connection) do
         {:noreply, put_flash(socket, :error, "Conexão não encontrada")}
@@ -320,7 +306,7 @@ defmodule ForrozinWeb.CollectionLive do
     if not socket.assigns.is_admin do
       {:noreply, socket}
     else
-      step = Repo.one(from s in Step, where: s.code == ^code)
+      step = StepQuery.get_by(code: code)
 
       if step do
         Admin.update_step(step, %{approved: true})
@@ -348,9 +334,10 @@ defmodule ForrozinWeb.CollectionLive do
 
   defp reopen_step_drawer(socket, code) do
     case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
-      {:ok, step} ->
-        out = Repo.all(from c in Connection, where: c.source_step_id == ^step.id, preload: [:target_step])
-        inn = Repo.all(from c in Connection, where: c.target_step_id == ^step.id, preload: [:source_step])
+      {:ok, _} ->
+        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+        out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
+        inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
         assign(socket, drawer_item: step, drawer_connections_out: out, drawer_connections_in: inn)
 
       _ ->

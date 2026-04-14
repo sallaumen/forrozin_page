@@ -5,11 +5,21 @@ defmodule Forrozin.Encyclopedia do
   Pure calculation module: all functions are DB queries with no side effects.
   Step visibility is controlled here — steps with `wip: true` or
   `status: "draft"` are not returned to the public.
+
+  All Repo access is delegated to the Query modules (StepQuery, ConnectionQuery,
+  SectionQuery). This context is the public API; Query modules are internal.
   """
 
-  import Ecto.Query
+  import Ecto.Query, only: [order_by: 2, from: 2, dynamic: 2, where: 3]
 
-  alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section}
+  alias Forrozin.Encyclopedia.{
+    Category,
+    ConnectionQuery,
+    SectionQuery,
+    StepQuery,
+    TechnicalConcept
+  }
+
   alias Forrozin.Repo
 
   # ---------------------------------------------------------------------------
@@ -19,7 +29,7 @@ defmodule Forrozin.Encyclopedia do
   @doc "Lists all categories ordered by label."
   def list_categories do
     Category
-    |> order_by([c], asc: c.label)
+    |> Ecto.Query.order_by([c], asc: c.label)
     |> Repo.all()
   end
 
@@ -37,9 +47,7 @@ defmodule Forrozin.Encyclopedia do
 
   @doc "Lists all sections ordered by position."
   def list_sections do
-    Section
-    |> order_by([s], asc: s.position)
-    |> Repo.all()
+    SectionQuery.list_by()
   end
 
   @doc """
@@ -53,6 +61,8 @@ defmodule Forrozin.Encyclopedia do
   def list_sections_with_steps(opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
 
+    import Ecto.Query
+
     visibility_filter =
       if admin,
         do: dynamic([p], p.status == "published"),
@@ -60,7 +70,7 @@ defmodule Forrozin.Encyclopedia do
 
     # Direct steps: only those NOT in a subsection (avoids duplicates)
     direct_steps =
-      from(p in Step,
+      from(p in Forrozin.Encyclopedia.Step,
         where: ^visibility_filter,
         where: is_nil(p.subsection_id),
         order_by: [asc: p.position]
@@ -68,14 +78,12 @@ defmodule Forrozin.Encyclopedia do
 
     # Subsection steps: all visible steps in subsections
     subsection_steps =
-      from(p in Step,
+      from(p in Forrozin.Encyclopedia.Step,
         where: ^visibility_filter,
         order_by: [asc: p.position]
       )
 
-    Section
-    |> order_by([s], asc: s.position)
-    |> Repo.all()
+    SectionQuery.list_by()
     |> Repo.preload([
       :category,
       steps: {direct_steps, [:suggested_by]},
@@ -89,9 +97,7 @@ defmodule Forrozin.Encyclopedia do
 
   @doc "Counts total published, non-wip steps (public count)."
   def count_public_steps do
-    Step
-    |> where([p], p.wip == false and p.status == "published")
-    |> Repo.aggregate(:count)
+    StepQuery.count_by(public_only: true)
   end
 
   @doc """
@@ -101,12 +107,7 @@ defmodule Forrozin.Encyclopedia do
   `{:error, :not_found}` for the public.
   """
   def get_step_by_code(code) do
-    query =
-      from(p in Step,
-        where: p.code == ^code and p.wip == false and p.status == "published"
-      )
-
-    case Repo.one(query) do
+    case StepQuery.get_by(code: code, public_only: true) do
       nil -> {:error, :not_found}
       step -> {:ok, step}
     end
@@ -121,16 +122,12 @@ defmodule Forrozin.Encyclopedia do
   def get_step_with_details(code, opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
 
-    query =
-      if admin do
-        from(p in Step, where: p.code == ^code and p.status == "published")
-      else
-        from(p in Step,
-          where: p.code == ^code and p.wip == false and p.status == "published"
-        )
-      end
+    query_opts =
+      if admin,
+        do: [code: code, status: "published"],
+        else: [code: code, public_only: true]
 
-    case Repo.one(query) do
+    case StepQuery.get_by(query_opts) do
       nil ->
         {:error, :not_found}
 
@@ -148,7 +145,7 @@ defmodule Forrozin.Encyclopedia do
   end
 
   @doc """
-  Searches steps by name (case-insensitive, partial match).
+  Searches steps by name or code (case-insensitive, partial match).
 
   Options:
   - `admin: true` — includes `wip` steps.
@@ -157,18 +154,15 @@ defmodule Forrozin.Encyclopedia do
   """
   def search_steps(term, opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
-    term_lower = String.downcase(term)
 
-    base_query =
-      from(p in Step,
-        where:
-          p.status == "published" and fragment("lower(?)", p.name) |> like(^"%#{term_lower}%"),
-        order_by: [asc: p.name]
-      )
+    base_opts = [search: term, order_by: [asc: :name]]
 
-    query = if admin, do: base_query, else: where(base_query, [p], p.wip == false)
+    extra_opts =
+      if admin,
+        do: [status: "published"],
+        else: [status: "published", wip: false]
 
-    Repo.all(query)
+    StepQuery.list_by(base_opts ++ extra_opts)
   end
 
   # ---------------------------------------------------------------------------
@@ -189,26 +183,19 @@ defmodule Forrozin.Encyclopedia do
   def build_graph(opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
 
-    nodes =
-      from(p in Step,
-        where:
-          ^if(admin,
-            do: dynamic([p], p.status == "published"),
-            else: dynamic([p], p.wip == false and p.status == "published")
-          ),
-        order_by: [asc: p.name],
-        preload: [:category]
-      )
-      |> Repo.all()
+    node_opts =
+      if admin,
+        do: [status: "published", order_by: [asc: :name], preload: [:category]],
+        else: [public_only: true, order_by: [asc: :name], preload: [:category]]
 
+    nodes = StepQuery.list_by(node_opts)
     step_ids = Enum.map(nodes, & &1.id)
 
     edges =
-      from(c in Connection,
-        where: c.source_step_id in ^step_ids and c.target_step_id in ^step_ids,
+      ConnectionQuery.list_by(
+        step_ids: step_ids,
         preload: [:source_step, :target_step]
       )
-      |> Repo.all()
 
     %{nodes: nodes, edges: edges}
   end
@@ -220,8 +207,7 @@ defmodule Forrozin.Encyclopedia do
   Returns `%{code => step}`.
   """
   def list_all_steps_map do
-    Step
-    |> Repo.all()
+    StepQuery.list_by()
     |> Map.new(&{&1.code, &1})
   end
 
@@ -232,7 +218,7 @@ defmodule Forrozin.Encyclopedia do
   @doc "Lists all technical concepts ordered by title."
   def list_technical_concepts do
     TechnicalConcept
-    |> order_by([c], asc: c.title)
+    |> Ecto.Query.order_by([c], asc: c.title)
     |> Repo.all()
   end
 
@@ -242,20 +228,20 @@ defmodule Forrozin.Encyclopedia do
 
   @doc "Lists all suggested steps (community contributions)."
   def list_suggested_steps do
-    Step
-    |> where([s], not is_nil(s.suggested_by_id))
-    |> where([s], s.status == "published")
-    |> order_by([s], desc: s.inserted_at)
-    |> preload([:category, :suggested_by])
-    |> Repo.all()
+    StepQuery.list_by(
+      has_suggestions: true,
+      status: "published",
+      order_by: [desc: :inserted_at],
+      preload: [:category, :suggested_by]
+    )
   end
 
   @doc "Lists steps suggested by a specific user."
   def list_user_steps(user_id) do
-    Step
-    |> where([s], s.suggested_by_id == ^user_id)
-    |> order_by([s], desc: s.inserted_at)
-    |> preload([:category, :suggested_by])
-    |> Repo.all()
+    StepQuery.list_by(
+      suggested_by_id: user_id,
+      order_by: [desc: :inserted_at],
+      preload: [:category, :suggested_by]
+    )
   end
 end

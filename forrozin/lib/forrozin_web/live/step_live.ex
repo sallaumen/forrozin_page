@@ -3,11 +3,8 @@ defmodule ForrozinWeb.StepLive do
 
   use ForrozinWeb, :live_view
 
-  import Ecto.Query
-
   alias Forrozin.{Accounts, Admin, Encyclopedia}
-  alias Forrozin.Encyclopedia.{Connection, Step}
-  alias Forrozin.Repo
+  alias Forrozin.Encyclopedia.{ConnectionQuery, StepQuery}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -17,12 +14,12 @@ defmodule ForrozinWeb.StepLive do
     user_id = socket.assigns.current_user.id
 
     case Encyclopedia.get_step_with_details(code, admin: admin) do
-      {:ok, step} ->
-        step = Repo.preload(step, :suggested_by)
+      {:ok, _} ->
+        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
         can_edit = admin or step.suggested_by_id == user_id
 
-        connections_out = Repo.all(from c in Connection, where: c.source_step_id == ^step.id, preload: [:target_step])
-        connections_in = Repo.all(from c in Connection, where: c.target_step_id == ^step.id, preload: [:source_step])
+        connections_out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
+        connections_in = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 
         {:ok,
          assign(socket,
@@ -56,7 +53,7 @@ defmodule ForrozinWeb.StepLive do
 
     case Admin.update_step(socket.assigns.step, params) do
       {:ok, updated} ->
-        updated = Repo.preload(updated, [:category, :technical_concepts, :suggested_by, connections_as_source: :target_step, connections_as_target: :source_step])
+        updated = StepQuery.get_by(code: updated.code, preload: [:category, :technical_concepts, :suggested_by, connections_as_source: :target_step, connections_as_target: :source_step])
         {:noreply, assign(socket, step: updated, page_title: updated.name) |> put_flash(:info, "Passo atualizado")}
 
       {:error, _} ->
@@ -71,7 +68,7 @@ defmodule ForrozinWeb.StepLive do
       step = socket.assigns.step
 
       # Delete all connections first (cascade)
-      Repo.delete_all(from c in Connection, where: c.source_step_id == ^step.id or c.target_step_id == ^step.id)
+      ConnectionQuery.delete_all_by(either_step_id: step.id)
 
       case Admin.delete_step(step) do
         {:ok, _} ->
@@ -90,16 +87,13 @@ defmodule ForrozinWeb.StepLive do
     if not socket.assigns.can_edit or String.length(term) < 1 do
       {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
     else
-      term_lower = String.downcase(term)
-
       suggestions =
-        Repo.all(
-          from s in Step,
-            where: s.status == "published",
-            where: fragment("lower(?) LIKE ? OR lower(?) LIKE ?", s.code, ^"%#{term_lower}%", s.name, ^"%#{term_lower}%"),
-            order_by: [asc: s.name],
-            limit: 8,
-            preload: [:category]
+        StepQuery.list_by(
+          status: "published",
+          search: term,
+          order_by: [asc: :name],
+          limit: 8,
+          preload: [:category]
         )
 
       {:noreply, assign(socket, connection_search: term, connection_suggestions: suggestions)}
@@ -113,7 +107,7 @@ defmodule ForrozinWeb.StepLive do
   def handle_event("create_connection", %{"target_code" => target_code}, socket) do
     if not socket.assigns.can_edit, do: {:noreply, socket}
 
-    target = Repo.one(from s in Step, where: s.code == ^target_code)
+    target = StepQuery.get_by(code: target_code)
 
     if is_nil(target) do
       {:noreply, put_flash(socket, :error, "Passo não encontrado")}
@@ -130,13 +124,7 @@ defmodule ForrozinWeb.StepLive do
   def handle_event("delete_connection", %{"source" => source_code, "target" => target_code}, socket) do
     if not socket.assigns.can_edit, do: {:noreply, socket}
 
-    connection =
-      Repo.one(
-        from c in Connection,
-          join: s in Step, on: c.source_step_id == s.id,
-          join: t in Step, on: c.target_step_id == t.id,
-          where: s.code == ^source_code and t.code == ^target_code
-      )
+    connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
 
     if connection do
       {:ok, _} = Admin.delete_connection(connection.id)
@@ -148,10 +136,10 @@ defmodule ForrozinWeb.StepLive do
 
   defp reload_step(socket, code) do
     case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
-      {:ok, step} ->
-        step = Repo.preload(step, :suggested_by)
-        out = Repo.all(from c in Connection, where: c.source_step_id == ^step.id, preload: [:target_step])
-        inn = Repo.all(from c in Connection, where: c.target_step_id == ^step.id, preload: [:source_step])
+      {:ok, _} ->
+        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+        out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
+        inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 
         assign(socket,
           step: step,
