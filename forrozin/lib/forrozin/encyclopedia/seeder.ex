@@ -21,8 +21,8 @@ defmodule Forrozin.Encyclopedia.Seeder do
 
   @categories [
     {"sacadas", "Sacadas", "#e91e63"},
-    {"travas", "Travas", "#2980b9"},
-    {"caminhadas", "Caminhadas", "#27ae60"},
+    {"travas", "Travas", "#1556a0"},
+    {"caminhadas", "Caminhadas", "#1b8a3d"},
     {"giros", "Giros", "#8e44ad"},
     {"pescadas", "Pescadas", "#d35400"},
     {"inversao", "Inversão", "#c0392b"},
