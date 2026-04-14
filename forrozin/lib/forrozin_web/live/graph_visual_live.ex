@@ -1,7 +1,7 @@
 defmodule ForrozinWeb.GraphVisualLive do
   use ForrozinWeb, :live_view
 
-  alias Forrozin.{Accounts, Admin, Encyclopedia}
+  alias Forrozin.{Accounts, Admin, Encyclopedia, Sequences}
   alias Forrozin.Encyclopedia.{ConnectionQuery, StepQuery}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
@@ -16,14 +16,236 @@ defmodule ForrozinWeb.GraphVisualLive do
      |> assign(:page_title, "Mapa de Passos")
      |> assign(:is_admin, is_admin)
      |> assign(:edit_mode, false)
+     |> assign(:seq_panel, false)
+     |> assign(:seq_view, :config)
+     |> assign(:seq_results, [])
+     |> assign(:seq_warnings, [])
+     |> assign(:seq_saved, [])
+     |> assign(:seq_active, nil)
+     |> assign(:seq_saving, nil)
+     |> assign(:seq_start_code, "")
+     |> assign(:seq_start_suggestions, [])
+     |> assign(:seq_required_codes, [])
+     |> assign(:seq_required_search, "")
+     |> assign(:seq_required_suggestions, [])
      |> assign_graph_data(graph, false)}
+  end
+
+  # ---------------------------------------------------------------------------
+  # Events — Sequence panel
+  # ---------------------------------------------------------------------------
+
+  @impl true
+  def handle_event("toggle_seq_panel", _params, socket) do
+    new_open = not socket.assigns.seq_panel
+    saved = if new_open, do: Sequences.list_user_sequences(socket.assigns.current_user.id), else: socket.assigns.seq_saved
+
+    {:noreply,
+     socket
+     |> assign(:seq_panel, new_open)
+     |> assign(:seq_saved, saved)
+     |> assign(:seq_view, :config)}
+  end
+
+  def handle_event("generate_sequences", params, socket) do
+    start_code = Map.get(params, "start_code", "") |> String.trim()
+    length_val = parse_int(Map.get(params, "length", "6"), 6)
+    count_val = parse_int(Map.get(params, "count", "3"), 3)
+    allow_repeats = Map.get(params, "allow_repeats") in ["true", "on"]
+
+    required_codes = socket.assigns.seq_required_codes
+
+    gen_params = %{
+      start_code: start_code,
+      length: length_val,
+      count: count_val,
+      required_codes: required_codes,
+      allow_repeats: allow_repeats
+    }
+
+    {:ok, sequences, warnings} = Sequences.generate(gen_params)
+
+    {:noreply,
+     socket
+     |> assign(:seq_results, sequences)
+     |> assign(:seq_warnings, warnings)
+     |> assign(:seq_view, :results)
+     |> assign(:seq_saving, nil)}
+  end
+
+  def handle_event("highlight_sequence", %{"index" => index_str}, socket) do
+    index = parse_int(index_str, 0)
+    sequence = Enum.at(socket.assigns.seq_results, index)
+
+    if sequence do
+      step_codes = Enum.map(sequence, & &1.code)
+
+      {:noreply,
+       socket
+       |> assign(:seq_active, sequence)
+       |> push_event("highlight_sequence", %{steps: step_codes})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("highlight_saved_sequence", %{"id" => id}, socket) do
+    saved = Sequences.get_sequence(id)
+
+    if saved do
+      steps = Enum.sort_by(saved.sequence_steps, & &1.position)
+      step_codes = Enum.map(steps, & &1.step.code)
+      step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
+
+      {:noreply,
+       socket
+       |> assign(:seq_active, step_list)
+       |> push_event("highlight_sequence", %{steps: step_codes})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("clear_highlight", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_active, nil)
+     |> push_event("clear_highlight", %{})}
+  end
+
+  def handle_event("start_save_sequence", %{"index" => index_str}, socket) do
+    index = parse_int(index_str, 0)
+    {:noreply, assign(socket, :seq_saving, index)}
+  end
+
+  def handle_event("cancel_save_sequence", _params, socket) do
+    {:noreply, assign(socket, :seq_saving, nil)}
+  end
+
+  def handle_event("save_sequence", %{"index" => index_str, "name" => name}, socket) do
+    index = parse_int(index_str, 0)
+    sequence = Enum.at(socket.assigns.seq_results, index)
+    name = String.trim(name)
+
+    if sequence && name != "" do
+      step_ids = Enum.map(sequence, & &1.id)
+      user_id = socket.assigns.current_user.id
+
+      case Sequences.create_sequence(user_id, name, step_ids) do
+        {:ok, _saved} ->
+          saved = Sequences.list_user_sequences(user_id)
+
+          {:noreply,
+           socket
+           |> assign(:seq_saving, nil)
+           |> assign(:seq_saved, saved)}
+
+        {:error, _changeset} ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("delete_sequence", %{"id" => id}, socket) do
+    saved = socket.assigns.seq_saved
+    sequence = Enum.find(saved, &(&1.id == id))
+
+    if sequence do
+      {:ok, _} = Sequences.delete_sequence(sequence)
+      new_saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
+
+      {:noreply, assign(socket, :seq_saved, new_saved)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("show_seq_config", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_view, :config)
+     |> assign(:seq_results, [])
+     |> assign(:seq_warnings, [])
+     |> assign(:seq_saving, nil)}
+  end
+
+  def handle_event("show_seq_saved", _params, socket) do
+    saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
+    {:noreply, socket |> assign(:seq_saved, saved) |> assign(:seq_view, :saved)}
+  end
+
+  # Autocomplete — start step
+  def handle_event("search_start_step", %{"value" => term}, socket) do
+    suggestions =
+      if String.length(term) >= 1 do
+        StepQuery.list_by(search: term, public_only: true, limit: 6, order_by: [asc: :code])
+        |> Enum.map(&%{code: &1.code, name: &1.name})
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:seq_start_code, term)
+     |> assign(:seq_start_suggestions, suggestions)}
+  end
+
+  def handle_event("select_start_step", %{"code" => code, "name" => name}, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_start_code, code)
+     |> assign(:seq_start_suggestions, [])
+     |> push_event("set_start_step_input", %{value: code, name: name})}
+  end
+
+  # Autocomplete — required steps
+  def handle_event("search_required_step", %{"value" => term}, socket) do
+    suggestions =
+      if String.length(term) >= 1 do
+        already = socket.assigns.seq_required_codes
+
+        StepQuery.list_by(search: term, public_only: true, limit: 6, order_by: [asc: :code])
+        |> Enum.reject(&(&1.code in already))
+        |> Enum.map(&%{code: &1.code, name: &1.name})
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:seq_required_search, term)
+     |> assign(:seq_required_suggestions, suggestions)}
+  end
+
+  def handle_event("select_required_step", %{"code" => code}, socket) do
+    already = socket.assigns.seq_required_codes
+
+    new_required =
+      if code in already do
+        already
+      else
+        already ++ [code]
+      end
+
+    {:noreply,
+     socket
+     |> assign(:seq_required_codes, new_required)
+     |> assign(:seq_required_search, "")
+     |> assign(:seq_required_suggestions, [])
+     |> push_event("clear_required_input", %{})}
+  end
+
+  def handle_event("remove_required_step", %{"code" => code}, socket) do
+    new_required = Enum.reject(socket.assigns.seq_required_codes, &(&1 == code))
+    {:noreply, assign(socket, :seq_required_codes, new_required)}
   end
 
   # ---------------------------------------------------------------------------
   # Events — Admin editing
   # ---------------------------------------------------------------------------
 
-  @impl true
   def handle_event("toggle_edit_mode", _params, socket) do
     if not socket.assigns.is_admin do
       {:noreply, socket}
@@ -207,4 +429,14 @@ defmodule ForrozinWeb.GraphVisualLive do
       end)
     end)
   end
+
+  defp parse_int(val, default) when is_binary(val) do
+    case Integer.parse(val) do
+      {n, _} when n > 0 -> n
+      _ -> default
+    end
+  end
+
+  defp parse_int(val, _default) when is_integer(val) and val > 0, do: val
+  defp parse_int(_val, default), do: default
 end

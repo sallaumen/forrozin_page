@@ -367,6 +367,26 @@ const GraphVisual = {
     this.handleEvent("graph_error", ({ message }) => {
       this._showToast(message)
     })
+
+    // Sequence highlight events
+    this.handleEvent("highlight_sequence", ({ steps }) => {
+      this._applySequenceHighlight(steps)
+    })
+
+    this.handleEvent("clear_highlight", () => {
+      this._clearSequenceHighlight()
+    })
+
+    // Autocomplete helpers: server sets input value via JS push
+    this.handleEvent("set_start_step_input", ({ value }) => {
+      const input = document.getElementById("seq-start-input")
+      if (input) input.value = value
+    })
+
+    this.handleEvent("clear_required_input", () => {
+      const input = document.getElementById("seq-required-input")
+      if (input) input.value = ""
+    })
   },
 
   updated() { this._initGraph() },
@@ -657,6 +677,96 @@ const GraphVisual = {
         btn.style.background = "rgba(60,40,20,0.08)"; btn.style.fontWeight = "700"
       })
     })
+  },
+
+  // ---------------------------------------------------------------------------
+  // Sequence highlight: dim all, highlight path nodes + edges with numbers
+  // ---------------------------------------------------------------------------
+  _applySequenceHighlight(stepCodes) {
+    const cy = this._cy
+    if (!cy) return
+
+    // Clear previous highlight state
+    this._clearSequenceHighlight()
+
+    // Store originals and dim everything
+    cy.batch(() => {
+      cy.elements().style({ opacity: 0.12 })
+
+      stepCodes.forEach((code, idx) => {
+        const node = cy.getElementById(code)
+        if (node.length === 0) return
+
+        // Save original label if not already saved
+        if (!node.data("_origLabel")) {
+          node.data("_origLabel", node.data("label"))
+        }
+
+        const num = idx + 1
+        const circledNums = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩",
+                             "⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"]
+        const prefix = num <= 20 ? circledNums[num - 1] : `${num}.`
+
+        node.data("label", `${prefix} ${node.id()}\n${node.data("nome") || node.id()}`)
+        node.style({
+          opacity: 1,
+          "border-color": "#e67e22",
+          "border-width": 4,
+          "background-color": "#fff8f0"
+        })
+      })
+
+      // Highlight edges that form the sequence path
+      for (let i = 0; i < stepCodes.length - 1; i++) {
+        const src = stepCodes[i]
+        const tgt = stepCodes[i + 1]
+        const edge = cy.edges(`[source = "${src}"][target = "${tgt}"]`)
+        if (edge.length > 0) {
+          edge.style({
+            opacity: 1,
+            "line-color": "#e67e22",
+            "target-arrow-color": "#e67e22",
+            width: 3
+          })
+        }
+      }
+    })
+
+    this._seqHighlightActive = true
+    this._seqHighlightCodes = stepCodes
+  },
+
+  _clearSequenceHighlight() {
+    const cy = this._cy
+    if (!cy || !this._seqHighlightActive) return
+
+    cy.batch(() => {
+      // Restore node labels and styles
+      cy.nodes().forEach(node => {
+        const orig = node.data("_origLabel")
+        if (orig) {
+          node.data("label", orig)
+          node.removeData("_origLabel")
+        }
+        node.style({
+          opacity: 1,
+          "border-color": node.data("cor"),
+          "border-width": node.degree() >= 10 ? 3 : 2,
+          "background-color": "#fffef9"
+        })
+      })
+
+      // Restore edges
+      cy.edges().style({
+        opacity: 0.45,
+        "line-color": "data(cor)",
+        "target-arrow-color": "data(cor)",
+        width: 1.5
+      })
+    })
+
+    this._seqHighlightActive = false
+    this._seqHighlightCodes = null
   }
 }
 
