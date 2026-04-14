@@ -100,16 +100,8 @@
         <% end %>
       </div>
 
-      <%!-- Sugerir + Expandir / recolher --%>
+      <%!-- Expandir / recolher + Sugerir --%>
       <%= if @search == "" do %>
-        <div style="display: flex; gap: 6px; margin-left: auto;">
-          <button
-            phx-click="toggle_suggest"
-            style={"font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-family: Georgia, serif; border: 1px solid #{if @suggest_mode, do: "#8e44ad", else: "rgba(60,40,20,0.2)"}; background: #{if @suggest_mode, do: "#8e44ad15", else: "transparent"}; color: #{if @suggest_mode, do: "#8e44ad", else: "#7a5c3a"};"}
-          >
-            <%= if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir passo" %>
-          </button>
-        </div>
         <div style="display: flex; gap: 6px;">
           <button
             phx-click="expand_all"
@@ -122,6 +114,12 @@
             style="font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; background: transparent; border: 1px solid rgba(60,40,20,0.2); color: #7a5c3a; font-family: Georgia, serif;"
           >
             − fechar
+          </button>
+          <button
+            phx-click="toggle_suggest"
+            style={"font-size: 12px; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-weight: 700; letter-spacing: 0.5px; margin-left: auto; transition: all 0.15s; border: 2px solid #{if @suggest_mode, do: "#c0392b", else: "#8e44ad"}; background: #{if @suggest_mode, do: "#c0392b10", else: "#8e44ad"}; color: #{if @suggest_mode, do: "#c0392b", else: "white"};"}
+          >
+            <%= if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir um passo" %>
           </button>
         </div>
       <% end %>
@@ -253,12 +251,18 @@
           <span style="display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #c0392b18; color: #c0392b; border: 1px solid #c0392b40; margin-left: 4px;">WIP</span>
         <% end %>
         <%= if @drawer_item.suggested_by_id do %>
-          <div style="margin-top: 8px;">
-            <span style="font-size: 10px; padding: 2px 8px; border-radius: 8px; background: #8e44ad18; color: #8e44ad; border: 1px solid #8e44ad30; font-style: italic;">
-              Sugestão de @{if @drawer_item.suggested_by, do: @drawer_item.suggested_by.username, else: "?"}
-            </span>
-            <%= if @is_admin do %>
-              <button phx-click="approve_step" phx-value-code={@drawer_item.code} data-confirm="Aprovar este passo como oficial?" style="margin-left: 8px; font-size: 10px; padding: 3px 10px; border-radius: 4px; background: #27ae60; color: white; border: none; cursor: pointer;">
+          <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+            <.link navigate={~p"/users/#{if @drawer_item.suggested_by, do: @drawer_item.suggested_by.username, else: "#"}"} style="text-decoration: none;">
+              <span style={"font-size: 10px; padding: 2px 8px; border-radius: 8px; background: #{if @drawer_item.approved, do: "#27ae6018", else: "#8e44ad18"}; color: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; border: 1px solid #{if @drawer_item.approved, do: "#27ae6030", else: "#8e44ad30"}; font-style: italic;"}>
+                <%= if @drawer_item.approved do %>
+                  ✓ Aprovado — contribuição de @{if @drawer_item.suggested_by, do: @drawer_item.suggested_by.username, else: "?"}
+                <% else %>
+                  Sugestão de @{if @drawer_item.suggested_by, do: @drawer_item.suggested_by.username, else: "?"}
+                <% end %>
+              </span>
+            </.link>
+            <%= if @is_admin and not @drawer_item.approved do %>
+              <button phx-click="approve_step" phx-value-code={@drawer_item.code} data-confirm="Aprovar este passo como oficial?" style="font-size: 10px; padding: 3px 10px; border-radius: 4px; background: #27ae60; color: white; border: none; cursor: pointer;">
                 Aprovar
               </button>
             <% end %>

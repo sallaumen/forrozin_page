@@ -323,7 +323,7 @@ defmodule ForrozinWeb.CollectionLive do
       step = Repo.one(from s in Step, where: s.code == ^code)
 
       if step do
-        Admin.update_step(step, %{suggested_by_id: nil})
+        Admin.update_step(step, %{approved: true})
         {:noreply, socket |> reload_sections() |> put_flash(:info, "Passo aprovado!")}
       else
         {:noreply, socket}
@@ -470,9 +470,15 @@ defmodule ForrozinWeb.CollectionLive do
             {@step.name}
           </span>
           <%= if @step.suggested_by_id do %>
-            <span style="font-size: 9px; padding: 1px 7px; border-radius: 8px; background: #8e44ad18; color: #8e44ad; border: 1px solid #8e44ad30; font-style: italic;">
-              Sugestão de @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
-            </span>
+            <.link navigate={~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"} style="text-decoration: none;">
+              <span style={"font-size: 9px; padding: 1px 7px; border-radius: 8px; border: 1px solid #{if @step.approved, do: "#27ae6030", else: "#8e44ad30"}; background: #{if @step.approved, do: "#27ae6018", else: "#8e44ad18"}; color: #{if @step.approved, do: "#27ae60", else: "#8e44ad"}; font-style: italic;"}>
+                <%= if @step.approved do %>
+                  ✓ @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
+                <% else %>
+                  Sugestão de @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
+                <% end %>
+              </span>
+            </.link>
           <% end %>
         </div>
         <%= if @step.note do %>

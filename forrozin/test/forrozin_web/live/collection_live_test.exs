@@ -284,9 +284,10 @@ defmodule ForrozinWeb.CollectionLiveTest do
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
       render_click(lv, "open_step", %{"code" => "SUG-2"})
       render_click(lv, "approve_step", %{"code" => "SUG-2"})
-      # Step no longer has suggested_by_id
+      # Step is now approved but keeps suggested_by_id
       step = Forrozin.Repo.get_by!(Forrozin.Encyclopedia.Step, code: "SUG-2")
-      assert step.suggested_by_id == nil
+      assert step.approved == true
+      assert step.suggested_by_id == user.id
     end
   end
 end

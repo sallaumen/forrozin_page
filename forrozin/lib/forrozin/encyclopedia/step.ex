@@ -10,7 +10,7 @@ defmodule Forrozin.Encyclopedia.Step do
 
   @required_fields [:code, :name]
   @optional_fields [
-    :note, :image_path, :position, :wip, :status, :highlighted,
+    :note, :image_path, :position, :wip, :status, :highlighted, :approved,
     :category_id, :section_id, :subsection_id, :suggested_by_id
   ]
 
@@ -23,6 +23,7 @@ defmodule Forrozin.Encyclopedia.Step do
     field :wip, :boolean, default: false
     field :status, :string, default: "published"
     field :highlighted, :boolean, default: false
+    field :approved, :boolean, default: false
 
     belongs_to :suggested_by, User, foreign_key: :suggested_by_id
     belongs_to :category, Category
