@@ -34,11 +34,13 @@ defmodule ForrozinWeb.GraphVisualLive do
       new_mode = not socket.assigns.edit_mode
       graph = Encyclopedia.build_graph()
 
+      socket =
+        socket
+        |> assign(:edit_mode, new_mode)
+        |> assign_graph_data(graph, new_mode)
+
       {:noreply,
-       socket
-       |> assign(:edit_mode, new_mode)
-       |> assign_graph_data(graph, new_mode)
-       |> push_event("graph_updated", %{
+       push_event(socket, "graph_updated", %{
          graph_json: socket.assigns.graph_json,
          edit_mode: new_mode,
          orphans: if(new_mode, do: build_orphans_json(graph), else: "[]")
@@ -54,14 +56,17 @@ defmodule ForrozinWeb.GraphVisualLive do
            target when not is_nil(target) <- Repo.one(from s in Step, where: s.code == ^target_code),
            {:ok, _conn} <- Admin.create_connection(%{source_step_id: source.id, target_step_id: target.id}) do
         graph = Encyclopedia.build_graph()
+        edit_mode = socket.assigns.edit_mode
+
+        socket =
+          socket
+          |> assign_graph_data(graph, edit_mode)
 
         {:noreply,
-         socket
-         |> assign_graph_data(graph, socket.assigns.edit_mode)
-         |> push_event("graph_updated", %{
+         push_event(socket, "graph_updated", %{
            graph_json: socket.assigns.graph_json,
-           edit_mode: socket.assigns.edit_mode,
-           orphans: if(socket.assigns.edit_mode, do: build_orphans_json(graph), else: "[]")
+           edit_mode: edit_mode,
+           orphans: if(edit_mode, do: build_orphans_json(graph), else: "[]")
          })}
       else
         {:error, _changeset} ->
@@ -92,14 +97,17 @@ defmodule ForrozinWeb.GraphVisualLive do
         conn ->
           {:ok, _} = Admin.delete_connection(conn.id)
           graph = Encyclopedia.build_graph()
+          edit_mode = socket.assigns.edit_mode
+
+          socket =
+            socket
+            |> assign_graph_data(graph, edit_mode)
 
           {:noreply,
-           socket
-           |> assign_graph_data(graph, socket.assigns.edit_mode)
-           |> push_event("graph_updated", %{
+           push_event(socket, "graph_updated", %{
              graph_json: socket.assigns.graph_json,
-             edit_mode: socket.assigns.edit_mode,
-             orphans: if(socket.assigns.edit_mode, do: build_orphans_json(graph), else: "[]")
+             edit_mode: edit_mode,
+             orphans: if(edit_mode, do: build_orphans_json(graph), else: "[]")
            })}
       end
     end

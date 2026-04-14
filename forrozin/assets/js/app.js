@@ -397,8 +397,13 @@ const GraphVisual = {
 
       btn.addEventListener("click", () => {
         // Start connection creation from this orphan
-        hook._startConnectionFrom = o.id
+        // The orphan may not be on the graph yet, so we store the code
+        // and handle it in the next tap on a graph node
+        hook._pendingOrphanSource = o.id
         hook._showToast(`Clique num passo no grafo para conectar ${o.id} →`)
+        // Highlight the button
+        list.querySelectorAll("button").forEach(b => b.style.background = "white")
+        btn.style.background = "#c0392b15"
       })
 
       list.appendChild(btn)
@@ -539,8 +544,8 @@ const GraphVisual = {
     const hook = this
     const isAdmin = el.dataset.admin === "true"
     const isEditMode = el.dataset.editMode === "true"
-    let ghostSourceId = this._startConnectionFrom || null
-    this._startConnectionFrom = null
+    let ghostSourceId = this._pendingOrphanSource || null
+    this._pendingOrphanSource = null
 
     // Ghost edge line (canvas overlay for connection creation)
     let ghostLine = null
@@ -560,6 +565,14 @@ const GraphVisual = {
 
       // Edit mode: connection creation flow
       if (isEditMode && isAdmin) {
+        // Check for pending orphan source (from left panel)
+        if (hook._pendingOrphanSource) {
+          const orphanCode = hook._pendingOrphanSource
+          hook._pendingOrphanSource = null
+          hook.pushEvent("create_connection", { source: orphanCode, target: node.id() })
+          return
+        }
+
         if (ghostSourceId) {
           // Second click — create connection
           const targetId = node.id()
