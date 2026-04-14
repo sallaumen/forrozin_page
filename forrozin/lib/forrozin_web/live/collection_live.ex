@@ -40,7 +40,9 @@ defmodule ForrozinWeb.CollectionLive do
         drawer_connections_out: [],
         drawer_connections_in: [],
         connection_search: "",
-        connection_suggestions: []
+        connection_suggestions: [],
+        suggest_mode: false,
+        can_edit_drawer: false
       )
 
     {:ok, socket}
@@ -87,8 +89,12 @@ defmodule ForrozinWeb.CollectionLive do
   def handle_event("open_step", %{"code" => code}, socket) do
     case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, step} ->
+        step = Repo.preload(step, :suggested_by)
         out = Repo.all(from c in Connection, where: c.source_step_id == ^step.id, preload: [:target_step])
         inn = Repo.all(from c in Connection, where: c.target_step_id == ^step.id, preload: [:source_step])
+
+        user_id = socket.assigns.current_user.id
+        can_edit = socket.assigns.edit_mode or (step.suggested_by_id == user_id)
 
         {:noreply,
          assign(socket,
@@ -96,7 +102,8 @@ defmodule ForrozinWeb.CollectionLive do
            drawer_type: :step,
            drawer_item: step,
            drawer_connections_out: out,
-           drawer_connections_in: inn
+           drawer_connections_in: inn,
+           can_edit_drawer: can_edit
          )}
 
       {:error, :not_found} ->
@@ -266,6 +273,46 @@ defmodule ForrozinWeb.CollectionLive do
   end
 
   # ---------------------------------------------------------------------------
+  # Suggestions
+  # ---------------------------------------------------------------------------
+
+  def handle_event("toggle_suggest", _params, socket) do
+    {:noreply, assign(socket, suggest_mode: not socket.assigns.suggest_mode)}
+  end
+
+  def handle_event("create_suggested_step", %{"step" => params}, socket) do
+    user = socket.assigns.current_user
+    attrs = Map.put(params, "suggested_by_id", user.id)
+
+    case Admin.create_step(attrs) do
+      {:ok, _step} ->
+        {:noreply,
+         socket
+         |> reload_sections()
+         |> assign(suggest_mode: false)
+         |> put_flash(:info, "Passo sugerido com sucesso!")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Erro ao criar passo — verifique os campos")}
+    end
+  end
+
+  def handle_event("approve_step", %{"code" => code}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      step = Repo.one(from s in Step, where: s.code == ^code)
+
+      if step do
+        Admin.update_step(step, %{suggested_by_id: nil})
+        {:noreply, socket |> reload_sections() |> put_flash(:info, "Passo aprovado!")}
+      else
+        {:noreply, socket}
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Private helpers
   # ---------------------------------------------------------------------------
 
@@ -395,6 +442,11 @@ defmodule ForrozinWeb.CollectionLive do
           <span style="font-size: 14px; color: #2c1a0e; font-family: Georgia, serif; line-height: 1.5;">
             {@step.name}
           </span>
+          <%= if @step.suggested_by_id do %>
+            <span style="font-size: 9px; padding: 1px 7px; border-radius: 8px; background: #8e44ad18; color: #8e44ad; border: 1px solid #8e44ad30; font-style: italic;">
+              Sugestão de @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
+            </span>
+          <% end %>
         </div>
         <%= if @step.note do %>
           <p style="font-size: 12px; color: #7a5c3a; margin: 5px 0 0; font-family: Georgia, serif; font-style: italic; line-height: 1.6;">

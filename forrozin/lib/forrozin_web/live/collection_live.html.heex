@@ -100,9 +100,17 @@
         <% end %>
       </div>
 
-      <%!-- Expandir / recolher --%>
+      <%!-- Sugerir + Expandir / recolher --%>
       <%= if @search == "" do %>
         <div style="display: flex; gap: 6px; margin-left: auto;">
+          <button
+            phx-click="toggle_suggest"
+            style={"font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-family: Georgia, serif; border: 1px solid #{if @suggest_mode, do: "#8e44ad", else: "rgba(60,40,20,0.2)"}; background: #{if @suggest_mode, do: "#8e44ad15", else: "transparent"}; color: #{if @suggest_mode, do: "#8e44ad", else: "#7a5c3a"};"}
+          >
+            <%= if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir passo" %>
+          </button>
+        </div>
+        <div style="display: flex; gap: 6px;">
           <button
             phx-click="expand_all"
             style="font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; background: transparent; border: 1px solid rgba(60,40,20,0.2); color: #7a5c3a; font-family: Georgia, serif;"
@@ -119,6 +127,38 @@
       <% end %>
     </div>
   </div>
+
+  <%!-- Suggestion form --%>
+  <%= if @suggest_mode do %>
+    <div style="max-width: 860px; margin: 0 auto; padding: 16px; background: #8e44ad08; border: 1px solid #8e44ad20; border-radius: 6px; margin-top: 12px;">
+      <div style="font-size: 12px; font-weight: 700; color: #8e44ad; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Sugerir novo passo</div>
+      <form phx-submit="create_suggested_step" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end;">
+        <div style="flex: 1; min-width: 150px;">
+          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Nome</label>
+          <input type="text" name="step[name]" required style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;" />
+        </div>
+        <div style="width: 100px;">
+          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Código</label>
+          <input type="text" name="step[code]" required style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: monospace; font-size: 14px; color: #1a0e05; box-sizing: border-box;" />
+        </div>
+        <div style="flex: 2; min-width: 200px;">
+          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Nota (opcional)</label>
+          <input type="text" name="step[note]" style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;" />
+        </div>
+        <div style="width: 140px;">
+          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Categoria</label>
+          <select name="step[category_id]" style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;">
+            <%= for cat <- @categories do %>
+              <option value={cat.id}>{cat.label}</option>
+            <% end %>
+          </select>
+        </div>
+        <button type="submit" style="padding: 8px 16px; background: #8e44ad; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.5px;">
+          Sugerir
+        </button>
+      </form>
+    </div>
+  <% end %>
 
   <%!-- Conteúdo --%>
   <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; width: 100%; box-sizing: border-box;">
@@ -163,10 +203,22 @@
         <%= if @drawer_item.wip do %>
           <span style="display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #c0392b18; color: #c0392b; border: 1px solid #c0392b40; margin-left: 4px;">WIP</span>
         <% end %>
+        <%= if @drawer_item.suggested_by_id do %>
+          <div style="margin-top: 8px;">
+            <span style="font-size: 10px; padding: 2px 8px; border-radius: 8px; background: #8e44ad18; color: #8e44ad; border: 1px solid #8e44ad30; font-style: italic;">
+              Sugestão de @{if @drawer_item.suggested_by, do: @drawer_item.suggested_by.username, else: "?"}
+            </span>
+            <%= if @is_admin do %>
+              <button phx-click="approve_step" phx-value-code={@drawer_item.code} data-confirm="Aprovar este passo como oficial?" style="margin-left: 8px; font-size: 10px; padding: 3px 10px; border-radius: 4px; background: #27ae60; color: white; border: none; cursor: pointer;">
+                Aprovar
+              </button>
+            <% end %>
+          </div>
+        <% end %>
       </div>
 
       <%!-- Note or edit form --%>
-      <%= if @edit_mode do %>
+      <%= if @can_edit_drawer do %>
         <form phx-submit="update_step" style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px;">
           <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Nome</label>
           <input type="text" name="step[name]" value={@drawer_item.name} style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05; box-sizing: border-box;" />
@@ -208,7 +260,7 @@
             <span phx-click="open_step" phx-value-code={conn.target_step.code} style="font-size: 13px; color: #1a0e05; cursor: pointer; flex: 1;">
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">{conn.target_step.code}</code> {conn.target_step.name}
             </span>
-            <%= if @edit_mode do %>
+            <%= if @can_edit_drawer do %>
               <button phx-click="delete_step_connection" phx-value-source={@drawer_item.code} phx-value-target={conn.target_step.code} data-confirm={"Remover #{@drawer_item.code} → #{conn.target_step.code}?"} style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 14px;">×</button>
             <% end %>
           </div>
@@ -222,14 +274,14 @@
             <span phx-click="open_step" phx-value-code={conn.source_step.code} style="font-size: 13px; color: #1a0e05; cursor: pointer; flex: 1;">
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">{conn.source_step.code}</code> {conn.source_step.name}
             </span>
-            <%= if @edit_mode do %>
+            <%= if @can_edit_drawer do %>
               <button phx-click="delete_step_connection" phx-value-source={conn.source_step.code} phx-value-target={@drawer_item.code} data-confirm={"Remover #{conn.source_step.code} → #{@drawer_item.code}?"} style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 14px;">×</button>
             <% end %>
           </div>
         <% end %>
       <% end %>
 
-      <%= if @edit_mode do %>
+      <%= if @can_edit_drawer do %>
         <div style="margin-top: 10px; position: relative;">
           <form phx-submit="create_step_connection" phx-change="search_connection" style="display: flex; gap: 6px;">
             <input

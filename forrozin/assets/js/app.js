@@ -434,7 +434,8 @@ const GraphVisual = {
           id: n.id, label: n.nome, categoria: n.categoria,
           categoriaName: n.categoriaName, cor: n.cor || "#9a7a5a",
           nota: n.nota,
-          highlighted: n.highlighted || false
+          highlighted: n.highlighted || false,
+          suggested: n.suggested || false
         }
       })
     })
@@ -465,6 +466,7 @@ const GraphVisual = {
               return e.degree() >= 10 ? 3 : 2
             },
             "border-color": "data(cor)", "border-opacity": 0.85,
+            "border-style": function(e) { return e.data("suggested") ? "dashed" : "solid" },
             "label": function(e) { return e.id() + "\n" + e.data("label") },
             "text-wrap": "wrap", "text-halign": "center", "text-valign": "center",
             "font-family": "Georgia, serif",

@@ -166,6 +166,7 @@ defmodule ForrozinWeb.GraphVisualLive do
             cor: if(cat, do: cat.color, else: "#9a7a5a"),
             nota: truncate_note(p.note, 300),
             highlighted: p.highlighted || false,
+            suggested: p.suggested_by_id != nil,
             orphan: not MapSet.member?(connected_codes, p.code)
           }
         end),

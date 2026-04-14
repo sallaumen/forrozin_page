@@ -5,12 +5,13 @@ defmodule Forrozin.Encyclopedia.Step do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
+  alias Forrozin.Accounts.User
   alias Forrozin.Encyclopedia.{Category, Connection, Section, Subsection, TechnicalConcept}
 
   @required_fields [:code, :name]
   @optional_fields [
     :note, :image_path, :position, :wip, :status, :highlighted,
-    :category_id, :section_id, :subsection_id
+    :category_id, :section_id, :subsection_id, :suggested_by_id
   ]
 
   schema "steps" do
@@ -23,6 +24,7 @@ defmodule Forrozin.Encyclopedia.Step do
     field :status, :string, default: "published"
     field :highlighted, :boolean, default: false
 
+    belongs_to :suggested_by, User, foreign_key: :suggested_by_id
     belongs_to :category, Category
     belongs_to :section, Section
     belongs_to :subsection, Subsection

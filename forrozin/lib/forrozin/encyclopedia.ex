@@ -78,8 +78,8 @@ defmodule Forrozin.Encyclopedia do
     |> Repo.all()
     |> Repo.preload([
       :category,
-      steps: direct_steps,
-      subsections: [steps: subsection_steps]
+      steps: {direct_steps, [:suggested_by]},
+      subsections: [steps: {subsection_steps, [:suggested_by]}]
     ])
   end
 
