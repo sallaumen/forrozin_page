@@ -9,21 +9,21 @@
     </a>
     <nav style="display: flex; gap: 24px; align-items: center;">
       <.link
-        navigate={~p"/acervo"}
+        navigate={~p"/collection"}
         style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
       >
         Acervo
       </.link>
       <%= if @is_admin do %>
         <.link
-          navigate={~p"/grafo"}
+          navigate={~p"/graph"}
           style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
         >
           ↗ Conexões
         </.link>
       <% end %>
       <span style="font-size: 11px; color: #7a5c3a; letter-spacing: 1px;">
-        {@current_user.nome_usuario}
+        {@current_user.username}
       </span>
     </nav>
   </header>
@@ -35,7 +35,7 @@
         Mapa de Passos
       </span>
       <span style="font-size: 12px; color: #7a5c3a;">
-        {@n_nos} passos · {@n_arestas} conexões
+        {@node_count} passos · {@edge_count} conexões
       </span>
     </div>
     <span style="font-size: 11px; color: #bba88a; letter-spacing: 0.5px;">
@@ -46,8 +46,8 @@
   <%!-- Canvas do grafo — fundo creme, ocupa o restante da tela --%>
   <div style="flex: 1; position: relative; overflow: hidden;">
     <div
-      id="grafo-canvas"
-      phx-hook="GrafoVisual"
+      id="graph-canvas"
+      phx-hook="GraphVisual"
       data-graph={@graph_json}
       style="width: 100%; height: calc(100vh - 100px); background: #f7f3ec;"
     >
