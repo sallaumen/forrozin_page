@@ -265,7 +265,7 @@ const GraphVisual = {
             "label": function(e) { return e.id() + "\n" + e.data("label") },
             "text-wrap": "wrap", "text-halign": "center", "text-valign": "center",
             "font-family": "Georgia, serif",
-            "font-size": function(e) { const d = e.degree(); return d >= 15 ? 13 : d >= 8 ? 11.5 : 10 },
+            "font-size": function(e) { const d = e.degree(); return d >= 15 ? 15 : d >= 8 ? 13 : 12 },
             "color": "#1a0e05", "text-max-width": "180px",
             "min-width": "80px",
             "shadow-blur": function(e) { return e.degree() >= 10 ? 10 : 4 },
