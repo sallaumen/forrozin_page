@@ -5,44 +5,44 @@ defmodule ForrozinWeb.UserRegistrationLiveTest do
 
   describe "página de cadastro" do
     test "renderiza formulário", %{conn: conn} do
-      {:ok, _lv, html} = live(conn, ~p"/cadastro")
+      {:ok, _lv, html} = live(conn, ~p"/signup")
       assert html =~ "Criar conta"
       assert html =~ "Usuário"
       assert html =~ "Senha"
     end
 
-    test "redireciona para /acervo se já autenticado", %{conn: conn} do
+    test "redireciona para /collection se já autenticado", %{conn: conn} do
       user = insert(:user)
       conn = conn |> log_in_user(user)
 
-      assert {:error, {:redirect, %{to: "/acervo"}}} = live(conn, ~p"/cadastro")
+      assert {:error, {:redirect, %{to: "/collection"}}} = live(conn, ~p"/signup")
     end
   end
 
   describe "cadastro de usuário" do
-    test "cria conta e redireciona para /entrar", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/cadastro")
+    test "cria conta e redireciona para /login", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/signup")
 
       result =
         lv
         |> form("form",
-          usuario: %{
-            nome_usuario: "novousuario",
+          user: %{
+            username: "novousuario",
             email: "novo@example.com",
-            senha: "senhasegura123"
+            password: "senhasegura123"
           }
         )
         |> render_submit()
 
-      assert {:error, {:redirect, %{to: "/entrar"}}} = result
+      assert {:error, {:redirect, %{to: "/login"}}} = result
     end
 
     test "exibe erros com dados inválidos", %{conn: conn} do
-      {:ok, lv, _html} = live(conn, ~p"/cadastro")
+      {:ok, lv, _html} = live(conn, ~p"/signup")
 
       html =
         lv
-        |> form("form", usuario: %{nome_usuario: "ab", email: "invalido", senha: "curta"})
+        |> form("form", user: %{username: "ab", email: "invalido", password: "curta"})
         |> render_submit()
 
       assert html =~ "should be at least"

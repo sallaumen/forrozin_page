@@ -1,26 +1,26 @@
 defmodule ForrozinWeb.UserSessionControllerTest do
   use ForrozinWeb.ConnCase, async: true
 
-  describe "GET /entrar" do
+  describe "GET /login" do
     test "renderiza formulário de login", %{conn: conn} do
-      conn = get(conn, ~p"/entrar")
+      conn = get(conn, ~p"/login")
       assert html_response(conn, 200) =~ "Entrar"
     end
 
-    test "redireciona para /acervo se já autenticado", %{conn: conn} do
+    test "redireciona para /collection se já autenticado", %{conn: conn} do
       user = insert(:user)
-      conn = conn |> log_in_user(user) |> get(~p"/entrar")
-      assert redirected_to(conn) == ~p"/acervo"
+      conn = conn |> log_in_user(user) |> get(~p"/login")
+      assert redirected_to(conn) == ~p"/collection"
     end
   end
 
-  describe "POST /entrar" do
+  describe "POST /login" do
     setup do
       {:ok, user} =
-        Forrozin.Accounts.registrar_usuario(%{
-          nome_usuario: "logintest",
+        Forrozin.Accounts.register_user(%{
+          username: "logintest",
           email: "logintest@example.com",
-          senha: "senhasegura123"
+          password: "senhasegura123"
         })
 
       %{user: user}
@@ -28,34 +28,34 @@ defmodule ForrozinWeb.UserSessionControllerTest do
 
     test "loga o usuário com credenciais corretas", %{conn: conn, user: user} do
       conn =
-        post(conn, ~p"/entrar", %{
-          "session" => %{"nome_usuario" => user.nome_usuario, "senha" => "senhasegura123"}
+        post(conn, ~p"/login", %{
+          "session" => %{"username" => user.username, "password" => "senhasegura123"}
         })
 
-      assert redirected_to(conn) == ~p"/acervo"
+      assert redirected_to(conn) == ~p"/collection"
       assert get_session(conn, :user_id) == user.id
     end
 
     test "exibe erro com credenciais inválidas", %{conn: conn} do
       conn =
-        post(conn, ~p"/entrar", %{
-          "session" => %{"nome_usuario" => "logintest", "senha" => "senhaerrada"}
+        post(conn, ~p"/login", %{
+          "session" => %{"username" => "logintest", "password" => "senhaerrada"}
         })
 
       assert html_response(conn, 200) =~ "inválidos"
     end
   end
 
-  describe "DELETE /sair" do
+  describe "DELETE /logout" do
     test "encerra a sessão e redireciona", %{conn: conn} do
       user = insert(:user)
 
       conn =
         conn
         |> log_in_user(user)
-        |> delete(~p"/sair")
+        |> delete(~p"/logout")
 
-      assert redirected_to(conn) == ~p"/entrar"
+      assert redirected_to(conn) == ~p"/login"
       refute get_session(conn, :user_id)
     end
   end

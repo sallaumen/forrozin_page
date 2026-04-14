@@ -4,135 +4,135 @@ defmodule Forrozin.AdminTest do
   alias Forrozin.Admin
 
   # ---------------------------------------------------------------------------
-  # criar_conexao/1
+  # create_connection/1
   # ---------------------------------------------------------------------------
 
-  describe "criar_conexao/1" do
+  describe "create_connection/1" do
     test "cria conexão válida entre dois passos" do
-      origem = insert(:passo, codigo: "BF")
-      destino = insert(:passo, codigo: "SC")
+      source = insert(:step, code: "BF")
+      target = insert(:step, code: "SC")
 
-      assert {:ok, conexao} =
-               Admin.criar_conexao(%{
-                 passo_origem_id: origem.id,
-                 passo_destino_id: destino.id,
-                 tipo: "saida"
+      assert {:ok, connection} =
+               Admin.create_connection(%{
+                 source_step_id: source.id,
+                 target_step_id: target.id,
+                 type: "exit"
                })
 
-      assert conexao.passo_origem_id == origem.id
-      assert conexao.passo_destino_id == destino.id
-      assert conexao.tipo == "saida"
+      assert connection.source_step_id == source.id
+      assert connection.target_step_id == target.id
+      assert connection.type == "exit"
     end
 
     test "retorna erro para tipo inválido" do
-      origem = insert(:passo, codigo: "BF")
-      destino = insert(:passo, codigo: "SC")
+      source = insert(:step, code: "BF")
+      target = insert(:step, code: "SC")
 
       assert {:error, changeset} =
-               Admin.criar_conexao(%{
-                 passo_origem_id: origem.id,
-                 passo_destino_id: destino.id,
-                 tipo: "invalido"
+               Admin.create_connection(%{
+                 source_step_id: source.id,
+                 target_step_id: target.id,
+                 type: "invalido"
                })
 
-      assert "is invalid" in errors_on(changeset).tipo
+      assert "is invalid" in errors_on(changeset).type
     end
 
     test "retorna erro quando passo de origem não existe" do
-      destino = insert(:passo, codigo: "SC")
-      id_inexistente = Ecto.UUID.generate()
+      target = insert(:step, code: "SC")
+      nonexistent_id = Ecto.UUID.generate()
 
       assert {:error, changeset} =
-               Admin.criar_conexao(%{
-                 passo_origem_id: id_inexistente,
-                 passo_destino_id: destino.id,
-                 tipo: "saida"
+               Admin.create_connection(%{
+                 source_step_id: nonexistent_id,
+                 target_step_id: target.id,
+                 type: "exit"
                })
 
-      assert changeset.errors[:passo_origem_id] != nil
+      assert changeset.errors[:source_step_id] != nil
     end
 
     test "retorna erro de constraint para conexão duplicada" do
-      origem = insert(:passo, codigo: "BF")
-      destino = insert(:passo, codigo: "SC")
-      insert(:conexao, passo_origem: origem, passo_destino: destino, tipo: "saida")
+      source = insert(:step, code: "BF")
+      target = insert(:step, code: "SC")
+      insert(:connection, source_step: source, target_step: target, type: "exit")
 
       assert {:error, changeset} =
-               Admin.criar_conexao(%{
-                 passo_origem_id: origem.id,
-                 passo_destino_id: destino.id,
-                 tipo: "saida"
+               Admin.create_connection(%{
+                 source_step_id: source.id,
+                 target_step_id: target.id,
+                 type: "exit"
                })
 
-      assert changeset.errors[:passo_origem_id] != nil or
-               changeset.errors[:passo_destino_id] != nil
+      assert changeset.errors[:source_step_id] != nil or
+               changeset.errors[:target_step_id] != nil
     end
 
-    test "cria conexão com rótulo e descrição opcionais" do
-      origem = insert(:passo, codigo: "ARM-D")
-      destino = insert(:passo, codigo: "TR-ARM")
+    test "cria conexão com label e description opcionais" do
+      source = insert(:step, code: "ARM-D")
+      target = insert(:step, code: "TR-ARM")
 
-      assert {:ok, conexao} =
-               Admin.criar_conexao(%{
-                 passo_origem_id: origem.id,
-                 passo_destino_id: destino.id,
-                 tipo: "saida",
-                 rotulo: "Trava Armada",
-                 descricao: "Ambos jogam CDM para direita gerando elástico."
+      assert {:ok, connection} =
+               Admin.create_connection(%{
+                 source_step_id: source.id,
+                 target_step_id: target.id,
+                 type: "exit",
+                 label: "Trava Armada",
+                 description: "Ambos jogam centro de massa para direita gerando elástico."
                })
 
-      assert conexao.rotulo == "Trava Armada"
-      assert conexao.descricao == "Ambos jogam CDM para direita gerando elástico."
+      assert connection.label == "Trava Armada"
+      assert connection.description == "Ambos jogam centro de massa para direita gerando elástico."
     end
   end
 
   # ---------------------------------------------------------------------------
-  # editar_conexao/2
+  # update_connection/2
   # ---------------------------------------------------------------------------
 
-  describe "editar_conexao/2" do
-    test "atualiza rotulo de uma conexão existente" do
-      origem = insert(:passo, codigo: "BF")
-      destino = insert(:passo, codigo: "SC")
-      conexao = insert(:conexao, passo_origem: origem, passo_destino: destino, tipo: "saida")
+  describe "update_connection/2" do
+    test "atualiza label de uma conexão existente" do
+      source = insert(:step, code: "BF")
+      target = insert(:step, code: "SC")
+      connection = insert(:connection, source_step: source, target_step: target, type: "exit")
 
-      assert {:ok, atualizada} = Admin.editar_conexao(conexao.id, %{rotulo: "Trava Armada"})
-      assert atualizada.rotulo == "Trava Armada"
+      assert {:ok, updated} = Admin.update_connection(connection.id, %{label: "Trava Armada"})
+      assert updated.label == "Trava Armada"
     end
 
-    test "atualiza descricao de uma conexão existente" do
-      origem = insert(:passo, codigo: "BF")
-      destino = insert(:passo, codigo: "SC")
-      conexao = insert(:conexao, passo_origem: origem, passo_destino: destino, tipo: "saida")
+    test "atualiza description de uma conexão existente" do
+      source = insert(:step, code: "BF")
+      target = insert(:step, code: "SC")
+      connection = insert(:connection, source_step: source, target_step: target, type: "exit")
 
-      assert {:ok, atualizada} =
-               Admin.editar_conexao(conexao.id, %{descricao: "Nova descrição."})
+      assert {:ok, updated} =
+               Admin.update_connection(connection.id, %{description: "Nova descrição."})
 
-      assert atualizada.descricao == "Nova descrição."
+      assert updated.description == "Nova descrição."
     end
 
     test "retorna erro para ID inexistente" do
-      assert {:error, :nao_encontrado} = Admin.editar_conexao(Ecto.UUID.generate(), %{rotulo: "X"})
+      assert {:error, :not_found} = Admin.update_connection(Ecto.UUID.generate(), %{label: "X"})
     end
   end
 
   # ---------------------------------------------------------------------------
-  # remover_conexao/1
+  # delete_connection/1
   # ---------------------------------------------------------------------------
 
-  describe "remover_conexao/1" do
+  describe "delete_connection/1" do
     test "remove uma conexão existente" do
-      origem = insert(:passo, codigo: "BF")
-      destino = insert(:passo, codigo: "SC")
-      conexao = insert(:conexao, passo_origem: origem, passo_destino: destino, tipo: "saida")
+      source = insert(:step, code: "BF")
+      target = insert(:step, code: "SC")
+      connection = insert(:connection, source_step: source, target_step: target, type: "exit")
 
-      assert {:ok, removida} = Admin.remover_conexao(conexao.id)
-      assert removida.id == conexao.id
-      assert Forrozin.Repo.get(Forrozin.Enciclopedia.Conexao, conexao.id) == nil
+      assert {:ok, deleted} = Admin.delete_connection(connection.id)
+      assert deleted.id == connection.id
+      assert Forrozin.Repo.get(Forrozin.Encyclopedia.Connection, connection.id) == nil
     end
 
     test "retorna erro para ID inexistente" do
-      assert {:error, :nao_encontrado} = Admin.remover_conexao(Ecto.UUID.generate())
+      assert {:error, :not_found} = Admin.delete_connection(Ecto.UUID.generate())
     end
   end
 end

@@ -1,7 +1,7 @@
-defmodule Forrozin.Workers.BackupPeriodicoTest do
+defmodule Forrozin.Workers.PeriodicBackupTest do
   use Forrozin.DataCase, async: false
 
-  alias Forrozin.Workers.BackupPeriodico
+  alias Forrozin.Workers.PeriodicBackup
 
   setup do
     dir =
@@ -14,9 +14,9 @@ defmodule Forrozin.Workers.BackupPeriodicoTest do
 
   describe "perform/1" do
     test "retorna :ok e cria arquivo de backup", %{dir: dir} do
-      assert :ok = perform_job(BackupPeriodico, %{"dir" => dir})
-      arquivos = File.ls!(dir) |> Enum.filter(&String.ends_with?(&1, ".json"))
-      assert length(arquivos) == 1
+      assert :ok = perform_job(PeriodicBackup, %{"dir" => dir})
+      files = File.ls!(dir) |> Enum.filter(&String.ends_with?(&1, ".json"))
+      assert length(files) == 1
     end
   end
 end
