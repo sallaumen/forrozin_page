@@ -8,20 +8,14 @@ defmodule Forrozin.AccountsTest do
   @valid_attrs %{username: "novousuario", email: "novo@example.com", password: "senhasegura"}
 
   describe "register_user/1" do
-    test "creates user with valid data and enqueues confirmation email" do
+    test "creates user with valid data and auto-confirms" do
       assert {:ok, user} = Accounts.register_user(@valid_attrs)
 
       assert user.username == "novousuario"
       assert user.email == "novo@example.com"
       assert user.role == "user"
       assert user.password_hash != nil
-      assert user.confirmation_token != nil
-      assert user.confirmed_at == nil
-
-      assert_email_sent(
-        subject: "Confirme seu email — Forrózin",
-        to: [{"novousuario", "novo@example.com"}]
-      )
+      assert user.confirmed_at != nil
     end
 
     test "returns error with duplicate username" do
@@ -52,8 +46,8 @@ defmodule Forrozin.AccountsTest do
 
   describe "confirm_email/1" do
     test "confirms email with valid token" do
-      {:ok, user} = Accounts.register_user(@valid_attrs)
-      assert {:ok, confirmed} = Accounts.confirm_email(user.confirmation_token)
+      user = insert(:user, confirmed_at: nil, confirmation_token: "valid_token_123")
+      assert {:ok, confirmed} = Accounts.confirm_email("valid_token_123")
       assert confirmed.confirmed_at != nil
       assert confirmed.confirmation_token == nil
     end
@@ -63,21 +57,20 @@ defmodule Forrozin.AccountsTest do
     end
 
     test "returns error with already used token" do
-      {:ok, user} = Accounts.register_user(@valid_attrs)
-      Accounts.confirm_email(user.confirmation_token)
-      assert {:error, :invalid_token} = Accounts.confirm_email(user.confirmation_token)
+      insert(:user, confirmed_at: nil, confirmation_token: "used_token_456")
+      Accounts.confirm_email("used_token_456")
+      assert {:error, :invalid_token} = Accounts.confirm_email("used_token_456")
     end
   end
 
   describe "email_confirmed?/1" do
-    test "returns true for confirmed user" do
+    test "returns true for auto-confirmed user" do
       {:ok, user} = Accounts.register_user(@valid_attrs)
-      {:ok, confirmed} = Accounts.confirm_email(user.confirmation_token)
-      assert Accounts.email_confirmed?(confirmed)
+      assert Accounts.email_confirmed?(user)
     end
 
-    test "returns false for unconfirmed user" do
-      {:ok, user} = Accounts.register_user(@valid_attrs)
+    test "returns false for user with nil confirmed_at" do
+      user = %Forrozin.Accounts.User{confirmed_at: nil}
       refute Accounts.email_confirmed?(user)
     end
   end

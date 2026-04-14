@@ -31,7 +31,6 @@ defmodule ForrozinWeb.CollectionLive do
         search: "",
         search_results: [],
         category_filter: "all",
-        email_confirmed: Accounts.email_confirmed?(socket.assigns.current_user),
         is_admin: admin,
         edit_mode: false,
         page_title: "Acervo",

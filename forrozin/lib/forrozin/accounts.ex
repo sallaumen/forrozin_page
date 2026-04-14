@@ -5,7 +5,6 @@ defmodule Forrozin.Accounts do
 
   alias Forrozin.Accounts.User
   alias Forrozin.Repo
-  alias Forrozin.Workers.SendConfirmationEmail
 
   @doc """
   Registers a new user and enqueues the confirmation email.
@@ -13,24 +12,14 @@ defmodule Forrozin.Accounts do
   Returns `{:ok, user}` or `{:error, changeset}`.
   """
   def register_user(attrs) do
-    token = generate_token()
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
     changeset =
       %User{}
       |> User.registration_changeset(attrs)
-      |> Ecto.Changeset.put_change(:confirmation_token, token)
+      |> Ecto.Changeset.put_change(:confirmed_at, now)
 
-    case Repo.insert(changeset) do
-      {:ok, user} ->
-        %{user_id: user.id}
-        |> SendConfirmationEmail.new()
-        |> Oban.insert()
-
-        {:ok, user}
-
-      error ->
-        error
-    end
+    Repo.insert(changeset)
   end
 
   @doc """
@@ -84,8 +73,4 @@ defmodule Forrozin.Accounts do
   def admin?(%User{role: "admin"}), do: true
   def admin?(_), do: false
 
-  defp generate_token do
-    random_bytes = :crypto.strong_rand_bytes(32)
-    Base.url_encode64(random_bytes, padding: false)
-  end
 end

@@ -18,7 +18,7 @@ defmodule ForrozinWeb.UserRegistrationLive do
       {:ok, _user} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Conta criada! Verifique seu email para confirmar o cadastro.")
+         |> put_flash(:info, "Conta criada! Faça login para acessar o acervo.")
          |> redirect(to: ~p"/login")}
 
       {:error, changeset} ->
