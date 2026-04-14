@@ -86,15 +86,22 @@ function runHybridLayout(cy) {
     })
   })
 
-  // Proportional angular allocation: bigger categories get more arc
-  const totalOuterNodes = outerCats.reduce((sum, c) => sum + (byCat[c]?.length || 1), 0)
-  let currentAngle = -Math.PI / 2 // start at 12 o'clock
+  // Proportional angular allocation with minimum arc per category
+  const MIN_ARC = Math.PI / 5 // ~36 degrees minimum per category
+  const rawArcs = outerCats.map(c => Math.max(byCat[c]?.length || 1, 3))
+  const totalWeight = rawArcs.reduce((s, w) => s + w, 0)
+  // Scale so total = 2π, but enforce minimum
+  let arcs = rawArcs.map(w => Math.max((w / totalWeight) * 2 * Math.PI, MIN_ARC))
+  const arcTotal = arcs.reduce((s, a) => s + a, 0)
+  arcs = arcs.map(a => (a / arcTotal) * 2 * Math.PI) // normalize to exactly 2π
 
-  outerCats.forEach(cat => {
+  let currentAngle = -Math.PI / 2
+
+  outerCats.forEach((cat, catIdx) => {
     const group = byCat[cat] || []
     const n = group.length
-    const arcShare = (n / totalOuterNodes) * 2 * Math.PI
-    const theta = currentAngle + arcShare / 2 // center of this sector's arc
+    const arcShare = arcs[catIdx]
+    const theta = currentAngle + arcShare / 2
     currentAngle += arcShare
 
     sectorCenters[cat] = { x: R_OUTER * Math.cos(theta), y: R_OUTER * Math.sin(theta), theta }
