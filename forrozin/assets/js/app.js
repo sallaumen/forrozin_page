@@ -55,7 +55,7 @@ function computeSectorPositions(cy) {
 
   const numCats = activeCats.length
   const positions = {}
-  const R_BASE = 460
+  const R_BASE = 580
   const NODE_GAP = 130
   const ROW_GAP = 120
 
@@ -129,7 +129,7 @@ function drawCategoryZones(cy) {
       maxY = Math.max(maxY, pos.y + h)
     })
 
-    const padding = 50
+    const padding = 35
     const cx = (minX + maxX) / 2
     const cy_ = (minY + maxY) / 2
     const rx = (maxX - minX) / 2 + padding
@@ -137,8 +137,11 @@ function drawCategoryZones(cy) {
 
     ctx.beginPath()
     ctx.ellipse(cx, cy_, rx, ry, 0, 0, 2 * Math.PI)
-    ctx.fillStyle = cor + "0A" // ~4% opacity via hex alpha
+    ctx.fillStyle = cor + "08" // ~3% opacity via hex alpha
     ctx.fill()
+    ctx.strokeStyle = cor + "20" // ~12% opacity border
+    ctx.lineWidth = 1.5
+    ctx.stroke()
   })
 }
 
@@ -392,7 +395,7 @@ const GraphVisual = {
       },
       edgeLength: function(e) {
         const same = e.source().data("categoriaName") === e.target().data("categoriaName")
-        return same ? 90 : 340
+        return same ? 90 : 450
       },
       gravity: 0.12, convergenceThreshold: 0.05, infinite: false
     }
