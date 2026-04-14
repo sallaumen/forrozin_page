@@ -16,6 +16,7 @@ defmodule Forrozin.Accounts.User do
   @foreign_key_type :binary_id
 
   @valid_roles ~w(user admin)
+  @valid_states ~w(AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO)
   @min_password 8
 
   schema "users" do
@@ -42,7 +43,7 @@ defmodule Forrozin.Accounts.User do
       message: "use apenas letras minúsculas, números e _"
     )
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/, message: "formato inválido")
-    |> validate_length(:state, is: 2, message: "selecione um estado")
+    |> validate_inclusion(:state, @valid_states, message: "selecione um estado válido")
     |> validate_length(:city, min: 2, message: "selecione uma cidade")
     |> validate_length(:password, min: @min_password)
     |> validate_inclusion(:role, @valid_roles)

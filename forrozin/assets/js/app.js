@@ -661,56 +661,133 @@ const GraphVisual = {
 const CityAutocomplete = {
   mounted() {
     this._citiesData = null
+    this._selectedIndex = -1
+    this._currentCities = []
     this._loadCities()
 
     const stateSelect = this.el
     const cityInput = document.getElementById("city-input")
     const suggestions = document.getElementById("city-suggestions")
+    const form = stateSelect.closest("form")
     if (!cityInput || !suggestions) return
 
     stateSelect.addEventListener("change", () => {
       cityInput.value = ""
       cityInput.placeholder = stateSelect.value ? "Digite o nome da cidade..." : "Selecione o estado primeiro"
       suggestions.style.display = "none"
+      this._currentCities = []
     })
 
-    cityInput.addEventListener("input", () => {
+    const showSuggestions = () => {
       const state = stateSelect.value
       const term = cityInput.value.toLowerCase()
       if (!state || !this._citiesData || term.length < 1) {
         suggestions.style.display = "none"
+        this._currentCities = []
         return
       }
 
-      const cities = (this._citiesData[state] || [])
+      this._currentCities = (this._citiesData[state] || [])
         .filter(c => c.toLowerCase().includes(term))
         .slice(0, 10)
 
-      if (cities.length === 0) {
+      if (this._currentCities.length === 0) {
         suggestions.style.display = "none"
         return
       }
 
+      this._selectedIndex = -1
+      renderSuggestions()
+    }
+
+    const renderSuggestions = () => {
       suggestions.style.display = "block"
       suggestions.textContent = ""
-      cities.forEach(city => {
+      this._currentCities.forEach((city, idx) => {
         const div = document.createElement("div")
         div.textContent = city
-        div.style.cssText = "padding: 10px 16px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; border-bottom: 1px solid rgba(180,120,40,0.1);"
+        const isActive = idx === this._selectedIndex
+        div.style.cssText = `padding: 10px 16px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; border-bottom: 1px solid rgba(180,120,40,0.1); background: ${isActive ? "rgba(180,120,40,0.1)" : "transparent"};`
         div.addEventListener("mousedown", (e) => {
           e.preventDefault()
-          cityInput.value = city
-          suggestions.style.display = "none"
+          selectCity(city)
         })
         div.addEventListener("mouseover", () => { div.style.background = "rgba(180,120,40,0.06)" })
-        div.addEventListener("mouseout", () => { div.style.background = "transparent" })
+        div.addEventListener("mouseout", () => { div.style.background = isActive ? "rgba(180,120,40,0.1)" : "transparent" })
         suggestions.appendChild(div)
       })
+    }
+
+    const selectCity = (city) => {
+      cityInput.value = city
+      suggestions.style.display = "none"
+      this._currentCities = []
+      this._selectedIndex = -1
+    }
+
+    cityInput.addEventListener("input", showSuggestions)
+
+    // Keyboard navigation: arrows + enter selects, doesn't submit form
+    cityInput.addEventListener("keydown", (e) => {
+      if (this._currentCities.length === 0) return
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        this._selectedIndex = Math.min(this._selectedIndex + 1, this._currentCities.length - 1)
+        renderSuggestions()
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        this._selectedIndex = Math.max(this._selectedIndex - 1, 0)
+        renderSuggestions()
+      } else if (e.key === "Enter") {
+        e.preventDefault()
+        if (this._selectedIndex >= 0) {
+          selectCity(this._currentCities[this._selectedIndex])
+        } else if (this._currentCities.length === 1) {
+          selectCity(this._currentCities[0])
+        } else if (this._currentCities.length > 0) {
+          // Select first match
+          selectCity(this._currentCities[0])
+        }
+      } else if (e.key === "Escape") {
+        suggestions.style.display = "none"
+        this._currentCities = []
+      }
     })
 
     cityInput.addEventListener("blur", () => {
-      setTimeout(() => { suggestions.style.display = "none" }, 150)
+      setTimeout(() => { suggestions.style.display = "none" }, 200)
     })
+
+    // Form validation: prevent submit if city is not in the list
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        const state = stateSelect.value
+        const city = cityInput.value.trim()
+
+        if (!state) {
+          e.preventDefault()
+          stateSelect.style.borderColor = "#c0392b"
+          return
+        }
+
+        if (!this._citiesData || !city) {
+          e.preventDefault()
+          cityInput.style.borderColor = "#c0392b"
+          return
+        }
+
+        const validCities = this._citiesData[state] || []
+        if (!validCities.includes(city)) {
+          e.preventDefault()
+          cityInput.style.borderColor = "#c0392b"
+          cityInput.value = ""
+          cityInput.placeholder = "Selecione uma cidade válida da lista"
+          cityInput.focus()
+          showSuggestions()
+        }
+      })
+    }
   },
 
   async _loadCities() {
