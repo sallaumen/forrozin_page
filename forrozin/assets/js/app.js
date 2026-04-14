@@ -69,8 +69,8 @@ function runHybridLayout(cy) {
   //    Other categories go to outer sectors
   const outerCats = activeCats.filter(c => c !== "bases")
   const numOuter = outerCats.length
-  const R_OUTER = 550
-  const R_BASES = 180 // bases cluster close to BF at center
+  const R_OUTER = 650
+  const R_BASES = 200 // bases cluster close to BF at center
   const NODE_GAP = 110
   const ROW_GAP = 100
 
@@ -119,16 +119,7 @@ function runHybridLayout(cy) {
   let remaining = allCats.length
 
   function onDone() {
-    // Lock BF at center, brief global Cola for overlap only
-    if (bf.length > 0) bf.lock()
-    cy.layout({
-      name: "cola", animate: false, maxSimulationTime: 400,
-      randomize: false, fit: false, avoidOverlaps: true,
-      nodeDimensionsIncludeLabels: true, nodeSpacing: 25,
-      edgeLength: 180, gravity: 0.005, convergenceThreshold: 0.1, infinite: false
-    }).run()
-    if (bf.length > 0) bf.unlock()
-
+    // No global Cola — per-category layout is final
     cy.fit(undefined, 60)
     drawCategoryZones(cy, sectorCenters, byCat)
   }
@@ -147,10 +138,10 @@ function runHybridLayout(cy) {
     if (cat === "bases" && bf.length > 0) bf.lock()
 
     catElements.layout({
-      name: "cola", animate: false, maxSimulationTime: 600,
+      name: "cola", animate: false, maxSimulationTime: 400,
       randomize: false, fit: false, avoidOverlaps: true,
-      nodeDimensionsIncludeLabels: true, nodeSpacing: 30,
-      edgeLength: 80, gravity: 0.2, convergenceThreshold: 0.05, infinite: false
+      nodeDimensionsIncludeLabels: true, nodeSpacing: 25,
+      edgeLength: 70, gravity: 0.8, convergenceThreshold: 0.05, infinite: false
     }).run()
 
     if (cat === "bases" && bf.length > 0) bf.unlock()
@@ -460,15 +451,9 @@ const GraphVisual = {
     })
     setupZoneRedraw(cy, sectorCenters, byCat)
 
-    // ── Drag-release: local anti-overlap only ──
+    // ── Drag-release: just redraw zones, no re-layout ──
     cy.on("dragfreeon", "node", () => {
-      cy.layout({
-        name: "cola", animate: true, animationDuration: 400, maxSimulationTime: 500,
-        randomize: false, fit: false, avoidOverlaps: true,
-        nodeDimensionsIncludeLabels: true, nodeSpacing: 30,
-        edgeLength: 120, gravity: 0.01, convergenceThreshold: 0.1, infinite: false
-      }).run()
-      setTimeout(() => drawCategoryZones(cy, sectorCenters, byCat), 600)
+      drawCategoryZones(cy, sectorCenters, byCat)
     })
 
     // ── Interactions ──
