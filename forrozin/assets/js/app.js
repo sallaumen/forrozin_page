@@ -66,11 +66,10 @@ function runHybridLayout(cy) {
   if (bf.length > 0) bf.position({ x: 0, y: 0 })
 
   // 3. "bases" cluster radiates directly around BF at a shorter radius
-  //    Other categories go to outer sectors
+  //    Other categories go to outer sectors with proportional angular size
   const outerCats = activeCats.filter(c => c !== "bases")
-  const numOuter = outerCats.length
-  const R_OUTER = 650
-  const R_BASES = 200 // bases cluster close to BF at center
+  const R_OUTER = 520
+  const R_BASES = 190
   const NODE_GAP = 110
   const ROW_GAP = 100
 
@@ -87,13 +86,19 @@ function runHybridLayout(cy) {
     })
   })
 
-  // Other categories: outer ring sectors
-  outerCats.forEach((cat, i) => {
-    const theta = (2 * Math.PI * i / numOuter) - Math.PI / 2
-    sectorCenters[cat] = { x: R_OUTER * Math.cos(theta), y: R_OUTER * Math.sin(theta), theta }
+  // Proportional angular allocation: bigger categories get more arc
+  const totalOuterNodes = outerCats.reduce((sum, c) => sum + (byCat[c]?.length || 1), 0)
+  let currentAngle = -Math.PI / 2 // start at 12 o'clock
 
+  outerCats.forEach(cat => {
     const group = byCat[cat] || []
     const n = group.length
+    const arcShare = (n / totalOuterNodes) * 2 * Math.PI
+    const theta = currentAngle + arcShare / 2 // center of this sector's arc
+    currentAngle += arcShare
+
+    sectorCenters[cat] = { x: R_OUTER * Math.cos(theta), y: R_OUTER * Math.sin(theta), theta }
+
     const center = sectorCenters[cat]
     const rHat = { x: Math.cos(theta), y: Math.sin(theta) }
     const tHat = { x: -Math.sin(theta), y: Math.cos(theta) }
