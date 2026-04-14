@@ -168,9 +168,10 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
     const cy_ = (minY + maxY) / 2
     const rx = (maxX - minX) / 2 + padding
     const ry = (maxY - minY) / 2 + padding
+    const r = Math.max(rx, ry, 40) // circle: use the larger dimension
 
     ctx.beginPath()
-    ctx.ellipse(cx, cy_, Math.max(rx, 40), Math.max(ry, 40), 0, 0, 2 * Math.PI)
+    ctx.arc(cx, cy_, r, 0, 2 * Math.PI)
     ctx.fillStyle = cor + "0A"
     ctx.fill()
     ctx.strokeStyle = cor + "25"
