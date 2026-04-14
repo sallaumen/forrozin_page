@@ -85,6 +85,7 @@ defmodule Forrozin.Accounts do
   def admin?(_), do: false
 
   defp generate_token do
-    :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+    random_bytes = :crypto.strong_rand_bytes(32)
+    Base.url_encode64(random_bytes, padding: false)
   end
 end

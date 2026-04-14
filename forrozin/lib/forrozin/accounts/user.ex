@@ -49,10 +49,8 @@ defmodule Forrozin.Accounts.User do
 
   @doc "Changeset that marks the email as confirmed and invalidates the token."
   def confirmation_changeset(user) do
-    change(user,
-      confirmed_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-      confirmation_token: nil
-    )
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    change(user, confirmed_at: now, confirmation_token: nil)
   end
 
   defp hash_password(changeset) do

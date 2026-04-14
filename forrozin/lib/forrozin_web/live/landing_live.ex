@@ -10,6 +10,6 @@ defmodule ForrozinWeb.LandingLive do
   @impl true
   def mount(_params, _session, socket) do
     total = Encyclopedia.count_public_steps()
-    {:ok, assign(socket, page_title: "O grupo de estudos", total_passos: total)}
+    {:ok, assign(socket, page_title: "O grupo de estudos", total_steps: total)}
   end
 end
