@@ -57,13 +57,16 @@ defmodule ForrozinWeb.GraphVisualLive do
 
     required_codes = socket.assigns.seq_required_codes
 
+    max_bf = parse_int(Map.get(params, "max_bf_visits", "1"), 1)
+
     gen_params = %{
       start_code: start_code,
       length: length_val,
       count: count_val,
       required_codes: required_codes,
       allow_repeats: allow_repeats,
-      cyclic: cyclic
+      cyclic: cyclic,
+      max_bf_visits: max_bf
     }
 
     {:ok, sequences, warnings} = Sequences.generate(gen_params)

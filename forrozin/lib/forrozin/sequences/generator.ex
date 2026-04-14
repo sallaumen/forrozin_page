@@ -34,8 +34,14 @@ defmodule Forrozin.Sequences.Generator do
   - `required_codes` — best-effort inclusion of these steps
   """
   @spec generate(params()) :: result()
+  @bf_code "BF"
+
   def generate(params) do
-    params = Map.put_new(params, :cyclic, true)
+    params =
+      params
+      |> Map.put_new(:cyclic, true)
+      |> Map.put_new(:max_bf_visits, 1)
+
     steps = StepQuery.list_by(public_only: true, preload: [:category])
     connections = ConnectionQuery.list_by(preload: [])
 
@@ -53,7 +59,7 @@ defmodule Forrozin.Sequences.Generator do
       sequences =
         1..params.count
         |> Enum.map(fn _ ->
-          generate_one(start_id, params.length, adjacency, required_id_set, params.allow_repeats, params.cyclic, step_map)
+          generate_one(start_id, params.length, adjacency, required_id_set, params.allow_repeats, params.cyclic, step_map, params)
         end)
         |> Enum.reject(&is_nil/1)
         |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
@@ -81,9 +87,9 @@ defmodule Forrozin.Sequences.Generator do
     end)
   end
 
-  defp generate_one(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map) do
+  defp generate_one(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map, params) do
     Enum.reduce_while(1..@max_attempts_per_sequence, nil, fn _, _acc ->
-      path = walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map)
+      path = walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map, params)
 
       valid =
         cond do
@@ -97,16 +103,30 @@ defmodule Forrozin.Sequences.Generator do
     end)
   end
 
-  defp walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map) do
-    # For cyclic: we need length-1 internal steps + return to start
+  defp walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map, params) do
+    code_to_id = Map.new(Map.values(step_map), &{&1.code, &1.id})
+    bf_id = Map.get(code_to_id, @bf_code)
+
+    # BF limit: for cyclic starting at BF, allow 3 (start + end + 1 mid)
+    # For others, use configurable max_bf_visits (default 1)
+    max_bf =
+      if cyclic and start_id == bf_id do
+        3
+      else
+        Map.get(params, :max_bf_visits, 1)
+      end
+
     state = %{
       visited: MapSet.new([start_id]),
       pair_counts: %{},
+      step_counts: %{start_id => 1},
       adjacency: adjacency,
       required_ids: required_ids,
       allow_repeats: allow_repeats,
       cyclic: cyclic,
       start_id: start_id,
+      bf_id: bf_id,
+      max_bf: max_bf,
       step_map: step_map,
       target_length: target_length
     }
@@ -157,7 +177,8 @@ defmodule Forrozin.Sequences.Generator do
 
       new_state = %{state |
         visited: MapSet.put(state.visited, next),
-        pair_counts: Map.update(state.pair_counts, pair, 1, &(&1 + 1))
+        pair_counts: Map.update(state.pair_counts, pair, 1, &(&1 + 1)),
+        step_counts: Map.update(state.step_counts, next, 1, &(&1 + 1))
       }
 
       do_walk([next | path], new_state)
@@ -169,16 +190,23 @@ defmodule Forrozin.Sequences.Generator do
       # Check repeat rules
       repeat_ok =
         if state.allow_repeats do
-          # Allow repeats but limit same pair to @max_same_pair_loops
           pair_count = Map.get(state.pair_counts, {current, n}, 0)
           pair_count < @max_same_pair_loops
         else
-          # No repeats except returning to start on last step if cyclic
           not MapSet.member?(state.visited, n) or
             (state.cyclic and n == state.start_id and steps_remaining == 1)
         end
 
-      repeat_ok
+      # Check BF visit limit
+      bf_ok =
+        if n == state.bf_id and state.bf_id != nil do
+          current_bf_count = Map.get(state.step_counts, n, 0)
+          current_bf_count < state.max_bf
+        else
+          true
+        end
+
+      repeat_ok and bf_ok
     end)
   end
 
