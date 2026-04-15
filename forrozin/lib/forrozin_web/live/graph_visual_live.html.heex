@@ -28,6 +28,12 @@
         >
           ↗ Conexões
         </.link>
+        <.link
+          navigate={~p"/admin/links"}
+          style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+        >
+          Links
+        </.link>
         <button
           phx-click="toggle_edit_mode"
           style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}

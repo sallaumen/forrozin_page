@@ -6,7 +6,7 @@ defmodule Forrozin.Admin do
   Authorization is the responsibility of the Web layer (LiveViews/Plugs).
   """
 
-  alias Forrozin.Encyclopedia.{Category, Connection, Section, Step, Subsection}
+  alias Forrozin.Encyclopedia.{Category, Connection, Section, Step, StepLink, Subsection}
   alias Forrozin.Repo
 
   @doc """
@@ -83,6 +83,33 @@ defmodule Forrozin.Admin do
 
   def update_category(%Category{} = cat, attrs) do
     cat |> Category.changeset(attrs) |> Repo.update()
+  end
+
+  @doc """
+  Creates a step link (submitted by a user, pending approval).
+
+  Returns `{:ok, link}` or `{:error, changeset}`.
+  """
+  def create_step_link(attrs) do
+    %StepLink{} |> StepLink.changeset(attrs) |> Repo.insert()
+  end
+
+  @doc """
+  Approves a step link, making it visible to all users.
+
+  Returns `{:ok, link}` or `{:error, changeset}`.
+  """
+  def approve_step_link(link) do
+    link |> Ecto.Changeset.change(approved: true) |> Repo.update()
+  end
+
+  @doc """
+  Soft-deletes a step link by setting deleted_at.
+
+  Returns `{:ok, link}` or `{:error, changeset}`.
+  """
+  def delete_step_link(link) do
+    link |> Ecto.Changeset.change(deleted_at: now()) |> Repo.update()
   end
 
   defp now do

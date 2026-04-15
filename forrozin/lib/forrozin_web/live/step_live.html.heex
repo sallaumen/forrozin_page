@@ -350,6 +350,75 @@
         </div>
       <% end %>
     </div>
+
+    <%!-- Links --%>
+    <div style="margin-bottom: 40px;">
+      <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px;">
+        Links
+      </p>
+
+      <%!-- Approved links --%>
+      <%= if @approved_links == [] do %>
+        <p style="font-size: 13px; color: #bba88a; font-style: italic; margin-bottom: 16px;">
+          Nenhum link ainda.
+        </p>
+      <% else %>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+          <%= for link <- @approved_links do %>
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              style="display: block; padding: 10px 14px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; overflow: hidden;"
+            >
+              <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 2px;">
+                {if link.title && link.title != "", do: link.title, else: link.url}
+              </p>
+              <p style="font-size: 11px; color: #9a7a5a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {link.url}
+              </p>
+            </a>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%!-- Submit link form --%>
+      <div style="padding: 16px; background: rgba(212,160,84,0.06); border: 1px solid rgba(212,160,84,0.2); border-radius: 6px;">
+        <p style="font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 12px;">
+          Adicionar link
+        </p>
+        <form phx-submit="submit_link" style="display: flex; flex-direction: column; gap: 8px;">
+          <input
+            type="url"
+            name="url"
+            value={@link_url}
+            placeholder="https://..."
+            required
+            style="width: 100%; padding: 9px 12px; border: 1px solid rgba(60,40,20,0.25); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+          />
+          <input
+            type="text"
+            name="title"
+            value={@link_title}
+            placeholder="Título opcional"
+            style="width: 100%; padding: 9px 12px; border: 1px solid rgba(60,40,20,0.25); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+          />
+          <div>
+            <button
+              type="submit"
+              style="padding: 9px 18px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+            >
+              Enviar link
+            </button>
+          </div>
+        </form>
+        <%= if @link_submitted do %>
+          <p style="font-size: 13px; color: #27ae60; margin-top: 10px; font-style: italic;">
+            Link enviado para aprovação!
+          </p>
+        <% end %>
+      </div>
+    </div>
   </div>
 
   <%!-- Footer --%>

@@ -1,0 +1,171 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <%!-- Header --%>
+  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
+      Forrózin
+    </a>
+    <nav style="display: flex; gap: 24px; align-items: center;">
+      <.link
+        navigate={~p"/collection"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        Acervo
+      </.link>
+      <.link
+        navigate={~p"/graph/visual"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
+        Mapa
+      </.link>
+      <.link
+        navigate={~p"/admin/links"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #d4a054; text-decoration: none; letter-spacing: 1px; font-weight: 600;"
+      >
+        Links
+      </.link>
+      <.link
+        navigate={~p"/users/#{@current_user.username}"}
+        style="font-size: 12px; color: #f2ede4; text-decoration: none; letter-spacing: 0.5px;"
+      >
+        Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
+      </.link>
+    </nav>
+  </header>
+
+  <%!-- Content --%>
+  <div style="max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box;">
+    <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 8px;">
+      Gerenciar Links
+    </h1>
+    <p style="font-size: 13px; color: #9a7a5a; margin-bottom: 40px;">
+      {length(@pending_links)} pendente(s) · {length(@approved_links)} aprovado(s)
+    </p>
+
+    <%!-- Pending section --%>
+    <div style="margin-bottom: 48px;">
+      <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px; border-bottom: 1px solid rgba(60,40,20,0.1); padding-bottom: 8px;">
+        Pendentes ({length(@pending_links)})
+      </p>
+
+      <%= if @pending_links == [] do %>
+        <p style="font-size: 14px; color: #bba88a; font-style: italic;">
+          Nenhum link aguardando aprovação.
+        </p>
+      <% else %>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <%= for link <- @pending_links do %>
+            <div style="padding: 14px 16px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-left: 3px solid #e67e22; border-radius: 0 6px 6px 0; display: flex; align-items: flex-start; gap: 16px;">
+              <div style="flex: 1; min-width: 0;">
+                <%= if link.title && link.title != "" do %>
+                  <p style="font-size: 14px; font-weight: 600; color: #2c1a0e; margin: 0 0 3px;">
+                    {link.title}
+                  </p>
+                <% end %>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  style="font-size: 12px; color: #9a7a5a; text-decoration: none; word-break: break-all; display: block; margin-bottom: 6px;"
+                >
+                  {link.url}
+                </a>
+                <p style="font-size: 11px; color: #bba88a; margin: 0;">
+                  Passo:
+                  <.link
+                    navigate={~p"/steps/#{link.step.code}"}
+                    style="color: #5c3a1a; text-decoration: none; font-weight: 600;"
+                  >
+                    {link.step.code} · {link.step.name}
+                  </.link>
+                  · Enviado por @{if link.submitted_by, do: link.submitted_by.username, else: "?"}
+                </p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
+                <button
+                  phx-click="approve_link"
+                  phx-value-id={link.id}
+                  style="padding: 6px 14px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                >
+                  Aprovar
+                </button>
+                <button
+                  phx-click="delete_link"
+                  phx-value-id={link.id}
+                  data-confirm="Remover este link?"
+                  style="padding: 6px 14px; background: transparent; color: #c0392b; border: 1px solid #c0392b; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                >
+                  Deletar
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Approved section --%>
+    <div>
+      <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px; border-bottom: 1px solid rgba(60,40,20,0.1); padding-bottom: 8px;">
+        Aprovados ({length(@approved_links)})
+      </p>
+
+      <%= if @approved_links == [] do %>
+        <p style="font-size: 14px; color: #bba88a; font-style: italic;">
+          Nenhum link aprovado ainda.
+        </p>
+      <% else %>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <%= for link <- @approved_links do %>
+            <div style="padding: 14px 16px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-left: 3px solid #27ae60; border-radius: 0 6px 6px 0; display: flex; align-items: flex-start; gap: 16px;">
+              <div style="flex: 1; min-width: 0;">
+                <%= if link.title && link.title != "" do %>
+                  <p style="font-size: 14px; font-weight: 600; color: #2c1a0e; margin: 0 0 3px;">
+                    {link.title}
+                  </p>
+                <% end %>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  style="font-size: 12px; color: #9a7a5a; text-decoration: none; word-break: break-all; display: block; margin-bottom: 6px;"
+                >
+                  {link.url}
+                </a>
+                <p style="font-size: 11px; color: #bba88a; margin: 0;">
+                  Passo:
+                  <.link
+                    navigate={~p"/steps/#{link.step.code}"}
+                    style="color: #5c3a1a; text-decoration: none; font-weight: 600;"
+                  >
+                    {link.step.code} · {link.step.name}
+                  </.link>
+                  · Enviado por @{if link.submitted_by, do: link.submitted_by.username, else: "?"}
+                </p>
+              </div>
+              <div style="flex-shrink: 0;">
+                <button
+                  phx-click="delete_link"
+                  phx-value-id={link.id}
+                  data-confirm="Remover este link?"
+                  style="padding: 6px 14px; background: transparent; color: #c0392b; border: 1px solid #c0392b; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                >
+                  Deletar
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Footer --%>
+  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
+    <p style="font-size: 12px; color: #7a5c3a; margin-bottom: 4px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
+  </footer>
+</div>

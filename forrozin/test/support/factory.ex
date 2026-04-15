@@ -3,7 +3,17 @@ defmodule Forrozin.Factory do
   use ExMachina.Ecto, repo: Forrozin.Repo
 
   alias Forrozin.Accounts.User
-  alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section, Subsection}
+
+  alias Forrozin.Encyclopedia.{
+    Category,
+    TechnicalConcept,
+    Connection,
+    Step,
+    Section,
+    StepLink,
+    Subsection
+  }
+
   alias Forrozin.Engagement.Like
   alias Forrozin.Sequences.{Sequence, SequenceStep}
 
@@ -96,6 +106,16 @@ defmodule Forrozin.Factory do
       position: sequence(:sequence_step_position, & &1),
       sequence: build(:sequence),
       step: build(:step)
+    }
+  end
+
+  def step_link_factory do
+    %StepLink{
+      url: sequence(:step_link_url, &"https://example.com/link#{&1}"),
+      title: sequence(:step_link_title, &"Link #{&1}"),
+      approved: false,
+      step: build(:step),
+      submitted_by: build(:user)
     }
   end
 

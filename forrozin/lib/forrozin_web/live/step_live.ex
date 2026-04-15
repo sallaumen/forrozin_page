@@ -4,7 +4,7 @@ defmodule ForrozinWeb.StepLive do
   use ForrozinWeb, :live_view
 
   alias Forrozin.{Accounts, Admin, Encyclopedia}
-  alias Forrozin.Encyclopedia.{ConnectionQuery, StepQuery}
+  alias Forrozin.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -25,6 +25,13 @@ defmodule ForrozinWeb.StepLive do
 
         connections_in = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 
+        approved_links =
+          StepLinkQuery.list_by(
+            step_id: step.id,
+            approved: true,
+            preload: [:submitted_by]
+          )
+
         {:ok,
          assign(socket,
            step: step,
@@ -36,7 +43,11 @@ defmodule ForrozinWeb.StepLive do
            connections_in: connections_in,
            connection_search: "",
            connection_suggestions: [],
-           categories: Encyclopedia.list_categories()
+           categories: Encyclopedia.list_categories(),
+           approved_links: approved_links,
+           link_url: "",
+           link_title: "",
+           link_submitted: false
          )}
 
       {:error, :not_found} ->
@@ -155,6 +166,30 @@ defmodule ForrozinWeb.StepLive do
     end
   end
 
+  def handle_event("submit_link", %{"url" => url, "title" => title}, socket) do
+    user_id = socket.assigns.current_user.id
+    step_id = socket.assigns.step.id
+
+    attrs = %{
+      url: String.trim(url),
+      title: String.trim(title),
+      step_id: step_id,
+      submitted_by_id: user_id,
+      approved: false
+    }
+
+    case Admin.create_step_link(attrs) do
+      {:ok, _link} ->
+        {:noreply,
+         socket
+         |> assign(link_url: "", link_title: "", link_submitted: true)
+         |> put_flash(:info, "Link enviado para aprovação!")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "URL inválida. Use http:// ou https://")}
+    end
+  end
+
   defp reload_step(socket, code) do
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
@@ -164,12 +199,16 @@ defmodule ForrozinWeb.StepLive do
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 
+        approved_links =
+          StepLinkQuery.list_by(step_id: step.id, approved: true, preload: [:submitted_by])
+
         assign(socket,
           step: step,
           connections_out: out,
           connections_in: inn,
           connection_search: "",
-          connection_suggestions: []
+          connection_suggestions: [],
+          approved_links: approved_links
         )
 
       _ ->

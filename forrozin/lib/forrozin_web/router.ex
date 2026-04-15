@@ -46,6 +46,7 @@ defmodule ForrozinWeb.Router do
     live "/graph/visual", GraphVisualLive
     live "/steps/:code", StepLive
     live "/users/:username", UserProfileLive
+    live "/admin/links", AdminLinksLive
   end
 
   if Application.compile_env(:forrozin, :dev_routes) do
