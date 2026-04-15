@@ -62,6 +62,13 @@ defmodule ForrozinWeb.Components.Navbar do
         >
           Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
         </.link>
+        <.link
+          navigate={~p"/settings"}
+          style="color: #bba88a; text-decoration: none; font-size: 14px;"
+          title="Configurações"
+        >
+          ⚙
+        </.link>
         <form method="post" action={~p"/logout"} style="margin: 0;">
           <input type="hidden" name="_method" value="delete" />
           <input

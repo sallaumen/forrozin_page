@@ -4,7 +4,7 @@ defmodule Forrozin.Engagement do
   """
 
   alias Forrozin.Repo
-  alias Forrozin.Engagement.{Like, LikeQuery}
+  alias Forrozin.Engagement.{Like, LikeQuery, ProfileComment, ProfileCommentQuery}
 
   @doc """
   Toggles a like for the given user on a likeable entity.
@@ -55,5 +55,39 @@ defmodule Forrozin.Engagement do
   """
   def likes_map(user_id, likeable_type, likeable_ids) do
     LikeQuery.batch_map(user_id, likeable_type, likeable_ids)
+  end
+
+  @doc """
+  Returns active (non-deleted) comments on a user's profile, newest first.
+
+  Accepts the same options as `ProfileCommentQuery.list_by/1`.
+  """
+  def list_profile_comments(opts \\ []) do
+    ProfileCommentQuery.list_by(opts)
+  end
+
+  @doc """
+  Posts a new comment on a user's profile.
+
+  Returns `{:ok, comment}` or `{:error, changeset}`.
+  """
+  def create_profile_comment(attrs) do
+    %ProfileComment{}
+    |> ProfileComment.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Soft-deletes a profile comment by setting `deleted_at` to now.
+
+  Returns `{:ok, comment}` or `{:error, changeset}`.
+  """
+  def delete_profile_comment(comment) do
+    utc_now = NaiveDateTime.utc_now()
+    now = NaiveDateTime.truncate(utc_now, :second)
+
+    comment
+    |> Ecto.Changeset.change(deleted_at: now)
+    |> Repo.update()
   end
 end

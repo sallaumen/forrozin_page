@@ -17,7 +17,7 @@ defmodule ForrozinWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets data fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets data uploads fonts images favicon.ico robots.txt)
 
   def router do
     quote do

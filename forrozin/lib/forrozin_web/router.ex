@@ -47,6 +47,7 @@ defmodule ForrozinWeb.Router do
     live "/graph/visual", GraphVisualLive
     live "/steps/:code", StepLive
     live "/users/:username", UserProfileLive
+    live "/settings", SettingsLive
     live "/admin/links", AdminLinksLive
     live "/admin/backups", AdminBackupsLive
     get "/admin/backups/download/:filename", BackupController, :download

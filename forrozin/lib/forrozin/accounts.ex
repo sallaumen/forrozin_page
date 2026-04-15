@@ -80,4 +80,15 @@ defmodule Forrozin.Accounts do
 
   @doc "Finds a user by username."
   def get_user_by_username(username), do: Repo.get_by(User, username: username)
+
+  @doc """
+  Updates editable profile fields (bio, instagram, avatar_path).
+
+  Returns `{:ok, user}` or `{:error, changeset}`.
+  """
+  def update_profile(user, attrs) do
+    user
+    |> User.profile_changeset(attrs)
+    |> Repo.update()
+  end
 end

@@ -31,6 +31,9 @@ defmodule Forrozin.Accounts.User do
     field :country, :string, default: "BR"
     field :state, :string
     field :city, :string
+    field :bio, :string
+    field :instagram, :string
+    field :avatar_path, :string
 
     timestamps()
   end
@@ -63,6 +66,14 @@ defmodule Forrozin.Accounts.User do
     |> unique_constraint(:username, message: "nome de usuário já existe")
     |> unique_constraint(:email, message: "email já cadastrado")
     |> hash_password()
+  end
+
+  @doc "Changeset for updating profile fields (bio, instagram, avatar_path)."
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:bio, :instagram, :avatar_path])
+    |> validate_length(:bio, max: 2000)
+    |> validate_length(:instagram, max: 100)
   end
 
   @doc "Changeset that marks the email as confirmed and invalidates the token."

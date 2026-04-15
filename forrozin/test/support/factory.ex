@@ -14,7 +14,7 @@ defmodule Forrozin.Factory do
     Subsection
   }
 
-  alias Forrozin.Engagement.Like
+  alias Forrozin.Engagement.{Like, ProfileComment}
   alias Forrozin.Sequences.{Sequence, SequenceStep}
 
   def user_factory do
@@ -124,6 +124,14 @@ defmodule Forrozin.Factory do
       likeable_type: "step",
       likeable_id: Ecto.UUID.generate(),
       user: build(:user)
+    }
+  end
+
+  def profile_comment_factory do
+    %ProfileComment{
+      body: sequence(:comment_body, &"Comentário de teste #{&1}"),
+      author: build(:user),
+      profile: build(:user)
     }
   end
 end
