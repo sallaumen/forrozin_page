@@ -16,9 +16,9 @@ defmodule OGrupoDeEstudosWeb.LandingLiveTest do
       assert html =~ "Já tenho conta"
     end
 
-    test "displays author section", %{conn: conn} do
+    test "displays about link in footer", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/")
-      assert html =~ "L. Tavano"
+      assert html =~ "Quem somos"
     end
   end
 
