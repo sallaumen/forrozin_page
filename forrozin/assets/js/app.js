@@ -715,8 +715,15 @@ const GraphVisual = {
         node.style({
           opacity: 1,
           "border-color": "#e67e22",
-          "border-width": 4,
-          "background-color": "#fff8f0"
+          "border-width": 5,
+          "background-color": "#fff8f0",
+          "font-size": 15,
+          "width": "label",
+          "height": "label",
+          "padding": "14px 20px",
+          "shadow-blur": 14,
+          "shadow-color": "rgba(230,126,34,0.25)",
+          "shadow-opacity": 1
         })
       })
 
@@ -730,7 +737,9 @@ const GraphVisual = {
             opacity: 1,
             "line-color": "#e67e22",
             "target-arrow-color": "#e67e22",
-            width: 3
+            width: 4,
+            "arrow-scale": 1.4,
+            "line-opacity": 1
           })
         }
       }
@@ -738,6 +747,34 @@ const GraphVisual = {
 
     this._seqHighlightActive = true
     this._seqHighlightCodes = stepCodes
+
+    // Show floating exit button
+    this._showSeqExitButton()
+
+    // Fit to highlighted nodes
+    const highlighted = cy.nodes().filter(n => stepCodes.includes(n.id()))
+    if (highlighted.length > 0) {
+      cy.animate({ fit: { eles: highlighted, padding: 80 }, duration: 500 })
+    }
+  },
+
+  _showSeqExitButton() {
+    this._removeSeqExitButton()
+    const container = this.el.parentElement
+    const btn = document.createElement("button")
+    btn.id = "seq-exit-btn"
+    btn.textContent = "✕ Sair da sequência"
+    btn.style.cssText = "position:absolute;top:12px;right:12px;z-index:25;padding:8px 16px;background:#e67e22;color:white;border:none;border-radius:20px;font-family:Georgia,serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);letter-spacing:0.5px;transition:opacity 0.2s;"
+    btn.addEventListener("click", () => {
+      this._clearSequenceHighlight()
+      this.pushEvent("clear_highlight", {})
+    })
+    container.appendChild(btn)
+  },
+
+  _removeSeqExitButton() {
+    const existing = document.getElementById("seq-exit-btn")
+    if (existing) existing.remove()
   },
 
   _clearSequenceHighlight() {
@@ -771,6 +808,10 @@ const GraphVisual = {
 
     this._seqHighlightActive = false
     this._seqHighlightCodes = null
+    this._removeSeqExitButton()
+
+    // Fit back to full graph
+    cy.animate({ fit: { padding: 60 }, duration: 400 })
   }
 }
 
