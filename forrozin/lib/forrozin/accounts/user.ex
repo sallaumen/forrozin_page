@@ -38,7 +38,17 @@ defmodule Forrozin.Accounts.User do
   @doc "Changeset for new user registration."
   def registration_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :email, :password, :role, :confirmation_token, :name, :country, :state, :city])
+    |> cast(attrs, [
+      :username,
+      :email,
+      :password,
+      :role,
+      :confirmation_token,
+      :name,
+      :country,
+      :state,
+      :city
+    ])
     |> validate_required([:username, :email, :password, :name, :country, :city])
     |> validate_name_has_two_words()
     |> validate_length(:username, min: 3, max: 30)

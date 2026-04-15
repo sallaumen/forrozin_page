@@ -31,7 +31,9 @@ defmodule Forrozin.Sequences.SequenceQuery do
   defp default_scope, do: from(s in Sequence, as: :sequence)
 
   defp shared_reducer({:include_deleted, true}, q), do: q
-  defp shared_reducer({:include_deleted, false}, q), do: where(q, [sequence: s], is_nil(s.deleted_at))
+
+  defp shared_reducer({:include_deleted, false}, q),
+    do: where(q, [sequence: s], is_nil(s.deleted_at))
 
   defp shared_reducer({:id, id}, q), do: where(q, [sequence: s], s.id == ^id)
   defp shared_reducer({:user_id, id}, q), do: where(q, [sequence: s], s.user_id == ^id)

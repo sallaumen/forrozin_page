@@ -60,6 +60,7 @@ defmodule Forrozin.Repo.Migrations.RenameColumnsToEnglish do
                RENAME TO categorias_name_index"
     execute "ALTER INDEX IF EXISTS usuarios_nome_usuario_index
                RENAME TO usuarios_username_index"
+
     execute """
     ALTER INDEX IF EXISTS
       conexoes_passos_passo_origem_id_passo_destino_id_tipo_index

@@ -20,6 +20,7 @@ defmodule Forrozin.Repo.Migrations.RenameTablesToEnglish do
     execute "ALTER INDEX IF EXISTS passos_code_index RENAME TO steps_code_index"
     execute "ALTER INDEX IF EXISTS categorias_name_index RENAME TO categories_name_index"
     execute "ALTER INDEX IF EXISTS usuarios_username_index RENAME TO users_username_index"
+
     execute "ALTER INDEX IF EXISTS conexoes_passos_source_step_id_target_step_id_type_index RENAME TO step_connections_source_step_id_target_step_id_type_index"
 
     # Rename FK indexes (Ecto auto-generates these as {table}_{column}_index)
@@ -27,9 +28,13 @@ defmodule Forrozin.Repo.Migrations.RenameTablesToEnglish do
     execute "ALTER INDEX IF EXISTS passos_section_id_index RENAME TO steps_section_id_index"
     execute "ALTER INDEX IF EXISTS passos_subsection_id_index RENAME TO steps_subsection_id_index"
     execute "ALTER INDEX IF EXISTS secoes_category_id_index RENAME TO sections_category_id_index"
+
     execute "ALTER INDEX IF EXISTS subsecoes_section_id_index RENAME TO subsections_section_id_index"
+
     execute "ALTER INDEX IF EXISTS conexoes_passos_source_step_id_index RENAME TO step_connections_source_step_id_index"
+
     execute "ALTER INDEX IF EXISTS conexoes_passos_target_step_id_index RENAME TO step_connections_target_step_id_index"
+
     execute "ALTER INDEX IF EXISTS conceitos_passos_conceito_id_passo_id_index RENAME TO concept_steps_concept_id_step_id_index"
   end
 

@@ -1,14 +1,23 @@
 <div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif;">
   <%!-- Header --%>
   <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
-    <a href={~p"/"} style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
       Forrózin
     </a>
     <nav style="display: flex; gap: 24px; align-items: center;">
-      <.link navigate={~p"/collection"} style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;">
+      <.link
+        navigate={~p"/collection"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
         Acervo
       </.link>
-      <.link navigate={~p"/graph/visual"} style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;">
+      <.link
+        navigate={~p"/graph/visual"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
         Mapa
       </.link>
     </nav>
@@ -35,24 +44,36 @@
     <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; padding: 16px 20px; background: #fffef9; border-radius: 8px; border: 1px solid rgba(60,40,20,0.1);">
       <%= if @profile_user.city do %>
         <div>
-          <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">Cidade</div>
+          <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+            Cidade
+          </div>
           <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
-            {@profile_user.city}<%= if @profile_user.state, do: ", #{@profile_user.state}" %>
+            {@profile_user.city}{if @profile_user.state, do: ", #{@profile_user.state}"}
           </div>
         </div>
       <% end %>
       <%= if @profile_user.country && @profile_user.country != "BR" do %>
         <div>
-          <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">País</div>
-          <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">{@profile_user.country}</div>
+          <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+            País
+          </div>
+          <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
+            {@profile_user.country}
+          </div>
         </div>
       <% end %>
       <div>
-        <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">Contribuições</div>
-        <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">{length(@user_steps)} passo(s)</div>
+        <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+          Contribuições
+        </div>
+        <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
+          {length(@user_steps)} passo(s)
+        </div>
       </div>
       <div>
-        <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">Membro desde</div>
+        <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+          Membro desde
+        </div>
         <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
           {Calendar.strftime(@profile_user.inserted_at, "%B %Y")}
         </div>
@@ -77,7 +98,9 @@
               <div>
                 <div style="font-size: 14px; color: #1a0e05;">{step.name}</div>
                 <%= if step.category do %>
-                  <span style={"font-size: 10px; color: #{step.category.color}; font-style: italic;"}>{step.category.label}</span>
+                  <span style={"font-size: 10px; color: #{step.category.color}; font-style: italic;"}>
+                    {step.category.label}
+                  </span>
                 <% end %>
               </div>
             </.link>
@@ -87,7 +110,11 @@
               phx-value-type="step"
               phx-value-id={step.id}
               style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 14px; color: #{if MapSet.member?(@step_likes.liked_ids, step.id), do: "#c0392b", else: "#9a7a5a"}; padding: 4px 8px; border-radius: 4px; transition: color 0.15s;"}
-              title={if MapSet.member?(@step_likes.liked_ids, step.id), do: "Remover like", else: "Curtir"}
+              title={
+                if MapSet.member?(@step_likes.liked_ids, step.id),
+                  do: "Remover like",
+                  else: "Curtir"
+              }
             >
               <%= if MapSet.member?(@step_likes.liked_ids, step.id) do %>
                 &#9829;
@@ -141,7 +168,11 @@
                 phx-value-type="sequence"
                 phx-value-id={seq.id}
                 style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 16px; color: #{if MapSet.member?(@sequence_likes.liked_ids, seq.id), do: "#c0392b", else: "#9a7a5a"}; padding: 4px 8px; border-radius: 4px; transition: color 0.15s; flex-shrink: 0;"}
-                title={if MapSet.member?(@sequence_likes.liked_ids, seq.id), do: "Remover like", else: "Curtir"}
+                title={
+                  if MapSet.member?(@sequence_likes.liked_ids, seq.id),
+                    do: "Remover like",
+                    else: "Curtir"
+                }
               >
                 <%= if MapSet.member?(@sequence_likes.liked_ids, seq.id) do %>
                   &#9829;

@@ -16,7 +16,10 @@ defmodule Forrozin.Repo.Migrations.CreateSequences do
     create table(:sequence_steps, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :position, :integer, null: false
-      add :sequence_id, references(:sequences, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :sequence_id, references(:sequences, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :step_id, references(:steps, type: :binary_id, on_delete: :delete_all), null: false
 
       timestamps(updated_at: false)

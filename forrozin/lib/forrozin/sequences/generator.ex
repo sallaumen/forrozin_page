@@ -69,7 +69,16 @@ defmodule Forrozin.Sequences.Generator do
       sequences =
         1..params.count
         |> Enum.map(fn _ ->
-          generate_one(start_id, params.length, adjacency, required_id_set, params.allow_repeats, params.cyclic, step_map, params)
+          generate_one(
+            start_id,
+            params.length,
+            adjacency,
+            required_id_set,
+            params.allow_repeats,
+            params.cyclic,
+            step_map,
+            params
+          )
         end)
         |> Enum.reject(&is_nil/1)
         |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
@@ -93,9 +102,28 @@ defmodule Forrozin.Sequences.Generator do
     end)
   end
 
-  defp generate_one(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map, params) do
+  defp generate_one(
+         start_id,
+         target_length,
+         adjacency,
+         required_ids,
+         allow_repeats,
+         cyclic,
+         step_map,
+         params
+       ) do
     Enum.reduce_while(1..@max_attempts_per_sequence, nil, fn _, _acc ->
-      path = walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map, params)
+      path =
+        walk(
+          start_id,
+          target_length,
+          adjacency,
+          required_ids,
+          allow_repeats,
+          cyclic,
+          step_map,
+          params
+        )
 
       valid =
         cond do
@@ -109,7 +137,16 @@ defmodule Forrozin.Sequences.Generator do
     end)
   end
 
-  defp walk(start_id, target_length, adjacency, required_ids, allow_repeats, cyclic, step_map, params) do
+  defp walk(
+         start_id,
+         target_length,
+         adjacency,
+         required_ids,
+         allow_repeats,
+         cyclic,
+         step_map,
+         params
+       ) do
     code_to_id = Map.new(Map.values(step_map), &{&1.code, &1.id})
     bf_id = Map.get(code_to_id, @bf_code)
 
@@ -170,21 +207,24 @@ defmodule Forrozin.Sequences.Generator do
       # If cyclic and near the end, weight start_id heavily
       weighted =
         Enum.flat_map(valid_neighbors, fn n ->
-          weight = cond do
-            state.cyclic and steps_remaining == 1 and n == state.start_id -> 20
-            MapSet.member?(remaining_required, n) -> @required_weight
-            true -> 1
-          end
+          weight =
+            cond do
+              state.cyclic and steps_remaining == 1 and n == state.start_id -> 20
+              MapSet.member?(remaining_required, n) -> @required_weight
+              true -> 1
+            end
+
           List.duplicate(n, weight)
         end)
 
       next = Enum.random(weighted)
       pair = {current, next}
 
-      new_state = %{state |
-        visited: MapSet.put(state.visited, next),
-        pair_counts: Map.update(state.pair_counts, pair, 1, &(&1 + 1)),
-        step_counts: Map.update(state.step_counts, next, 1, &(&1 + 1))
+      new_state = %{
+        state
+        | visited: MapSet.put(state.visited, next),
+          pair_counts: Map.update(state.pair_counts, pair, 1, &(&1 + 1)),
+          step_counts: Map.update(state.step_counts, next, 1, &(&1 + 1))
       }
 
       do_walk([next | path], new_state)

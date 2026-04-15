@@ -10,8 +10,18 @@ defmodule Forrozin.Encyclopedia.Step do
 
   @required_fields [:code, :name]
   @optional_fields [
-    :note, :image_path, :position, :wip, :status, :highlighted, :approved,
-    :category_id, :section_id, :subsection_id, :suggested_by_id, :deleted_at
+    :note,
+    :image_path,
+    :position,
+    :wip,
+    :status,
+    :highlighted,
+    :approved,
+    :category_id,
+    :section_id,
+    :subsection_id,
+    :suggested_by_id,
+    :deleted_at
   ]
 
   schema "steps" do

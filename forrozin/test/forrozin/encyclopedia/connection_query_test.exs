@@ -59,7 +59,8 @@ defmodule Forrozin.Encyclopedia.ConnectionQueryTest do
       target = insert(:step, code: "SC")
       insert(:connection, source_step: source, target_step: target)
 
-      result = ConnectionQuery.get_by(source_step_id: source.id, preload: [:source_step, :target_step])
+      result =
+        ConnectionQuery.get_by(source_step_id: source.id, preload: [:source_step, :target_step])
 
       assert result.source_step.code == "BF"
       assert result.target_step.code == "SC"
@@ -149,7 +150,8 @@ defmodule Forrozin.Encyclopedia.ConnectionQueryTest do
       target = insert(:step, code: "SC")
       insert(:connection, source_step: source, target_step: target)
 
-      [result] = ConnectionQuery.list_by(source_step_id: source.id, preload: [:source_step, :target_step])
+      [result] =
+        ConnectionQuery.list_by(source_step_id: source.id, preload: [:source_step, :target_step])
 
       assert result.source_step.code == "BF"
       assert result.target_step.code == "SC"

@@ -1,23 +1,37 @@
 <div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
   <%!-- Header --%>
   <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
-    <a href={~p"/"} style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;">
+    <a
+      href={~p"/"}
+      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+    >
       Forrózin
     </a>
     <nav style="display: flex; gap: 24px; align-items: center;">
-      <.link navigate={~p"/collection"} style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;">
+      <.link
+        navigate={~p"/collection"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
         ← Acervo
       </.link>
-      <.link navigate={~p"/graph/visual"} style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;">
+      <.link
+        navigate={~p"/graph/visual"}
+        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      >
         Mapa
       </.link>
       <%= if @can_edit do %>
-        <button phx-click="toggle_edit" style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
+        <button
+          phx-click="toggle_edit"
+          style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
         >
-          <%= if @edit_mode, do: "✕ Sair edição", else: "✏ Editar" %>
+          {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
         </button>
       <% end %>
-      <.link navigate={~p"/users/#{@current_user.username}"} style="font-size: 12px; color: #f2ede4; text-decoration: none; letter-spacing: 0.5px;">
+      <.link
+        navigate={~p"/users/#{@current_user.username}"}
+        style="font-size: 12px; color: #f2ede4; text-decoration: none; letter-spacing: 0.5px;"
+      >
         Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
       </.link>
     </nav>
@@ -27,7 +41,9 @@
   <div style="max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box;">
     <%!-- Breadcrumb --%>
     <p style="font-size: 12px; color: #9a7a5a; margin-bottom: 24px; letter-spacing: 0.5px;">
-      <.link navigate={~p"/collection"} style="color: #9a7a5a; text-decoration: none;">acervo</.link>
+      <.link navigate={~p"/collection"} style="color: #9a7a5a; text-decoration: none;">
+        acervo
+      </.link>
       <span style="margin: 0 6px;">›</span>
       {@step.code}
     </p>
@@ -42,7 +58,9 @@
           {category_label(@step)}
         </span>
         <%= if @step.wip do %>
-          <span style="font-size: 10px; color: #c0392b; background: #c0392b15; padding: 3px 10px; border-radius: 10px; border: 1px solid #c0392b25; text-transform: uppercase; letter-spacing: 1px;">wip</span>
+          <span style="font-size: 10px; color: #c0392b; background: #c0392b15; padding: 3px 10px; border-radius: 10px; border: 1px solid #c0392b25; text-transform: uppercase; letter-spacing: 1px;">
+            wip
+          </span>
         <% end %>
       </div>
       <h1 style="font-size: 36px; font-weight: 700; color: #1a0e05; letter-spacing: -1px; margin: 0 0 12px; line-height: 1.15;">
@@ -52,10 +70,17 @@
       <%!-- Suggested by badge --%>
       <%= if @step.suggested_by_id do %>
         <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-          <.link navigate={~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"} style="text-decoration: none;">
+          <.link
+            navigate={
+              ~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"
+            }
+            style="text-decoration: none;"
+          >
             <span style={"font-size: 11px; padding: 3px 10px; border-radius: 10px; background: #{if @step.approved, do: "#27ae6015", else: "#8e44ad15"}; color: #{if @step.approved, do: "#27ae60", else: "#8e44ad"}; border: 1px solid #{if @step.approved, do: "#27ae6030", else: "#8e44ad30"};"}>
               <%= if @step.approved do %>
-                ✓ Contribuição de @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
+                ✓ Contribuição de @{if @step.suggested_by,
+                  do: @step.suggested_by.username,
+                  else: "?"}
               <% else %>
                 Sugestão de @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
               <% end %>
@@ -67,28 +92,58 @@
 
     <%!-- Edit form OR read-only content --%>
     <%= if @edit_mode do %>
-      <form phx-submit="update_step" style="margin-bottom: 32px; padding: 24px; background: #fffef9; border: 1px solid rgba(60,40,20,0.1); border-radius: 8px;">
+      <form
+        phx-submit="update_step"
+        style="margin-bottom: 32px; padding: 24px; background: #fffef9; border: 1px solid rgba(60,40,20,0.1); border-radius: 8px;"
+      >
         <div style="display: flex; flex-direction: column; gap: 14px;">
           <div style="display: flex; gap: 12px;">
             <div style="flex: 1;">
-              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">Nome</label>
-              <input type="text" name="step[name]" value={@step.name} style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 16px; color: #1a0e05; box-sizing: border-box;" />
+              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+                Nome
+              </label>
+              <input
+                type="text"
+                name="step[name]"
+                value={@step.name}
+                style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 16px; color: #1a0e05; box-sizing: border-box;"
+              />
             </div>
             <div style="width: 120px;">
-              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">Código</label>
-              <input type="text" name="step[code]" value={@step.code} style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: monospace; font-size: 16px; color: #1a0e05; box-sizing: border-box;" />
+              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+                Código
+              </label>
+              <input
+                type="text"
+                name="step[code]"
+                value={@step.code}
+                style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: monospace; font-size: 16px; color: #1a0e05; box-sizing: border-box;"
+              />
             </div>
           </div>
           <div>
-            <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">Descrição técnica</label>
-            <textarea name="step[note]" rows="5" style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05; box-sizing: border-box; resize: vertical; line-height: 1.7;"><%= @step.note %></textarea>
+            <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+              Descrição técnica
+            </label>
+            <textarea
+              name="step[note]"
+              rows="5"
+              style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05; box-sizing: border-box; resize: vertical; line-height: 1.7;"
+            ><%= @step.note %></textarea>
           </div>
           <div style="display: flex; gap: 12px;">
             <div style="flex: 1;">
-              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">Categoria</label>
-              <select name="step[category_id]" style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05;">
+              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+                Categoria
+              </label>
+              <select
+                name="step[category_id]"
+                style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05;"
+              >
                 <%= for cat <- @categories do %>
-                  <option value={cat.id} selected={cat.id == @step.category_id}>{cat.label}</option>
+                  <option value={cat.id} selected={cat.id == @step.category_id}>
+                    {cat.label}
+                  </option>
                 <% end %>
               </select>
             </div>
@@ -99,16 +154,29 @@
               </label>
               <label style="font-size: 12px; color: #5c3a1a; display: flex; align-items: center; gap: 4px;">
                 <input type="hidden" name="step[highlighted]" value="false" />
-                <input type="checkbox" name="step[highlighted]" value="true" checked={@step.highlighted} /> Destacado
+                <input
+                  type="checkbox"
+                  name="step[highlighted]"
+                  value="true"
+                  checked={@step.highlighted}
+                /> Destacado
               </label>
             </div>
           </div>
           <div style="display: flex; gap: 12px; align-items: center;">
-            <button type="submit" style="padding: 10px 20px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">
+            <button
+              type="submit"
+              style="padding: 10px 20px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;"
+            >
               Salvar alterações
             </button>
             <%= if @is_admin do %>
-              <button type="button" phx-click="delete_step" data-confirm={"Tem certeza que deseja deletar o passo \"#{@step.name}\" (#{@step.code})? Todas as conexões serão removidas. Esta ação é irreversível."} style="padding: 10px 20px; background: transparent; color: #c0392b; border: 2px solid #c0392b; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">
+              <button
+                type="button"
+                phx-click="delete_step"
+                data-confirm={"Tem certeza que deseja deletar o passo \"#{@step.name}\" (#{@step.code})? Todas as conexões serão removidas. Esta ação é irreversível."}
+                style="padding: 10px 20px; background: transparent; color: #c0392b; border: 2px solid #c0392b; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+              >
                 Deletar passo
               </button>
             <% end %>
@@ -120,15 +188,23 @@
       <div style="display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 40px;">
         <%= if @step.image_path do %>
           <div style="flex-shrink: 0;">
-            <img src={"/#{@step.image_path}"} alt={@step.code} style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(60,40,20,0.15); filter: sepia(15%);" />
+            <img
+              src={"/#{@step.image_path}"}
+              alt={@step.code}
+              style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(60,40,20,0.15); filter: sepia(15%);"
+            />
           </div>
         <% end %>
         <div style="flex: 1; min-width: 240px;">
           <%= if @step.note do %>
-            <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 12px;">Descrição técnica</p>
+            <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 12px;">
+              Descrição técnica
+            </p>
             <p style="font-size: 16px; line-height: 1.9; color: #3a2410;">{@step.note}</p>
           <% else %>
-            <p style="font-size: 15px; color: #9a7a5a; font-style: italic;">Sem descrição técnica ainda.</p>
+            <p style="font-size: 15px; color: #9a7a5a; font-style: italic;">
+              Sem descrição técnica ainda.
+            </p>
           <% end %>
         </div>
       </div>
@@ -137,11 +213,17 @@
     <%!-- Technical concepts --%>
     <%= if @step.technical_concepts != [] do %>
       <div style="margin-bottom: 40px; padding: 20px; background: rgba(212,160,84,0.08); border: 1px solid rgba(212,160,84,0.25); border-left: 3px solid #d4a054; border-radius: 0 6px 6px 0;">
-        <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 14px;">Conceitos relacionados</p>
+        <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 14px;">
+          Conceitos relacionados
+        </p>
         <%= for concept <- @step.technical_concepts do %>
           <div style="margin-bottom: 10px;">
-            <p style="font-size: 14px; font-weight: 700; color: #2c1a0e; margin-bottom: 4px;">{concept.title}</p>
-            <p style="font-size: 13px; color: #5a4230; line-height: 1.7; margin: 0;">{concept.description}</p>
+            <p style="font-size: 14px; font-weight: 700; color: #2c1a0e; margin-bottom: 4px;">
+              {concept.title}
+            </p>
+            <p style="font-size: 13px; color: #5a4230; line-height: 1.7; margin: 0;">
+              {concept.description}
+            </p>
           </div>
         <% end %>
       </div>
@@ -150,23 +232,41 @@
     <%!-- Connections --%>
     <div style="margin-bottom: 40px;">
       <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px;">
-        Conexões <span style="color: #5c3a1a; font-weight: 600;">{length(@connections_out)} saídas · {length(@connections_in)} entradas</span>
+        Conexões
+        <span style="color: #5c3a1a; font-weight: 600;">
+          {length(@connections_out)} saídas · {length(@connections_in)} entradas
+        </span>
       </p>
       <div style="display: flex; gap: 24px; flex-wrap: wrap;">
         <%!-- Outgoing --%>
         <div style="flex: 1; min-width: 220px;">
-          <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">Vai para →</p>
+          <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">
+            Vai para →
+          </p>
           <%= if @connections_out == [] do %>
             <p style="font-size: 13px; color: #bba88a; font-style: italic;">Nenhuma saída</p>
           <% end %>
           <%= for conn <- @connections_out do %>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-              <.link navigate={~p"/steps/#{conn.target_step.code}"} style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; flex: 1;">
-                <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">{conn.target_step.code}</code>
+              <.link
+                navigate={~p"/steps/#{conn.target_step.code}"}
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; flex: 1;"
+              >
+                <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">
+                  {conn.target_step.code}
+                </code>
                 <span style="font-size: 13px; color: #3a2410;">{conn.target_step.name}</span>
               </.link>
               <%= if @edit_mode do %>
-                <button phx-click="delete_connection" phx-value-source={@step.code} phx-value-target={conn.target_step.code} data-confirm={"Remover #{@step.code} → #{conn.target_step.code}?"} style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 16px; padding: 4px;">×</button>
+                <button
+                  phx-click="delete_connection"
+                  phx-value-source={@step.code}
+                  phx-value-target={conn.target_step.code}
+                  data-confirm={"Remover #{@step.code} → #{conn.target_step.code}?"}
+                  style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 16px; padding: 4px;"
+                >
+                  ×
+                </button>
               <% end %>
             </div>
           <% end %>
@@ -174,18 +274,33 @@
 
         <%!-- Incoming --%>
         <div style="flex: 1; min-width: 220px;">
-          <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">← Vem de</p>
+          <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">
+            ← Vem de
+          </p>
           <%= if @connections_in == [] do %>
             <p style="font-size: 13px; color: #bba88a; font-style: italic;">Nenhuma entrada</p>
           <% end %>
           <%= for conn <- @connections_in do %>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-              <.link navigate={~p"/steps/#{conn.source_step.code}"} style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; flex: 1;">
-                <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">{conn.source_step.code}</code>
+              <.link
+                navigate={~p"/steps/#{conn.source_step.code}"}
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; flex: 1;"
+              >
+                <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">
+                  {conn.source_step.code}
+                </code>
                 <span style="font-size: 13px; color: #3a2410;">{conn.source_step.name}</span>
               </.link>
               <%= if @edit_mode do %>
-                <button phx-click="delete_connection" phx-value-source={conn.source_step.code} phx-value-target={@step.code} data-confirm={"Remover #{conn.source_step.code} → #{@step.code}?"} style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 16px; padding: 4px;">×</button>
+                <button
+                  phx-click="delete_connection"
+                  phx-value-source={conn.source_step.code}
+                  phx-value-target={@step.code}
+                  data-confirm={"Remover #{conn.source_step.code} → #{@step.code}?"}
+                  style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 16px; padding: 4px;"
+                >
+                  ×
+                </button>
               <% end %>
             </div>
           <% end %>
@@ -195,15 +310,38 @@
       <%!-- Add connection (edit mode) --%>
       <%= if @edit_mode do %>
         <div style="margin-top: 16px; position: relative;">
-          <form phx-submit="create_connection" phx-change="search_connection" style="display: flex; gap: 8px;">
-            <input type="text" name="target_code" value={@connection_search} placeholder="Buscar passo por código ou nome..." autocomplete="off" phx-debounce="150" style="flex: 1; padding: 10px 14px; border: 1px solid rgba(60,40,20,0.3); border-radius: 6px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05;" />
-            <button type="submit" style="padding: 10px 18px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;">+ Conexão</button>
+          <form
+            phx-submit="create_connection"
+            phx-change="search_connection"
+            style="display: flex; gap: 8px;"
+          >
+            <input
+              type="text"
+              name="target_code"
+              value={@connection_search}
+              placeholder="Buscar passo por código ou nome..."
+              autocomplete="off"
+              phx-debounce="150"
+              style="flex: 1; padding: 10px 14px; border: 1px solid rgba(60,40,20,0.3); border-radius: 6px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05;"
+            />
+            <button
+              type="submit"
+              style="padding: 10px 18px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;"
+            >
+              + Conexão
+            </button>
           </form>
           <%= if @connection_suggestions != [] do %>
             <div style="position: absolute; top: 48px; left: 0; right: 100px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
               <%= for sug <- @connection_suggestions do %>
-                <div phx-click="select_connection_target" phx-value-code={sug.code} style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 13px; color: #1a0e05;">
-                  <code style={"font-size: 11px; color: #{if sug.category, do: sug.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>{sug.code}</code>
+                <div
+                  phx-click="select_connection_target"
+                  phx-value-code={sug.code}
+                  style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 13px; color: #1a0e05;"
+                >
+                  <code style={"font-size: 11px; color: #{if sug.category, do: sug.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>
+                    {sug.code}
+                  </code>
                   {sug.name}
                 </div>
               <% end %>
@@ -216,11 +354,25 @@
 
   <%!-- Footer --%>
   <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a; margin-bottom: 4px;">feito por <strong>L. Tatá</strong></p>
+    <p style="font-size: 12px; color: #7a5c3a; margin-bottom: 4px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
     <div style="display: flex; justify-content: center; gap: 20px; font-size: 12px;">
-      <a href="mailto:lucas.c.tavano+forro@gmail.com" style="color: #9a7a5a; text-decoration: none;">email</a>
+      <a
+        href="mailto:lucas.c.tavano+forro@gmail.com"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        email
+      </a>
       <span style="color: #bba88a;">·</span>
-      <a href="https://instagram.com/tavanooh" target="_blank" rel="noreferrer" style="color: #9a7a5a; text-decoration: none;">@tavanooh</a>
+      <a
+        href="https://instagram.com/tavanooh"
+        target="_blank"
+        rel="noreferrer"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        @tavanooh
+      </a>
     </div>
   </footer>
 </div>

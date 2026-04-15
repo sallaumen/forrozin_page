@@ -77,7 +77,8 @@ defmodule Forrozin.Sequences.ValidatorTest do
       {:ok, _} = Admin.create_connection(%{source_step_id: step_a.id, target_step_id: step_b.id})
       {:ok, _} = Admin.delete_step(step_b)
 
-      assert {:invalid, issues} = Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
+      assert {:invalid, issues} =
+               Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
 
       deleted_step_issues = Enum.filter(issues, &(&1.type == :deleted_step))
       assert length(deleted_step_issues) == 1
@@ -95,7 +96,8 @@ defmodule Forrozin.Sequences.ValidatorTest do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
 
-      assert {:invalid, issues} = Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
+      assert {:invalid, issues} =
+               Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
 
       assert [%{position: 1, type: :missing_connection}] = issues
       assert String.contains?(hd(issues).code, "BF")
@@ -109,11 +111,12 @@ defmodule Forrozin.Sequences.ValidatorTest do
       {:ok, _} = Admin.create_connection(%{source_step_id: step_a.id, target_step_id: step_b.id})
       # No connection from B → C
 
-      assert {:invalid, issues} = Validator.validate([
-        make_ss(step_a.id, 1),
-        make_ss(step_b.id, 2),
-        make_ss(step_c.id, 3)
-      ])
+      assert {:invalid, issues} =
+               Validator.validate([
+                 make_ss(step_a.id, 1),
+                 make_ss(step_b.id, 2),
+                 make_ss(step_c.id, 3)
+               ])
 
       assert [%{position: 2, type: :missing_connection}] = issues
     end
@@ -127,10 +130,14 @@ defmodule Forrozin.Sequences.ValidatorTest do
     test "detects a soft-deleted connection between two active steps" do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
-      {:ok, conn} = Admin.create_connection(%{source_step_id: step_a.id, target_step_id: step_b.id})
+
+      {:ok, conn} =
+        Admin.create_connection(%{source_step_id: step_a.id, target_step_id: step_b.id})
+
       {:ok, _} = Admin.delete_connection(conn.id)
 
-      assert {:invalid, issues} = Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
+      assert {:invalid, issues} =
+               Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
 
       assert [%{position: 1, type: :deleted_connection}] = issues
       assert String.contains?(hd(issues).code, "BF")
@@ -149,7 +156,8 @@ defmodule Forrozin.Sequences.ValidatorTest do
       # No connection and step_b is deleted
       {:ok, _} = Admin.delete_step(step_b)
 
-      assert {:invalid, issues} = Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
+      assert {:invalid, issues} =
+               Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
 
       types = Enum.map(issues, & &1.type) |> MapSet.new()
       assert MapSet.member?(types, :deleted_step)

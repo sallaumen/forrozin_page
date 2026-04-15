@@ -138,7 +138,11 @@
         <% n_sources = MapSet.size(@sources) %>
         <% n_targets = MapSet.size(@targets) %>
         <% pode_conectar = n_sources > 0 and n_targets > 0 %>
-        <form phx-submit="create_connections" phx-change="update_label" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <form
+          phx-submit="create_connections"
+          phx-change="update_label"
+          style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;"
+        >
           <input
             type="text"
             name="label"
@@ -214,7 +218,10 @@
                       </span>
                     <% end %>
                     <%= if @is_admin and @edit_mode do %>
-                      <form phx-submit="edit_connection_label" style="display: flex; gap: 4px; margin-top: 2px;">
+                      <form
+                        phx-submit="edit_connection_label"
+                        style="display: flex; gap: 4px; margin-top: 2px;"
+                      >
                         <input type="hidden" name="connection_id" value={edge.id} />
                         <input
                           type="text"

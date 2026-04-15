@@ -12,7 +12,11 @@ defmodule Forrozin.Sequences.Validator do
 
   alias Forrozin.Encyclopedia.{ConnectionQuery, StepQuery}
 
-  @type issue :: %{position: integer(), type: :deleted_step | :deleted_connection | :missing_connection, code: String.t()}
+  @type issue :: %{
+          position: integer(),
+          type: :deleted_step | :deleted_connection | :missing_connection,
+          code: String.t()
+        }
 
   @doc """
   Validates a list of `SequenceStep` structs (must have `:step_id` loaded).

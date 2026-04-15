@@ -13,6 +13,7 @@ defmodule Forrozin.Repo.Migrations.RenameRemainingIndexesToEnglish do
 
     # Users indexes
     execute "ALTER INDEX IF EXISTS usuarios_email_index RENAME TO users_email_index"
+
     execute "ALTER INDEX IF EXISTS usuarios_confirmation_token_index RENAME TO users_confirmation_token_index"
 
     # Steps indexes
@@ -32,6 +33,7 @@ defmodule Forrozin.Repo.Migrations.RenameRemainingIndexesToEnglish do
 
     # Step connections indexes
     execute "ALTER INDEX IF EXISTS conexoes_passos_passo_origem_id_index RENAME TO step_connections_source_step_id_index"
+
     execute "ALTER INDEX IF EXISTS conexoes_passos_passo_destino_id_index RENAME TO step_connections_target_step_id_index"
 
     # Technical concepts indexes

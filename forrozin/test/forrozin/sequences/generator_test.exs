@@ -13,7 +13,13 @@ defmodule Forrozin.Sequences.GeneratorTest do
   defp build_linear_chain(n) when n >= 2 do
     steps =
       for i <- 0..(n - 1) do
-        insert(:step, code: "C#{i}", name: "Chain Step #{i}", wip: false, status: "published", approved: true)
+        insert(:step,
+          code: "C#{i}",
+          name: "Chain Step #{i}",
+          wip: false,
+          status: "published",
+          approved: true
+        )
       end
 
     # Connect each step to the next
@@ -166,9 +172,7 @@ defmodule Forrozin.Sequences.GeneratorTest do
       build_linear_chain(5)
 
       {:ok, [sequence], warnings} =
-        Generator.generate(
-          base_params("C0", length: 5, count: 1, required_codes: ["C3"])
-        )
+        Generator.generate(base_params("C0", length: 5, count: 1, required_codes: ["C3"]))
 
       codes = Enum.map(sequence, & &1.code)
 
@@ -182,9 +186,7 @@ defmodule Forrozin.Sequences.GeneratorTest do
       build_linear_chain(2)
 
       {:ok, _sequences, warnings} =
-        Generator.generate(
-          base_params("C0", length: 2, count: 1, required_codes: ["MISSING"])
-        )
+        Generator.generate(base_params("C0", length: 2, count: 1, required_codes: ["MISSING"]))
 
       # MISSING is not a valid step, so it can't be resolved — no warning about it
       # (unresolvable codes are silently dropped; only reachable-but-missed codes warn)
@@ -199,7 +201,13 @@ defmodule Forrozin.Sequences.GeneratorTest do
       # Rename steps to avoid code collision with chain helper
       _steps_b =
         for i <- 3..5 do
-          insert(:step, code: "D#{i}", name: "Dead Step #{i}", wip: false, status: "published", approved: true)
+          insert(:step,
+            code: "D#{i}",
+            name: "Dead Step #{i}",
+            wip: false,
+            status: "published",
+            approved: true
+          )
         end
 
       # D3, D4, D5 connected among themselves but not to C0..C2
@@ -211,9 +219,7 @@ defmodule Forrozin.Sequences.GeneratorTest do
 
       # Now require D3 in a sequence starting from C0 (impossible to reach)
       {:ok, sequences, warnings} =
-        Generator.generate(
-          base_params("C0", length: 3, count: 3, required_codes: ["D3"])
-        )
+        Generator.generate(base_params("C0", length: 3, count: 3, required_codes: ["D3"]))
 
       # Sequences were generated (starting from C0)
       assert length(sequences) >= 1
@@ -233,11 +239,50 @@ defmodule Forrozin.Sequences.GeneratorTest do
       # Build a branching graph so multiple paths exist
       # B0 -> B1, B0 -> B2, B1 -> B3, B2 -> B4
       # Two distinct paths of length 3: B0->B1->B3 and B0->B2->B4
-      s0 = insert(:step, code: "B0", name: "Branch 0", wip: false, status: "published", approved: true)
-      s1 = insert(:step, code: "B1", name: "Branch 1", wip: false, status: "published", approved: true)
-      s2 = insert(:step, code: "B2", name: "Branch 2", wip: false, status: "published", approved: true)
-      s3 = insert(:step, code: "B3", name: "Branch 3", wip: false, status: "published", approved: true)
-      s4 = insert(:step, code: "B4", name: "Branch 4", wip: false, status: "published", approved: true)
+      s0 =
+        insert(:step,
+          code: "B0",
+          name: "Branch 0",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+
+      s1 =
+        insert(:step,
+          code: "B1",
+          name: "Branch 1",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+
+      s2 =
+        insert(:step,
+          code: "B2",
+          name: "Branch 2",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+
+      s3 =
+        insert(:step,
+          code: "B3",
+          name: "Branch 3",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+
+      s4 =
+        insert(:step,
+          code: "B4",
+          name: "Branch 4",
+          wip: false,
+          status: "published",
+          approved: true
+        )
 
       insert(:connection, source_step: s0, target_step: s1)
       insert(:connection, source_step: s0, target_step: s2)

@@ -14,7 +14,8 @@ defmodule ForrozinWeb.StepLiveTest do
     end
 
     test "redirects to /collection when step does not exist", %{conn: conn} do
-      {:error, {:redirect, %{to: "/collection"}}} = live(logged_in_conn(conn), ~p"/steps/INEXISTENTE")
+      {:error, {:redirect, %{to: "/collection"}}} =
+        live(logged_in_conn(conn), ~p"/steps/INEXISTENTE")
     end
   end
 

@@ -18,7 +18,9 @@ defmodule Forrozin.Encyclopedia.ConnectionTest do
 
       assert changeset.valid?
       assert changeset.changes.label == "Trava Armada"
-      assert changeset.changes.description == "Ambos jogam centro de massa para direita gerando elástico."
+
+      assert changeset.changes.description ==
+               "Ambos jogam centro de massa para direita gerando elástico."
     end
 
     test "valid without label and description" do
@@ -28,8 +30,7 @@ defmodule Forrozin.Encyclopedia.ConnectionTest do
       changeset =
         Connection.changeset(%Connection{}, %{
           source_step_id: source.id,
-          target_step_id: target.id,
-          
+          target_step_id: target.id
         })
 
       assert changeset.valid?

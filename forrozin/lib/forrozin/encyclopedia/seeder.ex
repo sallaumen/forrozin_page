@@ -504,7 +504,8 @@ defmodule Forrozin.Encyclopedia.Seeder do
       title: "Dança aberta",
       num: 10,
       code: "DA",
-      description: "Duas versões — forró universitário e forró roots. Distintas em mecânica e uso.",
+      description:
+        "Duas versões — forró universitário e forró roots. Distintas em mecânica e uso.",
       note: nil,
       category: "outros",
       steps: [],
@@ -539,7 +540,8 @@ defmodule Forrozin.Encyclopedia.Seeder do
       title: "Pião",
       num: 11,
       code: "PI",
-      description: "Giro conjunto frente a frente. Pode ser inserido em qualquer momento da dança.",
+      description:
+        "Giro conjunto frente a frente. Pode ser inserido em qualquer momento da dança.",
       note:
         "Eixo central espelhado. Ciclo: 3 passos = 1 volta. Regra do ímpar: saídas técnicas só ficam corretas em voltas ímpares.",
       category: "giros",
@@ -712,7 +714,7 @@ defmodule Forrozin.Encyclopedia.Seeder do
         %{code: "AB-T", name: "Trocas de lado"},
         %{code: "AB-VR", name: "Volta romântica (todos ângulos)"},
         %{code: "AB-RQ", name: "Rebolada de quadril com ela à direita"},
-        %{code: "AB-TD", name: "Troca de pé em tempo duplo"},
+        %{code: "AB-TD", name: "Troca de pé em tempo duplo"}
       ],
       subsections: []
     },

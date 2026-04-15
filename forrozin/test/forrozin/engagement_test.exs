@@ -104,7 +104,11 @@ defmodule Forrozin.EngagementTest do
       assert Map.get(counts, other_step.id, 0) == 0
     end
 
-    test "does not leak likes across likeable_types", %{user: user, step: step, sequence: sequence} do
+    test "does not leak likes across likeable_types", %{
+      user: user,
+      step: step,
+      sequence: sequence
+    } do
       Engagement.toggle_like(user.id, "step", step.id)
 
       result = Engagement.likes_map(user.id, "sequence", [sequence.id])

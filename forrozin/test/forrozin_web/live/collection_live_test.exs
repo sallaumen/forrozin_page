@@ -200,7 +200,12 @@ defmodule ForrozinWeb.CollectionLiveTest do
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
       render_click(lv, "toggle_edit_mode", %{})
       render_click(lv, "open_step", %{"code" => "BF"})
-      html = render_submit(lv, "update_step", %{"step" => %{"name" => "Base frontal v2", "code" => "BF"}})
+
+      html =
+        render_submit(lv, "update_step", %{
+          "step" => %{"name" => "Base frontal v2", "code" => "BF"}
+        })
+
       assert html =~ "Base frontal v2"
     end
 
@@ -209,7 +214,12 @@ defmodule ForrozinWeb.CollectionLiveTest do
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
       render_click(lv, "toggle_edit_mode", %{})
       render_click(lv, "open_section", %{"id" => section.id})
-      html = render_submit(lv, "update_section", %{"section" => %{"title" => "Bases Novas", "position" => "1"}})
+
+      html =
+        render_submit(lv, "update_section", %{
+          "section" => %{"title" => "Bases Novas", "position" => "1"}
+        })
+
       assert html =~ "Bases Novas"
     end
 
@@ -243,14 +253,23 @@ defmodule ForrozinWeb.CollectionLiveTest do
       cat = insert(:category, name: "bases", label: "Bases")
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
       render_click(lv, "toggle_edit_mode", %{})
-      html = render_submit(lv, "create_section", %{"section" => %{"title" => "Nova Seção", "position" => "99", "category_id" => cat.id}})
+
+      html =
+        render_submit(lv, "create_section", %{
+          "section" => %{"title" => "Nova Seção", "position" => "99", "category_id" => cat.id}
+        })
+
       assert html =~ "Nova Seção"
     end
 
     test "admin creates new category", %{conn: conn} do
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
       render_click(lv, "toggle_edit_mode", %{})
-      render_submit(lv, "create_category", %{"category" => %{"name" => "nova", "label" => "Nova Cat", "color" => "#ff0000"}})
+
+      render_submit(lv, "create_category", %{
+        "category" => %{"name" => "nova", "label" => "Nova Cat", "color" => "#ff0000"}
+      })
+
       # Category appears in filter bar
       html = render(lv)
       assert html =~ "Nova Cat"
@@ -263,7 +282,16 @@ defmodule ForrozinWeb.CollectionLiveTest do
       section = insert(:section, title: "Bases", position: 1, category: cat)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       render_click(lv, "toggle_suggest", %{})
-      render_submit(lv, "create_suggested_step", %{"step" => %{"name" => "Meu passo", "code" => "MP-1", "category_id" => cat.id, "section_id" => section.id}})
+
+      render_submit(lv, "create_suggested_step", %{
+        "step" => %{
+          "name" => "Meu passo",
+          "code" => "MP-1",
+          "category_id" => cat.id,
+          "section_id" => section.id
+        }
+      })
+
       step = Forrozin.Repo.get_by(Forrozin.Encyclopedia.Step, code: "MP-1")
       assert step != nil
       assert step.section_id == section.id

@@ -97,12 +97,14 @@ defmodule ForrozinWeb.CollectionLive do
   def handle_event("open_step", %{"code" => code}, socket) do
     case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
-        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+        step =
+          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 
         user_id = socket.assigns.current_user.id
-        can_edit = socket.assigns.edit_mode or (step.suggested_by_id == user_id)
+        can_edit = socket.assigns.edit_mode or step.suggested_by_id == user_id
 
         {:noreply,
          assign(socket,
@@ -148,7 +150,16 @@ defmodule ForrozinWeb.CollectionLive do
 
       case Admin.update_step(step, params) do
         {:ok, updated} ->
-          updated = StepQuery.get_by(code: updated.code, preload: [:category, :technical_concepts, connections_as_source: :target_step, connections_as_target: :source_step])
+          updated =
+            StepQuery.get_by(
+              code: updated.code,
+              preload: [
+                :category,
+                :technical_concepts,
+                connections_as_source: :target_step,
+                connections_as_target: :source_step
+              ]
+            )
 
           {:noreply,
            socket
@@ -217,7 +228,8 @@ defmodule ForrozinWeb.CollectionLive do
       else
         case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
           {:ok, _} ->
-            {:noreply, socket |> reopen_step_drawer(step.code) |> put_flash(:info, "Conexão criada")}
+            {:noreply,
+             socket |> reopen_step_drawer(step.code) |> put_flash(:info, "Conexão criada")}
 
           {:error, _} ->
             {:noreply, put_flash(socket, :error, "Conexão já existe")}
@@ -226,7 +238,11 @@ defmodule ForrozinWeb.CollectionLive do
     end
   end
 
-  def handle_event("delete_step_connection", %{"source" => source_code, "target" => target_code}, socket) do
+  def handle_event(
+        "delete_step_connection",
+        %{"source" => source_code, "target" => target_code},
+        socket
+      ) do
     if not socket.assigns.is_admin do
       {:noreply, socket}
     else
@@ -236,7 +252,9 @@ defmodule ForrozinWeb.CollectionLive do
         {:noreply, put_flash(socket, :error, "Conexão não encontrada")}
       else
         {:ok, _} = Admin.delete_connection(connection.id)
-        {:noreply, socket |> reopen_step_drawer(socket.assigns.drawer_item.code) |> reload_sections()}
+
+        {:noreply,
+         socket |> reopen_step_drawer(socket.assigns.drawer_item.code) |> reload_sections()}
       end
     end
   end
@@ -261,7 +279,9 @@ defmodule ForrozinWeb.CollectionLive do
       case Admin.create_category(params) do
         {:ok, _} ->
           categories = Encyclopedia.list_categories()
-          {:noreply, socket |> assign(:categories, categories) |> put_flash(:info, "Categoria criada")}
+
+          {:noreply,
+           socket |> assign(:categories, categories) |> put_flash(:info, "Categoria criada")}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao criar categoria")}
@@ -307,7 +327,9 @@ defmodule ForrozinWeb.CollectionLive do
 
   defp reload_sections(socket) do
     sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
-    open = Map.new(sections, fn s -> {s.id, Map.get(socket.assigns.open_sections, s.id, false)} end)
+
+    open =
+      Map.new(sections, fn s -> {s.id, Map.get(socket.assigns.open_sections, s.id, false)} end)
 
     assign(socket,
       sections: sections,
@@ -319,7 +341,9 @@ defmodule ForrozinWeb.CollectionLive do
   defp reopen_step_drawer(socket, code) do
     case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
-        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+        step =
+          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
         assign(socket, drawer_item: step, drawer_connections_out: out, drawer_connections_in: inn)
@@ -350,27 +374,33 @@ defmodule ForrozinWeb.CollectionLive do
           <span style={"color: #{category_color(@section)}; font-size: 10px; display: inline-block; transform: #{if @open, do: "rotate(90deg)", else: "rotate(0deg)"}; transition: transform 0.15s;"}>
             ▶
           </span>
-        <span class="flex items-center gap-3 flex-wrap flex-1">
-          <%= if @section.num do %>
-            <span style="font-size: 11px; color: #aaa; font-family: Georgia, serif; font-style: italic;">
-              {@section.num}.
+          <span class="flex items-center gap-3 flex-wrap flex-1">
+            <%= if @section.num do %>
+              <span style="font-size: 11px; color: #aaa; font-family: Georgia, serif; font-style: italic;">
+                {@section.num}.
+              </span>
+            <% end %>
+            <%= if @section.code do %>
+              <code style={"font-size: 11px; color: #{category_color(@section)}; background: #{category_color(@section)}15; padding: 2px 8px; border-radius: 3px; border: 1px solid #{category_color(@section)}30; letter-spacing: 0.5px;"}>
+                {@section.code}
+              </code>
+            <% end %>
+            <span style="font-size: 15px; font-weight: 700; color: #1a0e05; font-family: Georgia, serif; letter-spacing: -0.2px;">
+              {@section.title}
             </span>
-          <% end %>
-          <%= if @section.code do %>
-            <code style={"font-size: 11px; color: #{category_color(@section)}; background: #{category_color(@section)}15; padding: 2px 8px; border-radius: 3px; border: 1px solid #{category_color(@section)}30; letter-spacing: 0.5px;"}>
-              {@section.code}
-            </code>
-          <% end %>
-          <span style="font-size: 15px; font-weight: 700; color: #1a0e05; font-family: Georgia, serif; letter-spacing: -0.2px;">
-            {@section.title}
+            <span style={"font-size: 10px; color: #{category_color(@section)}; background: #{category_color(@section)}15; padding: 1px 8px; border-radius: 10px; font-family: Georgia, serif; font-style: italic; border: 1px solid #{category_color(@section)}25;"}>
+              {category_label(@section)}
+            </span>
           </span>
-          <span style={"font-size: 10px; color: #{category_color(@section)}; background: #{category_color(@section)}15; padding: 1px 8px; border-radius: 10px; font-family: Georgia, serif; font-style: italic; border: 1px solid #{category_color(@section)}25;"}>
-            {category_label(@section)}
-          </span>
-        </span>
         </button>
         <%= if @edit_mode do %>
-          <button phx-click="open_section" phx-value-id={@section.id} style="padding: 6px 12px; background: none; border: none; cursor: pointer; color: #9a7a5a; font-size: 12px;">✏</button>
+          <button
+            phx-click="open_section"
+            phx-value-id={@section.id}
+            style="padding: 6px 12px; background: none; border: none; cursor: pointer; color: #9a7a5a; font-size: 12px;"
+          >
+            ✏
+          </button>
         <% end %>
       </div>
       <%= if @open do %>
@@ -437,7 +467,12 @@ defmodule ForrozinWeb.CollectionLive do
             {@step.name}
           </span>
           <%= if @step.suggested_by_id do %>
-            <.link navigate={~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"} style="text-decoration: none;">
+            <.link
+              navigate={
+                ~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"
+              }
+              style="text-decoration: none;"
+            >
               <span style={"font-size: 9px; padding: 1px 7px; border-radius: 8px; border: 1px solid #{if @step.approved, do: "#27ae6030", else: "#8e44ad30"}; background: #{if @step.approved, do: "#27ae6018", else: "#8e44ad18"}; color: #{if @step.approved, do: "#27ae60", else: "#8e44ad"}; font-style: italic;"}>
                 <%= if @step.approved do %>
                   ✓ @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}

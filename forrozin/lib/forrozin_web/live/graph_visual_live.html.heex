@@ -32,10 +32,13 @@
           phx-click="toggle_edit_mode"
           style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
         >
-          <%= if @edit_mode, do: "✕ Sair edição", else: "✏ Editar" %>
+          {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
         </button>
       <% end %>
-      <.link navigate={~p"/users/#{@current_user.username}"} style="font-size: 12px; color: #f2ede4; letter-spacing: 0.5px; text-decoration: none;">
+      <.link
+        navigate={~p"/users/#{@current_user.username}"}
+        style="font-size: 12px; color: #f2ede4; letter-spacing: 0.5px; text-decoration: none;"
+      >
         Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
       </.link>
     </nav>
@@ -83,8 +86,10 @@
       <%!-- View: Config form --%>
       <%= if @seq_view == :config do %>
         <div style="padding: 16px;">
-          <form phx-submit="generate_sequences" style="display: flex; flex-direction: column; gap: 14px;">
-
+          <form
+            phx-submit="generate_sequences"
+            style="display: flex; flex-direction: column; gap: 14px;"
+          >
             <%!-- Start step --%>
             <div>
               <label style="display: block; font-size: 10px; font-weight: 700; color: #7a5c3a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
@@ -166,7 +171,9 @@
                         phx-click="remove_required_step"
                         phx-value-code={code}
                         style="background: none; border: none; cursor: pointer; color: #e67e22; font-size: 12px; padding: 0; line-height: 1;"
-                      >×</button>
+                      >
+                        ×
+                      </button>
                     </span>
                   <% end %>
                 </div>
@@ -202,25 +209,45 @@
             <%!-- Cyclic + Allow repeats --%>
             <div style="display: flex; flex-direction: column; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="cyclic" id="cyclic" checked style="accent-color: #e67e22; cursor: pointer;" />
+                <input
+                  type="checkbox"
+                  name="cyclic"
+                  id="cyclic"
+                  checked
+                  style="accent-color: #e67e22; cursor: pointer;"
+                />
                 <label for="cyclic" style="font-size: 11px; color: #5c3a1a; cursor: pointer;">
                   Cíclica (volta ao início)
                 </label>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-              <input
-                type="checkbox"
-                name="allow_repeats"
-                id="allow-repeats"
-                style="accent-color: #e67e22; cursor: pointer;"
-              />
-              <label for="allow-repeats" style="font-size: 11px; color: #5c3a1a; cursor: pointer;">
-                Permitir repetições <span style="font-size: 9px; color: #9a7a5a;">(mín. 8 passos, máx. 3 loops iguais)</span>
-              </label>
+                <input
+                  type="checkbox"
+                  name="allow_repeats"
+                  id="allow-repeats"
+                  style="accent-color: #e67e22; cursor: pointer;"
+                />
+                <label
+                  for="allow-repeats"
+                  style="font-size: 11px; color: #5c3a1a; cursor: pointer;"
+                >
+                  Permitir repetições
+                  <span style="font-size: 9px; color: #9a7a5a;">
+                    (mín. 8 passos, máx. 3 loops iguais)
+                  </span>
+                </label>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="include_community" id="include-community" style="accent-color: #8e44ad; cursor: pointer;" />
-                <label for="include-community" style="font-size: 11px; color: #5c3a1a; cursor: pointer;">
+                <input
+                  type="checkbox"
+                  name="include_community"
+                  id="include-community"
+                  style="accent-color: #8e44ad; cursor: pointer;"
+                />
+                <label
+                  for="include-community"
+                  style="font-size: 11px; color: #5c3a1a; cursor: pointer;"
+                >
                   Incluir passos da comunidade
                 </label>
               </div>
@@ -228,7 +255,15 @@
                 <label for="max-bf" style="font-size: 11px; color: #5c3a1a; white-space: nowrap;">
                   Máx. vezes na BF:
                 </label>
-                <input type="number" name="max_bf_visits" id="max-bf" min="0" max="5" value="1" style="width: 50px; padding: 4px 8px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: Georgia, serif; font-size: 12px; color: #1a0e05; text-align: center;" />
+                <input
+                  type="number"
+                  name="max_bf_visits"
+                  id="max-bf"
+                  min="0"
+                  max="5"
+                  value="1"
+                  style="width: 50px; padding: 4px 8px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: Georgia, serif; font-size: 12px; color: #1a0e05; text-align: center;"
+                />
                 <span style="font-size: 9px; color: #9a7a5a;">(0 = evitar BF)</span>
               </div>
             </div>
@@ -267,7 +302,9 @@
               <div style="padding: 10px;">
                 <%= for {step, pos} <- Enum.with_index(seq, 1) do %>
                   <div style="display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(60,40,20,0.05);">
-                    <span style="font-size: 10px; font-weight: 700; color: #e67e22; min-width: 16px;">{pos}.</span>
+                    <span style="font-size: 10px; font-weight: 700; color: #e67e22; min-width: 16px;">
+                      {pos}.
+                    </span>
                     <code style="font-size: 10px; color: #9a7a5a;">{step.code}</code>
                     <span style="font-size: 11px; color: #2c1a0e;">{step.name}</span>
                   </div>
@@ -293,8 +330,19 @@
                       autofocus
                       style="flex: 1; padding: 4px 6px; border: 1px solid rgba(60,40,20,0.2); border-radius: 3px; font-family: Georgia, serif; font-size: 10px; min-width: 0;"
                     />
-                    <button type="submit" style="padding: 4px 8px; background: #e67e22; color: white; border: none; border-radius: 3px; font-family: Georgia, serif; font-size: 10px; cursor: pointer;">✓</button>
-                    <button type="button" phx-click="cancel_save_sequence" style="padding: 4px 8px; background: transparent; border: 1px solid rgba(60,40,20,0.15); border-radius: 3px; font-family: Georgia, serif; font-size: 10px; color: #9a7a5a; cursor: pointer;">✕</button>
+                    <button
+                      type="submit"
+                      style="padding: 4px 8px; background: #e67e22; color: white; border: none; border-radius: 3px; font-family: Georgia, serif; font-size: 10px; cursor: pointer;"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="cancel_save_sequence"
+                      style="padding: 4px 8px; background: transparent; border: 1px solid rgba(60,40,20,0.15); border-radius: 3px; font-family: Georgia, serif; font-size: 10px; color: #9a7a5a; cursor: pointer;"
+                    >
+                      ✕
+                    </button>
                   </form>
                 <% else %>
                   <button
@@ -344,8 +392,12 @@
               <div style="margin-bottom: 10px; padding: 10px; border: 1px solid rgba(60,40,20,0.12); border-radius: 6px; background: white;">
                 <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px;">
                   <div>
-                    <div style="font-size: 12px; font-weight: 700; color: #1a0e05; margin-bottom: 2px;">{saved_seq.name}</div>
-                    <div style="font-size: 10px; color: #9a7a5a;">{length(saved_seq.sequence_steps)} passos</div>
+                    <div style="font-size: 12px; font-weight: 700; color: #1a0e05; margin-bottom: 2px;">
+                      {saved_seq.name}
+                    </div>
+                    <div style="font-size: 10px; color: #9a7a5a;">
+                      {length(saved_seq.sequence_steps)} passos
+                    </div>
                   </div>
                 </div>
                 <div style="display: flex; gap: 6px;">
@@ -409,7 +461,8 @@
           data-category={cat.name}
           style={"display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; border: 1px solid #{cat.color}30; background: transparent; cursor: pointer; font-family: Georgia, serif; font-size: 9px; color: #5c3a1a; letter-spacing: 0.3px; transition: background 0.15s; white-space: nowrap;"}
         >
-          <span style={"width: 8px; height: 8px; border-radius: 50%; background: #{cat.color}; flex-shrink: 0;"}></span>
+          <span style={"width: 8px; height: 8px; border-radius: 50%; background: #{cat.color}; flex-shrink: 0;"}>
+          </span>
           {cat.label}
         </button>
       <% end %>

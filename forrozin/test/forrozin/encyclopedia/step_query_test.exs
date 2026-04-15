@@ -109,7 +109,14 @@ defmodule Forrozin.Encyclopedia.StepQueryTest do
   describe "list_by/1 with :public_only" do
     test "excludes wip and draft steps" do
       insert(:step, code: "BF", name: "Base frontal", wip: false, status: "published")
-      insert(:step, code: "HF-SRS", name: "Sacada Rotativa Suspensa", wip: true, status: "published")
+
+      insert(:step,
+        code: "HF-SRS",
+        name: "Sacada Rotativa Suspensa",
+        wip: true,
+        status: "published"
+      )
+
       insert(:step, code: "BQ", name: "Base quadrada", wip: false, status: "draft")
 
       results = StepQuery.list_by(public_only: true)

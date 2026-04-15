@@ -105,7 +105,9 @@ defmodule ForrozinWeb.GraphLiveTest do
       assert html =~ "SC"
     end
 
-    test "creating duplicate connection does not raise error and keeps graph stable", %{conn: conn} do
+    test "creating duplicate connection does not raise error and keeps graph stable", %{
+      conn: conn
+    } do
       step_a = insert(:step, code: "BF")
       step_b = insert(:step, code: "SC")
       insert(:connection, source_step: step_a, target_step: step_b)

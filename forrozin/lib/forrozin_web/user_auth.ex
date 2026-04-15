@@ -87,7 +87,10 @@ defmodule ForrozinWeb.UserAuth do
       is_nil(socket.assigns.current_user) ->
         socket =
           socket
-          |> LiveView.put_flash(:error, "Você precisa estar autenticado para acessar esta página.")
+          |> LiveView.put_flash(
+            :error,
+            "Você precisa estar autenticado para acessar esta página."
+          )
           |> LiveView.redirect(to: ~p"/login")
 
         {:halt, socket}

@@ -15,7 +15,11 @@ defmodule Forrozin.SequencesTest do
       step_c = insert(:step, code: "TR", name: "Trava")
 
       assert {:ok, sequence} =
-               Sequences.create_sequence(user.id, "Aula de Terça", [step_a.id, step_b.id, step_c.id])
+               Sequences.create_sequence(user.id, "Aula de Terça", [
+                 step_a.id,
+                 step_b.id,
+                 step_c.id
+               ])
 
       assert sequence.name == "Aula de Terça"
       assert sequence.user_id == user.id

@@ -12,7 +12,16 @@ defmodule ForrozinWeb.GraphVisualLiveTest do
     test "renders the graph page with graph-canvas", %{conn: conn} do
       cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
       section = insert(:section, category: cat)
-      step_a = insert(:step, code: "BF", name: "Base frontal", note: "Test note", section: section, category: cat)
+
+      step_a =
+        insert(:step,
+          code: "BF",
+          name: "Base frontal",
+          note: "Test note",
+          section: section,
+          category: cat
+        )
+
       step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
       insert(:connection, source_step: step_a, target_step: step_b)
 
@@ -25,7 +34,16 @@ defmodule ForrozinWeb.GraphVisualLiveTest do
     test "graph JSON includes note and category_name fields", %{conn: conn} do
       cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
       section = insert(:section, category: cat)
-      step_a = insert(:step, code: "BF", name: "Base frontal", note: "Mechanical note here", section: section, category: cat)
+
+      step_a =
+        insert(:step,
+          code: "BF",
+          name: "Base frontal",
+          note: "Mechanical note here",
+          section: section,
+          category: cat
+        )
+
       step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
       insert(:connection, source_step: step_a, target_step: step_b)
 

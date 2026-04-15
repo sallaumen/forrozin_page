@@ -34,7 +34,11 @@ defmodule ForrozinWeb.GraphVisualLive do
   @impl true
   def handle_event("toggle_seq_panel", _params, socket) do
     new_open = not socket.assigns.seq_panel
-    saved = if new_open, do: Sequences.list_user_sequences(socket.assigns.current_user.id), else: socket.assigns.seq_saved
+
+    saved =
+      if new_open,
+        do: Sequences.list_user_sequences(socket.assigns.current_user.id),
+        else: socket.assigns.seq_saved
 
     {:noreply,
      socket
@@ -267,13 +271,18 @@ defmodule ForrozinWeb.GraphVisualLive do
     end
   end
 
-  def handle_event("create_connection", %{"source" => source_code, "target" => target_code}, socket) do
+  def handle_event(
+        "create_connection",
+        %{"source" => source_code, "target" => target_code},
+        socket
+      ) do
     if not socket.assigns.is_admin do
       {:noreply, socket}
     else
       with source when not is_nil(source) <- StepQuery.get_by(code: source_code),
            target when not is_nil(target) <- StepQuery.get_by(code: target_code),
-           {:ok, _conn} <- Admin.create_connection(%{source_step_id: source.id, target_step_id: target.id}) do
+           {:ok, _conn} <-
+             Admin.create_connection(%{source_step_id: source.id, target_step_id: target.id}) do
         graph = Encyclopedia.build_graph()
         edit_mode = socket.assigns.edit_mode
 
@@ -297,7 +306,11 @@ defmodule ForrozinWeb.GraphVisualLive do
     end
   end
 
-  def handle_event("delete_connection", %{"source" => source_code, "target" => target_code}, socket) do
+  def handle_event(
+        "delete_connection",
+        %{"source" => source_code, "target" => target_code},
+        socket
+      ) do
     if not socket.assigns.is_admin do
       {:noreply, socket}
     else
@@ -395,7 +408,13 @@ defmodule ForrozinWeb.GraphVisualLive do
       |> Enum.reject(&MapSet.member?(connected_codes, &1.code))
       |> Enum.map(fn p ->
         cat = p.category
-        %{id: p.code, nome: p.name, categoria: if(cat, do: cat.label, else: "Outros"), cor: if(cat, do: cat.color, else: "#9a7a5a")}
+
+        %{
+          id: p.code,
+          nome: p.name,
+          categoria: if(cat, do: cat.label, else: "Outros"),
+          cor: if(cat, do: cat.color, else: "#9a7a5a")
+        }
       end)
 
     Jason.encode!(orphans)

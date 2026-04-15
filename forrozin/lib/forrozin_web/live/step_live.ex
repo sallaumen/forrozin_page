@@ -15,10 +15,14 @@ defmodule ForrozinWeb.StepLive do
 
     case Encyclopedia.get_step_with_details(code, admin: admin) do
       {:ok, _} ->
-        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+        step =
+          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+
         can_edit = admin or step.suggested_by_id == user_id
 
-        connections_out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
+        connections_out =
+          ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
+
         connections_in = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 
         {:ok,
@@ -53,8 +57,21 @@ defmodule ForrozinWeb.StepLive do
 
     case Admin.update_step(socket.assigns.step, params) do
       {:ok, updated} ->
-        updated = StepQuery.get_by(code: updated.code, preload: [:category, :technical_concepts, :suggested_by, connections_as_source: :target_step, connections_as_target: :source_step])
-        {:noreply, assign(socket, step: updated, page_title: updated.name) |> put_flash(:info, "Passo atualizado")}
+        updated =
+          StepQuery.get_by(
+            code: updated.code,
+            preload: [
+              :category,
+              :technical_concepts,
+              :suggested_by,
+              connections_as_source: :target_step,
+              connections_as_target: :source_step
+            ]
+          )
+
+        {:noreply,
+         assign(socket, step: updated, page_title: updated.name)
+         |> put_flash(:info, "Passo atualizado")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao salvar")}
@@ -121,7 +138,11 @@ defmodule ForrozinWeb.StepLive do
     end
   end
 
-  def handle_event("delete_connection", %{"source" => source_code, "target" => target_code}, socket) do
+  def handle_event(
+        "delete_connection",
+        %{"source" => source_code, "target" => target_code},
+        socket
+      ) do
     if not socket.assigns.can_edit, do: {:noreply, socket}
 
     connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
@@ -137,7 +158,9 @@ defmodule ForrozinWeb.StepLive do
   defp reload_step(socket, code) do
     case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
-        step = StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+        step =
+          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
 

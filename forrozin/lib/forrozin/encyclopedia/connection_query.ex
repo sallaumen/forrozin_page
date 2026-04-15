@@ -49,7 +49,9 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
   defp default_scope, do: from(c in Connection, as: :connection)
 
   defp shared_reducer({:include_deleted, true}, q), do: q
-  defp shared_reducer({:include_deleted, false}, q), do: where(q, [connection: c], is_nil(c.deleted_at))
+
+  defp shared_reducer({:include_deleted, false}, q),
+    do: where(q, [connection: c], is_nil(c.deleted_at))
 
   defp shared_reducer({:source_step_id, id}, q),
     do: where(q, [connection: c], c.source_step_id == ^id)

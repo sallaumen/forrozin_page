@@ -11,21 +11,21 @@ defmodule Forrozin.Repo.Migrations.RemoveTypeFromConnections do
 
     # Create new unique index without type
     create unique_index(:step_connections, [:source_step_id, :target_step_id],
-      name: :step_connections_source_target_index
-    )
+             name: :step_connections_source_target_index
+           )
   end
 
   def down do
     drop_if_exists index(:step_connections, [:source_step_id, :target_step_id],
-      name: :step_connections_source_target_index
-    )
+                     name: :step_connections_source_target_index
+                   )
 
     alter table(:step_connections) do
       add :type, :string, default: "exit"
     end
 
     create unique_index(:step_connections, [:source_step_id, :target_step_id, :type],
-      name: :step_connections_source_step_id_target_step_id_type_index
-    )
+             name: :step_connections_source_step_id_target_step_id_type_index
+           )
   end
 end

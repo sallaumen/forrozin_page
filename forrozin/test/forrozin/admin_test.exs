@@ -15,8 +15,7 @@ defmodule Forrozin.AdminTest do
       assert {:ok, connection} =
                Admin.create_connection(%{
                  source_step_id: source.id,
-                 target_step_id: target.id,
-                 
+                 target_step_id: target.id
                })
 
       assert connection.source_step_id == source.id
@@ -30,8 +29,7 @@ defmodule Forrozin.AdminTest do
       assert {:error, changeset} =
                Admin.create_connection(%{
                  source_step_id: nonexistent_id,
-                 target_step_id: target.id,
-                 
+                 target_step_id: target.id
                })
 
       assert changeset.errors[:source_step_id] != nil
@@ -45,8 +43,7 @@ defmodule Forrozin.AdminTest do
       assert {:error, changeset} =
                Admin.create_connection(%{
                  source_step_id: source.id,
-                 target_step_id: target.id,
-                 
+                 target_step_id: target.id
                })
 
       assert changeset.errors[:source_step_id] != nil or
@@ -66,7 +63,9 @@ defmodule Forrozin.AdminTest do
                })
 
       assert connection.label == "Trava Armada"
-      assert connection.description == "Ambos jogam centro de massa para direita gerando elástico."
+
+      assert connection.description ==
+               "Ambos jogam centro de massa para direita gerando elástico."
     end
   end
 
@@ -182,7 +181,15 @@ defmodule Forrozin.AdminTest do
     test "creates step with valid data" do
       cat = insert(:category)
       section = insert(:section, category: cat)
-      assert {:ok, step} = Admin.create_step(%{code: "NEW", name: "Novo", section_id: section.id, category_id: cat.id})
+
+      assert {:ok, step} =
+               Admin.create_step(%{
+                 code: "NEW",
+                 name: "Novo",
+                 section_id: section.id,
+                 category_id: cat.id
+               })
+
       assert step.code == "NEW"
     end
   end
