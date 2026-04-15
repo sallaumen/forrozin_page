@@ -318,7 +318,14 @@ defmodule ForrozinWeb.CollectionLive do
 
       if step do
         Admin.update_step(step, %{approved: true})
-        {:noreply, socket |> reload_sections() |> put_flash(:info, "Passo aprovado!")}
+
+        socket =
+          socket
+          |> reload_sections()
+          |> reopen_step_drawer(code)
+          |> put_flash(:info, "Passo aprovado!")
+
+        {:noreply, socket}
       else
         {:noreply, socket}
       end
