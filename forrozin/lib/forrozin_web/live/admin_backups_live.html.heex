@@ -1,0 +1,104 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <.navbar current_user={@current_user} is_admin={@is_admin} />
+  <.flash kind={:info} flash={@flash} />
+  <.flash kind={:error} flash={@flash} />
+
+  <%!-- Content --%>
+  <div style="max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box;">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 8px; flex-wrap: wrap;">
+      <div>
+        <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 6px;">
+          Backups do Sistema
+        </h1>
+        <p style="font-size: 13px; color: #9a7a5a; margin: 0;">
+          {length(@backups)} backup(s) disponível(is)
+        </p>
+      </div>
+
+      <button
+        phx-click="create_backup"
+        style="padding: 10px 20px; background: #27ae60; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; flex-shrink: 0;"
+      >
+        + Criar backup agora
+      </button>
+    </div>
+
+    <%!-- Backup list --%>
+    <div style="margin-top: 40px;">
+      <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px; border-bottom: 1px solid rgba(60,40,20,0.1); padding-bottom: 8px;">
+        Arquivos disponíveis
+      </p>
+
+      <%= if @backups == [] do %>
+        <div style="padding: 40px 24px; text-align: center; border: 1px dashed rgba(60,40,20,0.2); border-radius: 6px;">
+          <p style="font-size: 14px; color: #bba88a; font-style: italic; margin: 0 0 8px;">
+            Nenhum backup encontrado.
+          </p>
+          <p style="font-size: 12px; color: #c8a87a; margin: 0;">
+            Clique em "Criar backup agora" para gerar o primeiro.
+          </p>
+        </div>
+      <% else %>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <%= for backup <- @backups do %>
+            <div style="padding: 14px 16px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-left: 3px solid #2c7be5; border-radius: 0 6px 6px 0; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <%!-- Info --%>
+              <div style="flex: 1; min-width: 200px;">
+                <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 3px; font-family: 'Courier New', monospace;">
+                  {backup.filename}
+                </p>
+                <p style="font-size: 12px; color: #7a5c3a; margin: 0;">
+                  {format_timestamp(backup.timestamp)}
+                  <span style="color: #bba88a; margin-left: 8px;">·</span>
+                  <span style="color: #9a7a5a; margin-left: 8px;">
+                    {format_size(backup.size)}
+                  </span>
+                </p>
+              </div>
+
+              <%!-- Actions --%>
+              <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
+                <a
+                  href={~p"/admin/backups/download/#{backup.filename}"}
+                  style="padding: 6px 14px; background: transparent; color: #2c7be5; border: 1px solid #2c7be5; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600; white-space: nowrap; text-decoration: none; display: inline-block;"
+                >
+                  Baixar
+                </a>
+                <button
+                  phx-click="restore_backup"
+                  phx-value-path={backup.path}
+                  data-confirm={"ATENÇÃO: Restaurar o backup \"#{backup.filename}\" vai reinserir os dados antigos no banco (on_conflict: nothing — não sobrescreve dados existentes). Tem certeza que deseja continuar?"}
+                  style="padding: 6px 14px; background: transparent; color: #e67e22; border: 1px solid #e67e22; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                >
+                  Restaurar
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Technical note --%>
+    <div style="margin-top: 48px; padding: 16px 20px; background: rgba(60,40,20,0.04); border: 1px solid rgba(60,40,20,0.1); border-radius: 6px;">
+      <p style="font-size: 11px; color: #9a7a5a; margin: 0 0 4px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+        Nota técnica
+      </p>
+      <p style="font-size: 12px; color: #7a5c3a; margin: 0; line-height: 1.7;">
+        Backups são gerados automaticamente a cada hora pelo worker Oban. Os últimos 48 arquivos são mantidos (≈ 2 dias).
+        A restauração usa
+        <code style="font-size: 11px; background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 2px;">
+          on_conflict: :nothing
+        </code>
+        — dados já existentes no banco não são sobrescritos.
+      </p>
+    </div>
+  </div>
+
+  <%!-- Footer --%>
+  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
+    <p style="font-size: 12px; color: #7a5c3a; margin-bottom: 4px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
+  </footer>
+</div>

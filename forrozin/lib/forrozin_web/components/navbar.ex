@@ -48,6 +48,12 @@ defmodule ForrozinWeb.Components.Navbar do
           >
             Links
           </.link>
+          <.link
+            navigate={~p"/admin/backups"}
+            style="font-family: Georgia, serif; font-size: 11px; color: #9a7a5a; text-decoration: none; letter-spacing: 0.5px;"
+          >
+            Backups
+          </.link>
         <% end %>
         <span style="width: 1px; height: 16px; background: rgba(255,255,255,0.15);"></span>
         <.link

@@ -19,7 +19,17 @@ defmodule Forrozin.Admin.Backup do
   """
 
   alias Forrozin.Accounts.User
-  alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section, Subsection, StepLink}
+
+  alias Forrozin.Encyclopedia.{
+    Category,
+    TechnicalConcept,
+    Connection,
+    Step,
+    Section,
+    Subsection,
+    StepLink
+  }
+
   alias Forrozin.Engagement.Like
   alias Forrozin.Sequences.{Sequence, SequenceStep}
   alias Forrozin.Repo
@@ -101,6 +111,69 @@ defmodule Forrozin.Admin.Backup do
 
       {:error, _} ->
         []
+    end
+  end
+
+  @doc """
+  Returns a map of metadata for a backup file path.
+
+  Extracts filename, size (in bytes), and parsed timestamp from the filename.
+  Returns `nil` if the file does not exist.
+
+  ## Example
+
+      iex> Backup.backup_info("/priv/backups/backup_20260415_120000.json")
+      %{
+        path: "/priv/backups/backup_20260415_120000.json",
+        filename: "backup_20260415_120000.json",
+        size: 42_000,
+        timestamp: ~N[2026-04-15 12:00:00]
+      }
+  """
+  def backup_info(path) do
+    case File.stat(path) do
+      {:ok, stat} ->
+        filename = Path.basename(path)
+
+        %{
+          path: path,
+          filename: filename,
+          size: stat.size,
+          timestamp: parse_backup_timestamp(filename)
+        }
+
+      {:error, _} ->
+        nil
+    end
+  end
+
+  @doc """
+  Parses a NaiveDateTime from a backup filename of the form
+  `backup_YYYYMMDD_HHMMSS.json`.
+
+  Returns `nil` when the filename does not match the expected pattern.
+  """
+  def parse_backup_timestamp(filename) do
+    case Regex.run(~r/backup_(\d{8})_(\d{6})\.json/, filename) do
+      [_, date_part, time_part] ->
+        <<y::binary-size(4), mo::binary-size(2), d::binary-size(2)>> = date_part
+        <<h::binary-size(2), mi::binary-size(2), s::binary-size(2)>> = time_part
+
+        NaiveDateTime.new(
+          String.to_integer(y),
+          String.to_integer(mo),
+          String.to_integer(d),
+          String.to_integer(h),
+          String.to_integer(mi),
+          String.to_integer(s)
+        )
+        |> case do
+          {:ok, dt} -> dt
+          _ -> nil
+        end
+
+      _ ->
+        nil
     end
   end
 
