@@ -12,21 +12,21 @@ import Config
 # If you use `mix release`, you need to explicitly enable the server
 # by passing the PHX_SERVER=true when you start it:
 #
-#     PHX_SERVER=true bin/forrozin start
+#     PHX_SERVER=true bin/o_grupo_de_estudos start
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
 if System.get_env("PHX_SERVER") do
-  config :forrozin, ForrozinWeb.Endpoint, server: true
+  config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint, server: true
 end
 
-config :forrozin, ForrozinWeb.Endpoint,
+config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 if config_env() == :prod do
   # Mailer em produção — configurar via variável de ambiente SMTP_*
   # Exemplo com SMTP genérico (Brevo, Mailgun SMTP, etc.):
-  # config :forrozin, Forrozin.Mailer,
+  # config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
   #   adapter: Swoosh.Adapters.SMTP,
   #   relay: System.get_env("SMTP_HOST"),
   #   port: String.to_integer(System.get_env("SMTP_PORT", "587")),
@@ -42,7 +42,7 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  config :forrozin, Forrozin.Repo,
+  config :o_grupo_de_estudos, OGrupoDeEstudos.Repo,
     # ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
@@ -64,9 +64,9 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
-  config :forrozin, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :o_grupo_de_estudos, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
-  config :forrozin, ForrozinWeb.Endpoint,
+  config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
@@ -82,7 +82,7 @@ if config_env() == :prod do
   # To get SSL working, you will need to add the `https` key
   # to your endpoint configuration:
   #
-  #     config :forrozin, ForrozinWeb.Endpoint,
+  #     config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   #       https: [
   #         ...,
   #         port: 443,
@@ -104,7 +104,7 @@ if config_env() == :prod do
   # We also recommend setting `force_ssl` in your config/prod.exs,
   # ensuring no data is ever sent via http, always redirecting to https:
   #
-  #     config :forrozin, ForrozinWeb.Endpoint,
+  #     config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   #       force_ssl: [hsts: true]
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.

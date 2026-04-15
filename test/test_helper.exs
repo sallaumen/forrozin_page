@@ -1,2 +1,2 @@
 ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(Forrozin.Repo, :manual)
+Ecto.Adapters.SQL.Sandbox.mode(OGrupoDeEstudos.Repo, :manual)

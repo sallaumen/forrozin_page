@@ -22,7 +22,7 @@ import "phoenix_html"
 // Establish Phoenix Socket and LiveView configuration.
 import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
-import {hooks as colocatedHooks} from "phoenix-colocated/forrozin"
+import {hooks as colocatedHooks} from "phoenix-colocated/o_grupo_de_estudos"
 import topbar from "../vendor/topbar"
 import cytoscape from "../vendor/cytoscape.min"
 import cytoscapeCola from "../vendor/cytoscape-cola"

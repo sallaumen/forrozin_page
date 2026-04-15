@@ -1,12 +1,12 @@
 import Config
 
 # Configure your database
-config :forrozin, Forrozin.Repo,
+config :o_grupo_de_estudos, OGrupoDeEstudos.Repo,
   username: "forrozin",
   password: "forrozin",
   hostname: "localhost",
   port: 5433,
-  database: "forrozin_dev",
+  database: "o_grupo_de_estudos_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -17,7 +17,7 @@ config :forrozin, Forrozin.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :forrozin, ForrozinWeb.Endpoint,
+config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}],
@@ -26,8 +26,8 @@ config :forrozin, ForrozinWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "cZiOK7ReBYtt4HPe4PPtyDkcE2jXohnnIUAPPx/SImS+g+f3N8KOhFF9Eo0IiHRJ",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:forrozin, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:forrozin, ~w(--watch)]}
+    esbuild: {Esbuild, :install_and_run, [:o_grupo_de_estudos, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:o_grupo_de_estudos, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -54,7 +54,7 @@ config :forrozin, ForrozinWeb.Endpoint,
 # different ports.
 
 # Reload browser tabs when matching files change.
-config :forrozin, ForrozinWeb.Endpoint,
+config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
@@ -63,13 +63,13 @@ config :forrozin, ForrozinWeb.Endpoint,
       # Gettext translations
       ~r"priv/gettext/.*\.po$"E,
       # Router, Controllers, LiveViews and LiveComponents
-      ~r"lib/forrozin_web/router\.ex$"E,
-      ~r"lib/forrozin_web/(controllers|live|components)/.*\.(ex|heex)$"E
+      ~r"lib/o_grupo_de_estudos_web/router\.ex$"E,
+      ~r"lib/o_grupo_de_estudos_web/(controllers|live|components)/.*\.(ex|heex)$"E
     ]
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :forrozin, dev_routes: true
+config :o_grupo_de_estudos, dev_routes: true
 
 # ---------------------------------------------------------------------------
 # Mailer
@@ -86,7 +86,7 @@ config :forrozin, dev_routes: true
 # Para Gmail: gere uma "App Password" em myaccount.google.com/apppasswords
 # (precisa ter 2FA ativo). A porta 587 com TLS já funciona.
 # ---------------------------------------------------------------------------
-config :forrozin, Forrozin.Mailer,
+config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: System.get_env("MAILER_HOST", "smtp.gmail.com"),
   username: System.get_env("MAILER_USER"),
@@ -95,7 +95,7 @@ config :forrozin, Forrozin.Mailer,
   port: 587
 
 # Ativa o filtro: emails @teste.com vão pro mailbox local, não pro SMTP real.
-config :forrozin, :filtrar_emails_teste, true
+config :o_grupo_de_estudos, :filtrar_emails_teste, true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

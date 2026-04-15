@@ -7,25 +7,25 @@
 # General application configuration
 import Config
 
-config :forrozin,
-  ecto_repos: [Forrozin.Repo],
+config :o_grupo_de_estudos,
+  ecto_repos: [OGrupoDeEstudos.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
 # Configure the endpoint
-config :forrozin, ForrozinWeb.Endpoint,
+config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: ForrozinWeb.ErrorHTML, json: ForrozinWeb.ErrorJSON],
+    formats: [html: OGrupoDeEstudosWeb.ErrorHTML, json: OGrupoDeEstudosWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: Forrozin.PubSub,
+  pubsub_server: OGrupoDeEstudos.PubSub,
   live_view: [signing_salt: "xvU3PaZz"]
 
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.25.4",
-  forrozin: [
+  o_grupo_de_estudos: [
     args:
       ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
@@ -35,7 +35,7 @@ config :esbuild,
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "4.1.12",
-  forrozin: [
+  o_grupo_de_estudos: [
     args: ~w(
       --input=assets/css/app.css
       --output=priv/static/assets/css/app.css
@@ -52,15 +52,15 @@ config :logger, :default_formatter,
 config :phoenix, :json_library, Jason
 
 # Oban — filas de jobs assíncronos
-config :forrozin, Oban,
-  repo: Forrozin.Repo,
+config :o_grupo_de_estudos, Oban,
+  repo: OGrupoDeEstudos.Repo,
   queues: [email: 10, backup: 1],
   plugins: [
     Oban.Plugins.Pruner,
     {Oban.Plugins.Cron,
      crontab: [
        # Backup completo do banco a cada hora
-       {"0 * * * *", Forrozin.Workers.PeriodicBackup}
+       {"0 * * * *", OGrupoDeEstudos.Workers.PeriodicBackup}
      ]}
   ]
 

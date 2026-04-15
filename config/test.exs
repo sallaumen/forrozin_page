@@ -5,18 +5,18 @@ import Config
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :forrozin, Forrozin.Repo,
+config :o_grupo_de_estudos, OGrupoDeEstudos.Repo,
   username: "forrozin",
   password: "forrozin",
   hostname: "localhost",
   port: 5433,
-  database: "forrozin_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "o_grupo_de_estudos_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :forrozin, ForrozinWeb.Endpoint,
+config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "+D0l4D3qh4QSxtT8/4wdqL0LWDmwWUOTbyx5P3aMptFpJGdF9njMcxwp03N65xHb",
   server: false
@@ -36,7 +36,7 @@ config :phoenix,
   sort_verified_routes_query_params: true
 
 # Oban — executa jobs sincronamente nos testes
-config :forrozin, Oban, testing: :inline
+config :o_grupo_de_estudos, Oban, testing: :inline
 
 # Mailer — captura emails nos testes via Swoosh.TestAssertions
-config :forrozin, Forrozin.Mailer, adapter: Swoosh.Adapters.Test
+config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Test

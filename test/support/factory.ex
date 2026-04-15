@@ -1,10 +1,10 @@
-defmodule Forrozin.Factory do
+defmodule OGrupoDeEstudos.Factory do
   @moduledoc false
-  use ExMachina.Ecto, repo: Forrozin.Repo
+  use ExMachina.Ecto, repo: OGrupoDeEstudos.Repo
 
-  alias Forrozin.Accounts.User
+  alias OGrupoDeEstudos.Accounts.User
 
-  alias Forrozin.Encyclopedia.{
+  alias OGrupoDeEstudos.Encyclopedia.{
     Category,
     TechnicalConcept,
     Connection,
@@ -14,8 +14,8 @@ defmodule Forrozin.Factory do
     Subsection
   }
 
-  alias Forrozin.Engagement.{Like, ProfileComment}
-  alias Forrozin.Sequences.{Sequence, SequenceStep}
+  alias OGrupoDeEstudos.Engagement.{Like, ProfileComment}
+  alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
 
   def user_factory do
     %User{

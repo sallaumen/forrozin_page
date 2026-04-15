@@ -1,4 +1,4 @@
-defmodule ForrozinWeb.ConnCase do
+defmodule OGrupoDeEstudosWeb.ConnCase do
   @moduledoc """
   This module defines the test case to be used by
   tests that require setting up a connection.
@@ -11,7 +11,7 @@ defmodule ForrozinWeb.ConnCase do
   we enable the SQL sandbox, so changes done to the database
   are reverted at the end of every test. If you are using
   PostgreSQL, you can even run database tests asynchronously
-  by setting `use ForrozinWeb.ConnCase, async: true`, although
+  by setting `use OGrupoDeEstudosWeb.ConnCase, async: true`, although
   this option is not recommended for other databases.
   """
 
@@ -20,20 +20,20 @@ defmodule ForrozinWeb.ConnCase do
   using do
     quote do
       # The default endpoint for testing
-      @endpoint ForrozinWeb.Endpoint
+      @endpoint OGrupoDeEstudosWeb.Endpoint
 
-      use ForrozinWeb, :verified_routes
+      use OGrupoDeEstudosWeb, :verified_routes
 
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
-      import ForrozinWeb.ConnCase
-      import Forrozin.Factory
+      import OGrupoDeEstudosWeb.ConnCase
+      import OGrupoDeEstudos.Factory
     end
   end
 
   setup tags do
-    Forrozin.DataCase.setup_sandbox(tags)
+    OGrupoDeEstudos.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 
