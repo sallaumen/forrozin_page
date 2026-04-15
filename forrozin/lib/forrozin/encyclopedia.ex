@@ -22,10 +22,6 @@ defmodule Forrozin.Encyclopedia do
 
   alias Forrozin.Repo
 
-  # ---------------------------------------------------------------------------
-  # Categories
-  # ---------------------------------------------------------------------------
-
   @doc "Lists all categories ordered by label."
   def list_categories do
     Category
@@ -40,10 +36,6 @@ defmodule Forrozin.Encyclopedia do
       category -> {:ok, category}
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Sections
-  # ---------------------------------------------------------------------------
 
   @doc "Lists all sections ordered by position."
   def list_sections do
@@ -90,10 +82,6 @@ defmodule Forrozin.Encyclopedia do
       subsections: [steps: {subsection_steps, [:suggested_by]}]
     ])
   end
-
-  # ---------------------------------------------------------------------------
-  # Steps
-  # ---------------------------------------------------------------------------
 
   @doc "Counts total published, non-wip steps (public count)."
   def count_public_steps do
@@ -165,10 +153,6 @@ defmodule Forrozin.Encyclopedia do
     StepQuery.list_by(base_opts ++ extra_opts)
   end
 
-  # ---------------------------------------------------------------------------
-  # Graph
-  # ---------------------------------------------------------------------------
-
   @doc """
   Returns the connection graph between steps.
 
@@ -211,20 +195,12 @@ defmodule Forrozin.Encyclopedia do
     |> Map.new(&{&1.code, &1})
   end
 
-  # ---------------------------------------------------------------------------
-  # Technical Concepts
-  # ---------------------------------------------------------------------------
-
   @doc "Lists all technical concepts ordered by title."
   def list_technical_concepts do
     TechnicalConcept
     |> Ecto.Query.order_by([c], asc: c.title)
     |> Repo.all()
   end
-
-  # ---------------------------------------------------------------------------
-  # Suggested steps
-  # ---------------------------------------------------------------------------
 
   @doc "Lists all suggested steps (community contributions)."
   def list_suggested_steps do

@@ -11,10 +11,6 @@ defmodule Forrozin.Encyclopedia.SectionQuery do
   alias Forrozin.Repo
   alias Forrozin.Encyclopedia.Section
 
-  # ---------------------------------------------------------------------------
-  # Public API
-  # ---------------------------------------------------------------------------
-
   @doc "Returns the first section matching `opts`, or `nil`."
   def get_by(opts) do
     opts
@@ -30,15 +26,7 @@ defmodule Forrozin.Encyclopedia.SectionQuery do
     |> Repo.all()
   end
 
-  # ---------------------------------------------------------------------------
-  # Base scope
-  # ---------------------------------------------------------------------------
-
   defp default_scope, do: from(s in Section, as: :section)
-
-  # ---------------------------------------------------------------------------
-  # Shared reducer — one clause per filter
-  # ---------------------------------------------------------------------------
 
   defp shared_reducer({:id, id}, q),
     do: where(q, [section: s], s.id == ^id)

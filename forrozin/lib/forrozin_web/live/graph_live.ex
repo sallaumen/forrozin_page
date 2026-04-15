@@ -111,10 +111,6 @@ defmodule ForrozinWeb.GraphLive do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Private
-  # ---------------------------------------------------------------------------
-
   defp load_graph(socket, %{nodes: nodes, edges: edges}) do
     graph_json =
       Jason.encode!(%{

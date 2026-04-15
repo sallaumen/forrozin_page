@@ -43,10 +43,6 @@ defmodule Forrozin.Sequences.Validator do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Private helpers
-  # ---------------------------------------------------------------------------
-
   defp collect_step_issues(sequence_steps, active_ids, step_map) do
     sequence_steps
     |> Enum.with_index(1)

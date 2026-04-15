@@ -43,14 +43,9 @@ defmodule Forrozin.Admin do
         {:error, :not_found}
 
       connection ->
-        now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-        connection |> Ecto.Changeset.change(deleted_at: now) |> Repo.update()
+        connection |> Ecto.Changeset.change(deleted_at: now()) |> Repo.update()
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Steps
-  # ---------------------------------------------------------------------------
 
   def create_step(attrs) do
     %Step{} |> Step.changeset(attrs) |> Repo.insert()
@@ -61,13 +56,8 @@ defmodule Forrozin.Admin do
   end
 
   def delete_step(%Step{} = step) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-    step |> Ecto.Changeset.change(deleted_at: now) |> Repo.update()
+    step |> Ecto.Changeset.change(deleted_at: now()) |> Repo.update()
   end
-
-  # ---------------------------------------------------------------------------
-  # Sections
-  # ---------------------------------------------------------------------------
 
   def create_section(attrs) do
     %Section{} |> Section.changeset(attrs) |> Repo.insert()
@@ -79,10 +69,6 @@ defmodule Forrozin.Admin do
 
   def delete_section(%Section{} = section), do: Repo.delete(section)
 
-  # ---------------------------------------------------------------------------
-  # Subsections
-  # ---------------------------------------------------------------------------
-
   def create_subsection(attrs) do
     %Subsection{} |> Subsection.changeset(attrs) |> Repo.insert()
   end
@@ -91,15 +77,16 @@ defmodule Forrozin.Admin do
     sub |> Subsection.changeset(attrs) |> Repo.update()
   end
 
-  # ---------------------------------------------------------------------------
-  # Categories
-  # ---------------------------------------------------------------------------
-
   def create_category(attrs) do
     %Category{} |> Category.changeset(attrs) |> Repo.insert()
   end
 
   def update_category(%Category{} = cat, attrs) do
     cat |> Category.changeset(attrs) |> Repo.update()
+  end
+
+  defp now do
+    utc_now = NaiveDateTime.utc_now()
+    NaiveDateTime.truncate(utc_now, :second)
   end
 end

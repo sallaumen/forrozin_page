@@ -79,10 +79,6 @@ defmodule Forrozin.Sequences.Generator do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Private
-  # ---------------------------------------------------------------------------
-
   defp resolve_required_ids(nil, _code_to_id), do: []
 
   defp resolve_required_ids(codes, code_to_id) do

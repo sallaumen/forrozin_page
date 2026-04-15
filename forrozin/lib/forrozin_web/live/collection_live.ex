@@ -74,10 +74,6 @@ defmodule ForrozinWeb.CollectionLive do
     {:noreply, assign(socket, open_sections: open_sections)}
   end
 
-  # ---------------------------------------------------------------------------
-  # Tabs
-  # ---------------------------------------------------------------------------
-
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     socket =
       if tab == "meus_passos" do
@@ -89,10 +85,6 @@ defmodule ForrozinWeb.CollectionLive do
 
     {:noreply, socket}
   end
-
-  # ---------------------------------------------------------------------------
-  # Edit mode + drawer
-  # ---------------------------------------------------------------------------
 
   def handle_event("toggle_edit_mode", _params, socket) do
     if socket.assigns.is_admin do
@@ -277,10 +269,6 @@ defmodule ForrozinWeb.CollectionLive do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Suggestions
-  # ---------------------------------------------------------------------------
-
   def handle_event("toggle_suggest", _params, socket) do
     {:noreply, assign(socket, suggest_mode: not socket.assigns.suggest_mode)}
   end
@@ -317,10 +305,6 @@ defmodule ForrozinWeb.CollectionLive do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Private helpers
-  # ---------------------------------------------------------------------------
-
   defp reload_sections(socket) do
     sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
     open = Map.new(sections, fn s -> {s.id, Map.get(socket.assigns.open_sections, s.id, false)} end)
@@ -344,10 +328,6 @@ defmodule ForrozinWeb.CollectionLive do
         assign(socket, drawer_open: false)
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Components
-  # ---------------------------------------------------------------------------
 
   attr :section, :map, required: true
   attr :open, :boolean, required: true
@@ -477,10 +457,6 @@ defmodule ForrozinWeb.CollectionLive do
     </div>
     """
   end
-
-  # ---------------------------------------------------------------------------
-  # Public helpers (used in template)
-  # ---------------------------------------------------------------------------
 
   def filtered_sections(sections, "all"), do: sections
 

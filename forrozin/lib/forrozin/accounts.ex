@@ -12,7 +12,8 @@ defmodule Forrozin.Accounts do
   Returns `{:ok, user}` or `{:error, changeset}`.
   """
   def register_user(attrs) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    utc_now = NaiveDateTime.utc_now()
+    now = NaiveDateTime.truncate(utc_now, :second)
 
     changeset =
       %User{}

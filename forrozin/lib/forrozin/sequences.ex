@@ -9,20 +9,12 @@ defmodule Forrozin.Sequences do
   alias Forrozin.Repo
   alias Forrozin.Sequences.{Generator, Sequence, SequenceStep, SequenceQuery}
 
-  # ---------------------------------------------------------------------------
-  # Generation
-  # ---------------------------------------------------------------------------
-
   @doc """
   Generates sequences by traversing the step connection graph.
 
   Delegates entirely to `Generator.generate/1`. See that module for param docs.
   """
   def generate(params), do: Generator.generate(params)
-
-  # ---------------------------------------------------------------------------
-  # Persistence
-  # ---------------------------------------------------------------------------
 
   @doc """
   Creates a new sequence with its ordered steps inside a single transaction.
@@ -78,7 +70,8 @@ defmodule Forrozin.Sequences do
 
   @doc "Soft-deletes a sequence by setting deleted_at. The sequence is excluded from all default queries."
   def delete_sequence(%Sequence{} = sequence) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    utc_now = NaiveDateTime.utc_now()
+    now = NaiveDateTime.truncate(utc_now, :second)
     sequence |> Ecto.Changeset.change(deleted_at: now) |> Repo.update()
   end
 

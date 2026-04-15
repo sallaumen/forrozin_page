@@ -16,16 +16,8 @@ defmodule ForrozinWeb.UserAuth do
   alias Forrozin.Accounts
   alias Phoenix.LiveView
 
-  # ---------------------------------------------------------------------------
-  # Plug behaviour (suporte ao uso no pipeline: plug ForrozinWeb.UserAuth, :fn)
-  # ---------------------------------------------------------------------------
-
   def init(fun), do: fun
   def call(conn, fun), do: apply(__MODULE__, fun, [conn, []])
-
-  # ---------------------------------------------------------------------------
-  # Plugs
-  # ---------------------------------------------------------------------------
 
   @doc "Busca o usuário atual na sessão e atribui em `conn.assigns.current_user`."
   def fetch_current_user(conn, _opts) do
@@ -61,10 +53,6 @@ defmodule ForrozinWeb.UserAuth do
       conn
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # on_mount para LiveViews
-  # ---------------------------------------------------------------------------
 
   @doc """
   Hook `on_mount` para LiveViews.
@@ -131,10 +119,6 @@ defmodule ForrozinWeb.UserAuth do
 
     Phoenix.Component.assign(socket, current_user: user)
   end
-
-  # ---------------------------------------------------------------------------
-  # Helpers de sessão
-  # ---------------------------------------------------------------------------
 
   @doc "Inicia a sessão do usuário após login bem-sucedido."
   def login(conn, user) do

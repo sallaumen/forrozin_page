@@ -11,10 +11,6 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
   alias Forrozin.Repo
   alias Forrozin.Encyclopedia.{Connection, Step}
 
-  # ---------------------------------------------------------------------------
-  # Public API
-  # ---------------------------------------------------------------------------
-
   @doc "Returns the first connection matching `opts`, or `nil`."
   def get_by(opts) do
     opts
@@ -41,7 +37,8 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
 
   @doc "Soft-deletes all connections matching `opts` by setting deleted_at. Returns `{count, nil}`."
   def soft_delete_by(opts) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    utc_now = NaiveDateTime.utc_now()
+    now = NaiveDateTime.truncate(utc_now, :second)
 
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -49,15 +46,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQuery do
     |> Repo.update_all(set: [deleted_at: now])
   end
 
-  # ---------------------------------------------------------------------------
-  # Base scope
-  # ---------------------------------------------------------------------------
-
   defp default_scope, do: from(c in Connection, as: :connection)
-
-  # ---------------------------------------------------------------------------
-  # Shared reducer — one clause per filter
-  # ---------------------------------------------------------------------------
 
   defp shared_reducer({:include_deleted, true}, q), do: q
   defp shared_reducer({:include_deleted, false}, q), do: where(q, [connection: c], is_nil(c.deleted_at))

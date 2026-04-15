@@ -31,10 +31,6 @@ defmodule ForrozinWeb.GraphVisualLive do
      |> assign_graph_data(graph, false)}
   end
 
-  # ---------------------------------------------------------------------------
-  # Events — Sequence panel
-  # ---------------------------------------------------------------------------
-
   @impl true
   def handle_event("toggle_seq_panel", _params, socket) do
     new_open = not socket.assigns.seq_panel
@@ -250,10 +246,6 @@ defmodule ForrozinWeb.GraphVisualLive do
     {:noreply, assign(socket, :seq_required_codes, new_required)}
   end
 
-  # ---------------------------------------------------------------------------
-  # Events — Admin editing
-  # ---------------------------------------------------------------------------
-
   def handle_event("toggle_edit_mode", _params, socket) do
     if not socket.assigns.is_admin do
       {:noreply, socket}
@@ -333,10 +325,6 @@ defmodule ForrozinWeb.GraphVisualLive do
       end
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Graph data helpers
-  # ---------------------------------------------------------------------------
 
   defp assign_graph_data(socket, graph, include_orphans) do
     graph_json = build_json(graph, include_orphans)

@@ -11,10 +11,6 @@ defmodule Forrozin.Encyclopedia.StepQuery do
   alias Forrozin.Repo
   alias Forrozin.Encyclopedia.Step
 
-  # ---------------------------------------------------------------------------
-  # Public API
-  # ---------------------------------------------------------------------------
-
   @doc "Returns the first step matching `opts`, or `nil`."
   def get_by(opts) do
     opts
@@ -40,15 +36,7 @@ defmodule Forrozin.Encyclopedia.StepQuery do
     |> Repo.aggregate(:count)
   end
 
-  # ---------------------------------------------------------------------------
-  # Base scope
-  # ---------------------------------------------------------------------------
-
   defp default_scope, do: from(s in Step, as: :step)
-
-  # ---------------------------------------------------------------------------
-  # Shared reducer — one clause per filter
-  # ---------------------------------------------------------------------------
 
   defp shared_reducer({:include_deleted, true}, q), do: q
   defp shared_reducer({:include_deleted, false}, q), do: where(q, [step: s], is_nil(s.deleted_at))

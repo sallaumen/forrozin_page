@@ -32,10 +32,6 @@ defmodule Forrozin.Admin.Backup do
     {"step_connections", Connection}
   ]
 
-  # ---------------------------------------------------------------------------
-  # Public
-  # ---------------------------------------------------------------------------
-
   @doc """
   Creates a JSON backup in the specified directory.
 
@@ -46,9 +42,11 @@ defmodule Forrozin.Admin.Backup do
     File.mkdir_p!(dir)
     path = Path.join(dir, filename())
 
+    utc_now = DateTime.utc_now()
+
     data = %{
       "version" => "1",
-      "created_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "created_at" => DateTime.to_iso8601(utc_now),
       "tables" =>
         Map.new(@ordered_schemas, fn {name, schema} ->
           {name, dump_schema(schema)}
@@ -98,10 +96,6 @@ defmodule Forrozin.Admin.Backup do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Private — dump
-  # ---------------------------------------------------------------------------
-
   defp dump_schema(schema) do
     fields = schema.__schema__(:fields)
 
@@ -123,10 +117,6 @@ defmodule Forrozin.Admin.Backup do
   defp serialize_value(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
   defp serialize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp serialize_value(value), do: value
-
-  # ---------------------------------------------------------------------------
-  # Private — restore
-  # ---------------------------------------------------------------------------
 
   defp restore_schema(schema, records) do
     types =
@@ -161,10 +151,6 @@ defmodule Forrozin.Admin.Backup do
   end
 
   defp deserialize_value(v, _type), do: v
-
-  # ---------------------------------------------------------------------------
-  # Private — utilities
-  # ---------------------------------------------------------------------------
 
   defp filename do
     now = NaiveDateTime.utc_now()
