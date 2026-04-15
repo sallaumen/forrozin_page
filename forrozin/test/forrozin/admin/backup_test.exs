@@ -51,7 +51,7 @@ defmodule Forrozin.Admin.BackupTest do
       step_codes = Enum.map(data["tables"]["steps"], & &1["code"])
       assert "BF" in step_codes
       assert "SC" in step_codes
-      assert length(data["tables"]["step_connections"]) == 1
+      assert [_] = data["tables"]["step_connections"]
     end
 
     test "removes old files keeping only the last 48", %{dir: dir} do
@@ -64,7 +64,7 @@ defmodule Forrozin.Admin.BackupTest do
       Backup.create_backup!(dir)
 
       files = File.ls!(dir) |> Enum.filter(&String.ends_with?(&1, ".json"))
-      assert length(files) == 48
+      assert Enum.count(files) == 48
     end
   end
 

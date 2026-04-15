@@ -22,14 +22,14 @@ defmodule Forrozin.EncyclopediaTest do
     end
   end
 
-  describe "get_category_by_name/1" do
+  describe "fetch_category_by_name/1" do
     test "returns the category when it exists" do
       insert(:category, name: "sacadas", label: "Sacadas")
-      assert {:ok, %{name: "sacadas"}} = Encyclopedia.get_category_by_name("sacadas")
+      assert {:ok, %{name: "sacadas"}} = Encyclopedia.fetch_category_by_name("sacadas")
     end
 
     test "returns error when it does not exist" do
-      assert {:error, :not_found} = Encyclopedia.get_category_by_name("inexistente")
+      assert {:error, :not_found} = Encyclopedia.fetch_category_by_name("inexistente")
     end
   end
 
@@ -60,7 +60,7 @@ defmodule Forrozin.EncyclopediaTest do
       [result] = Encyclopedia.list_sections_with_steps()
 
       assert result.id == section.id
-      assert length(result.steps) == 1
+      assert [_] = result.steps
       assert hd(result.steps).code == "BF"
     end
 
@@ -93,21 +93,21 @@ defmodule Forrozin.EncyclopediaTest do
   # Steps
   # ---------------------------------------------------------------------------
 
-  describe "get_step_by_code/1" do
+  describe "fetch_step_by_code/1" do
     test "returns the step when it exists and is public" do
       insert(:step, code: "BF", name: "Base frontal")
 
-      assert {:ok, %{code: "BF"}} = Encyclopedia.get_step_by_code("BF")
+      assert {:ok, %{code: "BF"}} = Encyclopedia.fetch_step_by_code("BF")
     end
 
     test "returns error for wip step" do
       insert(:step, code: "HF-SRS", name: "Sacada Rotativa", wip: true)
 
-      assert {:error, :not_found} = Encyclopedia.get_step_by_code("HF-SRS")
+      assert {:error, :not_found} = Encyclopedia.fetch_step_by_code("HF-SRS")
     end
 
     test "returns error when step does not exist" do
-      assert {:error, :not_found} = Encyclopedia.get_step_by_code("INEXISTENTE")
+      assert {:error, :not_found} = Encyclopedia.fetch_step_by_code("INEXISTENTE")
     end
   end
 
@@ -130,7 +130,7 @@ defmodule Forrozin.EncyclopediaTest do
 
       results = Encyclopedia.search_steps("BASE")
 
-      assert length(results) == 1
+      assert [_] = results
     end
 
     test "does not return wip steps in public search" do
@@ -177,7 +177,7 @@ defmodule Forrozin.EncyclopediaTest do
       step_b = insert(:step, code: "SC")
       insert(:connection, source_step: step_a, target_step: step_b)
       graph = Encyclopedia.build_graph()
-      assert length(graph.edges) == 1
+      assert [_] = graph.edges
       [edge] = graph.edges
       assert edge.source_step.code == "BF"
       assert edge.target_step.code == "SC"

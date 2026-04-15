@@ -32,14 +32,14 @@ defmodule Forrozin.Encyclopedia.SeederTest do
 
     test "step BF is public (not wip, status published)" do
       Seeder.seed!()
-      assert {:ok, step} = Encyclopedia.get_step_by_code("BF")
+      assert {:ok, step} = Encyclopedia.fetch_step_by_code("BF")
       assert step.name == "Base frontal"
       refute step.wip
     end
 
     test "HF-* steps are wip and do not appear in public reads" do
       Seeder.seed!()
-      assert {:error, :not_found} = Encyclopedia.get_step_by_code("HF-SRS")
+      assert {:error, :not_found} = Encyclopedia.fetch_step_by_code("HF-SRS")
       step = Repo.get_by(Step, code: "HF-SRS")
       assert step != nil
       assert step.wip == true

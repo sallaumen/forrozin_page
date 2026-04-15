@@ -8,7 +8,7 @@ defmodule ForrozinWeb.UserConfirmationController do
   @doc "Processa o link de confirmação de email."
   def confirm(conn, %{"token" => token}) do
     ok =
-      case Accounts.confirm_email(token) do
+      case Accounts.validate_confirmation_token(token) do
         {:ok, _user} -> true
         {:error, :invalid_token} -> false
       end

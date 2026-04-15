@@ -28,7 +28,7 @@ defmodule Forrozin.Sequences.SequenceQueryTest do
       ids = Enum.map(results, & &1.id)
 
       assert seq_a.id in ids
-      assert length(results) == 1
+      assert [_] = results
     end
 
     test "returns empty list when user has no sequences" do
@@ -44,7 +44,7 @@ defmodule Forrozin.Sequences.SequenceQueryTest do
 
       results = SequenceQuery.list_by(user_id: user.id)
 
-      assert length(results) == 2
+      assert [_, _] = results
     end
   end
 
@@ -73,7 +73,7 @@ defmodule Forrozin.Sequences.SequenceQueryTest do
 
       [result] = SequenceQuery.list_by(user_id: user.id, preload: [:sequence_steps])
 
-      assert length(result.sequence_steps) == 1
+      assert [_] = result.sequence_steps
     end
   end
 
@@ -108,7 +108,7 @@ defmodule Forrozin.Sequences.SequenceQueryTest do
 
       result = SequenceQuery.get_by(id: sequence.id, preload: [sequence_steps: :step])
 
-      assert length(result.sequence_steps) == 1
+      assert [_] = result.sequence_steps
       assert hd(result.sequence_steps).step.code == "BF"
     end
   end

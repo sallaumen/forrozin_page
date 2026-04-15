@@ -60,7 +60,7 @@ defmodule Forrozin.Sequences.GeneratorTest do
       assert {:ok, sequences, warnings} =
                Generator.generate(base_params("C0", length: 5, count: 1))
 
-      assert length(sequences) == 1
+      assert [_] = sequences
       assert warnings == []
     end
 
@@ -79,7 +79,7 @@ defmodule Forrozin.Sequences.GeneratorTest do
       {:ok, [sequence], _warnings} =
         Generator.generate(base_params("C0", length: 4, count: 1))
 
-      assert length(sequence) == 4
+      assert [_, _, _, _] = sequence
     end
 
     test "each step in the result has :id, :code, and :name keys" do
@@ -157,8 +157,8 @@ defmodule Forrozin.Sequences.GeneratorTest do
         Generator.generate(base_params("C0", length: 10, count: 1, allow_repeats: true))
 
       # Should succeed because we can revisit steps
-      assert length(sequences) == 1
-      assert length(hd(sequences)) == 10
+      assert [_] = sequences
+      assert [_, _, _, _, _, _, _, _, _, _] = hd(sequences)
     end
   end
 

@@ -194,7 +194,7 @@ defmodule Forrozin.Encyclopedia.StepQueryTest do
 
       results = StepQuery.list_by(limit: 3)
 
-      assert length(results) == 3
+      assert [_, _, _] = results
     end
   end
 

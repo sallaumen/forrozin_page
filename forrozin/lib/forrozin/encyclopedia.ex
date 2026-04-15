@@ -30,7 +30,7 @@ defmodule Forrozin.Encyclopedia do
   end
 
   @doc "Finds a category by its internal name (e.g. 'sacadas', 'bases')."
-  def get_category_by_name(name) do
+  def fetch_category_by_name(name) do
     case Repo.get_by(Category, name: name) do
       nil -> {:error, :not_found}
       category -> {:ok, category}
@@ -53,6 +53,13 @@ defmodule Forrozin.Encyclopedia do
   def list_sections_with_steps(opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
 
+    # NOTE: The local `import Ecto.Query` here is intentional. The inline
+    # query sub-expressions passed to `Repo.preload/2` use `from/2` and
+    # `dynamic/2` macros that must reference schema modules directly (e.g.
+    # `Forrozin.Encyclopedia.Step`). Extracting them into SectionQuery would
+    # require passing the visibility filter as an argument, which couples the
+    # query module to domain policy. Keeping them here — scoped to this
+    # function — is the pragmatic trade-off.
     import Ecto.Query
 
     visibility_filter =
@@ -94,7 +101,7 @@ defmodule Forrozin.Encyclopedia do
   Respects visibility policy: wip or draft steps return
   `{:error, :not_found}` for the public.
   """
-  def get_step_by_code(code) do
+  def fetch_step_by_code(code) do
     case StepQuery.get_by(code: code, public_only: true) do
       nil -> {:error, :not_found}
       step -> {:ok, step}
@@ -107,7 +114,7 @@ defmodule Forrozin.Encyclopedia do
   Options:
   - `admin: true` — includes `wip` steps.
   """
-  def get_step_with_details(code, opts \\ []) do
+  def fetch_step_with_details(code, opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
 
     query_opts =

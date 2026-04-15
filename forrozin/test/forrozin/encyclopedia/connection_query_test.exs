@@ -79,7 +79,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQueryTest do
       insert(:connection, source_step: step_a, target_step: step_b)
       insert(:connection, source_step: step_b, target_step: step_c)
 
-      assert length(ConnectionQuery.list_by()) == 2
+      assert [_, _] = ConnectionQuery.list_by()
     end
 
     test "returns empty list when no connections" do
@@ -100,7 +100,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQueryTest do
 
       results = ConnectionQuery.list_by(source_step_id: source.id)
 
-      assert length(results) == 2
+      assert [_, _] = results
       assert Enum.all?(results, &(&1.source_step_id == source.id))
     end
   end
@@ -116,7 +116,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQueryTest do
 
       results = ConnectionQuery.list_by(target_step_id: target.id)
 
-      assert length(results) == 2
+      assert [_, _] = results
       assert Enum.all?(results, &(&1.target_step_id == target.id))
     end
   end
@@ -135,7 +135,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQueryTest do
       ids = [step_a.id, step_b.id, step_c.id]
       results = ConnectionQuery.list_by(step_ids: ids)
 
-      assert length(results) == 2
+      assert [_, _] = results
 
       Enum.each(results, fn c ->
         assert c.source_step_id in ids
@@ -177,7 +177,7 @@ defmodule Forrozin.Encyclopedia.ConnectionQueryTest do
       {count, _} = ConnectionQuery.delete_all_by(either_step_id: step.id)
 
       assert count == 2
-      assert length(ConnectionQuery.list_by()) == 1
+      assert [_] = ConnectionQuery.list_by()
     end
   end
 end

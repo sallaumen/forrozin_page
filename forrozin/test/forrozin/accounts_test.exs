@@ -52,22 +52,22 @@ defmodule Forrozin.AccountsTest do
     end
   end
 
-  describe "confirm_email/1" do
+  describe "validate_confirmation_token/1" do
     test "confirms email with valid token" do
       user = insert(:user, confirmed_at: nil, confirmation_token: "valid_token_123")
-      assert {:ok, confirmed} = Accounts.confirm_email("valid_token_123")
+      assert {:ok, confirmed} = Accounts.validate_confirmation_token("valid_token_123")
       assert confirmed.confirmed_at != nil
       assert confirmed.confirmation_token == nil
     end
 
     test "returns error with invalid token" do
-      assert {:error, :invalid_token} = Accounts.confirm_email("token_invalido")
+      assert {:error, :invalid_token} = Accounts.validate_confirmation_token("token_invalido")
     end
 
     test "returns error with already used token" do
       insert(:user, confirmed_at: nil, confirmation_token: "used_token_456")
-      Accounts.confirm_email("used_token_456")
-      assert {:error, :invalid_token} = Accounts.confirm_email("used_token_456")
+      Accounts.validate_confirmation_token("used_token_456")
+      assert {:error, :invalid_token} = Accounts.validate_confirmation_token("used_token_456")
     end
   end
 
@@ -83,7 +83,7 @@ defmodule Forrozin.AccountsTest do
     end
   end
 
-  describe "authenticate_user/2" do
+  describe "check_credentials/2" do
     setup do
       {:ok, user} =
         Accounts.register_user(%{
@@ -100,18 +100,18 @@ defmodule Forrozin.AccountsTest do
     end
 
     test "returns {:ok, user} with correct credentials", %{user: user} do
-      assert {:ok, authenticated} = Accounts.authenticate_user("loginuser", "senhasegura123")
+      assert {:ok, authenticated} = Accounts.check_credentials("loginuser", "senhasegura123")
       assert authenticated.id == user.id
     end
 
     test "returns error with wrong password" do
       assert {:error, :invalid_credentials} =
-               Accounts.authenticate_user("loginuser", "senhaerrada")
+               Accounts.check_credentials("loginuser", "senhaerrada")
     end
 
     test "returns error with nonexistent user" do
       assert {:error, :invalid_credentials} =
-               Accounts.authenticate_user("naoexiste", "senhasegura123")
+               Accounts.check_credentials("naoexiste", "senhasegura123")
     end
   end
 

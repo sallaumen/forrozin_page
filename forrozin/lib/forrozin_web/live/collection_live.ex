@@ -95,7 +95,7 @@ defmodule ForrozinWeb.CollectionLive do
   end
 
   def handle_event("open_step", %{"code" => code}, socket) do
-    case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
+    case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
         step =
           StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
@@ -339,7 +339,7 @@ defmodule ForrozinWeb.CollectionLive do
   end
 
   defp reopen_step_drawer(socket, code) do
-    case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
+    case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
         step =
           StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])

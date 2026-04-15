@@ -11,7 +11,7 @@ defmodule ForrozinWeb.UserSessionController do
   end
 
   def create(conn, %{"session" => %{"username" => username, "password" => password}}) do
-    case Accounts.authenticate_user(username, password) do
+    case Accounts.check_credentials(username, password) do
       {:ok, user} ->
         conn
         |> UserAuth.login(user)

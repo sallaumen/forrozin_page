@@ -28,7 +28,7 @@ defmodule Forrozin.Accounts do
 
   Returns `{:ok, user}` or `{:error, :invalid_token}`.
   """
-  def confirm_email(token) do
+  def validate_confirmation_token(token) do
     case Repo.get_by(User, confirmation_token: token) do
       nil -> {:error, :invalid_token}
       user -> user |> User.confirmation_changeset() |> Repo.update()
@@ -47,7 +47,7 @@ defmodule Forrozin.Accounts do
 
   Always runs password verification to prevent timing attacks.
   """
-  def authenticate_user(username, password) do
+  def check_credentials(username, password) do
     user = Repo.get_by(User, username: username)
     verify_password(user, password)
   end

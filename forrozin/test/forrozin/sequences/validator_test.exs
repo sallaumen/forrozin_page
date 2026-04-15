@@ -81,7 +81,7 @@ defmodule Forrozin.Sequences.ValidatorTest do
                Validator.validate([make_ss(step_a.id, 1), make_ss(step_b.id, 2)])
 
       deleted_step_issues = Enum.filter(issues, &(&1.type == :deleted_step))
-      assert length(deleted_step_issues) == 1
+      assert [_] = deleted_step_issues
       assert hd(deleted_step_issues).position == 2
       assert hd(deleted_step_issues).code == "SC"
     end

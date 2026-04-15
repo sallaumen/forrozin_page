@@ -39,7 +39,7 @@ defmodule Forrozin.SequencesTest do
                Sequences.create_sequence(user.id, "Repetida", [step.id, step.id], true)
 
       assert sequence.allow_repeats == true
-      assert length(sequence.sequence_steps) == 2
+      assert [_, _] = sequence.sequence_steps
     end
 
     test "returns error when name is missing" do

@@ -13,7 +13,7 @@ defmodule ForrozinWeb.StepLive do
     admin = Accounts.admin?(socket.assigns.current_user)
     user_id = socket.assigns.current_user.id
 
-    case Encyclopedia.get_step_with_details(code, admin: admin) do
+    case Encyclopedia.fetch_step_with_details(code, admin: admin) do
       {:ok, _} ->
         step =
           StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
@@ -156,7 +156,7 @@ defmodule ForrozinWeb.StepLive do
   end
 
   defp reload_step(socket, code) do
-    case Encyclopedia.get_step_with_details(code, admin: socket.assigns.is_admin) do
+    case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
         step =
           StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
