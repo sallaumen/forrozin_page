@@ -338,21 +338,43 @@
           Nenhum link ainda.
         </p>
       <% else %>
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
           <%= for link <- @approved_links do %>
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noreferrer noopener"
-              style="display: block; padding: 10px 14px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; overflow: hidden;"
-            >
-              <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 2px;">
-                {if link.title && link.title != "", do: link.title, else: link.url}
-              </p>
-              <p style="font-size: 11px; color: #9a7a5a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {link.url}
-              </p>
-            </a>
+            <%= case youtube_embed_url(link.url) do %>
+              <% {:youtube, embed_url} -> %>
+                <div style="border-radius: 6px; overflow: hidden; border: 1px solid rgba(60,40,20,0.12);">
+                  <%= if link.title && link.title != "" do %>
+                    <p style="font-size: 12px; font-weight: 600; color: #2c1a0e; margin: 0; padding: 8px 12px 6px; background: #fffef9;">
+                      {link.title}
+                    </p>
+                  <% end %>
+                  <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+                    <iframe
+                      src={embed_url}
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen
+                      loading="lazy"
+                      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                    >
+                    </iframe>
+                  </div>
+                </div>
+              <% :external -> %>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  style="display: block; padding: 10px 14px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; overflow: hidden;"
+                >
+                  <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 2px;">
+                    {if link.title && link.title != "", do: link.title, else: link.url}
+                  </p>
+                  <p style="font-size: 11px; color: #9a7a5a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {link.url}
+                  </p>
+                </a>
+            <% end %>
           <% end %>
         </div>
       <% end %>

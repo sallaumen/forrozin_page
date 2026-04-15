@@ -290,23 +290,24 @@
           </span>
         <% end %>
         <%= if @drawer_item.suggested_by_id do %>
-          <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+          <% author = @drawer_item.suggested_by %>
+          <% author_username = if author, do: author.username, else: "?" %>
+          <% author_initial = author_username |> String.upcase() |> String.first() %>
+          <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
             <.link
-              navigate={
-                ~p"/users/#{if @drawer_item.suggested_by, do: @drawer_item.suggested_by.username, else: "#"}"
-              }
-              style="text-decoration: none;"
+              navigate={~p"/users/#{author_username}"}
+              style="text-decoration: none; display: flex; align-items: center; gap: 8px;"
             >
-              <span style={"font-size: 10px; padding: 2px 8px; border-radius: 8px; background: #{if @drawer_item.approved, do: "#27ae6018", else: "#8e44ad18"}; color: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; border: 1px solid #{if @drawer_item.approved, do: "#27ae6030", else: "#8e44ad30"}; font-style: italic;"}>
-                <%= if @drawer_item.approved do %>
-                  ✓ Aprovado — contribuição de @{if @drawer_item.suggested_by,
-                    do: @drawer_item.suggested_by.username,
-                    else: "?"}
-                <% else %>
-                  Sugestão de @{if @drawer_item.suggested_by,
-                    do: @drawer_item.suggested_by.username,
-                    else: "?"}
-                <% end %>
+              <span style={"display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; color: white; font-size: 12px; font-weight: 700; font-family: Georgia, serif; flex-shrink: 0;"}>
+                {author_initial}
+              </span>
+              <span style={"font-size: 12px; color: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; font-weight: 600;"}>
+                @{author_username}
+              </span>
+              <span style={"font-size: 11px; color: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; font-style: italic; opacity: 0.8;"}>
+                {if @drawer_item.approved,
+                  do: "✓ contribuição aprovada",
+                  else: "· sugestão pendente"}
               </span>
             </.link>
             <%= if @is_admin and not @drawer_item.approved do %>
@@ -418,7 +419,7 @@
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">
                 {conn.target_step.code}
               </code>
-               {conn.target_step.name}
+              {conn.target_step.name}
             </span>
             <%= if @can_edit_drawer do %>
               <button
@@ -449,7 +450,7 @@
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">
                 {conn.source_step.code}
               </code>
-               {conn.source_step.name}
+              {conn.source_step.name}
             </span>
             <%= if @can_edit_drawer do %>
               <button

@@ -221,4 +221,42 @@ defmodule ForrozinWeb.StepLive do
 
   def category_label(%{category: %{label: label}}), do: label
   def category_label(_), do: "—"
+
+  @doc """
+  Parses a URL and returns `{:youtube, embed_url}` for YouTube links,
+  or `:external` for all other URLs.
+
+  Supports:
+  - `https://www.youtube.com/watch?v=VIDEO_ID`
+  - `https://youtu.be/VIDEO_ID`
+  - URLs with additional query parameters (only `v` is used)
+  """
+  def youtube_embed_url(url) when is_binary(url) do
+    uri = URI.parse(url)
+
+    cond do
+      uri.host in ["www.youtube.com", "youtube.com"] and uri.path == "/watch" ->
+        case URI.decode_query(uri.query || "") do
+          %{"v" => video_id} when video_id != "" ->
+            {:youtube, "https://www.youtube.com/embed/#{video_id}"}
+
+          _ ->
+            :external
+        end
+
+      uri.host == "youtu.be" and is_binary(uri.path) ->
+        video_id = String.trim_leading(uri.path, "/")
+
+        if video_id != "" do
+          {:youtube, "https://www.youtube.com/embed/#{video_id}"}
+        else
+          :external
+        end
+
+      true ->
+        :external
+    end
+  end
+
+  def youtube_embed_url(_), do: :external
 end

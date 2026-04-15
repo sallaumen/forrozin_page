@@ -1,0 +1,128 @@
+<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+  <.navbar current_user={@current_user} is_admin={@is_admin} />
+
+  <%!-- Hero --%>
+  <div style="border-bottom: 1px solid rgba(60,40,20,0.12); padding: 40px 24px 28px; background: #f2ede4;">
+    <div style="max-width: 860px; margin: 0 auto;">
+      <h1 style="font-size: 36px; font-weight: 700; color: #1a0e05; letter-spacing: -1px; margin: 0 0 10px; line-height: 1.2;">
+        Comunidade
+      </h1>
+      <p style="font-size: 14px; color: #5a4230; margin: 0; line-height: 1.7; max-width: 540px;">
+        Passos sugeridos pelos membros do grupo de estudos.
+        Sugestões pendentes aguardam revisão; aprovadas fazem parte do acervo.
+      </p>
+    </div>
+  </div>
+
+  <%!-- Tabs --%>
+  <div style="max-width: 860px; margin: 0 auto; padding: 0 16px; width: 100%; box-sizing: border-box;">
+    <div style="display: flex; gap: 0; border-bottom: 2px solid rgba(60,40,20,0.1); margin-top: 12px;">
+      <%= for {tab_key, tab_label} <- [{"all", "Todas"}, {"pending", "Pendentes"}, {"approved", "Aprovadas"}] do %>
+        <button
+          phx-click="switch_tab"
+          phx-value-tab={tab_key}
+          style={"padding: 10px 22px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; border: none; background: transparent; color: #{if @active_tab == tab_key, do: "#8e44ad", else: "#9a7a5a"}; border-bottom: 2px solid #{if @active_tab == tab_key, do: "#8e44ad", else: "transparent"}; font-weight: #{if @active_tab == tab_key, do: "700", else: "400"}; margin-bottom: -2px;"}
+        >
+          {tab_label}
+        </button>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Content --%>
+  <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; width: 100%; box-sizing: border-box;">
+    <%= if @steps == [] do %>
+      <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+        Nenhuma sugestão encontrada.
+      </div>
+    <% else %>
+      <p style="font-size: 12px; color: #8e44ad; margin-bottom: 16px; font-weight: 600;">
+        {length(@steps)} sugestão(ões)
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <%= for step <- @steps do %>
+          <% author = step.suggested_by %>
+          <% author_username = if author, do: author.username, else: "?" %>
+          <% author_initial = author_username |> String.upcase() |> String.first() %>
+          <div style={"padding: 16px 18px; background: #fffef9; border: 1px solid #{if step.approved, do: "#27ae6020", else: "#8e44ad18"}; border-left: 3px solid #{if step.approved, do: "#27ae60", else: "#8e44ad"}; border-radius: 0 6px 6px 0;"}>
+            <%!-- Header row --%>
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+              <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; flex: 1;">
+                <code style="font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 2px 7px; border-radius: 3px; letter-spacing: 0.5px; border: 1px solid rgba(180,120,40,0.2);">
+                  {step.code}
+                </code>
+                <.link
+                  navigate={~p"/steps/#{step.code}"}
+                  style="font-size: 16px; color: #1a0e05; font-weight: 700; font-family: Georgia, serif; text-decoration: none; line-height: 1.4;"
+                >
+                  {step.name}
+                </.link>
+                <%= if step.category do %>
+                  <span style={"font-size: 10px; padding: 2px 10px; border-radius: 10px; background: #{category_color(step)}15; color: #{category_color(step)}; border: 1px solid #{category_color(step)}30; font-style: italic;"}>
+                    {category_label(step)}
+                  </span>
+                <% end %>
+              </div>
+              <%!-- Status badge --%>
+              <span style={"font-size: 10px; padding: 3px 10px; border-radius: 10px; background: #{if step.approved, do: "#27ae6015", else: "#8e44ad12"}; color: #{if step.approved, do: "#27ae60", else: "#8e44ad"}; border: 1px solid #{if step.approved, do: "#27ae6030", else: "#8e44ad30"}; font-weight: 600; white-space: nowrap;"}>
+                {if step.approved, do: "✓ aprovada", else: "pendente"}
+              </span>
+            </div>
+
+            <%!-- Note preview --%>
+            <%= if step.note do %>
+              <p style="font-size: 13px; color: #5a4230; line-height: 1.7; font-style: italic; margin: 0 0 10px; font-family: Georgia, serif;">
+                {String.slice(step.note, 0, 160)}{if String.length(step.note) > 160, do: "…"}
+              </p>
+            <% end %>
+
+            <%!-- Footer row: author + link to profile --%>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <.link
+                navigate={~p"/users/#{author_username}"}
+                style="text-decoration: none; display: flex; align-items: center; gap: 6px;"
+              >
+                <span style={"display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #{if step.approved, do: "#27ae60", else: "#8e44ad"}; color: white; font-size: 10px; font-weight: 700; flex-shrink: 0;"}>
+                  {author_initial}
+                </span>
+                <span style="font-size: 12px; color: #8e44ad; font-weight: 600;">
+                  @{author_username}
+                </span>
+              </.link>
+              <.link
+                navigate={~p"/steps/#{step.code}"}
+                style="font-size: 11px; color: #9a7a5a; text-decoration: none; font-style: italic; margin-left: auto;"
+              >
+                ver detalhes →
+              </.link>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%!-- Footer --%>
+  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
+    <p style="font-size: 12px; color: #7a5c3a; margin-bottom: 4px;">
+      feito por <strong>L. Tatá</strong>
+    </p>
+    <div style="display: flex; justify-content: center; gap: 20px; font-size: 12px;">
+      <a
+        href="mailto:lucas.c.tavano+forro@gmail.com"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        email
+      </a>
+      <span style="color: #bba88a;">·</span>
+      <a
+        href="https://instagram.com/tavanooh"
+        target="_blank"
+        rel="noreferrer"
+        style="color: #9a7a5a; text-decoration: none;"
+      >
+        @tavanooh
+      </a>
+    </div>
+  </footer>
+</div>

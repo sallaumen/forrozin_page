@@ -29,6 +29,12 @@ defmodule ForrozinWeb.Components.Navbar do
         >
           Mapa
         </.link>
+        <.link
+          navigate={~p"/community"}
+          style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 0.5px;"
+        >
+          Comunidade
+        </.link>
         <%= if @is_admin do %>
           <.link
             navigate={~p"/graph"}

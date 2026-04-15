@@ -68,6 +68,9 @@ defmodule Forrozin.Encyclopedia.StepQuery do
   defp shared_reducer({:approved_only, true}, q),
     do: where(q, [step: s], s.approved == true)
 
+  defp shared_reducer({:pending_only, true}, q),
+    do: where(q, [step: s], s.approved == false)
+
   defp shared_reducer({:step_ids, ids}, q),
     do: where(q, [step: s], s.id in ^ids)
 

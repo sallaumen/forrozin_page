@@ -42,6 +42,7 @@ defmodule ForrozinWeb.Router do
     pipe_through :browser
 
     live "/collection", CollectionLive
+    live "/community", CommunityLive
     live "/graph", GraphLive
     live "/graph/visual", GraphVisualLive
     live "/steps/:code", StepLive

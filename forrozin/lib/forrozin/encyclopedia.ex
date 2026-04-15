@@ -67,19 +67,20 @@ defmodule Forrozin.Encyclopedia do
         do: dynamic([p], p.status == "published"),
         else: dynamic([p], p.wip == false and p.status == "published")
 
-    # Direct steps: only those NOT in a subsection (avoids duplicates)
+    # Direct steps: only those NOT in a subsection (avoids duplicates).
+    # Official steps (no suggested_by_id) come first, community steps after.
     direct_steps =
       from(p in Forrozin.Encyclopedia.Step,
         where: ^visibility_filter,
         where: is_nil(p.subsection_id),
-        order_by: [asc: p.position]
+        order_by: [desc: p.approved, asc: p.position]
       )
 
-    # Subsection steps: all visible steps in subsections
+    # Subsection steps: all visible steps in subsections, same ordering.
     subsection_steps =
       from(p in Forrozin.Encyclopedia.Step,
         where: ^visibility_filter,
-        order_by: [asc: p.position]
+        order_by: [desc: p.approved, asc: p.position]
       )
 
     SectionQuery.list_by()
@@ -217,6 +218,34 @@ defmodule Forrozin.Encyclopedia do
       order_by: [desc: :inserted_at],
       preload: [:category, :suggested_by]
     )
+  end
+
+  @doc """
+  Lists suggested steps filtered by approval status.
+
+  Options:
+  - `filter: "pending"` — only unapproved suggestions.
+  - `filter: "approved"` — only approved suggestions.
+  - `filter: "all"` (default) — all suggestions.
+  """
+  def list_suggested_steps_filtered(opts \\ []) do
+    filter = Keyword.get(opts, :filter, "all")
+
+    base = [
+      has_suggestions: true,
+      status: "published",
+      order_by: [desc: :inserted_at],
+      preload: [:category, :suggested_by]
+    ]
+
+    extra =
+      case filter do
+        "pending" -> [pending_only: true]
+        "approved" -> [approved_only: true]
+        _ -> []
+      end
+
+    StepQuery.list_by(base ++ extra)
   end
 
   @doc "Lists steps suggested by a specific user."
