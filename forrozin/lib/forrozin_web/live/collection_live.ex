@@ -45,7 +45,6 @@ defmodule ForrozinWeb.CollectionLive do
         can_edit_drawer: false,
         active_tab: "acervo",
         my_steps: [],
-        suggested_steps: Encyclopedia.list_suggested_steps(),
         steps_with_links: steps_with_links
       )
 
@@ -346,8 +345,7 @@ defmodule ForrozinWeb.CollectionLive do
 
     assign(socket,
       sections: sections,
-      open_sections: open,
-      suggested_steps: Encyclopedia.list_suggested_steps()
+      open_sections: open
     )
   end
 

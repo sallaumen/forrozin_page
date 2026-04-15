@@ -19,18 +19,19 @@
         O grupo de estudos.
       </h1>
       <p style="font-size: 15px; color: #5a4230; margin-bottom: 10px; line-height: 1.7; max-width: 540px;">
-        Acervo de {total_steps(@sections)} passos de forró catalogados na raça e na cara-de-pau.
-        Nomes inventados, descrições duvidosas e zero garantia de que qualquer coisa aqui esteja certa.
+        {total_steps(@sections)} passos de forró roots catalogados aqui.
+        Nomes inventados, descrições duvidosas — mas feito com carinho.
       </p>
       <p style="font-size: 13px; color: #9a7a5a; font-style: italic; margin-bottom: 0; line-height: 1.7; max-width: 540px;">
-        Obra eternamente em construção. Achou um erro? Niceee,
+        Sentiu falta de algum passo?
         <a
-          href="mailto:lucas.c.tavano+forro@gmail.com?subject=Erro no Forrózin"
-          style="color: #c0741a;"
+          href="#"
+          phx-click="toggle_suggest"
+          style="color: #8e44ad; font-weight: 600; text-decoration: none;"
         >
-          manda um email
+          Sugere aí
         </a>
-        um dia eu vejo, quem sabe &lt;3
+        — a gente cresce junto.
       </p>
     </div>
   </div>
@@ -254,21 +255,6 @@
             />
           <% end %>
 
-          <%!-- Sugestões da comunidade --%>
-          <%= if @suggested_steps != [] and @category_filter == "all" do %>
-            <div style="margin-top: 24px; border-top: 2px solid #8e44ad20; padding-top: 20px;">
-              <div style="font-size: 11px; font-weight: 700; color: #8e44ad; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                Sugestões da comunidade ({length(@suggested_steps)})
-              </div>
-              <%= for step <- @suggested_steps do %>
-                <.step_item
-                  step={step}
-                  current_user_id={@current_user.id}
-                  steps_with_links={@steps_with_links}
-                />
-              <% end %>
-            </div>
-          <% end %>
         <% end %>
       <% end %>
     <% end %>
