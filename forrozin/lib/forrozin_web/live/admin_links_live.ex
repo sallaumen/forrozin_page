@@ -16,6 +16,7 @@ defmodule ForrozinWeb.AdminLinksLive do
       {:ok,
        socket
        |> assign(:page_title, "Admin · Links")
+       |> assign(:is_admin, true)
        |> load_links()}
     end
   end

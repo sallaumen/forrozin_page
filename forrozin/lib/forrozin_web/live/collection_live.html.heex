@@ -1,45 +1,16 @@
 <div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
-  <%!-- Header --%>
-  <header style="background: #1a0e05; border-bottom: 2px solid #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 200;">
-    <a
-      href={~p"/"}
-      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
-    >
-      Forrózin
-    </a>
-    <nav style="display: flex; gap: 24px; align-items: center;">
-      <.link
-        navigate={~p"/graph/visual"}
-        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+  <.navbar current_user={@current_user} is_admin={@is_admin} />
+  <%!-- Secondary toolbar: page-specific actions --%>
+  <%= if @is_admin do %>
+    <div style="background: #1a0e05; border-top: 1px solid rgba(255,255,255,0.08); padding: 6px 24px; display: flex; justify-content: flex-end;">
+      <button
+        phx-click="toggle_edit_mode"
+        style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
       >
-        Mapa de Passos
-      </.link>
-      <%= if @is_admin do %>
-        <button
-          phx-click="toggle_edit_mode"
-          style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
-        >
-          {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
-        </button>
-      <% end %>
-      <.link
-        navigate={~p"/users/#{@current_user.username}"}
-        style="font-size: 12px; color: #f2ede4; letter-spacing: 0.5px; text-decoration: none;"
-      >
-        Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
-      </.link>
-      <form method="post" action={~p"/logout"} style="margin: 0;">
-        <input type="hidden" name="_method" value="delete" />
-        <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-        <button
-          type="submit"
-          style="font-family: Georgia, serif; font-size: 11px; color: #bba88a; background: none; border: none; cursor: pointer; letter-spacing: 1px;"
-        >
-          sair
-        </button>
-      </form>
-    </nav>
-  </header>
+        {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
+      </button>
+    </div>
+  <% end %>
 
   <%!-- Hero --%>
   <div style="border-bottom: 1px solid rgba(60,40,20,0.12); padding: 48px 24px 36px; background: #f2ede4;">
@@ -446,7 +417,8 @@
             >
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">
                 {conn.target_step.code}
-              </code> {conn.target_step.name}
+              </code>
+               {conn.target_step.name}
             </span>
             <%= if @can_edit_drawer do %>
               <button
@@ -476,7 +448,8 @@
             >
               <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">
                 {conn.source_step.code}
-              </code> {conn.source_step.name}
+              </code>
+               {conn.source_step.name}
             </span>
             <%= if @can_edit_drawer do %>
               <button

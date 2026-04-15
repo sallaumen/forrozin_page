@@ -86,6 +86,7 @@ defmodule ForrozinWeb do
       import Phoenix.HTML
       # Core UI components
       import ForrozinWeb.CoreComponents
+      import ForrozinWeb.Components.Navbar
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

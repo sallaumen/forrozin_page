@@ -33,7 +33,8 @@ defmodule ForrozinWeb.UserProfileLive do
            user_sequences: sequences,
            step_likes: step_likes,
            sequence_likes: sequence_likes,
-           is_own_profile: current_user.id == user.id
+           is_own_profile: current_user.id == user.id,
+           is_admin: Accounts.admin?(current_user)
          )}
     end
   end

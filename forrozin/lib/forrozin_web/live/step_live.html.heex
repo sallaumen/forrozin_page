@@ -1,41 +1,16 @@
 <div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
-  <%!-- Header --%>
-  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
-    <a
-      href={~p"/"}
-      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
-    >
-      Forrózin
-    </a>
-    <nav style="display: flex; gap: 24px; align-items: center;">
-      <.link
-        navigate={~p"/collection"}
-        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+  <.navbar current_user={@current_user} is_admin={@is_admin} />
+  <%!-- Secondary toolbar: page-specific actions --%>
+  <%= if @can_edit do %>
+    <div style="background: #1a0e05; border-top: 1px solid rgba(255,255,255,0.08); padding: 6px 24px; display: flex; justify-content: flex-end;">
+      <button
+        phx-click="toggle_edit"
+        style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
       >
-        ← Acervo
-      </.link>
-      <.link
-        navigate={~p"/graph/visual"}
-        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
-      >
-        Mapa
-      </.link>
-      <%= if @can_edit do %>
-        <button
-          phx-click="toggle_edit"
-          style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
-        >
-          {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
-        </button>
-      <% end %>
-      <.link
-        navigate={~p"/users/#{@current_user.username}"}
-        style="font-size: 12px; color: #f2ede4; text-decoration: none; letter-spacing: 0.5px;"
-      >
-        Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
-      </.link>
-    </nav>
-  </header>
+        {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
+      </button>
+    </div>
+  <% end %>
 
   <%!-- Content --%>
   <div style="max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box;">

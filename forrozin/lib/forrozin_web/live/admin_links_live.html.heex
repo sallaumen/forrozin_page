@@ -1,39 +1,5 @@
 <div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
-  <%!-- Header --%>
-  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
-    <a
-      href={~p"/"}
-      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
-    >
-      Forrózin
-    </a>
-    <nav style="display: flex; gap: 24px; align-items: center;">
-      <.link
-        navigate={~p"/collection"}
-        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
-      >
-        Acervo
-      </.link>
-      <.link
-        navigate={~p"/graph/visual"}
-        style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
-      >
-        Mapa
-      </.link>
-      <.link
-        navigate={~p"/admin/links"}
-        style="font-family: Georgia, serif; font-size: 12px; color: #d4a054; text-decoration: none; letter-spacing: 1px; font-weight: 600;"
-      >
-        Links
-      </.link>
-      <.link
-        navigate={~p"/users/#{@current_user.username}"}
-        style="font-size: 12px; color: #f2ede4; text-decoration: none; letter-spacing: 0.5px;"
-      >
-        Olá, <strong>{Forrozin.Accounts.first_name(@current_user)}</strong>
-      </.link>
-    </nav>
-  </header>
+  <.navbar current_user={@current_user} is_admin={@is_admin} />
 
   <%!-- Content --%>
   <div style="max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box;">
