@@ -9,7 +9,7 @@ defmodule ForrozinWeb.CollectionLive do
   use ForrozinWeb, :live_view
 
   alias Forrozin.{Accounts, Admin, Encyclopedia}
-  alias Forrozin.Encyclopedia.{ConnectionQuery, SectionQuery, StepQuery}
+  alias Forrozin.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -19,6 +19,8 @@ defmodule ForrozinWeb.CollectionLive do
     sections = Encyclopedia.list_sections_with_steps(admin: admin)
     categories = Encyclopedia.list_categories()
     open_sections = Map.new(sections, fn s -> {s.id, false} end)
+
+    steps_with_links = StepLinkQuery.step_ids_with_links()
 
     socket =
       assign(socket,
@@ -36,13 +38,15 @@ defmodule ForrozinWeb.CollectionLive do
         drawer_item: nil,
         drawer_connections_out: [],
         drawer_connections_in: [],
+        drawer_link_count: 0,
         connection_search: "",
         connection_suggestions: [],
         suggest_mode: false,
         can_edit_drawer: false,
         active_tab: "acervo",
         my_steps: [],
-        suggested_steps: Encyclopedia.list_suggested_steps()
+        suggested_steps: Encyclopedia.list_suggested_steps(),
+        steps_with_links: steps_with_links
       )
 
     {:ok, socket}
@@ -102,6 +106,7 @@ defmodule ForrozinWeb.CollectionLive do
 
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
+        link_count = StepLinkQuery.count_by(step_id: step.id, approved: true)
 
         user_id = socket.assigns.current_user.id
         can_edit = socket.assigns.edit_mode or step.suggested_by_id == user_id
@@ -113,6 +118,7 @@ defmodule ForrozinWeb.CollectionLive do
            drawer_item: step,
            drawer_connections_out: out,
            drawer_connections_in: inn,
+           drawer_link_count: link_count,
            can_edit_drawer: can_edit
          )}
 
@@ -353,7 +359,14 @@ defmodule ForrozinWeb.CollectionLive do
 
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
-        assign(socket, drawer_item: step, drawer_connections_out: out, drawer_connections_in: inn)
+        link_count = StepLinkQuery.count_by(step_id: step.id, approved: true)
+
+        assign(socket,
+          drawer_item: step,
+          drawer_connections_out: out,
+          drawer_connections_in: inn,
+          drawer_link_count: link_count
+        )
 
       _ ->
         assign(socket, drawer_open: false)
@@ -364,6 +377,7 @@ defmodule ForrozinWeb.CollectionLive do
   attr :open, :boolean, required: true
   attr :edit_mode, :boolean, default: false
   attr :current_user_id, :string, default: nil
+  attr :steps_with_links, :any, default: %MapSet{}
 
   def section_card(assigns) do
     ~H"""
@@ -423,7 +437,11 @@ defmodule ForrozinWeb.CollectionLive do
             </div>
           <% end %>
           <%= for step <- @section.steps do %>
-            <.step_item step={step} current_user_id={@current_user_id} />
+            <.step_item
+              step={step}
+              current_user_id={@current_user_id}
+              steps_with_links={@steps_with_links}
+            />
           <% end %>
           <%= for subsection <- @section.subsections do %>
             <div style="margin-top: 16px;">
@@ -436,7 +454,11 @@ defmodule ForrozinWeb.CollectionLive do
                 </p>
               <% end %>
               <%= for step <- subsection.steps do %>
-                <.step_item step={step} current_user_id={@current_user_id} />
+                <.step_item
+                  step={step}
+                  current_user_id={@current_user_id}
+                  steps_with_links={@steps_with_links}
+                />
               <% end %>
             </div>
           <% end %>
@@ -448,6 +470,7 @@ defmodule ForrozinWeb.CollectionLive do
 
   attr :step, :map, required: true
   attr :current_user_id, :string, default: nil
+  attr :steps_with_links, :any, default: %MapSet{}
 
   def step_item(assigns) do
     ~H"""
@@ -465,7 +488,7 @@ defmodule ForrozinWeb.CollectionLive do
           style="width: 72px; height: 72px; object-fit: cover; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(60,40,20,0.15); filter: sepia(20%);"
         />
       <% end %>
-      <div style="flex: 1;">
+      <div style="flex: 1; min-width: 0;">
         <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
           <code style="font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 2px 7px; border-radius: 3px; letter-spacing: 0.5px; border: 1px solid rgba(180,120,40,0.2);">
             {@step.code}
@@ -494,6 +517,14 @@ defmodule ForrozinWeb.CollectionLive do
           <p style="font-size: 12px; color: #7a5c3a; margin: 5px 0 0; font-family: Georgia, serif; font-style: italic; line-height: 1.6;">
             {String.slice(@step.note, 0, 120)}{if String.length(@step.note) > 120, do: "…"}
           </p>
+        <% end %>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+        <%= if @step.suggested_by_id do %>
+          <span title="Passo da comunidade" style="font-size: 12px; opacity: 0.6;">👤</span>
+        <% end %>
+        <%= if MapSet.member?(@steps_with_links, @step.id) do %>
+          <span title="Tem vídeo" style="font-size: 12px; opacity: 0.6;">🎬</span>
         <% end %>
       </div>
     </div>

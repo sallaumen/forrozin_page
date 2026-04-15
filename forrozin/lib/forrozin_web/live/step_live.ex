@@ -3,7 +3,7 @@ defmodule ForrozinWeb.StepLive do
 
   use ForrozinWeb, :live_view
 
-  alias Forrozin.{Accounts, Admin, Encyclopedia}
+  alias Forrozin.{Accounts, Admin, Encyclopedia, Engagement}
   alias Forrozin.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
@@ -32,6 +32,14 @@ defmodule ForrozinWeb.StepLive do
             preload: [:submitted_by]
           )
 
+        link_ids = Enum.map(approved_links, & &1.id)
+        link_likes = Engagement.likes_map(user_id, "step_link", link_ids)
+
+        sorted_links =
+          Enum.sort_by(approved_links, fn link ->
+            -Map.get(link_likes.counts, link.id, 0)
+          end)
+
         {:ok,
          assign(socket,
            step: step,
@@ -44,10 +52,12 @@ defmodule ForrozinWeb.StepLive do
            connection_search: "",
            connection_suggestions: [],
            categories: Encyclopedia.list_categories(),
-           approved_links: approved_links,
+           approved_links: sorted_links,
+           link_likes: link_likes,
            link_url: "",
            link_title: "",
-           link_submitted: false
+           link_submitted: false,
+           expanded_link: nil
          )}
 
       {:error, :not_found} ->
@@ -190,6 +200,34 @@ defmodule ForrozinWeb.StepLive do
     end
   end
 
+  def handle_event("toggle_link_like", %{"link-id" => link_id}, socket) do
+    user_id = socket.assigns.current_user.id
+
+    case Engagement.toggle_like(user_id, "step_link", link_id) do
+      {:ok, _} ->
+        # Reload link likes and re-sort
+        link_ids = Enum.map(socket.assigns.approved_links, & &1.id)
+        link_likes = Engagement.likes_map(user_id, "step_link", link_ids)
+
+        sorted_links =
+          Enum.sort_by(socket.assigns.approved_links, fn link ->
+            -Map.get(link_likes.counts, link.id, 0)
+          end)
+
+        {:noreply, assign(socket, link_likes: link_likes, approved_links: sorted_links)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao registrar like")}
+    end
+  end
+
+  def handle_event("toggle_link_video", %{"link-id" => link_id}, socket) do
+    expanded =
+      if socket.assigns.expanded_link == link_id, do: nil, else: link_id
+
+    {:noreply, assign(socket, expanded_link: expanded)}
+  end
+
   defp reload_step(socket, code) do
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
@@ -202,13 +240,23 @@ defmodule ForrozinWeb.StepLive do
         approved_links =
           StepLinkQuery.list_by(step_id: step.id, approved: true, preload: [:submitted_by])
 
+        link_ids = Enum.map(approved_links, & &1.id)
+        user_id = socket.assigns.current_user.id
+        link_likes = Engagement.likes_map(user_id, "step_link", link_ids)
+
+        sorted_links =
+          Enum.sort_by(approved_links, fn link ->
+            -Map.get(link_likes.counts, link.id, 0)
+          end)
+
         assign(socket,
           step: step,
           connections_out: out,
           connections_in: inn,
           connection_search: "",
           connection_suggestions: [],
-          approved_links: approved_links
+          approved_links: sorted_links,
+          link_likes: link_likes
         )
 
       _ ->

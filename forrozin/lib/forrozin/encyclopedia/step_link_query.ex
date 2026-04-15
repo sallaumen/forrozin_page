@@ -62,4 +62,19 @@ defmodule Forrozin.Encyclopedia.StepLinkQuery do
   defp shared_reducer({:preload, preloads}, q), do: preload(q, ^preloads)
 
   defp shared_reducer({:order_by, ordering}, q), do: order_by(q, ^ordering)
+
+  @doc """
+  Returns a MapSet of step IDs that have at least one approved, non-deleted link.
+
+  Used to efficiently render indicators in list views without N+1 queries.
+  """
+  def step_ids_with_links do
+    from(l in StepLink,
+      where: l.approved == true and is_nil(l.deleted_at),
+      distinct: l.step_id,
+      select: l.step_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
 end

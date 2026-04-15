@@ -212,7 +212,11 @@
           {length(@my_steps)} passo(s) sugerido(s) por você
         </p>
         <%= for step <- @my_steps do %>
-          <.step_item step={step} current_user_id={@current_user.id} />
+          <.step_item
+            step={step}
+            current_user_id={@current_user.id}
+            steps_with_links={@steps_with_links}
+          />
         <% end %>
       <% end %>
     <% else %>
@@ -227,7 +231,11 @@
             {length(@search_results)} resultado(s)
           </p>
           <%= for step <- @search_results do %>
-            <.step_item step={step} current_user_id={@current_user.id} />
+            <.step_item
+              step={step}
+              current_user_id={@current_user.id}
+              steps_with_links={@steps_with_links}
+            />
           <% end %>
         <% end %>
       <% else %>
@@ -242,6 +250,7 @@
               open={Map.get(@open_sections, section.id, false)}
               edit_mode={@edit_mode}
               current_user_id={@current_user.id}
+              steps_with_links={@steps_with_links}
             />
           <% end %>
 
@@ -252,7 +261,11 @@
                 Sugestões da comunidade ({length(@suggested_steps)})
               </div>
               <%= for step <- @suggested_steps do %>
-                <.step_item step={step} current_user_id={@current_user.id} />
+                <.step_item
+                  step={step}
+                  current_user_id={@current_user.id}
+                  steps_with_links={@steps_with_links}
+                />
               <% end %>
             </div>
           <% end %>
@@ -516,9 +529,14 @@
         </div>
       <% end %>
 
+      <%= if @drawer_link_count > 0 do %>
+        <div style="margin-top: 16px; padding: 10px 14px; background: rgba(212,160,84,0.07); border: 1px solid rgba(212,160,84,0.2); border-radius: 6px; font-size: 12px; color: #5c3a1a; font-style: italic;">
+          🎬 {@drawer_link_count} link(s) disponível(is) — ver no passo completo
+        </div>
+      <% end %>
       <.link
         navigate={~p"/steps/#{@drawer_item.code}"}
-        style="display: block; margin-top: 20px; padding: 12px 16px; text-align: center; background: #1a0e05; color: #f2ede4; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+        style="display: block; margin-top: 12px; padding: 12px 16px; text-align: center; background: #1a0e05; color: #f2ede4; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
       >
         Ver passo completo →
       </.link>
