@@ -29,6 +29,7 @@ defmodule Forrozin.Admin.BackupTest do
       assert data["version"] == "1"
       assert is_binary(data["created_at"])
       tables = data["tables"]
+      assert Map.has_key?(tables, "users")
       assert Map.has_key?(tables, "categories")
       assert Map.has_key?(tables, "sections")
       assert Map.has_key?(tables, "subsections")
@@ -36,6 +37,10 @@ defmodule Forrozin.Admin.BackupTest do
       assert Map.has_key?(tables, "step_connections")
       assert Map.has_key?(tables, "technical_concepts")
       assert Map.has_key?(tables, "concept_steps")
+      assert Map.has_key?(tables, "step_links")
+      assert Map.has_key?(tables, "sequences")
+      assert Map.has_key?(tables, "sequence_steps")
+      assert Map.has_key?(tables, "likes")
     end
 
     test "JSON includes data present in the database", %{dir: dir} do

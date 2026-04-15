@@ -18,18 +18,26 @@ defmodule Forrozin.Admin.Backup do
       Forrozin.Admin.Backup.restore_backup!("priv/backups/backup_20260411_130000.json")
   """
 
-  alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section, Subsection}
+  alias Forrozin.Accounts.User
+  alias Forrozin.Encyclopedia.{Category, TechnicalConcept, Connection, Step, Section, Subsection, StepLink}
+  alias Forrozin.Engagement.Like
+  alias Forrozin.Sequences.{Sequence, SequenceStep}
   alias Forrozin.Repo
 
   @max_backups 48
 
   @ordered_schemas [
+    {"users", User},
     {"categories", Category},
     {"sections", Section},
     {"subsections", Subsection},
     {"steps", Step},
     {"technical_concepts", TechnicalConcept},
-    {"step_connections", Connection}
+    {"step_connections", Connection},
+    {"step_links", StepLink},
+    {"sequences", Sequence},
+    {"sequence_steps", SequenceStep},
+    {"likes", Like}
   ]
 
   @doc """
