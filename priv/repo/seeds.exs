@@ -1,29 +1,23 @@
-# Script for populating the database. You can run it as:
+# Seed the database from the latest backup.
 #
 #     mix run priv/repo/seeds.exs
 #
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     Forrozin.Repo.insert!(%Forrozin.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
+# This restores all data (steps, connections, users, sequences, etc.)
+# from the most recent backup file. Idempotent — safe to run multiple times.
 
-result = Forrozin.Encyclopedia.Seeder.seed!()
-IO.puts("Seed: #{result}")
+alias OGrupoDeEstudos.Admin.Backup
 
-# Admin padrão — pré-confirmado, sem email de verificação
-import Ecto.Query, only: [where: 2]
+backups = Backup.list_backups()
 
-unless Forrozin.Repo.exists?(where(Forrozin.Accounts.User, nome_usuario: "tata")) do
-  Forrozin.Repo.insert!(%Forrozin.Accounts.User{
-    nome_usuario: "tata",
-    email: "tata@forrozin.com.br",
-    senha_hash: Argon2.hash_pwd_salt("forroisloveforroislife"),
-    papel: "admin",
-    confirmed_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-  })
+case backups do
+  [latest | _] ->
+    IO.puts("Restoring from: #{Path.basename(latest)}")
+    Backup.restore_backup!(latest)
+    IO.puts("Seed complete — all data restored from backup.")
 
-  IO.puts("Seed: admin tata criado")
+  [] ->
+    IO.puts("No backup files found in #{inspect(Backup.list_backups())}")
+    IO.puts("Run the seeder instead:")
+    IO.puts("  OGrupoDeEstudos.Encyclopedia.Seeder.seed!()")
+    IO.puts("Then create a backup for future seeds.")
 end
