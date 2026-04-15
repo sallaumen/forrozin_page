@@ -387,6 +387,12 @@ const GraphVisual = {
       const input = document.getElementById("seq-required-input")
       if (input) input.value = ""
     })
+
+    // Manual mode toggle
+    this.handleEvent("set_manual_mode", ({ active }) => {
+      this._manualMode = active
+      this.el.dataset.manualMode = active ? "true" : "false"
+    })
   },
 
   updated() { this._initGraph() },
@@ -593,6 +599,13 @@ const GraphVisual = {
 
     cy.on("tap", "node", function(evt) {
       const node = evt.target
+
+      // Manual sequence mode: clicking a node appends it to the manual list
+      if (hook._manualMode || hook.el.dataset.manualMode === "true") {
+        hook.pushEvent("add_manual_step", { code: node.id(), name: node.data("nome") || node.id() })
+        hook._showToast(`+ ${node.id()}`)
+        return
+      }
 
       // Edit mode: connection creation flow
       if (isEditMode && isAdmin) {

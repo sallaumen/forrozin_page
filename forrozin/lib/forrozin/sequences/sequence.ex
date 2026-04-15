@@ -9,6 +9,8 @@ defmodule Forrozin.Sequences.Sequence do
     field :name, :string
     field :allow_repeats, :boolean, default: false
     field :public, :boolean, default: true
+    field :description, :string
+    field :video_url, :string
     field :deleted_at, :naive_datetime
 
     belongs_to :user, Forrozin.Accounts.User
@@ -19,9 +21,26 @@ defmodule Forrozin.Sequences.Sequence do
 
   def changeset(sequence, attrs) do
     sequence
-    |> cast(attrs, [:name, :user_id, :allow_repeats, :public, :deleted_at])
+    |> cast(attrs, [
+      :name,
+      :user_id,
+      :allow_repeats,
+      :public,
+      :description,
+      :video_url,
+      :deleted_at
+    ])
     |> validate_required([:name, :user_id])
     |> validate_length(:name, min: 1, max: 100)
+    |> validate_url()
     |> foreign_key_constraint(:user_id)
+  end
+
+  defp validate_url(changeset) do
+    case get_change(changeset, :video_url) do
+      nil -> changeset
+      "" -> changeset
+      _ -> validate_format(changeset, :video_url, ~r/^https?:\/\//, message: "URL inválida")
+    end
   end
 end

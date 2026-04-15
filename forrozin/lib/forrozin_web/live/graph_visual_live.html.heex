@@ -26,6 +26,7 @@
       data-graph={@graph_json}
       data-admin={to_string(@is_admin)}
       data-edit-mode={to_string(@edit_mode)}
+      data-manual-mode={to_string(@seq_view == :manual)}
       data-user-id={@current_user.id}
       style="width: 100%; height: calc(100vh - 86px); background: #f7f3ec;"
     >
@@ -41,16 +42,22 @@
         <div style="font-size: 11px; font-weight: 700; color: #e67e22; text-transform: uppercase; letter-spacing: 2px;">
           Sequências
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 4px;">
           <button
             phx-click="show_seq_config"
-            style={"font-size: 10px; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-family: Georgia, serif; border: 1px solid #{if @seq_view == :config, do: "#e67e22", else: "rgba(60,40,20,0.15)"}; background: #{if @seq_view == :config, do: "#e67e2215", else: "transparent"}; color: #{if @seq_view == :config, do: "#e67e22", else: "#9a7a5a"};"}
+            style={"font-size: 10px; padding: 3px 7px; border-radius: 3px; cursor: pointer; font-family: Georgia, serif; border: 1px solid #{if @seq_view == :config, do: "#e67e22", else: "rgba(60,40,20,0.15)"}; background: #{if @seq_view == :config, do: "#e67e2215", else: "transparent"}; color: #{if @seq_view == :config, do: "#e67e22", else: "#9a7a5a"};"}
           >
             Gerar
           </button>
           <button
+            phx-click="show_seq_manual"
+            style={"font-size: 10px; padding: 3px 7px; border-radius: 3px; cursor: pointer; font-family: Georgia, serif; border: 1px solid #{if @seq_view == :manual, do: "#27ae60", else: "rgba(60,40,20,0.15)"}; background: #{if @seq_view == :manual, do: "#27ae6015", else: "transparent"}; color: #{if @seq_view == :manual, do: "#27ae60", else: "#9a7a5a"};"}
+          >
+            Manual
+          </button>
+          <button
             phx-click="show_seq_saved"
-            style={"font-size: 10px; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-family: Georgia, serif; border: 1px solid #{if @seq_view == :saved, do: "#e67e22", else: "rgba(60,40,20,0.15)"}; background: #{if @seq_view == :saved, do: "#e67e2215", else: "transparent"}; color: #{if @seq_view == :saved, do: "#e67e22", else: "#9a7a5a"};"}
+            style={"font-size: 10px; padding: 3px 7px; border-radius: 3px; cursor: pointer; font-family: Georgia, serif; border: 1px solid #{if @seq_view == :saved, do: "#e67e22", else: "rgba(60,40,20,0.15)"}; background: #{if @seq_view == :saved, do: "#e67e2215", else: "transparent"}; color: #{if @seq_view == :saved, do: "#e67e22", else: "#9a7a5a"};"}
           >
             Salvas
           </button>
@@ -351,6 +358,96 @@
               </button>
             <% end %>
           </div>
+        </div>
+      <% end %>
+
+      <%!-- View: Manual sequence builder --%>
+      <%= if @seq_view == :manual do %>
+        <div style="padding: 16px;">
+          <p style="font-size: 11px; color: #5c3a1a; line-height: 1.6; margin: 0 0 12px; font-style: italic;">
+            Clique nos nós do grafo para montar a sequência passo a passo.
+          </p>
+
+          <%!-- Step list --%>
+          <div style="margin-bottom: 12px; min-height: 36px; border: 1px dashed rgba(60,40,20,0.18); border-radius: 4px; padding: 8px;">
+            <%= if @seq_manual_steps == [] do %>
+              <div style="font-size: 11px; color: #bba88a; text-align: center; padding: 6px 0; font-style: italic;">
+                Nenhum passo ainda
+              </div>
+            <% else %>
+              <%= for {step, idx} <- Enum.with_index(@seq_manual_steps) do %>
+                <div style="display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(60,40,20,0.05);">
+                  <span style="font-size: 10px; font-weight: 700; color: #27ae60; min-width: 16px;">
+                    {idx + 1}.
+                  </span>
+                  <code style="font-size: 10px; color: #9a7a5a;">{step.code}</code>
+                  <span style="font-size: 11px; color: #2c1a0e; flex: 1;">{step.name}</span>
+                  <button
+                    type="button"
+                    phx-click="remove_manual_step"
+                    phx-value-index={idx}
+                    style="background: none; border: none; cursor: pointer; color: #c0392b; font-size: 13px; padding: 0 2px; line-height: 1; flex-shrink: 0;"
+                    title="Remover"
+                  >
+                    ×
+                  </button>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%!-- Error --%>
+          <%= if @seq_manual_error do %>
+            <div style="margin-bottom: 10px; padding: 7px 10px; background: #fdecea; border: 1px solid #c0392b30; border-radius: 4px; font-size: 11px; color: #c0392b;">
+              {@seq_manual_error}
+            </div>
+          <% end %>
+
+          <%!-- Save form --%>
+          <form
+            phx-submit="save_manual_sequence"
+            style="display: flex; flex-direction: column; gap: 10px;"
+          >
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #7a5c3a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+                Nome da sequência *
+              </label>
+              <input
+                type="text"
+                name="name"
+                placeholder="Ex: Sequência de terça"
+                style="width: 100%; padding: 7px 10px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: Georgia, serif; font-size: 12px; color: #1a0e05; background: white; box-sizing: border-box;"
+              />
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #7a5c3a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+                Descrição (opcional)
+              </label>
+              <textarea
+                name="description"
+                rows="2"
+                placeholder="Observações sobre a sequência..."
+                style="width: 100%; padding: 7px 10px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: Georgia, serif; font-size: 12px; color: #1a0e05; background: white; box-sizing: border-box; resize: vertical;"
+              ></textarea>
+            </div>
+            <div>
+              <label style="display: block; font-size: 10px; font-weight: 700; color: #7a5c3a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+                URL do vídeo (opcional)
+              </label>
+              <input
+                type="text"
+                name="video_url"
+                placeholder="https://youtu.be/..."
+                style="width: 100%; padding: 7px 10px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: Georgia, serif; font-size: 12px; color: #1a0e05; background: white; box-sizing: border-box;"
+              />
+            </div>
+            <button
+              type="submit"
+              style="width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 4px; font-family: Georgia, serif; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer;"
+            >
+              Salvar sequência
+            </button>
+          </form>
         </div>
       <% end %>
 

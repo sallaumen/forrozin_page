@@ -1,14 +1,15 @@
 defmodule ForrozinWeb.CommunityLive do
   @moduledoc """
-  Community page — shows all suggested steps with rich cards.
+  Community page — shows suggested steps and public sequences.
 
-  Tabs: all | pending | approved.
+  Steps tabs: all | pending | approved.
+  Sequences tab: all public sequences sorted by like count.
   Accessible to all authenticated users.
   """
 
   use ForrozinWeb, :live_view
 
-  alias Forrozin.{Accounts, Encyclopedia}
+  alias Forrozin.{Accounts, Encyclopedia, Engagement, Sequences}
 
   on_mount {ForrozinWeb.UserAuth, :ensure_authenticated}
 
@@ -21,15 +22,71 @@ defmodule ForrozinWeb.CommunityLive do
      assign(socket,
        page_title: "Comunidade",
        is_admin: admin,
+       active_section: "steps",
        active_tab: "all",
-       steps: steps
+       steps: steps,
+       sequences: [],
+       sequence_likes: %{liked_ids: MapSet.new(), counts: %{}}
      )}
   end
 
   @impl true
+  def handle_event("switch_section", %{"section" => "sequences"}, socket) do
+    sequences = Sequences.list_all_public_sequences()
+
+    sequence_ids = Enum.map(sequences, & &1.id)
+    current_user = socket.assigns.current_user
+    sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
+
+    sorted =
+      Enum.sort_by(
+        sequences,
+        fn seq ->
+          Map.get(sequence_likes.counts, seq.id, 0)
+        end,
+        :desc
+      )
+
+    {:noreply,
+     assign(socket,
+       active_section: "sequences",
+       sequences: sorted,
+       sequence_likes: sequence_likes
+     )}
+  end
+
+  def handle_event("switch_section", %{"section" => "steps"}, socket) do
+    {:noreply, assign(socket, active_section: "steps")}
+  end
+
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     steps = Encyclopedia.list_suggested_steps_filtered(filter: tab)
     {:noreply, assign(socket, active_tab: tab, steps: steps)}
+  end
+
+  def handle_event("toggle_like", %{"type" => "sequence", "id" => id}, socket) do
+    current_user = socket.assigns.current_user
+
+    case Engagement.toggle_like(current_user.id, "sequence", id) do
+      {:ok, _action} ->
+        sequences = socket.assigns.sequences
+        sequence_ids = Enum.map(sequences, & &1.id)
+        sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
+
+        sorted =
+          Enum.sort_by(
+            sequences,
+            fn seq ->
+              Map.get(sequence_likes.counts, seq.id, 0)
+            end,
+            :desc
+          )
+
+        {:noreply, assign(socket, sequences: sorted, sequence_likes: sequence_likes)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível registrar o like.")}
+    end
   end
 
   # Helpers
@@ -45,4 +102,25 @@ defmodule ForrozinWeb.CommunityLive do
   end
 
   def connection_count(_), do: 0
+
+  def youtube_embed_url(url) when is_binary(url) do
+    cond do
+      Regex.match?(~r/youtu\.be\/([a-zA-Z0-9_-]+)/, url) ->
+        [_, id] = Regex.run(~r/youtu\.be\/([a-zA-Z0-9_-]+)/, url)
+        {:embed, "https://www.youtube.com/embed/#{id}"}
+
+      Regex.match?(~r/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/, url) ->
+        [_, id] = Regex.run(~r/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/, url)
+        {:embed, "https://www.youtube.com/embed/#{id}"}
+
+      Regex.match?(~r/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/, url) ->
+        [_, id] = Regex.run(~r/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/, url)
+        {:embed, "https://www.youtube.com/embed/#{id}"}
+
+      true ->
+        :external
+    end
+  end
+
+  def youtube_embed_url(_), do: :external
 end

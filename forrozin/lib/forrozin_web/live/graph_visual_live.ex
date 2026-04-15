@@ -28,6 +28,8 @@ defmodule ForrozinWeb.GraphVisualLive do
      |> assign(:seq_required_codes, [])
      |> assign(:seq_required_search, "")
      |> assign(:seq_required_suggestions, [])
+     |> assign(:seq_manual_steps, [])
+     |> assign(:seq_manual_error, nil)
      |> assign_graph_data(graph, false)}
   end
 
@@ -40,11 +42,20 @@ defmodule ForrozinWeb.GraphVisualLive do
         do: Sequences.list_user_sequences(socket.assigns.current_user.id),
         else: socket.assigns.seq_saved
 
-    {:noreply,
-     socket
-     |> assign(:seq_panel, new_open)
-     |> assign(:seq_saved, saved)
-     |> assign(:seq_view, :config)}
+    socket =
+      socket
+      |> assign(:seq_panel, new_open)
+      |> assign(:seq_saved, saved)
+      |> assign(:seq_view, :config)
+      |> assign(:seq_manual_steps, [])
+      |> assign(:seq_manual_error, nil)
+
+    socket =
+      if not new_open,
+        do: push_event(socket, "set_manual_mode", %{active: false}),
+        else: socket
+
+    {:noreply, socket}
   end
 
   def handle_event("generate_sequences", params, socket) do
@@ -182,6 +193,77 @@ defmodule ForrozinWeb.GraphVisualLive do
   def handle_event("show_seq_saved", _params, socket) do
     saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
     {:noreply, socket |> assign(:seq_saved, saved) |> assign(:seq_view, :saved)}
+  end
+
+  def handle_event("show_seq_manual", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_view, :manual)
+     |> assign(:seq_manual_steps, [])
+     |> assign(:seq_manual_error, nil)
+     |> push_event("set_manual_mode", %{active: true})}
+  end
+
+  def handle_event("add_manual_step", %{"code" => code, "name" => name}, socket) do
+    step = %{code: code, name: name}
+    new_steps = socket.assigns.seq_manual_steps ++ [step]
+    {:noreply, assign(socket, :seq_manual_steps, new_steps)}
+  end
+
+  def handle_event("remove_manual_step", %{"index" => index_str}, socket) do
+    index = parse_int(index_str, -1)
+    new_steps = List.delete_at(socket.assigns.seq_manual_steps, index)
+    {:noreply, assign(socket, :seq_manual_steps, new_steps)}
+  end
+
+  def handle_event("save_manual_sequence", params, socket) do
+    name = Map.get(params, "name", "") |> String.trim()
+    description = Map.get(params, "description", "") |> String.trim()
+    video_url = Map.get(params, "video_url", "") |> String.trim()
+    manual_steps = socket.assigns.seq_manual_steps
+    user_id = socket.assigns.current_user.id
+
+    cond do
+      name == "" ->
+        {:noreply, assign(socket, :seq_manual_error, "Nome é obrigatório.")}
+
+      manual_steps == [] ->
+        {:noreply, assign(socket, :seq_manual_error, "Adicione ao menos um passo.")}
+
+      true ->
+        step_codes = Enum.map(manual_steps, & &1.code)
+
+        attrs = %{
+          name: name,
+          step_codes: step_codes,
+          description: if(description == "", do: nil, else: description),
+          video_url: if(video_url == "", do: nil, else: video_url)
+        }
+
+        case Sequences.create_manual_sequence(user_id, attrs) do
+          {:ok, _saved} ->
+            saved = Sequences.list_user_sequences(user_id)
+
+            {:noreply,
+             socket
+             |> assign(:seq_manual_steps, [])
+             |> assign(:seq_manual_error, nil)
+             |> assign(:seq_saved, saved)
+             |> assign(:seq_view, :saved)
+             |> push_event("set_manual_mode", %{active: false})}
+
+          {:error, :invalid_codes} ->
+            {:noreply, assign(socket, :seq_manual_error, "Código de passo inválido.")}
+
+          {:error, changeset} ->
+            msg =
+              changeset.errors
+              |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end)
+              |> Enum.join(", ")
+
+            {:noreply, assign(socket, :seq_manual_error, msg)}
+        end
+    end
   end
 
   # Autocomplete — start step

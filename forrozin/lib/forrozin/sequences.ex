@@ -7,6 +7,7 @@ defmodule Forrozin.Sequences do
   """
 
   alias Forrozin.Repo
+  alias Forrozin.Encyclopedia.StepQuery
   alias Forrozin.Sequences.{Generator, Sequence, SequenceStep, SequenceQuery}
 
   @doc """
@@ -53,6 +54,62 @@ defmodule Forrozin.Sequences do
     end)
   end
 
+  @doc """
+  Creates a sequence manually from step codes provided by a user.
+
+  Accepts a map with:
+  - `:name` (required)
+  - `:description` (optional)
+  - `:video_url` (optional)
+  - `:step_codes` — list of step codes in order
+
+  Resolves codes to step IDs, then creates the sequence in a transaction.
+  Returns `{:ok, sequence}` or `{:error, changeset | :invalid_codes}`.
+  """
+  def create_manual_sequence(user_id, attrs) do
+    step_codes = Map.get(attrs, :step_codes, Map.get(attrs, "step_codes", []))
+
+    steps =
+      step_codes
+      |> Enum.map(&StepQuery.get_by(code: &1))
+      |> Enum.reject(&is_nil/1)
+
+    if length(steps) != length(step_codes) do
+      {:error, :invalid_codes}
+    else
+      Repo.transaction(fn ->
+        changeset =
+          Sequence.changeset(%Sequence{}, %{
+            name: Map.get(attrs, :name, Map.get(attrs, "name", "")),
+            user_id: user_id,
+            description: Map.get(attrs, :description, Map.get(attrs, "description")),
+            video_url: Map.get(attrs, :video_url, Map.get(attrs, "video_url")),
+            allow_repeats: true
+          })
+
+        case Repo.insert(changeset) do
+          {:ok, sequence} ->
+            steps
+            |> Enum.with_index(1)
+            |> Enum.each(fn {step, position} ->
+              %SequenceStep{}
+              |> SequenceStep.changeset(%{
+                sequence_id: sequence.id,
+                step_id: step.id,
+                position: position
+              })
+              |> Repo.insert!()
+            end)
+
+            Repo.preload(sequence, sequence_steps: :step)
+
+          {:error, changeset} ->
+            Repo.rollback(changeset)
+        end
+      end)
+    end
+  end
+
   @doc "Lists all sequences belonging to a user, with steps preloaded."
   def list_user_sequences(user_id) do
     SequenceQuery.list_by(user_id: user_id, preload: [sequence_steps: :step])
@@ -61,6 +118,11 @@ defmodule Forrozin.Sequences do
   @doc "Lists all public sequences belonging to a user, with steps preloaded."
   def list_public_user_sequences(user_id) do
     SequenceQuery.list_by(user_id: user_id, public: true, preload: [sequence_steps: :step])
+  end
+
+  @doc "Lists all public sequences, with steps and user preloaded."
+  def list_all_public_sequences do
+    SequenceQuery.list_by(public: true, preload: [:user, sequence_steps: :step])
   end
 
   @doc "Fetches a single sequence by id, with steps preloaded. Returns `nil` if not found."

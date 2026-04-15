@@ -2,6 +2,7 @@ defmodule Forrozin.SequencesTest do
   use Forrozin.DataCase, async: true
 
   alias Forrozin.Sequences
+  alias Forrozin.Sequences.Sequence
 
   # ---------------------------------------------------------------------------
   # create_sequence/4
@@ -225,6 +226,186 @@ defmodule Forrozin.SequencesTest do
       assert {:error, changeset} = Sequences.update_sequence(sequence, %{name: ""})
 
       assert %{name: [_]} = errors_on(changeset)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Sequence.changeset — video_url and description fields
+  # ---------------------------------------------------------------------------
+
+  describe "Sequence.changeset video_url validation" do
+    test "accepts a valid https URL" do
+      changeset =
+        Sequence.changeset(%Sequence{}, %{
+          name: "Test",
+          user_id: Ecto.UUID.generate(),
+          video_url: "https://youtu.be/abc"
+        })
+
+      assert changeset.valid?
+    end
+
+    test "accepts a valid http URL" do
+      changeset =
+        Sequence.changeset(%Sequence{}, %{
+          name: "Test",
+          user_id: Ecto.UUID.generate(),
+          video_url: "http://example.com/video"
+        })
+
+      assert changeset.valid?
+    end
+
+    test "rejects a non-http URL" do
+      changeset =
+        Sequence.changeset(%Sequence{}, %{
+          name: "Test",
+          user_id: Ecto.UUID.generate(),
+          video_url: "ftp://bad-url.com"
+        })
+
+      assert %{video_url: [_]} = errors_on(changeset)
+    end
+
+    test "accepts nil video_url without validation error" do
+      changeset =
+        Sequence.changeset(%Sequence{}, %{
+          name: "Test",
+          user_id: Ecto.UUID.generate(),
+          video_url: nil
+        })
+
+      assert changeset.valid?
+    end
+
+    test "stores description" do
+      changeset =
+        Sequence.changeset(%Sequence{}, %{
+          name: "Test",
+          user_id: Ecto.UUID.generate(),
+          description: "Uma descrição da sequência"
+        })
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_change(changeset, :description) == "Uma descrição da sequência"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # create_manual_sequence/2
+  # ---------------------------------------------------------------------------
+
+  describe "create_manual_sequence/2" do
+    test "creates a sequence from step codes in order" do
+      user = insert(:user)
+      step_a = insert(:step, code: "BF", name: "Base Frontal")
+      step_b = insert(:step, code: "SC", name: "Sacada")
+
+      assert {:ok, sequence} =
+               Sequences.create_manual_sequence(user.id, %{
+                 name: "Manual Terça",
+                 step_codes: ["BF", "SC"]
+               })
+
+      assert sequence.name == "Manual Terça"
+      codes = Enum.map(sequence.sequence_steps, & &1.step.code)
+      assert codes == ["BF", "SC"]
+      _ = step_a
+      _ = step_b
+    end
+
+    test "stores description and video_url" do
+      user = insert(:user)
+      step = insert(:step, code: "BF", name: "Base Frontal")
+
+      assert {:ok, sequence} =
+               Sequences.create_manual_sequence(user.id, %{
+                 name: "Com Vídeo",
+                 step_codes: ["BF"],
+                 description: "Sequência teste",
+                 video_url: "https://youtu.be/xyz"
+               })
+
+      assert sequence.description == "Sequência teste"
+      assert sequence.video_url == "https://youtu.be/xyz"
+      _ = step
+    end
+
+    test "returns error :invalid_codes when a code does not exist" do
+      user = insert(:user)
+
+      assert {:error, :invalid_codes} =
+               Sequences.create_manual_sequence(user.id, %{
+                 name: "Ruim",
+                 step_codes: ["NAOEXISTE"]
+               })
+    end
+
+    test "returns error changeset when name is blank" do
+      user = insert(:user)
+      _step = insert(:step, code: "BF", name: "Base Frontal")
+
+      assert {:error, changeset} =
+               Sequences.create_manual_sequence(user.id, %{
+                 name: "",
+                 step_codes: ["BF"]
+               })
+
+      assert %{name: [_]} = errors_on(changeset)
+    end
+
+    test "accepts empty step_codes list" do
+      user = insert(:user)
+
+      assert {:ok, sequence} =
+               Sequences.create_manual_sequence(user.id, %{
+                 name: "Vazia",
+                 step_codes: []
+               })
+
+      assert sequence.sequence_steps == []
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # list_all_public_sequences/0
+  # ---------------------------------------------------------------------------
+
+  describe "list_all_public_sequences/0" do
+    test "returns public sequences from all users" do
+      user_a = insert(:user)
+      user_b = insert(:user)
+      seq_a = insert(:sequence, user: user_a, public: true)
+      seq_b = insert(:sequence, user: user_b, public: true)
+      _private = insert(:sequence, user: user_a, public: false)
+
+      results = Sequences.list_all_public_sequences()
+      ids = Enum.map(results, & &1.id)
+
+      assert seq_a.id in ids
+      assert seq_b.id in ids
+      assert length(results) == 2
+    end
+
+    test "preloads user and sequence_steps with step" do
+      user = insert(:user)
+      step = insert(:step, code: "BF", name: "Base Frontal")
+      sequence = insert(:sequence, user: user, public: true)
+      insert(:sequence_step, sequence: sequence, step: step, position: 1)
+
+      [result] = Sequences.list_all_public_sequences()
+
+      assert result.user.id == user.id
+      assert [ss] = result.sequence_steps
+      assert ss.step.code == "BF"
+    end
+
+    test "excludes soft-deleted sequences" do
+      user = insert(:user)
+      sequence = insert(:sequence, user: user, public: true)
+      {:ok, _} = Sequences.delete_sequence(sequence)
+
+      assert Sequences.list_all_public_sequences() == []
     end
   end
 end

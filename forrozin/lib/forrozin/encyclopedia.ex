@@ -73,14 +73,20 @@ defmodule Forrozin.Encyclopedia do
       from(p in Forrozin.Encyclopedia.Step,
         where: ^visibility_filter,
         where: is_nil(p.subsection_id),
-        order_by: [asc: fragment("CASE WHEN ? IS NULL THEN 0 ELSE 1 END", p.suggested_by_id), asc: p.position]
+        order_by: [
+          asc: fragment("CASE WHEN ? IS NULL THEN 0 ELSE 1 END", p.suggested_by_id),
+          asc: p.position
+        ]
       )
 
     # Subsection steps: all visible steps in subsections, same ordering.
     subsection_steps =
       from(p in Forrozin.Encyclopedia.Step,
         where: ^visibility_filter,
-        order_by: [asc: fragment("CASE WHEN ? IS NULL THEN 0 ELSE 1 END", p.suggested_by_id), asc: p.position]
+        order_by: [
+          asc: fragment("CASE WHEN ? IS NULL THEN 0 ELSE 1 END", p.suggested_by_id),
+          asc: p.position
+        ]
       )
 
     SectionQuery.list_by()
