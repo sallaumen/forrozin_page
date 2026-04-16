@@ -1,10 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Forrózin" suffix=" · Phoenix Framework">
+    <meta
+      name="description"
+      content="Acervo colaborativo de passos de forró roots com mais de 150 passos catalogados, conexões entre eles e sequências criadas pela comunidade."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="O Grupo de Estudos" />
+    <meta
+      property="og:description"
+      content="Acervo colaborativo de passos de forró roots — passos, conexões e sequências."
+    />
+    <meta property="og:image" content="https://ogrupodeestudos.com.br/icons/icon-512.png" />
+    <meta property="og:url" content="https://ogrupodeestudos.com.br" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary" />
+    <.live_title default="O Grupo de Estudos" suffix=" · O Grupo de Estudos">
       {assigns[:page_title]}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
