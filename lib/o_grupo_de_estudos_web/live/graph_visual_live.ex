@@ -24,7 +24,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:edit_mode, false)
      |> assign(:seq_panel, true)
      |> assign(:seq_mobile_visible, false)
-     |> assign(:seq_view, :config)
+     |> assign(:seq_view, :saved)
      |> assign(:seq_results, [])
      |> assign(:seq_warnings, [])
      |> assign(:seq_saved, seq_saved)
@@ -53,7 +53,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       socket
       |> assign(:seq_panel, new_open)
       |> assign(:seq_saved, saved)
-      |> assign(:seq_view, :config)
+      |> assign(:seq_view, :saved)
       |> assign(:seq_manual_steps, [])
       |> assign(:seq_manual_error, nil)
 

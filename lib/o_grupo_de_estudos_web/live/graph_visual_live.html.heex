@@ -10,7 +10,7 @@
         !@seq_panel && "bg-ink-100 text-ink-800 hover:bg-ink-50 border border-accent-orange/40"
       ]}
     >
-      🎲 Sequências
+      Sequências
     </button>
     <%= if @is_admin do %>
       <button
@@ -48,7 +48,7 @@
       class="md:hidden fixed bottom-20 right-4 z-30 bg-accent-orange text-white text-sm font-serif font-semibold py-2.5 px-5 rounded-full shadow-lg"
       aria-label="Abrir painel de sequências"
     >
-      🎲 Sequências
+      Sequências
     </button>
 
     <%!-- Sequence panel — left side on desktop, bottom sheet on mobile --%>
@@ -56,7 +56,7 @@
       id="seq-panel"
       class={[
         "bg-[#fffef9] shadow-[2px_0_12px_rgba(0,0,0,0.06)] overflow-y-auto font-serif z-40",
-        "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:max-h-[70vh] max-md:rounded-t-lg max-md:border-t-2 max-md:border-accent-orange/30",
+        "max-md:fixed max-md:inset-x-0 max-md:bottom-16 max-md:max-h-[70vh] max-md:rounded-t-lg max-md:border-t-2 max-md:border-accent-orange/30",
         "md:absolute md:top-0 md:left-0 md:w-[280px] md:h-full md:border-r md:border-accent-orange/25",
         !@seq_panel && "md:-translate-x-full",
         !@seq_mobile_visible && "max-md:hidden"
@@ -64,27 +64,38 @@
       style="transition: transform 0.2s ease;"
     >
       <%!-- Panel header --%>
-      <div class="p-4 border-b border-accent-orange/15 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="text-[11px] font-bold text-accent-orange uppercase tracking-widest">
+      <div class="p-4 border-b border-accent-orange/15">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-xs font-bold text-accent-orange uppercase tracking-widest">
             Sequências
           </div>
           <button
             type="button"
             phx-click="hide_seq_mobile"
-            class="md:hidden w-7 h-7 inline-flex items-center justify-center text-ink-700 bg-ink-100 rounded-full shadow-sm text-sm leading-none"
+            class="md:hidden w-8 h-8 inline-flex items-center justify-center text-ink-700 bg-ink-100 rounded-full shadow-sm text-base leading-none"
             aria-label="Fechar painel de sequências"
           >
             ✕
           </button>
         </div>
-        <div class="flex gap-1">
+        <%!-- Segmented control: Salvas | Gerar | Manual --%>
+        <div class="flex w-full p-0.5 bg-ink-100 rounded-md">
+          <button
+            phx-click="show_seq_saved"
+            class={[
+              "flex-1 py-1.5 px-2 rounded cursor-pointer font-serif text-xs font-semibold transition-all",
+              @seq_view == :saved && "bg-white text-accent-orange shadow-sm",
+              @seq_view != :saved && "bg-transparent text-ink-500 hover:text-ink-800"
+            ]}
+          >
+            Salvas
+          </button>
           <button
             phx-click="show_seq_config"
             class={[
-              "text-[10px] py-0.5 px-1.5 rounded cursor-pointer font-serif border transition-colors",
-              @seq_view == :config && "border-accent-orange bg-accent-orange/[0.08] text-accent-orange",
-              @seq_view != :config && "border-ink-900/15 bg-transparent text-ink-500"
+              "flex-1 py-1.5 px-2 rounded cursor-pointer font-serif text-xs font-semibold transition-all",
+              @seq_view == :config && "bg-white text-accent-orange shadow-sm",
+              @seq_view != :config && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
             Gerar
@@ -92,22 +103,12 @@
           <button
             phx-click="show_seq_manual"
             class={[
-              "text-[10px] py-0.5 px-1.5 rounded cursor-pointer font-serif border transition-colors",
-              @seq_view == :manual && "border-accent-green bg-accent-green/[0.08] text-accent-green",
-              @seq_view != :manual && "border-ink-900/15 bg-transparent text-ink-500"
+              "flex-1 py-1.5 px-2 rounded cursor-pointer font-serif text-xs font-semibold transition-all",
+              @seq_view == :manual && "bg-white text-accent-green shadow-sm",
+              @seq_view != :manual && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
             Manual
-          </button>
-          <button
-            phx-click="show_seq_saved"
-            class={[
-              "text-[10px] py-0.5 px-1.5 rounded cursor-pointer font-serif border transition-colors",
-              @seq_view == :saved && "border-accent-orange bg-accent-orange/[0.08] text-accent-orange",
-              @seq_view != :saved && "border-ink-900/15 bg-transparent text-ink-500"
-            ]}
-          >
-            Salvas
           </button>
         </div>
       </div>
@@ -511,8 +512,31 @@
       <%= if @seq_view == :saved do %>
         <div class="p-4">
           <%= if @seq_saved == [] do %>
-            <div class="text-xs text-ink-500 italic text-center py-6">
-              Nenhuma sequência salva ainda.
+            <div class="flex flex-col items-center gap-3 py-8 px-2 text-center">
+              <div class="text-4xl">♬</div>
+              <div class="text-sm font-semibold text-ink-900">
+                Nenhuma sequência salva ainda
+              </div>
+              <div class="text-xs text-ink-500 leading-relaxed max-w-[220px]">
+                Crie sua primeira sequência — use o gerador pra
+                explorar caminhos no mapa, ou monte manual passo a passo.
+              </div>
+              <div class="flex flex-col gap-2 w-full mt-2">
+                <button
+                  type="button"
+                  phx-click="show_seq_config"
+                  class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-white rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
+                >
+                  Gerar sequências
+                </button>
+                <button
+                  type="button"
+                  phx-click="show_seq_manual"
+                  class="w-full py-2 px-4 font-serif text-xs font-semibold bg-transparent text-accent-green border border-accent-green/50 rounded-md hover:bg-accent-green/5 transition-colors"
+                >
+                  Criar manual
+                </button>
+              </div>
             </div>
           <% else %>
             <%= for saved_seq <- @seq_saved do %>
