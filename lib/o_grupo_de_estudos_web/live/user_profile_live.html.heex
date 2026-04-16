@@ -1,36 +1,36 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title={OGrupoDeEstudos.Accounts.first_name(@profile_user) || @profile_user.username} />
 
   <%!-- Profile --%>
-  <div style="max-width: 680px; margin: 0 auto; padding: 48px 24px;">
+  <div class="max-w-[680px] mx-auto px-6 pt-12 pb-6 w-full box-border">
     <%!-- Avatar + Name --%>
-    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px;">
+    <div class="flex items-center gap-5 mb-6">
       <%= if @profile_user.avatar_path do %>
         <img
           src={@profile_user.avatar_path}
           alt="Avatar"
-          style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(60,40,20,0.15); flex-shrink: 0;"
+          class="w-[72px] h-[72px] rounded-full object-cover border border-[rgba(60,40,20,0.15)] shrink-0"
         />
       <% else %>
-        <div style="width: 72px; height: 72px; border-radius: 50%; background: #1a0e05; display: flex; align-items: center; justify-content: center; color: #f2ede4; font-size: 28px; font-weight: 700; flex-shrink: 0;">
+        <div class="w-[72px] h-[72px] rounded-full bg-ink-900 flex items-center justify-center text-ink-200 text-[28px] font-bold shrink-0">
           {String.first(@profile_user.name || @profile_user.username) |> String.upcase()}
         </div>
       <% end %>
-      <div style="flex: 1;">
-        <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
-          <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; margin: 0 0 4px; line-height: 1.2;">
+      <div class="flex-1">
+        <div class="flex items-baseline gap-3 flex-wrap">
+          <h1 class="text-[28px] font-bold text-ink-900 m-0 mb-1 leading-tight">
             {@profile_user.name || @profile_user.username}
           </h1>
           <%= if @is_own_profile do %>
             <.link
               navigate={~p"/settings"}
-              style="font-size: 13px; color: #9a7a5a; text-decoration: none; border: 1px solid rgba(60,40,20,0.2); padding: 3px 10px; border-radius: 4px;"
+              class="text-sm text-ink-500 no-underline border border-[rgba(60,40,20,0.2)] px-2.5 py-0.5 rounded"
             >
               Editar perfil
             </.link>
           <% end %>
         </div>
-        <div style="font-size: 14px; color: #9a7a5a;">
+        <div class="text-sm text-ink-500">
           @{@profile_user.username}
         </div>
         <%= if @profile_user.instagram do %>
@@ -38,7 +38,7 @@
             href={"https://instagram.com/#{@profile_user.instagram}"}
             target="_blank"
             rel="noopener noreferrer"
-            style="font-size: 13px; color: #bba88a; text-decoration: none; margin-top: 4px; display: inline-block;"
+            class="text-sm text-ink-400 no-underline mt-1 inline-block"
           >
             @{@profile_user.instagram} ↗
           </a>
@@ -48,46 +48,46 @@
 
     <%!-- Bio --%>
     <%= if @profile_user.bio && @profile_user.bio != "" do %>
-      <div style="margin-bottom: 24px; padding: 16px 20px; background: #fffef9; border-radius: 8px; border: 1px solid rgba(60,40,20,0.1); font-size: 14px; color: #1a0e05; line-height: 1.6; white-space: pre-wrap;">
+      <div class="mb-6 px-5 py-4 bg-ink-50 rounded-lg border border-[rgba(60,40,20,0.1)] text-sm text-ink-900 leading-relaxed whitespace-pre-wrap">
         {@profile_user.bio}
       </div>
     <% end %>
 
     <%!-- Info --%>
-    <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; padding: 16px 20px; background: #fffef9; border-radius: 8px; border: 1px solid rgba(60,40,20,0.1);">
+    <div class="flex gap-6 flex-wrap mb-8 px-5 py-4 bg-ink-50 rounded-lg border border-[rgba(60,40,20,0.1)]">
       <%= if @profile_user.city do %>
         <div>
-          <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+          <div class="text-[10px] text-ink-500 uppercase tracking-widest mb-0.5">
             Cidade
           </div>
-          <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
+          <div class="text-sm text-ink-900 font-semibold">
             {@profile_user.city}{if @profile_user.state, do: ", #{@profile_user.state}"}
           </div>
         </div>
       <% end %>
       <%= if @profile_user.country && @profile_user.country != "BR" do %>
         <div>
-          <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+          <div class="text-[10px] text-ink-500 uppercase tracking-widest mb-0.5">
             País
           </div>
-          <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
+          <div class="text-sm text-ink-900 font-semibold">
             {@profile_user.country}
           </div>
         </div>
       <% end %>
       <div>
-        <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+        <div class="text-[10px] text-ink-500 uppercase tracking-widest mb-0.5">
           Contribuições
         </div>
-        <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
+        <div class="text-sm text-ink-900 font-semibold">
           {length(@user_steps)} passo(s)
         </div>
       </div>
       <div>
-        <div style="font-size: 10px; color: #9a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">
+        <div class="text-[10px] text-ink-500 uppercase tracking-widest mb-0.5">
           Membro desde
         </div>
-        <div style="font-size: 14px; color: #1a0e05; font-weight: 600;">
+        <div class="text-sm text-ink-900 font-semibold">
           {Calendar.strftime(@profile_user.inserted_at, "%B %Y")}
         </div>
       </div>
@@ -95,21 +95,21 @@
 
     <%!-- Steps contributed --%>
     <%= if @user_steps != [] do %>
-      <div style="margin-bottom: 40px;">
-        <h2 style="font-size: 16px; font-weight: 700; color: #1a0e05; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid rgba(60,40,20,0.1);">
+      <div class="mb-10">
+        <h2 class="text-base font-bold text-ink-900 uppercase tracking-[2px] mb-4 pb-2 border-b-2 border-[rgba(60,40,20,0.1)]">
           Passos contribuídos
         </h2>
         <%= for step <- @user_steps do %>
-          <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(60,40,20,0.08);">
+          <div class="flex items-center gap-3 py-3 border-b border-[rgba(60,40,20,0.08)]">
             <.link
               navigate={~p"/collection"}
-              style="display: flex; gap: 12px; flex: 1; text-decoration: none; color: inherit;"
+              class="flex gap-3 flex-1 no-underline text-inherit"
             >
-              <code style="font-family: monospace; font-size: 12px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 2px 8px; border-radius: 3px; align-self: baseline;">
+              <code class="font-mono text-xs font-bold text-ink-700 bg-[rgba(180,120,40,0.1)] px-2 py-0.5 rounded self-baseline">
                 {step.code}
               </code>
               <div>
-                <div style="font-size: 14px; color: #1a0e05;">{step.name}</div>
+                <div class="text-sm text-ink-900">{step.name}</div>
                 <%= if step.category do %>
                   <span style={"font-size: 10px; color: #{step.category.color}; font-style: italic;"}>
                     {step.category.label}
@@ -134,13 +134,13 @@
               <% else %>
                 &#9825;
               <% end %>
-              <span style="font-size: 12px;">{Map.get(@step_likes.counts, step.id, 0)}</span>
+              <span class="text-xs">{Map.get(@step_likes.counts, step.id, 0)}</span>
             </button>
           </div>
         <% end %>
       </div>
     <% else %>
-      <p style="text-align: center; padding: 40px; color: #9a7a5a; font-style: italic; margin-bottom: 40px;">
+      <p class="text-center px-10 py-10 text-ink-500 italic text-sm mb-10">
         <%= if @is_own_profile do %>
           Você ainda não contribuiu com nenhum passo. Que tal sugerir um?
         <% else %>
@@ -151,24 +151,24 @@
 
     <%!-- Sequences --%>
     <%= if @user_sequences != [] do %>
-      <div style="margin-bottom: 40px;">
-        <h2 style="font-size: 16px; font-weight: 700; color: #1a0e05; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid rgba(60,40,20,0.1);">
+      <div class="mb-10">
+        <h2 class="text-base font-bold text-ink-900 uppercase tracking-[2px] mb-4 pb-2 border-b-2 border-[rgba(60,40,20,0.1)]">
           Sequências salvas
         </h2>
         <%= for seq <- @user_sequences do %>
-          <div style="padding: 16px; margin-bottom: 12px; background: #fffef9; border-radius: 8px; border: 1px solid rgba(60,40,20,0.1);">
-            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 15px; font-weight: 700; color: #1a0e05; margin-bottom: 6px;">
+          <div class="p-4 mb-3 bg-ink-50 rounded-lg border border-[rgba(60,40,20,0.1)]">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="text-[15px] font-bold text-ink-900 mb-1.5">
                   {seq.name}
                 </div>
-                <div style="font-size: 12px; color: #9a7a5a; margin-bottom: 8px;">
+                <div class="text-xs text-ink-500 mb-2">
                   {length(seq.sequence_steps)} passo(s)
                 </div>
                 <%= if seq.sequence_steps != [] do %>
-                  <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                  <div class="flex flex-wrap gap-1">
                     <%= for ss <- seq.sequence_steps do %>
-                      <code style="font-family: monospace; font-size: 11px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 1px 6px; border-radius: 3px;">
+                      <code class="font-mono text-[11px] font-bold text-ink-700 bg-[rgba(180,120,40,0.1)] px-1.5 py-px rounded">
                         {ss.step.code}
                       </code>
                     <% end %>
@@ -192,7 +192,7 @@
                 <% else %>
                   &#9825;
                 <% end %>
-                <span style="font-size: 12px;">{Map.get(@sequence_likes.counts, seq.id, 0)}</span>
+                <span class="text-xs">{Map.get(@sequence_likes.counts, seq.id, 0)}</span>
               </button>
             </div>
           </div>
@@ -202,38 +202,38 @@
 
     <%!-- Comments section --%>
     <div>
-      <h2 style="font-size: 16px; font-weight: 700; color: #1a0e05; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid rgba(60,40,20,0.1);">
+      <h2 class="text-base font-bold text-ink-900 uppercase tracking-[2px] mb-4 pb-2 border-b-2 border-[rgba(60,40,20,0.1)]">
         Comentários
       </h2>
 
       <%!-- Existing comments --%>
       <%= if @comments == [] do %>
-        <p style="color: #9a7a5a; font-style: italic; font-size: 14px; margin-bottom: 24px;">
+        <p class="text-ink-500 italic text-sm mb-6">
           Ainda não há comentários.
         </p>
       <% else %>
         <%= for comment <- @comments do %>
-          <div style="display: flex; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(60,40,20,0.08);">
+          <div class="flex gap-3 mb-4 pb-4 border-b border-[rgba(60,40,20,0.08)]">
             <%!-- Author avatar --%>
-            <div style="width: 36px; height: 36px; border-radius: 50%; background: #1a0e05; display: flex; align-items: center; justify-content: center; color: #f2ede4; font-size: 14px; font-weight: 700; flex-shrink: 0;">
+            <div class="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center text-ink-200 text-sm font-bold shrink-0">
               {String.first(comment.author.name || comment.author.username) |> String.upcase()}
             </div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
                 <.link
                   navigate={~p"/users/#{comment.author.username}"}
-                  style="font-size: 13px; font-weight: 700; color: #5c3a1a; text-decoration: none;"
+                  class="text-sm font-bold text-ink-700 no-underline"
                 >
                   @{comment.author.username}
                 </.link>
-                <span style="font-size: 11px; color: #9a7a5a;">
+                <span class="text-xs text-ink-500">
                   {Calendar.strftime(comment.inserted_at, "%d/%m/%Y %H:%M")}
                 </span>
               </div>
-              <div style="font-size: 14px; color: #1a0e05; line-height: 1.5; white-space: pre-wrap; word-break: break-word;">
+              <div class="text-sm text-ink-900 leading-relaxed whitespace-pre-wrap break-words">
                 {comment.body}
               </div>
-              <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+              <div class="flex items-center gap-3 mt-1.5">
                 <%!-- Like button --%>
                 <button
                   phx-click="toggle_like"
@@ -251,7 +251,7 @@
                   <% else %>
                     &#9825;
                   <% end %>
-                  <span style="font-size: 11px;">
+                  <span class="text-xs">
                     {Map.get(@comment_likes.counts, comment.id, 0)}
                   </span>
                 </button>
@@ -261,7 +261,7 @@
                     phx-click="delete_comment"
                     phx-value-id={comment.id}
                     data-confirm="Remover este comentário?"
-                    style="background: none; border: none; cursor: pointer; font-size: 11px; color: #9a7a5a; padding: 2px 4px; border-radius: 4px;"
+                    class="bg-transparent border-0 cursor-pointer text-xs text-ink-500 px-1 py-0.5 rounded"
                   >
                     remover
                   </button>
@@ -273,7 +273,7 @@
       <% end %>
 
       <%!-- Post comment form --%>
-      <form phx-submit="post_comment" style="margin-top: 16px;">
+      <form phx-submit="post_comment" class="mt-4">
         <textarea
           name="body"
           rows="3"
@@ -282,12 +282,12 @@
           required
           value={@comment_body}
           phx-change="update_comment_body"
-          style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; background: #fffef9; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; resize: vertical; box-sizing: border-box;"
+          class="w-full px-3 py-2.5 border border-[rgba(60,40,20,0.2)] rounded-md bg-ink-50 font-serif text-sm text-ink-900 resize-y box-border"
         >{@comment_body}</textarea>
-        <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
+        <div class="mt-2 flex justify-end">
           <button
             type="submit"
-            style="padding: 8px 20px; background: #1a0e05; color: #f2ede4; font-family: Georgia, serif; font-size: 13px; font-weight: 700; border: none; border-radius: 6px; cursor: pointer;"
+            class="px-5 py-2 bg-ink-900 text-ink-200 font-serif text-sm font-bold border-0 rounded-md cursor-pointer"
           >
             Comentar
           </button>
