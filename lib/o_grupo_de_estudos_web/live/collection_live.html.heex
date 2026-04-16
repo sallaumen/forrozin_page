@@ -285,30 +285,39 @@
   </div>
 
   <%!-- Drawer --%>
-  <div style={"position: fixed; top: 110px; right: 0; width: 380px; max-width: 100vw; height: calc(100vh - 110px); background: #fffef9; border-left: 1px solid rgba(60,40,20,0.12); box-shadow: -4px 0 16px rgba(0,0,0,0.06); z-index: 150; transform: #{if @drawer_open, do: "translateX(0)", else: "translateX(100%)"}; transition: transform 0.2s ease; overflow-y: auto; padding: 24px; font-family: Georgia, serif;"}>
+  <div class={[
+    "fixed top-[110px] right-0 w-[380px] max-w-screen h-[calc(100vh-110px)] z-40",
+    "bg-ink-50 border-l border-ink-200 shadow-lg overflow-y-auto p-6 font-serif",
+    "transition-transform duration-200"
+  ]}
+  style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
+  >
     <button
       phx-click="close_drawer"
-      style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; color: #9a7a5a; cursor: pointer;"
+      class="absolute top-3 right-4 bg-transparent border-0 text-xl text-ink-500 cursor-pointer"
     >
       ×
     </button>
 
     <%= if @drawer_type == :step and @drawer_item do %>
       <%!-- Step header --%>
-      <div style="margin-bottom: 16px;">
-        <div style="font-size: 11px; color: #9a7a5a; letter-spacing: 1px; margin-bottom: 4px;">
+      <div class="mb-4">
+        <div class="text-[11px] text-ink-500 tracking-wide mb-1">
           {@drawer_item.code}
         </div>
-        <div style="font-size: 20px; font-weight: 700; color: #1a0e05; line-height: 1.3; margin-bottom: 8px;">
+        <div class="text-xl font-bold text-ink-900 leading-snug mb-2">
           {@drawer_item.name}
         </div>
         <%= if @drawer_item.category do %>
-          <span style={"display: inline-block; font-size: 10px; padding: 2px 10px; border-radius: 10px; background: #{@drawer_item.category.color}18; color: #{@drawer_item.category.color}; border: 1px solid #{@drawer_item.category.color}40; font-style: italic;"}>
+          <span
+            style={"background: #{@drawer_item.category.color}18; color: #{@drawer_item.category.color}; border: 1px solid #{@drawer_item.category.color}40;"}
+            class="inline-block text-[10px] py-0.5 px-2.5 rounded-full italic"
+          >
             {@drawer_item.category.label}
           </span>
         <% end %>
         <%= if @drawer_item.wip do %>
-          <span style="display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #c0392b18; color: #c0392b; border: 1px solid #c0392b40; margin-left: 4px;">
+          <span class="inline-block text-[10px] py-0.5 px-2 rounded-full bg-accent-red/10 text-accent-red border border-accent-red/30 ml-1">
             WIP
           </span>
         <% end %>
@@ -316,18 +325,27 @@
           <% author = @drawer_item.suggested_by %>
           <% author_username = if author, do: author.username, else: "?" %>
           <% author_initial = author_username |> String.upcase() |> String.first() %>
-          <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+          <div class="mt-2.5 flex items-center gap-2">
             <.link
               navigate={~p"/users/#{author_username}"}
-              style="text-decoration: none; display: flex; align-items: center; gap: 8px;"
+              class="no-underline flex items-center gap-2"
             >
-              <span style={"display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; color: white; font-size: 12px; font-weight: 700; font-family: Georgia, serif; flex-shrink: 0;"}>
+              <span
+                style={if @drawer_item.approved, do: "background: #27ae60;", else: "background: #8e44ad;"}
+                class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold font-serif flex-shrink-0"
+              >
                 {author_initial}
               </span>
-              <span style={"font-size: 12px; color: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; font-weight: 600;"}>
+              <span
+                style={if @drawer_item.approved, do: "color: #27ae60;", else: "color: #8e44ad;"}
+                class="text-xs font-semibold"
+              >
                 @{author_username}
               </span>
-              <span style={"font-size: 11px; color: #{if @drawer_item.approved, do: "#27ae60", else: "#8e44ad"}; font-style: italic; opacity: 0.8;"}>
+              <span
+                style={if @drawer_item.approved, do: "color: #27ae60;", else: "color: #8e44ad;"}
+                class="text-[11px] italic opacity-80"
+              >
                 {if @drawer_item.approved,
                   do: "✓ contribuição aprovada",
                   else: "· sugestão pendente"}
@@ -338,7 +356,7 @@
                 phx-click="approve_step"
                 phx-value-code={@drawer_item.code}
                 data-confirm="Aprovar este passo como oficial?"
-                style="font-size: 10px; padding: 3px 10px; border-radius: 4px; background: #27ae60; color: white; border: none; cursor: pointer;"
+                class="text-[10px] py-1 px-2.5 rounded bg-accent-green text-white border-0 cursor-pointer"
               >
                 Aprovar
               </button>
@@ -351,40 +369,40 @@
       <%= if @can_edit_drawer do %>
         <form
           phx-submit="update_step"
-          style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px;"
+          class="mb-4 flex flex-col gap-2"
         >
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Nome
           </label>
           <input
             type="text"
             name="step[name]"
             value={@drawer_item.name}
-            style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
           />
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Código
           </label>
           <input
             type="text"
             name="step[code]"
             value={@drawer_item.code}
-            style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: monospace; font-size: 15px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2.5 px-3 border border-ink-300 rounded font-mono text-base text-ink-900 box-border"
           />
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Nota mecânica
           </label>
           <textarea
             name="step[note]"
             rows="4"
-            style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box; resize: vertical; line-height: 1.6;"
+            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
           ><%= @drawer_item.note %></textarea>
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Categoria
           </label>
           <select
             name="step[category_id]"
-            style="width: 100%; padding: 6px 10px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: Georgia, serif; font-size: 13px;"
+            class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
           >
             <%= for cat <- @categories do %>
               <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
@@ -392,13 +410,13 @@
               </option>
             <% end %>
           </select>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <label style="font-size: 11px; color: #5c3a1a; display: flex; align-items: center; gap: 4px;">
+          <div class="flex gap-2.5 items-center">
+            <label class="text-[11px] text-ink-700 flex items-center gap-1">
               <input type="hidden" name="step[wip]" value="false" />
               <input type="checkbox" name="step[wip]" value="true" checked={@drawer_item.wip} />
               WIP
             </label>
-            <label style="font-size: 11px; color: #5c3a1a; display: flex; align-items: center; gap: 4px;">
+            <label class="text-[11px] text-ink-700 flex items-center gap-1">
               <input type="hidden" name="step[highlighted]" value="false" />
               <input
                 type="checkbox"
@@ -410,36 +428,36 @@
           </div>
           <button
             type="submit"
-            style="padding: 8px 16px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px;"
+            class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
           >
             Salvar passo
           </button>
         </form>
       <% else %>
         <%= if @drawer_item.note do %>
-          <div style="font-size: 12px; color: #5c3a1a; font-style: italic; line-height: 1.7; margin-bottom: 16px; padding: 10px 14px; background: rgba(212,160,84,0.08); border-left: 3px solid #d4a054; border-radius: 0 4px 4px 0;">
+          <div class="text-xs text-ink-700 italic leading-relaxed mb-4 py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
             {@drawer_item.note}
           </div>
         <% end %>
       <% end %>
 
       <%!-- Connections --%>
-      <div style="font-size: 12px; color: #2c1a0e; margin-bottom: 12px; font-weight: 600;">
+      <div class="text-xs text-ink-800 mb-3 font-semibold">
         {length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas
       </div>
 
       <%= if @drawer_connections_out != [] do %>
-        <div style="font-size: 10px; font-weight: 700; color: #9a7a5a; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">
+        <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mb-1.5">
           Saídas →
         </div>
         <%= for conn <- @drawer_connections_out do %>
-          <div style="display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">
+          <div class="flex items-center py-1 border-b border-ink-200/40">
             <span
               phx-click="open_step"
               phx-value-code={conn.target_step.code}
-              style="font-size: 13px; color: #1a0e05; cursor: pointer; flex: 1;"
+              class="text-sm text-ink-900 cursor-pointer flex-1"
             >
-              <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">
+              <code class="text-[10px] text-ink-500 mr-1">
                 {conn.target_step.code}
               </code>
               {conn.target_step.name}
@@ -450,7 +468,7 @@
                 phx-value-source={@drawer_item.code}
                 phx-value-target={conn.target_step.code}
                 data-confirm={"Remover #{@drawer_item.code} → #{conn.target_step.code}?"}
-                style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 14px;"
+                class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
               >
                 ×
               </button>
@@ -460,17 +478,17 @@
       <% end %>
 
       <%= if @drawer_connections_in != [] do %>
-        <div style="font-size: 10px; font-weight: 700; color: #9a7a5a; text-transform: uppercase; letter-spacing: 2px; margin: 10px 0 6px;">
+        <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mt-2.5 mb-1.5">
           ← Entradas
         </div>
         <%= for conn <- @drawer_connections_in do %>
-          <div style="display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">
+          <div class="flex items-center py-1 border-b border-ink-200/40">
             <span
               phx-click="open_step"
               phx-value-code={conn.source_step.code}
-              style="font-size: 13px; color: #1a0e05; cursor: pointer; flex: 1;"
+              class="text-sm text-ink-900 cursor-pointer flex-1"
             >
-              <code style="font-size: 10px; color: #9a7a5a; margin-right: 4px;">
+              <code class="text-[10px] text-ink-500 mr-1">
                 {conn.source_step.code}
               </code>
               {conn.source_step.name}
@@ -481,7 +499,7 @@
                 phx-value-source={conn.source_step.code}
                 phx-value-target={@drawer_item.code}
                 data-confirm={"Remover #{conn.source_step.code} → #{@drawer_item.code}?"}
-                style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 14px;"
+                class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
               >
                 ×
               </button>
@@ -491,11 +509,11 @@
       <% end %>
 
       <%= if @can_edit_drawer do %>
-        <div style="margin-top: 10px; position: relative;">
+        <div class="mt-2.5 relative">
           <form
             phx-submit="create_step_connection"
             phx-change="search_connection"
-            style="display: flex; gap: 6px;"
+            class="flex gap-1.5"
           >
             <input
               type="text"
@@ -504,31 +522,35 @@
               placeholder="Buscar passo por código ou nome..."
               autocomplete="off"
               phx-debounce="150"
-              style="flex: 1; padding: 8px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05;"
+              class="flex-1 py-2 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900"
             />
             <button
               type="submit"
-              style="padding: 8px 14px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;"
+              class="py-2 px-3.5 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer text-xs whitespace-nowrap"
             >
               + Conexão
             </button>
           </form>
           <%= if @connection_suggestions != [] do %>
-            <div style="position: absolute; top: 42px; left: 0; right: 60px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
+            <div class="absolute top-[42px] left-0 right-[60px] bg-ink-50 border border-ink-300 rounded shadow-lg z-10 max-h-[200px] overflow-y-auto">
               <%= for step <- @connection_suggestions do %>
                 <div
                   phx-click="select_connection_target"
                   phx-value-code={step.code}
-                  style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
-                  onmouseover="this.style.background='rgba(60,40,20,0.04)'"
-                  onmouseout="this.style.background='transparent'"
+                  class="py-2 px-3 cursor-pointer border-b border-ink-200/40 font-serif text-sm text-ink-900 hover:bg-ink-200/60"
                 >
-                  <code style={"font-size: 11px; color: #{if step.category, do: step.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>
+                  <code
+                    style={"color: #{if step.category, do: step.category.color, else: "#9a7a5a"};"}
+                    class="text-[11px] mr-1.5"
+                  >
                     {step.code}
                   </code>
                   {step.name}
                   <%= if step.category do %>
-                    <span style={"font-size: 10px; color: #{step.category.color}; font-style: italic; margin-left: 6px;"}>
+                    <span
+                      style={"color: #{step.category.color};"}
+                      class="text-[10px] italic ml-1.5"
+                    >
                       {step.category.label}
                     </span>
                   <% end %>
@@ -540,61 +562,61 @@
       <% end %>
 
       <%= if @drawer_link_count > 0 do %>
-        <div style="margin-top: 16px; padding: 10px 14px; background: rgba(212,160,84,0.07); border: 1px solid rgba(212,160,84,0.2); border-radius: 6px; font-size: 12px; color: #5c3a1a; font-style: italic;">
+        <div class="mt-4 py-2.5 px-3.5 bg-gold-500/10 border border-gold-500/30 rounded-md text-xs text-ink-700 italic">
           🎬 {@drawer_link_count} link(s) disponível(is) — ver no passo completo
         </div>
       <% end %>
       <.link
         navigate={~p"/steps/#{@drawer_item.code}"}
-        style="display: block; margin-top: 12px; padding: 12px 16px; text-align: center; background: #1a0e05; color: #f2ede4; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+        class="block mt-3 py-3 px-4 text-center bg-ink-900 text-ink-100 rounded-md no-underline text-sm font-semibold tracking-wide"
       >
         Ver passo completo →
       </.link>
     <% end %>
 
     <%= if @drawer_type == :section and @drawer_item do %>
-      <div style="margin-bottom: 16px;">
-        <div style="font-size: 11px; color: #9a7a5a; letter-spacing: 1px; margin-bottom: 4px;">
+      <div class="mb-4">
+        <div class="text-[11px] text-ink-500 tracking-wide mb-1">
           Seção {if @drawer_item.num, do: "##{@drawer_item.num}"}
         </div>
-        <div style="font-size: 20px; font-weight: 700; color: #1a0e05; line-height: 1.3; margin-bottom: 8px;">
+        <div class="text-xl font-bold text-ink-900 leading-snug mb-2">
           {@drawer_item.title}
         </div>
       </div>
       <%= if @edit_mode do %>
-        <form phx-submit="update_section" style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+        <form phx-submit="update_section" class="flex flex-col gap-2">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Título
           </label>
           <input
             type="text"
             name="section[title]"
             value={@drawer_item.title}
-            style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
           />
           <input type="hidden" name="section[position]" value={@drawer_item.position} />
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Descrição
           </label>
           <textarea
             name="section[description]"
             rows="3"
-            style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box; resize: vertical; line-height: 1.6;"
+            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
           ><%= @drawer_item.description %></textarea>
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Nota
           </label>
           <textarea
             name="section[note]"
             rows="2"
-            style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box; resize: vertical; line-height: 1.6;"
+            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
           ><%= @drawer_item.note %></textarea>
-          <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
             Categoria
           </label>
           <select
             name="section[category_id]"
-            style="width: 100%; padding: 6px 10px; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; font-family: Georgia, serif; font-size: 13px;"
+            class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
           >
             <%= for cat <- @categories do %>
               <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
@@ -604,19 +626,19 @@
           </select>
           <button
             type="submit"
-            style="padding: 8px 16px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px;"
+            class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
           >
             Salvar seção
           </button>
         </form>
       <% else %>
         <%= if @drawer_item.description do %>
-          <p style="font-size: 13px; color: #7a5c3a; font-style: italic; line-height: 1.7; margin-bottom: 12px;">
+          <p class="text-sm text-ink-600 italic leading-relaxed mb-3">
             {@drawer_item.description}
           </p>
         <% end %>
         <%= if @drawer_item.note do %>
-          <div style="font-size: 12px; color: #5c3a1a; font-style: italic; line-height: 1.7; padding: 10px 14px; background: rgba(212,160,84,0.08); border-left: 3px solid #d4a054; border-radius: 0 4px 4px 0;">
+          <div class="text-xs text-ink-700 italic leading-relaxed py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
             {@drawer_item.note}
           </div>
         <% end %>
