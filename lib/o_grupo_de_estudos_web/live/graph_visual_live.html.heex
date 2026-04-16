@@ -40,15 +40,43 @@
     >
     </div>
 
+    <%!-- Mobile floating sequence panel trigger --%>
+    <button
+      :if={!@seq_mobile_visible}
+      type="button"
+      phx-click="show_seq_mobile"
+      class="md:hidden fixed bottom-20 right-4 z-30 bg-ink-900 text-ink-100 text-sm font-serif font-semibold py-2 px-4 rounded-full shadow-lg"
+      aria-label="Abrir painel de sequências"
+    >
+      Sequências
+    </button>
+
     <%!-- Sequence panel — left side --%>
     <div
       id="seq-panel"
-      style={"position: absolute; top: 0; left: 0; width: 280px; height: 100%; background: #fffef9; border-right: 1px solid rgba(230,126,34,0.25); box-shadow: 2px 0 12px rgba(0,0,0,0.06); z-index: 15; overflow-y: auto; font-family: Georgia, serif; transition: transform 0.2s ease; transform: #{if @seq_panel, do: "translateX(0)", else: "translateX(-300px)"};"}
+      class={[
+        "bg-[#fffef9] border-r border-accent-orange/25 shadow-[2px_0_12px_rgba(0,0,0,0.06)] overflow-y-auto font-serif",
+        "md:absolute md:top-0 md:left-0 md:w-[280px] md:h-full",
+        "fixed inset-0 z-40",
+        !@seq_panel && "md:-translate-x-full",
+        !@seq_mobile_visible && "hidden md:block"
+      ]}
+      style="transition: transform 0.2s ease;"
     >
       <%!-- Panel header --%>
       <div class="p-4 border-b border-accent-orange/15 flex items-center justify-between">
-        <div class="text-[11px] font-bold text-accent-orange uppercase tracking-widest">
-          Sequências
+        <div class="flex items-center gap-2">
+          <div class="text-[11px] font-bold text-accent-orange uppercase tracking-widest">
+            Sequências
+          </div>
+          <button
+            type="button"
+            phx-click="hide_seq_mobile"
+            class="md:hidden w-7 h-7 inline-flex items-center justify-center text-ink-700 bg-ink-100 rounded-full shadow-sm text-sm leading-none"
+            aria-label="Fechar painel de sequências"
+          >
+            ✕
+          </button>
         </div>
         <div class="flex gap-1">
           <button

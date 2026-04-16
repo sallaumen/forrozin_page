@@ -15,16 +15,19 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     is_admin = Accounts.admin?(socket.assigns.current_user)
     graph = Encyclopedia.build_graph()
 
+    seq_saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
+
     {:ok,
      socket
      |> assign(:page_title, "Mapa de Passos")
      |> assign(:is_admin, is_admin)
      |> assign(:edit_mode, false)
-     |> assign(:seq_panel, false)
+     |> assign(:seq_panel, true)
+     |> assign(:seq_mobile_visible, false)
      |> assign(:seq_view, :config)
      |> assign(:seq_results, [])
      |> assign(:seq_warnings, [])
-     |> assign(:seq_saved, [])
+     |> assign(:seq_saved, seq_saved)
      |> assign(:seq_active, nil)
      |> assign(:seq_saving, nil)
      |> assign(:seq_start_code, "")
@@ -60,6 +63,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         else: socket
 
     {:noreply, socket}
+  end
+
+  def handle_event("show_seq_mobile", _params, socket) do
+    {:noreply, assign(socket, seq_mobile_visible: true)}
+  end
+
+  def handle_event("hide_seq_mobile", _params, socket) do
+    {:noreply, assign(socket, seq_mobile_visible: false)}
   end
 
   def handle_event("generate_sequences", params, socket) do
