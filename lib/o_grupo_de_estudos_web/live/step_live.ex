@@ -7,6 +7,9 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
+
+  import OGrupoDeEstudosWeb.UI.TopNav
 
   @impl true
   def mount(%{"code" => code}, _session, socket) do

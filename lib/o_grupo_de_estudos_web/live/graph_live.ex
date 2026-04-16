@@ -4,6 +4,9 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
   alias OGrupoDeEstudos.{Accounts, Admin, Admin.Backup, Encyclopedia}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_admin}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
+
+  import OGrupoDeEstudosWeb.UI.TopNav
 
   @impl true
   def mount(_params, _session, socket) do

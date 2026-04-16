@@ -7,6 +7,9 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
   alias OGrupoDeEstudos.Encyclopedia.StepLinkQuery
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
+
+  import OGrupoDeEstudosWeb.UI.TopNav
 
   @impl true
   def mount(_params, _session, socket) do

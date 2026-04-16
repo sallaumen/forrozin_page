@@ -1,5 +1,5 @@
 <div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
-  <.navbar current_user={@current_user} is_admin={@is_admin} />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} />
   <%!-- Secondary toolbar: page-specific actions --%>
   <%= if @is_admin do %>
     <div style="background: #1a0e05; border-top: 1px solid rgba(255,255,255,0.08); padding: 6px 24px; display: flex; justify-content: flex-end;">
@@ -607,4 +607,5 @@
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
+  <.bottom_nav current_user={@current_user} current_path="/collection" />
 </div>

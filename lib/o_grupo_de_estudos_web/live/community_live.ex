@@ -12,6 +12,10 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
+
+  import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.BottomNav
 
   @impl true
   def mount(_params, _session, socket) do

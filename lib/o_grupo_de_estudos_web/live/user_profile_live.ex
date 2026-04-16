@@ -6,6 +6,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
 
+  import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.BottomNav
+
   @impl true
   def mount(%{"username" => username}, _session, socket) do
     case Accounts.get_user_by_username(username) do
@@ -36,6 +39,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         comment_ids = Enum.map(comments, & &1.id)
         comment_likes = Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
 
+        is_own_profile = current_user.id == user.id
+
         {:ok,
          assign(socket,
            page_title: user.name || user.username,
@@ -44,8 +49,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            user_sequences: sequences,
            step_likes: step_likes,
            sequence_likes: sequence_likes,
-           is_own_profile: current_user.id == user.id,
+           is_own_profile: is_own_profile,
            is_admin: Accounts.admin?(current_user),
+           nav_mode: if(is_own_profile, do: :primary, else: :detail),
            comments: comments,
            comment_likes: comment_likes,
            comment_body: ""

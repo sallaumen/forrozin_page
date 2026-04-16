@@ -6,6 +6,9 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
   alias OGrupoDeEstudos.Admin.Backup
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_admin}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
+
+  import OGrupoDeEstudosWeb.UI.TopNav
 
   @impl true
   def mount(_params, _session, socket) do

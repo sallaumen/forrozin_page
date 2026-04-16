@@ -5,6 +5,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
+
+  import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.BottomNav
 
   @impl true
   def mount(_params, _session, socket) do

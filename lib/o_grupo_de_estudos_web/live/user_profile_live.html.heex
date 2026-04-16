@@ -1,5 +1,5 @@
 <div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif;">
-  <.navbar current_user={@current_user} is_admin={@is_admin} />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title={OGrupoDeEstudos.Accounts.first_name(@profile_user) || @profile_user.username} />
 
   <%!-- Profile --%>
   <div style="max-width: 680px; margin: 0 auto; padding: 48px 24px;">
@@ -295,4 +295,5 @@
       </form>
     </div>
   </div>
+  <.bottom_nav :if={@nav_mode == :primary} current_user={@current_user} current_path={"/users/#{@current_user.username}"} />
 </div>
