@@ -383,35 +383,47 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   def section_card(assigns) do
     ~H"""
-    <div
-      class="mb-2 rounded overflow-hidden"
-      style={"border: 1px solid #{if @open, do: "rgba(60,40,20,0.2)", else: "rgba(60,40,20,0.1)"}; background: #{if @open, do: "#fffef9", else: "#fdfcf7"}"}
-    >
+    <div class={[
+      "mb-2 rounded overflow-hidden border",
+      @open && "border-ink-300 bg-ink-50",
+      !@open && "border-ink-200/70 bg-ink-100/80"
+    ]}>
       <div class="flex items-center">
         <button
           phx-click="toggle_section"
           phx-value-section_id={@section.id}
-          class="flex-1 text-left flex items-center gap-3 px-5 py-3"
-          style="background: transparent; border: none; cursor: pointer;"
+          class="flex-1 text-left flex items-center gap-3 px-5 py-3 bg-transparent border-0 cursor-pointer"
         >
-          <span style={"color: #{category_color(@section)}; font-size: 10px; display: inline-block; transform: #{if @open, do: "rotate(90deg)", else: "rotate(0deg)"}; transition: transform 0.15s;"}>
+          <span
+            style={"color: #{category_color(@section)};"}
+            class={[
+              "text-[10px] inline-block transition-transform",
+              @open && "rotate-90"
+            ]}
+          >
             ▶
           </span>
           <span class="flex items-center gap-3 flex-wrap flex-1">
             <%= if @section.num do %>
-              <span style="font-size: 11px; color: #aaa; font-family: Georgia, serif; font-style: italic;">
+              <span class="text-[11px] text-ink-400 font-serif italic">
                 {@section.num}.
               </span>
             <% end %>
             <%= if @section.code do %>
-              <code style={"font-size: 11px; color: #{category_color(@section)}; background: #{category_color(@section)}15; padding: 2px 8px; border-radius: 3px; border: 1px solid #{category_color(@section)}30; letter-spacing: 0.5px;"}>
+              <code
+                style={"color: #{category_color(@section)}; background: #{category_color(@section)}15; border: 1px solid #{category_color(@section)}30;"}
+                class="text-[11px] py-0.5 px-2 rounded-sm tracking-wide"
+              >
                 {@section.code}
               </code>
             <% end %>
-            <span style="font-size: 15px; font-weight: 700; color: #1a0e05; font-family: Georgia, serif; letter-spacing: -0.2px;">
+            <span class="text-[15px] font-bold text-ink-900 font-serif -tracking-[0.2px]">
               {@section.title}
             </span>
-            <span style={"font-size: 10px; color: #{category_color(@section)}; background: #{category_color(@section)}15; padding: 1px 8px; border-radius: 10px; font-family: Georgia, serif; font-style: italic; border: 1px solid #{category_color(@section)}25;"}>
+            <span
+              style={"color: #{category_color(@section)}; background: #{category_color(@section)}15; border: 1px solid #{category_color(@section)}25;"}
+              class="text-[10px] py-px px-2 rounded-full font-serif italic"
+            >
               {category_label(@section)}
             </span>
           </span>
@@ -420,21 +432,21 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
           <button
             phx-click="open_section"
             phx-value-id={@section.id}
-            style="padding: 6px 12px; background: none; border: none; cursor: pointer; color: #9a7a5a; font-size: 12px;"
+            class="py-1.5 px-3 bg-transparent border-0 cursor-pointer text-ink-500 text-xs"
           >
             ✏
           </button>
         <% end %>
       </div>
       <%= if @open do %>
-        <div style="padding: 4px 24px 20px 54px;">
+        <div class="pt-1 pb-5 pl-[54px] pr-6">
           <%= if @section.description do %>
-            <p style="font-size: 13px; color: #7a5c3a; font-style: italic; margin-bottom: 12px; line-height: 1.7; font-family: Georgia, serif;">
+            <p class="text-sm text-ink-600 italic mb-3 leading-relaxed font-serif">
               {@section.description}
             </p>
           <% end %>
           <%= if @section.note do %>
-            <div style="font-size: 12px; color: #5c3a1a; background: rgba(212,160,84,0.1); border: 1px solid rgba(212,160,84,0.3); border-left: 3px solid #d4a054; border-radius: 0 4px 4px 0; padding: 8px 14px; margin: 0 0 14px; font-family: Georgia, serif; font-style: italic; line-height: 1.7;">
+            <div class="text-xs text-ink-700 bg-gold-500/10 border border-gold-500/30 border-l-[3px] border-l-gold-500 rounded-r py-2 px-3.5 mb-3.5 font-serif italic leading-relaxed">
               {@section.note}
             </div>
           <% end %>
@@ -446,12 +458,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
             />
           <% end %>
           <%= for subsection <- @section.subsections do %>
-            <div style="margin-top: 16px;">
-              <div style="font-size: 10px; font-weight: 700; color: #9a7a5a; font-family: Georgia, serif; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(60,40,20,0.1);">
+            <div class="mt-4">
+              <div class="text-[10px] font-bold text-ink-500 font-serif uppercase tracking-widest mb-2.5 pb-1.5 border-b border-ink-200">
                 {subsection.title}
               </div>
               <%= if subsection.note do %>
-                <p style="font-size: 12px; color: #7a5c3a; font-style: italic; margin-bottom: 10px; font-family: Georgia, serif;">
+                <p class="text-xs text-ink-600 italic mb-2.5 font-serif">
                   {subsection.note}
                 </p>
               <% end %>
@@ -480,22 +492,27 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     <div
       phx-click="open_step"
       phx-value-code={@step.code}
-      style={"display: flex; gap: 14px; padding: 12px; border-bottom: 1px solid rgba(60,40,20,0.12); cursor: pointer; border-radius: 6px; margin-bottom: 2px; background: #{if is_mine, do: "#fce4ec", else: "transparent"};"}
+      class={[
+        "flex gap-3.5 p-3 border-b border-ink-200/40 cursor-pointer rounded-md mb-0.5",
+        is_mine && "bg-[#fce4ec]",
+        !is_mine && "bg-transparent"
+      ]}
     >
       <%= if @step.image_path do %>
         <img
           src={"/#{@step.image_path}"}
           alt={@step.code}
           loading="lazy"
-          style="width: 72px; height: 72px; object-fit: cover; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(60,40,20,0.15); filter: sepia(20%);"
+          class="w-[72px] h-[72px] object-cover rounded flex-shrink-0 border border-ink-300/60"
+          style="filter: sepia(20%);"
         />
       <% end %>
-      <div style="flex: 1; min-width: 0;">
-        <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
-          <code style="font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 2px 7px; border-radius: 3px; letter-spacing: 0.5px; border: 1px solid rgba(180,120,40,0.2);">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-baseline gap-2.5 flex-wrap">
+          <code class="font-mono text-xs font-bold text-ink-700 bg-[#b4782819] py-0.5 px-1.5 rounded-sm tracking-wide border border-[#b4782833]">
             {@step.code}
           </code>
-          <span style="font-size: 14px; color: #2c1a0e; font-family: Georgia, serif; line-height: 1.5;">
+          <span class="text-sm text-ink-800 font-serif leading-normal">
             {@step.name}
           </span>
           <%= if @step.suggested_by_id do %>
@@ -503,9 +520,16 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
               navigate={
                 ~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"
               }
-              style="text-decoration: none;"
+              class="no-underline"
             >
-              <span style={"font-size: 9px; padding: 1px 7px; border-radius: 8px; border: 1px solid #{if @step.approved, do: "#27ae6030", else: "#8e44ad30"}; background: #{if @step.approved, do: "#27ae6018", else: "#8e44ad18"}; color: #{if @step.approved, do: "#27ae60", else: "#8e44ad"}; font-style: italic;"}>
+              <span
+                class={[
+                  "text-[9px] py-px px-1.5 rounded-full italic border",
+                  @step.approved && "border-accent-green/30 bg-accent-green/10 text-accent-green",
+                  !@step.approved && "border-[#8e44ad4d] bg-[#8e44ad1a]"
+                ]}
+                style={if !@step.approved, do: "color: #8e44ad;"}
+              >
                 <%= if @step.approved do %>
                   ✓ @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
                 <% else %>
@@ -516,17 +540,17 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
           <% end %>
         </div>
         <%= if @step.note do %>
-          <p style="font-size: 12px; color: #7a5c3a; margin: 5px 0 0; font-family: Georgia, serif; font-style: italic; line-height: 1.6;">
+          <p class="text-xs text-ink-600 mt-1 font-serif italic leading-relaxed">
             {String.slice(@step.note, 0, 120)}{if String.length(@step.note) > 120, do: "…"}
           </p>
         <% end %>
       </div>
-      <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+      <div class="flex items-center gap-1 flex-shrink-0">
         <%= if @step.suggested_by_id do %>
-          <span title="Passo da comunidade" style="font-size: 12px; opacity: 0.6;">👤</span>
+          <span title="Passo da comunidade" class="text-xs opacity-60">👤</span>
         <% end %>
         <%= if MapSet.member?(@steps_with_links, @step.id) do %>
-          <span title="Tem vídeo" style="font-size: 12px; opacity: 0.6;">🎬</span>
+          <span title="Tem vídeo" class="text-xs opacity-60">🎬</span>
         <% end %>
       </div>
     </div>
