@@ -1,66 +1,66 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Backups" />
   <.flash kind={:info} flash={@flash} />
   <.flash kind={:error} flash={@flash} />
 
   <%!-- Content --%>
-  <div style="max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box;">
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 8px; flex-wrap: wrap;">
+  <div class="w-full max-w-3xl mx-auto px-6 py-10 pb-20 box-border">
+    <div class="flex items-start justify-between gap-4 mb-2 flex-wrap">
       <div>
-        <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 6px;">
+        <h1 class="text-2xl font-bold text-ink-900 tracking-tight mb-1.5">
           Backups do Sistema
         </h1>
-        <p style="font-size: 13px; color: #9a7a5a; margin: 0;">
+        <p class="text-xs text-ink-500">
           {length(@backups)} backup(s) disponível(is)
         </p>
       </div>
 
       <button
         phx-click="create_backup"
-        style="padding: 10px 20px; background: #27ae60; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; flex-shrink: 0;"
+        class="px-5 py-2.5 bg-accent-green text-white border-0 rounded-md cursor-pointer font-serif text-xs font-bold tracking-wide whitespace-nowrap flex-shrink-0"
       >
         + Criar backup agora
       </button>
     </div>
 
     <%!-- Backup list --%>
-    <div style="margin-top: 40px;">
-      <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px; border-bottom: 1px solid rgba(60,40,20,0.1); padding-bottom: 8px;">
+    <div class="mt-10">
+      <p class="text-[11px] tracking-[2px] text-ink-500 uppercase mb-4 border-b border-ink-900/10 pb-2">
         Arquivos disponíveis
       </p>
 
       <%= if @backups == [] do %>
-        <div style="padding: 40px 24px; text-align: center; border: 1px dashed rgba(60,40,20,0.2); border-radius: 6px;">
-          <p style="font-size: 14px; color: #bba88a; font-style: italic; margin: 0 0 8px;">
+        <div class="p-10 text-center border border-dashed border-ink-900/20 rounded-md">
+          <p class="text-sm text-ink-400 italic mb-2">
             Nenhum backup encontrado.
           </p>
-          <p style="font-size: 12px; color: #c8a87a; margin: 0;">
+          <p class="text-xs text-ink-400">
             Clique em "Criar backup agora" para gerar o primeiro.
           </p>
         </div>
       <% else %>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="flex flex-col gap-2">
           <%= for backup <- @backups do %>
-            <div style="padding: 14px 16px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-left: 3px solid #2c7be5; border-radius: 0 6px 6px 0; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="px-4 py-3.5 bg-ink-50 border border-ink-900/10 border-l-[3px] border-l-[#2c7be5] rounded-r-md flex items-center gap-4 flex-wrap">
               <%!-- Info --%>
-              <div style="flex: 1; min-width: 200px;">
-                <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 3px; font-family: 'Courier New', monospace;">
+              <div class="flex-1 min-w-[200px]">
+                <p class="text-sm font-semibold text-ink-900 mb-0.5 font-mono">
                   {backup.filename}
                 </p>
-                <p style="font-size: 12px; color: #7a5c3a; margin: 0;">
+                <p class="text-xs text-ink-600">
                   {format_timestamp(backup.timestamp)}
-                  <span style="color: #bba88a; margin-left: 8px;">·</span>
-                  <span style="color: #9a7a5a; margin-left: 8px;">
+                  <span class="text-ink-400 ml-2">·</span>
+                  <span class="text-ink-500 ml-2">
                     {format_size(backup.size)}
                   </span>
                 </p>
               </div>
 
               <%!-- Actions --%>
-              <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
+              <div class="flex gap-2 flex-shrink-0 items-center">
                 <a
                   href={~p"/admin/backups/download/#{backup.filename}"}
-                  style="padding: 6px 14px; background: transparent; color: #2c7be5; border: 1px solid #2c7be5; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600; white-space: nowrap; text-decoration: none; display: inline-block;"
+                  class="px-3.5 py-1.5 bg-transparent text-[#2c7be5] border border-[#2c7be5] rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap no-underline inline-block"
                 >
                   Baixar
                 </a>
@@ -68,7 +68,7 @@
                   phx-click="restore_backup"
                   phx-value-path={backup.path}
                   data-confirm={"ATENÇÃO: Restaurar o backup \"#{backup.filename}\" vai reinserir os dados antigos no banco (on_conflict: nothing — não sobrescreve dados existentes). Tem certeza que deseja continuar?"}
-                  style="padding: 6px 14px; background: transparent; color: #e67e22; border: 1px solid #e67e22; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                  class="px-3.5 py-1.5 bg-transparent text-accent-orange border border-accent-orange rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
                 >
                   Restaurar
                 </button>
@@ -80,14 +80,14 @@
     </div>
 
     <%!-- Technical note --%>
-    <div style="margin-top: 48px; padding: 16px 20px; background: rgba(60,40,20,0.04); border: 1px solid rgba(60,40,20,0.1); border-radius: 6px;">
-      <p style="font-size: 11px; color: #9a7a5a; margin: 0 0 4px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+    <div class="mt-12 px-5 py-4 bg-ink-900/[0.04] border border-ink-900/10 rounded-md">
+      <p class="text-[11px] text-ink-500 mb-1 font-bold tracking-[1px] uppercase">
         Nota técnica
       </p>
-      <p style="font-size: 12px; color: #7a5c3a; margin: 0; line-height: 1.7;">
+      <p class="text-xs text-ink-600 leading-relaxed">
         Backups são gerados automaticamente a cada hora pelo worker Oban. Os últimos 48 arquivos são mantidos (≈ 2 dias).
         A restauração usa
-        <code style="font-size: 11px; background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 2px;">
+        <code class="text-[11px] bg-black/[0.06] px-1 py-px rounded">
           on_conflict: :nothing
         </code>
         — dados já existentes no banco não são sobrescritos.
@@ -96,10 +96,10 @@
   </div>
 
   <%!-- Footer --%>
-  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a;">
-      <a href="/about" style="color: #9a7a5a; text-decoration: none;">Quem somos</a>
-      <span style="color: #bba88a; margin: 0 8px;">·</span>
+  <footer class="border-t border-ink-900/10 p-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
