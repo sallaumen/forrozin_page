@@ -24,11 +24,6 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/o_grupo_de_estudos"
 import topbar from "../vendor/topbar"
-import cytoscape from "../vendor/cytoscape.min"
-import cytoscapeCola from "../vendor/cytoscape-cola"
-
-// Registra o plugin cola no Cytoscape
-cytoscape.use(cytoscapeCola)
 
 // ---------------------------------------------------------------------------
 // Canonical category order for radial sectors.
@@ -359,7 +354,15 @@ function applyCategorySpotlight(cy, categoryName) {
 // Hook: GraphVisual — sector layout + cola physics + spotlight + drawer
 // ---------------------------------------------------------------------------
 const GraphVisual = {
-  mounted() {
+  async mounted() {
+    // Lazy-load Cytoscape + cola (only on /graph/visual)
+    const [{ default: cytoscape }, { default: cytoscapeCola }] = await Promise.all([
+      import("../vendor/cytoscape.min"),
+      import("../vendor/cytoscape-cola"),
+    ])
+    cytoscape.use(cytoscapeCola)
+    window._cytoscape = cytoscape
+
     this._initGraph()
 
     // Listen for server push events
@@ -481,7 +484,7 @@ const GraphVisual = {
       elements.push({ data: d })
     })
 
-    const cy = cytoscape({
+    const cy = window._cytoscape({
       container: el,
       elements,
       style: [
