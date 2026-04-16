@@ -5,9 +5,9 @@
     <button
       phx-click="toggle_seq_panel"
       class={[
-        "font-serif text-[11px] py-1 px-3 rounded cursor-pointer tracking-wide border transition-colors",
-        @seq_panel && "border-accent-orange bg-accent-orange/10 text-accent-orange",
-        !@seq_panel && "border-ink-400/25 bg-transparent text-ink-400"
+        "font-serif text-sm font-semibold py-2 px-5 rounded-full cursor-pointer tracking-wide transition-all shadow-md",
+        @seq_panel && "bg-accent-orange text-white hover:bg-accent-orange/90",
+        !@seq_panel && "bg-ink-100 text-ink-800 hover:bg-ink-50 border border-accent-orange/40"
       ]}
     >
       🎲 Sequências
@@ -31,10 +31,10 @@
     <div
       id="graph-canvas"
       phx-hook="GraphVisual"
+      phx-update="ignore"
       data-graph={@graph_json}
       data-admin={to_string(@is_admin)}
       data-edit-mode={to_string(@edit_mode)}
-      data-manual-mode={to_string(@seq_view == :manual)}
       data-user-id={@current_user.id}
       style="width: 100%; height: calc(100vh - 86px); background: #f7f3ec;"
     >
@@ -45,21 +45,21 @@
       :if={!@seq_mobile_visible}
       type="button"
       phx-click="show_seq_mobile"
-      class="md:hidden fixed bottom-20 right-4 z-30 bg-ink-900 text-ink-100 text-sm font-serif font-semibold py-2 px-4 rounded-full shadow-lg"
+      class="md:hidden fixed bottom-20 right-4 z-30 bg-accent-orange text-white text-sm font-serif font-semibold py-2.5 px-5 rounded-full shadow-lg"
       aria-label="Abrir painel de sequências"
     >
-      Sequências
+      🎲 Sequências
     </button>
 
-    <%!-- Sequence panel — left side --%>
+    <%!-- Sequence panel — left side on desktop, bottom sheet on mobile --%>
     <div
       id="seq-panel"
       class={[
-        "bg-[#fffef9] border-r border-accent-orange/25 shadow-[2px_0_12px_rgba(0,0,0,0.06)] overflow-y-auto font-serif",
-        "md:absolute md:top-0 md:left-0 md:w-[280px] md:h-full",
-        "fixed inset-0 z-40",
+        "bg-[#fffef9] shadow-[2px_0_12px_rgba(0,0,0,0.06)] overflow-y-auto font-serif z-40",
+        "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:max-h-[70vh] max-md:rounded-t-lg max-md:border-t-2 max-md:border-accent-orange/30",
+        "md:absolute md:top-0 md:left-0 md:w-[280px] md:h-full md:border-r md:border-accent-orange/25",
         !@seq_panel && "md:-translate-x-full",
-        !@seq_mobile_visible && "hidden md:block"
+        !@seq_mobile_visible && "max-md:hidden"
       ]}
       style="transition: transform 0.2s ease;"
     >
