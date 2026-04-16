@@ -18,5 +18,26 @@ defmodule OGrupoDeEstudosWeb.RootLayoutTest do
       assert html =~ "width=device-width"
       assert html =~ "initial-scale=1"
     end
+
+    test "root layout preloads Inter variable font", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/")
+
+      assert html =~ ~s(<link rel="preload"),
+             "root layout should include a <link rel=\"preload\"> for fonts"
+      assert html =~ "Inter-Variable.woff2",
+             "root layout should preload Inter-Variable.woff2 to avoid FOIT"
+      assert html =~ ~s(as="font"),
+             "preload link should declare as=\"font\""
+      assert html =~ "crossorigin",
+             "preload link for font must have crossorigin attribute"
+    end
+
+    test "root layout links to PWA manifest", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/")
+
+      assert html =~ ~s(<link rel="manifest"),
+             "root layout should reference /manifest.json"
+      assert html =~ "manifest.json"
+    end
   end
 end
