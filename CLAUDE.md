@@ -1,6 +1,6 @@
 # CLAUDE.md — O grupo de estudos (Forrózin)
 
-Acervo de passos de forró roots, usado ativamente em aulas em Curitiba. O autor é o Tavano (L. Tatá). Qualidade é obrigatória.
+Acervo de passos de forró, usado ativamente em aulas em Curitiba. O autor é o Tavano (L. Tatá). Qualidade é obrigatória.
 
 ---
 
