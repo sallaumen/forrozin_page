@@ -260,7 +260,9 @@ function openDrawer(node, cy, editMode, hook) {
 
   const d = node.data()
   content.innerHTML = buildDrawerHTML(d, node.outgoers("edge"), node.incomers("edge"), node.degree(), editMode)
-  el.style.right = "0px"
+  el.style.transform = "translateX(0)"
+  el.dataset.open = "true"
+  el.removeAttribute("inert")
 
   // Navigation links
   content.querySelectorAll(".drawer-link").forEach(link => {
@@ -315,7 +317,11 @@ function openDrawer(node, cy, editMode, hook) {
 
 function closeDrawer() {
   const el = document.getElementById("graph-drawer")
-  if (el) el.style.right = "-380px"
+  if (el) {
+    el.style.transform = "translateX(100%)"
+    el.dataset.open = "false"
+    el.setAttribute("inert", "")
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -646,7 +652,7 @@ const GraphVisual = {
     })
 
     cy.on("mouseover", "node", function(evt) {
-      if (document.getElementById("graph-drawer").style.right === "0px") return
+      if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't interfere with sequence highlight
       const node = evt.target
       cy.batch(() => {
@@ -657,7 +663,7 @@ const GraphVisual = {
     })
 
     cy.on("mouseout", "node", function() {
-      if (document.getElementById("graph-drawer").style.right === "0px") return
+      if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't clear sequence highlight
       if (!activeCategory) clearSpotlight(cy)
     })

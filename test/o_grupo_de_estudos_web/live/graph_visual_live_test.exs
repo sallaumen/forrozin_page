@@ -165,4 +165,21 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "Sequência Manual"
     end
   end
+
+  describe "drawer overflow prevention" do
+    test "step detail drawer does not use right: -Npx — prevents horizontal scroll", %{
+      conn: conn
+    } do
+      {:ok, _view, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      refute html =~ "right: -380px",
+             "graph drawer uses `right: -380px` in initial HTML which extends document scroll width"
+
+      refute html =~ "right:-380px",
+             "graph drawer uses `right:-380px` in initial HTML which extends document scroll width"
+
+      assert html =~ "translateX(100%)",
+             "graph drawer should use transform: translateX(100%) for off-screen positioning"
+    end
+  end
 end
