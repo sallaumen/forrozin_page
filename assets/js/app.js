@@ -689,6 +689,12 @@ const GraphVisual = {
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
+        // If sequence is active, clear it first (single-purpose Escape)
+        if (hook._seqHighlightActive) {
+          hook._clearSequenceHighlight()
+          hook.pushEvent("clear_highlight", {})
+          return
+        }
         cancelGhost()
         closeDrawer(); clearSpotlight(cy); activeCategory = null; resetLegend()
       }
