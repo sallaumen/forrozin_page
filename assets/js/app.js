@@ -37,6 +37,15 @@ const CATEGORY_ORDER = [
 const CENTER_CODE = "BF"
 
 // ---------------------------------------------------------------------------
+// Utility: circled Unicode number for sequence labels
+// ---------------------------------------------------------------------------
+function circledNumber(n) {
+  const circled = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩",
+                   "⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"]
+  return n >= 1 && n <= 20 ? circled[n - 1] : `(${n})`
+}
+
+// ---------------------------------------------------------------------------
 // Hybrid layout: hubs at center + per-category Cola in fixed sectors
 // ---------------------------------------------------------------------------
 function runHybridLayout(cy) {
@@ -707,49 +716,45 @@ const GraphVisual = {
   // Sequence highlight: dim all, highlight path nodes + edges with numbers
   // ---------------------------------------------------------------------------
   _applySequenceHighlight(stepCodes) {
+    if (!this._cy) return
     const cy = this._cy
-    if (!cy) return
 
-    // Clear previous highlight state
+    // Clear any previous highlight
     this._clearSequenceHighlight()
 
-    // Store originals and dim everything
+    // 1. Group positions by step code (handles repeated nodes)
+    const positionsByCode = {}
+    stepCodes.forEach((code, idx) => {
+      positionsByCode[code] = positionsByCode[code] || []
+      positionsByCode[code].push(idx + 1)
+    })
+
     cy.batch(() => {
+      // 2. Fade everything
       cy.elements().style({ opacity: 0.12 })
 
-      stepCodes.forEach((code, idx) => {
+      // 3. Highlight nodes (once per unique code, with all positions)
+      Object.entries(positionsByCode).forEach(([code, positions]) => {
         const node = cy.getElementById(code)
         if (node.length === 0) return
 
-        // Save original label if not already saved
-        if (!node.data("_origLabel")) {
+        // Save original label (only once)
+        if (node.data("_origLabel") === undefined) {
           node.data("_origLabel", node.data("label"))
         }
+        const originalLabel = node.data("_origLabel")
+        const prefix = positions.map(circledNumber).join(" ")
+        node.data("label", `${prefix}\n${originalLabel}`)
 
-        const num = idx + 1
-        const circledNums = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩",
-                             "⑪","⑫","⑬","⑭","⑮","⑯","⑰","⑱","⑲","⑳"]
-        const prefix = num <= 20 ? circledNums[num - 1] : `${num}.`
-
-        // The style function renders: e.id() + "\n" + e.data("label")
-        // So we only set label to the prefixed name (no code — style adds it)
-        node.data("label", `${prefix} ${node.data("_origLabel")}`)
         node.style({
           opacity: 1,
           "border-color": "#e67e22",
           "border-width": 5,
           "background-color": "#fff8f0",
-          "font-size": 15,
-          "width": "label",
-          "height": "label",
-          "padding": "14px 20px",
-          "shadow-blur": 14,
-          "shadow-color": "rgba(230,126,34,0.25)",
-          "shadow-opacity": 1
         })
       })
 
-      // Highlight edges that form the sequence path
+      // 4. Highlight edges between consecutive pairs
       for (let i = 0; i < stepCodes.length - 1; i++) {
         const src = stepCodes[i]
         const tgt = stepCodes[i + 1]
@@ -758,25 +763,23 @@ const GraphVisual = {
           edge.style({
             opacity: 1,
             "line-color": "#e67e22",
-            "target-arrow-color": "#e67e22",
             width: 4,
-            "arrow-scale": 1.4,
-            "line-opacity": 1
           })
         }
       }
     })
 
+    // 5. Set active flag + codes (used by guards in hover/spotlight handlers)
     this._seqHighlightActive = true
     this._seqHighlightCodes = stepCodes
 
-    // Show floating exit button
+    // 6. Show exit button
     this._showSeqExitButton()
 
-    // Fit to highlighted nodes
-    const highlighted = cy.nodes().filter(n => stepCodes.includes(n.id()))
-    if (highlighted.length > 0) {
-      cy.animate({ fit: { eles: highlighted, padding: 80 }, duration: 500 })
+    // 7. Fit camera to highlighted nodes
+    const nodes = cy.nodes().filter(n => positionsByCode[n.id()])
+    if (nodes.length > 0) {
+      cy.animate({ fit: { eles: nodes, padding: 80 }, duration: 400 })
     }
   },
 
