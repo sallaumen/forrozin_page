@@ -13,7 +13,8 @@ kill_signal = 'SIGTERM'
   release_command = '/app/bin/migrate'
 
 [env]
-  PHX_HOST = 'o-grupo-de-estudos.fly.dev'
+  PHX_HOST = 'ogrupodeestudos.com.br'
+  PHX_EXTRA_HOSTS = 'www.ogrupodeestudos.com.br,o-grupo-de-estudos.fly.dev'
   PORT = '8080'
 
 [http_service]
