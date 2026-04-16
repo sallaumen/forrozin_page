@@ -1,66 +1,66 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Configurações" />
 
-  <div style="max-width: 560px; margin: 0 auto; padding: 48px 24px;">
-    <h1 style="font-size: 24px; font-weight: 700; color: #1a0e05; margin: 0 0 32px;">
+  <main class="flex-1 max-w-4xl mx-auto px-4 py-8 w-full box-border">
+    <h1 class="text-2xl md:text-3xl font-bold text-ink-900 mb-6">
       Configurações
     </h1>
 
     <%!-- Avatar preview --%>
-    <div style="margin-bottom: 32px; display: flex; align-items: center; gap: 20px;">
+    <div class="mb-8 flex items-center gap-5">
       <%= if @avatar_path do %>
         <img
           src={@avatar_path}
           alt="Avatar"
-          style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(60,40,20,0.15);"
+          class="w-20 h-20 rounded-full object-cover border-2 border-ink-300"
         />
       <% else %>
-        <div style="width: 80px; height: 80px; border-radius: 50%; background: #1a0e05; display: flex; align-items: center; justify-content: center; color: #f2ede4; font-size: 32px; font-weight: 700; flex-shrink: 0;">
+        <div class="w-20 h-20 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-3xl font-bold shrink-0">
           {String.first(@current_user.name || @current_user.username) |> String.upcase()}
         </div>
       <% end %>
-      <div style="font-size: 14px; color: #9a7a5a;">
+      <div class="text-sm text-ink-500">
         Foto de perfil
       </div>
     </div>
 
     <form phx-change="validate" phx-submit="save">
       <%!-- Avatar upload --%>
-      <div style="margin-bottom: 24px;">
-        <label style="display: block; font-size: 12px; font-weight: 700; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+      <section class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4">
+        <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block">
           Trocar foto
         </label>
-        <.live_file_input upload={@uploads.avatar} style="font-size: 14px; color: #1a0e05;" />
+        <.live_file_input upload={@uploads.avatar} class="text-sm text-ink-900" />
         <%= for entry <- @uploads.avatar.entries do %>
-          <div style="margin-top: 8px; font-size: 13px; color: #5c3a1a;">
+          <div class="mt-2 text-sm text-ink-700">
             {entry.client_name}
             <button
               type="button"
               phx-click="cancel_upload"
               phx-value-ref={entry.ref}
-              style="margin-left: 8px; font-size: 12px; color: #9a7a5a; background: none; border: none; cursor: pointer;"
+              class="ml-2 text-xs text-ink-500 bg-transparent border-0 cursor-pointer"
             >
               remover
             </button>
           </div>
           <%= for err <- upload_errors(@uploads.avatar, entry) do %>
-            <div style="color: #c0392b; font-size: 13px; margin-top: 4px;">
+            <div class="text-xs text-accent-red mt-1">
               {OGrupoDeEstudosWeb.SettingsLive.upload_error_to_string(err)}
             </div>
           <% end %>
         <% end %>
         <%= for err <- upload_errors(@uploads.avatar) do %>
-          <div style="color: #c0392b; font-size: 13px; margin-top: 4px;">
+          <div class="text-xs text-accent-red mt-1">
             {OGrupoDeEstudosWeb.SettingsLive.upload_error_to_string(err)}
           </div>
         <% end %>
-      </div>
+      </section>
 
       <%!-- Bio --%>
-      <div style="margin-bottom: 24px;">
+      <section class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4">
         <label
           for="bio"
-          style="display: block; font-size: 12px; font-weight: 700; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;"
+          class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block"
         >
           Bio
         </label>
@@ -70,23 +70,23 @@
           rows="5"
           maxlength="2000"
           placeholder="Escreva um pouco sobre você..."
-          style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; background: #fffef9; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; resize: vertical; box-sizing: border-box;"
+          class="w-full py-2 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 bg-ink-50 resize-y box-border"
         >{@bio}</textarea>
-        <div style="font-size: 11px; color: #9a7a5a; margin-top: 4px; text-align: right;">
+        <div class="text-xs text-ink-500 mt-1 text-right">
           {String.length(@bio)}/2000
         </div>
-      </div>
+      </section>
 
       <%!-- Instagram --%>
-      <div style="margin-bottom: 32px;">
+      <section class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4">
         <label
           for="instagram"
-          style="display: block; font-size: 12px; font-weight: 700; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;"
+          class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block"
         >
           Instagram
         </label>
-        <div style="display: flex; align-items: center; gap: 0;">
-          <span style="padding: 10px 12px; background: rgba(60,40,20,0.05); border: 1px solid rgba(60,40,20,0.2); border-right: none; border-radius: 6px 0 0 6px; font-size: 14px; color: #9a7a5a;">
+        <div class="flex items-center">
+          <span class="py-2 px-3 bg-ink-100 border border-ink-300 border-r-0 rounded-l text-sm text-ink-500">
             @
           </span>
           <input
@@ -96,19 +96,19 @@
             value={@instagram}
             maxlength="100"
             placeholder="seu_usuario"
-            style="flex: 1; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.2); border-radius: 0 6px 6px 0; background: #fffef9; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+            class="flex-1 py-2 px-3 border border-ink-300 rounded-r font-serif text-base text-ink-900 bg-ink-50 box-border"
           />
         </div>
-      </div>
+      </section>
 
       <%!-- Feedback messages --%>
       <%= if @saved do %>
-        <div style="margin-bottom: 16px; padding: 12px 16px; background: rgba(40,120,40,0.08); border: 1px solid rgba(40,120,40,0.2); border-radius: 6px; color: #2d6a2d; font-size: 14px;">
+        <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">
           Perfil atualizado com sucesso.
         </div>
       <% end %>
       <%= if @error do %>
-        <div style="margin-bottom: 16px; padding: 12px 16px; background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.2); border-radius: 6px; color: #c0392b; font-size: 14px;">
+        <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded text-accent-red text-sm">
           {@error}
         </div>
       <% end %>
@@ -116,10 +116,10 @@
       <%!-- Submit --%>
       <button
         type="submit"
-        style="padding: 10px 24px; background: #1a0e05; color: #f2ede4; font-family: Georgia, serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; border: none; border-radius: 6px; cursor: pointer;"
+        class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-sm font-semibold"
       >
         Salvar
       </button>
     </form>
-  </div>
+  </main>
 </div>
