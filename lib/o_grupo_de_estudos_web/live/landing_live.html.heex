@@ -1,33 +1,33 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <%!-- Header --%>
-  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;">
-    <span style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase;">
+  <header class="bg-ink-900 px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
+    <span class="font-serif text-sm font-bold tracking-widest text-ink-200 uppercase">
       Forrózin
     </span>
-    <nav style="display: flex; gap: 20px; align-items: center;">
+    <nav class="flex gap-5 items-center">
       <%= if @current_user do %>
         <a
           href={~p"/graph"}
-          style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+          class="font-serif text-xs text-ink-400 no-underline tracking-wider"
         >
           Mapa
         </a>
         <a
           href={~p"/collection"}
-          style="font-family: Georgia, serif; font-size: 12px; color: #d4a054; text-decoration: none; letter-spacing: 1px; font-weight: 700;"
+          class="font-serif text-xs text-gold-500 no-underline tracking-wider font-bold"
         >
           Acervo →
         </a>
       <% else %>
         <a
           href={~p"/login"}
-          style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+          class="font-serif text-xs text-ink-400 no-underline tracking-wider"
         >
           Entrar
         </a>
         <a
           href={~p"/signup"}
-          style="font-family: Georgia, serif; font-size: 12px; color: #f2ede4; text-decoration: none; letter-spacing: 1px;"
+          class="font-serif text-xs text-ink-200 no-underline tracking-wider"
         >
           Cadastrar-se
         </a>
@@ -36,40 +36,40 @@
   </header>
 
   <%!-- Hero --%>
-  <div style="background: #1a0e05; padding: 80px 24px 72px;">
-    <div style="max-width: 760px; margin: 0 auto;">
-      <p style="font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #7a5840; text-transform: uppercase; margin-bottom: 20px;">
+  <div class="bg-ink-900 px-6 pt-20 pb-[72px]">
+    <div class="max-w-[760px] mx-auto">
+      <p class="text-xs font-bold tracking-widest text-ink-600 uppercase mb-5">
         O grupo de estudos
       </p>
-      <h1 style="font-size: 56px; font-weight: 700; color: #f2ede4; line-height: 1.05; letter-spacing: -2px; margin: 0 0 28px;">
+      <h1 class="text-[56px] font-bold text-ink-200 leading-[1.05] tracking-[-2px] mb-7">
         Forró roots,<br />na veia.
       </h1>
-      <p style="font-size: 17px; line-height: 1.9; color: #bba88a; max-width: 540px; margin-bottom: 12px;">
+      <p class="text-base leading-[1.9] text-ink-400 max-w-[540px] mb-3">
         {@total_steps} passos de forró catalogados com carinho.
         Mapa de conexões entre passos, sequências geradas por algoritmo
         e uma comunidade que cresce junto.
       </p>
-      <p style="font-size: 14px; color: #7a5840; font-style: italic; margin-bottom: 44px;">
+      <p class="text-sm text-ink-600 italic mb-11">
         Feito por dançarinos, pra dançarinos.
       </p>
       <%= if @current_user do %>
         <a
           href={~p"/collection"}
-          style="display: inline-block; padding: 14px 32px; background: #d4a054; color: #1a0e05; text-decoration: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;"
+          class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded font-serif text-base font-bold tracking-wide"
         >
           Ir para o acervo →
         </a>
       <% else %>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <div class="flex gap-3 flex-wrap">
           <a
             href={~p"/signup"}
-            style="display: inline-block; padding: 14px 32px; background: #d4a054; color: #1a0e05; text-decoration: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;"
+            class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded font-serif text-base font-bold tracking-wide"
           >
             Quero estudar
           </a>
           <a
             href={~p"/login"}
-            style="display: inline-block; padding: 14px 28px; background: transparent; color: #bba88a; text-decoration: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; border: 1px solid rgba(255,255,255,0.15);"
+            class="inline-block py-3.5 px-7 bg-transparent text-ink-400 no-underline rounded font-serif text-base border border-white/15"
           >
             Já tenho conta
           </a>
@@ -79,34 +79,34 @@
   </div>
 
   <%!-- O que é --%>
-  <div style="border-bottom: 1px solid rgba(60,40,20,0.12); padding: 72px 24px;">
-    <div style="max-width: 760px; margin: 0 auto; display: flex; gap: 64px; align-items: flex-start; flex-wrap: wrap;">
-      <div style="flex: 1; min-width: 260px;">
-        <p style="font-size: 11px; letter-spacing: 3px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 20px;">
+  <div class="border-b border-[rgba(60,40,20,0.12)] px-6 py-[72px]">
+    <div class="max-w-[760px] mx-auto flex gap-16 items-start flex-wrap">
+      <div class="flex-1 min-w-[260px]">
+        <p class="text-xs tracking-widest text-ink-500 uppercase mb-5">
           O que é isso
         </p>
-        <h2 style="font-size: 26px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 20px; line-height: 1.2;">
+        <h2 class="text-2xl font-bold text-ink-900 tracking-tight mb-5 leading-tight">
           Um acervo colaborativo de passos de forró
         </h2>
-        <p style="font-size: 15px; line-height: 1.9; color: #5a4230;">
+        <p class="text-base leading-[1.9] text-ink-700">
           Seções, subseções, conexões entre passos, imagens e descrições mecânicas.
           Tudo organizado pra você navegar, estudar e tirar dúvidas na hora da aula.
         </p>
       </div>
-      <div style="flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 20px;">
-        <div style="padding: 20px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px;">
-          <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 6px;">
+      <div class="flex-1 min-w-[260px] flex flex-col gap-5">
+        <div class="p-5 bg-ink-50 border border-[rgba(60,40,20,0.12)] rounded">
+          <p class="text-xs tracking-widest text-ink-500 uppercase mb-1.5">
             Passos catalogados
           </p>
-          <p style="font-size: 36px; font-weight: 700; color: #1a0e05; margin: 0;">
+          <p class="text-4xl font-bold text-ink-900 m-0">
             {@total_steps}
           </p>
         </div>
-        <div style="padding: 20px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px;">
-          <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 6px;">
+        <div class="p-5 bg-ink-50 border border-[rgba(60,40,20,0.12)] rounded">
+          <p class="text-xs tracking-widest text-ink-500 uppercase mb-1.5">
             Usado em
           </p>
-          <p style="font-size: 15px; color: #3a2410; margin: 0; font-style: italic;">
+          <p class="text-base text-ink-800 m-0 italic">
             Aulas de forró roots em Curitiba
           </p>
         </div>
@@ -115,10 +115,10 @@
   </div>
 
   <%!-- Footer --%>
-  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a;">
-      <a href="/about" style="color: #9a7a5a; text-decoration: none;">Quem somos</a>
-      <span style="color: #bba88a; margin: 0 8px;">·</span>
+  <footer class="border-t border-[rgba(60,40,20,0.1)] p-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
