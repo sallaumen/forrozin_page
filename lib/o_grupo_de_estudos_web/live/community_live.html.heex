@@ -1,26 +1,30 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} />
 
   <%!-- Hero --%>
-  <div style="border-bottom: 1px solid rgba(60,40,20,0.12); padding: 40px 24px 28px; background: #f2ede4;">
-    <div style="max-width: 860px; margin: 0 auto;">
-      <h1 style="font-size: 36px; font-weight: 700; color: #1a0e05; letter-spacing: -1px; margin: 0 0 10px; line-height: 1.2;">
+  <div class="border-b border-ink-300/50 px-6 pt-10 pb-7 bg-ink-200">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl md:text-4xl font-bold text-ink-900 tracking-tight leading-tight mb-2.5">
         Comunidade
       </h1>
-      <p style="font-size: 14px; color: #5a4230; margin: 0; line-height: 1.7; max-width: 540px;">
+      <p class="text-sm text-ink-700 leading-relaxed max-w-xl">
         Passos sugeridos e sequências criadas pelos membros do grupo de estudos.
       </p>
     </div>
   </div>
 
   <%!-- Section tabs: Passos | Sequências --%>
-  <div style="max-width: 860px; margin: 0 auto; padding: 0 16px; width: 100%; box-sizing: border-box;">
-    <div style="display: flex; gap: 0; border-bottom: 2px solid rgba(60,40,20,0.1); margin-top: 12px;">
+  <div class="max-w-4xl mx-auto px-4 w-full box-border">
+    <div class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
       <%= for {sec_key, sec_label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}] do %>
         <button
           phx-click="switch_section"
           phx-value-section={sec_key}
-          style={"padding: 10px 24px; font-family: Georgia, serif; font-size: 15px; cursor: pointer; border: none; background: transparent; color: #{if @active_section == sec_key, do: "#1a0e05", else: "#9a7a5a"}; border-bottom: 3px solid #{if @active_section == sec_key, do: "#1a0e05", else: "transparent"}; font-weight: #{if @active_section == sec_key, do: "700", else: "400"}; margin-bottom: -2px; letter-spacing: 0.3px;"}
+          class={[
+            "py-2.5 px-6 font-serif text-[15px] cursor-pointer border-0 bg-transparent -mb-0.5 border-b-[3px] tracking-tight",
+            @active_section == sec_key && "text-ink-900 border-ink-900 font-bold",
+            @active_section != sec_key && "text-ink-500 border-transparent font-normal"
+          ]}
         >
           {sec_label}
         </button>
@@ -31,8 +35,8 @@
   <%!-- ===== PASSOS SECTION ===== --%>
   <%= if @active_section == "steps" do %>
     <%!-- Step filter tabs --%>
-    <div style="max-width: 860px; margin: 0 auto; padding: 0 16px; width: 100%; box-sizing: border-box;">
-      <div style="display: flex; gap: 0; border-bottom: 1px solid rgba(60,40,20,0.08); margin-top: 8px;">
+    <div class="max-w-4xl mx-auto px-4 w-full box-border">
+      <div class="flex gap-0 border-b border-ink-300/20 mt-2">
         <%= for {tab_key, tab_label} <- [{"all", "Todas"}, {"pending", "Pendentes"}, {"approved", "Aprovadas"}] do %>
           <button
             phx-click="switch_tab"
@@ -46,30 +50,37 @@
     </div>
 
     <%!-- Steps content --%>
-    <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; width: 100%; box-sizing: border-box;">
+    <div class="max-w-4xl mx-auto px-4 pt-6 pb-20 w-full box-border">
       <%= if @steps == [] do %>
-        <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+        <div class="text-center py-20 px-5 text-ink-500 italic">
           Nenhuma sugestão encontrada.
         </div>
       <% else %>
         <p style="font-size: 12px; color: #8e44ad; margin-bottom: 16px; font-weight: 600;">
           {length(@steps)} sugestão(ões)
         </p>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="flex flex-col gap-2.5">
           <%= for step <- @steps do %>
             <% author = step.suggested_by %>
             <% author_username = if author, do: author.username, else: "?" %>
             <% author_initial = author_username |> String.upcase() |> String.first() %>
-            <div style={"padding: 16px 18px; background: #fffef9; border: 1px solid #{if step.approved, do: "#27ae6020", else: "#8e44ad18"}; border-left: 3px solid #{if step.approved, do: "#27ae60", else: "#8e44ad"}; border-radius: 0 6px 6px 0;"}>
+            <div
+              style={"border-left: 3px solid #{if step.approved, do: "#27ae60", else: "#8e44ad"};"}
+              class={[
+                "py-4 px-[18px] bg-ink-50 border rounded-r-md",
+                step.approved && "border-accent-green/20",
+                !step.approved && "border-[#8e44ad]/10"
+              ]}
+            >
               <%!-- Header row --%>
-              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
-                <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; flex: 1;">
-                  <code style="font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 2px 7px; border-radius: 3px; letter-spacing: 0.5px; border: 1px solid rgba(180,120,40,0.2);">
+              <div class="flex items-start justify-between gap-3 flex-wrap mb-2">
+                <div class="flex items-baseline gap-2.5 flex-wrap flex-1">
+                  <code class="font-mono text-xs font-bold text-ink-700 bg-gold-500/10 py-0.5 px-1.5 rounded-sm tracking-wide border border-gold-500/20">
                     {step.code}
                   </code>
                   <.link
                     navigate={~p"/steps/#{step.code}"}
-                    style="font-size: 16px; color: #1a0e05; font-weight: 700; font-family: Georgia, serif; text-decoration: none; line-height: 1.4;"
+                    class="text-base text-ink-900 font-bold font-serif no-underline leading-snug"
                   >
                     {step.name}
                   </.link>
@@ -87,18 +98,20 @@
 
               <%!-- Note preview --%>
               <%= if step.note do %>
-                <p style="font-size: 13px; color: #5a4230; line-height: 1.7; font-style: italic; margin: 0 0 10px; font-family: Georgia, serif;">
+                <p class="text-sm text-ink-700 leading-relaxed italic mb-2.5 font-serif">
                   {String.slice(step.note, 0, 160)}{if String.length(step.note) > 160, do: "…"}
                 </p>
               <% end %>
 
               <%!-- Footer row: author + link to profile --%>
-              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div class="flex items-center gap-3 flex-wrap">
                 <.link
                   navigate={~p"/users/#{author_username}"}
-                  style="text-decoration: none; display: flex; align-items: center; gap: 6px;"
+                  class="no-underline flex items-center gap-1.5"
                 >
-                  <span style={"display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #{if step.approved, do: "#27ae60", else: "#8e44ad"}; color: white; font-size: 10px; font-weight: 700; flex-shrink: 0;"}>
+                  <span
+                    style={"display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #{if step.approved, do: "#27ae60", else: "#8e44ad"}; color: white; font-size: 10px; font-weight: 700; flex-shrink: 0;"}
+                  >
                     {author_initial}
                   </span>
                   <span style="font-size: 12px; color: #8e44ad; font-weight: 600;">
@@ -107,7 +120,7 @@
                 </.link>
                 <.link
                   navigate={~p"/steps/#{step.code}"}
-                  style="font-size: 11px; color: #9a7a5a; text-decoration: none; font-style: italic; margin-left: auto;"
+                  class="text-xs text-ink-500 no-underline italic ml-auto"
                 >
                   ver detalhes →
                 </.link>
@@ -121,16 +134,16 @@
 
   <%!-- ===== SEQUÊNCIAS SECTION ===== --%>
   <%= if @active_section == "sequences" do %>
-    <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; width: 100%; box-sizing: border-box;">
+    <div class="max-w-4xl mx-auto px-4 pt-6 pb-20 w-full box-border">
       <%= if @sequences == [] do %>
-        <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+        <div class="text-center py-20 px-5 text-ink-500 italic">
           Nenhuma sequência pública encontrada ainda.
         </div>
       <% else %>
-        <p style="font-size: 12px; color: #e67e22; margin-bottom: 16px; font-weight: 600;">
+        <p class="text-xs text-accent-orange mb-4 font-semibold">
           {length(@sequences)} sequência(s) · ordenadas por likes
         </p>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="flex flex-col gap-3">
           <%= for seq <- @sequences do %>
             <% author = seq.user %>
             <% author_username = if author, do: author.username, else: "?" %>
@@ -138,24 +151,24 @@
             <% step_count = length(seq.sequence_steps) %>
             <% like_count = Map.get(@sequence_likes.counts, seq.id, 0) %>
             <% liked = MapSet.member?(@sequence_likes.liked_ids, seq.id) %>
-            <div style="padding: 16px 18px; background: #fffef9; border: 1px solid rgba(230,126,34,0.18); border-left: 3px solid #e67e22; border-radius: 0 6px 6px 0;">
+            <div class="py-4 px-[18px] bg-ink-50 border border-accent-orange/20 border-l-[3px] border-l-accent-orange rounded-r-md">
               <%!-- Header --%>
-              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
-                <div style="flex: 1; min-width: 0;">
-                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
-                    <span style="font-size: 16px; font-weight: 700; color: #1a0e05; font-family: Georgia, serif;">
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="text-base font-bold text-ink-900 font-serif">
                       {seq.name}
                     </span>
                     <%= if seq.video_url do %>
-                      <span style="font-size: 11px; color: #e67e22;" title="Tem vídeo">🎬</span>
+                      <span class="text-xs text-accent-orange" title="Tem vídeo">🎬</span>
                     <% end %>
                   </div>
-                  <div style="font-size: 11px; color: #9a7a5a; margin-bottom: 6px;">
+                  <div class="text-xs text-ink-500 mb-1.5">
                     {step_count} passo(s)
                   </div>
                   <%!-- Description --%>
                   <%= if seq.description do %>
-                    <p style="font-size: 13px; color: #5a4230; line-height: 1.6; font-style: italic; margin: 0 0 8px; font-family: Georgia, serif;">
+                    <p class="text-sm text-ink-700 leading-normal italic mb-2 font-serif">
                       {String.slice(seq.description, 0, 140)}{if String.length(seq.description) >
                                                                    140,
                                                                  do: "…"}
@@ -163,9 +176,9 @@
                   <% end %>
                   <%!-- Step codes inline --%>
                   <%= if seq.sequence_steps != [] do %>
-                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;">
+                    <div class="flex flex-wrap gap-1 mb-2">
                       <%= for ss <- seq.sequence_steps do %>
-                        <code style="font-family: 'Courier New', monospace; font-size: 10px; font-weight: 700; color: #5c3a1a; background: rgba(180,120,40,0.1); padding: 1px 6px; border-radius: 3px; border: 1px solid rgba(180,120,40,0.15);">
+                        <code class="font-mono text-[10px] font-bold text-ink-700 bg-gold-500/10 py-px px-1.5 rounded-sm border border-gold-500/15">
                           {ss.step.code}
                         </code>
                       <% end %>
@@ -185,26 +198,26 @@
                   <% else %>
                     &#9825;
                   <% end %>
-                  <span style="font-size: 11px;">{like_count}</span>
+                  <span class="text-xs">{like_count}</span>
                 </button>
               </div>
 
               <%!-- Footer: author + ver no mapa --%>
-              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div class="flex items-center gap-3 flex-wrap">
                 <.link
                   navigate={~p"/users/#{author_username}"}
-                  style="text-decoration: none; display: flex; align-items: center; gap: 6px;"
+                  class="no-underline flex items-center gap-1.5"
                 >
-                  <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #e67e22; color: white; font-size: 10px; font-weight: 700; flex-shrink: 0;">
+                  <span class="inline-flex items-center justify-center w-[22px] h-[22px] rounded-full bg-accent-orange text-white text-[10px] font-bold flex-shrink-0">
                     {author_initial}
                   </span>
-                  <span style="font-size: 12px; color: #e67e22; font-weight: 600;">
+                  <span class="text-xs text-accent-orange font-semibold">
                     @{author_username}
                   </span>
                 </.link>
                 <.link
                   navigate={~p"/graph/visual"}
-                  style="font-size: 11px; color: #9a7a5a; text-decoration: none; font-style: italic; margin-left: auto;"
+                  class="text-xs text-ink-500 no-underline italic ml-auto"
                 >
                   ver no mapa →
                 </.link>
@@ -215,11 +228,11 @@
                 <% embed = youtube_embed_url(seq.video_url) %>
                 <%= if embed != :external do %>
                   <% {:embed, embed_url} = embed %>
-                  <details style="margin-top: 10px;">
-                    <summary style="font-size: 11px; color: #e67e22; cursor: pointer; font-style: italic; user-select: none;">
+                  <details class="mt-2.5">
+                    <summary class="text-xs text-accent-orange cursor-pointer italic select-none">
                       ▶ Ver vídeo
                     </summary>
-                    <div style="margin-top: 8px; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 4px;">
+                    <div class="mt-2 relative pb-[56.25%] h-0 overflow-hidden rounded-sm">
                       <iframe
                         src={embed_url}
                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 4px;"
@@ -230,12 +243,12 @@
                     </div>
                   </details>
                 <% else %>
-                  <div style="margin-top: 8px;">
+                  <div class="mt-2">
                     <a
                       href={seq.video_url}
                       target="_blank"
                       rel="noreferrer"
-                      style="font-size: 11px; color: #e67e22; text-decoration: none;"
+                      class="text-xs text-accent-orange no-underline"
                     >
                       🎬 Ver vídeo externo →
                     </a>
@@ -250,10 +263,10 @@
   <% end %>
 
   <%!-- Footer --%>
-  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a;">
-      <a href="/about" style="color: #9a7a5a; text-decoration: none;">Quem somos</a>
-      <span style="color: #bba88a; margin: 0 8px;">·</span>
+  <footer class="border-t border-ink-300/25 py-6 px-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
