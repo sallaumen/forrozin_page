@@ -1,11 +1,15 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} />
-  <%!-- Secondary toolbar: page-specific actions --%>
+  <%!-- Secondary toolbar: page-specific actions (admin) --%>
   <%= if @is_admin do %>
-    <div style="background: #1a0e05; border-top: 1px solid rgba(255,255,255,0.08); padding: 6px 24px; display: flex; justify-content: flex-end;">
+    <div class="bg-ink-900 border-t border-ink-100/10 py-1.5 px-6 flex justify-end">
       <button
         phx-click="toggle_edit_mode"
-        style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
+        class={[
+          "font-serif text-xs py-1 px-3 rounded cursor-pointer tracking-wide border",
+          @edit_mode && "border-accent-red bg-accent-red/20 text-accent-red",
+          !@edit_mode && "border-ink-400/40 bg-transparent text-ink-400"
+        ]}
       >
         {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
       </button>
@@ -13,21 +17,22 @@
   <% end %>
 
   <%!-- Hero --%>
-  <div style="border-bottom: 1px solid rgba(60,40,20,0.12); padding: 48px 24px 36px; background: #f2ede4;">
-    <div style="max-width: 860px; margin: 0 auto;">
-      <h1 style="font-size: 48px; font-weight: 700; color: #1a0e05; letter-spacing: -1.5px; margin: 0 0 16px; line-height: 1.1;">
+  <div class="border-b border-ink-300/50 px-6 pt-12 pb-9 bg-ink-200">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-4xl md:text-5xl font-bold text-ink-900 tracking-tight leading-tight mb-4">
         O grupo de estudos.
       </h1>
-      <p style="font-size: 15px; color: #5a4230; margin-bottom: 10px; line-height: 1.7; max-width: 540px;">
+      <p class="text-base text-ink-700 leading-relaxed max-w-xl mb-2.5">
         {total_steps(@sections)} passos de forró catalogados aqui.
         Nomes inventados, descrições duvidosas — mas feito com carinho.
       </p>
-      <p style="font-size: 13px; color: #9a7a5a; font-style: italic; margin-bottom: 0; line-height: 1.7; max-width: 540px;">
+      <p class="text-sm text-ink-500 italic leading-relaxed max-w-xl">
         Sentiu falta de algum passo?
         <a
           href="#"
           phx-click="toggle_suggest"
-          style="color: #8e44ad; font-weight: 600; text-decoration: none;"
+          style="color: #8e44ad;"
+          class="font-semibold no-underline"
         >
           Sugere aí
         </a>
@@ -37,11 +42,11 @@
   </div>
 
   <%!-- Controles (sticky) --%>
-  <div style="position: sticky; top: 47px; z-index: 100; background: rgba(242,237,228,0.97); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(60,40,20,0.12); padding: 14px 24px;">
-    <div style="max-width: 860px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+  <div class="sticky top-[47px] z-30 bg-ink-200/95 backdrop-blur-sm border-b border-ink-300/40 py-3.5 px-6">
+    <div class="max-w-4xl mx-auto flex gap-2.5 flex-wrap items-center">
       <%!-- Busca --%>
-      <form phx-change="search" style="flex: 1; min-width: 200px; position: relative;">
-        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9a7a5a; font-size: 13px;">
+      <form phx-change="search" class="flex-1 min-w-[200px] relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">
           ⌕
         </span>
         <input
@@ -50,16 +55,20 @@
           placeholder="Buscar por sigla, nome..."
           autocomplete="off"
           phx-debounce="250"
-          style="width: 100%; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 4px; padding: 8px 12px 8px 32px; color: #2c1a0e; font-size: 13px; outline: none; font-family: Georgia, serif; box-sizing: border-box;"
+          class="w-full bg-ink-50 border border-ink-300 rounded py-2 pl-8 pr-3 text-ink-900 text-sm outline-none font-serif box-border focus-visible:ring-2 focus-visible:ring-ink-900"
         />
       </form>
 
       <%!-- Filtros de categoria --%>
-      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <div class="flex gap-1.5 flex-wrap">
         <button
           phx-click="filter"
           phx-value-category="all"
-          style={"font-size: 10px; padding: 5px 11px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-style: italic; letter-spacing: 0.3px; background: #{if @category_filter == "all", do: "#2c1a0e", else: "rgba(60,40,20,0.06)"}; color: #{if @category_filter == "all", do: "#f7f3ec", else: "#7a5c3a"}; border: 1px solid #{if @category_filter == "all", do: "transparent", else: "rgba(60,40,20,0.15)"}; font-weight: #{if @category_filter == "all", do: 700, else: 400};"}
+          class={[
+            "text-[10px] py-1 px-2.5 rounded-full cursor-pointer font-serif italic tracking-tight border",
+            @category_filter == "all" && "bg-ink-900 text-ink-100 border-transparent font-bold",
+            @category_filter != "all" && "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
+          ]}
         >
           Todos
         </button>
@@ -67,7 +76,12 @@
           <button
             phx-click="filter"
             phx-value-category={cat.name}
-            style={"font-size: 10px; padding: 5px 11px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-style: italic; letter-spacing: 0.3px; background: #{if @category_filter == cat.name, do: cat.color, else: "rgba(60,40,20,0.06)"}; color: #{if @category_filter == cat.name, do: "#f7f3ec", else: "#7a5c3a"}; border: 1px solid #{if @category_filter == cat.name, do: "transparent", else: "rgba(60,40,20,0.15)"}; font-weight: #{if @category_filter == cat.name, do: 700, else: 400};"}
+            style={@category_filter == cat.name && "background: #{cat.color}; border-color: transparent;"}
+            class={[
+              "text-[10px] py-1 px-2.5 rounded-full cursor-pointer font-serif italic tracking-tight border",
+              @category_filter == cat.name && "text-ink-100 font-bold",
+              @category_filter != cat.name && "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
+            ]}
           >
             {cat.label}
           </button>
@@ -76,22 +90,23 @@
 
       <%!-- Expandir / recolher + Sugerir --%>
       <%= if @search == "" do %>
-        <div style="display: flex; gap: 6px;">
+        <div class="flex gap-1.5 ml-auto items-center">
           <button
             phx-click="expand_all"
-            style="font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; background: transparent; border: 1px solid rgba(60,40,20,0.2); color: #7a5c3a; font-family: Georgia, serif;"
+            class="text-[10px] py-1 px-2.5 rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
           >
             + expandir
           </button>
           <button
             phx-click="collapse_all"
-            style="font-size: 10px; padding: 5px 10px; border-radius: 3px; cursor: pointer; background: transparent; border: 1px solid rgba(60,40,20,0.2); color: #7a5c3a; font-family: Georgia, serif;"
+            class="text-[10px] py-1 px-2.5 rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
           >
             − fechar
           </button>
           <button
             phx-click="toggle_suggest"
-            style={"font-size: 12px; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: Georgia, serif; font-weight: 700; letter-spacing: 0.5px; margin-left: auto; transition: all 0.15s; border: 2px solid #{if @suggest_mode, do: "#c0392b", else: "#8e44ad"}; background: #{if @suggest_mode, do: "#c0392b10", else: "#8e44ad"}; color: #{if @suggest_mode, do: "#c0392b", else: "white"};"}
+            style={if @suggest_mode, do: "border-color: #c0392b; background: #c0392b10; color: #c0392b;", else: "border-color: #8e44ad; background: #8e44ad; color: white;"}
+            class="text-xs py-2 px-4 rounded-full cursor-pointer font-serif font-bold tracking-wide border-2 transition-all"
           >
             {if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir um passo"}
           </button>
@@ -102,67 +117,67 @@
 
   <%!-- Suggestion form --%>
   <%= if @suggest_mode do %>
-    <div style="max-width: 860px; margin: 0 auto; padding: 16px; background: #8e44ad08; border: 1px solid #8e44ad20; border-radius: 6px; margin-top: 12px;">
-      <div style="font-size: 12px; font-weight: 700; color: #8e44ad; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+    <div class="max-w-4xl mx-auto p-4 my-3 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md">
+      <div class="text-xs font-bold uppercase tracking-widest mb-3" style="color: #8e44ad;">
         Sugerir novo passo
       </div>
       <form
         phx-submit="create_suggested_step"
-        style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end;"
+        class="flex flex-wrap gap-2.5 items-end"
       >
-        <div style="flex: 1; min-width: 150px;">
-          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+        <div class="flex-1 min-w-[150px]">
+          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
             Nome
           </label>
           <input
             type="text"
             name="step[name]"
             required
-            style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
           />
         </div>
-        <div style="width: 100px;">
-          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+        <div class="w-[100px]">
+          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
             Código
           </label>
           <input
             type="text"
             name="step[code]"
             required
-            style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: monospace; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2 px-2.5 border border-ink-300 rounded font-mono text-sm text-ink-900 box-border"
           />
         </div>
-        <div style="flex: 2; min-width: 200px;">
-          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+        <div class="flex-[2] min-w-[200px]">
+          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
             Nota (opcional)
           </label>
           <input
             type="text"
             name="step[note]"
-            style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
           />
         </div>
-        <div style="width: 140px;">
-          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+        <div class="w-[140px]">
+          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
             Categoria
           </label>
           <select
             name="step[category_id]"
-            style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
+            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
           >
             <%= for cat <- @categories do %>
               <option value={cat.id}>{cat.label}</option>
             <% end %>
           </select>
         </div>
-        <div style="width: 180px;">
-          <label style="font-size: 10px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+        <div class="w-[180px]">
+          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
             Seção
           </label>
           <select
             name="step[section_id]"
             required
-            style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
+            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
           >
             <option value="">Selecione...</option>
             <%= for section <- @sections do %>
@@ -172,7 +187,8 @@
         </div>
         <button
           type="submit"
-          style="padding: 8px 16px; background: #8e44ad; color: white; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.5px;"
+          class="py-2 px-4 text-white border-0 rounded cursor-pointer font-serif text-xs tracking-wide"
+          style="background: #8e44ad;"
         >
           Sugerir
         </button>
@@ -181,19 +197,28 @@
   <% end %>
 
   <%!-- Tabs --%>
-  <div style="max-width: 860px; margin: 0 auto; padding: 0 16px;">
-    <div style="display: flex; gap: 0; border-bottom: 2px solid rgba(60,40,20,0.1); margin-top: 12px;">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
       <button
         phx-click="switch_tab"
         phx-value-tab="acervo"
-        style={"padding: 10px 24px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; border: none; background: transparent; color: #{if @active_tab == "acervo", do: "#1a0e05", else: "#9a7a5a"}; border-bottom: 2px solid #{if @active_tab == "acervo", do: "#1a0e05", else: "transparent"}; font-weight: #{if @active_tab == "acervo", do: "700", else: "400"}; margin-bottom: -2px;"}
+        class={[
+          "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
+          @active_tab == "acervo" && "text-ink-900 border-ink-900 font-bold",
+          @active_tab != "acervo" && "text-ink-500 border-transparent font-normal"
+        ]}
       >
         Acervo
       </button>
       <button
         phx-click="switch_tab"
         phx-value-tab="meus_passos"
-        style={"padding: 10px 24px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; border: none; background: transparent; color: #{if @active_tab == "meus_passos", do: "#8e44ad", else: "#9a7a5a"}; border-bottom: 2px solid #{if @active_tab == "meus_passos", do: "#8e44ad", else: "transparent"}; font-weight: #{if @active_tab == "meus_passos", do: "700", else: "400"}; margin-bottom: -2px;"}
+        style={if @active_tab == "meus_passos", do: "color: #8e44ad; border-color: #8e44ad;"}
+        class={[
+          "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
+          @active_tab == "meus_passos" && "font-bold",
+          @active_tab != "meus_passos" && "text-ink-500 border-transparent font-normal"
+        ]}
       >
         Meus passos
       </button>
@@ -201,15 +226,15 @@
   </div>
 
   <%!-- Conteúdo --%>
-  <div style="max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; width: 100%; box-sizing: border-box;">
+  <div class="max-w-4xl mx-auto px-4 pt-6 pb-20 w-full box-border">
     <%= if @active_tab == "meus_passos" do %>
       <%!-- Meus passos tab --%>
       <%= if @my_steps == [] do %>
-        <div style="text-align: center; padding: 60px 20px; color: #9a7a5a; font-style: italic;">
+        <div class="text-center py-14 px-5 text-ink-500 italic">
           Você ainda não sugeriu nenhum passo. Use o botão "+ Sugerir passo" acima!
         </div>
       <% else %>
-        <p style="font-size: 12px; color: #8e44ad; margin-bottom: 16px; font-weight: 600;">
+        <p class="text-xs mb-4 font-semibold" style="color: #8e44ad;">
           {length(@my_steps)} passo(s) sugerido(s) por você
         </p>
         <%= for step <- @my_steps do %>
@@ -224,11 +249,11 @@
       <%!-- Acervo tab --%>
       <%= if @search != "" do %>
         <%= if @search_results == [] do %>
-          <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+          <div class="text-center py-20 px-5 text-ink-500 italic">
             Nenhum resultado para "{@search}"
           </div>
         <% else %>
-          <p style="font-size: 12px; color: #9a7a5a; margin-bottom: 16px; font-family: monospace;">
+          <p class="text-xs text-ink-500 mb-4 font-mono">
             {length(@search_results)} resultado(s)
           </p>
           <%= for step <- @search_results do %>
@@ -241,7 +266,7 @@
         <% end %>
       <% else %>
         <%= if filtered_sections(@sections, @category_filter) == [] do %>
-          <div style="text-align: center; padding: 80px 20px; color: #9a7a5a; font-style: italic;">
+          <div class="text-center py-20 px-5 text-ink-500 italic">
             Nenhuma seção encontrada para esta categoria.
           </div>
         <% else %>
@@ -600,10 +625,10 @@
   </div>
 
   <%!-- Footer --%>
-  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a;">
-      <a href="/about" style="color: #9a7a5a; text-decoration: none;">Quem somos</a>
-      <span style="color: #bba88a; margin: 0 8px;">·</span>
+  <footer class="border-t border-ink-300/40 p-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline hover:text-ink-900">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
