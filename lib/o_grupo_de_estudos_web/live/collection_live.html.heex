@@ -260,7 +260,7 @@
   </div>
 
   <%!-- Drawer --%>
-  <div style={"position: fixed; top: 110px; right: #{if @drawer_open, do: "0", else: "-400px"}; width: 380px; height: calc(100vh - 110px); background: #fffef9; border-left: 1px solid rgba(60,40,20,0.12); box-shadow: -4px 0 16px rgba(0,0,0,0.06); z-index: 150; transition: right 0.2s ease; overflow-y: auto; padding: 24px; font-family: Georgia, serif;"}>
+  <div style={"position: fixed; top: 110px; right: 0; width: 380px; max-width: 100vw; height: calc(100vh - 110px); background: #fffef9; border-left: 1px solid rgba(60,40,20,0.12); box-shadow: -4px 0 16px rgba(0,0,0,0.06); z-index: 150; transform: #{if @drawer_open, do: "translateX(0)", else: "translateX(100%)"}; transition: transform 0.2s ease; overflow-y: auto; padding: 24px; font-family: Georgia, serif;"}>
     <button
       phx-click="close_drawer"
       style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; color: #9a7a5a; cursor: pointer;"

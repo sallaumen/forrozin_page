@@ -330,4 +330,23 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert step.suggested_by_id == user.id
     end
   end
+
+  describe "drawer overflow prevention" do
+    test "drawer uses transform (not right: -Npx) when closed — prevents horizontal scroll", %{
+      conn: conn
+    } do
+      {:ok, _view, html} = live(logged_in_conn(conn), ~p"/collection")
+
+      # Drawer should NOT use negative right offset (which extends scroll width)
+      refute html =~ "right: -400px",
+             "drawer uses `right: -400px` which extends document scroll width; use transform: translateX(100%) instead"
+
+      refute html =~ "right:-400px",
+             "drawer uses `right:-400px` which extends document scroll width"
+
+      # Drawer should use transform to position off-screen when closed
+      assert html =~ "translateX(100%)",
+             "drawer should use transform: translateX(100%) when closed for off-screen positioning"
+    end
+  end
 end
