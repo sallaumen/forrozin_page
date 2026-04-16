@@ -331,6 +331,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> push_event("clear_required_input", %{})}
   end
 
+  def handle_event("hide_seq_suggestions", _params, socket) do
+    {:noreply,
+     assign(socket,
+       seq_start_suggestions: [],
+       seq_required_suggestions: []
+     )}
+  end
+
   def handle_event("remove_required_step", %{"code" => code}, socket) do
     new_required = Enum.reject(socket.assigns.seq_required_codes, &(&1 == code))
     {:noreply, assign(socket, :seq_required_codes, new_required)}

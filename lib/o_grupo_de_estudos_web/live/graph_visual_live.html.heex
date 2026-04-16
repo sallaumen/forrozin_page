@@ -109,7 +109,11 @@
                   class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
                 />
                 <%= if @seq_start_suggestions != [] do %>
-                  <div style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;" class="bg-white border border-ink-900/15 rounded-b shadow-md">
+                  <div
+                    style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;"
+                    class="bg-ink-50 border border-ink-900/15 rounded-b shadow-md"
+                    phx-click-away="hide_seq_suggestions"
+                  >
                     <%= for s <- @seq_start_suggestions do %>
                       <button
                         type="button"
@@ -191,7 +195,11 @@
                   class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
                 />
                 <%= if @seq_required_suggestions != [] do %>
-                  <div style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;" class="bg-white border border-ink-900/15 rounded-b shadow-md">
+                  <div
+                    style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;"
+                    class="bg-ink-50 border border-ink-900/15 rounded-b shadow-md"
+                    phx-click-away="hide_seq_suggestions"
+                  >
                     <%= for s <- @seq_required_suggestions do %>
                       <button
                         type="button"
