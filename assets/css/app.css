@@ -103,3 +103,32 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* ============================================================
+   Mobile-first foundation — Phase 0a
+   Prevent common overflow causes without using overflow-x: hidden
+   (which breaks position: sticky and hides real bugs)
+   ============================================================ */
+
+/* box-sizing: padding/border do not expand computed widths.
+   Tailwind v4 preflight already applies this universally — rule kept
+   here explicitly as a self-documenting contract of the mobile foundation. */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Media elements never exceed their containers */
+img, video, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Respect OS-level reduced motion preference (accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
