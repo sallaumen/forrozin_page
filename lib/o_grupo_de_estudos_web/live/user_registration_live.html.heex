@@ -6,37 +6,36 @@
   }
 </style>
 
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <%!-- Header --%>
-  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+  <header class="bg-ink-900 py-3.5 px-6 flex items-center justify-between flex-shrink-0">
     <a
       href={~p"/"}
-      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+      class="font-serif text-sm font-bold tracking-widest text-ink-200 uppercase no-underline"
     >
       Forrózin
     </a>
     <a
       href={~p"/login"}
-      style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      class="font-serif text-xs text-ink-400 no-underline tracking-wider"
     >
       ← Entrar
     </a>
   </header>
 
   <%!-- Split layout --%>
-  <div class="auth-layout" style="flex: 1; display: flex;">
+  <div class="auth-layout flex-1 flex">
     <%!-- Left: branding --%>
     <div
-      class="auth-side"
-      style="width: 42%; background: #1a0e05; padding: 64px 56px; display: flex; flex-direction: column; justify-content: center;"
+      class="auth-side w-[42%] bg-ink-900 px-14 py-16 flex flex-col justify-center"
     >
-      <p style="font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #7a5840; margin-bottom: 28px;">
+      <p class="text-xs font-bold tracking-[3px] uppercase text-ink-600 mb-7">
         O grupo de estudos
       </p>
-      <h1 style="font-size: 42px; font-weight: 700; color: #f2ede4; line-height: 1.1; letter-spacing: -1.5px; margin: 0 0 24px;">
+      <h1 class="text-[42px] font-bold text-ink-200 leading-tight tracking-[-1.5px] mt-0 mb-6">
         Forró roots,<br />na veia.
       </h1>
-      <p style="font-size: 15px; line-height: 1.9; color: #bba88a; margin-bottom: 0;">
+      <p class="text-base leading-[1.9] text-ink-400 mb-0">
         Acervo de passos catalogados na raça e na cara-de-pau.
         Nomes inventados, descrições duvidosas — e nenhum arrependimento.
       </p>
@@ -44,24 +43,23 @@
 
     <%!-- Right: form --%>
     <div
-      class="auth-main"
-      style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 64px 72px;"
+      class="auth-main flex-1 flex items-center justify-center px-[72px] py-16"
     >
-      <div style="width: 100%; max-width: 420px;">
-        <h2 style="font-size: 28px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 8px;">
+      <div class="w-full max-w-[420px]">
+        <h2 class="text-[28px] font-bold text-ink-900 tracking-[-0.5px] mt-0 mb-2">
           Criar conta
         </h2>
-        <p style="font-size: 14px; color: #9a7a5a; margin-bottom: 36px;">
+        <p class="text-sm text-ink-500 mb-9">
           Crie sua conta para acessar o acervo de passos.
         </p>
 
         <.form
           for={@form}
           phx-submit="register"
-          style="display: flex; flex-direction: column; gap: 18px;"
+          class="flex flex-col gap-[18px]"
         >
           <div>
-            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+            <label class="block text-xs tracking-[1.5px] text-ink-500 uppercase mb-2">
               Nome completo
             </label>
             <.input
@@ -69,60 +67,60 @@
               type="text"
               autocomplete="name"
               placeholder="Nome e sobrenome"
-              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             />
           </div>
 
           <div>
-            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+            <label class="block text-xs tracking-[1.5px] text-ink-500 uppercase mb-2">
               Usuário
-              <span style="color: #bba88a; font-size: 10px;">(usado no login e no perfil)</span>
+              <span class="text-ink-400 text-[10px]">(usado no login e no perfil)</span>
             </label>
             <.input
               field={@form[:username]}
               type="text"
               autocomplete="username"
-              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             />
           </div>
 
           <div>
-            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+            <label class="block text-xs tracking-[1.5px] text-ink-500 uppercase mb-2">
               Email
             </label>
             <.input
               field={@form[:email]}
               type="email"
               autocomplete="email"
-              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             />
           </div>
 
           <div>
-            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+            <label class="block text-xs tracking-[1.5px] text-ink-500 uppercase mb-2">
               Senha
             </label>
             <.input
               field={@form[:password]}
               type="password"
               autocomplete="new-password"
-              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             />
-            <p style="font-size: 11px; color: #9a7a5a; font-style: italic; margin: 4px 0 0; line-height: 1.5;">
+            <p class="text-xs text-ink-500 italic mt-1 mb-0 leading-normal">
               Mínimo 8 caracteres, sem frescura. Não precisa de caractere especial, número, letra maiúscula nem nada.
               Mas por favor, use uma senha que você não usa em nenhum outro site — a gente faz o nosso melhor, mas não somos especialistas em segurança ;)
             </p>
           </div>
 
           <div>
-            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+            <label class="block text-xs tracking-[1.5px] text-ink-500 uppercase mb-2">
               País
             </label>
             <select
               id="country-select"
               name="user[country]"
               phx-hook="CityAutocomplete"
-              style="width: 100%; padding: 13px 8px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+              class="w-full py-[13px] px-2 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             >
               <option value="BR" selected>Brasil</option>
               <option disabled>──────────</option>
@@ -315,15 +313,15 @@
               <option value="ZW">Zimbábue</option>
             </select>
           </div>
-          <div id="location-fields" style="display: flex; gap: 12px;">
-            <div id="state-wrapper" style="width: 120px;">
-              <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+          <div id="location-fields" class="flex gap-3">
+            <div id="state-wrapper" class="w-[120px]">
+              <label class="block text-xs tracking-[1.5px] text-ink-500 uppercase mb-2">
                 Estado
               </label>
               <select
                 id="state-select"
                 name="user[state]"
-                style="width: 100%; padding: 13px 8px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+                class="w-full py-[13px] px-2 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
               >
                 <option value="">UF</option>
                 <option
@@ -337,8 +335,8 @@
                 </option>
               </select>
             </div>
-            <div style="flex: 1; position: relative;">
-              <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+            <div class="flex-1 relative">
+              <label class="block text-xs tracking-[1.5px] text-ink-500 uppercase mb-2">
                 Cidade
               </label>
               <input
@@ -347,7 +345,7 @@
                 name="user[city]"
                 autocomplete="off"
                 placeholder="Selecione o estado primeiro"
-                style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box;"
+                class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
               />
               <div
                 id="city-suggestions"
@@ -356,21 +354,21 @@
               </div>
             </div>
           </div>
-          <p style="font-size: 11px; color: #9a7a5a; font-style: italic; margin: -8px 0 0; line-height: 1.5;">
+          <p class="text-xs text-ink-500 italic -mt-2 mb-0 leading-normal">
             No futuro, vamos sugerir professores e contatos na sua região.
           </p>
 
           <button
             type="submit"
-            style="width: 100%; padding: 14px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 1px; cursor: pointer; margin-top: 8px;"
+            class="w-full py-3.5 bg-ink-900 text-ink-200 border-0 rounded font-serif text-base font-bold tracking-wider cursor-pointer mt-2"
           >
             Criar conta
           </button>
         </.form>
 
-        <p style="text-align: center; margin-top: 28px; font-size: 14px; color: #9a7a5a;">
+        <p class="text-center mt-7 text-sm text-ink-500">
           Já tem conta?
-          <a href={~p"/login"} style="color: #c0741a; text-decoration: underline;">Entrar</a>
+          <a href={~p"/login"} class="text-gold-500 underline">Entrar</a>
         </p>
       </div>
     </div>
