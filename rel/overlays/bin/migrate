@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+exec ./o_grupo_de_estudos eval OGrupoDeEstudos.Release.migrate
