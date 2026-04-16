@@ -51,13 +51,18 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            connections_in: connections_in,
            connection_search: "",
            connection_suggestions: [],
+           incoming_search: "",
+           incoming_suggestions: [],
            categories: Encyclopedia.list_categories(),
            approved_links: sorted_links,
            link_likes: link_likes,
            link_url: "",
            link_title: "",
            link_submitted: false,
-           expanded_link: nil
+           expanded_link: nil,
+           editing_link_id: nil,
+           editing_link_url: "",
+           editing_link_title: ""
          )}
 
       {:error, :not_found} ->
@@ -176,6 +181,128 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     end
   end
 
+  # --- Incoming connections ---
+
+  def handle_event("search_incoming_connection", %{"source_code" => term}, socket) do
+    if not socket.assigns.can_edit or String.length(term) < 1 do
+      {:noreply, assign(socket, incoming_search: term, incoming_suggestions: [])}
+    else
+      suggestions =
+        StepQuery.list_by(
+          search: term,
+          order_by: [asc: :name],
+          limit: 8,
+          preload: [:category]
+        )
+
+      {:noreply, assign(socket, incoming_search: term, incoming_suggestions: suggestions)}
+    end
+  end
+
+  def handle_event("select_incoming_target", %{"code" => code}, socket) do
+    {:noreply, assign(socket, incoming_search: code, incoming_suggestions: [])}
+  end
+
+  def handle_event("create_incoming_connection", %{"source_code" => source_code}, socket) do
+    if not socket.assigns.can_edit, do: {:noreply, socket}
+
+    source = StepQuery.get_by(code: source_code)
+
+    if is_nil(source) do
+      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+    else
+      step = socket.assigns.step
+
+      case Admin.create_connection(%{source_step_id: source.id, target_step_id: step.id}) do
+        {:ok, _} -> {:noreply, reload_step(socket, step.code)}
+        {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
+      end
+    end
+  end
+
+  # --- Link editing ---
+
+  def handle_event("start_edit_link", %{"link-id" => link_id}, socket) do
+    link = Enum.find(socket.assigns.approved_links, &(&1.id == link_id))
+
+    if link do
+      {:noreply,
+       assign(socket,
+         editing_link_id: link_id,
+         editing_link_url: link.url,
+         editing_link_title: link.title || ""
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("cancel_edit_link", _params, socket) do
+    {:noreply, assign(socket, editing_link_id: nil, editing_link_url: "", editing_link_title: "")}
+  end
+
+  def handle_event("update_link", %{"url" => url, "title" => title}, socket) do
+    link = Enum.find(socket.assigns.approved_links, &(&1.id == socket.assigns.editing_link_id))
+    user_id = socket.assigns.current_user.id
+    can_edit_link = socket.assigns.is_admin or (link && link.submitted_by_id == user_id)
+
+    if link && can_edit_link do
+      case Admin.update_step_link(link, %{url: String.trim(url), title: String.trim(title)}) do
+        {:ok, _} ->
+          socket =
+            socket
+            |> assign(editing_link_id: nil, editing_link_url: "", editing_link_title: "")
+            |> reload_step(socket.assigns.step.code)
+            |> put_flash(:info, "Link atualizado")
+
+          {:noreply, socket}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "URL inválida")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("delete_link", %{"link-id" => link_id}, socket) do
+    link = Enum.find(socket.assigns.approved_links, &(&1.id == link_id))
+    user_id = socket.assigns.current_user.id
+    can_delete = socket.assigns.is_admin or (link && link.submitted_by_id == user_id)
+
+    if link && can_delete do
+      case Admin.delete_step_link(link) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> reload_step(socket.assigns.step.code)
+           |> put_flash(:info, "Link removido")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Erro ao remover link")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  # --- Unapprove step ---
+
+  def handle_event("unapprove_step", _params, socket) do
+    if not socket.assigns.is_admin, do: {:noreply, socket}
+
+    case Admin.unapprove_step(socket.assigns.step) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> reload_step(socket.assigns.step.code)
+         |> put_flash(:info, "Passo desaprovado — removido do acervo público")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao desaprovar")}
+    end
+  end
+
   def handle_event("submit_link", %{"url" => url, "title" => title}, socket) do
     user_id = socket.assigns.current_user.id
     step_id = socket.assigns.step.id
@@ -255,6 +382,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
           connections_in: inn,
           connection_search: "",
           connection_suggestions: [],
+          incoming_search: "",
+          incoming_suggestions: [],
           approved_links: sorted_links,
           link_likes: link_likes
         )

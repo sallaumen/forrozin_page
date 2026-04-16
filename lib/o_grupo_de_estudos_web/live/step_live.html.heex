@@ -146,6 +146,16 @@
               Salvar alterações
             </button>
             <%= if @is_admin do %>
+              <%= if @step.suggested_by_id && @step.approved do %>
+                <button
+                  type="button"
+                  phx-click="unapprove_step"
+                  data-confirm={"Desaprovar o passo \"#{@step.name}\"? Ele vai sair do acervo público."}
+                  style="padding: 10px 20px; background: transparent; color: #e67e22; border: 2px solid #e67e22; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+                >
+                  Desaprovar
+                </button>
+              <% end %>
               <button
                 type="button"
                 phx-click="delete_step"
@@ -245,6 +255,48 @@
               <% end %>
             </div>
           <% end %>
+          <%!-- Add outgoing connection --%>
+          <%= if @edit_mode do %>
+            <div style="margin-top: 10px; position: relative;">
+              <form
+                phx-submit="create_connection"
+                phx-change="search_connection"
+                style="display: flex; gap: 6px;"
+              >
+                <input
+                  type="text"
+                  name="target_code"
+                  value={@connection_search}
+                  placeholder="Buscar passo..."
+                  autocomplete="off"
+                  phx-debounce="150"
+                  style="flex: 1; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
+                />
+                <button
+                  type="submit"
+                  style="padding: 8px 12px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                >
+                  + Saída
+                </button>
+              </form>
+              <%= if @connection_suggestions != [] do %>
+                <div style="position: absolute; top: 42px; left: 0; right: 70px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
+                  <%= for sug <- @connection_suggestions do %>
+                    <div
+                      phx-click="select_connection_target"
+                      phx-value-code={sug.code}
+                      style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 13px; color: #1a0e05;"
+                    >
+                      <code style={"font-size: 11px; color: #{if sug.category, do: sug.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>
+                        {sug.code}
+                      </code>
+                      {sug.name}
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
         </div>
 
         <%!-- Incoming --%>
@@ -279,51 +331,50 @@
               <% end %>
             </div>
           <% end %>
-        </div>
-      </div>
-
-      <%!-- Add connection (edit mode) --%>
-      <%= if @edit_mode do %>
-        <div style="margin-top: 16px; position: relative;">
-          <form
-            phx-submit="create_connection"
-            phx-change="search_connection"
-            style="display: flex; gap: 8px;"
-          >
-            <input
-              type="text"
-              name="target_code"
-              value={@connection_search}
-              placeholder="Buscar passo por código ou nome..."
-              autocomplete="off"
-              phx-debounce="150"
-              style="flex: 1; padding: 10px 14px; border: 1px solid rgba(60,40,20,0.3); border-radius: 6px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05;"
-            />
-            <button
-              type="submit"
-              style="padding: 10px 18px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;"
-            >
-              + Conexão
-            </button>
-          </form>
-          <%= if @connection_suggestions != [] do %>
-            <div style="position: absolute; top: 48px; left: 0; right: 100px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
-              <%= for sug <- @connection_suggestions do %>
-                <div
-                  phx-click="select_connection_target"
-                  phx-value-code={sug.code}
-                  style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 13px; color: #1a0e05;"
+          <%!-- Add incoming connection --%>
+          <%= if @edit_mode do %>
+            <div style="margin-top: 10px; position: relative;">
+              <form
+                phx-submit="create_incoming_connection"
+                phx-change="search_incoming_connection"
+                style="display: flex; gap: 6px;"
+              >
+                <input
+                  type="text"
+                  name="source_code"
+                  value={@incoming_search}
+                  placeholder="Buscar passo..."
+                  autocomplete="off"
+                  phx-debounce="150"
+                  style="flex: 1; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
+                />
+                <button
+                  type="submit"
+                  style="padding: 8px 12px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;"
                 >
-                  <code style={"font-size: 11px; color: #{if sug.category, do: sug.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>
-                    {sug.code}
-                  </code>
-                  {sug.name}
+                  + Entrada
+                </button>
+              </form>
+              <%= if @incoming_suggestions != [] do %>
+                <div style="position: absolute; top: 42px; left: 0; right: 70px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
+                  <%= for sug <- @incoming_suggestions do %>
+                    <div
+                      phx-click="select_incoming_target"
+                      phx-value-code={sug.code}
+                      style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 13px; color: #1a0e05;"
+                    >
+                      <code style={"font-size: 11px; color: #{if sug.category, do: sug.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>
+                        {sug.code}
+                      </code>
+                      {sug.name}
+                    </div>
+                  <% end %>
                 </div>
               <% end %>
             </div>
           <% end %>
         </div>
-      <% end %>
+      </div>
     </div>
 
     <%!-- Links --%>
@@ -342,20 +393,153 @@
           <%= for link <- @approved_links do %>
             <% liked = MapSet.member?(@link_likes.liked_ids, link.id) %>
             <% like_count = Map.get(@link_likes.counts, link.id, 0) %>
-            <%= case youtube_embed_url(link.url) do %>
-              <% {:youtube, embed_url} -> %>
-                <div style="border-radius: 6px; border: 1px solid rgba(60,40,20,0.12); background: #fffef9; overflow: hidden;">
-                  <%!-- YouTube card header --%>
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px;">
-                    <span style="font-size: 16px; flex-shrink: 0;" title="YouTube">▶</span>
-                    <div style="flex: 1; min-width: 0;">
-                      <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <% can_edit_this_link =
+              @edit_mode and
+                (@is_admin or link.submitted_by_id == @current_user.id) %>
+            <%!-- Inline edit form for this link --%>
+            <%= if @editing_link_id == link.id do %>
+              <form
+                phx-submit="update_link"
+                style="padding: 12px; background: #fffef9; border: 2px solid #d4a054; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;"
+              >
+                <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                  Título
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={@editing_link_title}
+                  placeholder="Título do link"
+                  style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+                />
+                <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                  URL
+                </label>
+                <input
+                  type="url"
+                  name="url"
+                  value={@editing_link_url}
+                  required
+                  style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+                />
+                <div style="display: flex; gap: 8px;">
+                  <button
+                    type="submit"
+                    style="padding: 7px 14px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600;"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="cancel_edit_link"
+                    style="padding: 7px 14px; background: transparent; color: #5c3a1a; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px;"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            <% else %>
+              <%= case youtube_embed_url(link.url) do %>
+                <% {:youtube, embed_url} -> %>
+                  <div style="border-radius: 6px; border: 1px solid rgba(60,40,20,0.12); background: #fffef9; overflow: hidden;">
+                    <%!-- YouTube card header --%>
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px;">
+                      <span style="font-size: 16px; flex-shrink: 0;" title="YouTube">▶</span>
+                      <div style="flex: 1; min-width: 0;">
+                        <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          {if link.title && link.title != "", do: link.title, else: link.url}
+                        </p>
+                        <p style="font-size: 11px; color: #9a7a5a; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          {link.url}
+                        </p>
+                      </div>
+                      <%= if can_edit_this_link do %>
+                        <button
+                          phx-click="start_edit_link"
+                          phx-value-link-id={link.id}
+                          style="background: none; border: none; cursor: pointer; font-size: 13px; color: #d4a054; padding: 4px 6px; flex-shrink: 0;"
+                          title="Editar link"
+                        >
+                          ✏
+                        </button>
+                        <button
+                          phx-click="delete_link"
+                          phx-value-link-id={link.id}
+                          data-confirm="Remover este link?"
+                          style="background: none; border: none; cursor: pointer; font-size: 15px; color: #c0392b; padding: 4px 6px; flex-shrink: 0;"
+                          title="Remover link"
+                        >
+                          ×
+                        </button>
+                      <% end %>
+                      <button
+                        phx-click="toggle_link_like"
+                        phx-value-link-id={link.id}
+                        style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 14px; color: #{if liked, do: "#c0392b", else: "#9a7a5a"}; padding: 4px 6px; border-radius: 4px; flex-shrink: 0;"}
+                        title={if liked, do: "Remover like", else: "Curtir"}
+                      >
+                        {if liked, do: "♥", else: "♡"}
+                        <%= if like_count > 0 do %>
+                          <span style="font-size: 11px;">{like_count}</span>
+                        <% end %>
+                      </button>
+                      <button
+                        phx-click="toggle_link_video"
+                        phx-value-link-id={link.id}
+                        style={"font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; border: 1px solid rgba(60,40,20,0.2); background: #{if @expanded_link == link.id, do: "#1a0e0510", else: "transparent"}; color: #5c3a1a; white-space: nowrap; font-family: Georgia, serif; flex-shrink: 0;"}
+                      >
+                        {if @expanded_link == link.id, do: "▲ Fechar", else: "▶ Assistir"}
+                      </button>
+                    </div>
+                    <%!-- Expandable iframe --%>
+                    <%= if @expanded_link == link.id do %>
+                      <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+                        <iframe
+                          src={embed_url}
+                          frameborder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowfullscreen
+                          loading="lazy"
+                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                        >
+                        </iframe>
+                      </div>
+                    <% end %>
+                  </div>
+                <% :external -> %>
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px;">
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      style="flex: 1; min-width: 0; text-decoration: none;"
+                    >
+                      <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         {if link.title && link.title != "", do: link.title, else: link.url}
                       </p>
-                      <p style="font-size: 11px; color: #9a7a5a; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      <p style="font-size: 11px; color: #9a7a5a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         {link.url}
                       </p>
-                    </div>
+                    </a>
+                    <%= if can_edit_this_link do %>
+                      <button
+                        phx-click="start_edit_link"
+                        phx-value-link-id={link.id}
+                        style="background: none; border: none; cursor: pointer; font-size: 13px; color: #d4a054; padding: 4px 6px; flex-shrink: 0;"
+                        title="Editar link"
+                      >
+                        ✏
+                      </button>
+                      <button
+                        phx-click="delete_link"
+                        phx-value-link-id={link.id}
+                        data-confirm="Remover este link?"
+                        style="background: none; border: none; cursor: pointer; font-size: 15px; color: #c0392b; padding: 4px 6px; flex-shrink: 0;"
+                        title="Remover link"
+                      >
+                        ×
+                      </button>
+                    <% end %>
                     <button
                       phx-click="toggle_link_like"
                       phx-value-link-id={link.id}
@@ -367,56 +551,8 @@
                         <span style="font-size: 11px;">{like_count}</span>
                       <% end %>
                     </button>
-                    <button
-                      phx-click="toggle_link_video"
-                      phx-value-link-id={link.id}
-                      style={"font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; border: 1px solid rgba(60,40,20,0.2); background: #{if @expanded_link == link.id, do: "#1a0e0510", else: "transparent"}; color: #5c3a1a; white-space: nowrap; font-family: Georgia, serif; flex-shrink: 0;"}
-                    >
-                      {if @expanded_link == link.id, do: "▲ Fechar", else: "▶ Assistir"}
-                    </button>
                   </div>
-                  <%!-- Expandable iframe --%>
-                  <%= if @expanded_link == link.id do %>
-                    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
-                      <iframe
-                        src={embed_url}
-                        frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen
-                        loading="lazy"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                      >
-                      </iframe>
-                    </div>
-                  <% end %>
-                </div>
-              <% :external -> %>
-                <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px;">
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    style="flex: 1; min-width: 0; text-decoration: none;"
-                  >
-                    <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      {if link.title && link.title != "", do: link.title, else: link.url}
-                    </p>
-                    <p style="font-size: 11px; color: #9a7a5a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      {link.url}
-                    </p>
-                  </a>
-                  <button
-                    phx-click="toggle_link_like"
-                    phx-value-link-id={link.id}
-                    style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 14px; color: #{if liked, do: "#c0392b", else: "#9a7a5a"}; padding: 4px 6px; border-radius: 4px; flex-shrink: 0;"}
-                    title={if liked, do: "Remover like", else: "Curtir"}
-                  >
-                    {if liked, do: "♥", else: "♡"}
-                    <%= if like_count > 0 do %>
-                      <span style="font-size: 11px;">{like_count}</span>
-                    <% end %>
-                  </button>
-                </div>
+              <% end %>
             <% end %>
           <% end %>
         </div>

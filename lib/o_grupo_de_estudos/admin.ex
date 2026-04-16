@@ -104,12 +104,30 @@ defmodule OGrupoDeEstudos.Admin do
   end
 
   @doc """
+  Updates a step link's title and/or URL.
+
+  Returns `{:ok, link}` or `{:error, changeset}`.
+  """
+  def update_step_link(%StepLink{} = link, attrs) do
+    link |> StepLink.changeset(attrs) |> Repo.update()
+  end
+
+  @doc """
   Soft-deletes a step link by setting deleted_at.
 
   Returns `{:ok, link}` or `{:error, changeset}`.
   """
   def delete_step_link(link) do
     link |> Ecto.Changeset.change(deleted_at: now()) |> Repo.update()
+  end
+
+  @doc """
+  Unapproves a community step, removing it from the public collection.
+
+  Returns `{:ok, step}` or `{:error, changeset}`.
+  """
+  def unapprove_step(%Step{} = step) do
+    step |> Ecto.Changeset.change(approved: false) |> Repo.update()
   end
 
   defp now do
