@@ -1014,6 +1014,23 @@ const CityAutocomplete = {
 }
 
 // ---------------------------------------------------------------------------
+// Hook: BackButton — history.back() with fallback URL
+// ---------------------------------------------------------------------------
+const BackButton = {
+  mounted() {
+    this.el.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        const fallback = this.el.dataset.fallback || "/collection";
+        window.location.href = fallback;
+      }
+    });
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Hook: BottomSheet — native <dialog> with swipe-to-close gesture
 // ---------------------------------------------------------------------------
 const BottomSheet = {
@@ -1104,7 +1121,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BottomSheet},
+  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet},
 })
 
 // Show progress bar on live navigation and form submits
