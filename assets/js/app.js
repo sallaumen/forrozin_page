@@ -332,6 +332,7 @@ function closeDrawer() {
 // Spotlight: dim everything except selected node neighborhood
 // ---------------------------------------------------------------------------
 function applySpotlight(cy, node) {
+  if (window._seqHighlightActive) return
   cy.batch(() => {
     cy.elements().style({ opacity: 0.2 })
     const nh = node.closedNeighborhood()
@@ -342,6 +343,7 @@ function applySpotlight(cy, node) {
 }
 
 function clearSpotlight(cy) {
+  if (window._seqHighlightActive) return
   cy.batch(() => {
     cy.nodes().style({ opacity: 1 })
     cy.edges().style({ opacity: 0.45, width: 1.5 })
@@ -349,6 +351,7 @@ function clearSpotlight(cy) {
 }
 
 function applyCategorySpotlight(cy, categoryName) {
+  if (window._seqHighlightActive) return
   cy.batch(() => {
     cy.elements().style({ opacity: 0.15 })
     const catNodes = cy.nodes(`[categoriaName = "${categoryName}"]`)
@@ -771,6 +774,7 @@ const GraphVisual = {
 
     // 5. Set active flag + codes (used by guards in hover/spotlight handlers)
     this._seqHighlightActive = true
+    window._seqHighlightActive = true
     this._seqHighlightCodes = stepCodes
 
     // 6. Show exit button
@@ -832,6 +836,7 @@ const GraphVisual = {
     })
 
     this._seqHighlightActive = false
+    window._seqHighlightActive = false
     this._seqHighlightCodes = null
     this._removeSeqExitButton()
 
