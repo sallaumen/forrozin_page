@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudosWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets data uploads fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets data uploads fonts images icons favicon.ico robots.txt manifest.json sw.js)
 
   def router do
     quote do
