@@ -86,7 +86,6 @@ defmodule OGrupoDeEstudosWeb do
       import Phoenix.HTML
       # Core UI components
       import OGrupoDeEstudosWeb.CoreComponents
-      import OGrupoDeEstudosWeb.Components.Navbar
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS
