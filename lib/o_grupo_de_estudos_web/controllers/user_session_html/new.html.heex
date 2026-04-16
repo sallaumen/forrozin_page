@@ -1,62 +1,48 @@
-<style>
-  @media (max-width: 720px) {
-    .auth-layout { flex-direction: column !important; }
-    .auth-side { display: none !important; }
-    .auth-main { padding: 48px 28px !important; }
-  }
-</style>
-
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <%!-- Header --%>
-  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+  <header class="bg-ink-900 px-6 py-3.5 flex items-center justify-between flex-shrink-0">
     <a
       href={~p"/"}
-      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+      class="font-serif text-[13px] font-bold tracking-widest text-ink-200 uppercase no-underline"
     >
       Forrózin
     </a>
     <a
       href={~p"/signup"}
-      style="font-family: Georgia, serif; font-size: 12px; color: #bba88a; text-decoration: none; letter-spacing: 1px;"
+      class="font-serif text-xs text-ink-400 no-underline tracking-wider"
     >
       Cadastrar-se →
     </a>
   </header>
 
   <%!-- Split layout --%>
-  <div class="auth-layout" style="flex: 1; display: flex;">
+  <div class="flex-1 flex flex-col md:flex-row">
     <%!-- Left: branding --%>
-    <div
-      class="auth-side"
-      style="width: 42%; background: #1a0e05; padding: 64px 56px; display: flex; flex-direction: column; justify-content: center;"
-    >
-      <p style="font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #7a5840; margin-bottom: 28px;">
+    <div class="hidden md:flex w-[42%] bg-ink-900 px-14 py-16 flex-col justify-center">
+      <p class="text-[11px] font-bold tracking-[3px] uppercase text-ink-700 mb-7">
         O grupo de estudos
       </p>
-      <h1 style="font-size: 42px; font-weight: 700; color: #f2ede4; line-height: 1.1; letter-spacing: -1.5px; margin: 0 0 24px;">
+      <h1 class="text-[42px] font-bold text-ink-200 leading-tight tracking-[-1.5px] m-0 mb-6">
         Forró roots,<br />na veia.
       </h1>
-      <p style="font-size: 15px; line-height: 1.9; color: #bba88a; margin-bottom: 0;">
+      <p class="text-base leading-[1.9] text-ink-400 mb-0">
         Acervo de passos catalogados na raça e na cara-de-pau.
         Nomes inventados, descrições duvidosas — e nenhum arrependimento.
       </p>
     </div>
 
     <%!-- Right: form --%>
-    <div
-      class="auth-main"
-      style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 64px 72px;"
-    >
-      <div style="width: 100%; max-width: 420px;">
-        <h2 style="font-size: 28px; font-weight: 700; color: #1a0e05; letter-spacing: -0.5px; margin: 0 0 8px;">
+    <div class="flex-1 flex items-center justify-center px-7 py-12 md:px-[72px] md:py-16">
+      <div class="w-full max-w-[420px]">
+        <h2 class="text-[28px] font-bold text-ink-900 tracking-[-0.5px] m-0 mb-2">
           Entrar
         </h2>
-        <p style="font-size: 14px; color: #9a7a5a; margin-bottom: 36px;">
+        <p class="text-sm text-ink-500 mb-9">
           Acesse o acervo com seu usuário e senha.
         </p>
 
         <%= if @error do %>
-          <p style="font-size: 13px; color: #c0392b; background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.2); padding: 12px 16px; border-radius: 4px; margin-bottom: 24px;">
+          <p class="text-sm text-accent-red bg-[rgba(192,57,43,0.08)] border border-[rgba(192,57,43,0.2)] px-4 py-3 rounded mb-6">
             {@error}
           </p>
         <% end %>
@@ -64,8 +50,8 @@
         <form method="post" action={~p"/login"}>
           <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
 
-          <div style="margin-bottom: 18px;">
-            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+          <div class="mb-[18px]">
+            <label class="block text-[11px] tracking-[1.5px] text-ink-500 uppercase mb-2">
               Usuário
             </label>
             <input
@@ -73,12 +59,12 @@
               name="session[username]"
               autocomplete="username"
               required
-              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box; outline: none;"
+              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
             />
           </div>
 
-          <div style="margin-bottom: 32px;">
-            <label style="display: block; font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 8px;">
+          <div class="mb-8">
+            <label class="block text-[11px] tracking-[1.5px] text-ink-500 uppercase mb-2">
               Senha
             </label>
             <input
@@ -86,21 +72,21 @@
               name="session[password]"
               autocomplete="current-password"
               required
-              style="width: 100%; padding: 13px 16px; border: 1px solid rgba(180,120,40,0.35); border-radius: 4px; background: #fffef9; color: #2c1a0e; font-family: Georgia, serif; font-size: 15px; box-sizing: border-box; outline: none;"
+              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
             />
           </div>
 
           <button
             type="submit"
-            style="width: 100%; padding: 14px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 1px; cursor: pointer;"
+            class="w-full py-[14px] bg-ink-900 text-ink-200 border-0 rounded font-serif text-base font-bold tracking-wider cursor-pointer"
           >
             Entrar
           </button>
         </form>
 
-        <p style="text-align: center; margin-top: 28px; font-size: 14px; color: #9a7a5a;">
+        <p class="text-center mt-7 text-sm text-ink-500">
           Não tem conta?
-          <a href={~p"/signup"} style="color: #c0741a; text-decoration: underline;">
+          <a href={~p"/signup"} class="text-[#c0741a] underline">
             Cadastre-se
           </a>
         </p>
@@ -109,10 +95,10 @@
   </div>
 
   <%!-- Footer --%>
-  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a;">
-      <a href="/about" style="color: #9a7a5a; text-decoration: none;">Quem somos</a>
-      <span style="color: #bba88a; margin: 0 8px;">·</span>
+  <footer class="border-t border-[rgba(60,40,20,0.1)] p-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
