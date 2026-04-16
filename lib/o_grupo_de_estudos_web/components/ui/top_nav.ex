@@ -67,7 +67,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           >
             Olá, <strong>{OGrupoDeEstudos.Accounts.first_name(@current_user)}</strong>
           </.link>
-          <.link navigate={~p"/settings"} class="text-sm text-ink-400 no-underline" title="Configurações">
+          <.link
+            navigate={~p"/settings"}
+            class="text-sm text-ink-400 no-underline"
+            title="Configurações"
+            aria-label="Configurações"
+          >
             ⚙
           </.link>
           <form method="post" action={~p"/logout"} class="m-0">
@@ -107,7 +112,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 Backups
               </.link>
             <% end %>
-            <.link navigate={~p"/settings"} class="text-base text-ink-400 no-underline" title="Configurações">
+            <.link
+              navigate={~p"/settings"}
+              class="text-base text-ink-400 no-underline"
+              title="Configurações"
+              aria-label="Configurações"
+            >
               ⚙
             </.link>
             <form method="post" action={~p"/logout"} class="m-0">
