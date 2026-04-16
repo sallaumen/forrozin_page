@@ -45,8 +45,13 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
       join_through: "concept_steps",
       join_keys: [step_id: :id, concept_id: :id]
 
-    has_many :connections_as_source, Connection, foreign_key: :source_step_id
-    has_many :connections_as_target, Connection, foreign_key: :target_step_id
+    has_many :connections_as_source, Connection,
+      foreign_key: :source_step_id,
+      where: [deleted_at: nil]
+
+    has_many :connections_as_target, Connection,
+      foreign_key: :target_step_id,
+      where: [deleted_at: nil]
 
     timestamps()
   end

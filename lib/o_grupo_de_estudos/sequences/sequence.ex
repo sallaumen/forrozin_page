@@ -14,7 +14,9 @@ defmodule OGrupoDeEstudos.Sequences.Sequence do
     field :deleted_at, :naive_datetime
 
     belongs_to :user, OGrupoDeEstudos.Accounts.User
-    has_many :sequence_steps, OGrupoDeEstudos.Sequences.SequenceStep, preload_order: [asc: :position]
+    has_many :sequence_steps, OGrupoDeEstudos.Sequences.SequenceStep,
+      preload_order: [asc: :position],
+      where: [deleted_at: nil]
 
     timestamps()
   end

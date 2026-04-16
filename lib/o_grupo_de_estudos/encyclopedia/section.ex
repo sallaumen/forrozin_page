@@ -19,7 +19,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Section do
     field :position, :integer
 
     belongs_to :category, Category
-    has_many :steps, Step, foreign_key: :section_id
+    has_many :steps, Step, foreign_key: :section_id, where: [deleted_at: nil]
     has_many :subsections, Subsection, foreign_key: :section_id, on_delete: :delete_all
 
     timestamps()

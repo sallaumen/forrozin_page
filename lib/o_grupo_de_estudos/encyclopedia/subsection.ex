@@ -16,7 +16,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Subsection do
     field :position, :integer
 
     belongs_to :section, Section
-    has_many :steps, Step, foreign_key: :subsection_id
+    has_many :steps, Step, foreign_key: :subsection_id, where: [deleted_at: nil]
 
     timestamps()
   end

@@ -64,8 +64,8 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
     visibility_filter =
       if admin,
-        do: dynamic([p], p.status == "published"),
-        else: dynamic([p], p.wip == false and p.status == "published")
+        do: dynamic([p], p.status == "published" and is_nil(p.deleted_at)),
+        else: dynamic([p], p.wip == false and p.status == "published" and is_nil(p.deleted_at))
 
     # Direct steps: only those NOT in a subsection (avoids duplicates).
     # Official steps (no suggested_by_id) come first, community steps after.

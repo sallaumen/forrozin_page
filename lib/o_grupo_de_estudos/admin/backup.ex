@@ -4,7 +4,7 @@ defmodule OGrupoDeEstudos.Admin.Backup do
 
   Generates snapshots of the encyclopedia tables in `priv/backups/`.
   Each file is named `backup_YYYYMMDD_HHMMSS.json`.
-  Keeps the last 48 files (≈ 2 days of hourly backups).
+  Keeps the last 10 files as a safety cap.
 
   ## Usage
 
@@ -34,7 +34,7 @@ defmodule OGrupoDeEstudos.Admin.Backup do
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
   alias OGrupoDeEstudos.Repo
 
-  @max_backups 48
+  @max_backups 10
 
   @ordered_schemas [
     {"users", User},
@@ -250,7 +250,7 @@ defmodule OGrupoDeEstudos.Admin.Backup do
     |> Enum.each(fn name -> File.rm!(Path.join(dir, name)) end)
   end
 
-  defp default_dir do
+  def default_dir do
     Path.join([Application.app_dir(:o_grupo_de_estudos, "priv"), "backups"])
   end
 end

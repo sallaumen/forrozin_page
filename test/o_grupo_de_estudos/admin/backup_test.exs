@@ -59,9 +59,9 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
       assert [_] = data["tables"]["step_connections"]
     end
 
-    test "removes old files keeping only the last 48", %{dir: dir} do
-      # Creates 50 fake older backup files
-      for i <- 1..50 do
+    test "removes old files keeping only the last 10", %{dir: dir} do
+      # Creates 15 fake older backup files (more than @max_backups = 10)
+      for i <- 1..15 do
         name = "backup_20260101_#{String.pad_leading(to_string(i), 6, "0")}.json"
         File.write!(Path.join(dir, name), "{}")
       end
@@ -69,7 +69,7 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
       Backup.create_backup!(dir)
 
       files = File.ls!(dir) |> Enum.filter(&String.ends_with?(&1, ".json"))
-      assert Enum.count(files) == 48
+      assert Enum.count(files) == 10
     end
   end
 
