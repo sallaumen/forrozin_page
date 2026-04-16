@@ -1,11 +1,15 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title={@step.code} />
   <%!-- Secondary toolbar: page-specific actions --%>
   <%= if @can_edit do %>
-    <div style="background: #1a0e05; border-top: 1px solid rgba(255,255,255,0.08); padding: 6px 24px; display: flex; justify-content: flex-end;">
+    <div class="bg-ink-900 border-t border-white/[0.08] py-1.5 px-6 flex justify-end">
       <button
         phx-click="toggle_edit"
-        style={"font-family: Georgia, serif; font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; letter-spacing: 0.5px; border: 1px solid #{if @edit_mode, do: "#c0392b", else: "#bba88a40"}; background: #{if @edit_mode, do: "#c0392b20", else: "transparent"}; color: #{if @edit_mode, do: "#c0392b", else: "#bba88a"};"}
+        class={[
+          "font-serif text-xs py-1 px-3 rounded cursor-pointer tracking-wide border",
+          @edit_mode && "border-accent-red bg-accent-red/20 text-accent-red",
+          !@edit_mode && "border-ink-400/40 bg-transparent text-ink-400"
+        ]}
       >
         {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
       </button>
@@ -13,19 +17,19 @@
   <% end %>
 
   <%!-- Content --%>
-  <div style="max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; width: 100%; box-sizing: border-box;">
+  <div class="max-w-[760px] mx-auto px-6 pt-10 pb-20 w-full box-border">
     <%!-- Breadcrumb --%>
-    <p style="font-size: 12px; color: #9a7a5a; margin-bottom: 24px; letter-spacing: 0.5px;">
-      <.link navigate={~p"/collection"} style="color: #9a7a5a; text-decoration: none;">
+    <p class="text-xs text-ink-500 mb-6 tracking-wide">
+      <.link navigate={~p"/collection"} class="text-ink-500 no-underline">
         acervo
       </.link>
-      <span style="margin: 0 6px;">›</span>
+      <span class="mx-1.5">›</span>
       {@step.code}
     </p>
 
     <%!-- Step header --%>
-    <div style="margin-bottom: 32px;">
-      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+    <div class="mb-8">
+      <div class="flex items-center gap-3 flex-wrap mb-3">
         <code style={"font-family: monospace; font-size: 14px; font-weight: 700; color: #{category_color(@step)}; background: #{category_color(@step)}15; padding: 4px 10px; border-radius: 3px; border: 1px solid #{category_color(@step)}35; letter-spacing: 1px;"}>
           {@step.code}
         </code>
@@ -33,23 +37,23 @@
           {category_label(@step)}
         </span>
         <%= if @step.wip do %>
-          <span style="font-size: 10px; color: #c0392b; background: #c0392b15; padding: 3px 10px; border-radius: 10px; border: 1px solid #c0392b25; text-transform: uppercase; letter-spacing: 1px;">
+          <span class="text-xs text-accent-red bg-accent-red/10 py-0.5 px-2.5 rounded-full border border-accent-red/25 uppercase tracking-widest">
             wip
           </span>
         <% end %>
       </div>
-      <h1 style="font-size: 36px; font-weight: 700; color: #1a0e05; letter-spacing: -1px; margin: 0 0 12px; line-height: 1.15;">
+      <h1 class="text-3xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
         {@step.name}
       </h1>
 
       <%!-- Suggested by badge --%>
       <%= if @step.suggested_by_id do %>
-        <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        <div class="mb-2 flex items-center gap-2">
           <.link
             navigate={
               ~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"
             }
-            style="text-decoration: none;"
+            class="no-underline"
           >
             <span style={"font-size: 11px; padding: 3px 10px; border-radius: 10px; background: #{if @step.approved, do: "#27ae6015", else: "#8e44ad15"}; color: #{if @step.approved, do: "#27ae60", else: "#8e44ad"}; border: 1px solid #{if @step.approved, do: "#27ae6030", else: "#8e44ad30"};"}>
               <%= if @step.approved do %>
@@ -69,51 +73,51 @@
     <%= if @edit_mode do %>
       <form
         phx-submit="update_step"
-        style="margin-bottom: 32px; padding: 24px; background: #fffef9; border: 1px solid rgba(60,40,20,0.1); border-radius: 8px;"
+        class="mb-8 p-6 bg-ink-50 border border-ink-900/10 rounded-md"
       >
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-          <div style="display: flex; gap: 12px;">
-            <div style="flex: 1;">
-              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+        <div class="flex flex-col gap-3.5">
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label class="text-xs text-ink-700 uppercase tracking-widest font-semibold block mb-1">
                 Nome
               </label>
               <input
                 type="text"
                 name="step[name]"
                 value={@step.name}
-                style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 16px; color: #1a0e05; box-sizing: border-box;"
+                class="w-full py-2.5 px-3 border border-ink-900/30 rounded font-serif text-base text-ink-900 box-border"
               />
             </div>
-            <div style="width: 120px;">
-              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+            <div class="w-[120px]">
+              <label class="text-xs text-ink-700 uppercase tracking-widest font-semibold block mb-1">
                 Código
               </label>
               <input
                 type="text"
                 name="step[code]"
                 value={@step.code}
-                style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: monospace; font-size: 16px; color: #1a0e05; box-sizing: border-box;"
+                class="w-full py-2.5 px-3 border border-ink-900/30 rounded font-mono text-base text-ink-900 box-border"
               />
             </div>
           </div>
           <div>
-            <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+            <label class="text-xs text-ink-700 uppercase tracking-widest font-semibold block mb-1">
               Descrição técnica
             </label>
             <textarea
               name="step[note]"
               rows="5"
-              style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05; box-sizing: border-box; resize: vertical; line-height: 1.7;"
+              class="w-full py-2.5 px-3 border border-ink-900/30 rounded font-serif text-base text-ink-900 box-border resize-y leading-relaxed"
             ><%= @step.note %></textarea>
           </div>
-          <div style="display: flex; gap: 12px;">
-            <div style="flex: 1;">
-              <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: block; margin-bottom: 4px;">
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label class="text-xs text-ink-700 uppercase tracking-widest font-semibold block mb-1">
                 Categoria
               </label>
               <select
                 name="step[category_id]"
-                style="width: 100%; padding: 10px 12px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 15px; color: #1a0e05;"
+                class="w-full py-2.5 px-3 border border-ink-900/30 rounded font-serif text-base text-ink-900"
               >
                 <%= for cat <- @categories do %>
                   <option value={cat.id} selected={cat.id == @step.category_id}>
@@ -122,12 +126,12 @@
                 <% end %>
               </select>
             </div>
-            <div style="display: flex; align-items: end; gap: 10px; padding-bottom: 4px;">
-              <label style="font-size: 12px; color: #5c3a1a; display: flex; align-items: center; gap: 4px;">
+            <div class="flex items-end gap-2.5 pb-1">
+              <label class="text-sm text-ink-700 flex items-center gap-1">
                 <input type="hidden" name="step[wip]" value="false" />
                 <input type="checkbox" name="step[wip]" value="true" checked={@step.wip} /> WIP
               </label>
-              <label style="font-size: 12px; color: #5c3a1a; display: flex; align-items: center; gap: 4px;">
+              <label class="text-sm text-ink-700 flex items-center gap-1">
                 <input type="hidden" name="step[highlighted]" value="false" />
                 <input
                   type="checkbox"
@@ -138,10 +142,10 @@
               </label>
             </div>
           </div>
-          <div style="display: flex; gap: 12px; align-items: center;">
+          <div class="flex gap-3 items-center">
             <button
               type="submit"
-              style="padding: 10px 20px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;"
+              class="py-2.5 px-5 bg-ink-900 text-ink-200 border-0 rounded-md cursor-pointer font-serif text-sm font-semibold tracking-wide"
             >
               Salvar alterações
             </button>
@@ -151,7 +155,7 @@
                   type="button"
                   phx-click="unapprove_step"
                   data-confirm={"Desaprovar o passo \"#{@step.name}\"? Ele vai sair do acervo público."}
-                  style="padding: 10px 20px; background: transparent; color: #e67e22; border: 2px solid #e67e22; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+                  class="py-2.5 px-5 bg-transparent border-2 border-[#e67e22] text-[#e67e22] rounded-md cursor-pointer font-serif text-sm font-semibold tracking-wide"
                 >
                   Desaprovar
                 </button>
@@ -160,7 +164,7 @@
                 type="button"
                 phx-click="delete_step"
                 data-confirm={"Tem certeza que deseja deletar o passo \"#{@step.name}\" (#{@step.code})? Todas as conexões serão removidas. Esta ação é irreversível."}
-                style="padding: 10px 20px; background: transparent; color: #c0392b; border: 2px solid #c0392b; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+                class="py-2.5 px-5 bg-transparent border-2 border-accent-red text-accent-red rounded-md cursor-pointer font-serif text-sm font-semibold tracking-wide"
               >
                 Deletar passo
               </button>
@@ -170,24 +174,25 @@
       </form>
     <% else %>
       <%!-- Image + Note --%>
-      <div style="display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 40px;">
+      <div class="flex gap-8 flex-wrap mb-10">
         <%= if @step.image_path do %>
-          <div style="flex-shrink: 0;">
+          <div class="flex-shrink-0">
             <img
               src={"/#{@step.image_path}"}
               alt={@step.code}
-              style="width: 200px; height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(60,40,20,0.15); filter: sepia(15%);"
+              class="w-[200px] h-[200px] object-cover rounded-md border border-ink-900/15"
+              style="filter: sepia(15%);"
             />
           </div>
         <% end %>
-        <div style="flex: 1; min-width: 240px;">
+        <div class="flex-1 min-w-[240px]">
           <%= if @step.note do %>
-            <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 12px;">
+            <p class="text-xs tracking-widest text-ink-500 uppercase mb-3">
               Descrição técnica
             </p>
-            <p style="font-size: 16px; line-height: 1.9; color: #3a2410;">{@step.note}</p>
+            <p class="text-base leading-[1.9] text-ink-800">{@step.note}</p>
           <% else %>
-            <p style="font-size: 15px; color: #9a7a5a; font-style: italic;">
+            <p class="text-base text-ink-500 italic">
               Sem descrição técnica ainda.
             </p>
           <% end %>
@@ -197,16 +202,16 @@
 
     <%!-- Technical concepts --%>
     <%= if @step.technical_concepts != [] do %>
-      <div style="margin-bottom: 40px; padding: 20px; background: rgba(212,160,84,0.08); border: 1px solid rgba(212,160,84,0.25); border-left: 3px solid #d4a054; border-radius: 0 6px 6px 0;">
-        <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 14px;">
+      <div class="mb-10 py-5 px-5 bg-gold-500/[0.08] border border-gold-500/25 border-l-[3px] border-l-gold-500 rounded-r-md">
+        <p class="text-xs tracking-widest text-ink-500 uppercase mb-3.5">
           Conceitos relacionados
         </p>
         <%= for concept <- @step.technical_concepts do %>
-          <div style="margin-bottom: 10px;">
-            <p style="font-size: 14px; font-weight: 700; color: #2c1a0e; margin-bottom: 4px;">
+          <div class="mb-2.5">
+            <p class="text-sm font-bold text-ink-900 mb-1">
               {concept.title}
             </p>
-            <p style="font-size: 13px; color: #5a4230; line-height: 1.7; margin: 0;">
+            <p class="text-sm text-ink-700 leading-relaxed m-0">
               {concept.description}
             </p>
           </div>
@@ -215,32 +220,32 @@
     <% end %>
 
     <%!-- Connections --%>
-    <div style="margin-bottom: 40px;">
-      <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px;">
+    <div class="mb-10">
+      <p class="text-xs tracking-widest text-ink-500 uppercase mb-4">
         Conexões
-        <span style="color: #5c3a1a; font-weight: 600;">
+        <span class="text-ink-700 font-semibold">
           {length(@connections_out)} saídas · {length(@connections_in)} entradas
         </span>
       </p>
-      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+      <div class="flex gap-6 flex-wrap">
         <%!-- Outgoing --%>
-        <div style="flex: 1; min-width: 220px;">
-          <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">
+        <div class="flex-1 min-w-[220px]">
+          <p class="text-xs text-ink-500 mb-2.5 italic">
             Vai para →
           </p>
           <%= if @connections_out == [] do %>
-            <p style="font-size: 13px; color: #bba88a; font-style: italic;">Nenhuma saída</p>
+            <p class="text-sm text-ink-400 italic">Nenhuma saída</p>
           <% end %>
           <%= for conn <- @connections_out do %>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div class="flex items-center gap-2 mb-1.5">
               <.link
                 navigate={~p"/steps/#{conn.target_step.code}"}
-                style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; flex: 1;"
+                class="flex items-center gap-2 py-2 px-3 bg-ink-50 border border-ink-900/12 rounded no-underline flex-1"
               >
-                <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">
+                <code class="text-xs text-ink-700 font-mono">
                   {conn.target_step.code}
                 </code>
-                <span style="font-size: 13px; color: #3a2410;">{conn.target_step.name}</span>
+                <span class="text-sm text-ink-800">{conn.target_step.name}</span>
               </.link>
               <%= if @edit_mode do %>
                 <button
@@ -248,7 +253,7 @@
                   phx-value-source={@step.code}
                   phx-value-target={conn.target_step.code}
                   data-confirm={"Remover #{@step.code} → #{conn.target_step.code}?"}
-                  style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 16px; padding: 4px;"
+                  class="bg-transparent border-0 text-accent-red cursor-pointer text-base p-1"
                 >
                   ×
                 </button>
@@ -257,11 +262,11 @@
           <% end %>
           <%!-- Add outgoing connection --%>
           <%= if @edit_mode do %>
-            <div style="margin-top: 10px; position: relative;">
+            <div class="mt-2.5 relative">
               <form
                 phx-submit="create_connection"
                 phx-change="search_connection"
-                style="display: flex; gap: 6px;"
+                class="flex gap-1.5"
               >
                 <input
                   type="text"
@@ -270,22 +275,22 @@
                   placeholder="Buscar passo..."
                   autocomplete="off"
                   phx-debounce="150"
-                  style="flex: 1; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
+                  class="flex-1 py-2 px-2.5 border border-ink-900/30 rounded font-serif text-sm text-ink-900"
                 />
                 <button
                   type="submit"
-                  style="padding: 8px 12px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                  class="py-2 px-3 bg-ink-900 text-ink-200 border-0 rounded cursor-pointer text-xs font-semibold whitespace-nowrap"
                 >
                   + Saída
                 </button>
               </form>
               <%= if @connection_suggestions != [] do %>
-                <div style="position: absolute; top: 42px; left: 0; right: 70px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
+                <div class="absolute top-[42px] left-0 right-[70px] bg-ink-50 border border-ink-900/20 rounded-md shadow-md z-10 max-h-[200px] overflow-y-auto">
                   <%= for sug <- @connection_suggestions do %>
                     <div
                       phx-click="select_connection_target"
                       phx-value-code={sug.code}
-                      style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 13px; color: #1a0e05;"
+                      class="py-2 px-3 cursor-pointer border-b border-ink-900/[0.06] text-sm text-ink-900"
                     >
                       <code style={"font-size: 11px; color: #{if sug.category, do: sug.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>
                         {sug.code}
@@ -300,23 +305,23 @@
         </div>
 
         <%!-- Incoming --%>
-        <div style="flex: 1; min-width: 220px;">
-          <p style="font-size: 11px; color: #9a7a5a; margin-bottom: 10px; font-style: italic;">
+        <div class="flex-1 min-w-[220px]">
+          <p class="text-xs text-ink-500 mb-2.5 italic">
             ← Vem de
           </p>
           <%= if @connections_in == [] do %>
-            <p style="font-size: 13px; color: #bba88a; font-style: italic;">Nenhuma entrada</p>
+            <p class="text-sm text-ink-400 italic">Nenhuma entrada</p>
           <% end %>
           <%= for conn <- @connections_in do %>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div class="flex items-center gap-2 mb-1.5">
               <.link
                 navigate={~p"/steps/#{conn.source_step.code}"}
-                style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px; text-decoration: none; flex: 1;"
+                class="flex items-center gap-2 py-2 px-3 bg-ink-50 border border-ink-900/12 rounded no-underline flex-1"
               >
-                <code style="font-size: 11px; color: #5c3a1a; font-family: monospace;">
+                <code class="text-xs text-ink-700 font-mono">
                   {conn.source_step.code}
                 </code>
-                <span style="font-size: 13px; color: #3a2410;">{conn.source_step.name}</span>
+                <span class="text-sm text-ink-800">{conn.source_step.name}</span>
               </.link>
               <%= if @edit_mode do %>
                 <button
@@ -324,7 +329,7 @@
                   phx-value-source={conn.source_step.code}
                   phx-value-target={@step.code}
                   data-confirm={"Remover #{conn.source_step.code} → #{@step.code}?"}
-                  style="background: none; border: none; color: #c0392b; cursor: pointer; font-size: 16px; padding: 4px;"
+                  class="bg-transparent border-0 text-accent-red cursor-pointer text-base p-1"
                 >
                   ×
                 </button>
@@ -333,11 +338,11 @@
           <% end %>
           <%!-- Add incoming connection --%>
           <%= if @edit_mode do %>
-            <div style="margin-top: 10px; position: relative;">
+            <div class="mt-2.5 relative">
               <form
                 phx-submit="create_incoming_connection"
                 phx-change="search_incoming_connection"
-                style="display: flex; gap: 6px;"
+                class="flex gap-1.5"
               >
                 <input
                   type="text"
@@ -346,22 +351,22 @@
                   placeholder="Buscar passo..."
                   autocomplete="off"
                   phx-debounce="150"
-                  style="flex: 1; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 13px; color: #1a0e05;"
+                  class="flex-1 py-2 px-2.5 border border-ink-900/30 rounded font-serif text-sm text-ink-900"
                 />
                 <button
                   type="submit"
-                  style="padding: 8px 12px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;"
+                  class="py-2 px-3 bg-ink-900 text-ink-200 border-0 rounded cursor-pointer text-xs font-semibold whitespace-nowrap"
                 >
                   + Entrada
                 </button>
               </form>
               <%= if @incoming_suggestions != [] do %>
-                <div style="position: absolute; top: 42px; left: 0; right: 70px; background: #fffef9; border: 1px solid rgba(60,40,20,0.2); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 10; max-height: 200px; overflow-y: auto;">
+                <div class="absolute top-[42px] left-0 right-[70px] bg-ink-50 border border-ink-900/20 rounded-md shadow-md z-10 max-h-[200px] overflow-y-auto">
                   <%= for sug <- @incoming_suggestions do %>
                     <div
                       phx-click="select_incoming_target"
                       phx-value-code={sug.code}
-                      style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(60,40,20,0.06); font-size: 13px; color: #1a0e05;"
+                      class="py-2 px-3 cursor-pointer border-b border-ink-900/[0.06] text-sm text-ink-900"
                     >
                       <code style={"font-size: 11px; color: #{if sug.category, do: sug.category.color, else: "#9a7a5a"}; margin-right: 6px;"}>
                         {sug.code}
@@ -378,18 +383,18 @@
     </div>
 
     <%!-- Links --%>
-    <div style="margin-bottom: 40px;">
-      <p style="font-size: 11px; letter-spacing: 2px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 16px;">
+    <div class="mb-10">
+      <p class="text-xs tracking-widest text-ink-500 uppercase mb-4">
         Links
       </p>
 
       <%!-- Approved links --%>
       <%= if @approved_links == [] do %>
-        <p style="font-size: 13px; color: #bba88a; font-style: italic; margin-bottom: 16px;">
+        <p class="text-sm text-ink-400 italic mb-4">
           Nenhum link ainda.
         </p>
       <% else %>
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+        <div class="flex flex-col gap-3 mb-5">
           <%= for link <- @approved_links do %>
             <% liked = MapSet.member?(@link_likes.liked_ids, link.id) %>
             <% like_count = Map.get(@link_likes.counts, link.id, 0) %>
@@ -400,9 +405,9 @@
             <%= if @editing_link_id == link.id do %>
               <form
                 phx-submit="update_link"
-                style="padding: 12px; background: #fffef9; border: 2px solid #d4a054; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;"
+                class="p-3 bg-ink-50 border-2 border-gold-500 rounded-md flex flex-col gap-2"
               >
-                <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                <label class="text-xs text-ink-700 uppercase tracking-widest font-semibold">
                   Título
                 </label>
                 <input
@@ -410,9 +415,9 @@
                   name="title"
                   value={@editing_link_title}
                   placeholder="Título do link"
-                  style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+                  class="w-full py-2 px-2.5 border border-ink-900/30 rounded font-serif text-sm text-ink-900 box-border"
                 />
-                <label style="font-size: 11px; color: #5c3a1a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                <label class="text-xs text-ink-700 uppercase tracking-widest font-semibold">
                   URL
                 </label>
                 <input
@@ -420,19 +425,19 @@
                   name="url"
                   value={@editing_link_url}
                   required
-                  style="width: 100%; padding: 8px 10px; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+                  class="w-full py-2 px-2.5 border border-ink-900/30 rounded font-serif text-sm text-ink-900 box-border"
                 />
-                <div style="display: flex; gap: 8px;">
+                <div class="flex gap-2">
                   <button
                     type="submit"
-                    style="padding: 7px 14px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px; font-weight: 600;"
+                    class="py-1.5 px-3.5 bg-ink-900 text-ink-200 border-0 rounded cursor-pointer font-serif text-xs font-semibold"
                   >
                     Salvar
                   </button>
                   <button
                     type="button"
                     phx-click="cancel_edit_link"
-                    style="padding: 7px 14px; background: transparent; color: #5c3a1a; border: 1px solid rgba(60,40,20,0.3); border-radius: 4px; cursor: pointer; font-family: Georgia, serif; font-size: 12px;"
+                    class="py-1.5 px-3.5 bg-transparent text-ink-700 border border-ink-900/30 rounded cursor-pointer font-serif text-xs"
                   >
                     Cancelar
                   </button>
@@ -441,15 +446,15 @@
             <% else %>
               <%= case youtube_embed_url(link.url) do %>
                 <% {:youtube, embed_url} -> %>
-                  <div style="border-radius: 6px; border: 1px solid rgba(60,40,20,0.12); background: #fffef9; overflow: hidden;">
+                  <div class="rounded-md border border-ink-900/12 bg-ink-50 overflow-hidden">
                     <%!-- YouTube card header --%>
-                    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px;">
-                      <span style="font-size: 16px; flex-shrink: 0;" title="YouTube">▶</span>
-                      <div style="flex: 1; min-width: 0;">
-                        <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <div class="flex items-center gap-2.5 py-2.5 px-3">
+                      <span class="text-base flex-shrink-0" title="YouTube">▶</span>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-ink-900 m-0 whitespace-nowrap overflow-hidden text-ellipsis">
                           {if link.title && link.title != "", do: link.title, else: link.url}
                         </p>
-                        <p style="font-size: 11px; color: #9a7a5a; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <p class="text-xs text-ink-500 mt-0.5 mb-0 whitespace-nowrap overflow-hidden text-ellipsis">
                           {link.url}
                         </p>
                       </div>
@@ -457,7 +462,7 @@
                         <button
                           phx-click="start_edit_link"
                           phx-value-link-id={link.id}
-                          style="background: none; border: none; cursor: pointer; font-size: 13px; color: #d4a054; padding: 4px 6px; flex-shrink: 0;"
+                          class="bg-transparent border-0 cursor-pointer text-sm text-gold-500 py-1 px-1.5 flex-shrink-0"
                           title="Editar link"
                         >
                           ✏
@@ -466,7 +471,7 @@
                           phx-click="delete_link"
                           phx-value-link-id={link.id}
                           data-confirm="Remover este link?"
-                          style="background: none; border: none; cursor: pointer; font-size: 15px; color: #c0392b; padding: 4px 6px; flex-shrink: 0;"
+                          class="bg-transparent border-0 cursor-pointer text-base text-accent-red py-1 px-1.5 flex-shrink-0"
                           title="Remover link"
                         >
                           ×
@@ -475,49 +480,57 @@
                       <button
                         phx-click="toggle_link_like"
                         phx-value-link-id={link.id}
-                        style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 14px; color: #{if liked, do: "#c0392b", else: "#9a7a5a"}; padding: 4px 6px; border-radius: 4px; flex-shrink: 0;"}
+                        class={[
+                          "flex items-center gap-1 bg-transparent border-0 cursor-pointer text-sm py-1 px-1.5 rounded flex-shrink-0",
+                          liked && "text-accent-red",
+                          !liked && "text-ink-500"
+                        ]}
                         title={if liked, do: "Remover like", else: "Curtir"}
                       >
                         {if liked, do: "♥", else: "♡"}
                         <%= if like_count > 0 do %>
-                          <span style="font-size: 11px;">{like_count}</span>
+                          <span class="text-xs">{like_count}</span>
                         <% end %>
                       </button>
                       <button
                         phx-click="toggle_link_video"
                         phx-value-link-id={link.id}
-                        style={"font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; border: 1px solid rgba(60,40,20,0.2); background: #{if @expanded_link == link.id, do: "#1a0e0510", else: "transparent"}; color: #5c3a1a; white-space: nowrap; font-family: Georgia, serif; flex-shrink: 0;"}
+                        class={[
+                          "text-xs py-1 px-2.5 rounded cursor-pointer border border-ink-900/20 text-ink-700 whitespace-nowrap font-serif flex-shrink-0",
+                          @expanded_link == link.id && "bg-ink-900/[0.06]",
+                          @expanded_link != link.id && "bg-transparent"
+                        ]}
                       >
                         {if @expanded_link == link.id, do: "▲ Fechar", else: "▶ Assistir"}
                       </button>
                     </div>
                     <%!-- Expandable iframe --%>
                     <%= if @expanded_link == link.id do %>
-                      <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+                      <div class="relative pb-[56.25%] h-0 overflow-hidden">
                         <iframe
                           src={embed_url}
                           frameborder="0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowfullscreen
                           loading="lazy"
-                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                          class="absolute top-0 left-0 w-full h-full"
                         >
                         </iframe>
                       </div>
                     <% end %>
                   </div>
                 <% :external -> %>
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fffef9; border: 1px solid rgba(60,40,20,0.12); border-radius: 4px;">
+                  <div class="flex items-center gap-2.5 py-2.5 px-3.5 bg-ink-50 border border-ink-900/12 rounded">
                     <a
                       href={link.url}
                       target="_blank"
                       rel="noreferrer noopener"
-                      style="flex: 1; min-width: 0; text-decoration: none;"
+                      class="flex-1 min-w-0 no-underline"
                     >
-                      <p style="font-size: 13px; font-weight: 600; color: #2c1a0e; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      <p class="text-sm font-semibold text-ink-900 m-0 mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                         {if link.title && link.title != "", do: link.title, else: link.url}
                       </p>
-                      <p style="font-size: 11px; color: #9a7a5a; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      <p class="text-xs text-ink-500 m-0 whitespace-nowrap overflow-hidden text-ellipsis">
                         {link.url}
                       </p>
                     </a>
@@ -525,7 +538,7 @@
                       <button
                         phx-click="start_edit_link"
                         phx-value-link-id={link.id}
-                        style="background: none; border: none; cursor: pointer; font-size: 13px; color: #d4a054; padding: 4px 6px; flex-shrink: 0;"
+                        class="bg-transparent border-0 cursor-pointer text-sm text-gold-500 py-1 px-1.5 flex-shrink-0"
                         title="Editar link"
                       >
                         ✏
@@ -534,7 +547,7 @@
                         phx-click="delete_link"
                         phx-value-link-id={link.id}
                         data-confirm="Remover este link?"
-                        style="background: none; border: none; cursor: pointer; font-size: 15px; color: #c0392b; padding: 4px 6px; flex-shrink: 0;"
+                        class="bg-transparent border-0 cursor-pointer text-base text-accent-red py-1 px-1.5 flex-shrink-0"
                         title="Remover link"
                       >
                         ×
@@ -543,12 +556,16 @@
                     <button
                       phx-click="toggle_link_like"
                       phx-value-link-id={link.id}
-                      style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 14px; color: #{if liked, do: "#c0392b", else: "#9a7a5a"}; padding: 4px 6px; border-radius: 4px; flex-shrink: 0;"}
+                      class={[
+                        "flex items-center gap-1 bg-transparent border-0 cursor-pointer text-sm py-1 px-1.5 rounded flex-shrink-0",
+                        liked && "text-accent-red",
+                        !liked && "text-ink-500"
+                      ]}
                       title={if liked, do: "Remover like", else: "Curtir"}
                     >
                       {if liked, do: "♥", else: "♡"}
                       <%= if like_count > 0 do %>
-                        <span style="font-size: 11px;">{like_count}</span>
+                        <span class="text-xs">{like_count}</span>
                       <% end %>
                     </button>
                   </div>
@@ -559,37 +576,37 @@
       <% end %>
 
       <%!-- Submit link form --%>
-      <div style="padding: 16px; background: rgba(212,160,84,0.06); border: 1px solid rgba(212,160,84,0.2); border-radius: 6px;">
-        <p style="font-size: 11px; letter-spacing: 1.5px; color: #9a7a5a; text-transform: uppercase; margin-bottom: 12px;">
+      <div class="py-4 px-4 bg-gold-500/[0.06] border border-gold-500/20 rounded-md">
+        <p class="text-xs tracking-[1.5px] text-ink-500 uppercase mb-3">
           Adicionar link
         </p>
-        <form phx-submit="submit_link" style="display: flex; flex-direction: column; gap: 8px;">
+        <form phx-submit="submit_link" class="flex flex-col gap-2">
           <input
             type="url"
             name="url"
             value={@link_url}
             placeholder="https://..."
             required
-            style="width: 100%; padding: 9px 12px; border: 1px solid rgba(60,40,20,0.25); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2 px-3 border border-ink-900/25 rounded font-serif text-sm text-ink-900 box-border"
           />
           <input
             type="text"
             name="title"
             value={@link_title}
             placeholder="Título opcional"
-            style="width: 100%; padding: 9px 12px; border: 1px solid rgba(60,40,20,0.25); border-radius: 4px; font-family: Georgia, serif; font-size: 14px; color: #1a0e05; box-sizing: border-box;"
+            class="w-full py-2 px-3 border border-ink-900/25 rounded font-serif text-sm text-ink-900 box-border"
           />
           <div>
             <button
               type="submit"
-              style="padding: 9px 18px; background: #1a0e05; color: #f2ede4; border: none; border-radius: 6px; cursor: pointer; font-family: Georgia, serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;"
+              class="py-2 px-4.5 bg-ink-900 text-ink-200 border-0 rounded-md cursor-pointer font-serif text-sm font-semibold tracking-wide"
             >
               Enviar link
             </button>
           </div>
         </form>
         <%= if @link_submitted do %>
-          <p style="font-size: 13px; color: #27ae60; margin-top: 10px; font-style: italic;">
+          <p class="text-sm text-accent-green mt-2.5 italic">
             Link enviado para aprovação!
           </p>
         <% end %>
@@ -598,10 +615,10 @@
   </div>
 
   <%!-- Footer --%>
-  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a;">
-      <a href="/about" style="color: #9a7a5a; text-decoration: none;">Quem somos</a>
-      <span style="color: #bba88a; margin: 0 8px;">·</span>
+  <footer class="border-t border-ink-900/10 p-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
