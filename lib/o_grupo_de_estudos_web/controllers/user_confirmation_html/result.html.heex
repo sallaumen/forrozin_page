@@ -1,44 +1,44 @@
-<div style="min-height: 100vh; background: #f7f3ec; font-family: Georgia, serif; display: flex; flex-direction: column;">
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <%!-- Header --%>
-  <header style="background: #1a0e05; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+  <header class="bg-ink-900 px-6 py-3.5 flex items-center justify-between">
     <a
       href={~p"/"}
-      style="font-family: Georgia, serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #f2ede4; text-transform: uppercase; text-decoration: none;"
+      class="font-serif text-[13px] font-bold tracking-[2px] text-ink-50 uppercase no-underline"
     >
       Forrózin
     </a>
   </header>
 
-  <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px;">
-    <div style="max-width: 480px; width: 100%; text-align: center;">
+  <div class="flex-1 flex items-center justify-center px-6 py-[60px]">
+    <div class="max-w-[480px] w-full text-center">
       <%= if @ok do %>
-        <p style="font-size: 36px; margin-bottom: 20px;">✓</p>
-        <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; margin: 0 0 16px; letter-spacing: -0.5px;">
+        <p class="text-4xl mb-5">✓</p>
+        <h1 class="text-[28px] font-bold text-ink-900 mt-0 mb-4 tracking-[-0.5px]">
           Email confirmado
         </h1>
-        <p style="font-size: 16px; line-height: 1.8; color: #5a4230; margin-bottom: 36px;">
+        <p class="text-base leading-[1.8] text-ink-700 mb-9">
           Conta ativa. Você já pode acessar o acervo.
         </p>
         <a
           href={~p"/login"}
-          style="display: inline-block; padding: 14px 36px; background: #1a0e05; color: #f2ede4; text-decoration: none; font-family: Georgia, serif; font-size: 14px; font-weight: 700; letter-spacing: 1px; border-radius: 4px;"
+          class="inline-block py-3.5 px-9 bg-ink-900 text-ink-50 no-underline font-serif text-sm font-bold tracking-[1px] rounded"
         >
           Entrar
         </a>
       <% else %>
-        <p style="font-size: 36px; margin-bottom: 20px;">✗</p>
-        <h1 style="font-size: 28px; font-weight: 700; color: #1a0e05; margin: 0 0 16px; letter-spacing: -0.5px;">
+        <p class="text-4xl mb-5">✗</p>
+        <h1 class="text-[28px] font-bold text-ink-900 mt-0 mb-4 tracking-[-0.5px]">
           Link inválido
         </h1>
-        <p style="font-size: 16px; line-height: 1.8; color: #5a4230; margin-bottom: 12px;">
+        <p class="text-base leading-[1.8] text-ink-700 mb-3">
           Esse link de confirmação já foi utilizado ou não existe.
         </p>
-        <p style="font-size: 14px; color: #9a7a5a; margin-bottom: 36px;">
+        <p class="text-sm text-ink-500 mb-9">
           Se sua conta ainda não foi confirmada, entre em contato.
         </p>
         <a
           href={~p"/login"}
-          style="display: inline-block; padding: 14px 36px; background: #1a0e05; color: #f2ede4; text-decoration: none; font-family: Georgia, serif; font-size: 14px; font-weight: 700; letter-spacing: 1px; border-radius: 4px;"
+          class="inline-block py-3.5 px-9 bg-ink-900 text-ink-50 no-underline font-serif text-sm font-bold tracking-[1px] rounded"
         >
           Ir para o login
         </a>
@@ -47,10 +47,10 @@
   </div>
 
   <%!-- Footer --%>
-  <footer style="border-top: 1px solid rgba(60,40,20,0.1); padding: 24px; text-align: center; background: #ede8df; margin-top: auto;">
-    <p style="font-size: 12px; color: #7a5c3a;">
-      <a href="/about" style="color: #9a7a5a; text-decoration: none;">Quem somos</a>
-      <span style="color: #bba88a; margin: 0 8px;">·</span>
+  <footer class="border-t border-ink-200/60 py-6 px-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
