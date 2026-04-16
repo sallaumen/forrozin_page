@@ -18,6 +18,8 @@ O site está online em produção (https://ogrupodeestudos.com.br), mas **não �
 
 **Estado do tooling:** Tailwind v4.1.12 e daisyUI já estão configurados em `assets/css/app.css` mas praticamente não são usados nas páginas de conteúdo — só em layouts e auth. Viewport meta tag existe.
 
+**Nota sobre daisyUI:** será **removido** antes da Fase 1. Dois sistemas (daisyUI + componentes primitivos próprios) competindo gera conflito visual e semântico (classe `btn` do daisyUI vs `<.button>` nosso). Escolhemos um sistema próprio pra ter controle total da identidade visual.
+
 **Objetivo:** transformar o app em experiência mobile com qualidade comparável a big tech (Linear, Stripe, Notion), mantendo a identidade visual sepia/earth-tones atual.
 
 ---
@@ -31,12 +33,18 @@ O site está online em produção (https://ogrupodeestudos.com.br), mas **não �
 | Dark mode | **Não implementar agora** | O uso de CSS variables já deixa dark mode adicionável no futuro sem refactor; tokens não precisam de estrutura adicional |
 | Tipografia | **Dual: Georgia (conteúdo) + Inter (UI)** | Serif ruim em UI de 11-14px; Inter é padrão indústria pra UI |
 | Motion | **Moderate** — page transitions, bottom sheets, micro-animações de tap, skeleton loaders | Feeling nativo sem custo de shared element transitions |
-| PWA | **Basic** — manifest + service worker mínimo + install prompt | 80% do valor de PWA completa por 20% do esforço |
+| PWA | **Basic** — manifest + service worker mínimo (sem offline). Install prompt usa o automático do navegador (sem botão customizado) | 80% do valor de PWA completa por 20% do esforço; Safari não suporta install prompt programático mesmo |
 | Ordem de páginas | **Por uso** — collection → step → graph → community → perfil → auth → admin | Maximiza impacto percebido |
 
 ---
 
 ## Design de tokens (CSS variables)
+
+**Importante (Tailwind v4.1.12):** `@theme` gera utilities automaticamente só pra namespaces reconhecidos (`--color-*`, `--font-*`, `--text-*`, `--radius-*`, `--shadow-*`, `--ease-*`). Tokens fora desses namespaces (ex: durations customizadas) ficam em `:root` e são consumidos via `var()`.
+
+**Gate de implementação:** na Fase 0b, o primeiro passo é criar **um único token de teste** e validar no build que a utility foi gerada como esperado. Só depois escrever o resto. Isso mitiga risco de divergência entre a doc do Tailwind v4 e o comportamento real da 4.1.12.
+
+### Tokens que geram utilities Tailwind (`@theme`)
 
 Em `assets/css/app.css`:
 
@@ -55,7 +63,7 @@ Em `assets/css/app.css`:
   --color-ink-900: #1a0e05;   /* texto principal */
 
   --color-gold-400: #e6b97e;
-  --color-gold-500: #d4a054;   /* accent dourado */
+  --color-gold-500: #d4a054;
   --color-gold-600: #b8893f;
 
   --color-accent-red:    #c0392b;
@@ -67,27 +75,10 @@ Em `assets/css/app.css`:
   --font-serif: Georgia, "Iowan Old Style", serif;
   --font-sans:  "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Escala de tamanhos */
-  --text-xs: 0.75rem;    /* 12px */
-  --text-sm: 0.875rem;   /* 14px */
-  --text-base: 1rem;     /* 16px */
-  --text-lg: 1.125rem;   /* 18px */
-  --text-xl: 1.25rem;    /* 20px */
-  --text-2xl: 1.5rem;    /* 24px */
-  --text-3xl: 1.875rem;  /* 30px */
-  --text-4xl: 2.25rem;   /* 36px */
-
-  --leading-tight: 1.25;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.7;
-
-  --tracking-widest: 0.1em;
-
   /* Raios */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 12px;
-  --radius-full: 9999px;
 
   /* Sombras */
   --shadow-xs: 0 1px 2px rgba(26,14,5,0.05);
@@ -95,17 +86,38 @@ Em `assets/css/app.css`:
   --shadow-md: 0 4px 12px rgba(26,14,5,0.08);
   --shadow-lg: 0 12px 32px rgba(26,14,5,0.12);
 
-  /* Motion */
+  /* Easings (namespace --ease-* suportado) */
   --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
   --ease-spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-in-out:    cubic-bezier(0.4, 0, 0.2, 1);
-
-  --duration-instant: 100ms;
-  --duration-fast: 200ms;
-  --duration-base: 300ms;
-  --duration-slow: 500ms;
 }
 ```
+
+### Tokens consumidos via `var()` (`:root`)
+
+Durations e outras constantes não-tokenizáveis pelo Tailwind:
+
+```css
+:root {
+  --duration-instant: 100ms;
+  --duration-fast:    200ms;
+  --duration-base:    300ms;
+  --duration-slow:    500ms;
+}
+```
+
+Uso em CSS:
+```css
+.button:active {
+  transition: transform var(--duration-instant) var(--ease-out-quart);
+}
+```
+
+Ou em inline dinâmico quando necessário (ex: animação customizada):
+```heex
+<div style={"animation-duration: var(--duration-base);"}>
+```
+
+**Tamanhos de texto, line-heights e tracking:** Tailwind v4 já define `text-xs`, `text-sm`, etc. por padrão — **não vamos redefinir**. Se precisar customizar algum tamanho, fazemos via `@utility` específica.
 
 **Breakpoints** (default Tailwind): mobile <640px, sm ≥640px, md ≥768px, lg ≥1024px, xl ≥1280px.
 
@@ -125,12 +137,46 @@ Em `lib/o_grupo_de_estudos_web/components/ui/`:
 | `<.input>`, `<.textarea>`, `<.select>` | Form controls com label, error, hint |
 | `<.badge>` | Tags (categoria, status) |
 | `<.skeleton>` | Placeholder com shimmer sutil |
-| `<.bottom_sheet>` | Modal mobile que desliza de baixo com swipe-to-close; vira modal centrado em ≥md |
+| `<.bottom_sheet>` | Wrapper sobre elemento nativo `<dialog>` + CSS (bottom: 0 + translate); mobile: desliza de baixo; desktop (≥md): vira modal centrado. Swipe-to-close implementado em hook JS pequeno (~80 linhas) só pro mobile |
 | `<.top_nav>` | Navbar responsiva (desktop: horizontal; mobile detalhe: back button) |
 | `<.bottom_nav>` | Tab bar mobile fixa (só em páginas primárias) |
 | `<.back_button>` | Voltar mobile com fallback de rota |
 
-**Regra:** function components simples, stateless, tipadas com `attr`. Sem Storybook — testes unitários de render cobrem a superfície.
+**Regra:** function components simples, stateless, com `attr` tipado rigorosamente via `values:` pra estados inválidos serem impossíveis de representar (DDD — alinhado com suas preferências). Sem Storybook — testes unitários de render cobrem a superfície.
+
+**Exemplo de contrato rigoroso (button):**
+```elixir
+defmodule OGrupoDeEstudosWeb.UI.Button do
+  use Phoenix.Component
+
+  attr :variant, :atom, values: [:primary, :ghost, :danger], default: :primary
+  attr :size, :atom, values: [:sm, :md, :lg], default: :md
+  attr :type, :string, values: ["button", "submit"], default: "button"
+  attr :loading, :boolean, default: false
+  attr :rest, :global, include: ~w(disabled phx-click phx-value-id data-confirm)
+  slot :inner_block, required: true
+
+  def button(assigns) do
+    ~H"""
+    <button
+      type={@type}
+      data-variant={@variant}
+      data-size={@size}
+      class={button_classes(@variant, @size)}
+      disabled={@loading}
+      {@rest}
+    >
+      <%= render_slot(@inner_block) %>
+    </button>
+    """
+  end
+end
+```
+
+**Por que `data-variant` / `data-size` no DOM:**
+- Testes ficam desacoplados de classes Tailwind específicas (podemos refatorar classes sem quebrar testes)
+- Debug visual fácil no DevTools
+- Contratos semânticos estáveis
 
 ---
 
@@ -221,13 +267,67 @@ Preload no root layout:
 
 ## Motion
 
-### Page transitions (mobile)
+### Page transitions (mobile) — View Transitions API
 
-- **Primária → Detalhe:** página nova slide-in da direita (translate-x: 100% → 0); bottom nav desliza pra baixo; 300ms `--ease-out-quart`
-- **Detalhe → Primária:** reverso
-- **Desktop:** sem page transitions (só troca de conteúdo normal)
+LiveView faz DOM patch (não navegação tradicional), então `JS.transition` com slide-in tem risco de flicker — o DOM é substituído enquanto a animação roda.
 
-Implementação: `Phoenix.LiveView.JS.transition` + CSS classes — sem framework externo.
+**Caminho correto:** **View Transitions API** (`document.startViewTransition`), nativa dos browsers, com fallback fade pra onde não suportar.
+
+- **Browsers que suportam:** Chrome 111+, Edge 111+, Safari 18.0+ (setembro 2024), Opera 97+. Cobre ~90%+ do tráfego mobile em 2026.
+- **Fallback:** onde não suportado, `JS.transition` faz um cross-fade simples (300ms opacity). Sem slide, mas sem quebrar nada.
+
+Implementação no hook do `<main>`:
+```javascript
+// Em assets/js/app.js — hook PageTransition
+Hooks.PageTransition = {
+  mounted() {
+    // LiveView executeJS inicia a transition antes do patch
+    this.handleEvent("phx:navigate", ({to}) => {
+      if (document.startViewTransition) {
+        document.startViewTransition(() => {
+          // LiveView vai fazer o patch naturalmente
+          window.liveSocket.main.pushLinkRedirect(to);
+        });
+      } else {
+        // fallback simples
+        window.liveSocket.main.pushLinkRedirect(to);
+      }
+    });
+  }
+};
+```
+
+CSS das transições (via View Transitions API pseudo-elementos):
+```css
+@view-transition { navigation: auto; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-out-quart);
+}
+
+/* Slide só em mobile */
+@media (max-width: 767px) {
+  ::view-transition-new(root) {
+    animation-name: slide-from-right;
+  }
+  ::view-transition-old(root) {
+    animation-name: slide-to-left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+```
+
+**Resultado:** slide nativo onde suportado, fade suave onde não, zero fade onde usuário pediu reduced-motion. Sem o inferno de sincronizar animação com DOM patch do LiveView.
+
+- **Desktop:** sem page transitions visíveis (troca de conteúdo normal), mesmo com VT API ativa. Media query acima controla isso.
 
 ### Micro-animações
 
@@ -237,7 +337,9 @@ Implementação: `Phoenix.LiveView.JS.transition` + CSS classes — sem framewor
 
 ### Skeleton loaders
 
-Substituem spinners em lista da collection, feed, grafo. Estilo: retângulos cinza-claros, animação `pulse` de 1.5s (opacity 0.4 ↔ 0.7).
+Começar **só na Collection** (lista longa, carregamento perceptível). Estilo: retângulos cinza-claros, animação `pulse` de 1.5s (opacity 0.4 ↔ 0.7).
+
+Pra feed da comunidade e grafo: spinner discreto por enquanto. Se depois medirmos que skeleton melhora percepção, adicionamos. YAGNI.
 
 ### Accessibility
 
@@ -283,7 +385,16 @@ Substituem spinners em lista da collection, feed, grafo. Estilo: retângulos cin
 
 ### Service Worker mínimo (`priv/static/sw.js`)
 
-Vazio — só a existência + scope ativa o install prompt do navegador. Sem cache strategy.
+`beforeinstallprompt` exige SW com handler `fetch` **presente** (não pode ser totalmente vazio — alguns browsers falham o critério do install prompt sem ele). Mínimo viável:
+
+```javascript
+// priv/static/sw.js
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener("fetch", () => {});  // handler vazio, mas presente
+```
+
+Sem cache strategy — passa tudo pra rede. O objetivo aqui é só satisfazer os critérios de PWA instalável.
 
 ### Root layout
 
@@ -298,12 +409,11 @@ Vazio — só a existência + scope ativa o install prompt do navegador. Sem cac
 
 ### Install prompt
 
-Hook `InstallPrompt` em `assets/js/app.js`:
-- Escuta `beforeinstallprompt`, armazena deferido
-- Mostra botão "Instalar app" no menu do Perfil
-- Ao clicar, chama `prompt()`
+Confiamos no prompt automático do navegador (Chrome mostra banner "Instalar app" quando critérios PWA estão satisfeitos; Safari não suporta `beforeinstallprompt` mesmo).
 
-Se já instalado ou não suportado, botão some.
+**Não vamos implementar botão customizado de install** nesta fase. Complexidade alta pra retorno marginal, e Safari (maior parte do tráfego iOS) não é afetado por ele.
+
+Adicionamos instruções claras de "Como instalar" na página **About** — texto simples explicando: Chrome/Edge mostra banner automático; Safari iOS: botão Share → "Adicionar à Tela de Início".
 
 ---
 
@@ -337,19 +447,28 @@ Ganho esperado: ~25KB cortados do bundle inicial.
 }
 ```
 
-### Fix imediato de overflow
+### Fix de overflow — corrigir na fonte, não mascarar
+
+**Não vamos usar `overflow-x: hidden` no `<html>` ou `<body>`.** Isso mascara o bug real e causa efeitos colaterais:
+- Quebra `position: sticky` (vamos querer no top nav)
+- Quebra scroll-to-anchor em alguns browsers
+- Esconde regressões futuras
+
+**Abordagem correta:**
 
 ```css
-html, body {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100vw;
-}
-* { max-width: 100%; box-sizing: border-box; }
-img { max-width: 100%; height: auto; }
+/* global: só o essencial */
+*, *::before, *::after { box-sizing: border-box; }
+img, video, svg { max-width: 100%; height: auto; }
 ```
 
-Resolve 90% dos bugs de scroll horizontal.
+Depois, **na Fase 0a**, rodamos o app em mobile real e usamos o DevTools (Inspect Element → "Rendering" panel ou simplesmente `* { outline: 1px solid red }`) pra encontrar o elemento específico que está causando overflow. 90% das vezes é:
+- Tabela sem `table-layout: fixed`
+- `<pre>` de código ou textarea com largura maior que o viewport
+- Grid com `min-content` implícito
+- Elemento com `width: 100vw` (que ignora scrollbar e estoura)
+
+Corrigimos esses casos específicos na raiz. Resultado: overflow sumiu sem band-aid.
 
 ---
 
@@ -382,17 +501,29 @@ Cada fase = 1 PR independente, deploy independente, sem quebrar o app no meio. *
 8. Próxima fase
 ```
 
-### Fase 0 — Foundation
+### Fase 0a — Fixes imediatos (deploy o quanto antes)
 
-- CSS overflow fixes (html/body/img)
-- Tokens em `app.css`
-- Self-host Inter + preload
-- Viewport com `viewport-fit=cover`
-- Safe area CSS
-- `prefers-reduced-motion` global
-- PWA manifest + SW + install prompt hook
+Valor imediato pro usuário. Deploy independente. Sem tokens ainda, sem componentes.
 
-**Critério:** site sem scroll horizontal no mobile; Lighthouse PWA > 80.
+- Adicionar `*, *::before, *::after { box-sizing: border-box }` e `img, video, svg { max-width: 100%; height: auto }` no CSS global
+- Investigar e corrigir na fonte os elementos causando overflow horizontal (tabelas, `<pre>`, elementos com `100vw`)
+- Atualizar viewport meta: `viewport-fit=cover`
+- Adicionar `@media (prefers-reduced-motion: reduce)` global
+
+**Critério:** site sem scroll horizontal no mobile; nenhum element estoura viewport.
+
+### Fase 0b — Foundation (tokens, PWA, Inter, daisyUI out)
+
+- **Remover daisyUI** do `assets/css/app.css` (imports, plugins, classes daisyUI em arquivos existentes substituídas por Tailwind/inline temporário — detalhado em plano)
+- **Validar sintaxe `@theme` Tailwind v4.1.12:** criar um único token de cor, rodar build, confirmar utility gerada; só depois escrever o resto
+- Tokens em `@theme` (cores, fontes, raios, sombras, easings)
+- Tokens em `:root` (durations)
+- Self-host Inter + preload em `priv/static/fonts/Inter-Variable.woff2`
+- Safe area insets nos lugares estratégicos (body, bottom nav no futuro)
+- PWA: manifest.json, ícones, service worker mínimo (com fetch handler presente)
+- Tag `<link rel="manifest">` + meta tags PWA no root layout
+
+**Critério:** build gera classes Tailwind a partir dos tokens (verificável via inspect); Lighthouse PWA > 80; Inter carregando sem FOIT; zero referência a daisyUI restante.
 
 ### Fase 1 — Componentes primitivos
 
@@ -463,12 +594,25 @@ Todos os componentes listados em "Componentes primitivos" + testes unitários.
 
 | Tipo | Método |
 |------|--------|
-| Componentes primitivos | Testes unitários renderizando com attrs |
-| LiveView | `Phoenix.LiveViewTest` verificando classes Tailwind |
-| Navegação | Teste de integração por rota |
+| Componentes primitivos | Testes unitários via `render_component/2` verificando **contratos semânticos**: presença de `data-variant`, `data-size`, `role`, `aria-*`, `type`, touch target (via `data-*` ou atributos). **Não testar classes Tailwind** — isso acopla testes à implementação visual. |
+| LiveView | `Phoenix.LiveViewTest` verificando estrutura HTML (elementos, `data-*`, eventos `phx-*`) |
+| Navegação | Teste de integração: rota primária tem `data-nav="bottom"`, rota detalhe tem `data-nav="detail"` |
 | Responsividade | **Manual em device real** (Phoenix.LiveViewTest não tem viewport) |
 | Motion | Manual |
 | A11y | Lighthouse CI + manual com screen reader |
+
+**Exemplo de teste contratual:**
+```elixir
+test "button/1 renders with primary variant and touch target" do
+  html = render_component(&Button.button/1, %{
+    variant: :primary,
+    inner_block: fn _, _ -> "Click" end
+  })
+  assert html =~ ~s(data-variant="primary")
+  assert html =~ ~s(data-size="md")
+  # touch target verificável via atributo próprio ou estrutura
+end
+```
 
 **Playwright com screenshots visuais** fica como opcional futuro — custo-benefício não justifica agora.
 
@@ -483,7 +627,7 @@ Ao final das 9 fases:
 3. Lighthouse PWA ≥ 90
 4. Zero scroll horizontal indesejado em qualquer viewport
 5. Touch targets ≥ 44px em 100% dos elementos interativos
-6. **Zero inline styles** em `lib/o_grupo_de_estudos_web/live/**` — verificável via grep
+6. **Zero inline styles estáticos** em `.heex` templates (dynamic styles legítimos — ex: `style={"transform: translateX(#{@offset}px)"}` — são permitidos e documentados). SVGs inline e atributos `fill`/`stroke` dentro de SVG também são permitidos. Métrica verificável via teste meta em Elixir que lê os arquivos e regex em padrões específicos de strings estáticas (`style="..."` sem interpolação), excluindo SVG e casos marcados explicitamente.
 7. App instalável via "Adicionar à tela inicial" com ícone e splash
 8. Funciona em iPhone SE (375px) e iPad (1024px)
 
@@ -494,8 +638,10 @@ Ao final das 9 fases:
 Não entram neste redesign (anotados como próximos possíveis):
 - Dark mode (CSS variables já são base suficiente; overrides `[data-theme="dark"]` ficam pra depois)
 - PWA offline (service worker com cache)
+- Install prompt customizado com botão próprio (Safari não suporta mesmo; automático do Chrome resolve)
 - WebP nas imagens (conversão de 54 JPGs)
 - Sync em background
 - Shared element transitions (tipo imagem do card expandindo)
 - i18n (internacionalização)
 - Playwright visual regression
+- Skeleton loaders em feed e grafo (começamos só na collection)
