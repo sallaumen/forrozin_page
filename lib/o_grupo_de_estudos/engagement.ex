@@ -493,6 +493,17 @@ defmodule OGrupoDeEstudos.Engagement do
     |> MapSet.new()
   end
 
+  @doc "Returns a list of step codes that the given user has liked."
+  def liked_step_codes(user_id) do
+    from(l in Like,
+      where: l.user_id == ^user_id and l.likeable_type == "step",
+      join: s in Step,
+      on: s.id == l.likeable_id,
+      select: s.code
+    )
+    |> Repo.all()
+  end
+
   @doc "Returns the count of likes given by a user for a specific likeable_type."
   def count_likes_given(user_id, likeable_type) do
     Repo.aggregate(

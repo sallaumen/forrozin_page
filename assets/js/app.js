@@ -348,6 +348,7 @@ function clearSpotlight(cy) {
     cy.nodes().style({ opacity: 1 })
     cy.edges().style({ opacity: 0.45, width: 1.5 })
   })
+  applyLikedStepStyling()
 }
 
 function applyCategorySpotlight(cy, categoryName) {
@@ -359,6 +360,32 @@ function applyCategorySpotlight(cy, categoryName) {
     catNodes.connectedEdges().style({ opacity: 0.7, width: 2 })
     catNodes.connectedEdges().connectedNodes().style({ opacity: 0.6 })
     catNodes.style({ opacity: 1 })
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Liked step styling: red border on nodes the current user has liked
+// ---------------------------------------------------------------------------
+function applyLikedStepStyling() {
+  if (!window._cytoscape || !window._likedStepCodes) return
+  const cy = window._cyInstance
+  if (!cy) return
+
+  cy.nodes().forEach(node => {
+    if (window._likedStepCodes.has(node.id())) {
+      node.style({
+        'border-width': node.data('highlighted') ? 5 : (node.degree() >= 10 ? 3 : 2.5),
+        'border-color': '#c0392b'
+      })
+    } else {
+      // Only reset the border-color if the node isn't actively selected/spotlighted
+      // and sequence highlight isn't active (sequence takes full precedence)
+      if (!window._seqHighlightActive) {
+        node.style({
+          'border-color': node.data('cor') || '#9a7a5a'
+        })
+      }
+    }
   })
 }
 
@@ -413,6 +440,12 @@ const GraphVisual = {
     this.handleEvent("set_manual_mode", ({ active }) => {
       this._manualMode = active
       this.el.dataset.manualMode = active ? "true" : "false"
+    })
+
+    // Liked steps: highlight with red border
+    this.handleEvent("set_liked_steps", ({ codes }) => {
+      window._likedStepCodes = new Set(codes)
+      applyLikedStepStyling()
     })
   },
 
@@ -571,6 +604,7 @@ const GraphVisual = {
     })
 
     this._cy = cy
+    window._cyInstance = cy
 
     // Inherit source category color to edges — except edges pointing to BF get black
     cy.edges().forEach(edge => {
@@ -583,6 +617,9 @@ const GraphVisual = {
 
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)
+
+    // Apply liked step borders after layout (layout is synchronous here)
+    applyLikedStepStyling()
 
     // Collect byCat for zone redraw
     const byCat = {}
@@ -845,6 +882,9 @@ const GraphVisual = {
     window._seqHighlightActive = false
     this._seqHighlightCodes = null
     this._removeSeqExitButton()
+
+    // Re-apply liked step borders now that sequence highlight is gone
+    applyLikedStepStyling()
 
     // Fit back to full graph
     cy.animate({ fit: { padding: 60 }, duration: 400 })

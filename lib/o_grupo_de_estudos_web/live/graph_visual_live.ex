@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Sequences}
+  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
@@ -19,6 +19,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     graph = Encyclopedia.build_graph()
 
     seq_saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
+    liked_codes = Engagement.liked_step_codes(socket.assigns.current_user.id)
 
     {:ok,
      socket
@@ -40,7 +41,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_required_suggestions, [])
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
-     |> assign_graph_data(graph, false)}
+     |> assign(:liked_step_codes, liked_codes)
+     |> assign_graph_data(graph, false)
+     |> push_event("set_liked_steps", %{codes: liked_codes})}
   end
 
   @impl true
