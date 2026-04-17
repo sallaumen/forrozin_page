@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
     Email.new()
     |> Email.to({user.username, user.email})
     |> Email.from(@sender)
-    |> Email.subject("Confirme seu email — O Grupo de Estudos")
+    |> Email.subject("Confirme seu email | O Grupo de Estudos")
     |> Email.html_body(html(user.username, link))
     |> Email.text_body(text(user.username, link))
   end
@@ -50,7 +50,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
 
   defp text(name, link) do
     """
-    O Grupo de Estudos — Confirme seu email
+    O Grupo de Estudos | Confirme seu email
 
     Olá, #{name}!
 
