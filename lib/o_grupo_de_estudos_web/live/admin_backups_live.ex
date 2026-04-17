@@ -43,6 +43,15 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
     end
   end
 
+  def handle_event("delete_backup", %{"path" => path}, socket) do
+    if valid_backup_path?(path) do
+      File.rm(path)
+      {:noreply, socket |> load_backups() |> put_flash(:info, "Backup deletado.")}
+    else
+      {:noreply, put_flash(socket, :error, "Arquivo não encontrado.")}
+    end
+  end
+
   defp load_backups(socket) do
     backups =
       Backup.list_backups()
@@ -55,6 +64,25 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
   defp valid_backup_path?(path) do
     filename = Path.basename(path)
     String.ends_with?(filename, ".json") and File.exists?(path)
+  end
+
+  @min_safe_backup_size 5_000
+
+  def suspicious?(backup), do: backup.size < @min_safe_backup_size
+
+  def backup_summary(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, data} ->
+            steps = length(Map.get(data, "steps", []))
+            connections = length(Map.get(data, "connections", []))
+            sections = length(Map.get(data, "sections", []))
+            "#{steps} passos, #{connections} conexões, #{sections} seções"
+          _ -> "formato inválido"
+        end
+      _ -> "erro ao ler"
+    end
   end
 
   @doc "Formats bytes into a human-readable string (KB or MB)."

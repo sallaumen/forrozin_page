@@ -56,21 +56,41 @@
                 </p>
               </div>
 
+              <%!-- Warning for suspicious backups --%>
+              <%= if suspicious?(backup) do %>
+                <div class="flex items-center gap-1.5 text-xs text-accent-red bg-accent-red/10 border border-accent-red/20 rounded px-2 py-1">
+                  <span>⚠</span>
+                  <span>Backup suspeito (muito pequeno)</span>
+                </div>
+              <% end %>
+
               <%!-- Actions --%>
               <div class="flex gap-2 flex-shrink-0 items-center">
                 <a
                   href={~p"/admin/backups/download/#{backup.filename}"}
-                  class="px-3.5 py-1.5 bg-transparent text-[#2c7be5] border border-[#2c7be5] rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap no-underline inline-block"
+                  class="px-3 py-1.5 bg-transparent text-ink-600 border border-ink-300 rounded cursor-pointer font-serif text-xs whitespace-nowrap no-underline inline-block hover:bg-ink-100"
                 >
                   Baixar
                 </a>
                 <button
                   phx-click="restore_backup"
                   phx-value-path={backup.path}
-                  data-confirm={"ATENÇÃO: Restaurar o backup \"#{backup.filename}\" vai reinserir os dados antigos no banco (on_conflict: nothing — não sobrescreve dados existentes). Tem certeza que deseja continuar?"}
-                  class="px-3.5 py-1.5 bg-transparent text-accent-orange border border-accent-orange rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
+                  data-confirm={"RESTAURAR \"#{backup.filename}\"?\n\nConteúdo: #{backup_summary(backup.path)}\nTamanho: #{format_size(backup.size)}\n\nDados existentes NÃO serão sobrescritos (on_conflict: nothing)."}
+                  class={[
+                    "px-3 py-1.5 rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap border",
+                    suspicious?(backup) && "bg-accent-red/10 text-accent-red border-accent-red/30",
+                    !suspicious?(backup) && "bg-transparent text-accent-orange border-accent-orange"
+                  ]}
                 >
                   Restaurar
+                </button>
+                <button
+                  phx-click="delete_backup"
+                  phx-value-path={backup.path}
+                  data-confirm={"Deletar \"#{backup.filename}\" permanentemente?"}
+                  class="px-3 py-1.5 bg-transparent text-accent-red/60 border border-accent-red/20 rounded cursor-pointer font-serif text-xs whitespace-nowrap hover:bg-accent-red/10 hover:text-accent-red"
+                >
+                  Deletar
                 </button>
               </div>
             </div>
