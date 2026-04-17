@@ -54,13 +54,15 @@ config :phoenix, :json_library, Jason
 # Oban — filas de jobs assíncronos
 config :o_grupo_de_estudos, Oban,
   repo: OGrupoDeEstudos.Repo,
-  queues: [email: 10, backup: 1],
+  queues: [email: 10, backup: 1, maintenance: 1],
   plugins: [
     Oban.Plugins.Pruner,
     {Oban.Plugins.Cron,
      crontab: [
        # Backup completo do banco a cada hora
-       {"0 * * * *", OGrupoDeEstudos.Workers.PeriodicBackup}
+       {"0 * * * *", OGrupoDeEstudos.Workers.PeriodicBackup},
+       # Limpeza de notificações lidas com >90 dias (semanalmente às 03:00 UTC)
+       {"0 3 * * 0", OGrupoDeEstudos.Workers.NotificationCleanup}
      ]}
   ]
 
