@@ -2,7 +2,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences}
-  alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
+  alias OGrupoDeEstudos.Engagement.{Badges, ProfileCommentQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -44,6 +44,15 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
         is_own_profile = current_user.id == user.id
 
+        # Stats
+        total_likes = Engagement.total_likes_received(user.id)
+        total_favorites = Engagement.count_user_favorites(user.id)
+        total_sequences = length(sequences)
+
+        # Badges
+        badges = Badges.compute(user.id)
+        primary_badge = Enum.find(badges, & &1.earned)
+
         {:ok,
          assign(socket,
            page_title: user.name || user.username,
@@ -57,7 +66,16 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            nav_mode: if(is_own_profile, do: :primary, else: :detail),
            comments: comments,
            comment_likes: comment_likes,
-           comment_body: ""
+           comment_body: "",
+           total_likes: total_likes,
+           total_favorites: total_favorites,
+           total_sequences: total_sequences,
+           badges: badges,
+           primary_badge: primary_badge,
+           profile_tab: "steps",
+           favorite_steps: [],
+           favorite_sequences: [],
+           favorite_sub_tab: "steps"
          )}
     end
   end
@@ -123,6 +141,30 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     else
       {:noreply, put_flash(socket, :error, "Sem permissão para remover este comentário.")}
     end
+  end
+
+  @impl true
+  def handle_event("switch_profile_tab", %{"tab" => "favorites"}, socket) do
+    profile_user = socket.assigns.profile_user
+    fav_steps = Engagement.list_user_favorites(profile_user.id, "step")
+    fav_sequences = Engagement.list_user_favorites(profile_user.id, "sequence")
+
+    {:noreply,
+     assign(socket,
+       profile_tab: "favorites",
+       favorite_steps: fav_steps,
+       favorite_sequences: fav_sequences
+     )}
+  end
+
+  @impl true
+  def handle_event("switch_profile_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, profile_tab: tab)}
+  end
+
+  @impl true
+  def handle_event("switch_favorite_sub_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, favorite_sub_tab: tab)}
   end
 
   # --- helpers ---
