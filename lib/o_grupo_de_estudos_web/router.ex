@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     live "/about", AboutLive
     delete "/logout", UserSessionController, :delete
     get "/confirm/:token", UserConfirmationController, :confirm
-    get "/auto-login/:user_id", UserSessionController, :auto_login
+    get "/auto-login/:token", UserSessionController, :auto_login
   end
 
   scope "/", OGrupoDeEstudosWeb do

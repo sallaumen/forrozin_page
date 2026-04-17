@@ -16,11 +16,13 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
   def handle_event("register", %{"user" => params}, socket) do
     case Accounts.register_user(params) do
       {:ok, user} ->
+        token = Phoenix.Token.sign(OGrupoDeEstudosWeb.Endpoint, "auto_login", user.id)
+
         {:noreply,
          socket
          |> push_event("form_persisted_clear", %{id: "registration-form"})
          |> put_flash(:info, "Bem-vindo ao Forrózin, #{user.username}!")
-         |> redirect(to: ~p"/auto-login/#{user.id}")}
+         |> redirect(to: ~p"/auto-login/#{token}")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, as: :user))}

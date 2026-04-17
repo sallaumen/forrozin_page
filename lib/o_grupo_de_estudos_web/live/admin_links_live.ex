@@ -26,24 +26,32 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
 
   @impl true
   def handle_event("approve_link", %{"id" => id}, socket) do
-    link = StepLinkQuery.get_by(id: id, include_deleted: false)
-
-    if link do
-      {:ok, _} = Admin.approve_step_link(link)
-      {:noreply, socket |> put_flash(:info, "Link aprovado.") |> load_links()}
+    if not Accounts.admin?(socket.assigns.current_user) do
+      {:noreply, socket}
     else
-      {:noreply, put_flash(socket, :error, "Link não encontrado.")}
+      link = StepLinkQuery.get_by(id: id, include_deleted: false)
+
+      if link do
+        {:ok, _} = Admin.approve_step_link(link)
+        {:noreply, socket |> put_flash(:info, "Link aprovado.") |> load_links()}
+      else
+        {:noreply, put_flash(socket, :error, "Link não encontrado.")}
+      end
     end
   end
 
   def handle_event("delete_link", %{"id" => id}, socket) do
-    link = StepLinkQuery.get_by(id: id, include_deleted: false)
-
-    if link do
-      {:ok, _} = Admin.delete_step_link(link)
-      {:noreply, socket |> put_flash(:info, "Link removido.") |> load_links()}
+    if not Accounts.admin?(socket.assigns.current_user) do
+      {:noreply, socket}
     else
-      {:noreply, put_flash(socket, :error, "Link não encontrado.")}
+      link = StepLinkQuery.get_by(id: id, include_deleted: false)
+
+      if link do
+        {:ok, _} = Admin.delete_step_link(link)
+        {:noreply, socket |> put_flash(:info, "Link removido.") |> load_links()}
+      else
+        {:noreply, put_flash(socket, :error, "Link não encontrado.")}
+      end
     end
   end
 

@@ -23,15 +23,23 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
     end
   end
 
-  def auto_login(conn, %{"user_id" => user_id}) do
-    case Accounts.get_user_by_id(user_id) do
-      nil ->
-        conn |> redirect(to: ~p"/login")
+  def auto_login(conn, %{"token" => token}) do
+    case Phoenix.Token.verify(OGrupoDeEstudosWeb.Endpoint, "auto_login", token, max_age: 60) do
+      {:ok, user_id} ->
+        case Accounts.get_user_by_id(user_id) do
+          nil ->
+            conn |> redirect(to: ~p"/login")
 
-      user ->
+          user ->
+            conn
+            |> UserAuth.login(user)
+            |> redirect(to: ~p"/collection")
+        end
+
+      {:error, _reason} ->
         conn
-        |> UserAuth.login(user)
-        |> redirect(to: ~p"/collection")
+        |> put_flash(:error, "Link de acesso expirado ou inválido.")
+        |> redirect(to: ~p"/login")
     end
   end
 

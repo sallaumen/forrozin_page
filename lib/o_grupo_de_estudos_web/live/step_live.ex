@@ -102,9 +102,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("update_step", %{"step" => params}, socket) do
-    if not socket.assigns.can_edit, do: {:noreply, socket}
-
-    case Admin.update_step(socket.assigns.step, params) do
+    if not socket.assigns.can_edit do
+      {:noreply, socket}
+    else
+      case Admin.update_step(socket.assigns.step, params) do
       {:ok, updated} ->
         updated =
           StepQuery.get_by(
@@ -124,6 +125,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao salvar")}
+    end
     end
   end
 
@@ -171,18 +173,20 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("create_connection", %{"target_code" => target_code}, socket) do
-    if not socket.assigns.can_edit, do: {:noreply, socket}
-
-    target = StepQuery.get_by(code: target_code)
-
-    if is_nil(target) do
-      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+    if not socket.assigns.can_edit do
+      {:noreply, socket}
     else
-      step = socket.assigns.step
+      target = StepQuery.get_by(code: target_code)
 
-      case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
-        {:ok, _} -> {:noreply, reload_step(socket, step.code)}
-        {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
+      if is_nil(target) do
+        {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+      else
+        step = socket.assigns.step
+
+        case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
+          {:ok, _} -> {:noreply, reload_step(socket, step.code)}
+          {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
+        end
       end
     end
   end
@@ -192,15 +196,17 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         %{"source" => source_code, "target" => target_code},
         socket
       ) do
-    if not socket.assigns.can_edit, do: {:noreply, socket}
-
-    connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
-
-    if connection do
-      {:ok, _} = Admin.delete_connection(connection.id)
-      {:noreply, reload_step(socket, socket.assigns.step.code)}
+    if not socket.assigns.can_edit do
+      {:noreply, socket}
     else
-      {:noreply, put_flash(socket, :error, "Conexão não encontrada")}
+      connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
+
+      if connection do
+        {:ok, _} = Admin.delete_connection(connection.id)
+        {:noreply, reload_step(socket, socket.assigns.step.code)}
+      else
+        {:noreply, put_flash(socket, :error, "Conexão não encontrada")}
+      end
     end
   end
 
@@ -227,18 +233,20 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("create_incoming_connection", %{"source_code" => source_code}, socket) do
-    if not socket.assigns.can_edit, do: {:noreply, socket}
-
-    source = StepQuery.get_by(code: source_code)
-
-    if is_nil(source) do
-      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+    if not socket.assigns.can_edit do
+      {:noreply, socket}
     else
-      step = socket.assigns.step
+      source = StepQuery.get_by(code: source_code)
 
-      case Admin.create_connection(%{source_step_id: source.id, target_step_id: step.id}) do
-        {:ok, _} -> {:noreply, reload_step(socket, step.code)}
-        {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
+      if is_nil(source) do
+        {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+      else
+        step = socket.assigns.step
+
+        case Admin.create_connection(%{source_step_id: source.id, target_step_id: step.id}) do
+          {:ok, _} -> {:noreply, reload_step(socket, step.code)}
+          {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
+        end
       end
     end
   end
@@ -312,17 +320,19 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   # --- Unapprove step ---
 
   def handle_event("unapprove_step", _params, socket) do
-    if not socket.assigns.is_admin, do: {:noreply, socket}
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      case Admin.unapprove_step(socket.assigns.step) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> reload_step(socket.assigns.step.code)
+           |> put_flash(:info, "Passo desaprovado — removido do acervo público")}
 
-    case Admin.unapprove_step(socket.assigns.step) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> reload_step(socket.assigns.step.code)
-         |> put_flash(:info, "Passo desaprovado — removido do acervo público")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Erro ao desaprovar")}
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Erro ao desaprovar")}
+      end
     end
   end
 
