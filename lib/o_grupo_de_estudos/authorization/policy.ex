@@ -32,6 +32,10 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
       when user_id == comment_user_id,
       do: :ok
 
+  def authorize(:delete_comment, %User{id: user_id}, %{author_id: author_id})
+      when user_id == author_id,
+      do: :ok
+
   def authorize(:delete_comment, _, _), do: {:error, :unauthorized}
 
   def authorize(:create_comment, %User{}, _), do: :ok

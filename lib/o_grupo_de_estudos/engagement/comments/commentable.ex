@@ -10,4 +10,5 @@ defmodule OGrupoDeEstudos.Engagement.Comments.Commentable do
   @callback parent_field() :: atom()
   @callback parent_comment_field() :: atom()
   @callback likeable_type() :: String.t()
+  @callback user_field() :: atom()
 end

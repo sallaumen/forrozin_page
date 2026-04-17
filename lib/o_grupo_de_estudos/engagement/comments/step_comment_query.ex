@@ -29,4 +29,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments.StepCommentQuery do
 
   @impl true
   def likeable_type, do: "step_comment"
+
+  @impl true
+  def user_field, do: :user_id
 end

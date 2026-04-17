@@ -69,6 +69,9 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
   @impl true
   def likeable_type, do: "profile_comment"
 
+  @impl true
+  def user_field, do: :author_id
+
   # --- private reducers ---
 
   defp apply_filters(query, opts) do

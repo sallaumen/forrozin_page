@@ -31,4 +31,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery do
 
   @impl true
   def likeable_type, do: "sequence_comment"
+
+  @impl true
+  def user_field, do: :user_id
 end
