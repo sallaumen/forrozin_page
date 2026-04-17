@@ -415,6 +415,36 @@
               </button>
             <% end %>
           </div>
+
+          <%!-- Missing connections warning --%>
+          <%= if @seq_missing_edges != [] do %>
+            <div class="mt-3 p-2.5 bg-accent-red/10 border border-accent-red/20 rounded">
+              <p class="text-[10px] font-bold text-accent-red uppercase tracking-wider mb-1.5">
+                Conexões faltantes
+              </p>
+              <div class="space-y-1">
+                <%= for missing <- @seq_missing_edges do %>
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class="text-accent-red">⚠</span>
+                    <code class="text-[10px] font-bold text-ink-700">{missing.from}</code>
+                    <span class="text-ink-400">→</span>
+                    <code class="text-[10px] font-bold text-ink-700">{missing.to}</code>
+                    <%= if @is_admin do %>
+                      <button
+                        type="button"
+                        phx-click="create_missing_connection"
+                        phx-value-source={missing.from}
+                        phx-value-target={missing.to}
+                        class="ml-auto text-[9px] py-0.5 px-2 bg-accent-green text-white rounded border-0 cursor-pointer font-medium"
+                      >
+                        Criar
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
         </div>
       <% end %>
 

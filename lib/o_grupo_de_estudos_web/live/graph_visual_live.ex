@@ -41,6 +41,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_required_suggestions, [])
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
+     |> assign(:seq_missing_edges, [])
      |> assign(:liked_step_codes, liked_codes)
      |> assign_graph_data(graph, false)
      |> push_event("set_liked_steps", %{codes: liked_codes})
@@ -162,9 +163,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       step_codes = Enum.map(steps, & &1.step.code)
       step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
 
+      missing = find_missing_edges(step_codes, socket.assigns.edges)
+
       {:noreply,
        socket
        |> assign(:seq_active, step_list)
+       |> assign(:seq_missing_edges, missing)
        |> push_event("highlight_sequence", %{steps: step_codes})}
     else
       {:noreply, socket}
@@ -190,10 +194,41 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     end
   end
 
+  def handle_event("create_missing_connection", %{"source" => src_code, "target" => tgt_code}, socket) do
+    if socket.assigns.is_admin do
+      alias OGrupoDeEstudos.Encyclopedia.StepQuery
+      source = StepQuery.get_by(code: src_code)
+      target = StepQuery.get_by(code: tgt_code)
+
+      if source && target do
+        OGrupoDeEstudos.Admin.create_connection(%{
+          source_step_id: source.id,
+          target_step_id: target.id
+        })
+
+        # Reload graph edges + recalculate missing
+        graph = Encyclopedia.build_graph()
+        step_codes = if socket.assigns.seq_active, do: Enum.map(socket.assigns.seq_active, & &1.code), else: []
+        missing = if step_codes != [], do: find_missing_edges(step_codes, graph.edges), else: []
+
+        {:noreply,
+         socket
+         |> assign(:edges, graph.edges)
+         |> assign(:seq_missing_edges, missing)
+         |> put_flash(:info, "Conexão #{src_code} → #{tgt_code} criada!")}
+      else
+        {:noreply, put_flash(socket, :error, "Passos não encontrados")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("clear_highlight", _params, socket) do
     {:noreply,
      socket
      |> assign(:seq_active, nil)
+     |> assign(:seq_missing_edges, [])
      |> push_event("clear_highlight", %{})}
   end
 
@@ -648,6 +683,19 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         }
       end)
     end)
+  end
+
+  defp find_missing_edges(step_codes, edges) do
+    edge_set =
+      edges
+      |> Enum.map(fn e -> {e.source_step.code, e.target_step.code} end)
+      |> MapSet.new()
+
+    step_codes
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.with_index()
+    |> Enum.reject(fn {[src, tgt], _i} -> MapSet.member?(edge_set, {src, tgt}) end)
+    |> Enum.map(fn {[src, tgt], i} -> %{from: src, to: tgt, position: i + 1} end)
   end
 
   defp parse_int(val, default) when is_binary(val) do
