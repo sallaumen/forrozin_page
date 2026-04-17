@@ -5,7 +5,7 @@
     <button
       phx-click="toggle_seq_panel"
       class={[
-        "font-serif text-sm font-semibold py-2 px-5 rounded-full cursor-pointer tracking-wide transition-all shadow-md",
+        "hidden md:inline-flex font-serif text-sm font-semibold py-2 px-5 rounded-full cursor-pointer tracking-wide transition-all shadow-md",
         @seq_panel && "bg-accent-orange text-white hover:bg-accent-orange/90",
         !@seq_panel && "bg-ink-100 text-ink-800 hover:bg-ink-50 border border-accent-orange/40"
       ]}
