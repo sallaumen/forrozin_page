@@ -11,10 +11,8 @@
 
 Code.require_file("scripts/script_helper.exs")
 
-alias OGrupoDeEstudos.{Accounts, Admin, Engagement, Sequences, Repo}
-alias OGrupoDeEstudos.Encyclopedia.{Step, StepQuery, Section}
-alias OGrupoDeEstudos.Engagement.{Like, Favorite, Follow}
-alias OGrupoDeEstudos.Engagement.Comments.StepComment
+alias OGrupoDeEstudos.{Accounts, Admin, Engagement, Repo}
+alias OGrupoDeEstudos.Encyclopedia.{Step, Section}
 alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
 
 import Ecto.Query
@@ -107,7 +105,6 @@ ScriptHelper.log(:ok, "Favorited #{length(fav_steps)} steps")
 ScriptHelper.log(:step, "Commenting on random steps")
 
 comment_steps = Enum.take_random(steps, min(15, length(steps)))
-comments_created = []
 
 fake_comments = [
   "Esse passo é muito bom pra quem tá comecando!",
@@ -127,14 +124,16 @@ fake_comments = [
   "Base fundamental pra tudo."
 ]
 
-unless dry_run do
-  comments_created =
+comments_created =
+  if dry_run do
+    []
+  else
     Enum.map(comment_steps, fn step ->
       body = Enum.random(fake_comments)
       {:ok, comment} = Engagement.create_step_comment(user, step.id, %{body: body})
       comment
     end)
-end
+  end
 
 ScriptHelper.log(:ok, "Created #{length(comment_steps)} comments")
 
