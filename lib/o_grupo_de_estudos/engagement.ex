@@ -567,7 +567,8 @@ defmodule OGrupoDeEstudos.Engagement do
       join: f in Favorite,
       on: f.favoritable_id == s.id and f.favoritable_type == "sequence",
       where: f.user_id == ^user_id and is_nil(s.deleted_at),
-      order_by: [desc: f.inserted_at]
+      order_by: [desc: f.inserted_at],
+      preload: [:user, sequence_steps: :step]
     )
     |> Repo.all()
   end
