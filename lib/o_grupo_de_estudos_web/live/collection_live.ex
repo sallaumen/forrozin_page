@@ -536,6 +536,13 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
+  # Catch-all for debugging — remove after fixing
+  def handle_event(event, params, socket) do
+    require Logger
+    Logger.warning("UNHANDLED EVENT: #{event} params=#{inspect(Map.keys(params))}")
+    {:noreply, socket}
+  end
+
   defp reload_expanded(socket) do
     step_id = socket.assigns.expanded_step
     user = socket.assigns.current_user
