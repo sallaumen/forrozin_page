@@ -1,0 +1,103 @@
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
+
+  <main class="flex-1 max-w-5xl mx-auto px-4 py-8 w-full box-border">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-ink-900">Erros do Sistema</h1>
+        <p class="text-xs text-ink-500 mt-1">{length(@errors)} erro(s) carregados</p>
+      </div>
+      <button
+        :if={@errors != []}
+        phx-click="clear_all"
+        data-confirm="Limpar todos os erros? Essa acao nao pode ser desfeita."
+        class="text-xs py-1.5 px-4 bg-accent-red text-white rounded border-0 cursor-pointer font-medium"
+      >
+        Limpar tudo
+      </button>
+    </div>
+
+    <%= if @errors == [] do %>
+      <div class="text-center py-16">
+        <.icon name="hero-check-circle" class="w-12 h-12 text-accent-green mx-auto mb-3" />
+        <p class="text-ink-600 font-medium">Nenhum erro registrado</p>
+        <p class="text-xs text-ink-400 mt-1">O sistema esta funcionando normalmente.</p>
+      </div>
+    <% else %>
+      <div class="space-y-2">
+        <%= for error <- @errors do %>
+          <div class={[
+            "rounded-lg border overflow-hidden",
+            error.level == "error" && "border-accent-red/30 bg-accent-red/5",
+            error.level != "error" && "border-ink-200 bg-ink-50"
+          ]}>
+            <div
+              class="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-ink-100/50"
+              phx-click="toggle_expand"
+              phx-value-id={error.id}
+            >
+              <span class={[
+                "text-[10px] font-bold uppercase tracking-wider py-0.5 px-2 rounded",
+                error.level == "error" && "bg-accent-red/20 text-accent-red",
+                error.level == "warning" && "bg-gold-500/20 text-gold-500",
+                error.level not in ["error", "warning"] && "bg-ink-200 text-ink-600"
+              ]}>
+                {error.level}
+              </span>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-ink-800 font-mono truncate">{String.slice(error.message, 0, 120)}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-[10px] text-ink-400">{time_ago(error.inserted_at)}</span>
+                  <span :if={error.source} class="text-[10px] text-ink-400 truncate max-w-[200px]">{error.source}</span>
+                </div>
+              </div>
+              <button
+                phx-click="copy_error"
+                phx-value-id={error.id}
+                class="text-ink-400 hover:text-ink-700 bg-transparent border-0 cursor-pointer p-1 flex-shrink-0"
+                title="Copiar erro"
+              >
+                <.icon name="hero-clipboard-document" class="w-4 h-4" />
+              </button>
+            </div>
+
+            <%!-- Expanded detail --%>
+            <%= if @expanded == error.id do %>
+              <div class="px-4 pb-4 border-t border-ink-200/50">
+                <pre class="text-xs text-ink-700 font-mono whitespace-pre-wrap mt-3 bg-ink-900/5 p-3 rounded overflow-x-auto max-h-[300px] overflow-y-auto"><%= error.message %></pre>
+                <%= if error.stacktrace do %>
+                  <details class="mt-2">
+                    <summary class="text-xs text-ink-500 cursor-pointer">Stacktrace</summary>
+                    <pre class="text-[10px] text-ink-600 font-mono whitespace-pre-wrap mt-1 bg-ink-900/5 p-2 rounded overflow-x-auto max-h-[200px] overflow-y-auto"><%= error.stacktrace %></pre>
+                  </details>
+                <% end %>
+                <div class="flex items-center gap-4 mt-3 text-[10px] text-ink-400">
+                  <span>{format_time(error.inserted_at)}</span>
+                  <span :if={error.source}>{error.source}</span>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <button
+        :if={@has_more}
+        phx-click="load_more"
+        class="w-full py-3 text-sm text-accent-orange hover:text-accent-orange/80 font-medium mt-4 bg-transparent border-0 cursor-pointer"
+      >
+        Carregar mais
+      </button>
+    <% end %>
+  </main>
+</div>
+
+<script>
+  window.addEventListener("phx:copy_to_clipboard", (e) => {
+    navigator.clipboard.writeText(e.detail.text).then(() => {
+      // Brief visual feedback
+      const btn = document.activeElement
+      if (btn) { btn.style.color = '#27ae60'; setTimeout(() => btn.style.color = '', 1000) }
+    })
+  })
+</script>

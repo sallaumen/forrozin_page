@@ -62,6 +62,9 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             <.link navigate={~p"/admin/suggestions"} class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline">
               Sugestões
             </.link>
+            <.link navigate={~p"/admin/errors"} class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline">
+              Erros
+            </.link>
           <% end %>
 
           <.link navigate={~p"/notifications"} class="relative group no-underline">
@@ -134,6 +137,9 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               </.link>
               <.link navigate={~p"/admin/suggestions"} class="text-xs text-ink-400 no-underline">
                 Sugestões
+              </.link>
+              <.link navigate={~p"/admin/errors"} class="text-xs text-ink-400 no-underline">
+                Erros
               </.link>
             <% end %>
             <.link

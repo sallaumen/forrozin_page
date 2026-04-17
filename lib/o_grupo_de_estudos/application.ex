@@ -20,7 +20,12 @@ defmodule OGrupoDeEstudos.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: OGrupoDeEstudos.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+
+    # Install error logger after Repo is up
+    OGrupoDeEstudos.Admin.ErrorLogger.install()
+
+    result
   end
 
   # Tell Phoenix to update the endpoint configuration

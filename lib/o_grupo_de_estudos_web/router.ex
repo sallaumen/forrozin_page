@@ -59,6 +59,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     live "/admin/links", AdminLinksLive
     live "/admin/backups", AdminBackupsLive
     live "/admin/suggestions", AdminSuggestionsLive
+    live "/admin/errors", AdminErrorsLive
     get "/admin/backups/download/:filename", BackupController, :download
   end
 
