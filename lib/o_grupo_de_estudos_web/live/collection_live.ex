@@ -337,9 +337,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:noreply, assign(socket, :suggest_form, params)}
   end
 
-  def handle_event("create_suggested_step", %{"step" => params}, socket) do
+  def handle_event("create_suggested_step", %{"step" => step_params}, socket) do
     user = socket.assigns.current_user
-    attrs = Map.put(params, "suggested_by_id", user.id)
+    attrs = Map.put(step_params, "suggested_by_id", user.id)
 
     case Admin.create_step(attrs) do
       {:ok, _step} ->
