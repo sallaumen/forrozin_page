@@ -693,4 +693,71 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.total_likes_received(user.id) >= 1
     end
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Follows
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "follows" do
+    test "toggle_follow/2 creates a follow", %{user: user} do
+      other = insert(:user)
+      assert {:ok, :followed} = Engagement.toggle_follow(user.id, other.id)
+      assert Engagement.following?(user.id, other.id)
+    end
+
+    test "toggle_follow/2 removes follow on second call", %{user: user} do
+      other = insert(:user)
+      {:ok, :followed} = Engagement.toggle_follow(user.id, other.id)
+      {:ok, :unfollowed} = Engagement.toggle_follow(user.id, other.id)
+      refute Engagement.following?(user.id, other.id)
+    end
+
+    test "toggle_follow/2 rejects self-follow", %{user: user} do
+      assert {:error, _} = Engagement.toggle_follow(user.id, user.id)
+    end
+
+    test "following?/2 returns false when not following", %{user: user} do
+      other = insert(:user)
+      refute Engagement.following?(user.id, other.id)
+    end
+
+    test "list_following/1 returns followed users", %{user: user} do
+      u1 = insert(:user)
+      u2 = insert(:user)
+      Engagement.toggle_follow(user.id, u1.id)
+      Engagement.toggle_follow(user.id, u2.id)
+      following = Engagement.list_following(user.id)
+      assert length(following) == 2
+      assert Enum.any?(following, &(&1.id == u1.id))
+    end
+
+    test "list_followers/1 returns followers", %{user: user} do
+      u1 = insert(:user)
+      u2 = insert(:user)
+      Engagement.toggle_follow(u1.id, user.id)
+      Engagement.toggle_follow(u2.id, user.id)
+      followers = Engagement.list_followers(user.id)
+      assert length(followers) == 2
+    end
+
+    test "list_following/2 supports search filter", %{user: user} do
+      maria = insert(:user, username: "maria_danca", name: "Maria Silva")
+      joao = insert(:user, username: "joao_forro", name: "João Santos")
+      Engagement.toggle_follow(user.id, maria.id)
+      Engagement.toggle_follow(user.id, joao.id)
+      results = Engagement.list_following(user.id, search: "maria")
+      assert length(results) == 1
+      assert hd(results).id == maria.id
+    end
+
+    test "count_following/1 and count_followers/1", %{user: user} do
+      u1 = insert(:user)
+      u2 = insert(:user)
+      Engagement.toggle_follow(user.id, u1.id)
+      Engagement.toggle_follow(user.id, u2.id)
+      Engagement.toggle_follow(u1.id, user.id)
+      assert Engagement.count_following(user.id) == 2
+      assert Engagement.count_followers(user.id) == 1
+    end
+  end
 end

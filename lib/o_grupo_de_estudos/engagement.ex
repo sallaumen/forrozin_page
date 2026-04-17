@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudos.Engagement do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Authorization.Policy
 
-  alias OGrupoDeEstudos.Engagement.{Favorite, Like, LikeQuery, ProfileComment, ProfileCommentQuery}
+  alias OGrupoDeEstudos.Engagement.{Favorite, Follow, Like, LikeQuery, ProfileComment, ProfileCommentQuery}
 
   alias OGrupoDeEstudos.Engagement.Comments.{
     StepComment,
@@ -375,6 +375,97 @@ defmodule OGrupoDeEstudos.Engagement do
   defp schema_and_field_for("step"), do: {StepComment, :step_id}
   defp schema_and_field_for("sequence"), do: {SequenceComment, :sequence_id}
   defp schema_and_field_for("profile"), do: {ProfileComment, :profile_id}
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Follows
+  # ══════════════════════════════════════════════════════════════════════
+
+  @doc """
+  Toggles a follow relationship between two users.
+
+  Returns `{:ok, :followed}` when a new follow is created,
+  `{:ok, :unfollowed}` when an existing follow is removed,
+  or `{:error, changeset}` when validation fails (e.g. self-follow).
+  """
+  def toggle_follow(follower_id, followed_id) do
+    case Repo.get_by(Follow, follower_id: follower_id, followed_id: followed_id) do
+      nil ->
+        %Follow{}
+        |> Follow.changeset(%{follower_id: follower_id, followed_id: followed_id})
+        |> Repo.insert()
+        |> case do
+          {:ok, _} -> {:ok, :followed}
+          {:error, changeset} -> {:error, changeset}
+        end
+
+      follow ->
+        Repo.delete(follow)
+        {:ok, :unfollowed}
+    end
+  end
+
+  @doc "Returns `true` if follower_id is currently following followed_id."
+  def following?(follower_id, followed_id) do
+    Repo.exists?(
+      from(f in Follow,
+        where: f.follower_id == ^follower_id and f.followed_id == ^followed_id
+      )
+    )
+  end
+
+  @doc """
+  Returns the list of users followed by the given user, ordered newest first.
+
+  Supports optional `search:` keyword to filter by username or name (case-insensitive).
+  """
+  def list_following(user_id, opts \\ []) do
+    search = Keyword.get(opts, :search, "")
+
+    from(u in OGrupoDeEstudos.Accounts.User,
+      join: f in Follow,
+      on: f.followed_id == u.id,
+      where: f.follower_id == ^user_id,
+      order_by: [desc: f.inserted_at]
+    )
+    |> maybe_search_users(search)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of users following the given user, ordered newest first.
+
+  Supports optional `search:` keyword to filter by username or name (case-insensitive).
+  """
+  def list_followers(user_id, opts \\ []) do
+    search = Keyword.get(opts, :search, "")
+
+    from(u in OGrupoDeEstudos.Accounts.User,
+      join: f in Follow,
+      on: f.follower_id == u.id,
+      where: f.followed_id == ^user_id,
+      order_by: [desc: f.inserted_at]
+    )
+    |> maybe_search_users(search)
+    |> Repo.all()
+  end
+
+  @doc "Returns the number of users the given user is following."
+  def count_following(user_id) do
+    Repo.aggregate(from(f in Follow, where: f.follower_id == ^user_id), :count)
+  end
+
+  @doc "Returns the number of followers of the given user."
+  def count_followers(user_id) do
+    Repo.aggregate(from(f in Follow, where: f.followed_id == ^user_id), :count)
+  end
+
+  defp maybe_search_users(query, ""), do: query
+  defp maybe_search_users(query, nil), do: query
+
+  defp maybe_search_users(query, search) do
+    term = "%#{String.downcase(search)}%"
+    where(query, [u], ilike(u.username, ^term) or ilike(u.name, ^term))
+  end
 
   # ══════════════════════════════════════════════════════════════════════
   # Favorites
