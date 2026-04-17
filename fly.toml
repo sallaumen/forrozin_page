@@ -33,11 +33,11 @@ kill_signal = 'SIGTERM'
     soft_limit = 1000
 
   [[http_service.checks]]
-    grace_period = '10s'
+    grace_period = '30s'
     interval = '30s'
     method = 'GET'
     timeout = '5s'
-    path = '/'
+    path = '/about'
 
 [[vm]]
   memory = '1gb'
