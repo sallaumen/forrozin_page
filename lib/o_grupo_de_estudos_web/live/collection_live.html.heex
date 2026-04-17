@@ -195,6 +195,10 @@
           Sugerir
         </button>
       </form>
+      <%!-- Inline error message --%>
+      <div :if={@suggest_error} class="mt-2 py-2 px-3 bg-accent-red/10 border border-accent-red/30 rounded text-sm text-accent-red font-sans">
+        {@suggest_error}
+      </div>
     </div>
   <% end %>
 

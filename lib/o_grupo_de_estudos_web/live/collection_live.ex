@@ -62,6 +62,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         connection_suggestions: [],
         suggest_mode: false,
         suggest_form: %{},
+        suggest_error: nil,
         can_edit_drawer: false,
         active_tab: "acervo",
         my_steps: [],
@@ -333,35 +334,21 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:noreply, assign(socket, suggest_mode: not socket.assigns.suggest_mode)}
   end
 
-  def handle_event("update_suggest_form", %{"step" => params}, socket) do
-    {:noreply, assign(socket, :suggest_form, params)}
-  end
-
-  def handle_event("create_suggested_step", params, socket) do
-    require Logger
-    Logger.warning("SUGGEST STEP RAW PARAMS: #{inspect(Map.keys(params))}")
-    Logger.warning("SUGGEST STEP FULL: #{inspect(params)}")
-
-    step_params = params["step"] || params
+  def handle_event("create_suggested_step", %{"step" => step_params}, socket) do
     user = socket.assigns.current_user
-
     attrs = Map.put(step_params, "suggested_by_id", user.id)
 
     case Admin.create_step(attrs) do
       {:ok, step} ->
-        Logger.info("SUGGEST STEP SUCCESS: code=#{step.code}")
-
         {:noreply,
          socket
          |> reload_sections()
-         |> assign(suggest_mode: false, suggest_form: %{})
+         |> assign(suggest_mode: false, suggest_form: %{}, suggest_error: nil)
          |> put_flash(:info, "Passo '#{step.name}' sugerido com sucesso!")}
 
       {:error, changeset} ->
-        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-        error_msg = errors |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end) |> Enum.join("; ")
-        Logger.warning("SUGGEST STEP ERROR: #{error_msg}")
-        {:noreply, put_flash(socket, :error, "Erro: #{error_msg}")}
+        error_msg = format_changeset_errors(changeset)
+        {:noreply, assign(socket, suggest_error: error_msg)}
     end
   end
 
@@ -536,12 +523,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-  # Catch-all for debugging — remove after fixing
-  def handle_event(event, params, socket) do
-    require Logger
-    Logger.warning("UNHANDLED EVENT: #{event} params=#{inspect(Map.keys(params))}")
-    {:noreply, socket}
-  end
 
   defp reload_expanded(socket) do
     step_id = socket.assigns.expanded_step
@@ -599,6 +580,21 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
     step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", all_step_ids)
     assign(socket, :step_likes, step_likes)
+  end
+
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+    |> Enum.map(fn
+      {:code, ["has already been taken"]} -> "Esse código já existe. Escolha outro."
+      {:code, msgs} -> "Código: #{Enum.join(msgs, ", ")}"
+      {:name, msgs} -> "Nome: #{Enum.join(msgs, ", ")}"
+      {field, msgs} -> "#{field}: #{Enum.join(msgs, ", ")}"
+    end)
+    |> Enum.join(" · ")
   end
 
   defp reload_sections(socket) do
