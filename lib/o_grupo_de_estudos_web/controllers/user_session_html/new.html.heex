@@ -54,13 +54,19 @@
             <label class="block text-[11px] tracking-[1.5px] text-ink-500 uppercase mb-2">
               Usuário
             </label>
-            <input
-              type="text"
-              name="session[username]"
-              autocomplete="username"
-              required
-              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
-            />
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 font-serif text-base select-none pointer-events-none">
+                @
+              </span>
+              <input
+                type="text"
+                name="session[username]"
+                autocomplete="username"
+                placeholder="seuusuario"
+                required
+                class="w-full py-[13px] pl-9 pr-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
+              />
+            </div>
           </div>
 
           <div class="mb-8">

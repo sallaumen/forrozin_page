@@ -78,12 +78,18 @@
               Usuário
               <span class="text-ink-400 text-[10px]">(usado no login e no perfil)</span>
             </label>
-            <.input
-              field={@form[:username]}
-              type="text"
-              autocomplete="username"
-              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
-            />
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 font-serif text-base select-none pointer-events-none">
+                @
+              </span>
+              <.input
+                field={@form[:username]}
+                type="text"
+                autocomplete="username"
+                placeholder="seuusuario"
+                class="w-full py-[13px] pl-9 pr-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
+              />
+            </div>
           </div>
 
           <div>

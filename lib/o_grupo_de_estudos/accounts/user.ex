@@ -53,6 +53,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
       :city
     ])
     |> validate_required([:username, :email, :password, :name, :country, :city])
+    |> sanitize_username()
     |> validate_name_has_two_words()
     |> validate_length(:username, min: 3, max: 30)
     |> validate_format(:username, ~r/^[a-z0-9_]+$/,
@@ -81,6 +82,13 @@ defmodule OGrupoDeEstudos.Accounts.User do
     utc_now = NaiveDateTime.utc_now()
     now = NaiveDateTime.truncate(utc_now, :second)
     change(user, confirmed_at: now, confirmation_token: nil)
+  end
+
+  defp sanitize_username(changeset) do
+    case get_change(changeset, :username) do
+      nil -> changeset
+      username -> put_change(changeset, :username, username |> String.trim_leading("@") |> String.downcase())
+    end
   end
 
   defp validate_name_has_two_words(changeset) do

@@ -48,6 +48,7 @@ defmodule OGrupoDeEstudos.Accounts do
   Always runs password verification to prevent timing attacks.
   """
   def check_credentials(username, password) do
+    username = username |> String.trim_leading("@") |> String.downcase()
     user = Repo.get_by(User, username: username)
     verify_password(user, password)
   end
