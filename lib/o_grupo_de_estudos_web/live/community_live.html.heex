@@ -127,7 +127,7 @@
                   </p>
                 <% end %>
 
-                <%!-- Footer: author + link --%>
+                <%!-- Footer: author + link + like --%>
                 <div class="flex items-center gap-3 flex-wrap mt-1">
                   <.link
                     navigate={~p"/users/#{author_username}"}
@@ -143,6 +143,21 @@
                       @{author_username}
                     </span>
                   </.link>
+                  <button phx-click="toggle_step_like" phx-value-id={step.id}
+                    class="flex items-center gap-1">
+                    <.icon
+                      name={if MapSet.member?(@step_likes.liked_ids, step.id), do: "hero-heart-solid", else: "hero-heart"}
+                      class={[
+                        "w-4 h-4",
+                        MapSet.member?(@step_likes.liked_ids, step.id) && "text-accent-red",
+                        !MapSet.member?(@step_likes.liked_ids, step.id) && "text-ink-400"
+                      ]}
+                    />
+                    <span :if={Map.get(@step_likes.counts, step.id, 0) > 0}
+                      class="text-xs tabular-nums text-ink-500">
+                      {Map.get(@step_likes.counts, step.id, 0)}
+                    </span>
+                  </button>
                   <.link
                     navigate={~p"/steps/#{step.code}"}
                     class="text-xs text-ink-400 no-underline italic ml-auto hover:text-ink-700"

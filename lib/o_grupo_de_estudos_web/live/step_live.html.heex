@@ -69,6 +69,47 @@
       <% end %>
     </div>
 
+    <%!-- Like + Favorite --%>
+    <div class="flex items-center gap-4 mt-3 mb-4">
+      <button phx-click="toggle_step_like" phx-value-id={@step.id}
+        class="flex items-center gap-1.5 group">
+        <.icon
+          name={if @step_liked, do: "hero-heart-solid", else: "hero-heart"}
+          class={[
+            "w-5 h-5 transition-all duration-200",
+            @step_liked && "text-accent-red",
+            !@step_liked && "text-ink-400 group-hover:text-accent-red/60"
+          ]}
+        />
+        <span class={[
+          "text-sm tabular-nums",
+          @step_liked && "text-accent-red font-medium",
+          !@step_liked && "text-ink-500"
+        ]}>
+          {if @step_like_count > 0, do: @step_like_count, else: "Curtir"}
+        </span>
+      </button>
+
+      <button phx-click="toggle_step_favorite" phx-value-id={@step.id}
+        class="flex items-center gap-1.5 group">
+        <.icon
+          name={if @step_favorited, do: "hero-star-solid", else: "hero-star"}
+          class={[
+            "w-5 h-5 transition-all duration-200",
+            @step_favorited && "text-gold-500",
+            !@step_favorited && "text-ink-400 group-hover:text-gold-500/60"
+          ]}
+        />
+        <span class={[
+          "text-sm",
+          @step_favorited && "text-gold-500 font-medium",
+          !@step_favorited && "text-ink-500"
+        ]}>
+          {if @step_favorited, do: "Favoritado", else: "Favoritar"}
+        </span>
+      </button>
+    </div>
+
     <%!-- Edit form OR read-only content --%>
     <%= if @edit_mode do %>
       <form

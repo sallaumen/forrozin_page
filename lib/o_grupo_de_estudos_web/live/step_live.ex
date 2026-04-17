@@ -52,6 +52,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         step_comment_ids = Enum.map(step_comments, & &1.id)
         step_comment_likes = Engagement.likes_map(user_id, "step_comment", step_comment_ids)
 
+        step_liked = Engagement.liked?(user_id, "step", step.id)
+        step_like_count = step.like_count
+        step_favorited = Engagement.favorited?(user_id, "step", step.id)
+
         {:ok,
          assign(socket,
            step: step,
@@ -78,7 +82,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            step_comments: step_comments,
            step_comment_likes: step_comment_likes,
            replying_to: nil,
-           replies_map: %{}
+           replies_map: %{},
+           step_liked: step_liked,
+           step_like_count: step_like_count,
+           step_favorited: step_favorited
          )}
 
       {:error, :not_found} ->
@@ -361,6 +368,43 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao registrar like")}
+    end
+  end
+
+  def handle_event("toggle_step_like", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_like(user.id, "step", step_id) do
+      {:ok, _} ->
+        step = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Encyclopedia.Step, step_id)
+
+        {:noreply,
+         assign(socket,
+           step_liked: Engagement.liked?(user.id, "step", step_id),
+           step_like_count: step.like_count
+         )}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_step_favorite", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_favorite(user.id, "step", step_id) do
+      {:ok, _} ->
+        step = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Encyclopedia.Step, step_id)
+
+        {:noreply,
+         assign(socket,
+           step_liked: Engagement.liked?(user.id, "step", step_id),
+           step_like_count: step.like_count,
+           step_favorited: Engagement.favorited?(user.id, "step", step_id)
+         )}
+
+      {:error, _} ->
+        {:noreply, socket}
     end
   end
 

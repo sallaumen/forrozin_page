@@ -32,6 +32,15 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
     steps_with_links = StepLinkQuery.step_ids_with_links()
 
+    all_step_ids =
+      sections
+      |> Enum.flat_map(fn s ->
+        Enum.map(s.steps, & &1.id) ++
+          Enum.flat_map(s.subsections, fn sub -> Enum.map(sub.steps, & &1.id) end)
+      end)
+
+    step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", all_step_ids)
+
     socket =
       assign(socket,
         sections: sections,
@@ -56,6 +65,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         active_tab: "acervo",
         my_steps: [],
         steps_with_links: steps_with_links,
+        step_likes: step_likes,
         expanded_step: nil,
         expanded_comments: [],
         expanded_links: [],
@@ -460,6 +470,15 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:noreply, assign(socket, :expanded_video, if(current == link_id, do: nil, else: link_id))}
   end
 
+  def handle_event("toggle_step_like", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_like(user.id, "step", step_id) do
+      {:ok, _} -> {:noreply, reload_collection_step_likes(socket)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
   defp reload_expanded(socket) do
     step_id = socket.assigns.expanded_step
     user = socket.assigns.current_user
@@ -504,6 +523,20 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     assign(socket, :expanded_comment_likes, comment_likes)
   end
 
+  defp reload_collection_step_likes(socket) do
+    sections = socket.assigns.sections
+
+    all_step_ids =
+      sections
+      |> Enum.flat_map(fn s ->
+        Enum.map(s.steps, & &1.id) ++
+          Enum.flat_map(s.subsections, fn sub -> Enum.map(sub.steps, & &1.id) end)
+      end)
+
+    step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", all_step_ids)
+    assign(socket, :step_likes, step_likes)
+  end
+
   defp reload_sections(socket) do
     sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
 
@@ -543,6 +576,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   attr :edit_mode, :boolean, default: false
   attr :current_user_id, :string, default: nil
   attr :steps_with_links, :any, default: %MapSet{}
+  attr :step_likes, :map, default: %{liked_ids: %MapSet{}, counts: %{}}
   attr :expanded_step, :string, default: nil
   attr :expanded_comments, :list, default: []
   attr :expanded_links, :list, default: []
@@ -627,6 +661,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
               step={step}
               current_user_id={@current_user_id}
               steps_with_links={@steps_with_links}
+              step_likes={@step_likes}
               expanded_step={assigns[:expanded_step]}
               expanded_comments={assigns[:expanded_comments] || []}
               expanded_links={assigns[:expanded_links] || []}
@@ -653,6 +688,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
                   step={step}
                   current_user_id={@current_user_id}
                   steps_with_links={@steps_with_links}
+                  step_likes={@step_likes}
                 />
               <% end %>
             </div>
@@ -666,6 +702,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   attr :step, :map, required: true
   attr :current_user_id, :string, default: nil
   attr :steps_with_links, :any, default: %MapSet{}
+  attr :step_likes, :map, default: %{liked_ids: %MapSet{}, counts: %{}}
   attr :expanded_step, :string, default: nil
   attr :expanded_comments, :list, default: []
   attr :expanded_links, :list, default: []
@@ -747,6 +784,21 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
           <%= if @has_links do %>
             <span title="Tem vídeo" class="text-xs opacity-60">🎬</span>
           <% end %>
+          <button
+            phx-click="toggle_step_like"
+            phx-value-id={@step.id}
+            class="p-0.5"
+            title={if MapSet.member?(@step_likes.liked_ids, @step.id), do: "Remover curtida", else: "Curtir"}
+          >
+            <.icon
+              name={if MapSet.member?(@step_likes.liked_ids, @step.id), do: "hero-heart-solid", else: "hero-heart"}
+              class={[
+                "w-4 h-4",
+                MapSet.member?(@step_likes.liked_ids, @step.id) && "text-accent-red",
+                !MapSet.member?(@step_likes.liked_ids, @step.id) && "text-ink-300 hover:text-accent-red/60"
+              ]}
+            />
+          </button>
           <%!-- Expand/collapse — compact icon on the right --%>
           <button
             phx-click="toggle_step_expand"

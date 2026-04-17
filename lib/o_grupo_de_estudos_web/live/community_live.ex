@@ -28,6 +28,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   def mount(_params, _session, socket) do
     admin = Accounts.admin?(socket.assigns.current_user)
     steps = Encyclopedia.list_suggested_steps_filtered(filter: "all")
+    step_ids = Enum.map(steps, & &1.id)
+    step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", step_ids)
 
     {:ok,
      assign(socket,
@@ -36,6 +38,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        active_section: "steps",
        active_tab: "all",
        steps: steps,
+       step_likes: step_likes,
        sequences: [],
        sequence_likes: %{liked_ids: MapSet.new(), counts: %{}},
        expanded_seq: nil,
@@ -83,7 +86,9 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     # Non-admins cannot access the pending tab
     tab = if tab == "pending" and not socket.assigns.is_admin, do: "all", else: tab
     steps = Encyclopedia.list_suggested_steps_filtered(filter: tab)
-    {:noreply, assign(socket, active_tab: tab, steps: steps)}
+    step_ids = Enum.map(steps, & &1.id)
+    step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", step_ids)
+    {:noreply, assign(socket, active_tab: tab, steps: steps, step_likes: step_likes)}
   end
 
   def handle_event("toggle_like", %{"type" => "sequence", "id" => id}, socket) do
@@ -107,6 +112,20 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível registrar o like.")}
+    end
+  end
+
+  def handle_event("toggle_step_like", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_like(user.id, "step", step_id) do
+      {:ok, _} ->
+        step_ids = Enum.map(socket.assigns.steps, & &1.id)
+        step_likes = Engagement.likes_map(user.id, "step", step_ids)
+        {:noreply, assign(socket, step_likes: step_likes)}
+
+      {:error, _} ->
+        {:noreply, socket}
     end
   end
 
