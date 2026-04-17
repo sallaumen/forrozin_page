@@ -340,7 +340,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       {:ok, _step} ->
         {:noreply,
          socket
-         |> push_event("form_persisted_clear", %{id: "suggest-step-form"})
          |> reload_sections()
          |> assign(suggest_mode: false)
          |> put_flash(:info, "Passo sugerido com sucesso!")}
