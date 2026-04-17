@@ -47,6 +47,28 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   @impl true
+  def handle_params(%{"seq" => seq_id}, _uri, socket) do
+    case Sequences.get_sequence(seq_id) do
+      nil ->
+        {:noreply, socket}
+
+      saved ->
+        steps = Enum.sort_by(saved.sequence_steps, & &1.position)
+        step_codes = Enum.map(steps, & &1.step.code)
+        step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
+
+        {:noreply,
+         socket
+         |> assign(:seq_active, step_list)
+         |> assign(:seq_panel, true)
+         |> assign(:seq_view, :saved)
+         |> push_event("highlight_sequence", %{steps: step_codes})}
+    end
+  end
+
+  def handle_params(_params, _uri, socket), do: {:noreply, socket}
+
+  @impl true
   def handle_event("toggle_seq_panel", _params, socket) do
     new_open = not socket.assigns.seq_panel
 
