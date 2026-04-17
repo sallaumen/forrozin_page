@@ -316,6 +316,24 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     {:noreply, assign(socket, :seq_manual_steps, new_steps)}
   end
 
+  def handle_event("move_manual_step", %{"index" => index_str, "direction" => dir}, socket) do
+    index = parse_int(index_str, -1)
+    steps = socket.assigns.seq_manual_steps
+    new_index = if dir == "up", do: index - 1, else: index + 1
+
+    if index >= 0 and new_index >= 0 and new_index < length(steps) do
+      item = Enum.at(steps, index)
+      new_steps = steps |> List.delete_at(index) |> List.insert_at(new_index, item)
+
+      {:noreply,
+       socket
+       |> assign(:seq_manual_steps, new_steps)
+       |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("save_manual_sequence", params, socket) do
     name = Map.get(params, "name", "") |> String.trim()
     description = Map.get(params, "description", "") |> String.trim()

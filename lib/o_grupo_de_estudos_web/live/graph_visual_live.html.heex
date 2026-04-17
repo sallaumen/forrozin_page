@@ -463,12 +463,32 @@
               </div>
             <% else %>
               <%= for {step, idx} <- Enum.with_index(@seq_manual_steps) do %>
-                <div class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]">
+                <div class="flex items-center gap-1 py-0.5 border-b border-ink-900/[0.05]">
                   <span class="text-[10px] font-bold text-accent-green min-w-[16px]">
                     {idx + 1}.
                   </span>
                   <code class="text-[10px] text-ink-500">{step.code}</code>
-                  <span class="flex-1 text-[11px] text-ink-800">{step.name}</span>
+                  <span class="flex-1 text-[11px] text-ink-800 truncate">{step.name}</span>
+                  <div class="flex flex-col shrink-0">
+                    <button
+                      :if={idx > 0}
+                      type="button"
+                      phx-click="move_manual_step"
+                      phx-value-index={idx}
+                      phx-value-direction="up"
+                      class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
+                      title="Mover pra cima"
+                    >▲</button>
+                    <button
+                      :if={idx < length(@seq_manual_steps) - 1}
+                      type="button"
+                      phx-click="move_manual_step"
+                      phx-value-index={idx}
+                      phx-value-direction="down"
+                      class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
+                      title="Mover pra baixo"
+                    >▼</button>
+                  </div>
                   <button
                     type="button"
                     phx-click="remove_manual_step"
