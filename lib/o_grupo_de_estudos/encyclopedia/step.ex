@@ -17,6 +17,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
     :status,
     :highlighted,
     :approved,
+    :like_count,
     :category_id,
     :section_id,
     :subsection_id,
@@ -34,6 +35,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
     field :status, :string, default: "published"
     field :highlighted, :boolean, default: false
     field :approved, :boolean, default: false
+    field :like_count, :integer, default: 0
     field :deleted_at, :naive_datetime
 
     belongs_to :suggested_by, User, foreign_key: :suggested_by_id

@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudos.Sequences.Sequence do
     field :public, :boolean, default: true
     field :description, :string
     field :video_url, :string
+    field :like_count, :integer, default: 0
     field :deleted_at, :naive_datetime
 
     belongs_to :user, OGrupoDeEstudos.Accounts.User
@@ -30,6 +31,7 @@ defmodule OGrupoDeEstudos.Sequences.Sequence do
       :public,
       :description,
       :video_url,
+      :like_count,
       :deleted_at
     ])
     |> validate_required([:name, :user_id])
