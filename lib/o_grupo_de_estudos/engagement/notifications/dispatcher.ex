@@ -208,10 +208,43 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end
   end
 
-  # ── Suggestion notifications (stub — Task 3 will implement) ──
+  # ── Suggestion notifications ───────────────────────────────
 
-  @doc "Stub for suggestion notification. Task 3 will expand this."
-  def notify_suggestion(_action, _suggestion, _admin), do: :ok
+  @doc """
+  Dispatches a notification to the suggestion author when an admin reviews it.
+
+  Sends `suggestion_approved` or `suggestion_rejected` based on `suggestion.status`.
+  The admin never receives their own notification (excluded from recipients).
+  """
+  def notify_suggestion(:suggestion_reviewed, suggestion, admin) do
+    action =
+      case suggestion.status do
+        "approved" -> "suggestion_approved"
+        "rejected" -> "suggestion_rejected"
+        _ -> nil
+      end
+
+    if action do
+      recipients = [suggestion.user_id] -- [admin.id]
+
+      insert_and_broadcast(recipients, fn user_id ->
+        %{
+          id: Ecto.UUID.generate(),
+          user_id: user_id,
+          actor_id: admin.id,
+          action: action,
+          group_key: "suggestion:#{suggestion.id}",
+          target_type: "suggestion",
+          target_id: suggestion.id,
+          parent_type: suggestion.target_type,
+          parent_id: suggestion.target_id,
+          inserted_at: now()
+        }
+      end)
+    else
+      :ok
+    end
+  end
 
   defp now, do: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 end

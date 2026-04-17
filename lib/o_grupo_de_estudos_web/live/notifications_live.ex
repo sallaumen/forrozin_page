@@ -126,6 +126,8 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   defp action_text(%{action: "replied_comment"}), do: " respondeu ao seu comentário"
   defp action_text(%{action: "liked_step"}), do: " curtiu o passo"
   defp action_text(%{action: "liked_sequence"}), do: " curtiu a sequência"
+  defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão ✓"
+  defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
   defp action_text(_), do: " interagiu"
 
   defp time_ago(datetime) do

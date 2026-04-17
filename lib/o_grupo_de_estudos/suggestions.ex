@@ -12,6 +12,8 @@ defmodule OGrupoDeEstudos.Suggestions do
   alias OGrupoDeEstudos.Suggestions.{Suggestion, SuggestionQuery}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
 
+  import Ecto.Query, only: [where: 3]
+
   @doc """
   Creates a pending suggestion authored by the given user.
 
@@ -82,9 +84,9 @@ defmodule OGrupoDeEstudos.Suggestions do
     end
   end
 
-  @doc "Lists pending suggestions, preloading the author."
+  @doc "Lists pending suggestions, preloading the author and reviewer."
   def list_pending(opts \\ []) do
-    SuggestionQuery.list_by([status: "pending", preload: [:user]] ++ opts)
+    SuggestionQuery.list_by([status: "pending", preload: [:user, :reviewed_by]] ++ opts)
   end
 
   @doc "Lists all suggestions by a specific user, preloading author and reviewer."
@@ -95,6 +97,32 @@ defmodule OGrupoDeEstudos.Suggestions do
   @doc "Counts pending suggestions (for admin nav badge)."
   def count_pending do
     SuggestionQuery.count_by(status: "pending")
+  end
+
+  @doc "Lists all suggestions (any status), preloading author and reviewer."
+  def list_all(opts \\ []) do
+    SuggestionQuery.list_by([preload: [:user, :reviewed_by]] ++ opts)
+  end
+
+  @doc """
+  Returns a map of step_id => Step for all steps referenced by edit_field suggestions.
+  Used by the admin UI to build links to the affected step.
+  """
+  def steps_for_suggestions(suggestions) do
+    ids =
+      suggestions
+      |> Enum.filter(&(&1.action == "edit_field"))
+      |> Enum.map(& &1.target_id)
+      |> Enum.uniq()
+      |> Enum.reject(&is_nil/1)
+
+    ids
+    |> then(fn ids ->
+      Step
+      |> where([s], s.id in ^ids)
+      |> Repo.all()
+    end)
+    |> Map.new(&{&1.id, &1})
   end
 
   @doc "Gets a single suggestion by ID with preloaded associations."

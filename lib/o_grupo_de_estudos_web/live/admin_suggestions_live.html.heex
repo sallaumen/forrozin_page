@@ -1,0 +1,262 @@
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Sugestões" notification_count={assigns[:notification_count] || 0} />
+
+  <%!-- Content --%>
+  <div class="max-w-3xl mx-auto px-6 pt-10 pb-20 w-full">
+    <h1 class="text-2xl font-bold text-ink-900 tracking-tight mb-2">
+      Sugestões da Comunidade
+    </h1>
+    <p class="text-sm text-ink-500 mb-6">
+      {@pending_count} pendente(s) · {@total_count} no filtro atual
+    </p>
+
+    <%!-- Filter tabs --%>
+    <div class="flex gap-3 mb-10 border-b border-ink-900/10 pb-0">
+      <button
+        phx-click="filter"
+        phx-value-tab="pending"
+        class={[
+          "text-xs tracking-widest uppercase pb-3 border-b-2 -mb-px transition-colors",
+          @filter == :pending && "text-ink-900 border-ink-900 font-semibold",
+          @filter != :pending && "text-ink-400 border-transparent hover:text-ink-700"
+        ]}
+      >
+        Pendentes
+      </button>
+      <button
+        phx-click="filter"
+        phx-value-tab="all"
+        class={[
+          "text-xs tracking-widest uppercase pb-3 border-b-2 -mb-px transition-colors",
+          @filter == :all && "text-ink-900 border-ink-900 font-semibold",
+          @filter != :all && "text-ink-400 border-transparent hover:text-ink-700"
+        ]}
+      >
+        Todas
+      </button>
+    </div>
+
+    <%!-- Overall empty state --%>
+    <%= if @total_count == 0 do %>
+      <p class="text-sm text-ink-400 italic text-center py-12">
+        Nenhuma sugestão encontrada.
+      </p>
+    <% else %>
+
+      <%!-- Section: Edições de campo --%>
+      <div class="mb-12">
+        <p class="text-xs tracking-widest text-ink-500 uppercase mb-4 border-b border-ink-900/10 pb-2">
+          Edições de campo ({length(@edit_field_suggestions)})
+        </p>
+
+        <%= if @edit_field_suggestions == [] do %>
+          <p class="text-sm text-ink-400 italic">
+            Nenhuma edição de campo <%= if @filter == :pending, do: "pendente", else: "registrada" %>.
+          </p>
+        <% else %>
+          <div class="flex flex-col gap-2.5">
+            <%= for s <- @edit_field_suggestions do %>
+              <% step = Map.get(@steps_by_id, s.target_id) %>
+              <div class={[
+                "px-4 py-3.5 bg-ink-50 border border-ink-900/10 border-l-[3px] rounded-r-md flex items-start gap-4",
+                s.status == "pending" && "border-l-accent-orange",
+                s.status == "approved" && "border-l-accent-green",
+                s.status == "rejected" && "border-l-ink-400"
+              ]}>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-ink-500 mb-1">
+                    por <strong class="text-ink-700">@{if s.user, do: s.user.username, else: "?"}</strong>
+                    <%= if step do %>
+                      · Passo:
+                      <.link navigate={~p"/steps/#{step.code}"} class="text-ink-700 font-semibold no-underline">
+                        {step.code} · {step.name}
+                      </.link>
+                    <% end %>
+                  </p>
+                  <p class="text-sm text-ink-800 mb-1">
+                    <span class="font-mono text-[11px] bg-ink-200 px-1 rounded text-ink-600">{s.field}</span>
+                    <span class="text-ink-400 mx-1">·</span>
+                    <span class="line-through text-ink-400">{s.old_value || "—"}</span>
+                    <span class="text-ink-400 mx-1">→</span>
+                    <span class="font-semibold text-ink-900">{s.new_value}</span>
+                  </p>
+                  <%= if s.status != "pending" do %>
+                    <p class="text-[11px] text-ink-400">
+                      {if s.status == "approved", do: "Aprovado", else: "Rejeitado"}
+                      <%= if s.reviewed_by do %>
+                        por @{s.reviewed_by.username}
+                      <% end %>
+                    </p>
+                  <% end %>
+                </div>
+                <%= if s.status == "pending" do %>
+                  <div class="flex flex-col gap-1.5 shrink-0">
+                    <button
+                      phx-click="approve"
+                      phx-value-id={s.id}
+                      class="px-3.5 py-1.5 bg-accent-green text-white border-0 rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      phx-click="reject"
+                      phx-value-id={s.id}
+                      data-confirm="Rejeitar esta sugestão?"
+                      class="px-3.5 py-1.5 bg-transparent text-accent-red border border-accent-red rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
+                    >
+                      Rejeitar
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- Section: Novas conexões --%>
+      <div class="mb-12">
+        <p class="text-xs tracking-widest text-ink-500 uppercase mb-4 border-b border-ink-900/10 pb-2">
+          Novas conexões ({length(@create_connection_suggestions)})
+        </p>
+
+        <%= if @create_connection_suggestions == [] do %>
+          <p class="text-sm text-ink-400 italic">
+            Nenhuma conexão nova <%= if @filter == :pending, do: "pendente", else: "registrada" %>.
+          </p>
+        <% else %>
+          <div class="flex flex-col gap-2.5">
+            <%= for s <- @create_connection_suggestions do %>
+              <% source_code = s.new_value |> String.split("→") |> List.first("") |> String.trim() %>
+              <div class={[
+                "px-4 py-3.5 bg-ink-50 border border-ink-900/10 border-l-[3px] rounded-r-md flex items-start gap-4",
+                s.status == "pending" && "border-l-accent-orange",
+                s.status == "approved" && "border-l-accent-green",
+                s.status == "rejected" && "border-l-ink-400"
+              ]}>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-ink-500 mb-1">
+                    por <strong class="text-ink-700">@{if s.user, do: s.user.username, else: "?"}</strong>
+                    <%= if source_code != "" do %>
+                      · Passo de origem:
+                      <.link navigate={~p"/steps/#{source_code}"} class="text-ink-700 font-semibold no-underline">
+                        {source_code}
+                      </.link>
+                    <% end %>
+                  </p>
+                  <p class="text-sm font-semibold text-ink-900">
+                    {s.new_value}
+                  </p>
+                  <%= if s.status != "pending" do %>
+                    <p class="text-[11px] text-ink-400 mt-1">
+                      {if s.status == "approved", do: "Aprovado", else: "Rejeitado"}
+                      <%= if s.reviewed_by do %>
+                        por @{s.reviewed_by.username}
+                      <% end %>
+                    </p>
+                  <% end %>
+                </div>
+                <%= if s.status == "pending" do %>
+                  <div class="flex flex-col gap-1.5 shrink-0">
+                    <button
+                      phx-click="approve"
+                      phx-value-id={s.id}
+                      class="px-3.5 py-1.5 bg-accent-green text-white border-0 rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      phx-click="reject"
+                      phx-value-id={s.id}
+                      data-confirm="Rejeitar esta sugestão?"
+                      class="px-3.5 py-1.5 bg-transparent text-accent-red border border-accent-red rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
+                    >
+                      Rejeitar
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- Section: Remoções de conexão --%>
+      <div>
+        <p class="text-xs tracking-widest text-ink-500 uppercase mb-4 border-b border-ink-900/10 pb-2">
+          Remoções de conexão ({length(@remove_connection_suggestions)})
+        </p>
+
+        <%= if @remove_connection_suggestions == [] do %>
+          <p class="text-sm text-ink-400 italic">
+            Nenhuma remoção de conexão <%= if @filter == :pending, do: "pendente", else: "registrada" %>.
+          </p>
+        <% else %>
+          <div class="flex flex-col gap-2.5">
+            <%= for s <- @remove_connection_suggestions do %>
+              <% source_code = s.old_value |> String.split("→") |> List.first("") |> String.trim() %>
+              <div class={[
+                "px-4 py-3.5 bg-ink-50 border border-ink-900/10 border-l-[3px] rounded-r-md flex items-start gap-4",
+                s.status == "pending" && "border-l-accent-orange",
+                s.status == "approved" && "border-l-accent-green",
+                s.status == "rejected" && "border-l-ink-400"
+              ]}>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-ink-500 mb-1">
+                    por <strong class="text-ink-700">@{if s.user, do: s.user.username, else: "?"}</strong>
+                    <%= if source_code != "" do %>
+                      · Passo de origem:
+                      <.link navigate={~p"/steps/#{source_code}"} class="text-ink-700 font-semibold no-underline">
+                        {source_code}
+                      </.link>
+                    <% end %>
+                  </p>
+                  <p class="text-sm font-semibold text-ink-900 line-through text-ink-500">
+                    {s.old_value}
+                  </p>
+                  <%= if s.status != "pending" do %>
+                    <p class="text-[11px] text-ink-400 mt-1">
+                      {if s.status == "approved", do: "Aprovado", else: "Rejeitado"}
+                      <%= if s.reviewed_by do %>
+                        por @{s.reviewed_by.username}
+                      <% end %>
+                    </p>
+                  <% end %>
+                </div>
+                <%= if s.status == "pending" do %>
+                  <div class="flex flex-col gap-1.5 shrink-0">
+                    <button
+                      phx-click="approve"
+                      phx-value-id={s.id}
+                      class="px-3.5 py-1.5 bg-accent-green text-white border-0 rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      phx-click="reject"
+                      phx-value-id={s.id}
+                      data-confirm="Rejeitar esta sugestão?"
+                      class="px-3.5 py-1.5 bg-transparent text-accent-red border border-accent-red rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap"
+                    >
+                      Rejeitar
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+    <% end %>
+  </div>
+
+  <%!-- Footer --%>
+  <footer class="border-t border-ink-900/10 py-6 px-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span>
+      Forrózin — O Grupo de Estudos
+    </p>
+  </footer>
+</div>
