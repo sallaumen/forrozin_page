@@ -891,7 +891,7 @@ const GraphVisual = {
     const btn = document.createElement("button")
     btn.id = "seq-exit-btn"
     btn.textContent = "✕ Sair da sequência"
-    btn.style.cssText = "position:absolute;top:12px;right:12px;z-index:25;padding:8px 16px;background:#e67e22;color:white;border:none;border-radius:20px;font-family:Georgia,serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);letter-spacing:0.5px;transition:opacity 0.2s;"
+    btn.style.cssText = "position:absolute;top:60px;right:12px;z-index:25;padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:20px;font-family:Georgia,serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);letter-spacing:0.5px;transition:opacity 0.2s;"
     btn.addEventListener("click", () => {
       this._clearSequenceHighlight()
       this.pushEvent("clear_highlight", {})
