@@ -8,6 +8,11 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     log_in_user(conn, user)
   end
 
+  defp admin_conn(conn) do
+    admin = insert(:admin)
+    log_in_user(conn, admin)
+  end
+
   describe "access" do
     test "redirects to /login when not authenticated", %{conn: conn} do
       {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/community")
@@ -51,8 +56,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       assert html =~ "Passo Aprovado"
     end
 
-    test "switching to 'pending' tab shows only pending steps", %{conn: conn} do
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+    test "switching to 'pending' tab shows only pending steps (admin only)", %{conn: conn} do
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/community")
       html = render_click(lv, "switch_tab", %{"tab" => "pending"})
       assert html =~ "Passo Pendente"
       refute html =~ "Passo Aprovado"
@@ -156,7 +161,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
 
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
       html = render_click(lv, "switch_section", %{"section" => "sequences"})
-      assert html =~ "🎬"
+      assert html =~ "vídeo"
     end
 
     test "toggle_like on sequence updates like count", %{conn: conn, sequence: seq} do
@@ -164,7 +169,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       {:ok, lv, _html} = live(conn, ~p"/community")
       render_click(lv, "switch_section", %{"section" => "sequences"})
       html = render_click(lv, "toggle_like", %{"type" => "sequence", "id" => seq.id})
-      assert html =~ "&#9829;" or html =~ "♥"
+      # After liking, the filled heart icon (hero-heart-solid) is shown
+      assert html =~ "hero-heart-solid"
     end
 
     test "empty state when no public sequences", %{conn: conn} do
