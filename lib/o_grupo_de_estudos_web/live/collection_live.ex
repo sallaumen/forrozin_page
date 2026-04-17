@@ -337,10 +337,13 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:noreply, assign(socket, :suggest_form, params)}
   end
 
-  def handle_event("create_suggested_step", %{"step" => step_params}, socket) do
+  def handle_event("create_suggested_step", params, socket) do
     require Logger
+    Logger.warning("SUGGEST STEP RAW PARAMS: #{inspect(Map.keys(params))}")
+    Logger.warning("SUGGEST STEP FULL: #{inspect(params)}")
+
+    step_params = params["step"] || params
     user = socket.assigns.current_user
-    Logger.info("SUGGEST STEP: user=#{user.username} params=#{inspect(step_params)}")
 
     attrs = Map.put(step_params, "suggested_by_id", user.id)
 
