@@ -52,9 +52,14 @@
       <p class="text-sm text-ink-600 italic mb-6">
         Feito por dançarinos, pra dançarinos.
       </p>
-      <span class="inline-flex items-center gap-1.5 text-xs bg-accent-orange/10 text-accent-orange border border-accent-orange/30 rounded-full py-1 px-3 font-sans mb-11">
-        Disponível como app
-      </span>
+      <div class="flex items-center gap-3 bg-ink-800/80 border border-gold-500/20 rounded-lg py-2.5 px-4 mb-11 max-w-[320px]">
+        <img src="/icons/icon-192.png" alt="OGE" class="w-9 h-9 rounded-lg flex-shrink-0 shadow-sm" />
+        <div class="flex-1">
+          <p class="text-xs font-bold text-gold-500 font-serif">Disponível como app</p>
+          <p class="text-[10px] text-ink-400 font-sans mt-0.5">Instale na tela inicial do celular</p>
+        </div>
+        <span class="text-ink-500 text-lg">→</span>
+      </div>
       <%= if @current_user do %>
         <a
           href={~p"/collection"}

@@ -1,9 +1,7 @@
 defmodule OGrupoDeEstudosWeb.UI.PWAInstallBanner do
   @moduledoc """
-  PWA install prompt banner — fixed above the bottom nav on mobile,
-  fixed at the bottom on desktop. Hidden by default; revealed by the
-  PWAInstall JS hook after the beforeinstallprompt event fires or after
-  a short delay (iOS fallback).
+  PWA install banner — elegant, on-brand bottom bar.
+  Hidden in standalone mode (PWA). Dismissible per session.
   """
 
   use Phoenix.Component
@@ -15,18 +13,26 @@ defmodule OGrupoDeEstudosWeb.UI.PWAInstallBanner do
       phx-hook="PWAInstall"
       class="hidden fixed bottom-14 left-0 right-0 z-30 md:bottom-0"
     >
-      <div class="bg-ink-900 text-ink-100 px-4 py-2.5 flex items-center gap-3 max-w-4xl mx-auto">
-        <img src="/icons/icon-192.png" alt="OGE" class="w-6 h-6 rounded flex-shrink-0" />
-        <span class="text-xs flex-1 font-sans">Instale como app</span>
+      <div class="bg-gold-500 px-4 py-2 flex items-center gap-3 shadow-lg">
+        <img src="/icons/icon-192.png" alt="OGE"
+          class="w-8 h-8 rounded-lg flex-shrink-0 border border-ink-900/20 shadow-sm" />
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-ink-900 font-serif leading-tight">
+            Forrózin na sua tela inicial
+          </p>
+          <p class="text-[10px] text-ink-900/70 font-sans leading-tight mt-0.5">
+            Acesso rápido, como um app nativo
+          </p>
+        </div>
         <button
           id="pwa-install-btn"
-          class="bg-accent-orange text-white text-xs font-medium py-1 px-3 rounded-full flex-shrink-0 cursor-pointer border-0"
+          class="bg-ink-900 text-gold-500 text-xs font-bold py-1.5 px-4 rounded-full flex-shrink-0 cursor-pointer border-0 font-serif tracking-wide shadow-sm hover:bg-ink-800 transition-colors"
         >
           Instalar
         </button>
         <button
           id="pwa-dismiss-btn"
-          class="text-ink-500 hover:text-ink-300 text-sm cursor-pointer bg-transparent border-0 p-1 flex-shrink-0"
+          class="text-ink-900/40 hover:text-ink-900/70 cursor-pointer bg-transparent border-0 p-1 flex-shrink-0 text-base leading-none"
         >
           ✕
         </button>

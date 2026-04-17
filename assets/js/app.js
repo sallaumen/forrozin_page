@@ -1322,16 +1322,29 @@ window.addEventListener("phx:form_persisted_clear", (e) => {
 })
 
 // ---------------------------------------------------------------------------
-// Hook: PWAInstall — shows an install banner for supported browsers
+// PWA: Capture beforeinstallprompt GLOBALLY (must run before any hook)
+// ---------------------------------------------------------------------------
+window._deferredPWAPrompt = null
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  window._deferredPWAPrompt = e
+})
+
+// ---------------------------------------------------------------------------
+// Hook: PWAInstall — elegant install banner
 // ---------------------------------------------------------------------------
 const PWAInstall = {
   mounted() {
-    // Don't show if already running as an installed PWA
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true
+
+    // Hide completely in PWA mode
+    if (isStandalone) {
+      this.el.remove()
       return
     }
 
-    // Don't show if user already dismissed this session
+    // Don't show if dismissed this session
     if (sessionStorage.getItem('pwa_banner_dismissed')) {
       return
     }
@@ -1340,37 +1353,23 @@ const PWAInstall = {
     const installBtn = document.getElementById('pwa-install-btn')
     const dismissBtn = document.getElementById('pwa-dismiss-btn')
 
-    // Capture the beforeinstallprompt event (Chrome/Android)
-    window._deferredPWAPrompt = window._deferredPWAPrompt || null
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault()
-      window._deferredPWAPrompt = e
-    })
-
-    // Show banner after a short delay to avoid distracting on first paint
-    setTimeout(() => {
-      banner.classList.remove('hidden')
-    }, 1500)
+    // Show after 2s
+    setTimeout(() => banner.classList.remove('hidden'), 2000)
 
     if (installBtn) {
       installBtn.addEventListener('click', async () => {
         if (window._deferredPWAPrompt) {
-          // Android/Chrome: trigger native install prompt
+          // Chrome/Android: native install prompt
           window._deferredPWAPrompt.prompt()
-          const result = await window._deferredPWAPrompt.userChoice
-          if (result.outcome === 'accepted') {
+          const { outcome } = await window._deferredPWAPrompt.userChoice
+          if (outcome === 'accepted') {
             banner.classList.add('hidden')
             sessionStorage.setItem('pwa_banner_dismissed', '1')
           }
           window._deferredPWAPrompt = null
         } else {
-          // iOS Safari: manual instructions
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-          if (isIOS) {
-            alert('Para instalar: toque no botão de compartilhar (⬆) e depois em "Adicionar à Tela de Início"')
-          } else {
-            alert('Use o menu do navegador (⋮) e selecione "Instalar aplicativo" ou "Adicionar à tela inicial"')
-          }
+          // iOS/other: show a helpful modal instead of ugly alert
+          showInstallInstructions()
         }
       })
     }
@@ -1384,11 +1383,72 @@ const PWAInstall = {
   }
 }
 
+function showInstallInstructions() {
+  // Remove existing modal if any
+  document.getElementById('pwa-instructions-modal')?.remove()
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  const steps = isIOS
+    ? `<li>Toque em <strong>Compartilhar</strong> <span style="font-size:18px;">⬆</span></li>
+       <li>Role até <strong>"Adicionar à Tela de Início"</strong></li>
+       <li>Toque em <strong>Adicionar</strong></li>`
+    : `<li>Toque no menu <strong>⋮</strong> do navegador</li>
+       <li>Selecione <strong>"Instalar aplicativo"</strong></li>
+       <li>Confirme a instalação</li>`
+
+  const modal = document.createElement('div')
+  modal.id = 'pwa-instructions-modal'
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(26,14,5,0.85);padding:20px;'
+  modal.innerHTML = `
+    <div style="background:#f7f3ec;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;font-family:Georgia,serif;">
+      <img src="/icons/icon-192.png" alt="OGE" style="width:56px;height:56px;border-radius:12px;margin:0 auto 16px;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
+      <h3 style="font-size:18px;color:#1a0e05;margin:0 0 8px;font-weight:700;">Instale o Forrózin</h3>
+      <p style="font-size:13px;color:#7a5c3a;margin:0 0 16px;line-height:1.5;">Acesse como um app direto da tela inicial</p>
+      <ol style="text-align:left;font-size:13px;color:#3a2510;line-height:1.8;padding-left:20px;margin:0 0 20px;">${steps}</ol>
+      <button onclick="this.closest('#pwa-instructions-modal').remove()" style="background:#b47828;color:white;border:none;padding:10px 28px;border-radius:20px;font-family:Georgia,serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">Entendi</button>
+    </div>`
+  document.body.appendChild(modal)
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove()
+  })
+}
+
+// Hook: PWAInstallSettings — permanent install button in Settings page
+const PWAInstallSettings = {
+  mounted() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true
+
+    if (isStandalone) {
+      // Already in PWA — change button to show status
+      this.el.textContent = 'Instalado ✓'
+      this.el.classList.remove('bg-gold-500', 'hover:bg-gold-600', 'cursor-pointer')
+      this.el.classList.add('bg-accent-green/20', 'text-accent-green', 'cursor-default')
+      this.el.disabled = true
+      return
+    }
+
+    this.el.addEventListener('click', async () => {
+      if (window._deferredPWAPrompt) {
+        window._deferredPWAPrompt.prompt()
+        const { outcome } = await window._deferredPWAPrompt.userChoice
+        if (outcome === 'accepted') {
+          this.el.textContent = 'Instalado ✓'
+          this.el.disabled = true
+        }
+        window._deferredPWAPrompt = null
+      } else {
+        showInstallInstructions()
+      }
+    })
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall},
+  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings},
 })
 
 // Show progress bar on live navigation and form submits
