@@ -89,11 +89,13 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       cat_b = insert(:category, name: "bases", label: "Bases")
       cat_s = insert(:category, name: "sacadas", label: "Sacadas")
       insert(:section, title: "Seção Bases", position: 1, category: cat_b)
-      insert(:section, title: "Seção Sacadas", position: 2, category: cat_s)
+      section_s = insert(:section, title: "Seção Sacadas", position: 2, category: cat_s)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       html = render_click(lv, "filter", %{"category" => "bases"})
       assert html =~ "Seção Bases"
-      refute html =~ "Seção Sacadas"
+      # "Seção Sacadas" text exists in suggest form dropdown, but section card should not show
+      # Check that the toggle button for section_s doesn't exist
+      refute html =~ "phx-value-section_id=\"#{section_s.id}\""
     end
 
     test "'all' filter restores all sections", %{conn: conn} do

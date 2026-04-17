@@ -343,7 +343,14 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         {:noreply,
          socket
          |> reload_sections()
-         |> assign(suggest_mode: false, suggest_form: %{}, suggest_error: nil)
+         |> assign(
+           suggest_mode: false,
+           suggest_form: %{},
+           suggest_error: nil,
+           drawer_open: false,
+           drawer_type: nil,
+           drawer_item: nil
+         )
          |> put_flash(:info, "Passo '#{step.name}' sugerido com sucesso!")}
 
       {:error, changeset} ->
