@@ -178,10 +178,9 @@
           </label>
           <select
             name="step[section_id]"
-            required
             class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
           >
-            <option value="">Selecione...</option>
+            <option value="">Sem seção</option>
             <%= for section <- @sections do %>
               <option value={section.id}>{section.title}</option>
             <% end %>
