@@ -2,32 +2,30 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   @moduledoc """
   Creates notification records and broadcasts via PubSub.
 
-  Stub implementation — inserts notifications for reply recipients and broadcasts
-  to their PubSub topics. Will be expanded with Grouper logic and like notifications
-  in Task 9.
+  Called from Engagement context OUTSIDE Ecto.Multi transactions,
+  wrapped in try/rescue so notification failures never break CRUD.
 
-  This module is called from Engagement context functions OUTSIDE the Ecto.Multi
-  transaction, wrapped in a try/rescue so notification failures never break CRUD.
+  Admin users receive a copy of ALL notifications.
   """
 
+  import Ecto.Query
+
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias Phoenix.PubSub
 
   @pubsub OGrupoDeEstudos.PubSub
 
-  @doc """
-  Dispatches notifications for a new comment.
+  # ── Comment notifications ──────────────────────────────
 
-  For replies, notifies the parent comment's author (unless self-reply or parent is deleted).
-  Root comments produce no notifications (no follow system yet).
-  """
+  @doc "Dispatches notification when a comment reply is created."
   def notify(:new_comment, comment, actor, query_mod) do
     recipients = determine_comment_recipients(comment, actor, query_mod)
     parent_field = query_mod.parent_field()
     parent_id = Map.get(comment, parent_field)
 
-    insert_and_broadcast(recipients, fn user_id ->
+    builder = fn user_id ->
       %{
         id: Ecto.UUID.generate(),
         user_id: user_id,
@@ -38,12 +36,49 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         target_id: comment.id,
         parent_type: parent_type_from(query_mod),
         parent_id: parent_id,
-        inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+        inserted_at: now()
       }
-    end)
+    end
+
+    all_recipients = add_admin_recipients(recipients, actor.id)
+    insert_and_broadcast(all_recipients, builder)
   end
 
-  # --- Private ---
+  # ── Like notifications ─────────────────────────────────
+
+  @doc """
+  Dispatches notification when a like is created.
+
+  Recipients:
+  - Like on comment → comment author
+  - Like on step (community) → step's suggested_by user
+  - Like on sequence → sequence owner
+  - Admin always gets a copy
+  """
+  def notify_like(actor_id, likeable_type, likeable_id) do
+    {recipients, action, target_type, parent_type, parent_id} =
+      determine_like_context(actor_id, likeable_type, likeable_id)
+
+    builder = fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: actor_id,
+        action: action,
+        group_key: "like:#{likeable_type}:#{likeable_id}",
+        target_type: target_type,
+        target_id: likeable_id,
+        parent_type: parent_type,
+        parent_id: parent_id,
+        inserted_at: now()
+      }
+    end
+
+    all_recipients = add_admin_recipients(recipients, actor_id)
+    insert_and_broadcast(all_recipients, builder)
+  end
+
+  # ── Private: recipient determination ───────────────────
 
   defp determine_comment_recipients(comment, actor, query_mod) do
     parent_comment_field = query_mod.parent_comment_field()
@@ -64,6 +99,89 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end
   end
 
+  defp determine_like_context(actor_id, "step_comment", comment_id) do
+    alias OGrupoDeEstudos.Engagement.Comments.StepComment
+    comment = Repo.get(StepComment, comment_id)
+
+    recipients =
+      if comment && comment.user_id != actor_id && is_nil(comment.deleted_at),
+        do: [comment.user_id],
+        else: []
+
+    {recipients, "liked_comment", "step_comment", "step", comment && comment.step_id}
+  end
+
+  defp determine_like_context(actor_id, "sequence_comment", comment_id) do
+    alias OGrupoDeEstudos.Engagement.Comments.SequenceComment
+    comment = Repo.get(SequenceComment, comment_id)
+
+    recipients =
+      if comment && comment.user_id != actor_id && is_nil(comment.deleted_at),
+        do: [comment.user_id],
+        else: []
+
+    {recipients, "liked_comment", "sequence_comment", "sequence",
+     comment && comment.sequence_id}
+  end
+
+  defp determine_like_context(actor_id, "profile_comment", comment_id) do
+    alias OGrupoDeEstudos.Engagement.ProfileComment
+    comment = Repo.get(ProfileComment, comment_id)
+
+    recipients =
+      if comment && comment.author_id != actor_id && is_nil(comment.deleted_at),
+        do: [comment.author_id],
+        else: []
+
+    {recipients, "liked_comment", "profile_comment", "profile", comment && comment.profile_id}
+  end
+
+  defp determine_like_context(actor_id, "step", step_id) do
+    alias OGrupoDeEstudos.Encyclopedia.Step
+    step = Repo.get(Step, step_id)
+
+    # Notify step creator if it's a community step
+    recipients =
+      if step && step.suggested_by_id && step.suggested_by_id != actor_id,
+        do: [step.suggested_by_id],
+        else: []
+
+    {recipients, "liked_step", "step", "step", step_id}
+  end
+
+  defp determine_like_context(actor_id, "sequence", sequence_id) do
+    alias OGrupoDeEstudos.Sequences.Sequence
+    sequence = Repo.get(Sequence, sequence_id)
+
+    recipients =
+      if sequence && sequence.user_id != actor_id,
+        do: [sequence.user_id],
+        else: []
+
+    {recipients, "liked_sequence", "sequence", "sequence", sequence_id}
+  end
+
+  defp determine_like_context(_actor_id, _type, _id) do
+    {[], "liked_comment", "step_comment", "step", nil}
+  end
+
+  # ── Private: admin broadcast ───────────────────────────
+
+  defp add_admin_recipients(recipients, actor_id) do
+    admin_ids =
+      from(u in User, where: u.role == "admin", select: u.id)
+      |> Repo.all()
+
+    # Add admins that aren't already recipients and aren't the actor
+    extra_admins =
+      admin_ids
+      |> Enum.reject(fn id -> id == actor_id || id in recipients end)
+
+    Enum.uniq(recipients ++ extra_admins)
+  end
+
+  # ── Private: insert + broadcast ────────────────────────
+
   defp insert_and_broadcast([], _builder), do: :ok
 
   defp insert_and_broadcast(recipients, builder) do
@@ -74,6 +192,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
       PubSub.broadcast(@pubsub, "notifications:#{user_id}", {:new_notification, 1})
     end)
   end
+
+  # ── Helpers ────────────────────────────────────────────
 
   defp root_comment_id(comment, query_mod) do
     parent_comment_field = query_mod.parent_comment_field()
@@ -87,4 +207,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
       :profile_id -> "profile"
     end
   end
+
+  defp now, do: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 end

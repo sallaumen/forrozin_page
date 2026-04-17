@@ -56,8 +56,12 @@ defmodule OGrupoDeEstudos.Engagement do
         })
         |> Repo.insert()
         |> case do
-          {:ok, _} -> {:ok, :liked}
-          error -> error
+          {:ok, _} ->
+            safe_dispatch_like(user_id, likeable_type, likeable_id)
+            {:ok, :liked}
+
+          error ->
+            error
         end
 
       like ->
@@ -358,6 +362,12 @@ defmodule OGrupoDeEstudos.Engagement do
 
   defp safe_dispatch(action, comment, actor, query_mod) do
     Dispatcher.notify(action, comment, actor, query_mod)
+  rescue
+    _error -> :ok
+  end
+
+  defp safe_dispatch_like(user_id, likeable_type, likeable_id) do
+    Dispatcher.notify_like(user_id, likeable_type, likeable_id)
   rescue
     _error -> :ok
   end
