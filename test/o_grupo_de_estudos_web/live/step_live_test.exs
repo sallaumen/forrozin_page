@@ -4,6 +4,8 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
   import Phoenix.LiveViewTest
 
   alias OGrupoDeEstudosWeb.StepLive
+  alias OGrupoDeEstudos.Engagement
+  alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
 
   defp logged_in_conn(conn) do
     user = insert(:user)
@@ -83,6 +85,98 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
     test "returns :external for empty youtu.be" do
       assert :external = StepLive.youtube_embed_url("https://youtu.be/")
+    end
+  end
+
+  describe "step like" do
+    test "toggle_step_like changes liked state", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "LK1")
+
+      {:ok, view, _html} = live(conn, ~p"/steps/#{step.code}")
+
+      view |> render_click("toggle_step_like", %{"id" => step.id})
+
+      assert Engagement.liked?(user.id, "step", step.id)
+    end
+  end
+
+  describe "step favorite" do
+    test "toggle_step_favorite creates favorite and auto-likes", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "FAV1")
+
+      {:ok, view, _html} = live(conn, ~p"/steps/#{step.code}")
+
+      view |> render_click("toggle_step_favorite", %{"id" => step.id})
+
+      assert Engagement.favorited?(user.id, "step", step.id)
+      assert Engagement.liked?(user.id, "step", step.id)
+    end
+  end
+
+  describe "step comments" do
+    test "create_comment adds a comment", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "CMT1")
+
+      {:ok, view, _html} = live(conn, ~p"/steps/#{step.code}")
+
+      view |> render_submit("create_comment", %{"body" => "Great step!"})
+
+      comments = Engagement.list_step_comments(step.id)
+      assert length(comments) == 1
+      assert hd(comments).body == "Great step!"
+    end
+
+    test "create_reply adds a reply to a comment", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "RPL1")
+      {:ok, parent} = Engagement.create_step_comment(user, step.id, %{body: "Parent"})
+
+      {:ok, view, _html} = live(conn, ~p"/steps/#{step.code}")
+
+      view |> render_submit("create_reply", %{"body" => "Reply!", "parent-id" => parent.id})
+
+      replies = Engagement.list_replies(StepCommentQuery, parent.id)
+      assert length(replies) == 1
+    end
+
+    test "delete_comment removes comment when no replies", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "DEL1")
+      {:ok, comment} = Engagement.create_step_comment(user, step.id, %{body: "Delete me"})
+
+      {:ok, view, _html} = live(conn, ~p"/steps/#{step.code}")
+
+      view |> render_click("delete_comment", %{"id" => comment.id, "type" => "step_comment"})
+
+      assert Engagement.list_step_comments(step.id) == []
+    end
+
+    test "toggle_comment_like likes a comment", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "CLK1")
+      other = insert(:user)
+      {:ok, comment} = Engagement.create_step_comment(other, step.id, %{body: "Like me"})
+
+      {:ok, view, _html} = live(conn, ~p"/steps/#{step.code}")
+
+      view |> render_click("toggle_comment_like", %{"type" => "step_comment", "id" => comment.id})
+
+      assert Engagement.liked?(user.id, "step_comment", comment.id)
     end
   end
 end

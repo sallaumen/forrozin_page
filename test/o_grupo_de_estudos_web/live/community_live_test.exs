@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
 
   import Phoenix.LiveViewTest
 
+  alias OGrupoDeEstudos.Engagement
+
   defp logged_in_conn(conn) do
     user = insert(:user)
     log_in_user(conn, user)
@@ -199,6 +201,68 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       render_click(lv, "switch_section", %{"section" => "sequences"})
       html = render_click(lv, "switch_section", %{"section" => "steps"})
       assert html =~ "Passo de Volta"
+    end
+  end
+
+  describe "follow interactions" do
+    test "toggle_follow creates a follow", %{conn: conn} do
+      user = insert(:user)
+      target = insert(:user)
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/community")
+
+      render_click(view, "switch_section", %{"section" => "followers"})
+      render_click(view, "toggle_follow", %{"user-id" => target.id})
+
+      assert Engagement.following?(user.id, target.id)
+    end
+  end
+
+  describe "step like in community" do
+    test "toggle_step_like likes a community step", %{conn: conn} do
+      user = insert(:user)
+      author = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "COM-LK", name: "Passo Curtido", suggested_by: author, approved: true)
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/community")
+
+      render_click(view, "toggle_step_like", %{"id" => step.id})
+
+      assert Engagement.liked?(user.id, "step", step.id)
+    end
+  end
+
+  describe "followers section" do
+    test "switch to followers section shows counters", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/community")
+
+      html = render_click(view, "switch_section", %{"section" => "followers"})
+
+      assert html =~ "seguindo"
+      assert html =~ "seguidores"
+    end
+
+    test "search_followers filters by name", %{conn: conn} do
+      user = insert(:user)
+      maria = insert(:user, username: "maria_test", name: "Maria Test")
+      joao = insert(:user, username: "joao_test", name: "Joao Test")
+      Engagement.toggle_follow(user.id, maria.id)
+      Engagement.toggle_follow(user.id, joao.id)
+
+      conn = log_in_user(conn, user)
+      {:ok, view, _html} = live(conn, ~p"/community")
+
+      render_click(view, "switch_section", %{"section" => "followers"})
+      html = render_keyup(view, "search_followers", %{"term" => "maria"})
+
+      assert html =~ "maria_test"
+      refute html =~ "joao_test"
     end
   end
 end
