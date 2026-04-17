@@ -562,6 +562,14 @@
                   </button>
                   <button
                     type="button"
+                    phx-click="edit_saved_sequence"
+                    phx-value-id={saved_seq.id}
+                    class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-300 rounded text-ink-600 cursor-pointer hover:border-accent-orange hover:text-accent-orange"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
                     phx-click="delete_sequence"
                     phx-value-id={saved_seq.id}
                     class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-red/30 rounded text-accent-red cursor-pointer"

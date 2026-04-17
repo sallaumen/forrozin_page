@@ -171,6 +171,25 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     end
   end
 
+  def handle_event("edit_saved_sequence", %{"id" => id}, socket) do
+    saved = Sequences.get_sequence(id)
+
+    if saved do
+      steps = Enum.sort_by(saved.sequence_steps, & &1.position)
+      manual_steps = Enum.map(steps, &%{code: &1.step.code, name: &1.step.name})
+
+      {:noreply,
+       socket
+       |> assign(:seq_view, :manual)
+       |> assign(:seq_manual_steps, manual_steps)
+       |> assign(:seq_manual_error, nil)
+       |> push_event("set_manual_mode", %{active: true})
+       |> push_event("highlight_sequence", %{steps: Enum.map(manual_steps, & &1.code)})}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("clear_highlight", _params, socket) do
     {:noreply,
      socket
