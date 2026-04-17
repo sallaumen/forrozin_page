@@ -1,277 +1,276 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Conexões" notification_count={assigns[:notification_count] || 0} />
 
-  <%!-- Conteúdo --%>
+  <.flash kind={:info} flash={@flash} />
+  <.flash kind={:error} flash={@flash} />
+
   <div class="max-w-[960px] mx-auto px-6 pt-14 pb-20 w-full box-border">
-    <%!-- Título + botão de edição (admin) --%>
-    <div class="flex items-start justify-between gap-6 mb-10 flex-wrap">
+
+    <%!-- Header --%>
+    <div class="flex items-start justify-between gap-6 mb-8 flex-wrap">
       <div>
-        <p class="text-xs font-bold tracking-[3px] text-ink-500 uppercase mb-3">
-          Enciclopédia
-        </p>
-        <h1 class="text-4xl font-bold text-ink-900 tracking-tight mb-3">
+        <h1 class="text-3xl font-bold text-ink-900 tracking-tight mb-2">
           Mapa de Passos
         </h1>
-        <p class="text-base text-ink-700 leading-relaxed max-w-[560px]">
-          Conexões direcionais entre passos: de onde vem e para onde vai cada movimento. {length(
-            @nodes
-          )} nós · {Enum.reduce(@edges_by_source, 0, fn {_, v}, acc -> acc + length(v) end)} arestas
+        <p class="text-sm text-ink-600 leading-relaxed">
+          {length(@nodes)} nós · {Enum.reduce(@edges_by_source, 0, fn {_, v}, acc -> acc + length(v) end)} conexões
         </p>
       </div>
-      <%= if @is_admin do %>
-        <div class="flex flex-col items-end gap-2">
-          <div class="flex gap-2">
-            <button
-              phx-click="create_backup"
-              class="font-serif text-xs py-2 px-4 rounded cursor-pointer tracking-wide border border-ink-900/30 bg-transparent text-ink-600"
-            >
-              ↓ Backup
-            </button>
-            <button
-              phx-click="toggle_edit_mode"
-              class={[
-                "font-serif text-xs py-2 px-4 rounded cursor-pointer tracking-wide",
-                if(@edit_mode,
-                  do: "border border-ink-900/30 bg-transparent text-ink-600",
-                  else: "border border-gold-500 bg-gold-500 text-ink-900"
-                )
-              ]}
-            >
-              {if @edit_mode, do: "Fechar edição", else: "Editar conexões"}
-            </button>
-          </div>
-          <%= if @last_backup do %>
-            <span class="text-xs text-ink-600 tracking-wide">
-              ✓ {@last_backup}
-            </span>
-          <% end %>
-        </div>
-      <% end %>
+
+      <div class="flex flex-col items-end gap-2">
+        <button
+          phx-click="create_backup"
+          class="font-sans text-xs py-2 px-4 rounded cursor-pointer tracking-wide border border-ink-200 bg-ink-50 text-ink-600 hover:border-ink-300 hover:text-ink-900 transition-colors"
+        >
+          ↓ Backup
+        </button>
+        <%= if @last_backup do %>
+          <span class="text-xs text-ink-500 tracking-wide">
+            ✓ {@last_backup}
+          </span>
+        <% end %>
+      </div>
     </div>
 
-    <%!-- Painel de edição (admin, edit_mode = true) --%>
-    <%= if @is_admin and @edit_mode do %>
-      <div class="bg-ink-50 border border-gold-500/30 rounded-md p-6 mb-8">
-        <p class="text-xs font-bold tracking-[2px] text-ink-500 uppercase mb-5">
-          Nova conexão
-        </p>
+    <%!-- Nova Conexão (always visible — admin-only page) --%>
+    <div class="bg-ink-50 border border-ink-200 rounded-lg p-5 mb-8">
+      <p class="font-sans text-xs font-bold tracking-[2px] text-ink-500 uppercase mb-4">
+        Nova Conexão
+      </p>
 
-        <div class="flex gap-4 mb-4 flex-wrap">
-          <%!-- Painel Sources --%>
-          <div class="flex-1 min-w-[240px]">
-            <p class="text-xs text-ink-500 tracking-wider mb-2.5 uppercase">
-              Origens ({MapSet.size(@sources)} selecionadas)
-            </p>
-            <div class="max-h-[280px] overflow-y-auto border border-ink-900/[0.12] rounded bg-[#faf8f4]">
-              <%= for node <- @nodes do %>
-                <button
-                  phx-click="select_source"
-                  phx-value-step_id={node.id}
-                  class={[
-                    "w-full text-left px-3 py-2 border-none border-b border-ink-900/[0.06] cursor-pointer flex gap-2.5 items-center font-serif",
-                    if(MapSet.member?(@sources, node.id),
-                      do: "bg-gold-500/15",
-                      else: "bg-transparent"
-                    )
-                  ]}
-                >
-                  <div class="flex flex-col gap-px min-w-[72px]">
-                    <span class={[
-                      "text-[9px] font-bold tracking-[0.8px] uppercase",
-                      if(MapSet.member?(@sources, node.id),
-                        do: "text-gold-500",
-                        else: "text-ink-500"
-                      )
-                    ]}>
-                      {if node.category, do: node.category.label, else: "—"}
-                    </span>
-                    <code class={[
-                      "text-xs font-bold",
-                      if(MapSet.member?(@sources, node.id),
-                        do: "text-gold-500",
-                        else: "text-ink-800"
-                      )
-                    ]}>
-                      {node.code}
-                    </code>
-                  </div>
-                  <span class="text-xs text-ink-700">{node.name}</span>
-                </button>
+      <div class="flex gap-3 items-start mb-4 flex-wrap">
+
+        <%!-- Origem --%>
+        <div class="flex-1 min-w-[200px]">
+          <p class="font-sans text-xs text-ink-500 uppercase tracking-wider mb-1.5">Origem</p>
+          <%= if @source_selected do %>
+            <div class="inline-flex items-center gap-1.5 bg-accent-orange/10 text-accent-orange border border-accent-orange/30 rounded-full px-3 py-1 text-sm">
+              <code class="font-mono font-bold text-xs">{@source_selected.code}</code>
+              <span class="text-xs">{@source_selected.name}</span>
+              <button
+                phx-click="clear_source"
+                class="ml-1 text-accent-orange/70 hover:text-accent-orange cursor-pointer border-none bg-transparent leading-none"
+                title="Remover seleção"
+              >
+                ×
+              </button>
+            </div>
+          <% else %>
+            <div class="relative">
+              <input
+                type="text"
+                value={@source_search}
+                placeholder="Buscar passo..."
+                phx-keyup="search_source"
+                phx-debounce="200"
+                class="font-sans text-sm py-2 px-3 rounded border border-ink-200 bg-white text-ink-900 w-full outline-none focus:border-ink-400 placeholder:text-ink-400"
+              />
+              <%= if @source_results != [] do %>
+                <div class="absolute top-full left-0 right-0 bg-white border border-ink-200 rounded shadow-lg z-10 mt-0.5 max-h-[240px] overflow-y-auto">
+                  <%= for step <- @source_results do %>
+                    <button
+                      phx-click="select_source"
+                      phx-value-id={step.id}
+                      phx-value-code={step.code}
+                      phx-value-name={step.name}
+                      class="w-full text-left px-3 py-2 flex gap-2 items-center hover:bg-ink-50 cursor-pointer border-none border-b border-ink-100 last:border-b-0 font-sans"
+                    >
+                      <code class="font-mono text-xs font-bold text-ink-700 min-w-[60px]">{step.code}</code>
+                      <span class="text-xs text-ink-600">{step.name}</span>
+                    </button>
+                  <% end %>
+                </div>
               <% end %>
             </div>
-          </div>
-
-          <%!-- Seta central --%>
-          <div class="flex items-center pt-8 text-ink-500 text-xl">
-            →
-          </div>
-
-          <%!-- Painel Targets --%>
-          <div class="flex-1 min-w-[240px]">
-            <p class="text-xs text-ink-500 tracking-wider mb-2.5 uppercase">
-              Destinos ({MapSet.size(@targets)} selecionados)
-            </p>
-            <div class="max-h-[280px] overflow-y-auto border border-ink-900/[0.12] rounded bg-[#faf8f4]">
-              <%= for node <- @nodes do %>
-                <button
-                  phx-click="select_target"
-                  phx-value-step_id={node.id}
-                  class={[
-                    "w-full text-left px-3 py-2 border-none border-b border-ink-900/[0.06] cursor-pointer flex gap-2.5 items-center font-serif",
-                    if(MapSet.member?(@targets, node.id),
-                      do: "bg-gold-500/15",
-                      else: "bg-transparent"
-                    )
-                  ]}
-                >
-                  <div class="flex flex-col gap-px min-w-[72px]">
-                    <span class={[
-                      "text-[9px] font-bold tracking-[0.8px] uppercase",
-                      if(MapSet.member?(@targets, node.id),
-                        do: "text-gold-500",
-                        else: "text-ink-500"
-                      )
-                    ]}>
-                      {if node.category, do: node.category.label, else: "—"}
-                    </span>
-                    <code class={[
-                      "text-xs font-bold",
-                      if(MapSet.member?(@targets, node.id),
-                        do: "text-gold-500",
-                        else: "text-ink-800"
-                      )
-                    ]}>
-                      {node.code}
-                    </code>
-                  </div>
-                  <span class="text-xs text-ink-700">{node.name}</span>
-                </button>
-              <% end %>
-            </div>
-          </div>
+          <% end %>
         </div>
 
-        <%!-- Rótulo opcional + botão conectar --%>
-        <% n_sources = MapSet.size(@sources) %>
-        <% n_targets = MapSet.size(@targets) %>
-        <% pode_conectar = n_sources > 0 and n_targets > 0 %>
-        <form
-          phx-submit="create_connections"
-          phx-change="update_label"
-          class="flex gap-3 items-center flex-wrap"
-        >
-          <input
-            type="text"
-            name="label"
-            value={@connection_label}
-            placeholder="Rótulo da conexão (opcional)"
-            class="font-serif text-sm py-2.5 px-3.5 rounded border border-ink-900/25 bg-[#fdf9f3] text-ink-900 w-[260px] outline-none"
-          />
-          <button
-            type="submit"
-            disabled={not pode_conectar}
-            class={[
-              "font-serif text-sm py-2.5 px-6 rounded border-none",
-              if(pode_conectar,
-                do: "cursor-pointer bg-gold-500 text-ink-900 font-bold",
-                else: "cursor-not-allowed bg-ink-900/10 text-ink-500 font-normal"
-              )
-            ]}
-          >
-            Conectar {n_sources} → {n_targets}
-          </button>
-        </form>
+        <%!-- Seta --%>
+        <div class="flex items-center pt-7 text-ink-400 text-lg font-sans select-none">
+          →
+        </div>
+
+        <%!-- Destino --%>
+        <div class="flex-1 min-w-[200px]">
+          <p class="font-sans text-xs text-ink-500 uppercase tracking-wider mb-1.5">Destino</p>
+          <%= if @target_selected do %>
+            <div class="inline-flex items-center gap-1.5 bg-accent-orange/10 text-accent-orange border border-accent-orange/30 rounded-full px-3 py-1 text-sm">
+              <code class="font-mono font-bold text-xs">{@target_selected.code}</code>
+              <span class="text-xs">{@target_selected.name}</span>
+              <button
+                phx-click="clear_target"
+                class="ml-1 text-accent-orange/70 hover:text-accent-orange cursor-pointer border-none bg-transparent leading-none"
+                title="Remover seleção"
+              >
+                ×
+              </button>
+            </div>
+          <% else %>
+            <div class="relative">
+              <input
+                type="text"
+                value={@target_search}
+                placeholder="Buscar passo..."
+                phx-keyup="search_target"
+                phx-debounce="200"
+                class="font-sans text-sm py-2 px-3 rounded border border-ink-200 bg-white text-ink-900 w-full outline-none focus:border-ink-400 placeholder:text-ink-400"
+              />
+              <%= if @target_results != [] do %>
+                <div class="absolute top-full left-0 right-0 bg-white border border-ink-200 rounded shadow-lg z-10 mt-0.5 max-h-[240px] overflow-y-auto">
+                  <%= for step <- @target_results do %>
+                    <button
+                      phx-click="select_target"
+                      phx-value-id={step.id}
+                      phx-value-code={step.code}
+                      phx-value-name={step.name}
+                      class="w-full text-left px-3 py-2 flex gap-2 items-center hover:bg-ink-50 cursor-pointer border-none border-b border-ink-100 last:border-b-0 font-sans"
+                    >
+                      <code class="font-mono text-xs font-bold text-ink-700 min-w-[60px]">{step.code}</code>
+                      <span class="text-xs text-ink-600">{step.name}</span>
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
       </div>
-    <% end %>
+
+      <%!-- Rótulo + botão --%>
+      <% pode_conectar = not is_nil(@source_selected) and not is_nil(@target_selected) %>
+      <form phx-submit="create_connection" phx-change="update_connection_label" class="flex gap-3 items-center flex-wrap">
+        <input
+          type="text"
+          name="label"
+          value={@connection_label}
+          placeholder="Rótulo (opcional)"
+          class="font-sans text-sm py-2 px-3 rounded border border-ink-200 bg-white text-ink-900 w-[220px] outline-none focus:border-ink-400 placeholder:text-ink-400"
+        />
+        <button
+          type="submit"
+          disabled={not pode_conectar}
+          class={[
+            "font-sans text-sm py-2 px-5 rounded border-none font-semibold tracking-wide transition-colors",
+            if(pode_conectar,
+              do: "cursor-pointer bg-accent-green text-white hover:opacity-90",
+              else: "cursor-not-allowed bg-ink-200 text-ink-400"
+            )
+          ]}
+        >
+          Criar conexão
+        </button>
+      </form>
+    </div>
 
     <%!-- Âncora para futura visualização D3/Three.js --%>
     <div id="graph-canvas" data-graph={@graph_json} class="hidden"></div>
 
-    <%!-- Lista de adjacência --%>
+    <%!-- Lista de conexões --%>
+    <div class="mb-4 flex items-center justify-between gap-4 flex-wrap">
+      <p class="font-sans text-xs font-bold tracking-[2px] text-ink-500 uppercase">
+        Conexões
+      </p>
+      <input
+        type="text"
+        value={@connection_filter}
+        placeholder="Filtrar por código ou nome..."
+        phx-keyup="filter_connections"
+        phx-debounce="200"
+        class="font-sans text-sm py-1.5 px-3 rounded border border-ink-200 bg-white text-ink-900 w-[240px] outline-none focus:border-ink-400 placeholder:text-ink-400"
+      />
+    </div>
+
     <%= if @nodes == [] do %>
-      <p class="text-base text-ink-500 italic">
+      <p class="font-sans text-sm text-ink-400 italic">
         Nenhum passo publicado ainda.
       </p>
     <% else %>
-      <div class="flex flex-col gap-0.5">
+      <% filter_term = String.downcase(@connection_filter) %>
+      <div class="flex flex-col gap-1">
         <%= for node <- @nodes do %>
-          <div class="bg-ink-50 border border-ink-900/10 rounded px-4 py-3 flex items-center gap-3.5 flex-wrap">
-            <%!-- Código + categoria do passo --%>
-            <div class="flex flex-col gap-px min-w-[120px]">
-              <span class="text-[10px] font-bold tracking-widest text-ink-500 uppercase">
-                {if node.category, do: node.category.label, else: "—"}
-              </span>
-              <.link
-                navigate={~p"/steps/#{node.code}"}
-                class="font-mono text-sm font-bold text-ink-900 no-underline whitespace-nowrap"
-              >
-                {node.code}
-              </.link>
-            </div>
+          <% matches_filter =
+               filter_term == "" or
+                 String.contains?(String.downcase(node.code), filter_term) or
+                 String.contains?(String.downcase(node.name), filter_term) or
+                 (Map.get(@edges_by_source, node.id, [])
+                  |> Enum.any?(fn e ->
+                    String.contains?(String.downcase(e.target_step.code), filter_term) or
+                      String.contains?(String.downcase(e.target_step.name), filter_term)
+                  end)) %>
+          <%= if matches_filter do %>
+            <div class="bg-ink-50 border border-ink-200 rounded-lg px-4 py-3 flex items-start gap-4 flex-wrap">
 
-            <span class="text-sm text-ink-700 min-w-[160px]">{node.name}</span>
+              <%!-- Nó fonte --%>
+              <div class="flex flex-col gap-0.5 min-w-[110px]">
+                <span class="font-sans text-[10px] font-bold tracking-widest text-ink-400 uppercase">
+                  {if node.category, do: node.category.label, else: "—"}
+                </span>
+                <.link
+                  navigate={~p"/steps/#{node.code}"}
+                  class="font-mono text-sm font-bold text-ink-900 no-underline hover:text-accent-orange transition-colors"
+                >
+                  {node.code}
+                </.link>
+                <span class="font-sans text-xs text-ink-500">{node.name}</span>
+              </div>
 
-            <%!-- Arestas de saída com botão × para admin --%>
-            <%= if edges = Map.get(@edges_by_source, node.id) do %>
-              <div class="flex items-center gap-1.5 flex-wrap flex-1">
-                <span class="text-xs text-ink-500">→</span>
-                <%= for edge <- edges do %>
-                  <span class="inline-flex flex-col gap-px bg-gold-500/[0.08] rounded-sm px-1.5 py-0.5">
-                    <span class="inline-flex items-center gap-1">
-                      <.link
-                        navigate={~p"/steps/#{edge.target_step.code}"}
-                        class="font-mono text-xs text-gold-500 no-underline whitespace-nowrap"
-                      >
-                        {edge.target_step.code}
-                      </.link>
-                      <%= if @is_admin do %>
+              <%!-- Arestas de saída --%>
+              <%= if edges = Map.get(@edges_by_source, node.id) do %>
+                <div class="flex items-start gap-2 flex-wrap flex-1 pt-1">
+                  <span class="font-sans text-xs text-ink-400 pt-0.5">→</span>
+                  <%= for edge <- edges do %>
+                    <div class="bg-white border border-ink-200 rounded-md px-2.5 py-1.5 flex flex-col gap-1 min-w-[100px]">
+                      <div class="flex items-center gap-1.5">
+                        <.link
+                          navigate={~p"/steps/#{edge.target_step.code}"}
+                          class="font-mono text-xs font-bold text-accent-orange no-underline hover:underline whitespace-nowrap"
+                        >
+                          {edge.target_step.code}
+                        </.link>
+                        <span class="font-sans text-xs text-ink-500">{edge.target_step.name}</span>
                         <button
                           phx-click="delete_connection"
                           phx-value-connection_id={edge.id}
-                          class="bg-transparent border-none cursor-pointer text-ink-500 text-xs px-0.5 leading-none"
+                          class="ml-auto bg-transparent border-none cursor-pointer text-accent-red text-xs px-0.5 leading-none hover:opacity-70"
                           title="Remover conexão"
                         >
                           ×
                         </button>
+                      </div>
+                      <%= if edge.label do %>
+                        <span class="font-sans text-[10px] text-ink-500 italic">{edge.label}</span>
                       <% end %>
-                    </span>
-                    <%= if edge.label do %>
-                      <span class="text-[10px] text-ink-600 italic tracking-[0.3px]">
-                        {edge.label}
-                      </span>
-                    <% end %>
-                    <%= if @is_admin and @edit_mode do %>
-                      <form
-                        phx-submit="edit_connection_label"
-                        class="flex gap-1 mt-0.5"
-                      >
+                      <form phx-submit="edit_connection_label" class="flex gap-1 mt-0.5">
                         <input type="hidden" name="connection_id" value={edge.id} />
                         <input
                           type="text"
                           name="label"
                           value={edge.label || ""}
                           placeholder="rótulo"
-                          class="font-serif text-[10px] py-0.5 px-1.5 border border-ink-900/20 rounded-sm bg-[#fdf9f3] text-ink-900 w-[120px] outline-none"
+                          class="font-sans text-[10px] py-0.5 px-1.5 border border-ink-200 rounded bg-white text-ink-900 w-[100px] outline-none focus:border-ink-400 placeholder:text-ink-300"
                         />
                         <button
                           type="submit"
-                          class="text-[10px] py-0.5 px-1.5 border-none bg-gold-500/20 rounded-sm cursor-pointer text-ink-800"
+                          class="font-sans text-[10px] py-0.5 px-2 border-none bg-ink-100 hover:bg-ink-200 rounded cursor-pointer text-ink-700 transition-colors"
                         >
                           ok
                         </button>
                       </form>
-                    <% end %>
-                  </span>
-                <% end %>
-              </div>
-            <% else %>
-              <span class="text-xs text-ink-400 italic flex-1">
-                sem saídas mapeadas
-              </span>
-            <% end %>
-          </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <span class="font-sans text-xs text-ink-300 italic flex-1 pt-1">
+                  sem saídas mapeadas
+                </span>
+              <% end %>
+
+            </div>
+          <% end %>
         <% end %>
       </div>
     <% end %>
+
   </div>
 </div>

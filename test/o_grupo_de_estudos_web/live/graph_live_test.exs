@@ -63,9 +63,15 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
   end
 
   describe "admin controls" do
-    test "admin sees edit connections button", %{conn: conn} do
+    test "admin sees Nova Conexão form", %{conn: conn} do
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
-      assert html =~ "Editar conexões"
+      assert html =~ "Nova Conexão"
+    end
+
+    test "admin sees autocomplete search inputs", %{conn: conn} do
+      {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
+      assert html =~ "search_source"
+      assert html =~ "search_target"
     end
 
     test "regular user is redirected before seeing the graph", %{conn: conn} do
@@ -85,24 +91,63 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
     end
   end
 
-  describe "edit mode (admin)" do
-    test "clicking edit connections displays the selection panels", %{conn: conn} do
+  describe "autocomplete search" do
+    test "search_source returns results for matching term", %{conn: conn} do
+      insert(:step, code: "BF", name: "Base frontal")
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      html = render_click(lv, "toggle_edit_mode", %{})
-      assert html =~ "Origens"
-      assert html =~ "Destinos"
+      html = render_keyup(lv, "search_source", %{"value" => "base"})
+      assert html =~ "BF"
     end
 
+    test "selecting source sets the pill", %{conn: conn} do
+      step = insert(:step, code: "BF", name: "Base frontal")
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
+      html = render_click(lv, "select_source", %{"id" => step.id, "code" => "BF", "name" => "Base frontal"})
+      assert html =~ "BF"
+      assert html =~ "clear_source"
+    end
+
+    test "clearing source removes the pill", %{conn: conn} do
+      step = insert(:step, code: "BF", name: "Base frontal")
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
+      render_click(lv, "select_source", %{"id" => step.id, "code" => "BF", "name" => "Base frontal"})
+      html = render_click(lv, "clear_source", %{})
+      assert html =~ "search_source"
+      refute html =~ "clear_source"
+    end
+
+    test "search_target returns results for matching term", %{conn: conn} do
+      insert(:step, code: "SC", name: "Sacada simples")
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
+      html = render_keyup(lv, "search_target", %{"value" => "sacada"})
+      assert html =~ "SC"
+    end
+
+    test "selecting target sets the pill", %{conn: conn} do
+      step = insert(:step, code: "SC", name: "Sacada simples")
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
+      html = render_click(lv, "select_target", %{"id" => step.id, "code" => "SC", "name" => "Sacada simples"})
+      assert html =~ "SC"
+      assert html =~ "clear_target"
+    end
+  end
+
+  describe "create connection" do
     test "selecting source and target then creating adds edge to the list", %{conn: conn} do
       step_a = insert(:step, code: "BF", name: "Base frontal")
       step_b = insert(:step, code: "SC", name: "Sacada simples")
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      render_click(lv, "toggle_edit_mode", %{})
-      render_click(lv, "select_source", %{"step_id" => step_a.id})
-      render_click(lv, "select_target", %{"step_id" => step_b.id})
-      html = render_click(lv, "create_connections", %{})
+      render_click(lv, "select_source", %{"id" => step_a.id, "code" => "BF", "name" => "Base frontal"})
+      render_click(lv, "select_target", %{"id" => step_b.id, "code" => "SC", "name" => "Sacada simples"})
+      html = render_click(lv, "create_connection", %{})
       assert html =~ "BF"
       assert html =~ "SC"
+    end
+
+    test "creating without source and target shows error flash", %{conn: conn} do
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
+      html = render_click(lv, "create_connection", %{})
+      assert html =~ "Selecione origem e destino"
     end
 
     test "creating duplicate connection does not raise error and keeps graph stable", %{
@@ -112,10 +157,9 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
       step_b = insert(:step, code: "SC")
       insert(:connection, source_step: step_a, target_step: step_b)
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      render_click(lv, "toggle_edit_mode", %{})
-      render_click(lv, "select_source", %{"step_id" => step_a.id})
-      render_click(lv, "select_target", %{"step_id" => step_b.id})
-      html = render_click(lv, "create_connections", %{})
+      render_click(lv, "select_source", %{"id" => step_a.id, "code" => "BF", "name" => "Base frontal"})
+      render_click(lv, "select_target", %{"id" => step_b.id, "code" => "SC", "name" => "Sacada simples"})
+      html = render_click(lv, "create_connection", %{})
       assert html =~ "BF"
     end
   end
@@ -126,9 +170,22 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
       step_b = insert(:step, code: "SC")
       connection = insert(:connection, source_step: step_a, target_step: step_b)
       {:ok, lv, html} = live(admin_conn(conn), ~p"/graph")
-      assert html =~ "1 arestas"
+      assert html =~ "1 conexões"
       html = render_click(lv, "delete_connection", %{"connection_id" => connection.id})
-      assert html =~ "0 arestas"
+      assert html =~ "0 conexões"
+    end
+  end
+
+  describe "connection filter" do
+    test "filter_connections narrows visible connections by code", %{conn: conn} do
+      step_a = insert(:step, code: "BF", name: "Base frontal")
+      step_b = insert(:step, code: "SC", name: "Sacada simples")
+      step_c = insert(:step, code: "GP", name: "Giro paulista")
+      insert(:connection, source_step: step_a, target_step: step_b)
+      insert(:connection, source_step: step_a, target_step: step_c)
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
+      html = render_keyup(lv, "filter_connections", %{"value" => "sc"})
+      assert html =~ "SC"
     end
   end
 end
