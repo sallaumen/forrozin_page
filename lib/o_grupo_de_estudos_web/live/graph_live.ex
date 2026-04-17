@@ -35,7 +35,7 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
 
     results =
       if String.length(term) >= 1 do
-        StepQuery.list_by(search: term, order_by: [asc: :name], limit: 8, preload: [:category])
+        StepQuery.list_by(search: term, order_by: [asc: :code], limit: 8, preload: [:category])
       else
         []
       end
@@ -57,7 +57,7 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
 
     results =
       if String.length(term) >= 1 do
-        StepQuery.list_by(search: term, order_by: [asc: :name], limit: 8, preload: [:category])
+        StepQuery.list_by(search: term, order_by: [asc: :code], limit: 8, preload: [:category])
       else
         []
       end
@@ -147,10 +147,13 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
           end)
       })
 
+    sorted_nodes = Enum.sort_by(nodes, & &1.code)
+    sorted_edges = Enum.sort_by(edges, fn e -> {e.source_step.code, e.target_step.code} end)
+
     socket
-    |> assign(:nodes, nodes)
-    |> assign(:edges, edges)
-    |> assign(:edges_by_source, Enum.group_by(edges, & &1.source_step_id))
+    |> assign(:nodes, sorted_nodes)
+    |> assign(:edges, sorted_edges)
+    |> assign(:edges_by_source, Enum.group_by(sorted_edges, & &1.source_step_id))
     |> assign(:graph_json, graph_json)
   end
 
