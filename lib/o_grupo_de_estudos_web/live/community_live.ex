@@ -49,9 +49,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       Enum.sort_by(
         sequences,
         fn seq ->
-          Map.get(sequence_likes.counts, seq.id, 0)
-        end,
-        :desc
+          {-seq.like_count, seq.inserted_at}
+        end
       )
 
     {:noreply,
@@ -84,9 +83,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
           Enum.sort_by(
             sequences,
             fn seq ->
-              Map.get(sequence_likes.counts, seq.id, 0)
-            end,
-            :desc
+              {-seq.like_count, seq.inserted_at}
+            end
           )
 
         {:noreply, assign(socket, sequences: sorted, sequence_likes: sequence_likes)}

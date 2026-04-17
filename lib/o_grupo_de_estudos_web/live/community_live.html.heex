@@ -163,8 +163,12 @@
                       <span class="text-xs text-accent-orange" title="Tem vídeo">🎬</span>
                     <% end %>
                   </div>
-                  <div class="text-xs text-ink-500 mb-1.5">
-                    {step_count} passo(s)
+                  <div class="flex items-center gap-2 text-xs text-ink-500 mb-1.5">
+                    <span>{step_count} passo(s)</span>
+                    <div :if={seq.like_count > 0} class="flex items-center gap-1 text-accent-red/80">
+                      <span class="text-[14px]">♥</span>
+                      <span class="font-medium tabular-nums">{seq.like_count}</span>
+                    </div>
                   </div>
                   <%!-- Description --%>
                   <%= if seq.description do %>
