@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudos.Engagement do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Authorization.Policy
 
-  alias OGrupoDeEstudos.Engagement.{Like, LikeQuery, ProfileComment, ProfileCommentQuery}
+  alias OGrupoDeEstudos.Engagement.{Favorite, Like, LikeQuery, ProfileComment, ProfileCommentQuery}
 
   alias OGrupoDeEstudos.Engagement.Comments.{
     StepComment,
@@ -27,6 +27,9 @@ defmodule OGrupoDeEstudos.Engagement do
   }
 
   alias OGrupoDeEstudos.Engagement.Notifications.{Dispatcher, Notification, NotificationQuery}
+
+  alias OGrupoDeEstudos.Encyclopedia.Step
+  alias OGrupoDeEstudos.Sequences.Sequence
 
   # ══════════════════════════════════════════════════════════════════════
   # Likes (unchanged signatures)
@@ -362,4 +365,209 @@ defmodule OGrupoDeEstudos.Engagement do
   defp schema_and_field_for("step"), do: {StepComment, :step_id}
   defp schema_and_field_for("sequence"), do: {SequenceComment, :sequence_id}
   defp schema_and_field_for("profile"), do: {ProfileComment, :profile_id}
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Favorites
+  # ══════════════════════════════════════════════════════════════════════
+
+  @doc """
+  Toggles a favorite for the given user on a favoritable entity.
+
+  When favoriting, also ensures a like exists (auto-like).
+  When unfavoriting, the like is preserved.
+
+  Returns `{:ok, :favorited}` or `{:ok, :unfavorited}`.
+  """
+  def toggle_favorite(user_id, favoritable_type, favoritable_id) do
+    case Repo.get_by(Favorite,
+           user_id: user_id,
+           favoritable_type: favoritable_type,
+           favoritable_id: favoritable_id
+         ) do
+      nil ->
+        result =
+          Multi.new()
+          |> Multi.insert(:favorite, Favorite.changeset(%Favorite{}, %{
+            user_id: user_id,
+            favoritable_type: favoritable_type,
+            favoritable_id: favoritable_id
+          }))
+          |> Multi.run(:like, fn _repo, _changes ->
+            if LikeQuery.exists?(user_id, favoritable_type, favoritable_id) do
+              {:ok, :already_liked}
+            else
+              %Like{}
+              |> Like.changeset(%{
+                user_id: user_id,
+                likeable_type: favoritable_type,
+                likeable_id: favoritable_id
+              })
+              |> Repo.insert()
+            end
+          end)
+          |> Repo.transaction()
+
+        case result do
+          {:ok, _} -> {:ok, :favorited}
+          {:error, _, changeset, _} -> {:error, changeset}
+        end
+
+      favorite ->
+        Repo.delete(favorite)
+        {:ok, :unfavorited}
+    end
+  end
+
+  @doc "Returns `true` if the user has favorited the given entity."
+  def favorited?(user_id, favoritable_type, favoritable_id) do
+    Repo.exists?(
+      from f in Favorite,
+        where:
+          f.user_id == ^user_id and
+            f.favoritable_type == ^favoritable_type and
+            f.favoritable_id == ^favoritable_id
+    )
+  end
+
+  @doc """
+  Returns a MapSet of favorited IDs for the given user, type, and batch of IDs.
+
+  Useful for rendering favorite state on list pages without N+1 queries.
+  """
+  def favorites_map(user_id, favoritable_type, favoritable_ids) do
+    from(f in Favorite,
+      where:
+        f.user_id == ^user_id and
+          f.favoritable_type == ^favoritable_type and
+          f.favoritable_id in ^favoritable_ids,
+      select: f.favoritable_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc """
+  Returns the favorited entities for the given user and type.
+
+  Supports `"step"` and `"sequence"` — returns the full records.
+  """
+  def list_user_favorites(user_id, "step") do
+    from(s in Step,
+      join: f in Favorite,
+      on: f.favoritable_id == s.id and f.favoritable_type == "step",
+      where: f.user_id == ^user_id and is_nil(s.deleted_at),
+      order_by: [desc: f.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  def list_user_favorites(user_id, "sequence") do
+    from(s in Sequence,
+      join: f in Favorite,
+      on: f.favoritable_id == s.id and f.favoritable_type == "sequence",
+      where: f.user_id == ^user_id and is_nil(s.deleted_at),
+      order_by: [desc: f.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc "Returns the total count of favorites for the given user across all types."
+  def count_user_favorites(user_id) do
+    Repo.aggregate(
+      from(f in Favorite, where: f.user_id == ^user_id),
+      :count
+    )
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Metrics
+  # ══════════════════════════════════════════════════════════════════════
+
+  @doc "Returns a MapSet of step IDs that the given user has liked."
+  def liked_step_ids(user_id) do
+    from(l in Like,
+      where: l.user_id == ^user_id and l.likeable_type == "step",
+      select: l.likeable_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc "Returns the count of likes given by a user for a specific likeable_type."
+  def count_likes_given(user_id, likeable_type) do
+    Repo.aggregate(
+      from(l in Like,
+        where: l.user_id == ^user_id and l.likeable_type == ^likeable_type
+      ),
+      :count
+    )
+  end
+
+  @doc """
+  Returns the total number of comments authored by the user across all comment types.
+
+  StepComment and SequenceComment use `user_id`.
+  ProfileComment uses `author_id`.
+  """
+  def count_comments_authored(user_id) do
+    step_count =
+      Repo.aggregate(
+        from(c in StepComment, where: c.user_id == ^user_id and is_nil(c.deleted_at)),
+        :count
+      )
+
+    sequence_count =
+      Repo.aggregate(
+        from(c in SequenceComment, where: c.user_id == ^user_id and is_nil(c.deleted_at)),
+        :count
+      )
+
+    profile_count =
+      Repo.aggregate(
+        from(c in ProfileComment, where: c.author_id == ^user_id and is_nil(c.deleted_at)),
+        :count
+      )
+
+    step_count + sequence_count + profile_count
+  end
+
+  @doc """
+  Returns the total number of likes received on all comments authored by the user.
+
+  Sums likes on step_comments (user_id), sequence_comments (user_id),
+  and profile_comments (author_id).
+  """
+  def total_likes_received(user_id) do
+    step_likes =
+      from(l in Like,
+        join: c in StepComment,
+        on: l.likeable_id == c.id and l.likeable_type == "step_comment",
+        where: c.user_id == ^user_id,
+        select: count(l.id)
+      )
+      |> Repo.one()
+      |> Kernel.||(0)
+
+    sequence_likes =
+      from(l in Like,
+        join: c in SequenceComment,
+        on: l.likeable_id == c.id and l.likeable_type == "sequence_comment",
+        where: c.user_id == ^user_id,
+        select: count(l.id)
+      )
+      |> Repo.one()
+      |> Kernel.||(0)
+
+    profile_likes =
+      from(l in Like,
+        join: c in ProfileComment,
+        on: l.likeable_id == c.id and l.likeable_type == "profile_comment",
+        where: c.author_id == ^user_id,
+        select: count(l.id)
+      )
+      |> Repo.one()
+      |> Kernel.||(0)
+
+    step_likes + sequence_likes + profile_likes
+  end
 end

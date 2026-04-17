@@ -618,4 +618,79 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert {:ok, 0} = Engagement.mark_all_read(user)
     end
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Favorites
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "favorites" do
+    test "toggle_favorite/3 creates favorite + auto-likes", %{user: user, step: step} do
+      assert {:ok, :favorited} = Engagement.toggle_favorite(user.id, "step", step.id)
+      assert Engagement.favorited?(user.id, "step", step.id)
+      assert Engagement.liked?(user.id, "step", step.id)
+    end
+
+    test "toggle_favorite/3 removes favorite but keeps like", %{user: user, step: step} do
+      {:ok, :favorited} = Engagement.toggle_favorite(user.id, "step", step.id)
+      {:ok, :unfavorited} = Engagement.toggle_favorite(user.id, "step", step.id)
+      refute Engagement.favorited?(user.id, "step", step.id)
+      assert Engagement.liked?(user.id, "step", step.id)
+    end
+
+    test "toggle_favorite/3 does not double-like if already liked", %{user: user, step: step} do
+      Engagement.toggle_like(user.id, "step", step.id)
+      {:ok, :favorited} = Engagement.toggle_favorite(user.id, "step", step.id)
+      assert Engagement.liked?(user.id, "step", step.id)
+    end
+
+    test "favorites_map/3 returns favorited_ids MapSet", %{user: user, step: step} do
+      other_step = insert(:step)
+      Engagement.toggle_favorite(user.id, "step", step.id)
+      result = Engagement.favorites_map(user.id, "step", [step.id, other_step.id])
+      assert MapSet.member?(result, step.id)
+      refute MapSet.member?(result, other_step.id)
+    end
+
+    test "list_user_favorites/2 returns favorited steps", %{user: user, step: step} do
+      Engagement.toggle_favorite(user.id, "step", step.id)
+      favorites = Engagement.list_user_favorites(user.id, "step")
+      assert length(favorites) == 1
+      assert hd(favorites).id == step.id
+    end
+
+    test "count_user_favorites/1 counts all favorites", %{user: user, step: step} do
+      Engagement.toggle_favorite(user.id, "step", step.id)
+      assert Engagement.count_user_favorites(user.id) == 1
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Metrics
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "metrics" do
+    test "liked_step_ids/1 returns MapSet of liked step ids", %{user: user, step: step} do
+      Engagement.toggle_like(user.id, "step", step.id)
+      ids = Engagement.liked_step_ids(user.id)
+      assert MapSet.member?(ids, step.id)
+    end
+
+    test "count_likes_given/2 counts likes by type", %{user: user, step: step} do
+      Engagement.toggle_like(user.id, "step", step.id)
+      assert Engagement.count_likes_given(user.id, "step") == 1
+    end
+
+    test "count_comments_authored/1 counts all comment types", %{user: user, step: step} do
+      Engagement.create_step_comment(user, step.id, %{body: "Test 1"})
+      Engagement.create_step_comment(user, step.id, %{body: "Test 2"})
+      assert Engagement.count_comments_authored(user.id) >= 2
+    end
+
+    test "total_likes_received/1 counts likes on user's comments", %{user: user, step: step} do
+      {:ok, comment} = Engagement.create_step_comment(user, step.id, %{body: "My comment"})
+      other = insert(:user)
+      Engagement.toggle_like(other.id, "step_comment", comment.id)
+      assert Engagement.total_likes_received(user.id) >= 1
+    end
+  end
 end
