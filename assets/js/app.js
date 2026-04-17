@@ -819,7 +819,6 @@ const GraphVisual = {
   _applySequenceHighlight(stepCodes) {
     if (!this._cy) return
     const cy = this._cy
-    const hook = this
 
     // Clear any previous highlight
     this._clearSequenceHighlight()
@@ -831,31 +830,16 @@ const GraphVisual = {
       positionsByCode[code].push(idx + 1)
     })
 
-    // Gradient: dark orange → light orange based on position in sequence
-    const totalSteps = stepCodes.length
-    function gradientColor(position) {
-      // position 0 = darkest, last = lightest
-      const darkR = 180, darkG = 90, darkB = 20    // #B45A14
-      const lightR = 240, lightG = 180, lightB = 120 // #F0B478
-      const t = totalSteps <= 1 ? 0 : position / (totalSteps - 1)
-      const r = Math.round(darkR + (lightR - darkR) * t)
-      const g = Math.round(darkG + (lightG - darkG) * t)
-      const b = Math.round(darkB + (lightB - darkB) * t)
-      return `rgb(${r},${g},${b})`
-    }
-
-    // Remove old missing-edge elements
-    cy.elements('.seq-missing-edge').remove()
-
     cy.batch(() => {
       // 2. Fade everything
       cy.elements().style({ opacity: 0.12 })
 
-      // 3. Highlight nodes with gradient color
+      // 3. Highlight nodes (once per unique code, with all positions)
       Object.entries(positionsByCode).forEach(([code, positions]) => {
         const node = cy.getElementById(code)
         if (node.length === 0) return
 
+        // Save original label (only once)
         if (node.data("_origLabel") === undefined) {
           node.data("_origLabel", node.data("label"))
         }
@@ -863,57 +847,25 @@ const GraphVisual = {
         const prefix = positions.map(circledNumber).join(" ")
         node.data("label", `${prefix}\n${originalLabel}`)
 
-        // Use the earliest position for gradient color
-        const firstPos = Math.min(...positions) - 1
-        const color = gradientColor(firstPos)
-
         node.style({
           opacity: 1,
-          "border-color": color,
+          "border-color": "#e67e22",
           "border-width": 5,
-          "background-color": "#fffdf8",
+          "background-color": "#fff8f0",
         })
       })
 
-      // 4. Highlight edges between consecutive pairs (gradient + missing detection)
+      // 4. Highlight edges between consecutive pairs
       for (let i = 0; i < stepCodes.length - 1; i++) {
         const src = stepCodes[i]
         const tgt = stepCodes[i + 1]
-        const edgeColor = gradientColor(i)
         const edge = cy.edges(`[source = "${src}"][target = "${tgt}"]`)
-
         if (edge.length > 0) {
-          // Existing edge: highlight with gradient color
           edge.style({
             opacity: 1,
-            "line-color": edgeColor,
-            "target-arrow-color": edgeColor,
+            "line-color": "#e67e22",
             width: 4,
-            "curve-style": "unbundled-bezier",
           })
-        } else {
-          // Missing edge: create a temporary dashed red indicator
-          const srcNode = cy.getElementById(src)
-          const tgtNode = cy.getElementById(tgt)
-          if (srcNode.length > 0 && tgtNode.length > 0) {
-            cy.add({
-              group: "edges",
-              data: { source: src, target: tgt, _missing: true },
-              classes: "seq-missing-edge",
-              style: {
-                "line-color": "#c0392b",
-                "line-style": "dashed",
-                "target-arrow-color": "#c0392b",
-                "target-arrow-shape": "triangle",
-                "arrow-scale": 1.2,
-                width: 3,
-                opacity: 0.8,
-                "curve-style": "unbundled-bezier",
-                "control-point-distances": 40,
-                "control-point-weights": 0.5,
-              }
-            })
-          }
         }
       }
     })
@@ -955,9 +907,6 @@ const GraphVisual = {
   _clearSequenceHighlight() {
     const cy = this._cy
     if (!cy || !this._seqHighlightActive) return
-
-    // Remove temporary missing-edge indicators
-    cy.elements('.seq-missing-edge').remove()
 
     cy.batch(() => {
       // Restore node labels and styles

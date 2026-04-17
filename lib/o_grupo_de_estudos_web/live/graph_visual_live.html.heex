@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
-  <%!-- Graph controls: overlaid top-right, inline with nav --%>
-  <div class="hidden md:flex fixed top-2 right-6 z-50 gap-2 items-center">
+  <%!-- Graph controls: below nav bar, top-right --%>
+  <div class="hidden md:flex absolute top-14 right-4 z-30 gap-2 items-center">
     <button
       phx-click="toggle_seq_panel"
       class={[

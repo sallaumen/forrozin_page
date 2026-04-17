@@ -138,7 +138,7 @@
             badge.earned && "bg-ink-50 border-ink-200 text-ink-700",
             !badge.earned && "bg-ink-50/50 border-ink-100 text-ink-400 opacity-40"
           ]}
-            title={if badge.earned, do: badge.name, else: "#{badge.name} — #{round(badge.progress * 100)}%"}
+            title={if badge.earned, do: badge.name, else: "#{badge.name}: #{round(badge.progress * 100)}%"}
           >
             <span>{badge.icon}</span>
             <span class="font-medium">{badge.name}</span>
