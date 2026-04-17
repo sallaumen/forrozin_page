@@ -138,7 +138,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     )}
   end
 
-  def handle_event("search_followers", %{"term" => term}, socket) do
+  def handle_event("search_followers", params, socket) do
+    term = params["value"] || params["term"] || ""
     user = socket.assigns.current_user
     list = case socket.assigns.followers_sub_tab do
       "following" -> Engagement.list_following(user.id, search: term)
@@ -189,7 +190,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
      )}
   end
 
-  def handle_event("search_steps", %{"term" => term}, socket) do
+  def handle_event("search_steps", params, socket) do
+    term = params["value"] || params["term"] || ""
     filtered = filter_steps(socket.assigns.steps_all, term, socket.assigns.step_category_filter)
     {:noreply, assign(socket, step_search: term, steps: filtered)}
   end
@@ -199,7 +201,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     {:noreply, assign(socket, step_category_filter: cat, steps: filtered)}
   end
 
-  def handle_event("search_sequences", %{"term" => term}, socket) do
+  def handle_event("search_sequences", params, socket) do
+    term = params["value"] || params["term"] || ""
     filtered =
       if term == "" do
         socket.assigns.sequences_all
