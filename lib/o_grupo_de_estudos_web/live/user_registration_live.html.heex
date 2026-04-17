@@ -56,6 +56,8 @@
         <.form
           for={@form}
           phx-submit="register"
+          phx-hook="FormPersist"
+          id="registration-form"
           class="flex flex-col gap-[18px]"
         >
           <div>

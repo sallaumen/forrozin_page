@@ -1215,11 +1215,89 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// FormPersist hook — saves form fields to sessionStorage, restores on mount
+// Protects against data loss on LiveView reconnect, deploy, or page refresh.
+// Usage: add phx-hook="FormPersist" id="unique-form-id" to any <form>
+// ---------------------------------------------------------------------------
+const FormPersist = {
+  mounted() {
+    this._key = `form_persist:${this.el.id}`
+    this._restoreFields()
+    this._startAutoSave()
+  },
+
+  updated() {
+    // Don't overwrite user input on LiveView re-render
+  },
+
+  destroyed() {
+    this._stopAutoSave()
+    // Clear saved data when form is intentionally removed (e.g. after submit)
+    sessionStorage.removeItem(this._key)
+  },
+
+  _restoreFields() {
+    const saved = sessionStorage.getItem(this._key)
+    if (!saved) return
+
+    try {
+      const data = JSON.parse(saved)
+      Object.entries(data).forEach(([name, value]) => {
+        const input = this.el.querySelector(`[name="${name}"]`)
+        if (input && input.type !== "hidden" && input.name !== "_csrf_token") {
+          input.value = value
+          // Dispatch input event so LiveView picks up the restored value
+          input.dispatchEvent(new Event("input", { bubbles: true }))
+        }
+      })
+    } catch (_) {
+      sessionStorage.removeItem(this._key)
+    }
+  },
+
+  _startAutoSave() {
+    this._saveHandler = () => this._saveFields()
+    this.el.addEventListener("input", this._saveHandler)
+    this.el.addEventListener("change", this._saveHandler)
+  },
+
+  _stopAutoSave() {
+    if (this._saveHandler) {
+      this.el.removeEventListener("input", this._saveHandler)
+      this.el.removeEventListener("change", this._saveHandler)
+    }
+  },
+
+  _saveFields() {
+    const data = {}
+    const inputs = this.el.querySelectorAll("input, textarea, select")
+    inputs.forEach(input => {
+      if (input.name && input.type !== "hidden" && input.name !== "_csrf_token" && input.type !== "file") {
+        if (input.type === "checkbox") {
+          data[input.name] = input.checked
+        } else if (input.type === "radio") {
+          if (input.checked) data[input.name] = input.value
+        } else {
+          data[input.name] = input.value
+        }
+      }
+    })
+    sessionStorage.setItem(this._key, JSON.stringify(data))
+  }
+}
+
+// Clear form persistence after successful submit
+window.addEventListener("phx:form_persisted_clear", (e) => {
+  const key = `form_persist:${e.detail.id}`
+  sessionStorage.removeItem(key)
+})
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet},
+  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist},
 })
 
 // Show progress bar on live navigation and form submits

@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <form phx-change="validate" phx-submit="save">
+    <form phx-change="validate" phx-submit="save" phx-hook="FormPersist" id="settings-form">
       <%!-- Avatar upload --%>
       <section class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4">
         <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block">
