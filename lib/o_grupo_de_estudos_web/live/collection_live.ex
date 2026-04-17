@@ -467,18 +467,25 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     comments = Engagement.list_step_comments(step_id, limit: 5)
     comment_ids = Enum.map(comments, & &1.id)
 
-    reply_ids =
+    # Refresh expanded replies from DB (so like_count updates)
+    replies_map =
       socket.assigns.expanded_replies_map
-      |> Map.values()
-      |> List.flatten()
-      |> Enum.map(& &1.id)
+      |> Map.keys()
+      |> Enum.reduce(%{}, fn parent_id, acc ->
+        replies = Engagement.list_replies(StepCommentQuery, parent_id)
+        Map.put(acc, parent_id, replies)
+      end)
+
+    reply_ids =
+      replies_map |> Map.values() |> List.flatten() |> Enum.map(& &1.id)
 
     all_ids = comment_ids ++ reply_ids
     comment_likes = Engagement.likes_map(user.id, "step_comment", all_ids)
 
     assign(socket,
       expanded_comments: comments,
-      expanded_comment_likes: comment_likes
+      expanded_comment_likes: comment_likes,
+      expanded_replies_map: replies_map
     )
   end
 
@@ -733,33 +740,30 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
             </p>
           <% end %>
         </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
+        <div class="flex flex-col items-center gap-1 flex-shrink-0">
           <%= if @step.suggested_by_id do %>
             <span title="Passo da comunidade" class="text-xs opacity-60">👤</span>
           <% end %>
           <%= if @has_links do %>
             <span title="Tem vídeo" class="text-xs opacity-60">🎬</span>
           <% end %>
+          <%!-- Expand/collapse — compact icon on the right --%>
+          <button
+            phx-click="toggle_step_expand"
+            phx-value-step-id={@step.id}
+            class={[
+              "p-1 rounded-full transition-colors",
+              @is_expanded && "text-accent-orange bg-accent-orange/10",
+              !@is_expanded && "text-ink-400 hover:text-ink-600 hover:bg-ink-100"
+            ]}
+            title={if @is_expanded, do: "Fechar detalhes", else: "Ver detalhes"}
+          >
+            <.icon
+              name={if @is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
+              class="w-4 h-4"
+            />
+          </button>
         </div>
-      </div>
-
-      <%!-- Expand/collapse button --%>
-      <div class="flex justify-center -mt-1 pb-1">
-        <button
-          phx-click="toggle_step_expand"
-          phx-value-step-id={@step.id}
-          class={[
-            "flex items-center gap-1 text-[10px] py-0.5 px-3 rounded-full transition-colors",
-            @is_expanded && "text-accent-orange bg-accent-orange/10",
-            !@is_expanded && "text-ink-400 hover:text-ink-600 hover:bg-ink-100"
-          ]}
-        >
-          <.icon
-            name={if @is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
-            class="w-3.5 h-3.5"
-          />
-          <span><%= if @is_expanded, do: "Fechar", else: "Detalhes" %></span>
-        </button>
       </div>
 
       <%!-- Expanded content --%>

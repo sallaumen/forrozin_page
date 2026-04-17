@@ -99,15 +99,21 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
         <% end %>
       </div>
 
-      <%!-- Toggle replies link — only shown when replies exist --%>
+      <%!-- Toggle replies link — show/hide --%>
       <button
         :if={@comment.reply_count > 0}
         phx-click="toggle_replies"
         phx-value-id={@comment.id}
-        class="ml-10 text-xs text-ink-500 hover:text-ink-700 cursor-pointer"
+        class="ml-10 text-xs text-ink-500 hover:text-ink-700 cursor-pointer flex items-center gap-1"
         type="button"
       >
-        Ver {@comment.reply_count} {if @comment.reply_count == 1, do: "resposta", else: "respostas"}
+        <%= if @replies != [] do %>
+          <.icon name="hero-chevron-up-mini" class="size-3.5" />
+          <span>Fechar {if @comment.reply_count == 1, do: "resposta", else: "respostas"}</span>
+        <% else %>
+          <.icon name="hero-chevron-down-mini" class="size-3.5" />
+          <span>Ver {@comment.reply_count} {if @comment.reply_count == 1, do: "resposta", else: "respostas"}</span>
+        <% end %>
       </button>
     </div>
     """

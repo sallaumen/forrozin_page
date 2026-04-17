@@ -443,15 +443,25 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   defp reload_step_comments(socket) do
+    alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
+
     step = socket.assigns.step
     user = socket.assigns.current_user
 
     comments = Engagement.list_step_comments(step.id)
     comment_ids = Enum.map(comments, & &1.id)
 
-    # Include reply IDs from expanded threads so likes work on replies too
-    reply_ids =
+    # Refresh expanded replies from DB (so like_count updates)
+    replies_map =
       socket.assigns.replies_map
+      |> Map.keys()
+      |> Enum.reduce(%{}, fn parent_id, acc ->
+        replies = Engagement.list_replies(StepCommentQuery, parent_id)
+        Map.put(acc, parent_id, replies)
+      end)
+
+    reply_ids =
+      replies_map
       |> Map.values()
       |> List.flatten()
       |> Enum.map(& &1.id)
@@ -461,7 +471,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     assign(socket,
       step_comments: comments,
-      step_comment_likes: comment_likes
+      step_comment_likes: comment_likes,
+      replies_map: replies_map
     )
   end
 
