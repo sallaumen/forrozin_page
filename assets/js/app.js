@@ -600,7 +600,8 @@ const GraphVisual = {
           }
         }
       ],
-      wheelSensitivity: 0.3, minZoom: 0.06, maxZoom: 5
+      wheelSensitivity: 0.3, minZoom: 0.06, maxZoom: 5,
+      autoungrabifyNodes: true
     })
 
     this._cy = cy
