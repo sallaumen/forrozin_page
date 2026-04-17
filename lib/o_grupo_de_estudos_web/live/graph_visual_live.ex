@@ -179,8 +179,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   def handle_event("edit_saved_sequence", %{"id" => id}, socket) do
     saved = Sequences.get_sequence(id)
+    user_id = socket.assigns.current_user.id
 
-    if saved do
+    if saved && saved.user_id == user_id do
       steps = Enum.sort_by(saved.sequence_steps, & &1.position)
       manual_steps = Enum.map(steps, &%{code: &1.step.code, name: &1.step.name})
 
