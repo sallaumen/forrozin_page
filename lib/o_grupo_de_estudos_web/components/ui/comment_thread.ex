@@ -138,12 +138,24 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   defp comment_row(assigns) do
     user = get_user(assigns.comment)
 
+    badge =
+      if user do
+        try do
+          OGrupoDeEstudos.Engagement.Badges.primary(get_user_id(assigns.comment))
+        rescue
+          _ -> nil
+        end
+      else
+        nil
+      end
+
     assigns =
       assigns
       |> assign(:user, user)
       |> assign(:liked?, liked?(assigns.likes_map, assigns.comment.id))
       |> assign(:can_delete?, can_delete?(assigns.comment, assigns.current_user, assigns.is_admin))
       |> assign(:initial, if(user, do: String.upcase(String.first(user.username)), else: "?"))
+      |> assign(:badge, badge)
 
     ~H"""
     <div class="flex items-start gap-2">
@@ -158,6 +170,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
           >
             {@user.username}
           </.link>
+          <span :if={@badge} class="text-xs" title={@badge.name}>{@badge.icon}</span>
           <span :if={!@user} class="text-xs font-semibold text-ink-400">—</span>
           <span class="text-xs text-ink-400">{time_ago(@comment.inserted_at)}</span>
         </div>
