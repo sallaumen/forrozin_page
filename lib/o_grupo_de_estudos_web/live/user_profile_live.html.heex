@@ -28,6 +28,15 @@
             >
               Editar perfil
             </.link>
+          <% else %>
+            <button phx-click="toggle_follow"
+              class={[
+                "text-sm py-1.5 px-5 rounded-full font-medium border transition-colors cursor-pointer",
+                @is_following && "bg-transparent border-accent-orange text-accent-orange",
+                !@is_following && "bg-accent-orange border-accent-orange text-white"
+              ]}>
+              {if @is_following, do: "Seguindo ✓", else: "Seguir"}
+            </button>
           <% end %>
         </div>
         <div class="text-sm text-ink-500">
@@ -94,21 +103,29 @@
     </div>
 
     <%!-- Stats grid --%>
-    <div class="flex justify-center gap-2 my-4 px-4">
-      <div class="flex-1 text-center p-3 rounded-lg bg-ink-50">
+    <div class="flex flex-wrap justify-center gap-2 my-4 px-4">
+      <div class="flex-1 text-center p-3 rounded-lg bg-ink-50 min-w-[60px]">
         <p class="text-2xl font-bold text-ink-800">{@total_likes}</p>
         <p class="text-xs text-ink-500">curtidas</p>
       </div>
       <button phx-click="switch_profile_tab" phx-value-tab="favorites"
-        class="flex-1 text-center p-3 rounded-lg bg-ink-50 hover:bg-ink-100 transition-colors cursor-pointer border-0">
+        class="flex-1 text-center p-3 rounded-lg bg-ink-50 hover:bg-ink-100 transition-colors cursor-pointer border-0 min-w-[60px]">
         <p class="text-2xl font-bold text-ink-800">{@total_favorites}</p>
         <p class="text-xs text-ink-500">favoritos</p>
       </button>
       <button phx-click="switch_profile_tab" phx-value-tab="sequences"
-        class="flex-1 text-center p-3 rounded-lg bg-ink-50 hover:bg-ink-100 transition-colors cursor-pointer border-0">
+        class="flex-1 text-center p-3 rounded-lg bg-ink-50 hover:bg-ink-100 transition-colors cursor-pointer border-0 min-w-[60px]">
         <p class="text-2xl font-bold text-ink-800">{@total_sequences}</p>
         <p class="text-xs text-ink-500">sequências</p>
       </button>
+      <div class="flex-1 text-center p-3 rounded-lg bg-ink-50 min-w-[60px]">
+        <p class="text-2xl font-bold text-ink-800">{@following_count}</p>
+        <p class="text-xs text-ink-500">seguindo</p>
+      </div>
+      <div class="flex-1 text-center p-3 rounded-lg bg-ink-50 min-w-[60px]">
+        <p class="text-2xl font-bold text-ink-800">{@followers_count}</p>
+        <p class="text-xs text-ink-500">seguidores</p>
+      </div>
     </div>
 
     <%!-- Conquistas --%>

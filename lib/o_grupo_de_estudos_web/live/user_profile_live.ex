@@ -50,6 +50,10 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         total_favorites = Engagement.count_user_favorites(user.id)
         total_sequences = length(sequences)
 
+        following_count = Engagement.count_following(user.id)
+        followers_count = Engagement.count_followers(user.id)
+        is_following = if !is_own_profile, do: Engagement.following?(current_user.id, user.id), else: false
+
         # Badges
         badges = Badges.compute(user.id)
         primary_badge = Enum.find(badges, & &1.earned)
@@ -71,6 +75,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            total_likes: total_likes,
            total_favorites: total_favorites,
            total_sequences: total_sequences,
+           following_count: following_count,
+           followers_count: followers_count,
+           is_following: is_following,
            badges: badges,
            primary_badge: primary_badge,
            profile_tab: "steps",
@@ -92,6 +99,22 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível registrar o like.")}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_follow", _params, socket) do
+    current = socket.assigns.current_user
+    profile = socket.assigns.profile_user
+
+    case Engagement.toggle_follow(current.id, profile.id) do
+      {:ok, _} ->
+        {:noreply, assign(socket,
+          is_following: Engagement.following?(current.id, profile.id),
+          following_count: Engagement.count_following(profile.id),
+          followers_count: Engagement.count_followers(profile.id)
+        )}
+      {:error, _} -> {:noreply, socket}
     end
   end
 
