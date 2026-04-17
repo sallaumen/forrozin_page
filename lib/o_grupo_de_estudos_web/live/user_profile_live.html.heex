@@ -168,7 +168,7 @@
     <%!-- Profile tabs --%>
     <div class="px-4 mb-4">
       <div class="flex w-full p-0.5 bg-ink-100 rounded-md">
-        <%= for {tab, label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"favorites", "Favoritos ★"}] do %>
+        <%= for {tab, label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"favorites", "Favoritos ★"}, {"contributions", "Contribuições"}] do %>
           <button phx-click="switch_profile_tab" phx-value-tab={tab}
             class={[
               "flex-1 py-2 text-sm font-medium rounded-md transition-all text-center border-0 cursor-pointer",
@@ -351,6 +351,58 @@
               <% end %>
             </div>
           <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%!-- Contributions tab --%>
+    <%= if @profile_tab == "contributions" do %>
+      <div class="px-4">
+        <%= if @contributions == [] do %>
+          <p class="text-sm text-ink-400 italic py-8 text-center">Nenhuma contribuição ainda.</p>
+        <% else %>
+          <div class="space-y-2">
+            <%= for s <- @contributions do %>
+              <div class={[
+                "flex items-start gap-3 p-3 rounded-lg border",
+                s.status == "pending" && "bg-gold-500/5 border-gold-500/20",
+                s.status == "approved" && "bg-accent-green/5 border-accent-green/20",
+                s.status == "rejected" && "bg-accent-red/5 border-accent-red/20"
+              ]}>
+                <span class="text-sm mt-0.5">
+                  <%= case s.status do %>
+                    <% "pending" -> %><span class="text-gold-500">●</span>
+                    <% "approved" -> %><span class="text-accent-green">●</span>
+                    <% "rejected" -> %><span class="text-accent-red">●</span>
+                  <% end %>
+                </span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-ink-700">
+                    <%= case s.action do %>
+                      <% "edit_field" -> %>
+                        Edição de <span class="font-semibold">{s.field}</span>:
+                        "<span class="text-ink-400 line-through">{String.slice(s.old_value || "", 0, 40)}</span>" →
+                        "<span class="text-accent-orange font-medium">{String.slice(s.new_value || "", 0, 40)}</span>"
+                      <% "create_connection" -> %>
+                        Nova conexão: <span class="font-semibold text-accent-orange">{s.new_value}</span>
+                      <% "remove_connection" -> %>
+                        Remover conexão: <span class="font-semibold text-accent-red line-through">{s.old_value}</span>
+                    <% end %>
+                  </p>
+                  <p class="text-xs text-ink-400 mt-0.5">
+                    <%= if s.status == "pending" do %>
+                      Aguardando revisão
+                    <% else %>
+                      {String.capitalize(s.status)}
+                      <%= if s.reviewed_by do %>
+                        por @{s.reviewed_by.username}
+                      <% end %>
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+            <% end %>
+          </div>
         <% end %>
       </div>
     <% end %>

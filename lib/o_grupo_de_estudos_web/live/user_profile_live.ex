@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.UserProfileLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences}
+  alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences, Suggestions}
   alias OGrupoDeEstudos.Engagement.{Badges, ProfileCommentQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
@@ -83,7 +83,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            profile_tab: "steps",
            favorite_steps: [],
            favorite_sequences: [],
-           favorite_sub_tab: "steps"
+           favorite_sub_tab: "steps",
+           contributions: []
          )}
     end
   end
@@ -179,6 +180,13 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
        favorite_steps: fav_steps,
        favorite_sequences: fav_sequences
      )}
+  end
+
+  @impl true
+  def handle_event("switch_profile_tab", %{"tab" => "contributions"}, socket) do
+    profile_user = socket.assigns.profile_user
+    contributions = Suggestions.list_by_user(profile_user.id)
+    {:noreply, assign(socket, profile_tab: "contributions", contributions: contributions)}
   end
 
   @impl true
