@@ -337,7 +337,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   def handle_event("create_suggested_step", %{"step" => step_params}, socket) do
     user = socket.assigns.current_user
-    attrs = Map.put(step_params, "suggested_by_id", user.id)
+
+    # Auto-fill category from selected section
+    attrs =
+      step_params
+      |> Map.put("suggested_by_id", user.id)
+      |> maybe_fill_category_from_section(socket.assigns.sections)
 
     case Admin.create_step(attrs) do
       {:ok, step} ->
@@ -588,6 +593,22 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
     step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", all_step_ids)
     assign(socket, :step_likes, step_likes)
+  end
+
+  defp maybe_fill_category_from_section(attrs, sections) do
+    section_id = attrs["section_id"]
+
+    if section_id && section_id != "" do
+      section = Enum.find(sections, &(&1.id == section_id))
+
+      if section && section.category_id do
+        Map.put(attrs, "category_id", section.category_id)
+      else
+        attrs
+      end
+    else
+      attrs
+    end
   end
 
   defp format_changeset_errors(changeset) do

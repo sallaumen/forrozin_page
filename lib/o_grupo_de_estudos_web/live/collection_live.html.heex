@@ -160,19 +160,6 @@
             class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
           />
         </div>
-        <div class="w-[140px]">
-          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-            Categoria
-          </label>
-          <select
-            name="step[category_id]"
-            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
-          >
-            <%= for cat <- @categories do %>
-              <option value={cat.id}>{cat.label}</option>
-            <% end %>
-          </select>
-        </div>
         <div class="w-[180px]">
           <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
             Seção
