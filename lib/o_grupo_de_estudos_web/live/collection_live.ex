@@ -61,6 +61,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         connection_search: "",
         connection_suggestions: [],
         suggest_mode: false,
+        suggest_form: %{},
         can_edit_drawer: false,
         active_tab: "acervo",
         my_steps: [],
@@ -332,6 +333,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:noreply, assign(socket, suggest_mode: not socket.assigns.suggest_mode)}
   end
 
+  def handle_event("update_suggest_form", %{"step" => params}, socket) do
+    {:noreply, assign(socket, :suggest_form, params)}
+  end
+
   def handle_event("create_suggested_step", %{"step" => params}, socket) do
     user = socket.assigns.current_user
     attrs = Map.put(params, "suggested_by_id", user.id)
@@ -341,7 +346,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         {:noreply,
          socket
          |> reload_sections()
-         |> assign(suggest_mode: false)
+         |> assign(suggest_mode: false, suggest_form: %{})
          |> put_flash(:info, "Passo sugerido com sucesso!")}
 
       {:error, changeset} ->
@@ -756,10 +761,18 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   attr :is_admin, :boolean, default: false
   attr :current_user, :map, default: nil
 
+  @non_expandable_categories ~w(conceitos convencoes)
+
   def step_item(assigns) do
     has_links = MapSet.member?(assigns.steps_with_links, assigns.step.id)
     is_expanded = assigns.expanded_step == assigns.step.id
-    assigns = assign(assigns, has_links: has_links, is_expanded: is_expanded)
+    cat_name =
+      case assigns.step do
+        %{category: %{name: name}} when is_binary(name) -> name
+        _ -> nil
+      end
+    can_expand = cat_name not in @non_expandable_categories
+    assigns = assign(assigns, has_links: has_links, is_expanded: is_expanded, can_expand: can_expand)
 
     ~H"""
     <% is_mine = @step.suggested_by_id != nil and @step.suggested_by_id == @current_user_id %>
@@ -845,27 +858,29 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
               {Map.get(@step_likes.counts, @step.id, 0)}
             </span>
           </button>
-          <%!-- Expand/collapse — compact icon on the right --%>
-          <button
-            phx-click="toggle_step_expand"
-            phx-value-step-id={@step.id}
-            class={[
-              "p-1 rounded-full transition-colors",
-              @is_expanded && "text-accent-orange bg-accent-orange/10",
-              !@is_expanded && "text-ink-400 hover:text-ink-600 hover:bg-ink-100"
-            ]}
-            title={if @is_expanded, do: "Fechar detalhes", else: "Ver detalhes"}
-          >
-            <.icon
-              name={if @is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
-              class="w-4 h-4"
-            />
-          </button>
+          <%!-- Expand/collapse — only for dance steps, not conventions/concepts --%>
+          <%= if @can_expand do %>
+            <button
+              phx-click="toggle_step_expand"
+              phx-value-step-id={@step.id}
+              class={[
+                "p-1 rounded-full transition-colors",
+                @is_expanded && "text-accent-orange bg-accent-orange/10",
+                !@is_expanded && "text-ink-400 hover:text-ink-600 hover:bg-ink-100"
+              ]}
+              title={if @is_expanded, do: "Fechar detalhes", else: "Ver detalhes"}
+            >
+              <.icon
+                name={if @is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
+                class="w-4 h-4"
+              />
+            </button>
+          <% end %>
         </div>
       </div>
 
       <%!-- Expanded content --%>
-      <%= if @is_expanded do %>
+      <%= if @is_expanded && @can_expand do %>
         <div class="px-4 pb-4 space-y-4 border-t border-ink-100 pt-3">
           <%!-- Links / Videos --%>
           <%= if @expanded_links != [] do %>

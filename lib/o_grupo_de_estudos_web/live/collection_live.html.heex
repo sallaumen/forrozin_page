@@ -123,6 +123,7 @@
       </div>
       <form
         phx-submit="create_suggested_step"
+        phx-change="update_suggest_form"
         id="suggest-step-form"
         class="flex flex-wrap gap-2.5 items-end"
       >
@@ -133,7 +134,7 @@
           <input
             type="text"
             name="step[name]"
-            required
+            value={Map.get(@suggest_form, "name", "")}
             class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
           />
         </div>
@@ -144,7 +145,7 @@
           <input
             type="text"
             name="step[code]"
-            required
+            value={Map.get(@suggest_form, "code", "")}
             class="w-full py-2 px-2.5 border border-ink-300 rounded font-mono text-sm text-ink-900 box-border"
           />
         </div>
@@ -155,6 +156,7 @@
           <input
             type="text"
             name="step[note]"
+            value={Map.get(@suggest_form, "note", "")}
             class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
           />
         </div>
