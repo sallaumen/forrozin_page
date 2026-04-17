@@ -36,3 +36,4 @@ npm-debug.log
 *.swp
 *.swo
 .elixir_ls/
+tmp/
