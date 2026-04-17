@@ -62,7 +62,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
          socket
          |> assign(:seq_active, step_list)
          |> assign(:seq_panel, true)
+         |> assign(:seq_mobile_visible, true)
          |> assign(:seq_view, :saved)
+         |> assign(:seq_highlight_on_init, step_codes)
          |> push_event("highlight_sequence", %{steps: step_codes})}
     end
   end

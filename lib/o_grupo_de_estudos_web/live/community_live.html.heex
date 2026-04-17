@@ -355,9 +355,10 @@
                   <% end %>
                   <.link
                     navigate={~p"/graph/visual?seq=#{seq.id}"}
-                    class="text-xs text-ink-400 no-underline italic hover:text-ink-700"
+                    class="inline-flex items-center gap-1.5 text-xs font-medium text-accent-orange bg-accent-orange/10 border border-accent-orange/30 rounded-full py-1 px-3 no-underline hover:bg-accent-orange/20 transition-colors"
                   >
-                    ver no mapa →
+                    <.icon name="hero-map" class="w-3.5 h-3.5" />
+                    Ver no mapa
                   </.link>
                   <%!-- Expand/collapse button for comments + video --%>
                   <button

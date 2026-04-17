@@ -451,9 +451,15 @@ const GraphVisual = {
       this._showToast(message)
     })
 
-    // Sequence highlight events
+    // Sequence highlight events — retry if graph not ready yet
     this.handleEvent("highlight_sequence", ({ steps }) => {
-      this._applySequenceHighlight(steps)
+      if (this._cy) {
+        this._applySequenceHighlight(steps)
+      } else {
+        // Graph not initialized yet (happens when navigating from community)
+        // Retry after layout completes
+        this._pendingHighlight = steps
+      }
     })
 
     this.handleEvent("clear_highlight", () => {
@@ -661,6 +667,14 @@ const GraphVisual = {
 
     // Apply liked step borders after layout (layout is synchronous here)
     applyLikedStepStyling()
+
+    // Apply pending sequence highlight (from ?seq= param navigation)
+    if (this._pendingHighlight) {
+      setTimeout(() => {
+        this._applySequenceHighlight(this._pendingHighlight)
+        this._pendingHighlight = null
+      }, 500)
+    }
 
     // Collect byCat for zone redraw
     const byCat = {}
