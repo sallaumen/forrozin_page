@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
 
   <%!-- Hero --%>
   <div class="border-b border-ink-300/50 px-6 pt-10 pb-7 bg-ink-200">
@@ -270,5 +270,5 @@
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
-  <.bottom_nav current_user={@current_user} current_path="/community" />
+  <.bottom_nav current_user={@current_user} current_path="/community" notification_count={assigns[:notification_count] || 0} />
 </div>

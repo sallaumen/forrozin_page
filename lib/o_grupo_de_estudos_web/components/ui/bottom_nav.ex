@@ -16,12 +16,14 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
 
   attr :current_user, :map, required: true
   attr :current_path, :string, required: true
+  attr :notification_count, :integer, default: 0
 
   def bottom_nav(assigns) do
     tabs = [
       %{label: "Acervo", path: "/collection", icon: "hero-rectangle-stack"},
       %{label: "Mapa", path: "/graph/visual", icon: "hero-map"},
       %{label: "Comunidade", path: "/community", icon: "hero-users"},
+      %{label: "Alertas", path: "/notifications", icon: "hero-bell"},
       %{label: "Perfil", path: "/users/#{assigns.current_user.username}", icon: "hero-user-circle"}
     ]
 
@@ -37,7 +39,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
       ]}
     >
       <ul class="flex items-stretch h-14">
-        <li :for={tab <- @tabs} class="flex-1">
+        <li :for={tab <- @tabs} class="flex-1 relative">
           <.link
             navigate={tab.path}
             data-active={active?(@current_path, tab.path)}
@@ -49,6 +51,17 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
             <.icon name={tab.icon} class="size-6" />
             <span class="text-[10px] leading-none">{tab.label}</span>
           </.link>
+          <span
+            :if={tab.path == "/notifications" && @notification_count > 0}
+            class={[
+              "absolute top-1 right-1/4 min-w-[16px] h-4 px-0.5",
+              "flex items-center justify-center",
+              "bg-accent-red text-white text-[9px] font-bold rounded-full",
+              "animate-notification-pop pointer-events-none"
+            ]}
+          >
+            <%= if @notification_count > 99, do: "99+", else: @notification_count %>
+          </span>
         </li>
       </ul>
     </nav>

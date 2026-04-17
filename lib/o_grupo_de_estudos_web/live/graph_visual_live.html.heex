@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
   <%!-- Secondary toolbar: page-specific controls --%>
   <div class="bg-ink-900 border-t border-white/[0.08] py-1.5 px-6 flex gap-3 justify-end items-center">
     <button
@@ -638,5 +638,5 @@
       <div id="drawer-content"></div>
     </div>
   </div>
-  <.bottom_nav current_user={@current_user} current_path="/graph/visual" />
+  <.bottom_nav current_user={@current_user} current_path="/graph/visual" notification_count={assigns[:notification_count] || 0} />
 </div>

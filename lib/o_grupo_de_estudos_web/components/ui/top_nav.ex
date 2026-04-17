@@ -14,11 +14,13 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   use OGrupoDeEstudosWeb, :verified_routes
 
   import OGrupoDeEstudosWeb.UI.BackButton, only: [back_button: 1]
+  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
   attr :current_user, :map, required: true
   attr :is_admin, :boolean, default: false
   attr :nav_mode, :atom, values: [:primary, :detail], default: :primary
   attr :title, :string, default: nil
+  attr :notification_count, :integer, default: 0
 
   def top_nav(assigns) do
     ~H"""
@@ -58,6 +60,22 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               Backups
             </.link>
           <% end %>
+
+          <.link href="/notifications" class="relative group no-underline">
+            <.icon name="hero-bell-solid" class={[
+              "size-5 transition-colors",
+              @notification_count > 0 && "text-accent-orange",
+              @notification_count == 0 && "text-ink-400 group-hover:text-ink-200"
+            ]} />
+            <span :if={@notification_count > 0} class={[
+              "absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-0.5",
+              "flex items-center justify-center",
+              "bg-accent-red text-white text-[10px] font-bold rounded-full",
+              "animate-notification-pop"
+            ]}>
+              <%= if @notification_count > 99, do: "99+", else: @notification_count %>
+            </span>
+          </.link>
 
           <span class="w-px h-4 bg-ink-100/15"></span>
 

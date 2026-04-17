@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Backups" />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Backups" notification_count={assigns[:notification_count] || 0} />
   <.flash kind={:info} flash={@flash} />
   <.flash kind={:error} flash={@flash} />
 

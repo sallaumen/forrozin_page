@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
   <%!-- Secondary toolbar: page-specific actions (admin) --%>
   <%= if @is_admin do %>
     <div class="bg-ink-900 border-t border-ink-100/10 py-1.5 px-6 flex justify-end">
@@ -655,5 +655,5 @@
       Forrózin — O Grupo de Estudos
     </p>
   </footer>
-  <.bottom_nav current_user={@current_user} current_path="/collection" />
+  <.bottom_nav current_user={@current_user} current_path="/collection" notification_count={assigns[:notification_count] || 0} />
 </div>

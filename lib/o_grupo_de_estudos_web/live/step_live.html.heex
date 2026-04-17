@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title={@step.code} />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title={@step.code} notification_count={assigns[:notification_count] || 0} />
   <%!-- Secondary toolbar: page-specific actions --%>
   <%= if @can_edit do %>
     <div class="bg-ink-900 border-t border-white/[0.08] py-1.5 px-6 flex justify-end">

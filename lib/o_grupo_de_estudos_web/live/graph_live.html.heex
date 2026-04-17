@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Conexões" />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Conexões" notification_count={assigns[:notification_count] || 0} />
 
   <%!-- Conteúdo --%>
   <div class="max-w-[960px] mx-auto px-6 pt-14 pb-20 w-full box-border">

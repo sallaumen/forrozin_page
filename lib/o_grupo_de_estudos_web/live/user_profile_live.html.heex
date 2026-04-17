@@ -1,5 +1,5 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title={OGrupoDeEstudos.Accounts.first_name(@profile_user) || @profile_user.username} />
+  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title={OGrupoDeEstudos.Accounts.first_name(@profile_user) || @profile_user.username} notification_count={assigns[:notification_count] || 0} />
 
   <%!-- Profile --%>
   <div class="max-w-[680px] mx-auto px-6 pt-12 pb-6 w-full box-border">
@@ -295,5 +295,5 @@
       </form>
     </div>
   </div>
-  <.bottom_nav :if={@nav_mode == :primary} current_user={@current_user} current_path={"/users/#{@current_user.username}"} />
+  <.bottom_nav :if={@nav_mode == :primary} current_user={@current_user} current_path={"/users/#{@current_user.username}"} notification_count={assigns[:notification_count] || 0} />
 </div>
