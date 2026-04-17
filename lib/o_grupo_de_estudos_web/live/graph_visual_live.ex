@@ -33,6 +33,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_warnings, [])
      |> assign(:seq_saved, seq_saved)
      |> assign(:seq_active, nil)
+     |> assign(:seq_active_id, nil)
      |> assign(:seq_saving, nil)
      |> assign(:seq_start_code, "")
      |> assign(:seq_start_suggestions, [])
@@ -60,13 +61,29 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         step_codes = Enum.map(steps, & &1.step.code)
         step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
 
+        # Determine if this is user's own sequence or a favorited one
+        is_own = saved.user_id == socket.assigns.current_user.id
+        view = if is_own, do: :saved, else: :favorites
+
+        # Load favorites list if needed
+        favorites = if view == :favorites do
+          Engagement.list_user_favorites(socket.assigns.current_user.id, "sequence")
+        else
+          socket.assigns.seq_favorites_list
+        end
+
+        edges = Map.get(socket.assigns, :edges, [])
+        missing = find_missing_edges(step_codes, edges)
+
         {:noreply,
          socket
          |> assign(:seq_active, step_list)
+         |> assign(:seq_active_id, saved.id)
+         |> assign(:seq_missing_edges, missing)
          |> assign(:seq_panel, true)
          |> assign(:seq_mobile_visible, true)
-         |> assign(:seq_view, :saved)
-         |> assign(:seq_highlight_on_init, step_codes)
+         |> assign(:seq_view, view)
+         |> assign(:seq_favorites_list, favorites)
          |> push_event("highlight_sequence", %{steps: step_codes})}
     end
   end
@@ -170,6 +187,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       {:noreply,
        socket
        |> assign(:seq_active, step_list)
+       |> assign(:seq_active_id, id)
        |> assign(:seq_missing_edges, missing)
        |> push_event("highlight_sequence", %{steps: step_codes})}
     else
@@ -231,6 +249,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     {:noreply,
      socket
      |> assign(:seq_active, nil)
+     |> assign(:seq_active_id, nil)
      |> assign(:seq_missing_edges, [])
      |> push_event("clear_highlight", %{})}
   end
