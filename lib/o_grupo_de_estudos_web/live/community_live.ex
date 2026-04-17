@@ -31,6 +31,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     steps = Encyclopedia.list_suggested_steps_filtered(filter: "all")
     step_ids = Enum.map(steps, & &1.id)
     step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", step_ids)
+    step_favorites = Engagement.favorites_map(socket.assigns.current_user.id, "step", step_ids)
     categories = Encyclopedia.list_categories()
 
     {:ok,
@@ -42,12 +43,14 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        steps: steps,
        steps_all: steps,
        step_likes: step_likes,
+       step_favorites: step_favorites,
        step_search: "",
        step_category_filter: "all",
        categories: categories,
        sequences: [],
        sequences_all: [],
        sequence_likes: %{liked_ids: MapSet.new(), counts: %{}},
+       seq_favorites: MapSet.new(),
        seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
@@ -64,6 +67,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     sequence_ids = Enum.map(sequences, & &1.id)
     current_user = socket.assigns.current_user
     sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
+    seq_favorites = Engagement.favorites_map(current_user.id, "sequence", sequence_ids)
 
     sorted =
       Enum.sort_by(
@@ -79,6 +83,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        sequences: sorted,
        sequences_all: sorted,
        sequence_likes: sequence_likes,
+       seq_favorites: seq_favorites,
        seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
@@ -97,7 +102,9 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     tab = if tab == "pending" and not socket.assigns.is_admin, do: "all", else: tab
     steps = Encyclopedia.list_suggested_steps_filtered(filter: tab)
     step_ids = Enum.map(steps, & &1.id)
-    step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", step_ids)
+    user = socket.assigns.current_user
+    step_likes = Engagement.likes_map(user.id, "step", step_ids)
+    step_favorites = Engagement.favorites_map(user.id, "step", step_ids)
 
     {:noreply,
      assign(socket,
@@ -105,6 +112,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        steps: steps,
        steps_all: steps,
        step_likes: step_likes,
+       step_favorites: step_favorites,
        step_search: "",
        step_category_filter: "all"
      )}
@@ -166,7 +174,37 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       {:ok, _} ->
         step_ids = Enum.map(socket.assigns.steps, & &1.id)
         step_likes = Engagement.likes_map(user.id, "step", step_ids)
-        {:noreply, assign(socket, step_likes: step_likes)}
+        step_favorites = Engagement.favorites_map(user.id, "step", step_ids)
+        {:noreply, assign(socket, step_likes: step_likes, step_favorites: step_favorites)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_step_favorite", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_favorite(user.id, "step", step_id) do
+      {:ok, _} ->
+        step_ids = Enum.map(socket.assigns.steps, & &1.id)
+        step_likes = Engagement.likes_map(user.id, "step", step_ids)
+        step_favorites = Engagement.favorites_map(user.id, "step", step_ids)
+        {:noreply, assign(socket, step_likes: step_likes, step_favorites: step_favorites)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_seq_favorite", %{"id" => seq_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_favorite(user.id, "sequence", seq_id) do
+      {:ok, _} ->
+        sequence_ids = Enum.map(socket.assigns.sequences, & &1.id)
+        seq_favorites = Engagement.favorites_map(user.id, "sequence", sequence_ids)
+        {:noreply, assign(socket, seq_favorites: seq_favorites)}
 
       {:error, _} ->
         {:noreply, socket}

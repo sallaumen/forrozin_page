@@ -156,21 +156,34 @@
                       @{author_username}
                     </span>
                   </.link>
-                  <button phx-click="toggle_step_like" phx-value-id={step.id}
-                    class="flex items-center gap-1">
-                    <.icon
-                      name={if MapSet.member?(@step_likes.liked_ids, step.id), do: "hero-heart-solid", else: "hero-heart"}
-                      class={[
-                        "w-4 h-4",
-                        MapSet.member?(@step_likes.liked_ids, step.id) && "text-accent-red",
-                        !MapSet.member?(@step_likes.liked_ids, step.id) && "text-ink-400"
-                      ]}
-                    />
-                    <span :if={Map.get(@step_likes.counts, step.id, 0) > 0}
-                      class="text-xs tabular-nums text-ink-500">
-                      {Map.get(@step_likes.counts, step.id, 0)}
-                    </span>
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button phx-click="toggle_step_like" phx-value-id={step.id}
+                      class="flex items-center gap-1">
+                      <.icon
+                        name={if MapSet.member?(@step_likes.liked_ids, step.id), do: "hero-heart-solid", else: "hero-heart"}
+                        class={[
+                          "w-4 h-4",
+                          MapSet.member?(@step_likes.liked_ids, step.id) && "text-accent-red",
+                          !MapSet.member?(@step_likes.liked_ids, step.id) && "text-ink-400"
+                        ]}
+                      />
+                      <span class="text-xs tabular-nums text-ink-500">
+                        {Map.get(@step_likes.counts, step.id, 0)}
+                      </span>
+                    </button>
+                    <button phx-click="toggle_step_favorite" phx-value-id={step.id}
+                      class="flex items-center gap-0.5"
+                      title={if MapSet.member?(@step_favorites, step.id), do: "Remover favorito", else: "Favoritar"}>
+                      <.icon
+                        name={if MapSet.member?(@step_favorites, step.id), do: "hero-star-solid", else: "hero-star"}
+                        class={[
+                          "w-4 h-4",
+                          MapSet.member?(@step_favorites, step.id) && "text-gold-500",
+                          !MapSet.member?(@step_favorites, step.id) && "text-ink-400"
+                        ]}
+                      />
+                    </button>
+                  </div>
                   <.link
                     navigate={~p"/steps/#{step.code}"}
                     class="text-xs text-ink-400 no-underline italic ml-auto hover:text-ink-700"
@@ -223,6 +236,7 @@
             <% step_count = length(seq.sequence_steps) %>
             <% like_count = Map.get(@sequence_likes.counts, seq.id, 0) %>
             <% liked = MapSet.member?(@sequence_likes.liked_ids, seq.id) %>
+            <% is_favorited = MapSet.member?(@seq_favorites, seq.id) %>
             <% is_expanded = @expanded_seq == seq.id %>
             <div class={[
               "bg-ink-50 rounded-lg border shadow-sm overflow-hidden transition-shadow",
@@ -255,24 +269,42 @@
                     </div>
                   </div>
 
-                  <%!-- Like button with Heroicons --%>
-                  <button
-                    phx-click="toggle_like"
-                    phx-value-type="sequence"
-                    phx-value-id={seq.id}
-                    class={[
-                      "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors flex-shrink-0",
-                      liked && "border-accent-red/30 bg-accent-red/5 text-accent-red",
-                      !liked && "border-ink-300/50 bg-transparent text-ink-400 hover:border-accent-red/30 hover:text-accent-red"
-                    ]}
-                    title={if liked, do: "Remover like", else: "Curtir"}
-                  >
-                    <.icon
-                      name={if liked, do: "hero-heart-solid", else: "hero-heart"}
-                      class="size-5"
-                    />
-                    <span class="text-xs font-medium tabular-nums">{like_count}</span>
-                  </button>
+                  <%!-- Like + Favorite buttons --%>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      phx-click="toggle_like"
+                      phx-value-type="sequence"
+                      phx-value-id={seq.id}
+                      class={[
+                        "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
+                        liked && "border-accent-red/30 bg-accent-red/5 text-accent-red",
+                        !liked && "border-ink-300/50 bg-transparent text-ink-400 hover:border-accent-red/30 hover:text-accent-red"
+                      ]}
+                      title={if liked, do: "Remover like", else: "Curtir"}
+                    >
+                      <.icon
+                        name={if liked, do: "hero-heart-solid", else: "hero-heart"}
+                        class="size-5"
+                      />
+                      <span class="text-xs font-medium tabular-nums">{like_count}</span>
+                    </button>
+                    <button
+                      phx-click="toggle_seq_favorite"
+                      phx-value-id={seq.id}
+                      class={[
+                        "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
+                        is_favorited && "border-gold-500/40 bg-gold-500/5 text-gold-500",
+                        !is_favorited && "border-ink-300/50 bg-transparent text-ink-400 hover:border-gold-500/40 hover:text-gold-500"
+                      ]}
+                      title={if is_favorited, do: "Remover favorito", else: "Favoritar"}
+                    >
+                      <.icon
+                        name={if is_favorited, do: "hero-star-solid", else: "hero-star"}
+                        class="size-5"
+                      />
+                      <span class="text-xs font-medium">{if is_favorited, do: "Salvo", else: "Salvar"}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <%!-- Step codes as inline pills --%>

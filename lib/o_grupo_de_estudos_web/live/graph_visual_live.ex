@@ -573,7 +573,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
             highlighted: p.highlighted || false,
             suggested: p.suggested_by_id != nil,
             suggested_by_id: p.suggested_by_id,
-            orphan: not MapSet.member?(connected_codes, p.code)
+            orphan: not MapSet.member?(connected_codes, p.code),
+            like_count: p.like_count || 0
           }
         end),
       edges: compute_edge_spread(edges)

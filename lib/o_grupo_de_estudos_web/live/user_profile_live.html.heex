@@ -194,19 +194,22 @@
               phx-click="toggle_like"
               phx-value-type="step"
               phx-value-id={step.id}
-              style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 14px; color: #{if MapSet.member?(@step_likes.liked_ids, step.id), do: "#c0392b", else: "#9a7a5a"}; padding: 4px 8px; border-radius: 4px; transition: color 0.15s;"}
+              class="flex items-center gap-1 bg-transparent border-0 cursor-pointer p-1 rounded"
               title={
                 if MapSet.member?(@step_likes.liked_ids, step.id),
                   do: "Remover like",
                   else: "Curtir"
               }
             >
-              <%= if MapSet.member?(@step_likes.liked_ids, step.id) do %>
-                &#9829;
-              <% else %>
-                &#9825;
-              <% end %>
-              <span class="text-xs">{Map.get(@step_likes.counts, step.id, 0)}</span>
+              <.icon
+                name={if MapSet.member?(@step_likes.liked_ids, step.id), do: "hero-heart-solid", else: "hero-heart"}
+                class={[
+                  "w-4 h-4",
+                  MapSet.member?(@step_likes.liked_ids, step.id) && "text-accent-red",
+                  !MapSet.member?(@step_likes.liked_ids, step.id) && "text-ink-400"
+                ]}
+              />
+              <span class="text-xs tabular-nums text-ink-500">{Map.get(@step_likes.counts, step.id, 0)}</span>
             </button>
           </div>
         <% end %>
@@ -254,19 +257,22 @@
                 phx-click="toggle_like"
                 phx-value-type="sequence"
                 phx-value-id={seq.id}
-                style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 16px; color: #{if MapSet.member?(@sequence_likes.liked_ids, seq.id), do: "#c0392b", else: "#9a7a5a"}; padding: 4px 8px; border-radius: 4px; transition: color 0.15s; flex-shrink: 0;"}
+                class="flex items-center gap-1 bg-transparent border-0 cursor-pointer p-1 rounded flex-shrink-0"
                 title={
                   if MapSet.member?(@sequence_likes.liked_ids, seq.id),
                     do: "Remover like",
                     else: "Curtir"
                 }
               >
-                <%= if MapSet.member?(@sequence_likes.liked_ids, seq.id) do %>
-                  &#9829;
-                <% else %>
-                  &#9825;
-                <% end %>
-                <span class="text-xs">{Map.get(@sequence_likes.counts, seq.id, 0)}</span>
+                <.icon
+                  name={if MapSet.member?(@sequence_likes.liked_ids, seq.id), do: "hero-heart-solid", else: "hero-heart"}
+                  class={[
+                    "w-4 h-4",
+                    MapSet.member?(@sequence_likes.liked_ids, seq.id) && "text-accent-red",
+                    !MapSet.member?(@sequence_likes.liked_ids, seq.id) && "text-ink-400"
+                  ]}
+                />
+                <span class="text-xs tabular-nums text-ink-500">{Map.get(@sequence_likes.counts, seq.id, 0)}</span>
               </button>
             </div>
           </div>
@@ -371,19 +377,22 @@
                   phx-click="toggle_like"
                   phx-value-type="profile_comment"
                   phx-value-id={comment.id}
-                  style={"display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; font-size: 13px; color: #{if MapSet.member?(@comment_likes.liked_ids, comment.id), do: "#c0392b", else: "#9a7a5a"}; padding: 2px 4px; border-radius: 4px;"}
+                  class="flex items-center gap-1 bg-transparent border-0 cursor-pointer p-0.5 rounded"
                   title={
                     if MapSet.member?(@comment_likes.liked_ids, comment.id),
                       do: "Remover like",
                       else: "Curtir"
                   }
                 >
-                  <%= if MapSet.member?(@comment_likes.liked_ids, comment.id) do %>
-                    &#9829;
-                  <% else %>
-                    &#9825;
-                  <% end %>
-                  <span class="text-xs">
+                  <.icon
+                    name={if MapSet.member?(@comment_likes.liked_ids, comment.id), do: "hero-heart-solid", else: "hero-heart"}
+                    class={[
+                      "w-4 h-4",
+                      MapSet.member?(@comment_likes.liked_ids, comment.id) && "text-accent-red",
+                      !MapSet.member?(@comment_likes.liked_ids, comment.id) && "text-ink-400"
+                    ]}
+                  />
+                  <span class="text-xs tabular-nums text-ink-500">
                     {Map.get(@comment_likes.counts, comment.id, 0)}
                   </span>
                 </button>

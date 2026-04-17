@@ -828,7 +828,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
           <button
             phx-click="toggle_step_like"
             phx-value-id={@step.id}
-            class="p-0.5"
+            class="flex items-center gap-0.5 p-0.5"
             title={if MapSet.member?(@step_likes.liked_ids, @step.id), do: "Remover curtida", else: "Curtir"}
           >
             <.icon
@@ -839,6 +839,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
                 !MapSet.member?(@step_likes.liked_ids, @step.id) && "text-ink-300 hover:text-accent-red/60"
               ]}
             />
+            <span class="text-[10px] tabular-nums text-ink-400">
+              {Map.get(@step_likes.counts, @step.id, 0)}
+            </span>
           </button>
           <%!-- Expand/collapse — compact icon on the right --%>
           <button

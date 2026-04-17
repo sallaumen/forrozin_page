@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 
