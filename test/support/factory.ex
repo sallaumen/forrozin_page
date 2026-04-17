@@ -15,6 +15,8 @@ defmodule OGrupoDeEstudos.Factory do
   }
 
   alias OGrupoDeEstudos.Engagement.{Like, ProfileComment}
+  alias OGrupoDeEstudos.Engagement.Comments.{StepComment, SequenceComment}
+  alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
 
   def user_factory do
@@ -132,6 +134,35 @@ defmodule OGrupoDeEstudos.Factory do
       body: sequence(:comment_body, &"Comentário de teste #{&1}"),
       author: build(:user),
       profile: build(:user)
+    }
+  end
+
+  def step_comment_factory do
+    %StepComment{
+      body: sequence(:step_comment_body, &"Comentário no passo #{&1}"),
+      user: build(:user),
+      step: build(:step)
+    }
+  end
+
+  def sequence_comment_factory do
+    %SequenceComment{
+      body: sequence(:sequence_comment_body, &"Comentário na sequência #{&1}"),
+      user: build(:user),
+      sequence: build(:sequence)
+    }
+  end
+
+  def notification_factory do
+    %Notification{
+      action: "replied_comment",
+      group_key: sequence(:group_key, &"comment:step_comment:#{Ecto.UUID.generate()}_#{&1}"),
+      target_type: "step_comment",
+      target_id: Ecto.UUID.generate(),
+      parent_type: "step",
+      parent_id: Ecto.UUID.generate(),
+      user: build(:user),
+      actor: build(:user)
     }
   end
 end

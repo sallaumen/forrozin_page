@@ -14,6 +14,8 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
   - `:order_by` — Ecto order_by clause (default: `[desc: :inserted_at]`)
   """
 
+  @behaviour OGrupoDeEstudos.Engagement.Comments.Commentable
+
   import Ecto.Query
 
   alias OGrupoDeEstudos.Repo
@@ -35,6 +37,37 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
     |> Repo.all()
     |> maybe_preload(Keyword.get(opts, :preload, []))
   end
+
+  # --- Commentable behaviour ---
+
+  @impl true
+  def base_query, do: from(c in ProfileComment, where: is_nil(c.deleted_at))
+
+  @impl true
+  def for_parent(query, profile_id), do: where(query, [c], c.profile_id == ^profile_id)
+
+  @impl true
+  def roots_only(query), do: where(query, [c], is_nil(c.parent_profile_comment_id))
+
+  @impl true
+  def replies_for(query, comment_id),
+    do: where(query, [c], c.parent_profile_comment_id == ^comment_id)
+
+  @impl true
+  def ordered_by_engagement(query),
+    do: order_by(query, [c], [desc: c.like_count, desc: c.inserted_at])
+
+  @impl true
+  def schema, do: ProfileComment
+
+  @impl true
+  def parent_field, do: :profile_id
+
+  @impl true
+  def parent_comment_field, do: :parent_profile_comment_id
+
+  @impl true
+  def likeable_type, do: "profile_comment"
 
   # --- private reducers ---
 
