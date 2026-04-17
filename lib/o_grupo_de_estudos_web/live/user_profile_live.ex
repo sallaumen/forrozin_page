@@ -5,9 +5,12 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
+  on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+
+  use OGrupoDeEstudosWeb.NotificationHandlers
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do

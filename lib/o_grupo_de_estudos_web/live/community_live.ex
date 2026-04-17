@@ -13,9 +13,12 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
+  on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+
+  use OGrupoDeEstudosWeb.NotificationHandlers
 
   @impl true
   def mount(_params, _session, socket) do
