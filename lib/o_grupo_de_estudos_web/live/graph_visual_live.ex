@@ -164,7 +164,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       step_codes = Enum.map(steps, & &1.step.code)
       step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
 
-      missing = find_missing_edges(step_codes, socket.assigns.edges)
+      edges = Map.get(socket.assigns, :edges, [])
+      missing = find_missing_edges(step_codes, edges)
 
       {:noreply,
        socket
