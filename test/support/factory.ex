@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudos.Factory do
     Subsection
   }
 
-  alias OGrupoDeEstudos.Engagement.{Like, ProfileComment, Favorite}
+  alias OGrupoDeEstudos.Engagement.{Like, ProfileComment, Favorite, Follow}
   alias OGrupoDeEstudos.Engagement.Comments.{StepComment, SequenceComment}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
@@ -158,6 +158,13 @@ defmodule OGrupoDeEstudos.Factory do
       body: sequence(:sequence_comment_body, &"Comentário na sequência #{&1}"),
       user: build(:user),
       sequence: build(:sequence)
+    }
+  end
+
+  def follow_factory do
+    %Follow{
+      follower: build(:user),
+      followed: build(:user)
     }
   end
 
