@@ -2,7 +2,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   @moduledoc """
   Community page — shows suggested steps and public sequences.
 
-  Steps tabs: all | pending (admin only) | approved.
+  Steps: single "Todas" tab for regular users; admins also see "Pendentes".
+  Search by name/code and filter by category (steps); search by name (sequences).
   Sequences tab: all public sequences sorted by like count, with inline
   comment expansion (lazy-loaded) and YouTube embeds.
   Accessible to all authenticated users.
@@ -30,6 +31,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     steps = Encyclopedia.list_suggested_steps_filtered(filter: "all")
     step_ids = Enum.map(steps, & &1.id)
     step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", step_ids)
+    categories = Encyclopedia.list_categories()
 
     {:ok,
      assign(socket,
@@ -38,9 +40,15 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        active_section: "steps",
        active_tab: "all",
        steps: steps,
+       steps_all: steps,
        step_likes: step_likes,
+       step_search: "",
+       step_category_filter: "all",
+       categories: categories,
        sequences: [],
+       sequences_all: [],
        sequence_likes: %{liked_ids: MapSet.new(), counts: %{}},
+       seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
        expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
@@ -69,7 +77,9 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
      assign(socket,
        active_section: "sequences",
        sequences: sorted,
+       sequences_all: sorted,
        sequence_likes: sequence_likes,
+       seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
        expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
@@ -88,7 +98,41 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     steps = Encyclopedia.list_suggested_steps_filtered(filter: tab)
     step_ids = Enum.map(steps, & &1.id)
     step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", step_ids)
-    {:noreply, assign(socket, active_tab: tab, steps: steps, step_likes: step_likes)}
+
+    {:noreply,
+     assign(socket,
+       active_tab: tab,
+       steps: steps,
+       steps_all: steps,
+       step_likes: step_likes,
+       step_search: "",
+       step_category_filter: "all"
+     )}
+  end
+
+  def handle_event("search_steps", %{"term" => term}, socket) do
+    filtered = filter_steps(socket.assigns.steps_all, term, socket.assigns.step_category_filter)
+    {:noreply, assign(socket, step_search: term, steps: filtered)}
+  end
+
+  def handle_event("filter_step_category", %{"category" => cat}, socket) do
+    filtered = filter_steps(socket.assigns.steps_all, socket.assigns.step_search, cat)
+    {:noreply, assign(socket, step_category_filter: cat, steps: filtered)}
+  end
+
+  def handle_event("search_sequences", %{"term" => term}, socket) do
+    filtered =
+      if term == "" do
+        socket.assigns.sequences_all
+      else
+        lower = String.downcase(term)
+
+        Enum.filter(socket.assigns.sequences_all, fn seq ->
+          String.contains?(String.downcase(seq.name), lower)
+        end)
+      end
+
+    {:noreply, assign(socket, seq_search: term, sequences: filtered)}
   end
 
   def handle_event("toggle_like", %{"type" => "sequence", "id" => id}, socket) do
@@ -223,6 +267,29 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   end
 
   # ── Private helpers ─────────────────────────────────────────────────────
+
+  defp filter_steps(all_steps, search, category) do
+    all_steps
+    |> then(fn steps ->
+      if search == "" do
+        steps
+      else
+        term = String.downcase(search)
+
+        Enum.filter(steps, fn s ->
+          String.contains?(String.downcase(s.name), term) ||
+            String.contains?(String.downcase(s.code), term)
+        end)
+      end
+    end)
+    |> then(fn steps ->
+      if category == "all" do
+        steps
+      else
+        Enum.filter(steps, fn s -> s.category && s.category.name == category end)
+      end
+    end)
+  end
 
   defp reload_seq_expanded(socket) do
     seq_id = socket.assigns.expanded_seq

@@ -100,7 +100,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
   end
 
   describe "step note preview" do
-    test "shows truncated note when note is long", %{conn: conn} do
+    test "does not show note/description text in step cards", %{conn: conn} do
       author = insert(:user)
       section = insert(:section)
       long_note = String.duplicate("palavra ", 30)
@@ -114,7 +114,10 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       )
 
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
-      assert html =~ "…"
+      # Step card shows code and name but not the note body
+      assert html =~ "COM-N"
+      assert html =~ "Passo com nota"
+      refute html =~ String.slice(long_note, 0, 20)
     end
   end
 

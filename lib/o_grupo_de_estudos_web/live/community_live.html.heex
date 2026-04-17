@@ -1,15 +1,12 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
 
-  <%!-- Hero --%>
-  <div class="border-b border-ink-300/50 px-6 pt-10 pb-7 bg-ink-200">
+  <%!-- Hero (compact) --%>
+  <div class="border-b border-ink-300/50 px-6 pt-4 pb-3 bg-ink-200">
     <div class="max-w-4xl mx-auto">
-      <h1 class="text-3xl md:text-4xl font-bold text-ink-900 tracking-tight leading-tight mb-2.5">
+      <h1 class="text-xl font-bold text-ink-900 tracking-tight leading-tight">
         Comunidade
       </h1>
-      <p class="text-sm text-ink-700 leading-relaxed max-w-xl">
-        Passos sugeridos e sequências criadas pelos membros do grupo de estudos.
-      </p>
     </div>
   </div>
 
@@ -34,37 +31,77 @@
 
   <%!-- ===== PASSOS SECTION ===== --%>
   <%= if @active_section == "steps" do %>
-    <%!-- Step filter tabs — "Pendentes" only visible to admins --%>
+    <%!-- Admin-only tab: Pendentes --%>
+    <%= if @is_admin do %>
+      <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
+        <div class="flex gap-0 border-b border-ink-300/30">
+          <%= for {tab_key, tab_label} <- [{"all", "Todas"}, {"pending", "Pendentes"}] do %>
+            <button
+              phx-click="switch_tab"
+              phx-value-tab={tab_key}
+              class={[
+                "py-2 px-5 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-px border-b-2 transition-colors",
+                @active_tab == tab_key &&
+                  "text-accent-orange border-accent-orange font-bold",
+                @active_tab != tab_key &&
+                  "text-ink-500 border-transparent font-normal hover:text-ink-800"
+              ]}
+            >
+              {tab_label}
+            </button>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Search bar --%>
     <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
-      <div class="flex gap-0 border-b border-ink-300/30">
-        <%
-          tabs =
-            if @is_admin do
-              [{"all", "Todas"}, {"pending", "Pendentes"}, {"approved", "Aprovadas"}]
-            else
-              [{"all", "Todas"}, {"approved", "Aprovadas"}]
-            end
-        %>
-        <%= for {tab_key, tab_label} <- tabs do %>
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex-1 relative">
+          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <input
+            type="text"
+            phx-keyup="search_steps"
+            phx-debounce="300"
+            name="term"
+            value={@step_search}
+            placeholder="Buscar passo..."
+            class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+          />
+        </div>
+      </div>
+
+      <%!-- Category filter chips --%>
+      <div class="flex flex-wrap gap-1.5 mb-3">
+        <button
+          phx-click="filter_step_category"
+          phx-value-category="all"
+          class={[
+            "py-1 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer",
+            @step_category_filter == "all" && "bg-ink-800 text-white border-ink-800",
+            @step_category_filter != "all" && "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
+          ]}
+        >
+          Todas
+        </button>
+        <%= for cat <- @categories do %>
           <button
-            phx-click="switch_tab"
-            phx-value-tab={tab_key}
+            phx-click="filter_step_category"
+            phx-value-category={cat.name}
             class={[
-              "py-2 px-5 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-px border-b-2 transition-colors",
-              @active_tab == tab_key &&
-                "text-accent-orange border-accent-orange font-bold",
-              @active_tab != tab_key &&
-                "text-ink-500 border-transparent font-normal hover:text-ink-800"
+              "py-1 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer",
+              @step_category_filter == cat.name && "bg-ink-800 text-white border-ink-800",
+              @step_category_filter != cat.name && "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
             ]}
           >
-            {tab_label}
+            {cat.label}
           </button>
         <% end %>
       </div>
     </div>
 
     <%!-- Steps content --%>
-    <div class="max-w-4xl mx-auto px-4 pt-5 pb-20 w-full box-border">
+    <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
       <%= if @steps == [] do %>
         <div class="text-center py-20 px-5 text-ink-500 italic">
           Nenhuma sugestão encontrada.
@@ -78,54 +115,30 @@
             <% author = step.suggested_by %>
             <% author_username = if author, do: author.username, else: "?" %>
             <% author_initial = author_username |> String.upcase() |> String.first() %>
-            <% approved_color = if step.approved, do: "#27ae60", else: "#8e44ad" %>
-            <div class={[
-              "bg-ink-50 rounded-lg border shadow-sm overflow-hidden",
-              step.approved && "border-accent-green/25",
-              !step.approved && "border-[#8e44ad]/15"
-            ]}>
+            <div class="bg-ink-50 rounded-lg border border-accent-green/25 shadow-sm overflow-hidden">
               <%!-- Colored top accent bar --%>
-              <div
-                class="h-0.5 w-full"
-                style={"background: #{approved_color};"}
-              />
+              <div class="h-0.5 w-full" style={"background: #{category_color(step)};"} />
               <div class="px-4 py-4">
                 <%!-- Header row --%>
-                <div class="flex items-start justify-between gap-3 flex-wrap mb-2.5">
-                  <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-                    <code class="font-mono text-xs font-bold text-ink-700 bg-gold-500/10 py-0.5 px-1.5 rounded-sm tracking-wide border border-gold-500/20">
-                      {step.code}
-                    </code>
-                    <.link
-                      navigate={~p"/steps/#{step.code}"}
-                      class="text-base text-ink-900 font-bold font-serif no-underline leading-snug"
-                    >
-                      {step.name}
-                    </.link>
-                    <%= if step.category do %>
-                      <span
-                        class="text-[10px] py-0.5 px-2.5 rounded-full italic font-semibold border"
-                        style={"background: #{category_color(step)}12; color: #{category_color(step)}; border-color: #{category_color(step)}30;"}
-                      >
-                        {category_label(step)}
-                      </span>
-                    <% end %>
-                  </div>
-                  <%!-- Status badge --%>
-                  <span
-                    class="text-[10px] py-1 px-2.5 rounded-full font-semibold border whitespace-nowrap flex-shrink-0"
-                    style={"background: #{approved_color}12; color: #{approved_color}; border-color: #{approved_color}30;"}
+                <div class="flex items-center gap-2 flex-wrap mb-2.5">
+                  <code class="font-mono text-xs font-bold text-ink-700 bg-gold-500/10 py-0.5 px-1.5 rounded-sm tracking-wide border border-gold-500/20">
+                    {step.code}
+                  </code>
+                  <.link
+                    navigate={~p"/steps/#{step.code}"}
+                    class="text-base text-ink-900 font-bold font-serif no-underline leading-snug"
                   >
-                    {if step.approved, do: "✓ aprovada", else: "pendente"}
-                  </span>
+                    {step.name}
+                  </.link>
+                  <%= if step.category do %>
+                    <span
+                      class="text-[10px] py-0.5 px-2.5 rounded-full italic font-semibold border"
+                      style={"background: #{category_color(step)}12; color: #{category_color(step)}; border-color: #{category_color(step)}30;"}
+                    >
+                      {category_label(step)}
+                    </span>
+                  <% end %>
                 </div>
-
-                <%!-- Note preview --%>
-                <%= if step.note do %>
-                  <p class="text-sm text-ink-700 leading-relaxed italic mb-3 font-serif">
-                    {String.slice(step.note, 0, 160)}{if String.length(step.note) > 160, do: "…"}
-                  </p>
-                <% end %>
 
                 <%!-- Footer: author + link + like --%>
                 <div class="flex items-center gap-3 flex-wrap mt-1">
@@ -135,11 +148,11 @@
                   >
                     <span
                       class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-bold flex-shrink-0"
-                      style={"background: #{approved_color};"}
+                      style={"background: #{category_color(step)};"}
                     >
                       {author_initial}
                     </span>
-                    <span class="text-xs font-semibold" style={"color: #{approved_color};"}>
+                    <span class="text-xs font-semibold" style={"color: #{category_color(step)};"}>
                       @{author_username}
                     </span>
                   </.link>
@@ -175,7 +188,25 @@
 
   <%!-- ===== SEQUÊNCIAS SECTION ===== --%>
   <%= if @active_section == "sequences" do %>
-    <div class="max-w-4xl mx-auto px-4 pt-5 pb-20 w-full box-border">
+    <%!-- Sequences search bar --%>
+    <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex-1 relative">
+          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <input
+            type="text"
+            phx-keyup="search_sequences"
+            phx-debounce="300"
+            name="term"
+            value={@seq_search}
+            placeholder="Buscar sequência..."
+            class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
       <%= if @sequences == [] do %>
         <div class="text-center py-20 px-5 text-ink-500 italic">
           Nenhuma sequência pública encontrada ainda.
@@ -243,13 +274,6 @@
                     <span class="text-xs font-medium tabular-nums">{like_count}</span>
                   </button>
                 </div>
-
-                <%!-- Description --%>
-                <%= if seq.description do %>
-                  <p class="text-sm text-ink-700 leading-normal italic mb-2.5 font-serif">
-                    {String.slice(seq.description, 0, 140)}{if String.length(seq.description) > 140, do: "…"}
-                  </p>
-                <% end %>
 
                 <%!-- Step codes as inline pills --%>
                 <%= if seq.sequence_steps != [] do %>
@@ -327,7 +351,7 @@
                         rel="noreferrer"
                         class="text-xs text-accent-orange no-underline"
                       >
-                        🎬 Ver vídeo externo →
+                        Ver vídeo externo →
                       </a>
                     </div>
                   <% end %>
