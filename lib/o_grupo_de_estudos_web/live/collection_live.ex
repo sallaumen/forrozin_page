@@ -338,20 +338,26 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("create_suggested_step", %{"step" => step_params}, socket) do
+    require Logger
     user = socket.assigns.current_user
+    Logger.info("SUGGEST STEP: user=#{user.username} params=#{inspect(step_params)}")
+
     attrs = Map.put(step_params, "suggested_by_id", user.id)
 
     case Admin.create_step(attrs) do
-      {:ok, _step} ->
+      {:ok, step} ->
+        Logger.info("SUGGEST STEP SUCCESS: code=#{step.code}")
+
         {:noreply,
          socket
          |> reload_sections()
          |> assign(suggest_mode: false, suggest_form: %{})
-         |> put_flash(:info, "Passo sugerido com sucesso!")}
+         |> put_flash(:info, "Passo '#{step.name}' sugerido com sucesso!")}
 
       {:error, changeset} ->
         errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
         error_msg = errors |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end) |> Enum.join("; ")
+        Logger.warning("SUGGEST STEP ERROR: #{error_msg}")
         {:noreply, put_flash(socket, :error, "Erro: #{error_msg}")}
     end
   end
