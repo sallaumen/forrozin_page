@@ -19,6 +19,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.CommentThread
+  import OGrupoDeEstudosWeb.UI.OnboardingBanner
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers

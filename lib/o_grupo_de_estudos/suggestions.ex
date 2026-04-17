@@ -173,6 +173,9 @@ defmodule OGrupoDeEstudos.Suggestions do
   defp safe_notify(action, suggestion, admin) do
     Dispatcher.notify_suggestion(action, suggestion, admin)
   rescue
-    _ -> :ok
+    error ->
+      require Logger
+      Logger.warning("Suggestion notification failed: #{inspect(error)}")
+      :ok
   end
 end

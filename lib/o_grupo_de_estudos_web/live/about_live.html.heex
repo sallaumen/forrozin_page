@@ -3,24 +3,125 @@
     <a href={~p"/"} class="font-serif text-[13px] font-bold tracking-[2px] text-ink-50 uppercase no-underline">
       Forrózin
     </a>
+    <a href={~p"/collection"} class="text-xs text-ink-400 no-underline hover:text-ink-200 tracking-wide">
+      Ir para o Acervo →
+    </a>
   </header>
 
-  <div class="max-w-[680px] mx-auto px-6 py-[60px] text-center w-full box-border">
-    <h1 class="text-4xl font-bold text-ink-900 mb-6">
-      Quem somos
+  <div class="max-w-[720px] mx-auto px-6 py-12 w-full box-border">
+    <%!-- Hero --%>
+    <h1 class="text-4xl font-bold text-ink-900 mb-3 tracking-tight">
+      Uma wiki de forró roots.
     </h1>
-    <p class="text-base text-ink-700 leading-[1.8] mb-6">
-      O Forrózin é um projeto colaborativo de mapeamento de passos de forró.
-      Nasceu da vontade de organizar o conhecimento sobre a dança de um jeito acessível e divertido.
+    <p class="text-lg text-ink-600 leading-relaxed mb-10">
+      Construída pela comunidade, pra comunidade. Cada passo, cada conexão, cada correção conta.
     </p>
-    <p class="text-base text-ink-700 leading-[1.8] mb-6">
-      A ideia é simples: dançarinos ensinam dançarinos.
-      Qualquer pessoa pode sugerir passos, compartilhar vídeos e criar sequências.
-    </p>
-    <div class="p-6 bg-ink-300/10 rounded-lg border border-ink-400/25 mt-8">
-      <p class="text-sm text-ink-500 italic">
-        Esta página está em construção. Em breve, mais informações sobre o projeto e a equipe.
-      </p>
+
+    <%!-- Culture section --%>
+    <section class="mb-12">
+      <h2 class="text-sm font-bold text-accent-orange uppercase tracking-widest mb-4">Nossa cultura</h2>
+      <div class="space-y-4 text-base text-ink-700 leading-relaxed">
+        <p>
+          O Forrózin nasceu de uma pessoa catalogando passos de forró roots. Mas a ideia nunca foi ficar centralizado —
+          é um projeto <strong>de dançarinos, pra dançarinos</strong>.
+        </p>
+        <p>
+          Aqui, todo mundo pode contribuir. Sugerir passos novos, corrigir conexões erradas, adicionar vídeos.
+          Cada contribuição aprovada fica com o <strong>nome de quem ajudou</strong>, porque reconhecimento importa.
+        </p>
+        <p class="text-ink-500 italic">
+          Obrigado por usar e por ajudar a construir. Vocês fazem o Forrózin existir.
+        </p>
+      </div>
+    </section>
+
+    <%!-- Guide cards --%>
+    <section class="mb-12">
+      <h2 class="text-sm font-bold text-accent-orange uppercase tracking-widest mb-6">Como funciona</h2>
+
+      <div class="space-y-6">
+        <%!-- Card 1: Acervo --%>
+        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <span class="text-ink-200 text-lg">📚</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-ink-900 mb-1">O Acervo</h3>
+            <p class="text-sm text-ink-600 leading-relaxed">
+              Todos os passos organizados por seção e categoria. Cada passo tem código, nome, nota técnica
+              e conexões com outros passos. Clique num passo pra ver detalhes, links e comentários.
+            </p>
+          </div>
+        </div>
+
+        <%!-- Card 2: Mapa --%>
+        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <span class="text-ink-200 text-lg">🗺</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-ink-900 mb-1">O Mapa de Conexões</h3>
+            <p class="text-sm text-ink-600 leading-relaxed">
+              Um grafo visual onde cada passo é um nó e cada seta mostra "de A você pode ir pra B".
+              Navegue pelo mapa pra descobrir caminhos entre passos que você já conhece.
+            </p>
+          </div>
+        </div>
+
+        <%!-- Card 3: Sequências --%>
+        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <span class="text-ink-200 text-lg">🎲</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-ink-900 mb-1">Gerador de Sequências</h3>
+            <p class="text-sm text-ink-600 leading-relaxed">
+              No Mapa, use o gerador pra criar combinações de passos que respeitam as conexões.
+              Escolha o passo inicial, o tamanho, e deixe o algoritmo te surpreender.
+              Salve suas favoritas e compartilhe com a comunidade.
+            </p>
+          </div>
+        </div>
+
+        <%!-- Card 4: Contribuir --%>
+        <div class="flex gap-4 items-start p-5 bg-accent-orange/5 rounded-lg border border-accent-orange/20">
+          <div class="w-10 h-10 rounded-lg bg-accent-orange flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-lg">✏</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-ink-900 mb-1">Contribua com a wiki</h3>
+            <p class="text-sm text-ink-600 leading-relaxed">
+              Viu algo errado? Falta um passo? Clique no lápis (🖊) ao lado de qualquer campo
+              pra sugerir uma edição. Um admin revisa e, se aprovada, sua contribuição fica
+              com seu nome. Você também pode sugerir novas conexões no grafo.
+            </p>
+          </div>
+        </div>
+
+        <%!-- Card 5: Comunidade --%>
+        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <span class="text-ink-200 text-lg">👥</span>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-ink-900 mb-1">Comunidade</h3>
+            <p class="text-sm text-ink-600 leading-relaxed">
+              Siga outros dançarinos, comente nos passos, dê likes, compartilhe sequências.
+              Suas contribuições aprovadas geram reconhecimento — e o app fica cada vez mais
+              completo pra todo mundo.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <%!-- CTA --%>
+    <div class="text-center py-8 border-t border-ink-200">
+      <p class="text-sm text-ink-500 mb-4">Pronto pra começar?</p>
+      <a href={~p"/collection"}
+        class="inline-block py-3 px-8 bg-ink-900 text-ink-100 no-underline rounded font-serif text-base font-bold tracking-wide">
+        Explorar o Acervo →
+      </a>
     </div>
   </div>
 

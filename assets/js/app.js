@@ -1465,11 +1465,26 @@ const PWAInstallSettings = {
   }
 }
 
+// Hook: OnboardingBanner — shows once for new users (localStorage)
+const OnboardingBanner = {
+  mounted() {
+    if (localStorage.getItem('onboarding_seen')) return
+    this.el.classList.remove('hidden')
+    const btn = document.getElementById('onboarding-dismiss')
+    if (btn) {
+      btn.addEventListener('click', () => {
+        this.el.classList.add('hidden')
+        localStorage.setItem('onboarding_seen', '1')
+      })
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings},
+  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, OnboardingBanner},
 })
 
 // Show progress bar on live navigation and form submits
