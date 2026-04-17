@@ -17,6 +17,11 @@ defmodule OGrupoDeEstudosWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Health check — no SSL redirect, no auth, just 200 OK
+  scope "/healthz" do
+    get "/", OGrupoDeEstudosWeb.HealthController, :check
+  end
+
   pipeline :redirect_if_authenticated do
     plug OGrupoDeEstudosWeb.UserAuth, :redirect_if_authenticated
   end

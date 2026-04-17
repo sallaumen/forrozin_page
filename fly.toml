@@ -37,7 +37,7 @@ kill_signal = 'SIGTERM'
     interval = '30s'
     method = 'GET'
     timeout = '5s'
-    path = '/about'
+    path = '/healthz'
 
 [[vm]]
   memory = '1gb'
