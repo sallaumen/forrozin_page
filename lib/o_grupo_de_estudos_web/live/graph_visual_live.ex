@@ -42,6 +42,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
      |> assign(:seq_missing_edges, [])
+     |> assign(:seq_favorites_list, [])
      |> assign(:liked_step_codes, liked_codes)
      |> assign_graph_data(graph, false)
      |> push_event("set_liked_steps", %{codes: liked_codes})
@@ -293,6 +294,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   def handle_event("show_seq_saved", _params, socket) do
     saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
     {:noreply, socket |> assign(:seq_saved, saved) |> assign(:seq_view, :saved)}
+  end
+
+  def handle_event("show_seq_favorites", _params, socket) do
+    user_id = socket.assigns.current_user.id
+    favorites = Engagement.list_user_favorites(user_id, "sequence")
+    {:noreply, socket |> assign(:seq_favorites_list, favorites) |> assign(:seq_view, :favorites)}
   end
 
   def handle_event("show_seq_manual", _params, socket) do

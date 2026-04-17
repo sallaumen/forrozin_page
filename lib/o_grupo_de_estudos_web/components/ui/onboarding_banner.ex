@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.UI.OnboardingBanner do
   @moduledoc """
   Light onboarding banner for first-time users.
-  Shows once per session, dismissible. Links to /about for full guide.
+  Shows once, dismissible via localStorage. No JS hook needed.
   """
 
   use Phoenix.Component
@@ -9,11 +9,7 @@ defmodule OGrupoDeEstudosWeb.UI.OnboardingBanner do
 
   def onboarding_banner(assigns) do
     ~H"""
-    <div
-      id="onboarding-banner"
-      phx-hook="OnboardingBanner"
-      class="hidden"
-    >
+    <div id="onboarding-banner" style="display:none;">
       <div class="bg-ink-900 border-b border-gold-500/20 px-4 py-3">
         <div class="max-w-4xl mx-auto flex items-center gap-4">
           <div class="flex-1 min-w-0">
@@ -30,7 +26,7 @@ defmodule OGrupoDeEstudosWeb.UI.OnboardingBanner do
             Como funciona
           </a>
           <button
-            id="onboarding-dismiss"
+            onclick="document.getElementById('onboarding-banner').style.display='none';localStorage.setItem('onboarding_seen','1')"
             class="text-ink-500 hover:text-ink-300 bg-transparent border-0 cursor-pointer text-base p-1 flex-shrink-0 leading-none"
           >
             ✕
@@ -38,6 +34,11 @@ defmodule OGrupoDeEstudosWeb.UI.OnboardingBanner do
         </div>
       </div>
     </div>
+    <script>
+      if(!localStorage.getItem('onboarding_seen')){
+        document.getElementById('onboarding-banner').style.display='block'
+      }
+    </script>
     """
   end
 end

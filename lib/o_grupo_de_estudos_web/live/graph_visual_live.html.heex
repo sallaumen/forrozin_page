@@ -78,12 +78,12 @@
             ✕
           </button>
         </div>
-        <%!-- Segmented control: Salvas | Gerar | Manual --%>
+        <%!-- Segmented control: Salvas | Favoritas | Gerar | Manual --%>
         <div class="flex w-full p-0.5 bg-ink-100 rounded-md">
           <button
             phx-click="show_seq_saved"
             class={[
-              "flex-1 py-1.5 px-2 rounded cursor-pointer font-serif text-xs font-semibold transition-all",
+              "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
               @seq_view == :saved && "bg-white text-accent-orange shadow-sm",
               @seq_view != :saved && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
@@ -91,9 +91,19 @@
             Salvas
           </button>
           <button
+            phx-click="show_seq_favorites"
+            class={[
+              "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
+              @seq_view == :favorites && "bg-white text-gold-500 shadow-sm",
+              @seq_view != :favorites && "bg-transparent text-ink-500 hover:text-ink-800"
+            ]}
+          >
+            Favoritas
+          </button>
+          <button
             phx-click="show_seq_config"
             class={[
-              "flex-1 py-1.5 px-2 rounded cursor-pointer font-serif text-xs font-semibold transition-all",
+              "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
               @seq_view == :config && "bg-white text-accent-orange shadow-sm",
               @seq_view != :config && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
@@ -103,7 +113,7 @@
           <button
             phx-click="show_seq_manual"
             class={[
-              "flex-1 py-1.5 px-2 rounded cursor-pointer font-serif text-xs font-semibold transition-all",
+              "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
               @seq_view == :manual && "bg-white text-accent-green shadow-sm",
               @seq_view != :manual && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
@@ -443,6 +453,56 @@
                   </div>
                 <% end %>
               </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%!-- View: Favorited sequences (from community) --%>
+      <%= if @seq_view == :favorites do %>
+        <div class="p-4">
+          <%= if @seq_favorites_list == [] do %>
+            <div class="text-center py-8">
+              <p class="text-sm font-bold text-ink-600 mb-1">Nenhuma sequência favoritada</p>
+              <p class="text-xs text-ink-400">
+                Favorite sequências na Comunidade e elas aparecem aqui.
+              </p>
+            </div>
+          <% else %>
+            <div class="space-y-3">
+              <%= for seq <- @seq_favorites_list do %>
+                <div class="border border-gold-500/20 rounded p-3 bg-ink-50">
+                  <div class="flex items-start justify-between gap-2 mb-1">
+                    <div>
+                      <div class="text-xs font-bold text-ink-900">{seq.name}</div>
+                      <div class="text-[10px] text-ink-500">
+                        {length(seq.sequence_steps)} passos
+                        <%= if seq.user do %>
+                          · por @{seq.user.username}
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex gap-1.5 mt-2">
+                    <button
+                      type="button"
+                      phx-click="highlight_saved_sequence"
+                      phx-value-id={seq.id}
+                      class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
+                    >
+                      Ver no mapa
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="edit_saved_sequence"
+                      phx-value-id={seq.id}
+                      class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-300 rounded text-ink-600 cursor-pointer"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                </div>
+              <% end %>
             </div>
           <% end %>
         </div>
