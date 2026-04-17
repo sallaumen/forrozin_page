@@ -208,5 +208,10 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end
   end
 
+  # ── Suggestion notifications (stub — Task 3 will implement) ──
+
+  @doc "Stub for suggestion notification. Task 3 will expand this."
+  def notify_suggestion(_action, _suggestion, _admin), do: :ok
+
   defp now, do: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 end
