@@ -18,7 +18,7 @@ defmodule OGrupoDeEstudosWeb.UI.PWAInstallBanner do
           class="w-8 h-8 rounded-lg flex-shrink-0 border border-ink-900/20 shadow-sm" />
         <div class="flex-1 min-w-0">
           <p class="text-xs font-bold text-ink-900 font-serif leading-tight">
-            Forrózin na sua tela inicial
+            O Grupo de Estudos na sua tela inicial
           </p>
           <p class="text-[10px] text-ink-900/70 font-sans leading-tight mt-0.5">
             Acesso rápido, como um app nativo

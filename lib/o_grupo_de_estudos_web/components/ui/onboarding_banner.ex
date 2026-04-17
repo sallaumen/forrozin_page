@@ -18,7 +18,7 @@ defmodule OGrupoDeEstudosWeb.UI.OnboardingBanner do
         <div class="max-w-4xl mx-auto flex items-center gap-4">
           <div class="flex-1 min-w-0">
             <p class="text-sm text-ink-100 font-serif">
-              <span class="text-gold-500 font-bold">Bem-vindo ao Forrózin!</span>
+              <span class="text-gold-500 font-bold">Bem-vindo ao Grupo de Estudos!</span>
               Uma wiki de forró roots construída pela comunidade.
             </p>
             <p class="text-xs text-ink-400 mt-0.5 font-sans">

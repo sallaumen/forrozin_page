@@ -1423,7 +1423,7 @@ function showInstallInstructions() {
   modal.innerHTML = `
     <div style="background:#f7f3ec;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;font-family:Georgia,serif;">
       <img src="/icons/icon-192.png" alt="OGE" style="width:56px;height:56px;border-radius:12px;margin:0 auto 16px;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
-      <h3 style="font-size:18px;color:#1a0e05;margin:0 0 8px;font-weight:700;">Instale o Forrózin</h3>
+      <h3 style="font-size:18px;color:#1a0e05;margin:0 0 8px;font-weight:700;">Instale o Grupo de Estudos</h3>
       <p style="font-size:13px;color:#7a5c3a;margin:0 0 16px;line-height:1.5;">Acesse como um app direto da tela inicial</p>
       <ol style="text-align:left;font-size:13px;color:#3a2510;line-height:1.8;padding-left:20px;margin:0 0 20px;">${steps}</ol>
       <button onclick="this.closest('#pwa-instructions-modal').remove()" style="background:#b47828;color:white;border:none;padding:10px 28px;border-radius:20px;font-family:Georgia,serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">Entendi</button>

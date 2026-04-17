@@ -4,6 +4,6 @@ defmodule OGrupoDeEstudosWeb.AboutLiveTest do
 
   test "renders about page", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/about")
-    assert html =~ "Forrózin" or html =~ "Grupo de Estudos" or html =~ "forró"
+    assert html =~ "O Grupo de Estudos" or html =~ "Grupo de Estudos" or html =~ "forró"
   end
 end

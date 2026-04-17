@@ -1,5 +1,5 @@
 defmodule OGrupoDeEstudosWeb.LandingLive do
-  @moduledoc "Página inicial pública do Forrózin."
+  @moduledoc "Página inicial pública do Grupo de Estudos."
 
   use OGrupoDeEstudosWeb, :live_view
 

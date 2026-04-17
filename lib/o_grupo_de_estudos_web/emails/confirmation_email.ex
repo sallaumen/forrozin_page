@@ -5,7 +5,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
 
   use OGrupoDeEstudosWeb, :verified_routes
 
-  @sender {"Forrózin", "noreply@o_grupo_de_estudos.com.br"}
+  @sender {"O Grupo de Estudos", "noreply@o_grupo_de_estudos.com.br"}
 
   @doc "Builds the confirmation email for the given user."
   def new(user) do
@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
     Email.new()
     |> Email.to({user.username, user.email})
     |> Email.from(@sender)
-    |> Email.subject("Confirme seu email — Forrózin")
+    |> Email.subject("Confirme seu email — O Grupo de Estudos")
     |> Email.html_body(html(user.username, link))
     |> Email.text_body(text(user.username, link))
   end
@@ -27,7 +27,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
     <body style="background:#f7f3ec;font-family:Georgia,serif;padding:40px 24px;">
       <div style="max-width:520px;margin:0 auto;">
         <p style="font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1a0e05;">
-          Forrózin
+          O Grupo de Estudos
         </p>
         <h1 style="font-size:20px;color:#1a0e05;margin:20px 0 8px;">
           Confirme seu email
@@ -40,7 +40,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
           Confirmar email
         </a>
         <p style="font-size:12px;color:#9a7a5a;">
-          Se não criou uma conta no Forrózin, ignore este email.
+          Se não criou uma conta no Grupo de Estudos, ignore este email.
         </p>
       </div>
     </body>
@@ -50,14 +50,14 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
 
   defp text(name, link) do
     """
-    Forrózin — Confirme seu email
+    O Grupo de Estudos — Confirme seu email
 
     Olá, #{name}!
 
     Confirme seu email acessando o link abaixo:
     #{link}
 
-    Se não criou uma conta no Forrózin, ignore este email.
+    Se não criou uma conta no Grupo de Estudos, ignore este email.
     """
   end
 end

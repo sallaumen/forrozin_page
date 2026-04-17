@@ -19,7 +19,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
       })
 
       assert html =~ ~s(href="/collection")
-      assert html =~ "Forrózin"
+      assert html =~ "O Grupo de Estudos"
     end
 
     test "has data-ui attribute with data-mode" do

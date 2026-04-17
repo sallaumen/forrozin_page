@@ -35,7 +35,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           navigate={~p"/collection"}
           class="text-sm font-bold tracking-[2px] uppercase text-ink-100 hover:text-ink-200 no-underline"
         >
-          Forrózin
+          O Grupo de Estudos
         </.link>
 
         <nav class="flex items-center gap-4">
@@ -122,7 +122,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             navigate={~p"/collection"}
             class="text-sm font-bold tracking-[2px] uppercase text-ink-100 no-underline"
           >
-            Forrózin
+            O Grupo de Estudos
           </.link>
           <div class="flex items-center gap-2">
             <%= if @is_admin do %>
