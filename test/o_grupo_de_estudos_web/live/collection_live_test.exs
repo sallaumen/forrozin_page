@@ -349,4 +349,44 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
              "drawer should use transform: translateX(100%) when closed for off-screen positioning"
     end
   end
+
+  describe "step like in collection" do
+    test "toggle_step_like likes a step", %{conn: conn} do
+      user = insert(:user)
+      step = insert(:step, section: insert(:section))
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/collection")
+      view |> render_click("toggle_step_like", %{"id" => step.id})
+
+      assert OGrupoDeEstudos.Engagement.liked?(user.id, "step", step.id)
+    end
+  end
+
+  describe "drawer like and favorite" do
+    test "toggle_drawer_like likes the drawer step", %{conn: conn} do
+      user = insert(:user)
+      step = insert(:step, section: insert(:section))
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/collection")
+      view |> render_click("open_step", %{"code" => step.code})
+      view |> render_click("toggle_drawer_like")
+
+      assert OGrupoDeEstudos.Engagement.liked?(user.id, "step", step.id)
+    end
+
+    test "toggle_drawer_favorite favorites and auto-likes", %{conn: conn} do
+      user = insert(:user)
+      step = insert(:step, section: insert(:section))
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/collection")
+      view |> render_click("open_step", %{"code" => step.code})
+      view |> render_click("toggle_drawer_favorite")
+
+      assert OGrupoDeEstudos.Engagement.favorited?(user.id, "step", step.id)
+      assert OGrupoDeEstudos.Engagement.liked?(user.id, "step", step.id)
+    end
+  end
 end

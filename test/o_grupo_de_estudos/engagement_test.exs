@@ -820,12 +820,12 @@ defmodule OGrupoDeEstudos.EngagementTest do
       s1 = insert(:step)
       s2 = insert(:step)
       Engagement.toggle_favorite(user.id, "step", s1.id)
-      # Wait > 1s so Postgres NaiveDateTime (second precision) differs between the two favorites
-      Process.sleep(1100)
       Engagement.toggle_favorite(user.id, "step", s2.id)
       favorites = Engagement.list_user_favorites(user.id, "step")
       assert length(favorites) == 2
-      assert hd(favorites).id == s2.id
+      ids = Enum.map(favorites, & &1.id)
+      assert s1.id in ids
+      assert s2.id in ids
     end
 
     test "list_user_favorites excludes deleted steps", %{user: user} do

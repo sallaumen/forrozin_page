@@ -147,4 +147,82 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       assert html =~ "profile_comment"
     end
   end
+
+  describe "follow button" do
+    test "toggle_follow follows another user", %{conn: conn, viewer: viewer, profile: profile} do
+      conn = logged_in_conn(conn, viewer)
+
+      {:ok, view, _html} = live(conn, ~p"/users/#{profile.username}")
+
+      view |> render_click("toggle_follow")
+
+      assert OGrupoDeEstudos.Engagement.following?(viewer.id, profile.id)
+    end
+
+    test "toggle_follow unfollows on second click", %{conn: conn, viewer: viewer, profile: profile} do
+      OGrupoDeEstudos.Engagement.toggle_follow(viewer.id, profile.id)
+      conn = logged_in_conn(conn, viewer)
+
+      {:ok, view, _html} = live(conn, ~p"/users/#{profile.username}")
+
+      view |> render_click("toggle_follow")
+
+      refute OGrupoDeEstudos.Engagement.following?(viewer.id, profile.id)
+    end
+  end
+
+  describe "profile tabs" do
+    test "switch to favorites tab", %{conn: conn, viewer: viewer} do
+      conn = logged_in_conn(conn, viewer)
+
+      {:ok, view, _html} = live(conn, ~p"/users/#{viewer.username}")
+
+      html = view |> render_click("switch_profile_tab", %{"tab" => "favorites"})
+
+      assert html =~ "Nenhum passo favoritado"
+    end
+
+    test "favorites tab shows favorited steps", %{conn: conn, viewer: viewer} do
+      step = insert(:step)
+      OGrupoDeEstudos.Engagement.toggle_favorite(viewer.id, "step", step.id)
+      conn = logged_in_conn(conn, viewer)
+
+      {:ok, view, _html} = live(conn, ~p"/users/#{viewer.username}")
+      html = view |> render_click("switch_profile_tab", %{"tab" => "favorites"})
+
+      assert html =~ step.code
+    end
+  end
+
+  describe "delete comment" do
+    test "author can delete own comment via event", %{conn: conn, viewer: viewer, profile: profile} do
+      conn = logged_in_conn(conn, viewer)
+
+      OGrupoDeEstudos.Engagement.create_profile_comment(%{
+        body: "To be deleted",
+        author_id: viewer.id,
+        profile_id: profile.id
+      })
+
+      {:ok, view, _html} = live(conn, ~p"/users/#{profile.username}")
+
+      comments =
+        OGrupoDeEstudos.Engagement.list_profile_comments(
+          profile_id: profile.id,
+          preload: [:author]
+        )
+
+      comment = hd(comments)
+
+      view |> render_click("delete_comment", %{"id" => comment.id})
+
+      remaining =
+        OGrupoDeEstudos.Engagement.list_profile_comments(
+          profile_id: profile.id,
+          preload: [:author]
+        )
+
+      assert length(remaining) == 0
+    end
+  end
 end
