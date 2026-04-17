@@ -122,6 +122,18 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
 
   defp primary_actor_name(_), do: "Alguém"
 
+  defp primary_actor_username(%{actors_data: [actor | _]}), do: actor.username
+  defp primary_actor_username(_), do: nil
+
+  defp target_name(%{parent_type: "step", parent_id: id}) when not is_nil(id) do
+    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
+      nil -> nil
+      step -> step.name
+    end
+  end
+
+  defp target_name(_), do: nil
+
   defp action_text(%{action: "liked_comment"}), do: " curtiu seu comentário"
   defp action_text(%{action: "replied_comment"}), do: " respondeu ao seu comentário"
   defp action_text(%{action: "liked_step"}), do: " curtiu o passo"

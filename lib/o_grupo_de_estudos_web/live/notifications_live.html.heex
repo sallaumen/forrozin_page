@@ -41,16 +41,24 @@
         </div>
 
         <%!-- Content --%>
-        <a href={notification_path(notif)}
-          phx-click="mark_read" phx-value-id={notif.id}
-          class="flex-1 min-w-0 no-underline">
+        <div class="flex-1 min-w-0" phx-click="mark_read" phx-value-id={notif.id}>
           <p class="text-sm text-ink-700">
-            <span class="font-semibold"><%= primary_actor_name(notif) %></span>
+            <.link :if={primary_actor_username(notif)}
+              navigate={~p"/users/#{primary_actor_username(notif)}"}
+              class="font-semibold text-ink-800 no-underline hover:underline">
+              <%= primary_actor_name(notif) %>
+            </.link>
+            <span :if={!primary_actor_username(notif)} class="font-semibold">Alguém</span>
             <span :if={notif.count > 1} class="text-ink-500">e mais <%= notif.count - 1 %></span>
             <span class="text-ink-600"><%= action_text(notif) %></span>
+            <.link :if={target_name(notif)}
+              navigate={notification_path(notif)}
+              class="font-semibold text-accent-orange no-underline hover:underline">
+              <%= target_name(notif) %>
+            </.link>
           </p>
           <p class="text-xs text-ink-400 mt-0.5"><%= time_ago(notif.latest_at) %></p>
-        </a>
+        </div>
 
         <%!-- Unread dot --%>
         <div :if={!notif.read}

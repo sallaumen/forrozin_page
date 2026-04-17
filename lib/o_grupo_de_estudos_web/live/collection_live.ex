@@ -345,8 +345,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
          |> assign(suggest_mode: false)
          |> put_flash(:info, "Passo sugerido com sucesso!")}
 
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Erro ao criar passo — verifique os campos")}
+      {:error, changeset} ->
+        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+        error_msg = errors |> Enum.map(fn {k, v} -> "#{k}: #{Enum.join(v, ", ")}" end) |> Enum.join("; ")
+        {:noreply, put_flash(socket, :error, "Erro: #{error_msg}")}
     end
   end
 
