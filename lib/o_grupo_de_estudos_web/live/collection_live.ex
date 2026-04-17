@@ -73,7 +73,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         expanded_replies_map: %{},
         expanded_replying_to: nil,
         expanded_video: nil,
-        step_comment_counts: %{}
+        step_comment_counts: %{},
+        drawer_liked: false,
+        drawer_favorited: false
       )
 
     {:ok, socket}
@@ -137,6 +139,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
         user_id = socket.assigns.current_user.id
         can_edit = socket.assigns.edit_mode or step.suggested_by_id == user_id
+        drawer_liked = Engagement.liked?(user_id, "step", step.id)
+        drawer_favorited = Engagement.favorited?(user_id, "step", step.id)
 
         {:noreply,
          assign(socket,
@@ -146,7 +150,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
            drawer_connections_out: out,
            drawer_connections_in: inn,
            drawer_link_count: link_count,
-           can_edit_drawer: can_edit
+           can_edit_drawer: can_edit,
+           drawer_liked: drawer_liked,
+           drawer_favorited: drawer_favorited
          )}
 
       {:error, :not_found} ->
@@ -468,6 +474,41 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   def handle_event("toggle_expanded_video", %{"link-id" => link_id}, socket) do
     current = socket.assigns.expanded_video
     {:noreply, assign(socket, :expanded_video, if(current == link_id, do: nil, else: link_id))}
+  end
+
+  def handle_event("toggle_drawer_like", _params, socket) do
+    user = socket.assigns.current_user
+    step = socket.assigns.drawer_item
+
+    case Engagement.toggle_like(user.id, "step", step.id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:drawer_liked, Engagement.liked?(user.id, "step", step.id))
+         |> reload_collection_step_likes()}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_drawer_favorite", _params, socket) do
+    user = socket.assigns.current_user
+    step = socket.assigns.drawer_item
+
+    case Engagement.toggle_favorite(user.id, "step", step.id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(
+           drawer_liked: Engagement.liked?(user.id, "step", step.id),
+           drawer_favorited: Engagement.favorited?(user.id, "step", step.id)
+         )
+         |> reload_collection_step_likes()}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("toggle_step_like", %{"id" => step_id}, socket) do

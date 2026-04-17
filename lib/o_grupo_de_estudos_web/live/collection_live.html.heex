@@ -316,8 +316,26 @@
         <div class="text-[11px] text-ink-500 tracking-wide mb-1">
           {@drawer_item.code}
         </div>
-        <div class="text-xl font-bold text-ink-900 leading-snug mb-2">
-          {@drawer_item.name}
+        <div class="flex items-center gap-3 mb-2">
+          <div class="text-xl font-bold text-ink-900 leading-snug flex-1">
+            {@drawer_item.name}
+          </div>
+          <button phx-click="toggle_drawer_like"
+            class="p-1.5 rounded-lg border border-ink-200 hover:border-accent-red/40 transition-colors"
+            title={if @drawer_liked, do: "Remover curtida", else: "Curtir"}>
+            <.icon
+              name={if @drawer_liked, do: "hero-heart-solid", else: "hero-heart"}
+              class={["w-5 h-5", @drawer_liked && "text-accent-red", !@drawer_liked && "text-ink-400"]}
+            />
+          </button>
+          <button phx-click="toggle_drawer_favorite"
+            class="p-1.5 rounded-lg border border-ink-200 hover:border-gold-500/40 transition-colors"
+            title={if @drawer_favorited, do: "Remover favorito", else: "Favoritar"}>
+            <.icon
+              name={if @drawer_favorited, do: "hero-star-solid", else: "hero-star"}
+              class={["w-5 h-5", @drawer_favorited && "text-gold-500", !@drawer_favorited && "text-ink-400"]}
+            />
+          </button>
         </div>
         <%= if @drawer_item.category do %>
           <span

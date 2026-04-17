@@ -43,7 +43,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_manual_error, nil)
      |> assign(:liked_step_codes, liked_codes)
      |> assign_graph_data(graph, false)
-     |> push_event("set_liked_steps", %{codes: liked_codes})}
+     |> push_event("set_liked_steps", %{codes: liked_codes})
+     |> push_event("set_favorited_steps", %{codes: favorited_step_codes(socket.assigns.current_user.id)})}
   end
 
   @impl true
@@ -470,6 +471,55 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
            })}
       end
     end
+  end
+
+  # ── Like + Favorite from graph drawer ──────────────────
+
+  def handle_event("toggle_step_like_graph", %{"code" => code}, socket) do
+    user = socket.assigns.current_user
+    step = OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: code)
+
+    if step do
+      Engagement.toggle_like(user.id, "step", step.id)
+      liked_codes = Engagement.liked_step_codes(user.id)
+
+      {:noreply,
+       socket
+       |> assign(:liked_step_codes, liked_codes)
+       |> push_event("set_liked_steps", %{codes: liked_codes})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_step_favorite_graph", %{"code" => code}, socket) do
+    user = socket.assigns.current_user
+    step = OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: code)
+
+    if step do
+      Engagement.toggle_favorite(user.id, "step", step.id)
+      liked_codes = Engagement.liked_step_codes(user.id)
+      fav_codes = favorited_step_codes(user.id)
+
+      {:noreply,
+       socket
+       |> assign(:liked_step_codes, liked_codes)
+       |> push_event("set_liked_steps", %{codes: liked_codes})
+       |> push_event("set_favorited_steps", %{codes: fav_codes})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp favorited_step_codes(user_id) do
+    import Ecto.Query
+
+    from(f in OGrupoDeEstudos.Engagement.Favorite,
+      where: f.user_id == ^user_id and f.favoritable_type == "step",
+      join: s in OGrupoDeEstudos.Encyclopedia.Step, on: s.id == f.favoritable_id,
+      select: s.code
+    )
+    |> OGrupoDeEstudos.Repo.all()
   end
 
   defp assign_graph_data(socket, graph, include_orphans) do

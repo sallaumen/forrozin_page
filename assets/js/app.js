@@ -252,7 +252,16 @@ function buildDrawerHTML(d, outEdges, inEdges, degree, editMode) {
     })
   }
 
-  parts.push(`<a href="/steps/${encodeURIComponent(d.id)}" style="display: block; margin-top: 20px; padding: 10px 16px; text-align: center; background: #1a0e05; color: #f2ede4; border-radius: 6px; text-decoration: none; font-size: 12px; letter-spacing: 1px;">Ver passo completo</a>`)
+  // Like + Favorite buttons
+  const isLiked = window._likedStepCodes && window._likedStepCodes.has(d.id)
+  const isFavorited = window._favoritedStepCodes && window._favoritedStepCodes.has(d.id)
+
+  parts.push(`<div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 12px;">`)
+  parts.push(`<button class="drawer-like-btn" data-code="${escapeHTML(d.id)}" style="display: flex; align-items: center; gap: 4px; background: none; border: 1px solid ${isLiked ? '#c0392b40' : 'rgba(60,40,20,0.12)'}; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; color: ${isLiked ? '#c0392b' : '#9a7a5a'}; font-family: Georgia, serif; transition: all 0.15s;">${isLiked ? '♥' : '♡'} <span style="font-size: 12px;">${isLiked ? 'Curtido' : 'Curtir'}</span></button>`)
+  parts.push(`<button class="drawer-fav-btn" data-code="${escapeHTML(d.id)}" style="display: flex; align-items: center; gap: 4px; background: none; border: 1px solid ${isFavorited ? '#b4782840' : 'rgba(60,40,20,0.12)'}; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; color: ${isFavorited ? '#b47828' : '#9a7a5a'}; font-family: Georgia, serif; transition: all 0.15s;">${isFavorited ? '★' : '☆'} <span style="font-size: 12px;">${isFavorited ? 'Favoritado' : 'Favoritar'}</span></button>`)
+  parts.push(`</div>`)
+
+  parts.push(`<a href="/steps/${encodeURIComponent(d.id)}" style="display: block; margin-top: 8px; padding: 10px 16px; text-align: center; background: #1a0e05; color: #f2ede4; border-radius: 6px; text-decoration: none; font-size: 12px; letter-spacing: 1px;">Ver passo completo</a>`)
 
   return parts.join("")
 }
@@ -314,6 +323,23 @@ function openDrawer(node, cy, editMode, hook) {
           // Re-open drawer to restore original state
           openDrawer(node, cy, editMode, hook)
         })
+      })
+    })
+  }
+
+  // Like + Favorite buttons in drawer
+  if (hook) {
+    content.querySelectorAll(".drawer-like-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        hook.pushEvent("toggle_step_like_graph", { code: btn.dataset.code })
+        // Optimistic UI update
+        setTimeout(() => openDrawer(node, cy, editMode, hook), 300)
+      })
+    })
+    content.querySelectorAll(".drawer-fav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        hook.pushEvent("toggle_step_favorite_graph", { code: btn.dataset.code })
+        setTimeout(() => openDrawer(node, cy, editMode, hook), 300)
       })
     })
   }
@@ -446,6 +472,11 @@ const GraphVisual = {
     this.handleEvent("set_liked_steps", ({ codes }) => {
       window._likedStepCodes = new Set(codes)
       applyLikedStepStyling()
+    })
+
+    // Favorited steps (for drawer buttons)
+    this.handleEvent("set_favorited_steps", ({ codes }) => {
+      window._favoritedStepCodes = new Set(codes)
     })
   },
 
