@@ -14,6 +14,7 @@ defmodule OGrupoDeEstudos.Factory do
     Subsection
   }
 
+  alias OGrupoDeEstudos.Suggestions.Suggestion
   alias OGrupoDeEstudos.Engagement.{Like, ProfileComment, Favorite, Follow}
   alias OGrupoDeEstudos.Engagement.Comments.{StepComment, SequenceComment}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
@@ -178,6 +179,19 @@ defmodule OGrupoDeEstudos.Factory do
       parent_id: Ecto.UUID.generate(),
       user: build(:user),
       actor: build(:user)
+    }
+  end
+
+  def suggestion_factory do
+    %Suggestion{
+      target_type: "step",
+      target_id: Ecto.UUID.generate(),
+      action: "edit_field",
+      field: "name",
+      old_value: "Old Name",
+      new_value: "New Name",
+      status: "pending",
+      user: build(:user)
     }
   end
 end

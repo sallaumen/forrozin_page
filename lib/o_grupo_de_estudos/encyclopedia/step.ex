@@ -22,7 +22,9 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
     :section_id,
     :subsection_id,
     :suggested_by_id,
-    :deleted_at
+    :deleted_at,
+    :last_edited_by_id,
+    :last_edited_at
   ]
 
   schema "steps" do
@@ -37,8 +39,10 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
     field :approved, :boolean, default: false
     field :like_count, :integer, default: 0
     field :deleted_at, :naive_datetime
+    field :last_edited_at, :naive_datetime
 
     belongs_to :suggested_by, User, foreign_key: :suggested_by_id
+    belongs_to :last_edited_by, User, foreign_key: :last_edited_by_id
     belongs_to :category, Category
     belongs_to :section, Section
     belongs_to :subsection, Subsection
