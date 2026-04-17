@@ -1228,13 +1228,16 @@ const FormPersist = {
   },
 
   updated() {
-    // Don't overwrite user input on LiveView re-render
+    // Don't overwrite user input on LiveView re-render — but re-attach
+    // listeners in case the form was re-rendered
   },
 
   destroyed() {
     this._stopAutoSave()
-    // Clear saved data when form is intentionally removed (e.g. after submit)
-    sessionStorage.removeItem(this._key)
+    // IMPORTANT: Do NOT clear sessionStorage here!
+    // destroyed() fires on: conditional hide, LiveView reconnect, deploy
+    // In all these cases we WANT to keep the saved data.
+    // Data is cleared explicitly via phx:form_persisted_clear event after submit.
   },
 
   _restoreFields() {
@@ -1244,11 +1247,22 @@ const FormPersist = {
     try {
       const data = JSON.parse(saved)
       Object.entries(data).forEach(([name, value]) => {
-        const input = this.el.querySelector(`[name="${name}"]`)
-        if (input && input.type !== "hidden" && input.name !== "_csrf_token") {
-          input.value = value
+        // Support both plain names ("code") and nested names ("user[name]")
+        // CSS selector needs to escape brackets
+        const escapedName = CSS.escape(name)
+        const input = this.el.querySelector(`[name="${escapedName}"]`)
+          || this.el.querySelector(`[name="${name}"]`)
+
+        if (input && input.type !== "hidden" && input.type !== "password"
+            && input.name !== "_csrf_token") {
+          if (input.type === "checkbox") {
+            input.checked = !!value
+          } else {
+            input.value = value
+          }
           // Dispatch input event so LiveView picks up the restored value
           input.dispatchEvent(new Event("input", { bubbles: true }))
+          input.dispatchEvent(new Event("change", { bubbles: true }))
         }
       })
     } catch (_) {
@@ -1273,7 +1287,8 @@ const FormPersist = {
     const data = {}
     const inputs = this.el.querySelectorAll("input, textarea, select")
     inputs.forEach(input => {
-      if (input.name && input.type !== "hidden" && input.name !== "_csrf_token" && input.type !== "file") {
+      if (input.name && input.type !== "hidden" && input.type !== "password"
+          && input.name !== "_csrf_token" && input.type !== "file") {
         if (input.type === "checkbox") {
           data[input.name] = input.checked
         } else if (input.type === "radio") {

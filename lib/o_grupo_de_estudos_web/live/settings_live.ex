@@ -61,6 +61,7 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
       {:ok, updated_user} ->
         {:noreply,
          socket
+         |> push_event("form_persisted_clear", %{id: "settings-form"})
          |> assign(
            bio: updated_user.bio || "",
            instagram: updated_user.instagram || "",

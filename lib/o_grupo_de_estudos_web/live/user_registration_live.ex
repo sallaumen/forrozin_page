@@ -18,6 +18,7 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
       {:ok, user} ->
         {:noreply,
          socket
+         |> push_event("form_persisted_clear", %{id: "registration-form"})
          |> put_flash(:info, "Bem-vindo ao Forrózin, #{user.username}!")
          |> redirect(to: ~p"/auto-login/#{user.id}")}
 
