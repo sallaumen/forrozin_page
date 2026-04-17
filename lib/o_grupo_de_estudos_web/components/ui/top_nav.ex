@@ -61,7 +61,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             </.link>
           <% end %>
 
-          <.link href="/notifications" class="relative group no-underline">
+          <.link navigate={~p"/notifications"} class="relative group no-underline">
             <.icon name="hero-bell-solid" class={[
               "size-5 transition-colors",
               @notification_count > 0 && "text-accent-orange",

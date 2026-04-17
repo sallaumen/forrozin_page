@@ -44,6 +44,7 @@ defmodule OGrupoDeEstudosWeb.Router do
 
     live "/collection", CollectionLive
     live "/community", CommunityLive
+    live "/notifications", NotificationsLive
     live "/graph", GraphLive
     live "/graph/visual", GraphVisualLive
     live "/steps/:code", StepLive

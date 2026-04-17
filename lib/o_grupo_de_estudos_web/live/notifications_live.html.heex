@@ -1,0 +1,70 @@
+<.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode}
+  notification_count={@notification_count} />
+
+<main class="max-w-2xl mx-auto px-4 pt-4 pb-24 font-sans">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-serif font-bold text-ink-800">Notificações</h1>
+    <button :if={@notification_count > 0}
+      phx-click="mark_all_read"
+      class="text-xs text-accent-orange hover:text-accent-orange/80 font-medium">
+      Marcar tudo como lido
+    </button>
+  </div>
+
+  <%= if @notifications == [] do %>
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <.icon name="hero-bell" class="w-12 h-12 text-ink-200 mb-3" />
+      <p class="text-ink-500 font-medium">Nenhuma notificação ainda</p>
+      <p class="text-ink-400 text-sm mt-1">
+        Quando alguém curtir ou responder seus comentários, você verá aqui.
+      </p>
+    </div>
+  <% else %>
+    <div class="divide-y divide-ink-100 rounded-lg border border-ink-100 overflow-hidden">
+      <div :for={notif <- @notifications} class={[
+        "flex items-start gap-3 px-4 py-3 transition-colors",
+        !notif.read && "bg-gold-400/8"
+      ]}>
+        <%!-- Avatar stack --%>
+        <div class="relative flex-shrink-0 w-10 h-10">
+          <%= for {actor, i} <- Enum.take(notif.actors_data, 3) |> Enum.with_index() do %>
+            <div class={[
+              "w-7 h-7 rounded-full bg-ink-200 border-2 border-white absolute",
+              "flex items-center justify-center text-[10px] font-bold text-ink-500",
+              i == 0 && "top-0 left-0 z-20",
+              i == 1 && "top-1 left-2 z-10",
+              i == 2 && "top-2 left-4 z-0"
+            ]}>
+              <%= String.first(actor.name || actor.username || "?") %>
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- Content --%>
+        <a href={notification_path(notif)}
+          phx-click="mark_read" phx-value-id={notif.id}
+          class="flex-1 min-w-0 no-underline">
+          <p class="text-sm text-ink-700">
+            <span class="font-semibold"><%= primary_actor_name(notif) %></span>
+            <span :if={notif.count > 1} class="text-ink-500">e mais <%= notif.count - 1 %></span>
+            <span class="text-ink-600"><%= action_text(notif) %></span>
+          </p>
+          <p class="text-xs text-ink-400 mt-0.5"><%= time_ago(notif.latest_at) %></p>
+        </a>
+
+        <%!-- Unread dot --%>
+        <div :if={!notif.read}
+          class="w-2.5 h-2.5 rounded-full bg-accent-orange flex-shrink-0 mt-2" />
+      </div>
+    </div>
+
+    <button :if={@has_more}
+      phx-click="load_more"
+      class="w-full py-3 text-sm text-accent-orange hover:text-accent-orange/80 font-medium mt-4">
+      Carregar mais
+    </button>
+  <% end %>
+</main>
+
+<.bottom_nav current_user={@current_user} current_path="/notifications"
+  notification_count={@notification_count} />
