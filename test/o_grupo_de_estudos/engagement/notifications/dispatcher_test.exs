@@ -42,4 +42,123 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     {:ok, _comment} = Engagement.create_step_comment(user, step.id, %{body: "Root"})
     assert Repo.aggregate(Notification, :count) == 0
   end
+
+  # ── Like notifications ──────────────────────────────────────────────
+
+  test "liking a step comment notifies the comment author" do
+    step = insert(:step)
+    author = insert(:user)
+    liker = insert(:user)
+
+    {:ok, comment} = Engagement.create_step_comment(author, step.id, %{body: "My comment"})
+    Engagement.toggle_like(liker.id, "step_comment", comment.id)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^author.id and n.action == "liked_comment"
+      )
+
+    assert length(notifications) >= 1
+    [notif] = notifications
+    assert notif.actor_id == liker.id
+    assert notif.target_type == "step_comment"
+    assert notif.target_id == comment.id
+  end
+
+  test "liking own step comment does NOT create a notification for the liker" do
+    step = insert(:step)
+    user = insert(:user)
+
+    {:ok, comment} = Engagement.create_step_comment(user, step.id, %{body: "Mine"})
+    Engagement.toggle_like(user.id, "step_comment", comment.id)
+
+    self_notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^user.id and n.action == "liked_comment"
+      )
+
+    assert self_notifications == []
+  end
+
+  test "admin receives a copy of like notifications" do
+    admin = insert(:admin)
+    step = insert(:step)
+    author = insert(:user)
+    liker = insert(:user)
+
+    {:ok, comment} = Engagement.create_step_comment(author, step.id, %{body: "Comment"})
+    Engagement.toggle_like(liker.id, "step_comment", comment.id)
+
+    admin_notifications =
+      Repo.all(from n in Notification, where: n.user_id == ^admin.id)
+
+    assert length(admin_notifications) >= 1
+  end
+
+  test "liking a sequence comment notifies the sequence comment author" do
+    author = insert(:user)
+    liker = insert(:user)
+    sequence = insert(:sequence, user: author)
+
+    {:ok, comment} =
+      Engagement.create_sequence_comment(author, sequence.id, %{body: "Sequence comment"})
+
+    Engagement.toggle_like(liker.id, "sequence_comment", comment.id)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^author.id and n.action == "liked_comment"
+      )
+
+    assert length(notifications) >= 1
+  end
+
+  test "liking a community step notifies the step suggester" do
+    section = insert(:section)
+    suggester = insert(:user)
+    liker = insert(:user)
+
+    step =
+      insert(:step,
+        section: section,
+        code: "DISP-1",
+        name: "Passo Sugerido",
+        suggested_by: suggester
+      )
+
+    Engagement.toggle_like(liker.id, "step", step.id)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^suggester.id and n.action == "liked_step"
+      )
+
+    assert length(notifications) >= 1
+  end
+
+  test "liking does not notify the author if the comment is deleted" do
+    step = insert(:step)
+    author = insert(:user)
+    liker = insert(:user)
+
+    {:ok, comment} = Engagement.create_step_comment(author, step.id, %{body: "Will be gone"})
+
+    comment
+    |> Ecto.Changeset.change(deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+    |> Repo.update!()
+
+    Engagement.toggle_like(liker.id, "step_comment", comment.id)
+
+    author_notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^author.id and n.action == "liked_comment"
+      )
+
+    assert author_notifications == []
+  end
 end

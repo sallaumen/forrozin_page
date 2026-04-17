@@ -1230,7 +1230,14 @@ const FormPersist = {
 
   updated() {
     // LiveView re-rendered the form (e.g. user clicked a step, drawer opened).
-    // DOM inputs get replaced with empty values — restore from sessionStorage.
+    // DOM inputs may be replaced with empty values — restore + re-bind listeners.
+    this._stopAutoSave()
+    this._startAutoSave()
+    requestAnimationFrame(() => this._restoreFields())
+  },
+
+  reconnected() {
+    // LiveView reconnected after deploy — restore form data
     requestAnimationFrame(() => this._restoreFields())
   },
 

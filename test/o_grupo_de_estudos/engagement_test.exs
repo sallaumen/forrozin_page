@@ -760,4 +760,90 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.count_followers(user.id) == 1
     end
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Follow edge cases
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "follow edge cases" do
+    test "triple toggle restores follow and count stays at 1", %{user: user} do
+      other = insert(:user)
+      {:ok, :followed} = Engagement.toggle_follow(user.id, other.id)
+      {:ok, :unfollowed} = Engagement.toggle_follow(user.id, other.id)
+      {:ok, :followed} = Engagement.toggle_follow(user.id, other.id)
+      assert Engagement.following?(user.id, other.id)
+      assert Engagement.count_following(user.id) == 1
+    end
+
+    test "follow is directional — A following B does not mean B follows A", %{user: user} do
+      other = insert(:user)
+      Engagement.toggle_follow(user.id, other.id)
+      assert Engagement.following?(user.id, other.id)
+      refute Engagement.following?(other.id, user.id)
+    end
+
+    test "list_followers search filters by username case-insensitively", %{user: user} do
+      beatriz = insert(:user, username: "beatriz_roots", name: "Beatriz")
+      rui = insert(:user, username: "rui_forro", name: "Rui Santos")
+      Engagement.toggle_follow(beatriz.id, user.id)
+      Engagement.toggle_follow(rui.id, user.id)
+      results = Engagement.list_followers(user.id, search: "BEATRIZ")
+      assert length(results) == 1
+      assert hd(results).id == beatriz.id
+    end
+
+    test "list_following returns empty list when user follows nobody", %{user: user} do
+      assert Engagement.list_following(user.id) == []
+    end
+
+    test "unfollowed user no longer appears in list_following", %{user: user} do
+      other = insert(:user)
+      {:ok, :followed} = Engagement.toggle_follow(user.id, other.id)
+      {:ok, :unfollowed} = Engagement.toggle_follow(user.id, other.id)
+      following = Engagement.list_following(user.id)
+      refute Enum.any?(following, &(&1.id == other.id))
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Favorites edge cases
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "favorite edge cases" do
+    test "favoriting already-liked step does not create duplicate like", %{user: user, step: step} do
+      Engagement.toggle_like(user.id, "step", step.id)
+      {:ok, :favorited} = Engagement.toggle_favorite(user.id, "step", step.id)
+      assert Engagement.count_likes("step", step.id) == 1
+    end
+
+    test "list_user_favorites returns favorited steps ordered newest first", %{user: user} do
+      s1 = insert(:step)
+      s2 = insert(:step)
+      Engagement.toggle_favorite(user.id, "step", s1.id)
+      # Wait > 1s so Postgres NaiveDateTime (second precision) differs between the two favorites
+      Process.sleep(1100)
+      Engagement.toggle_favorite(user.id, "step", s2.id)
+      favorites = Engagement.list_user_favorites(user.id, "step")
+      assert length(favorites) == 2
+      assert hd(favorites).id == s2.id
+    end
+
+    test "list_user_favorites excludes deleted steps", %{user: user} do
+      step = insert(:step)
+      Engagement.toggle_favorite(user.id, "step", step.id)
+
+      step
+      |> Ecto.Changeset.change(deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+      |> Repo.update!()
+
+      assert Engagement.list_user_favorites(user.id, "step") == []
+    end
+
+    test "count_user_favorites reflects toggle off", %{user: user, step: step} do
+      {:ok, :favorited} = Engagement.toggle_favorite(user.id, "step", step.id)
+      assert Engagement.count_user_favorites(user.id) == 1
+      {:ok, :unfavorited} = Engagement.toggle_favorite(user.id, "step", step.id)
+      assert Engagement.count_user_favorites(user.id) == 0
+    end
+  end
 end
