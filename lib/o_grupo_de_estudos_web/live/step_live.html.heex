@@ -612,6 +612,27 @@
         <% end %>
       </div>
     </div>
+
+    <%!-- Comments section --%>
+    <section class="mt-8 pt-6 border-t border-ink-200">
+      <h3 class="text-lg font-serif font-bold text-ink-800 mb-4">
+        Comentários
+        <span :if={length(@step_comments) > 0} class="text-sm font-sans font-normal text-ink-400 ml-1">
+          (<%= length(@step_comments) %>)
+        </span>
+      </h3>
+
+      <.comment_thread
+        comments={@step_comments}
+        current_user={@current_user}
+        likes_map={@step_comment_likes}
+        comment_type="step_comment"
+        parent_id={@step.id}
+        replying_to={@replying_to}
+        replies_map={@replies_map}
+        is_admin={@is_admin}
+      />
+    </section>
   </div>
 
   <%!-- Footer --%>

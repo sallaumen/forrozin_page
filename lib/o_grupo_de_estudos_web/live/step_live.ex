@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.CommentThread
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 
@@ -46,6 +47,11 @@ defmodule OGrupoDeEstudosWeb.StepLive do
             -Map.get(link_likes.counts, link.id, 0)
           end)
 
+        # Load step comments
+        step_comments = Engagement.list_step_comments(step.id)
+        step_comment_ids = Enum.map(step_comments, & &1.id)
+        step_comment_likes = Engagement.likes_map(user_id, "step_comment", step_comment_ids)
+
         {:ok,
          assign(socket,
            step: step,
@@ -68,7 +74,11 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            expanded_link: nil,
            editing_link_id: nil,
            editing_link_url: "",
-           editing_link_title: ""
+           editing_link_title: "",
+           step_comments: step_comments,
+           step_comment_likes: step_comment_likes,
+           replying_to: nil,
+           replies_map: %{}
          )}
 
       {:error, :not_found} ->
@@ -359,6 +369,87 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       if socket.assigns.expanded_link == link_id, do: nil, else: link_id
 
     {:noreply, assign(socket, expanded_link: expanded)}
+  end
+
+  # --- Comments ---
+
+  def handle_event("create_comment", %{"body" => body}, socket) do
+    user = socket.assigns.current_user
+    step = socket.assigns.step
+
+    case Engagement.create_step_comment(user, step.id, %{body: body}) do
+      {:ok, _comment} ->
+        {:noreply, reload_step_comments(socket)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível postar o comentário.")}
+    end
+  end
+
+  def handle_event("create_reply", %{"body" => body, "parent-id" => parent_id}, socket) do
+    user = socket.assigns.current_user
+    step = socket.assigns.step
+
+    case Engagement.create_step_comment(user, step.id, %{
+           body: body,
+           parent_step_comment_id: parent_id
+         }) do
+      {:ok, _reply} ->
+        {:noreply, socket |> reload_step_comments() |> assign(:replying_to, nil)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível postar a resposta.")}
+    end
+  end
+
+  def handle_event("toggle_comment_like", %{"type" => type, "id" => id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_like(user.id, type, id) do
+      {:ok, _} -> {:noreply, reload_step_comments(socket)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("start_reply", %{"id" => comment_id}, socket) do
+    {:noreply, assign(socket, :replying_to, comment_id)}
+  end
+
+  def handle_event("toggle_replies", %{"id" => comment_id}, socket) do
+    alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
+    replies_map = socket.assigns.replies_map
+
+    if Map.has_key?(replies_map, comment_id) do
+      {:noreply, assign(socket, :replies_map, Map.delete(replies_map, comment_id))}
+    else
+      replies = Engagement.list_replies(StepCommentQuery, comment_id)
+      {:noreply, assign(socket, :replies_map, Map.put(replies_map, comment_id, replies))}
+    end
+  end
+
+  def handle_event("delete_comment", %{"id" => id, "type" => "step_comment"}, socket) do
+    user = socket.assigns.current_user
+    alias OGrupoDeEstudos.Engagement.Comments.StepComment
+    comment = OGrupoDeEstudos.Repo.get!(StepComment, id)
+
+    case Engagement.delete_step_comment(user, comment) do
+      {:ok, _} -> {:noreply, reload_step_comments(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
+    end
+  end
+
+  defp reload_step_comments(socket) do
+    step = socket.assigns.step
+    user = socket.assigns.current_user
+
+    comments = Engagement.list_step_comments(step.id)
+    comment_ids = Enum.map(comments, & &1.id)
+    comment_likes = Engagement.likes_map(user.id, "step_comment", comment_ids)
+
+    assign(socket,
+      step_comments: comments,
+      step_comment_likes: comment_likes
+    )
   end
 
   defp reload_step(socket, code) do
