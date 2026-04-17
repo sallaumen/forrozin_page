@@ -195,6 +195,16 @@
                       />
                     </button>
                   </div>
+                  <%= if @is_admin && !step.approved do %>
+                    <button
+                      phx-click="approve_step"
+                      phx-value-code={step.code}
+                      data-confirm="Aprovar este passo como oficial?"
+                      class="text-xs py-1 px-3 rounded-full bg-accent-green text-white border-0 cursor-pointer font-medium hover:bg-accent-green/80 transition-colors"
+                    >
+                      Aprovar
+                    </button>
+                  <% end %>
                   <.link
                     navigate={~p"/steps/#{step.code}"}
                     class="text-xs text-ink-400 no-underline italic ml-auto hover:text-ink-700"

@@ -245,6 +245,30 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     end
   end
 
+  def handle_event("approve_step", %{"code" => code}, socket) do
+    if not socket.assigns.is_admin do
+      {:noreply, socket}
+    else
+      step = OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: code)
+
+      if step do
+        OGrupoDeEstudos.Admin.update_step(step, %{approved: true})
+
+        steps = OGrupoDeEstudos.Encyclopedia.list_suggested_steps_filtered(
+          filter: socket.assigns.active_tab
+        )
+
+        {:noreply,
+         socket
+         |> assign(:steps, steps)
+         |> assign(:steps_all, steps)
+         |> put_flash(:info, "Passo '#{step.name}' aprovado!")}
+      else
+        {:noreply, socket}
+      end
+    end
+  end
+
   def handle_event("toggle_step_like", %{"id" => step_id}, socket) do
     user = socket.assigns.current_user
 
