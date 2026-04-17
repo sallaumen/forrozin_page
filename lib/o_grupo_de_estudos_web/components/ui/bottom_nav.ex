@@ -7,12 +7,17 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
   tab's base path.
 
   Height: 56px + env(safe-area-inset-bottom) (respects iPhone home bar).
+
+  Also renders the PWA install banner (above the tab bar on mobile,
+  at the very bottom on desktop) so it appears on all authenticated pages
+  without duplicating the call in every LiveView template.
   """
 
   use Phoenix.Component
   use OGrupoDeEstudosWeb, :verified_routes
 
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.PWAInstallBanner
 
   attr :current_user, :map, required: true
   attr :current_path, :string, required: true
@@ -30,6 +35,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
     assigns = assign(assigns, :tabs, tabs)
 
     ~H"""
+    <.pwa_install_banner />
     <nav
       data-ui="bottom-nav"
       class={[

@@ -1308,11 +1308,74 @@ window.addEventListener("phx:form_persisted_clear", (e) => {
   sessionStorage.removeItem(key)
 })
 
+// ---------------------------------------------------------------------------
+// Hook: PWAInstall — shows an install banner for supported browsers
+// ---------------------------------------------------------------------------
+const PWAInstall = {
+  mounted() {
+    // Don't show if already running as an installed PWA
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      return
+    }
+
+    // Don't show if user already dismissed this session
+    if (sessionStorage.getItem('pwa_banner_dismissed')) {
+      return
+    }
+
+    const banner = this.el
+    const installBtn = document.getElementById('pwa-install-btn')
+    const dismissBtn = document.getElementById('pwa-dismiss-btn')
+
+    // Capture the beforeinstallprompt event (Chrome/Android)
+    window._deferredPWAPrompt = window._deferredPWAPrompt || null
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault()
+      window._deferredPWAPrompt = e
+    })
+
+    // Show banner after a short delay to avoid distracting on first paint
+    setTimeout(() => {
+      banner.classList.remove('hidden')
+    }, 1500)
+
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (window._deferredPWAPrompt) {
+          // Android/Chrome: trigger native install prompt
+          window._deferredPWAPrompt.prompt()
+          const result = await window._deferredPWAPrompt.userChoice
+          if (result.outcome === 'accepted') {
+            banner.classList.add('hidden')
+            sessionStorage.setItem('pwa_banner_dismissed', '1')
+          }
+          window._deferredPWAPrompt = null
+        } else {
+          // iOS Safari: manual instructions
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+          if (isIOS) {
+            alert('Para instalar: toque no botão de compartilhar (⬆) e depois em "Adicionar à Tela de Início"')
+          } else {
+            alert('Use o menu do navegador (⋮) e selecione "Instalar aplicativo" ou "Adicionar à tela inicial"')
+          }
+        }
+      })
+    }
+
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        banner.classList.add('hidden')
+        sessionStorage.setItem('pwa_banner_dismissed', '1')
+      })
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist},
+  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall},
 })
 
 // Show progress bar on live navigation and form submits

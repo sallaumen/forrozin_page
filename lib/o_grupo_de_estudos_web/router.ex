@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug OGrupoDeEstudosWeb.UserAuth, :fetch_current_user
+    plug OGrupoDeEstudosWeb.Plugs.DeviceTracker
   end
 
   pipeline :api do
