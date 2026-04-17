@@ -157,9 +157,14 @@
                     </span>
                   </.link>
                   <%= if step.suggested_by_id && step.suggested_by_id != @current_user.id do %>
+                    <% is_following = MapSet.member?(@following_user_ids, step.suggested_by_id) %>
                     <button phx-click="toggle_follow" phx-value-user-id={step.suggested_by_id}
-                      class="text-[10px] py-0.5 px-2 rounded-full border border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange transition-colors cursor-pointer">
-                      Seguir
+                      class={[
+                        "text-[10px] py-0.5 px-2.5 rounded-full border transition-colors cursor-pointer",
+                        is_following && "border-accent-orange bg-accent-orange/10 text-accent-orange",
+                        !is_following && "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+                      ]}>
+                      {if is_following, do: "Seguindo ✓", else: "Seguir"}
                     </button>
                   <% end %>
                   <div class="flex items-center gap-2">
@@ -338,9 +343,14 @@
                     </span>
                   </.link>
                   <%= if seq.user_id && seq.user_id != @current_user.id do %>
+                    <% is_following = MapSet.member?(@following_user_ids, seq.user_id) %>
                     <button phx-click="toggle_follow" phx-value-user-id={seq.user_id}
-                      class="text-[10px] py-0.5 px-2 rounded-full border border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange transition-colors cursor-pointer">
-                      Seguir
+                      class={[
+                        "text-[10px] py-0.5 px-2.5 rounded-full border transition-colors cursor-pointer",
+                        is_following && "border-accent-orange bg-accent-orange/10 text-accent-orange",
+                        !is_following && "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+                      ]}>
+                      {if is_following, do: "Seguindo ✓", else: "Seguir"}
                     </button>
                   <% end %>
                   <.link
@@ -453,6 +463,46 @@
         >
           <span class="text-ink-900 font-bold">{@followers_count}</span> seguidores
         </button>
+      </div>
+
+      <%!-- Global people search --%>
+      <div class="mb-4">
+        <div class="relative">
+          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <input type="text" phx-keyup="search_people" phx-debounce="300" name="term"
+            value={@people_search} placeholder="Buscar pessoas..."
+            class="w-full pl-9 pr-3 py-2.5 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30" />
+        </div>
+
+        <%!-- Search results --%>
+        <div :if={@people_results != []} class="mt-2 space-y-1.5">
+          <%= for person <- @people_results do %>
+            <% is_following = MapSet.member?(@following_user_ids, person.id) %>
+            <div class="flex items-center gap-3 p-2.5 bg-ink-50 rounded-lg border border-ink-100">
+              <.link navigate={~p"/users/#{person.username}"} class="no-underline flex items-center gap-2 flex-1 min-w-0">
+                <div class="w-8 h-8 rounded-full bg-ink-800 flex items-center justify-center text-ink-200 text-xs font-bold flex-shrink-0">
+                  {String.first(person.name || person.username) |> String.upcase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-ink-800 truncate">@{person.username}</p>
+                  <p :if={person.city} class="text-xs text-ink-400">{person.city}</p>
+                </div>
+              </.link>
+              <button phx-click="toggle_follow" phx-value-user-id={person.id}
+                class={[
+                  "text-xs py-1 px-3 rounded-full border font-medium transition-colors cursor-pointer flex-shrink-0",
+                  is_following && "border-accent-orange bg-transparent text-accent-orange",
+                  !is_following && "border-accent-orange bg-accent-orange text-white"
+                ]}>
+                {if is_following, do: "Seguindo ✓", else: "Seguir"}
+              </button>
+            </div>
+          <% end %>
+        </div>
+
+        <p :if={@people_search != "" && @people_results == []} class="text-xs text-ink-400 italic mt-2 text-center">
+          Nenhum resultado para "{@people_search}"
+        </p>
       </div>
 
       <%!-- Sub-tab pills --%>

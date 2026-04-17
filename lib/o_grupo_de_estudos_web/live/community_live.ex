@@ -63,7 +63,10 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        followers_list: [],
        following_count: 0,
        followers_count: 0,
-       followers_following_map: MapSet.new()
+       followers_following_map: MapSet.new(),
+       following_user_ids: load_following_user_ids(socket.assigns.current_user.id),
+       people_search: "",
+       people_results: []
      )}
   end
 
@@ -165,7 +168,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       followers_list: list,
       following_count: Engagement.count_following(user.id),
       followers_count: Engagement.count_followers(user.id),
-      followers_following_map: following_ids_set(user.id, user_ids)
+      followers_following_map: following_ids_set(user.id, user_ids),
+      following_user_ids: load_following_user_ids(user.id)
     )}
   end
 
@@ -367,6 +371,27 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     end
   end
 
+  def handle_event("search_people", params, socket) do
+    term = params["value"] || params["term"] || ""
+
+    results = if String.length(term) >= 2 do
+      import Ecto.Query
+      term_like = "%#{String.downcase(term)}%"
+
+      from(u in OGrupoDeEstudos.Accounts.User,
+        where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
+        where: u.id != ^socket.assigns.current_user.id,
+        order_by: [asc: u.username],
+        limit: 5
+      )
+      |> OGrupoDeEstudos.Repo.all()
+    else
+      []
+    end
+
+    {:noreply, assign(socket, people_search: term, people_results: results)}
+  end
+
   def handle_event("delete_comment", %{"id" => id, "type" => "sequence_comment"}, socket) do
     user = socket.assigns.current_user
     alias OGrupoDeEstudos.Engagement.Comments.SequenceComment
@@ -385,6 +410,17 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
     from(f in OGrupoDeEstudos.Engagement.Follow,
       where: f.follower_id == ^user_id and f.followed_id in ^target_ids,
+      select: f.followed_id
+    )
+    |> OGrupoDeEstudos.Repo.all()
+    |> MapSet.new()
+  end
+
+  defp load_following_user_ids(user_id) do
+    import Ecto.Query
+
+    from(f in OGrupoDeEstudos.Engagement.Follow,
+      where: f.follower_id == ^user_id,
       select: f.followed_id
     )
     |> OGrupoDeEstudos.Repo.all()
