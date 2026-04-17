@@ -27,6 +27,11 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
       |> assign(
         page_title: "Configurações",
         is_admin: Accounts.admin?(user),
+        name: user.name || "",
+        username: user.username || "",
+        country: user.country || "BR",
+        state: user.state || "",
+        city: user.city || "",
         bio: user.bio || "",
         instagram: user.instagram || "",
         avatar_path: user.avatar_path,
@@ -43,18 +48,36 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
   end
 
   @impl true
-  def handle_event("validate", %{"bio" => bio, "instagram" => instagram}, socket) do
-    {:noreply, assign(socket, bio: bio, instagram: instagram, saved: false, error: nil)}
+  def handle_event("validate", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:name, params["name"] || socket.assigns.name)
+     |> assign(:username, params["username"] || socket.assigns.username)
+     |> assign(:country, params["country"] || socket.assigns.country)
+     |> assign(:state, params["state"] || socket.assigns.state)
+     |> assign(:city, params["city"] || socket.assigns.city)
+     |> assign(:bio, params["bio"] || socket.assigns.bio)
+     |> assign(:instagram, params["instagram"] || socket.assigns.instagram)
+     |> assign(:saved, false)
+     |> assign(:error, nil)}
   end
 
   @impl true
-  def handle_event("save", %{"bio" => bio, "instagram" => instagram}, socket) do
+  def handle_event("save", params, socket) do
     user = socket.assigns.current_user
 
     {avatar_path, socket} = consume_avatar_upload(socket, user)
 
     attrs =
-      %{bio: bio, instagram: instagram}
+      %{
+        name: params["name"],
+        username: params["username"],
+        country: params["country"],
+        state: params["state"],
+        city: params["city"],
+        bio: params["bio"],
+        instagram: params["instagram"]
+      }
       |> maybe_put_avatar(avatar_path)
 
     case Accounts.update_profile(user, attrs) do
@@ -63,6 +86,11 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
          socket
          |> push_event("form_persisted_clear", %{id: "settings-form"})
          |> assign(
+           name: updated_user.name || "",
+           username: updated_user.username || "",
+           country: updated_user.country || "BR",
+           state: updated_user.state || "",
+           city: updated_user.city || "",
            bio: updated_user.bio || "",
            instagram: updated_user.instagram || "",
            avatar_path: updated_user.avatar_path,

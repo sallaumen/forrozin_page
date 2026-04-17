@@ -69,12 +69,21 @@ defmodule OGrupoDeEstudos.Accounts.User do
     |> hash_password()
   end
 
-  @doc "Changeset for updating profile fields (bio, instagram, avatar_path)."
+  @doc "Changeset for updating profile fields."
   def profile_changeset(user, attrs) do
     user
-    |> cast(attrs, [:bio, :instagram, :avatar_path])
+    |> cast(attrs, [:bio, :instagram, :avatar_path, :name, :username, :country, :state, :city])
+    |> sanitize_username()
     |> validate_length(:bio, max: 2000)
     |> validate_length(:instagram, max: 100)
+    |> validate_required([:name, :username])
+    |> validate_name_has_two_words()
+    |> validate_length(:username, min: 3, max: 30)
+    |> validate_format(:username, ~r/^[a-z0-9_]+$/,
+      message: "use apenas letras minúsculas, números e _"
+    )
+    |> validate_state_for_brazil()
+    |> unique_constraint(:username, message: "nome de usuário já existe")
   end
 
   @doc "Changeset that marks the email as confirmed and invalidates the token."
