@@ -13,7 +13,7 @@
   <%!-- Section switcher: segmented control (Passos | Sequências) --%>
   <div class="max-w-4xl mx-auto px-4 w-full box-border mt-4">
     <div class="flex w-full p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
-      <%= for {sec_key, sec_label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}] do %>
+      <%= for {sec_key, sec_label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"followers", "Seguidores"}] do %>
         <button
           phx-click="switch_section"
           phx-value-section={sec_key}
@@ -156,6 +156,12 @@
                       @{author_username}
                     </span>
                   </.link>
+                  <%= if step.suggested_by_id && step.suggested_by_id != @current_user.id do %>
+                    <button phx-click="toggle_follow" phx-value-user-id={step.suggested_by_id}
+                      class="text-[10px] py-0.5 px-2 rounded-full border border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange transition-colors cursor-pointer">
+                      Seguir
+                    </button>
+                  <% end %>
                   <div class="flex items-center gap-2">
                     <button phx-click="toggle_step_like" phx-value-id={step.id}
                       class="flex items-center gap-1">
@@ -331,6 +337,12 @@
                       @{author_username}
                     </span>
                   </.link>
+                  <%= if seq.user_id && seq.user_id != @current_user.id do %>
+                    <button phx-click="toggle_follow" phx-value-user-id={seq.user_id}
+                      class="text-[10px] py-0.5 px-2 rounded-full border border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange transition-colors cursor-pointer">
+                      Seguir
+                    </button>
+                  <% end %>
                   <.link
                     navigate={~p"/graph/visual?seq=#{seq.id}"}
                     class="text-xs text-ink-400 no-underline italic hover:text-ink-700"
@@ -407,6 +419,135 @@
                     is_admin={@is_admin}
                   />
                 </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%!-- ===== SEGUIDORES SECTION ===== --%>
+  <%= if @active_section == "followers" do %>
+    <div class="max-w-4xl mx-auto px-4 w-full box-border mt-4">
+      <%!-- Counters line --%>
+      <div class="flex items-center gap-4 mb-4 text-sm text-ink-600">
+        <button
+          phx-click="switch_followers_tab"
+          phx-value-tab="following"
+          class={[
+            "cursor-pointer hover:text-ink-900 transition-colors",
+            @followers_sub_tab == "following" && "font-bold text-ink-900"
+          ]}
+        >
+          <span class="text-ink-900 font-bold">{@following_count}</span> seguindo
+        </button>
+        <span class="text-ink-300">·</span>
+        <button
+          phx-click="switch_followers_tab"
+          phx-value-tab="followers"
+          class={[
+            "cursor-pointer hover:text-ink-900 transition-colors",
+            @followers_sub_tab == "followers" && "font-bold text-ink-900"
+          ]}
+        >
+          <span class="text-ink-900 font-bold">{@followers_count}</span> seguidores
+        </button>
+      </div>
+
+      <%!-- Sub-tab pills --%>
+      <div class="flex gap-2 mb-4">
+        <%= for {tab_key, tab_label} <- [{"following", "Seguindo"}, {"followers", "Seguidores"}] do %>
+          <button
+            phx-click="switch_followers_tab"
+            phx-value-tab={tab_key}
+            class={[
+              "py-1.5 px-4 rounded-full text-xs font-semibold border transition-colors cursor-pointer",
+              @followers_sub_tab == tab_key && "bg-accent-orange border-accent-orange text-white",
+              @followers_sub_tab != tab_key && "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+            ]}
+          >
+            {tab_label}
+          </button>
+        <% end %>
+      </div>
+
+      <%!-- Search bar --%>
+      <div class="flex items-center gap-2 mb-4">
+        <div class="flex-1 relative">
+          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <input
+            type="text"
+            phx-keyup="search_followers"
+            phx-debounce="300"
+            name="term"
+            value={@followers_search}
+            placeholder="Buscar pessoa..."
+            class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+          />
+        </div>
+      </div>
+    </div>
+
+    <%!-- User cards list --%>
+    <div class="max-w-4xl mx-auto px-4 pt-1 pb-20 w-full box-border">
+      <%= if @followers_list == [] do %>
+        <div class="text-center py-20 px-5 text-ink-500 italic">
+          <%= if @followers_sub_tab == "following" do %>
+            Você ainda não segue ninguém.
+          <% else %>
+            Ninguém ainda te segue.
+          <% end %>
+        </div>
+      <% else %>
+        <div class="flex flex-col gap-3">
+          <%= for person <- @followers_list do %>
+            <% badge = Badges.primary(person.id) %>
+            <% steps_count = length(OGrupoDeEstudos.Encyclopedia.list_user_steps(person.id)) %>
+            <% seqs_count = length(OGrupoDeEstudos.Sequences.list_public_user_sequences(person.id)) %>
+            <% person_initial = person.username |> String.upcase() |> String.first() %>
+            <% is_following = MapSet.member?(@followers_following_map, person.id) %>
+            <div class="p-3 bg-ink-50 rounded-lg border border-ink-100 flex items-center gap-3">
+              <%!-- Avatar --%>
+              <.link navigate={~p"/users/#{person.username}"} class="no-underline flex-shrink-0">
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink-800 text-ink-200 text-sm font-bold">
+                  {person_initial}
+                </span>
+              </.link>
+
+              <%!-- Info --%>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <.link navigate={~p"/users/#{person.username}"} class="text-sm font-semibold text-ink-800 hover:underline no-underline">
+                    @{person.username}
+                  </.link>
+                  <%= if badge do %>
+                    <span class="text-xs">{badge.icon}</span>
+                  <% end %>
+                </div>
+                <%= if person.city || person.state do %>
+                  <p class="text-xs text-ink-500">
+                    {[person.city, person.state] |> Enum.filter(& &1) |> Enum.join(", ")}
+                  </p>
+                <% end %>
+                <p class="text-xs text-ink-400">
+                  {steps_count} passos · {seqs_count} sequências
+                </p>
+              </div>
+
+              <%!-- Follow / Following button --%>
+              <%= if person.id != @current_user.id do %>
+                <button
+                  phx-click="toggle_follow"
+                  phx-value-user-id={person.id}
+                  class={[
+                    "rounded-full py-1.5 px-4 text-xs font-medium border transition-colors cursor-pointer flex-shrink-0",
+                    is_following && "bg-transparent border-accent-orange text-accent-orange hover:bg-accent-orange/5",
+                    !is_following && "bg-accent-orange border-accent-orange text-white hover:bg-accent-orange/90"
+                  ]}
+                >
+                  {if is_following, do: "Seguindo", else: "Seguir"}
+                </button>
               <% end %>
             </div>
           <% end %>

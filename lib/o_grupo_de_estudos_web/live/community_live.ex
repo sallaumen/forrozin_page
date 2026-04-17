@@ -13,6 +13,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
+  alias OGrupoDeEstudos.Engagement.Badges
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -56,7 +57,13 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        expanded_seq_comments: [],
        expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
        expanded_seq_replies_map: %{},
-       expanded_seq_replying_to: nil
+       expanded_seq_replying_to: nil,
+       followers_sub_tab: "following",
+       followers_search: "",
+       followers_list: [],
+       following_count: 0,
+       followers_count: 0,
+       followers_following_map: MapSet.new()
      )}
   end
 
@@ -95,6 +102,70 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   def handle_event("switch_section", %{"section" => "steps"}, socket) do
     {:noreply, assign(socket, active_section: "steps")}
+  end
+
+  def handle_event("switch_section", %{"section" => "followers"}, socket) do
+    user = socket.assigns.current_user
+    following = Engagement.list_following(user.id)
+    following_count = Engagement.count_following(user.id)
+    followers_count = Engagement.count_followers(user.id)
+    user_ids = Enum.map(following, & &1.id)
+    following_map = following_ids_set(user.id, user_ids)
+
+    {:noreply,
+     assign(socket,
+       active_section: "followers",
+       followers_sub_tab: "following",
+       followers_list: following,
+       following_count: following_count,
+       followers_count: followers_count,
+       followers_following_map: following_map,
+       followers_search: ""
+     )}
+  end
+
+  def handle_event("switch_followers_tab", %{"tab" => tab}, socket) do
+    user = socket.assigns.current_user
+    list = case tab do
+      "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
+      "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
+    end
+    user_ids = Enum.map(list, & &1.id)
+    {:noreply, assign(socket,
+      followers_sub_tab: tab,
+      followers_list: list,
+      followers_following_map: following_ids_set(user.id, user_ids)
+    )}
+  end
+
+  def handle_event("search_followers", %{"term" => term}, socket) do
+    user = socket.assigns.current_user
+    list = case socket.assigns.followers_sub_tab do
+      "following" -> Engagement.list_following(user.id, search: term)
+      "followers" -> Engagement.list_followers(user.id, search: term)
+    end
+    user_ids = Enum.map(list, & &1.id)
+    {:noreply, assign(socket,
+      followers_search: term,
+      followers_list: list,
+      followers_following_map: following_ids_set(user.id, user_ids)
+    )}
+  end
+
+  def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
+    user = socket.assigns.current_user
+    Engagement.toggle_follow(user.id, target_id)
+    list = case socket.assigns.followers_sub_tab do
+      "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
+      "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
+    end
+    user_ids = Enum.map(list, & &1.id)
+    {:noreply, assign(socket,
+      followers_list: list,
+      following_count: Engagement.count_following(user.id),
+      followers_count: Engagement.count_followers(user.id),
+      followers_following_map: following_ids_set(user.id, user_ids)
+    )}
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
@@ -305,6 +376,17 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   end
 
   # ── Private helpers ─────────────────────────────────────────────────────
+
+  defp following_ids_set(user_id, target_ids) do
+    import Ecto.Query
+
+    from(f in OGrupoDeEstudos.Engagement.Follow,
+      where: f.follower_id == ^user_id and f.followed_id in ^target_ids,
+      select: f.followed_id
+    )
+    |> OGrupoDeEstudos.Repo.all()
+    |> MapSet.new()
+  end
 
   defp filter_steps(all_steps, search, category) do
     all_steps
