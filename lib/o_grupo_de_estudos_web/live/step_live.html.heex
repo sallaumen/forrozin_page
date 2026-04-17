@@ -36,15 +36,48 @@
         <span style={"font-size: 12px; color: #{category_color(@step)}; background: #{category_color(@step)}15; padding: 3px 12px; border-radius: 10px; font-style: italic; border: 1px solid #{category_color(@step)}25;"}>
           {category_label(@step)}
         </span>
+        <button :if={!@edit_mode && @suggesting_field != "category_id"}
+          phx-click="start_suggest" phx-value-field="category_id"
+          class="inline-flex p-0.5 text-ink-300 hover:text-accent-orange transition-colors"
+          title="Sugerir edição da categoria">
+          <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
+        </button>
         <%= if @step.wip do %>
           <span class="text-xs text-accent-red bg-accent-red/10 py-0.5 px-2.5 rounded-full border border-accent-red/25 uppercase tracking-widest">
             wip
           </span>
         <% end %>
       </div>
-      <h1 class="text-3xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
-        {@step.name}
-      </h1>
+      <%= if @suggesting_field == "category_id" do %>
+        <form phx-submit="submit_suggestion" class="flex items-center gap-2 mt-1.5 mb-3">
+          <select name="value" class="flex-1 px-2.5 py-1.5 border border-accent-orange/40 rounded text-sm">
+            <%= for cat <- OGrupoDeEstudos.Encyclopedia.list_categories() do %>
+              <option value={cat.id} selected={cat.id == @step.category_id}>{cat.label}</option>
+            <% end %>
+          </select>
+          <button type="submit" class="text-xs bg-accent-orange text-white px-3 py-1.5 rounded font-medium border-0 cursor-pointer">Enviar</button>
+          <button type="button" phx-click="cancel_suggest" class="text-xs text-ink-400 px-2 py-1.5 cursor-pointer bg-transparent border-0">Cancelar</button>
+        </form>
+      <% end %>
+      <div class="flex items-baseline gap-1 mb-3">
+        <h1 class="text-3xl font-bold text-ink-900 tracking-tight leading-tight m-0">
+          {@step.name}
+        </h1>
+        <button :if={!@edit_mode && @suggesting_field != "name"}
+          phx-click="start_suggest" phx-value-field="name"
+          class="inline-flex p-0.5 text-ink-300 hover:text-accent-orange transition-colors ml-1"
+          title="Sugerir edição do nome">
+          <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <%= if @suggesting_field == "name" do %>
+        <form phx-submit="submit_suggestion" class="flex items-center gap-2 mt-1.5 mb-3">
+          <input name="value" value={@suggestion_value} required
+            class="flex-1 px-2.5 py-1.5 border border-accent-orange/40 rounded text-sm text-ink-800 bg-ink-50 font-serif" />
+          <button type="submit" class="text-xs bg-accent-orange text-white px-3 py-1.5 rounded font-medium border-0 cursor-pointer">Enviar</button>
+          <button type="button" phx-click="cancel_suggest" class="text-xs text-ink-400 px-2 py-1.5 cursor-pointer bg-transparent border-0">Cancelar</button>
+        </form>
+      <% end %>
 
       <%!-- Suggested by badge --%>
       <%= if @step.suggested_by_id do %>
@@ -228,14 +261,48 @@
         <% end %>
         <div class="flex-1 min-w-[240px]">
           <%= if @step.note do %>
-            <p class="text-xs tracking-widest text-ink-500 uppercase mb-3">
-              Descrição técnica
-            </p>
+            <div class="flex items-center gap-1 mb-3">
+              <p class="text-xs tracking-widest text-ink-500 uppercase m-0">
+                Descrição técnica
+              </p>
+              <button :if={!@edit_mode && @suggesting_field != "note"}
+                phx-click="start_suggest" phx-value-field="note"
+                class="inline-flex p-0.5 text-ink-300 hover:text-accent-orange transition-colors"
+                title="Sugerir edição da descrição">
+                <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
+              </button>
+            </div>
             <p class="text-base leading-[1.9] text-ink-800">{@step.note}</p>
           <% else %>
-            <p class="text-base text-ink-500 italic">
-              Sem descrição técnica ainda.
-            </p>
+            <div class="flex items-center gap-1 mb-3">
+              <p class="text-base text-ink-500 italic m-0">
+                Sem descrição técnica ainda.
+              </p>
+              <button :if={!@edit_mode && @suggesting_field != "note"}
+                phx-click="start_suggest" phx-value-field="note"
+                class="inline-flex p-0.5 text-ink-300 hover:text-accent-orange transition-colors"
+                title="Sugerir edição da descrição">
+                <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          <% end %>
+          <%= if @suggesting_field == "note" do %>
+            <form phx-submit="submit_suggestion" class="flex items-center gap-2 mt-1.5">
+              <input name="value" value={@suggestion_value} required
+                class="flex-1 px-2.5 py-1.5 border border-accent-orange/40 rounded text-sm text-ink-800 bg-ink-50 font-serif" />
+              <button type="submit" class="text-xs bg-accent-orange text-white px-3 py-1.5 rounded font-medium border-0 cursor-pointer">Enviar</button>
+              <button type="button" phx-click="cancel_suggest" class="text-xs text-ink-400 px-2 py-1.5 cursor-pointer bg-transparent border-0">Cancelar</button>
+            </form>
+          <% end %>
+          <%= if @step.last_edited_by_id && @step.last_edited_by do %>
+            <div class="flex items-center gap-1.5 mt-2 text-xs text-ink-400">
+              <.icon name="hero-pencil" class="w-3 h-3" />
+              <span>Editado por</span>
+              <.link navigate={~p"/users/#{@step.last_edited_by.username}"}
+                class="text-accent-orange font-medium no-underline hover:underline">
+                @{@step.last_edited_by.username}
+              </.link>
+            </div>
           <% end %>
         </div>
       </div>
@@ -297,6 +364,17 @@
                   class="bg-transparent border-0 text-accent-red cursor-pointer text-base p-1"
                 >
                   ×
+                </button>
+              <% else %>
+                <button
+                  phx-click="suggest_remove_connection"
+                  phx-value-id={conn.id}
+                  phx-value-label={"#{@step.code}\u2192#{conn.target_step.code}"}
+                  class="text-ink-300 hover:text-accent-red text-xs p-0.5 cursor-pointer bg-transparent border-0"
+                  title="Sugerir remoção"
+                  data-confirm="Sugerir remoção desta conexão?"
+                >
+                  <.icon name="hero-x-mark" class="w-3 h-3" />
                 </button>
               <% end %>
             </div>
@@ -374,6 +452,17 @@
                 >
                   ×
                 </button>
+              <% else %>
+                <button
+                  phx-click="suggest_remove_connection"
+                  phx-value-id={conn.id}
+                  phx-value-label={"#{conn.source_step.code}\u2192#{@step.code}"}
+                  class="text-ink-300 hover:text-accent-red text-xs p-0.5 cursor-pointer bg-transparent border-0"
+                  title="Sugerir remoção"
+                  data-confirm="Sugerir remoção desta conexão?"
+                >
+                  <.icon name="hero-x-mark" class="w-3 h-3" />
+                </button>
               <% end %>
             </div>
           <% end %>
@@ -421,6 +510,29 @@
           <% end %>
         </div>
       </div>
+      <%!-- Suggest new connection (non-edit mode) --%>
+      <button :if={!@edit_mode && !@suggesting_connection}
+        phx-click="start_suggest_connection"
+        class="text-xs text-accent-orange hover:text-accent-orange/80 mt-2 cursor-pointer bg-transparent border-0 font-serif">
+        + Sugerir nova conexão
+      </button>
+      <%= if @suggesting_connection do %>
+        <div class="mt-2 p-2 bg-ink-50 rounded border border-ink-200">
+          <input type="text" phx-keyup="search_suggest_connection" phx-debounce="200"
+            value={@connection_suggest_search} placeholder="Buscar passo..."
+            class="w-full px-2 py-1.5 border border-ink-300 rounded text-xs" />
+          <div :if={@connection_suggest_results != []} class="mt-1 space-y-0.5">
+            <%= for result <- @connection_suggest_results do %>
+              <button phx-click="submit_connection_suggestion" phx-value-target_code={result.code}
+                class="block w-full text-left px-2 py-1 text-xs hover:bg-ink-100 rounded cursor-pointer bg-transparent border-0">
+                <code class="text-accent-orange">{result.code}</code> {result.name}
+              </button>
+            <% end %>
+          </div>
+          <button phx-click="cancel_suggest_connection"
+            class="text-xs text-ink-400 mt-1 cursor-pointer bg-transparent border-0">Cancelar</button>
+        </div>
+      <% end %>
     </div>
 
     <%!-- Links --%>

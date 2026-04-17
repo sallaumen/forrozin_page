@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     case Encyclopedia.fetch_step_with_details(code, admin: admin) do
       {:ok, _} ->
         step =
-          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts, :last_edited_by])
 
         can_edit = admin or step.suggested_by_id == user_id
 
@@ -85,7 +85,12 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            replies_map: %{},
            step_liked: step_liked,
            step_like_count: step_like_count,
-           step_favorited: step_favorited
+           step_favorited: step_favorited,
+           suggesting_field: nil,
+           suggestion_value: "",
+           suggesting_connection: false,
+           connection_suggest_search: "",
+           connection_suggest_results: []
          )}
 
       {:error, :not_found} ->
@@ -496,6 +501,124 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     end
   end
 
+  # -- Suggestion handlers --
+
+  def handle_event("start_suggest", %{"field" => field}, socket) do
+    step = socket.assigns.step
+    current_value = Map.get(step, String.to_existing_atom(field)) || ""
+    {:noreply, assign(socket, suggesting_field: field, suggestion_value: to_string(current_value))}
+  end
+
+  def handle_event("cancel_suggest", _, socket) do
+    {:noreply, assign(socket, suggesting_field: nil, suggestion_value: "")}
+  end
+
+  def handle_event("submit_suggestion", %{"value" => new_value}, socket) do
+    user = socket.assigns.current_user
+    step = socket.assigns.step
+    field = socket.assigns.suggesting_field
+    old_value = Map.get(step, String.to_existing_atom(field)) || ""
+
+    alias OGrupoDeEstudos.Suggestions
+
+    case Suggestions.create(user, %{
+           target_type: "step",
+           target_id: step.id,
+           action: "edit_field",
+           field: field,
+           old_value: to_string(old_value),
+           new_value: new_value
+         }) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(suggesting_field: nil, suggestion_value: "")
+         |> put_flash(:info, "Sugestão enviada! Um admin vai revisar.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}
+    end
+  end
+
+  def handle_event("start_suggest_connection", _, socket) do
+    {:noreply, assign(socket, suggesting_connection: true)}
+  end
+
+  def handle_event("cancel_suggest_connection", _, socket) do
+    {:noreply,
+     assign(socket,
+       suggesting_connection: false,
+       connection_suggest_search: "",
+       connection_suggest_results: []
+     )}
+  end
+
+  def handle_event("search_suggest_connection", params, socket) do
+    term = params["value"] || params["term"] || ""
+
+    results =
+      if String.length(term) >= 1 do
+        StepQuery.list_by(
+          status: "published",
+          search: term,
+          order_by: [asc: :name],
+          limit: 8,
+          preload: [:category]
+        )
+      else
+        []
+      end
+
+    {:noreply,
+     assign(socket, connection_suggest_search: term, connection_suggest_results: results)}
+  end
+
+  def handle_event("submit_connection_suggestion", %{"target_code" => target_code}, socket) do
+    user = socket.assigns.current_user
+    step = socket.assigns.step
+
+    alias OGrupoDeEstudos.Suggestions
+
+    case Suggestions.create(user, %{
+           target_type: "connection",
+           target_id: step.id,
+           action: "create_connection",
+           new_value: "#{step.code}\u2192#{target_code}"
+         }) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(
+           suggesting_connection: false,
+           connection_suggest_search: "",
+           connection_suggest_results: []
+         )
+         |> put_flash(:info, "Sugestão de conexão enviada!")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao sugerir conexão")}
+    end
+  end
+
+  def handle_event("suggest_remove_connection", %{"id" => conn_id, "label" => label}, socket) do
+    user = socket.assigns.current_user
+
+    alias OGrupoDeEstudos.Suggestions
+
+    case Suggestions.create(user, %{
+           target_type: "connection",
+           target_id: conn_id,
+           action: "remove_connection",
+           old_value: label
+         }) do
+      {:ok, _} ->
+        {:noreply, put_flash(socket, :info, "Sugestão de remoção enviada!")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao sugerir remoção")}
+    end
+  end
+
   defp reload_step_comments(socket) do
     alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
 
@@ -534,7 +657,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
         step =
-          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts, :last_edited_by])
 
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
