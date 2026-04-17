@@ -8,8 +8,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia}
+  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
+  alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -17,6 +18,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.UI.CommentThread
+  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 
@@ -52,7 +55,15 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         can_edit_drawer: false,
         active_tab: "acervo",
         my_steps: [],
-        steps_with_links: steps_with_links
+        steps_with_links: steps_with_links,
+        expanded_step: nil,
+        expanded_comments: [],
+        expanded_links: [],
+        expanded_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
+        expanded_replies_map: %{},
+        expanded_replying_to: nil,
+        expanded_video: nil,
+        step_comment_counts: %{}
       )
 
     {:ok, socket}
@@ -344,6 +355,148 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
+  # ── Inline expansion: comments + links per step ─────────────
+
+  def handle_event("toggle_step_expand", %{"step-id" => step_id}, socket) do
+    if socket.assigns.expanded_step == step_id do
+      # Collapse
+      {:noreply,
+       assign(socket,
+         expanded_step: nil,
+         expanded_comments: [],
+         expanded_links: [],
+         expanded_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
+         expanded_replies_map: %{},
+         expanded_replying_to: nil,
+         expanded_video: nil
+       )}
+    else
+      # Expand: lazy-load comments + links
+      user = socket.assigns.current_user
+      comments = Engagement.list_step_comments(step_id, limit: 5)
+      comment_ids = Enum.map(comments, & &1.id)
+      comment_likes = Engagement.likes_map(user.id, "step_comment", comment_ids)
+
+      links = StepLinkQuery.list_by(step_id: step_id, approved: true, preload: [:submitted_by])
+
+      {:noreply,
+       assign(socket,
+         expanded_step: step_id,
+         expanded_comments: comments,
+         expanded_links: links,
+         expanded_comment_likes: comment_likes,
+         expanded_replies_map: %{},
+         expanded_replying_to: nil,
+         expanded_video: nil
+       )}
+    end
+  end
+
+  def handle_event("create_comment", %{"body" => body}, socket) do
+    user = socket.assigns.current_user
+    step_id = socket.assigns.expanded_step
+
+    case Engagement.create_step_comment(user, step_id, %{body: body}) do
+      {:ok, _} -> {:noreply, reload_expanded(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao postar comentário.")}
+    end
+  end
+
+  def handle_event("create_reply", %{"body" => body, "parent-id" => parent_id}, socket) do
+    user = socket.assigns.current_user
+    step_id = socket.assigns.expanded_step
+
+    case Engagement.create_step_comment(user, step_id, %{
+           body: body,
+           parent_step_comment_id: parent_id
+         }) do
+      {:ok, _} ->
+        {:noreply, socket |> reload_expanded() |> assign(:expanded_replying_to, nil)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao postar resposta.")}
+    end
+  end
+
+  def handle_event("toggle_comment_like", %{"type" => type, "id" => id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_like(user.id, type, id) do
+      {:ok, _} -> {:noreply, reload_expanded(socket)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("start_reply", %{"id" => comment_id}, socket) do
+    {:noreply, assign(socket, :expanded_replying_to, comment_id)}
+  end
+
+  def handle_event("toggle_replies", %{"id" => comment_id}, socket) do
+    replies_map = socket.assigns.expanded_replies_map
+
+    if Map.has_key?(replies_map, comment_id) do
+      {:noreply, assign(socket, :expanded_replies_map, Map.delete(replies_map, comment_id))}
+    else
+      replies = Engagement.list_replies(StepCommentQuery, comment_id)
+      new_map = Map.put(replies_map, comment_id, replies)
+      socket = assign(socket, :expanded_replies_map, new_map)
+      {:noreply, reload_expanded_likes(socket)}
+    end
+  end
+
+  def handle_event("delete_comment", %{"id" => id, "type" => "step_comment"}, socket) do
+    user = socket.assigns.current_user
+    alias OGrupoDeEstudos.Engagement.Comments.StepComment
+    comment = OGrupoDeEstudos.Repo.get!(StepComment, id)
+
+    case Engagement.delete_step_comment(user, comment) do
+      {:ok, _} -> {:noreply, reload_expanded(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
+    end
+  end
+
+  def handle_event("toggle_expanded_video", %{"link-id" => link_id}, socket) do
+    current = socket.assigns.expanded_video
+    {:noreply, assign(socket, :expanded_video, if(current == link_id, do: nil, else: link_id))}
+  end
+
+  defp reload_expanded(socket) do
+    step_id = socket.assigns.expanded_step
+    user = socket.assigns.current_user
+
+    comments = Engagement.list_step_comments(step_id, limit: 5)
+    comment_ids = Enum.map(comments, & &1.id)
+
+    reply_ids =
+      socket.assigns.expanded_replies_map
+      |> Map.values()
+      |> List.flatten()
+      |> Enum.map(& &1.id)
+
+    all_ids = comment_ids ++ reply_ids
+    comment_likes = Engagement.likes_map(user.id, "step_comment", all_ids)
+
+    assign(socket,
+      expanded_comments: comments,
+      expanded_comment_likes: comment_likes
+    )
+  end
+
+  defp reload_expanded_likes(socket) do
+    user = socket.assigns.current_user
+    comment_ids = Enum.map(socket.assigns.expanded_comments, & &1.id)
+
+    reply_ids =
+      socket.assigns.expanded_replies_map
+      |> Map.values()
+      |> List.flatten()
+      |> Enum.map(& &1.id)
+
+    all_ids = comment_ids ++ reply_ids
+    comment_likes = Engagement.likes_map(user.id, "step_comment", all_ids)
+    assign(socket, :expanded_comment_likes, comment_likes)
+  end
+
   defp reload_sections(socket) do
     sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
 
@@ -383,6 +536,15 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   attr :edit_mode, :boolean, default: false
   attr :current_user_id, :string, default: nil
   attr :steps_with_links, :any, default: %MapSet{}
+  attr :expanded_step, :string, default: nil
+  attr :expanded_comments, :list, default: []
+  attr :expanded_links, :list, default: []
+  attr :expanded_comment_likes, :map, default: %{liked_ids: %MapSet{}, counts: %{}}
+  attr :expanded_replies_map, :map, default: %{}
+  attr :expanded_replying_to, :string, default: nil
+  attr :expanded_video, :string, default: nil
+  attr :is_admin, :boolean, default: false
+  attr :current_user, :map, default: nil
 
   def section_card(assigns) do
     ~H"""
@@ -458,6 +620,15 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
               step={step}
               current_user_id={@current_user_id}
               steps_with_links={@steps_with_links}
+              expanded_step={assigns[:expanded_step]}
+              expanded_comments={assigns[:expanded_comments] || []}
+              expanded_links={assigns[:expanded_links] || []}
+              expanded_comment_likes={assigns[:expanded_comment_likes] || %{liked_ids: MapSet.new(), counts: %{}}}
+              expanded_replies_map={assigns[:expanded_replies_map] || %{}}
+              expanded_replying_to={assigns[:expanded_replying_to]}
+              expanded_video={assigns[:expanded_video]}
+              is_admin={assigns[:is_admin] || false}
+              current_user={assigns[:current_user]}
             />
           <% end %>
           <%= for subsection <- @section.subsections do %>
@@ -488,74 +659,171 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   attr :step, :map, required: true
   attr :current_user_id, :string, default: nil
   attr :steps_with_links, :any, default: %MapSet{}
+  attr :expanded_step, :string, default: nil
+  attr :expanded_comments, :list, default: []
+  attr :expanded_links, :list, default: []
+  attr :expanded_comment_likes, :map, default: %{liked_ids: %MapSet{}, counts: %{}}
+  attr :expanded_replies_map, :map, default: %{}
+  attr :expanded_replying_to, :string, default: nil
+  attr :expanded_video, :string, default: nil
+  attr :is_admin, :boolean, default: false
+  attr :current_user, :map, default: nil
 
   def step_item(assigns) do
+    has_links = MapSet.member?(assigns.steps_with_links, assigns.step.id)
+    is_expanded = assigns.expanded_step == assigns.step.id
+    assigns = assign(assigns, has_links: has_links, is_expanded: is_expanded)
+
     ~H"""
     <% is_mine = @step.suggested_by_id != nil and @step.suggested_by_id == @current_user_id %>
-    <div
-      phx-click="open_step"
-      phx-value-code={@step.code}
-      class={[
-        "flex gap-3.5 p-3 border-b border-ink-200/40 cursor-pointer rounded-md mb-0.5",
-        is_mine && "bg-[#fce4ec]",
-        !is_mine && "bg-transparent"
-      ]}
-    >
-      <%= if @step.image_path do %>
-        <img
-          src={"/#{@step.image_path}"}
-          alt={@step.code}
-          loading="lazy"
-          class="w-[72px] h-[72px] object-cover rounded flex-shrink-0 border border-ink-300/60"
-          style="filter: sepia(20%);"
-        />
-      <% end %>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-baseline gap-2.5 flex-wrap">
-          <code class="font-mono text-xs font-bold text-ink-700 bg-[#b4782819] py-0.5 px-1.5 rounded-sm tracking-wide border border-[#b4782833]">
-            {@step.code}
-          </code>
-          <span class="text-sm text-ink-800 font-serif leading-normal">
-            {@step.name}
-          </span>
-          <%= if @step.suggested_by_id do %>
-            <.link
-              navigate={
-                ~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"
-              }
-              class="no-underline"
-            >
-              <span
-                class={[
-                  "text-[9px] py-px px-1.5 rounded-full italic border",
-                  @step.approved && "border-accent-green/30 bg-accent-green/10 text-accent-green",
-                  !@step.approved && "border-[#8e44ad4d] bg-[#8e44ad1a]"
-                ]}
-                style={if !@step.approved, do: "color: #8e44ad;"}
+    <div class={[
+      "border-b border-ink-200/40 rounded-md mb-0.5",
+      is_mine && "bg-[#fce4ec]",
+      !is_mine && "bg-transparent"
+    ]}>
+      <div
+        phx-click="open_step"
+        phx-value-code={@step.code}
+        class="flex gap-3.5 p-3 cursor-pointer"
+      >
+        <%= if @step.image_path do %>
+          <img
+            src={"/#{@step.image_path}"}
+            alt={@step.code}
+            loading="lazy"
+            class="w-[72px] h-[72px] object-cover rounded flex-shrink-0 border border-ink-300/60"
+            style="filter: sepia(20%);"
+          />
+        <% end %>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-baseline gap-2.5 flex-wrap">
+            <code class="font-mono text-xs font-bold text-ink-700 bg-[#b4782819] py-0.5 px-1.5 rounded-sm tracking-wide border border-[#b4782833]">
+              {@step.code}
+            </code>
+            <span class="text-sm text-ink-800 font-serif leading-normal">
+              {@step.name}
+            </span>
+            <%= if @step.suggested_by_id do %>
+              <.link
+                navigate={
+                  ~p"/users/#{if @step.suggested_by, do: @step.suggested_by.username, else: "#"}"
+                }
+                class="no-underline"
               >
-                <%= if @step.approved do %>
-                  ✓ @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
-                <% else %>
-                  Sugestão de @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
-                <% end %>
-              </span>
-            </.link>
+                <span
+                  class={[
+                    "text-[9px] py-px px-1.5 rounded-full italic border",
+                    @step.approved && "border-accent-green/30 bg-accent-green/10 text-accent-green",
+                    !@step.approved && "border-[#8e44ad4d] bg-[#8e44ad1a]"
+                  ]}
+                  style={if !@step.approved, do: "color: #8e44ad;"}
+                >
+                  <%= if @step.approved do %>
+                    ✓ @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
+                  <% else %>
+                    Sugestão de @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
+                  <% end %>
+                </span>
+              </.link>
+            <% end %>
+          </div>
+          <%= if @step.note do %>
+            <p class="text-xs text-ink-600 mt-1 font-serif italic leading-relaxed">
+              {String.slice(@step.note, 0, 120)}{if String.length(@step.note) > 120, do: "…"}
+            </p>
           <% end %>
         </div>
-        <%= if @step.note do %>
-          <p class="text-xs text-ink-600 mt-1 font-serif italic leading-relaxed">
-            {String.slice(@step.note, 0, 120)}{if String.length(@step.note) > 120, do: "…"}
-          </p>
-        <% end %>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <%= if @step.suggested_by_id do %>
+            <span title="Passo da comunidade" class="text-xs opacity-60">👤</span>
+          <% end %>
+          <%= if @has_links do %>
+            <span title="Tem vídeo" class="text-xs opacity-60">🎬</span>
+          <% end %>
+        </div>
       </div>
-      <div class="flex items-center gap-1 flex-shrink-0">
-        <%= if @step.suggested_by_id do %>
-          <span title="Passo da comunidade" class="text-xs opacity-60">👤</span>
-        <% end %>
-        <%= if MapSet.member?(@steps_with_links, @step.id) do %>
-          <span title="Tem vídeo" class="text-xs opacity-60">🎬</span>
-        <% end %>
+
+      <%!-- Expand/collapse button --%>
+      <div class="flex justify-center -mt-1 pb-1">
+        <button
+          phx-click="toggle_step_expand"
+          phx-value-step-id={@step.id}
+          class={[
+            "flex items-center gap-1 text-[10px] py-0.5 px-3 rounded-full transition-colors",
+            @is_expanded && "text-accent-orange bg-accent-orange/10",
+            !@is_expanded && "text-ink-400 hover:text-ink-600 hover:bg-ink-100"
+          ]}
+        >
+          <.icon
+            name={if @is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
+            class="w-3.5 h-3.5"
+          />
+          <span><%= if @is_expanded, do: "Fechar", else: "Detalhes" %></span>
+        </button>
       </div>
+
+      <%!-- Expanded content --%>
+      <%= if @is_expanded do %>
+        <div class="px-4 pb-4 space-y-4 border-t border-ink-100 pt-3">
+          <%!-- Links / Videos --%>
+          <%= if @expanded_links != [] do %>
+            <div>
+              <h4 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-2">Links</h4>
+              <div class="space-y-2">
+                <%= for link <- @expanded_links do %>
+                  <div class="rounded-lg border border-ink-200 overflow-hidden">
+                    <div class="flex items-center gap-2 px-3 py-2">
+                      <a href={link.url} target="_blank" rel="noopener"
+                        class="flex-1 text-sm text-accent-orange hover:underline truncate no-underline">
+                        {link.title || link.url}
+                      </a>
+                      <%= if youtube_id(link.url) do %>
+                        <button
+                          phx-click="toggle_expanded_video"
+                          phx-value-link-id={link.id}
+                          class={[
+                            "text-xs py-1 px-2.5 rounded-full font-medium transition-colors",
+                            @expanded_video == link.id && "bg-ink-200 text-ink-700",
+                            @expanded_video != link.id && "bg-ink-100 text-ink-500 hover:bg-ink-200"
+                          ]}
+                        >
+                          <%= if @expanded_video == link.id, do: "▲ Fechar", else: "▶ Assistir" %>
+                        </button>
+                      <% end %>
+                    </div>
+                    <%= if @expanded_video == link.id && youtube_id(link.url) do %>
+                      <div class="relative pb-[56.25%] h-0 overflow-hidden bg-ink-900">
+                        <iframe
+                          src={"https://www.youtube.com/embed/#{youtube_id(link.url)}"}
+                          class="absolute top-0 left-0 w-full h-full"
+                          frameborder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowfullscreen
+                        />
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- Comments --%>
+          <div>
+            <h4 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-2">Comentários</h4>
+            <.comment_thread
+              comments={@expanded_comments}
+              current_user={@current_user}
+              likes_map={@expanded_comment_likes}
+              comment_type="step_comment"
+              parent_id={@step.id}
+              replying_to={@expanded_replying_to}
+              replies_map={@expanded_replies_map}
+              is_admin={@is_admin}
+            />
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end
@@ -580,4 +848,19 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   def category_label(%{category: %{label: label}}), do: label
   def category_label(_), do: ""
+
+  defp youtube_id(url) when is_binary(url) do
+    cond do
+      String.contains?(url, "youtube.com/watch") ->
+        URI.parse(url) |> Map.get(:query, "") |> URI.decode_query() |> Map.get("v")
+
+      String.contains?(url, "youtu.be/") ->
+        URI.parse(url) |> Map.get(:path, "") |> String.trim_leading("/")
+
+      true ->
+        nil
+    end
+  end
+
+  defp youtube_id(_), do: nil
 end

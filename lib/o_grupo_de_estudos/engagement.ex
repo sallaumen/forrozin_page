@@ -274,7 +274,6 @@ defmodule OGrupoDeEstudos.Engagement do
 
   defp create_comment(schema_mod, query_mod, user, parent_id, attrs) do
     parent_field = query_mod.parent_field()
-    parent_comment_field = query_mod.parent_comment_field()
     user_field = query_mod.user_field()
 
     changeset =
@@ -285,22 +284,9 @@ defmodule OGrupoDeEstudos.Engagement do
         |> Map.put(parent_field, parent_id)
       )
 
+    # reply_count is handled by Postgres trigger — no Multi.run needed
     Multi.new()
     |> Multi.insert(:comment, changeset)
-    |> Multi.run(:bump_reply_count, fn repo, %{comment: comment} ->
-      parent_comment_id = Map.get(comment, parent_comment_field)
-
-      if parent_comment_id do
-        repo.update_all(
-          from(c in schema_mod, where: c.id == ^parent_comment_id),
-          inc: [reply_count: 1]
-        )
-
-        {:ok, :bumped}
-      else
-        {:ok, :root}
-      end
-    end)
     |> Repo.transaction()
     |> case do
       {:ok, %{comment: comment}} ->
@@ -324,25 +310,11 @@ defmodule OGrupoDeEstudos.Engagement do
     end
   end
 
-  defp hard_delete(schema_mod, comment, parent_comment_field) do
-    Multi.new()
-    |> Multi.delete(:comment, comment)
-    |> Multi.run(:decrement_parent, fn repo, _ ->
-      parent_id = Map.get(comment, parent_comment_field)
-
-      if parent_id do
-        repo.update_all(
-          from(c in schema_mod, where: c.id == ^parent_id),
-          inc: [reply_count: -1]
-        )
-      end
-
-      {:ok, :done}
-    end)
-    |> Repo.transaction()
-    |> case do
+  defp hard_delete(_schema_mod, comment, _parent_comment_field) do
+    # reply_count decrement handled by Postgres trigger on DELETE
+    case Repo.delete(comment) do
       {:ok, _} -> {:ok, :deleted}
-      {:error, _, reason, _} -> {:error, reason}
+      {:error, reason} -> {:error, reason}
     end
   end
 

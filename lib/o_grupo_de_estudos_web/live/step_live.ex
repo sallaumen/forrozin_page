@@ -420,10 +420,14 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     replies_map = socket.assigns.replies_map
 
     if Map.has_key?(replies_map, comment_id) do
-      {:noreply, assign(socket, :replies_map, Map.delete(replies_map, comment_id))}
+      socket = assign(socket, :replies_map, Map.delete(replies_map, comment_id))
+      {:noreply, reload_step_comments(socket)}
     else
       replies = Engagement.list_replies(StepCommentQuery, comment_id)
-      {:noreply, assign(socket, :replies_map, Map.put(replies_map, comment_id, replies))}
+      new_map = Map.put(replies_map, comment_id, replies)
+      socket = assign(socket, :replies_map, new_map)
+      # Reload likes to include reply IDs
+      {:noreply, reload_step_comments(socket)}
     end
   end
 
@@ -444,7 +448,16 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     comments = Engagement.list_step_comments(step.id)
     comment_ids = Enum.map(comments, & &1.id)
-    comment_likes = Engagement.likes_map(user.id, "step_comment", comment_ids)
+
+    # Include reply IDs from expanded threads so likes work on replies too
+    reply_ids =
+      socket.assigns.replies_map
+      |> Map.values()
+      |> List.flatten()
+      |> Enum.map(& &1.id)
+
+    all_comment_ids = comment_ids ++ reply_ids
+    comment_likes = Engagement.likes_map(user.id, "step_comment", all_comment_ids)
 
     assign(socket,
       step_comments: comments,
