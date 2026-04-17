@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudos.Factory do
     Subsection
   }
 
-  alias OGrupoDeEstudos.Engagement.{Like, ProfileComment}
+  alias OGrupoDeEstudos.Engagement.{Like, ProfileComment, Favorite}
   alias OGrupoDeEstudos.Engagement.Comments.{StepComment, SequenceComment}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
@@ -125,6 +125,14 @@ defmodule OGrupoDeEstudos.Factory do
     %Like{
       likeable_type: "step",
       likeable_id: Ecto.UUID.generate(),
+      user: build(:user)
+    }
+  end
+
+  def favorite_factory do
+    %Favorite{
+      favoritable_type: "step",
+      favoritable_id: Ecto.UUID.generate(),
       user: build(:user)
     }
   end
