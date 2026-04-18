@@ -6,6 +6,8 @@ defmodule OGrupoDeEstudos.Sequences do
   via the graph traversal algorithm in `Generator`.
   """
 
+  import Ecto.Query
+
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Encyclopedia.StepQuery
   alias OGrupoDeEstudos.Sequences.{Generator, Sequence, SequenceStep, SequenceQuery}
@@ -102,6 +104,59 @@ defmodule OGrupoDeEstudos.Sequences do
             end)
 
             Repo.preload(sequence, sequence_steps: :step)
+
+          {:error, changeset} ->
+            Repo.rollback(changeset)
+        end
+      end)
+    end
+  end
+
+  @doc """
+  Updates a manually managed sequence and replaces its ordered steps.
+
+  Existing `sequence_steps` are replaced inside the same transaction so the
+  visible sequence stays in sync with the edited order.
+  """
+  def update_manual_sequence(%Sequence{} = sequence, attrs) do
+    step_codes = Map.get(attrs, :step_codes, Map.get(attrs, "step_codes", []))
+
+    steps =
+      step_codes
+      |> Enum.map(&StepQuery.get_by(code: &1))
+      |> Enum.reject(&is_nil/1)
+
+    if length(steps) != length(step_codes) do
+      {:error, :invalid_codes}
+    else
+      Repo.transaction(fn ->
+        update_attrs = %{
+          name: Map.get(attrs, :name, Map.get(attrs, "name", "")),
+          description: Map.get(attrs, :description, Map.get(attrs, "description")),
+          video_url: Map.get(attrs, :video_url, Map.get(attrs, "video_url")),
+          allow_repeats: true
+        }
+
+        case sequence |> Sequence.changeset(update_attrs) |> Repo.update() do
+          {:ok, updated} ->
+            from(ss in SequenceStep,
+              where: ss.sequence_id == ^sequence.id and is_nil(ss.deleted_at)
+            )
+            |> Repo.delete_all()
+
+            steps
+            |> Enum.with_index(1)
+            |> Enum.each(fn {step, position} ->
+              %SequenceStep{}
+              |> SequenceStep.changeset(%{
+                sequence_id: sequence.id,
+                step_id: step.id,
+                position: position
+              })
+              |> Repo.insert!()
+            end)
+
+            Repo.preload(updated, [sequence_steps: [step: :category]], force: true)
 
           {:error, changeset} ->
             Repo.rollback(changeset)

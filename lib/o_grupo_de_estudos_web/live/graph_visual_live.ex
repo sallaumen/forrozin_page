@@ -50,6 +50,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:graph_search_results, [])
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
+     |> assign(:seq_editing_id, nil)
+     |> assign(:seq_manual_name, "")
+     |> assign(:seq_manual_description, "")
+     |> assign(:seq_manual_video_url, "")
      |> assign(:seq_missing_edges, [])
      |> assign(:seq_favorites_list, [])
      |> assign(:liked_step_codes, liked_codes)
@@ -189,9 +193,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   def handle_event("edit_saved_sequence", %{"id" => id}, socket) do
     saved = Sequences.get_sequence(id)
-    user_id = socket.assigns.current_user.id
 
-    if saved && saved.user_id == user_id do
+    if can_manage_sequence?(socket, saved) do
       steps = Enum.sort_by(saved.sequence_steps, & &1.position)
       manual_steps = Enum.map(steps, &%{code: &1.step.code, name: &1.step.name})
 
@@ -200,6 +203,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
        |> assign(:seq_view, :manual)
        |> assign(:seq_manual_steps, manual_steps)
        |> assign(:seq_manual_error, nil)
+       |> assign(:seq_editing_id, saved.id)
+       |> assign(:seq_manual_name, saved.name || "")
+       |> assign(:seq_manual_description, saved.description || "")
+       |> assign(:seq_manual_video_url, saved.video_url || "")
        |> push_event("set_manual_mode", %{active: true})
        |> push_event("highlight_sequence", %{steps: Enum.map(manual_steps, & &1.code)})}
     else
@@ -289,13 +296,17 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   def handle_event("delete_sequence", %{"id" => id}, socket) do
-    saved = socket.assigns.seq_saved
-    sequence = Enum.find(saved, &(&1.id == id))
+    sequence = Sequences.get_sequence(id)
 
-    if sequence do
+    if can_manage_sequence?(socket, sequence) do
       {:ok, _} = Sequences.delete_sequence(sequence)
 
-      {:noreply, assign_sequence_library(socket)}
+      socket =
+        socket
+        |> assign_sequence_library()
+        |> maybe_clear_deleted_sequence(id)
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -372,6 +383,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_view, :manual)
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
+     |> assign(:seq_editing_id, nil)
+     |> assign(:seq_manual_name, "")
+     |> assign(:seq_manual_description, "")
+     |> assign(:seq_manual_video_url, "")
      |> push_event("set_manual_mode", %{active: true})}
   end
 
@@ -412,6 +427,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     manual_steps = socket.assigns.seq_manual_steps
     user_id = socket.assigns.current_user.id
 
+    socket =
+      socket
+      |> assign(:seq_manual_name, name)
+      |> assign(:seq_manual_description, description)
+      |> assign(:seq_manual_video_url, video_url)
+
     cond do
       name == "" ->
         {:noreply, assign(socket, :seq_manual_error, "Nome é obrigatório.")}
@@ -429,18 +450,40 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
           video_url: if(video_url == "", do: nil, else: video_url)
         }
 
-        case Sequences.create_manual_sequence(user_id, attrs) do
+        result =
+          case socket.assigns.seq_editing_id do
+            nil ->
+              Sequences.create_manual_sequence(user_id, attrs)
+
+            sequence_id ->
+              sequence = Sequences.get_sequence(sequence_id)
+
+              if can_manage_sequence?(socket, sequence) do
+                Sequences.update_manual_sequence(sequence, attrs)
+              else
+                {:error, :unauthorized}
+              end
+          end
+
+        case result do
           {:ok, _saved} ->
             {:noreply,
              socket
              |> assign(:seq_manual_steps, [])
              |> assign(:seq_manual_error, nil)
+             |> assign(:seq_editing_id, nil)
+             |> assign(:seq_manual_name, "")
+             |> assign(:seq_manual_description, "")
+             |> assign(:seq_manual_video_url, "")
              |> assign(:seq_view, :library)
              |> assign_sequence_library()
              |> push_event("set_manual_mode", %{active: false})}
 
           {:error, :invalid_codes} ->
             {:noreply, assign(socket, :seq_manual_error, "Código de passo inválido.")}
+
+          {:error, :unauthorized} ->
+            {:noreply, assign(socket, :seq_manual_error, "Você não pode editar esta sequência.")}
 
           {:error, changeset} ->
             msg =
@@ -702,6 +745,35 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       select: s.code
     )
     |> OGrupoDeEstudos.Repo.all()
+  end
+
+  defp can_manage_sequence?(_socket, nil), do: false
+
+  defp can_manage_sequence?(socket, sequence) do
+    socket.assigns.is_admin or sequence.user_id == socket.assigns.current_user.id
+  end
+
+  defp maybe_clear_deleted_sequence(socket, sequence_id) do
+    active? = socket.assigns.seq_active_id == sequence_id
+    editing? = socket.assigns.seq_editing_id == sequence_id
+
+    if active? or editing? do
+      socket
+      |> assign(:seq_active, nil)
+      |> assign(:seq_active_id, nil)
+      |> assign(:seq_missing_edges, [])
+      |> assign(:seq_view, :library)
+      |> assign(:seq_manual_steps, [])
+      |> assign(:seq_manual_error, nil)
+      |> assign(:seq_editing_id, nil)
+      |> assign(:seq_manual_name, "")
+      |> assign(:seq_manual_description, "")
+      |> assign(:seq_manual_video_url, "")
+      |> push_event("clear_highlight", %{})
+      |> push_event("set_manual_mode", %{active: false})
+    else
+      socket
+    end
   end
 
   defp maybe_refresh_sequence_library(socket, true), do: assign_sequence_library(socket)

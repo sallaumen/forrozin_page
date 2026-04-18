@@ -634,6 +634,7 @@
               <%= for seq <- @seq_library do %>
                 <% owned? = MapSet.member?(@seq_owned_ids, seq.id) %>
                 <% favorited? = MapSet.member?(@seq_favorite_ids, seq.id) %>
+                <% can_manage? = owned? or @is_admin %>
                 <% active? = @seq_active_id == seq.id %>
                 <% categories = sequence_category_labels(seq) %>
                 <div
@@ -658,7 +659,7 @@
                         <% end %>
                       </div>
                     </div>
-                    <div class="flex shrink-0 gap-1">
+                    <div class="flex shrink-0 items-start gap-1">
                       <span
                         :if={owned?}
                         class="rounded-full bg-accent-orange/10 px-2 py-0.5 text-[9px] font-bold text-accent-orange"
@@ -677,6 +678,18 @@
                       >
                         exemplo
                       </span>
+                      <button
+                        :if={can_manage?}
+                        id={"seq-library-delete-#{seq.id}"}
+                        type="button"
+                        phx-click="delete_sequence"
+                        phx-value-id={seq.id}
+                        data-confirm="Deletar esta sequência? Essa ação não pode ser desfeita."
+                        aria-label={"Deletar sequência #{seq.name}"}
+                        class="inline-flex h-6 w-6 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
+                      >
+                        <.icon name="hero-x-mark" class="size-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -728,7 +741,8 @@
                       {if favorited?, do: "Favorita", else: "Favoritar"}
                     </button>
                     <button
-                      :if={owned?}
+                      :if={can_manage?}
+                      id={"seq-library-edit-#{seq.id}"}
                       type="button"
                       phx-click="edit_saved_sequence"
                       phx-value-id={seq.id}
@@ -803,8 +817,35 @@
       <%!-- View: Manual sequence builder --%>
       <%= if @seq_view == :manual do %>
         <div class="p-4">
+          <div class="mb-3 flex items-start justify-between gap-2">
+            <div>
+              <div class="text-xs font-bold text-ink-900">
+                {if @seq_editing_id, do: "Editar sequência", else: "Criar sequência"}
+              </div>
+              <p class="text-[11px] text-ink-700 leading-normal m-0 mt-1 italic">
+                Clique nos nós do grafo para montar a sequência passo a passo.
+              </p>
+            </div>
+            <button
+              :if={@seq_editing_id}
+              id="seq-manual-delete"
+              type="button"
+              phx-click="delete_sequence"
+              phx-value-id={@seq_editing_id}
+              data-confirm="Deletar esta sequência? Essa ação não pode ser desfeita."
+              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
+              aria-label="Deletar sequência em edição"
+            >
+              <.icon name="hero-x-mark" class="size-4" />
+            </button>
+          </div>
+
           <p class="text-[11px] text-ink-700 leading-normal m-0 mb-3 italic">
-            Clique nos nós do grafo para montar a sequência passo a passo.
+            <%= if @seq_editing_id do %>
+              Ajuste os dados e salve para atualizar esta sequência.
+            <% else %>
+              Dê um nome e salve quando terminar.
+            <% end %>
           </p>
 
           <%!-- Step list --%>
@@ -868,6 +909,7 @@
 
           <%!-- Save form --%>
           <form
+            id="seq-manual-form"
             phx-submit="save_manual_sequence"
             class="flex flex-col gap-2.5"
           >
@@ -877,7 +919,9 @@
               </label>
               <input
                 type="text"
+                id="seq-manual-name"
                 name="name"
+                value={@seq_manual_name}
                 placeholder="Ex: Sequência de terça"
                 class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
               />
@@ -887,11 +931,12 @@
                 Descrição (opcional)
               </label>
               <textarea
+                id="seq-manual-description"
                 name="description"
                 rows="2"
                 placeholder="Observações sobre a sequência..."
                 class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border resize-y"
-              ></textarea>
+              >{@seq_manual_description}</textarea>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
@@ -899,7 +944,9 @@
               </label>
               <input
                 type="text"
+                id="seq-manual-video-url"
                 name="video_url"
+                value={@seq_manual_video_url}
                 placeholder="https://youtu.be/..."
                 class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
               />
@@ -908,7 +955,7 @@
               type="submit"
               class="w-full py-2.5 bg-accent-green text-white border-none rounded font-serif text-xs font-bold tracking-wide cursor-pointer"
             >
-              Salvar sequência
+              {if @seq_editing_id, do: "Atualizar sequência", else: "Salvar sequência"}
             </button>
           </form>
         </div>

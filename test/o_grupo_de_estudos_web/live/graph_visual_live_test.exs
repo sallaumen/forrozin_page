@@ -8,6 +8,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     log_in_user(conn, user)
   end
 
+  defp admin_conn(conn) do
+    admin = insert(:admin)
+    log_in_user(conn, admin)
+  end
+
   defp setup_graph(_ctx) do
     cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
     section = insert(:section, category: cat)
@@ -243,6 +248,62 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute has_element?(lv, "#seq-library-card-#{saved.id}")
     end
 
+    test "sequence owner can delete from the library card", %{conn: conn} do
+      user = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+
+      sequence = insert(:sequence, name: "Sequência para deletar", user: user)
+      insert(:sequence_step, sequence: sequence, step: step, position: 1)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      lv
+      |> element("#seq-library-delete-#{sequence.id}")
+      |> render_click()
+
+      refute OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
+      refute has_element?(lv, "#seq-library-card-#{sequence.id}")
+    end
+
+    test "admin can delete a community sequence from the library card", %{conn: conn} do
+      author = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+
+      sequence = insert(:sequence, name: "Sequência moderada", user: author)
+      insert(:sequence_step, sequence: sequence, step: step, position: 1)
+
+      {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph/visual")
+
+      lv
+      |> element("#seq-library-delete-#{sequence.id}")
+      |> render_click()
+
+      refute OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
+    end
+
+    test "non-owner cannot delete a public sequence by forging the event", %{conn: conn} do
+      author = insert(:user)
+      other_user = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+
+      sequence = insert(:sequence, name: "Sequência protegida", user: author)
+      insert(:sequence_step, sequence: sequence, step: step, position: 1)
+
+      {:ok, lv, _html} = live(log_in_user(conn, other_user), ~p"/graph/visual")
+
+      refute has_element?(lv, "#seq-library-delete-#{sequence.id}")
+
+      render_click(lv, "delete_sequence", %{"id" => sequence.id})
+
+      assert OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
+    end
+
     test "redirects to /login when not authenticated", %{conn: conn} do
       {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/graph/visual")
     end
@@ -323,6 +384,71 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
         })
 
       assert html =~ "Sequência Manual"
+    end
+
+    test "editing a saved sequence pre-fills fields and updates the existing record",
+         %{conn: conn, step_a: step_a, step_b: step_b} do
+      user = insert(:user)
+
+      sequence =
+        insert(:sequence,
+          name: "Sequência antiga",
+          description: "Descrição antiga",
+          video_url: "https://example.com/antigo",
+          user: user
+        )
+
+      insert(:sequence_step, sequence: sequence, step: step_a, position: 1)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      html =
+        lv
+        |> element("#seq-library-edit-#{sequence.id}")
+        |> render_click()
+
+      assert html =~ ~s(id="seq-manual-form")
+      assert html =~ ~s(value="Sequência antiga")
+      assert html =~ "Descrição antiga"
+      assert html =~ ~s(value="https://example.com/antigo")
+
+      render_click(lv, "add_manual_step", %{"code" => step_b.code, "name" => step_b.name})
+
+      render_submit(lv, "save_manual_sequence", %{
+        "name" => "Sequência atualizada",
+        "description" => "Descrição nova",
+        "video_url" => "https://example.com/novo"
+      })
+
+      updated = OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
+
+      assert updated.name == "Sequência atualizada"
+      assert updated.description == "Descrição nova"
+      assert updated.video_url == "https://example.com/novo"
+      assert Enum.map(updated.sequence_steps, & &1.step.code) == [step_a.code, step_b.code]
+    end
+
+    test "editing mode can delete the sequence being edited", %{
+      conn: conn,
+      step_a: step_a
+    } do
+      user = insert(:user)
+      sequence = insert(:sequence, name: "Sequência em edição", user: user)
+      insert(:sequence_step, sequence: sequence, step: step_a, position: 1)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      lv
+      |> element("#seq-library-edit-#{sequence.id}")
+      |> render_click()
+
+      lv
+      |> element("#seq-manual-delete")
+      |> render_click()
+
+      refute OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
+      assert has_element?(lv, "#seq-library-search")
+      refute has_element?(lv, "#seq-manual-form")
     end
   end
 
