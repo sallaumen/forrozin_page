@@ -53,5 +53,4 @@ defmodule OGrupoDeEstudosWeb.Layouts do
     </div>
     """
   end
-
 end

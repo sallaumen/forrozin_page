@@ -1,5 +1,10 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    notification_count={assigns[:notification_count] || 0}
+  />
 
   <%!-- Hero (compact) --%>
   <div class="border-b border-ink-300/50 px-6 pt-4 pb-3 bg-ink-200">
@@ -58,7 +63,10 @@
     <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
       <div class="flex items-center gap-2 mb-3">
         <div class="flex-1 relative">
-          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
+          />
           <input
             type="text"
             phx-keyup="search_steps"
@@ -79,7 +87,8 @@
           class={[
             "py-1 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer",
             @step_category_filter == "all" && "bg-ink-800 text-white border-ink-800",
-            @step_category_filter != "all" && "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
+            @step_category_filter != "all" &&
+              "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
           ]}
         >
           Todas
@@ -91,7 +100,8 @@
             class={[
               "py-1 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer",
               @step_category_filter == cat.name && "bg-ink-800 text-white border-ink-800",
-              @step_category_filter != cat.name && "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
+              @step_category_filter != cat.name &&
+                "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
             ]}
           >
             {cat.label}
@@ -158,20 +168,32 @@
                   </.link>
                   <%= if step.suggested_by_id && step.suggested_by_id != @current_user.id do %>
                     <% is_following = MapSet.member?(@following_user_ids, step.suggested_by_id) %>
-                    <button phx-click="toggle_follow" phx-value-user-id={step.suggested_by_id}
+                    <button
+                      phx-click="toggle_follow"
+                      phx-value-user-id={step.suggested_by_id}
                       class={[
                         "text-[10px] py-0.5 px-2.5 rounded-full border transition-colors cursor-pointer",
-                        is_following && "border-accent-orange bg-accent-orange/10 text-accent-orange",
-                        !is_following && "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
-                      ]}>
+                        is_following &&
+                          "border-accent-orange bg-accent-orange/10 text-accent-orange",
+                        !is_following &&
+                          "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+                      ]}
+                    >
                       {if is_following, do: "Seguindo ✓", else: "Seguir"}
                     </button>
                   <% end %>
                   <div class="flex items-center gap-2">
-                    <button phx-click="toggle_step_like" phx-value-id={step.id}
-                      class="flex items-center gap-1">
+                    <button
+                      phx-click="toggle_step_like"
+                      phx-value-id={step.id}
+                      class="flex items-center gap-1"
+                    >
                       <.icon
-                        name={if MapSet.member?(@step_likes.liked_ids, step.id), do: "hero-heart-solid", else: "hero-heart"}
+                        name={
+                          if MapSet.member?(@step_likes.liked_ids, step.id),
+                            do: "hero-heart-solid",
+                            else: "hero-heart"
+                        }
                         class={[
                           "w-4 h-4",
                           MapSet.member?(@step_likes.liked_ids, step.id) && "text-accent-red",
@@ -182,11 +204,22 @@
                         {Map.get(@step_likes.counts, step.id, 0)}
                       </span>
                     </button>
-                    <button phx-click="toggle_step_favorite" phx-value-id={step.id}
+                    <button
+                      phx-click="toggle_step_favorite"
+                      phx-value-id={step.id}
                       class="flex items-center gap-0.5"
-                      title={if MapSet.member?(@step_favorites, step.id), do: "Remover favorito", else: "Favoritar"}>
+                      title={
+                        if MapSet.member?(@step_favorites, step.id),
+                          do: "Remover favorito",
+                          else: "Favoritar"
+                      }
+                    >
                       <.icon
-                        name={if MapSet.member?(@step_favorites, step.id), do: "hero-star-solid", else: "hero-star"}
+                        name={
+                          if MapSet.member?(@step_favorites, step.id),
+                            do: "hero-star-solid",
+                            else: "hero-star"
+                        }
                         class={[
                           "w-4 h-4",
                           MapSet.member?(@step_favorites, step.id) && "text-gold-500",
@@ -226,7 +259,10 @@
     <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
       <div class="flex items-center gap-2 mb-3">
         <div class="flex-1 relative">
-          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
+          />
           <input
             type="text"
             phx-keyup="search_sequences"
@@ -283,7 +319,10 @@
                     </div>
                     <div class="flex items-center gap-2 text-xs text-ink-500 mb-2">
                       <span>{step_count} passo(s)</span>
-                      <div :if={seq.like_count > 0} class="flex items-center gap-1 text-accent-red/80">
+                      <div
+                        :if={seq.like_count > 0}
+                        class="flex items-center gap-1 text-accent-red/80"
+                      >
                         <.icon name="hero-heart-solid" class="size-3 text-accent-red/70" />
                         <span class="font-medium tabular-nums">{seq.like_count}</span>
                       </div>
@@ -299,7 +338,8 @@
                       class={[
                         "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
                         liked && "border-accent-red/30 bg-accent-red/5 text-accent-red",
-                        !liked && "border-ink-300/50 bg-transparent text-ink-400 hover:border-accent-red/30 hover:text-accent-red"
+                        !liked &&
+                          "border-ink-300/50 bg-transparent text-ink-400 hover:border-accent-red/30 hover:text-accent-red"
                       ]}
                       title={if liked, do: "Remover like", else: "Curtir"}
                     >
@@ -315,7 +355,8 @@
                       class={[
                         "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
                         is_favorited && "border-gold-500/40 bg-gold-500/5 text-gold-500",
-                        !is_favorited && "border-ink-300/50 bg-transparent text-ink-400 hover:border-gold-500/40 hover:text-gold-500"
+                        !is_favorited &&
+                          "border-ink-300/50 bg-transparent text-ink-400 hover:border-gold-500/40 hover:text-gold-500"
                       ]}
                       title={if is_favorited, do: "Remover favorito", else: "Favoritar"}
                     >
@@ -323,7 +364,9 @@
                         name={if is_favorited, do: "hero-star-solid", else: "hero-star"}
                         class="size-5"
                       />
-                      <span class="text-xs font-medium">{if is_favorited, do: "Salvo", else: "Salvar"}</span>
+                      <span class="text-xs font-medium">
+                        {if is_favorited, do: "Salvo", else: "Salvar"}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -354,12 +397,17 @@
                   </.link>
                   <%= if seq.user_id && seq.user_id != @current_user.id do %>
                     <% is_following = MapSet.member?(@following_user_ids, seq.user_id) %>
-                    <button phx-click="toggle_follow" phx-value-user-id={seq.user_id}
+                    <button
+                      phx-click="toggle_follow"
+                      phx-value-user-id={seq.user_id}
                       class={[
                         "text-[10px] py-0.5 px-2.5 rounded-full border transition-colors cursor-pointer",
-                        is_following && "border-accent-orange bg-accent-orange/10 text-accent-orange",
-                        !is_following && "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
-                      ]}>
+                        is_following &&
+                          "border-accent-orange bg-accent-orange/10 text-accent-orange",
+                        !is_following &&
+                          "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+                      ]}
+                    >
                       {if is_following, do: "Seguindo ✓", else: "Seguir"}
                     </button>
                   <% end %>
@@ -367,8 +415,7 @@
                     navigate={~p"/graph/visual?seq=#{seq.id}"}
                     class="inline-flex items-center gap-1.5 text-xs font-medium text-accent-orange bg-accent-orange/10 border border-accent-orange/30 rounded-full py-1 px-3 no-underline hover:bg-accent-orange/20 transition-colors"
                   >
-                    <.icon name="hero-map" class="w-3.5 h-3.5" />
-                    Ver no mapa
+                    <.icon name="hero-map" class="w-3.5 h-3.5" /> Ver no mapa
                   </.link>
                   <%!-- Expand/collapse button for comments + video --%>
                   <button
@@ -376,13 +423,17 @@
                     phx-value-seq-id={seq.id}
                     class={[
                       "ml-auto flex items-center gap-1 text-xs rounded-full px-2.5 py-1 border transition-colors cursor-pointer",
-                      is_expanded && "bg-accent-orange/10 text-accent-orange border-accent-orange/30",
-                      !is_expanded && "bg-transparent text-ink-400 border-ink-300/40 hover:text-ink-700 hover:border-ink-400/50"
+                      is_expanded &&
+                        "bg-accent-orange/10 text-accent-orange border-accent-orange/30",
+                      !is_expanded &&
+                        "bg-transparent text-ink-400 border-ink-300/40 hover:text-ink-700 hover:border-ink-400/50"
                     ]}
                     title={if is_expanded, do: "Fechar", else: "Ver comentários e vídeo"}
                   >
                     <.icon
-                      name={if is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
+                      name={
+                        if is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"
+                      }
                       class="size-3.5"
                     />
                     <span>{if is_expanded, do: "Fechar", else: "Comentários"}</span>
@@ -479,10 +530,19 @@
       <%!-- Global people search --%>
       <div class="mb-4">
         <div class="relative">
-          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-          <input type="text" phx-keyup="search_people" phx-debounce="300" name="term"
-            value={@people_search} placeholder="Buscar pessoas..."
-            class="w-full pl-9 pr-3 py-2.5 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30" />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
+          />
+          <input
+            type="text"
+            phx-keyup="search_people"
+            phx-debounce="300"
+            name="term"
+            value={@people_search}
+            placeholder="Buscar pessoas..."
+            class="w-full pl-9 pr-3 py-2.5 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+          />
         </div>
 
         <%!-- Search results --%>
@@ -490,7 +550,10 @@
           <%= for person <- @people_results do %>
             <% is_following = MapSet.member?(@following_user_ids, person.id) %>
             <div class="flex items-center gap-3 p-2.5 bg-ink-50 rounded-lg border border-ink-100">
-              <.link navigate={~p"/users/#{person.username}"} class="no-underline flex items-center gap-2 flex-1 min-w-0">
+              <.link
+                navigate={~p"/users/#{person.username}"}
+                class="no-underline flex items-center gap-2 flex-1 min-w-0"
+              >
                 <div class="w-8 h-8 rounded-full bg-ink-800 flex items-center justify-center text-ink-200 text-xs font-bold flex-shrink-0">
                   {String.first(person.name || person.username) |> String.upcase()}
                 </div>
@@ -499,19 +562,25 @@
                   <p :if={person.city} class="text-xs text-ink-400">{person.city}</p>
                 </div>
               </.link>
-              <button phx-click="toggle_follow" phx-value-user-id={person.id}
+              <button
+                phx-click="toggle_follow"
+                phx-value-user-id={person.id}
                 class={[
                   "text-xs py-1 px-3 rounded-full border font-medium transition-colors cursor-pointer flex-shrink-0",
                   is_following && "border-accent-orange bg-transparent text-accent-orange",
                   !is_following && "border-accent-orange bg-accent-orange text-white"
-                ]}>
+                ]}
+              >
                 {if is_following, do: "Seguindo ✓", else: "Seguir"}
               </button>
             </div>
           <% end %>
         </div>
 
-        <p :if={@people_search != "" && @people_results == []} class="text-xs text-ink-400 italic mt-2 text-center">
+        <p
+          :if={@people_search != "" && @people_results == []}
+          class="text-xs text-ink-400 italic mt-2 text-center"
+        >
           Nenhum resultado para "{@people_search}"
         </p>
       </div>
@@ -525,7 +594,8 @@
             class={[
               "py-1.5 px-4 rounded-full text-xs font-semibold border transition-colors cursor-pointer",
               @followers_sub_tab == tab_key && "bg-accent-orange border-accent-orange text-white",
-              @followers_sub_tab != tab_key && "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+              @followers_sub_tab != tab_key &&
+                "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
             ]}
           >
             {tab_label}
@@ -536,7 +606,10 @@
       <%!-- Search bar --%>
       <div class="flex items-center gap-2 mb-4">
         <div class="flex-1 relative">
-          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
+          />
           <input
             type="text"
             phx-keyup="search_followers"
@@ -565,7 +638,8 @@
           <%= for person <- @followers_list do %>
             <% badge = Badges.primary(person.id) %>
             <% steps_count = length(OGrupoDeEstudos.Encyclopedia.list_user_steps(person.id)) %>
-            <% seqs_count = length(OGrupoDeEstudos.Sequences.list_public_user_sequences(person.id)) %>
+            <% seqs_count =
+              length(OGrupoDeEstudos.Sequences.list_public_user_sequences(person.id)) %>
             <% person_initial = person.username |> String.upcase() |> String.first() %>
             <% is_following = MapSet.member?(@followers_following_map, person.id) %>
             <div class="p-3 bg-ink-50 rounded-lg border border-ink-100 flex items-center gap-3">
@@ -579,7 +653,10 @@
               <%!-- Info --%>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <.link navigate={~p"/users/#{person.username}"} class="text-sm font-semibold text-ink-800 hover:underline no-underline">
+                  <.link
+                    navigate={~p"/users/#{person.username}"}
+                    class="text-sm font-semibold text-ink-800 hover:underline no-underline"
+                  >
                     @{person.username}
                   </.link>
                   <%= if badge do %>
@@ -603,8 +680,10 @@
                   phx-value-user-id={person.id}
                   class={[
                     "rounded-full py-1.5 px-4 text-xs font-medium border transition-colors cursor-pointer flex-shrink-0",
-                    is_following && "bg-transparent border-accent-orange text-accent-orange hover:bg-accent-orange/5",
-                    !is_following && "bg-accent-orange border-accent-orange text-white hover:bg-accent-orange/90"
+                    is_following &&
+                      "bg-transparent border-accent-orange text-accent-orange hover:bg-accent-orange/5",
+                    !is_following &&
+                      "bg-accent-orange border-accent-orange text-white hover:bg-accent-orange/90"
                   ]}
                 >
                   {if is_following, do: "Seguindo", else: "Seguir"}
@@ -621,9 +700,12 @@
   <footer class="border-t border-ink-300/25 py-6 px-6 text-center bg-ink-200 mt-auto">
     <p class="text-xs text-ink-600">
       <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
-      <span class="text-ink-400 mx-2">·</span>
-      O Grupo de Estudos
+      <span class="text-ink-400 mx-2">·</span> O Grupo de Estudos
     </p>
   </footer>
-  <.bottom_nav current_user={@current_user} current_path="/community" notification_count={assigns[:notification_count] || 0} />
+  <.bottom_nav
+    current_user={@current_user}
+    current_path="/community"
+    notification_count={assigns[:notification_count] || 0}
+  />
 </div>

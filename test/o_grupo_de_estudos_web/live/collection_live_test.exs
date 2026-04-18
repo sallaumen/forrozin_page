@@ -300,7 +300,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert step.suggested_by_id != nil
     end
 
-    test "suggested step appears in its section when expanded", %{conn: conn} do
+    test "suggested step appears in its section when expanded" do
       user = insert(:user)
       section = insert(:section, title: "Pescadas", position: 1)
       insert(:step, section: section, code: "PE-T", name: "Pescada teste", suggested_by: user)
@@ -310,7 +310,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ "Sugestão de"
     end
 
-    test "suggested step shows badge in list", %{conn: conn} do
+    test "suggested step shows badge in list" do
       user = insert(:user)
       section = insert(:section, title: "Bases", position: 1)
       insert(:step, section: section, code: "SUG-1", name: "Passo sugerido", suggested_by: user)

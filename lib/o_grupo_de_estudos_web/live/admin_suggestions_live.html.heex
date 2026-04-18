@@ -1,5 +1,11 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Sugestões" notification_count={assigns[:notification_count] || 0} />
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    title="Sugestões"
+    notification_count={assigns[:notification_count] || 0}
+  />
 
   <%!-- Content --%>
   <div class="max-w-3xl mx-auto px-6 pt-10 pb-20 w-full">
@@ -42,7 +48,6 @@
         Nenhuma sugestão encontrada.
       </p>
     <% else %>
-
       <%!-- Section: Edições de campo --%>
       <div class="mb-12">
         <p class="text-xs tracking-widest text-ink-500 uppercase mb-4 border-b border-ink-900/10 pb-2">
@@ -51,7 +56,7 @@
 
         <%= if @edit_field_suggestions == [] do %>
           <p class="text-sm text-ink-400 italic">
-            Nenhuma edição de campo <%= if @filter == :pending, do: "pendente", else: "registrada" %>.
+            Nenhuma edição de campo {if @filter == :pending, do: "pendente", else: "registrada"}.
           </p>
         <% else %>
           <div class="flex flex-col gap-2.5">
@@ -65,16 +70,24 @@
               ]}>
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-ink-500 mb-1">
-                    por <strong class="text-ink-700">@{if s.user, do: s.user.username, else: "?"}</strong>
+                    por
+                    <strong class="text-ink-700">
+                      @{if s.user, do: s.user.username, else: "?"}
+                    </strong>
                     <%= if step do %>
                       · Passo:
-                      <.link navigate={~p"/steps/#{step.code}"} class="text-ink-700 font-semibold no-underline">
+                      <.link
+                        navigate={~p"/steps/#{step.code}"}
+                        class="text-ink-700 font-semibold no-underline"
+                      >
                         {step.code} · {step.name}
                       </.link>
                     <% end %>
                   </p>
                   <p class="text-sm text-ink-800 mb-1">
-                    <span class="font-mono text-[11px] bg-ink-200 px-1 rounded text-ink-600">{s.field}</span>
+                    <span class="font-mono text-[11px] bg-ink-200 px-1 rounded text-ink-600">
+                      {s.field}
+                    </span>
                     <span class="text-ink-400 mx-1">·</span>
                     <span class="line-through text-ink-400">{s.old_value || "—"}</span>
                     <span class="text-ink-400 mx-1">→</span>
@@ -122,7 +135,7 @@
 
         <%= if @create_connection_suggestions == [] do %>
           <p class="text-sm text-ink-400 italic">
-            Nenhuma conexão nova <%= if @filter == :pending, do: "pendente", else: "registrada" %>.
+            Nenhuma conexão nova {if @filter == :pending, do: "pendente", else: "registrada"}.
           </p>
         <% else %>
           <div class="flex flex-col gap-2.5">
@@ -136,10 +149,16 @@
               ]}>
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-ink-500 mb-1">
-                    por <strong class="text-ink-700">@{if s.user, do: s.user.username, else: "?"}</strong>
+                    por
+                    <strong class="text-ink-700">
+                      @{if s.user, do: s.user.username, else: "?"}
+                    </strong>
                     <%= if source_code != "" do %>
                       · Passo de origem:
-                      <.link navigate={~p"/steps/#{source_code}"} class="text-ink-700 font-semibold no-underline">
+                      <.link
+                        navigate={~p"/steps/#{source_code}"}
+                        class="text-ink-700 font-semibold no-underline"
+                      >
                         {source_code}
                       </.link>
                     <% end %>
@@ -189,7 +208,7 @@
 
         <%= if @remove_connection_suggestions == [] do %>
           <p class="text-sm text-ink-400 italic">
-            Nenhuma remoção de conexão <%= if @filter == :pending, do: "pendente", else: "registrada" %>.
+            Nenhuma remoção de conexão {if @filter == :pending, do: "pendente", else: "registrada"}.
           </p>
         <% else %>
           <div class="flex flex-col gap-2.5">
@@ -203,10 +222,16 @@
               ]}>
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-ink-500 mb-1">
-                    por <strong class="text-ink-700">@{if s.user, do: s.user.username, else: "?"}</strong>
+                    por
+                    <strong class="text-ink-700">
+                      @{if s.user, do: s.user.username, else: "?"}
+                    </strong>
                     <%= if source_code != "" do %>
                       · Passo de origem:
-                      <.link navigate={~p"/steps/#{source_code}"} class="text-ink-700 font-semibold no-underline">
+                      <.link
+                        navigate={~p"/steps/#{source_code}"}
+                        class="text-ink-700 font-semibold no-underline"
+                      >
                         {source_code}
                       </.link>
                     <% end %>
@@ -247,7 +272,6 @@
           </div>
         <% end %>
       </div>
-
     <% end %>
   </div>
 
@@ -255,8 +279,7 @@
   <footer class="border-t border-ink-900/10 py-6 px-6 text-center bg-ink-200 mt-auto">
     <p class="text-xs text-ink-600">
       <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
-      <span class="text-ink-400 mx-2">·</span>
-      O Grupo de Estudos
+      <span class="text-ink-400 mx-2">·</span> O Grupo de Estudos
     </p>
   </footer>
 </div>

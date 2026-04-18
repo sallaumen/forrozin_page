@@ -18,10 +18,13 @@ defmodule OGrupoDeEstudosWeb.UI.PageHeaderTest do
     end
 
     test "breadcrumb slot renders content above title" do
-      html = render_component(&PageHeader.page_header/1, %{
-        title: "BF",
-        breadcrumb: [%{inner_block: fn _, _ -> ~s(<span>acervo › BF</span>) end, __slot__: :breadcrumb}]
-      })
+      html =
+        render_component(&PageHeader.page_header/1, %{
+          title: "BF",
+          breadcrumb: [
+            %{inner_block: fn _, _ -> ~s(<span>acervo › BF</span>) end, __slot__: :breadcrumb}
+          ]
+        })
 
       assert html =~ "acervo"
       bread_pos = html |> :binary.match("acervo") |> elem(0)
@@ -30,10 +33,13 @@ defmodule OGrupoDeEstudosWeb.UI.PageHeaderTest do
     end
 
     test "actions slot renders content beside title" do
-      html = render_component(&PageHeader.page_header/1, %{
-        title: "BF",
-        actions: [%{inner_block: fn _, _ -> ~s(<button>Salvar</button>) end, __slot__: :actions}]
-      })
+      html =
+        render_component(&PageHeader.page_header/1, %{
+          title: "BF",
+          actions: [
+            %{inner_block: fn _, _ -> ~s(<button>Salvar</button>) end, __slot__: :actions}
+          ]
+        })
 
       assert html =~ "Salvar"
     end

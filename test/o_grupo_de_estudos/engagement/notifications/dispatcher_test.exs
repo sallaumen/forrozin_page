@@ -12,9 +12,12 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     replier = insert(:user)
 
     {:ok, parent} = Engagement.create_step_comment(author, step.id, %{body: "I'm the parent"})
-    {:ok, _reply} = Engagement.create_step_comment(replier, step.id, %{
-      body: "I'm the reply", parent_step_comment_id: parent.id
-    })
+
+    {:ok, _reply} =
+      Engagement.create_step_comment(replier, step.id, %{
+        body: "I'm the reply",
+        parent_step_comment_id: parent.id
+      })
 
     notifications = Repo.all(from n in Notification, where: n.user_id == ^author.id)
     assert length(notifications) == 1
@@ -28,9 +31,12 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     user = insert(:user)
 
     {:ok, parent} = Engagement.create_step_comment(user, step.id, %{body: "Parent"})
-    {:ok, _reply} = Engagement.create_step_comment(user, step.id, %{
-      body: "Self reply", parent_step_comment_id: parent.id
-    })
+
+    {:ok, _reply} =
+      Engagement.create_step_comment(user, step.id, %{
+        body: "Self reply",
+        parent_step_comment_id: parent.id
+      })
 
     notifications = Repo.all(from n in Notification, where: n.user_id == ^user.id)
     assert notifications == []
@@ -148,7 +154,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     {:ok, comment} = Engagement.create_step_comment(author, step.id, %{body: "Will be gone"})
 
     comment
-    |> Ecto.Changeset.change(deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+    |> Ecto.Changeset.change(
+      deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    )
     |> Repo.update!()
 
     Engagement.toggle_like(liker.id, "step_comment", comment.id)

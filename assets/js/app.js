@@ -466,6 +466,14 @@ const GraphVisual = {
       this._clearSequenceHighlight()
     })
 
+    this.handleEvent("focus_graph_node", ({ code }) => {
+      this._focusGraphNode(code)
+    })
+
+    this.handleEvent("clear_graph_focus", () => {
+      this._clearGraphFocus()
+    })
+
     // Autocomplete helpers: server sets input value via JS push
     this.handleEvent("set_start_step_input", ({ value }) => {
       const input = document.getElementById("seq-start-input")
@@ -694,6 +702,8 @@ const GraphVisual = {
     const hook = this
     const isAdmin = el.dataset.admin === "true"
     const isEditMode = el.dataset.editMode === "true"
+    this._isAdmin = isAdmin
+    this._isEditMode = isEditMode
     let ghostSourceId = this._pendingOrphanSource || null
     this._pendingOrphanSource = null
 
@@ -943,6 +953,40 @@ const GraphVisual = {
 
     // Fit back to full graph
     cy.animate({ fit: { padding: 60 }, duration: 400 })
+  },
+
+  _focusGraphNode(code) {
+    const cy = this._cy
+    if (!cy || !code) return
+
+    if (this._seqHighlightActive) {
+      this._clearSequenceHighlight()
+      this.pushEvent("clear_highlight", {})
+    }
+
+    const node = cy.getElementById(code)
+    if (node.length === 0) {
+      this._showToast("Passo não está visível no mapa")
+      return
+    }
+
+    clearSpotlight(cy)
+    cy.nodes().unselect()
+    node.select()
+    applySpotlight(cy, node)
+    openDrawer(node, cy, this._isEditMode && this._isAdmin, this)
+
+    const neighborhood = node.closedNeighborhood()
+    cy.animate({ fit: { eles: neighborhood, padding: 120 }, duration: 350 })
+  },
+
+  _clearGraphFocus() {
+    const cy = this._cy
+    if (!cy) return
+
+    cy.nodes().unselect()
+    closeDrawer()
+    clearSpotlight(cy)
   }
 }
 
@@ -1535,4 +1579,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-

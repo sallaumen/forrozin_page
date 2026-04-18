@@ -6,6 +6,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Grouper do
     |> Enum.group_by(& &1.group_key)
     |> Enum.map(fn {_key, group} ->
       latest = Enum.max_by(group, & &1.inserted_at, NaiveDateTime)
+
       %{
         id: latest.id,
         action: latest.action,

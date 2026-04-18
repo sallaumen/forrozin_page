@@ -173,7 +173,8 @@ defmodule OGrupoDeEstudos.AdminTest do
 
       {:ok, _} = Admin.delete_step(step)
 
-      assert OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: "BF", include_deleted: true) != nil
+      assert OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: "BF", include_deleted: true) !=
+               nil
     end
   end
 

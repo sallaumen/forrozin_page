@@ -15,7 +15,9 @@ defmodule OGrupoDeEstudos.Engagement.Comments.SequenceComment do
     belongs_to :sequence, OGrupoDeEstudos.Sequences.Sequence
     belongs_to :parent_comment, __MODULE__, foreign_key: :parent_sequence_comment_id
 
-    has_many :replies, __MODULE__, foreign_key: :parent_sequence_comment_id, where: [deleted_at: nil]
+    has_many :replies, __MODULE__,
+      foreign_key: :parent_sequence_comment_id,
+      where: [deleted_at: nil]
 
     timestamps()
   end

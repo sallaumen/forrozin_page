@@ -11,7 +11,8 @@ defmodule OGrupoDeEstudos.Application do
       [
         OGrupoDeEstudosWeb.Telemetry,
         OGrupoDeEstudos.Repo,
-        {DNSCluster, query: Application.get_env(:o_grupo_de_estudos, :dns_cluster_query) || :ignore},
+        {DNSCluster,
+         query: Application.get_env(:o_grupo_de_estudos, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: OGrupoDeEstudos.PubSub},
         {Oban, Application.fetch_env!(:o_grupo_de_estudos, Oban)},
         OGrupoDeEstudosWeb.Endpoint
@@ -23,7 +24,9 @@ defmodule OGrupoDeEstudos.Application do
     result = Supervisor.start_link(children, opts)
 
     # Install error logger after Repo is up
-    OGrupoDeEstudos.Admin.ErrorLogger.install()
+    if Application.get_env(:o_grupo_de_estudos, :persist_error_logs, true) do
+      OGrupoDeEstudos.Admin.ErrorLogger.install()
+    end
 
     result
   end

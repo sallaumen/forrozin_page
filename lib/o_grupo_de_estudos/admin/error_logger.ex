@@ -56,8 +56,10 @@ defmodule OGrupoDeEstudos.Admin.ErrorLogger do
       Map.has_key?(meta, :mfa) ->
         {m, f, a} = meta.mfa
         "#{inspect(m)}.#{f}/#{a}"
+
       Map.has_key?(meta, :module) ->
         inspect(meta.module)
+
       true ->
         nil
     end

@@ -133,7 +133,9 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
   describe "step comments" do
     test "create_step_comment/3 creates a root comment", %{user: user, step: step} do
-      assert {:ok, comment} = Engagement.create_step_comment(user, step.id, %{body: "Ótimo passo!"})
+      assert {:ok, comment} =
+               Engagement.create_step_comment(user, step.id, %{body: "Ótimo passo!"})
+
       assert comment.body == "Ótimo passo!"
       assert comment.user_id == user.id
       assert comment.step_id == step.id
@@ -184,7 +186,9 @@ defmodule OGrupoDeEstudos.EngagementTest do
       {:ok, c2} = Engagement.create_step_comment(user, step.id, %{body: "Deleted"})
 
       c2
-      |> Ecto.Changeset.change(deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+      |> Ecto.Changeset.change(
+        deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      )
       |> Repo.update!()
 
       comments = Engagement.list_step_comments(step.id)
@@ -506,7 +510,9 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
       # Soft-delete c2
       c2
-      |> Ecto.Changeset.change(deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+      |> Ecto.Changeset.change(
+        deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      )
       |> Repo.update!()
 
       counts = Engagement.comment_counts_for("step", [step.id])
@@ -833,7 +839,9 @@ defmodule OGrupoDeEstudos.EngagementTest do
       Engagement.toggle_favorite(user.id, "step", step.id)
 
       step
-      |> Ecto.Changeset.change(deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+      |> Ecto.Changeset.change(
+        deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      )
       |> Repo.update!()
 
       assert Engagement.list_user_favorites(user.id, "step") == []

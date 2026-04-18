@@ -15,7 +15,9 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
         )
         |> then(fn notif ->
           notif
-          |> Ecto.Changeset.change(inserted_at: NaiveDateTime.add(now, -100, :day) |> NaiveDateTime.truncate(:second))
+          |> Ecto.Changeset.change(
+            inserted_at: NaiveDateTime.add(now, -100, :day) |> NaiveDateTime.truncate(:second)
+          )
           |> Repo.update!()
         end)
 
@@ -26,7 +28,9 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
         )
         |> then(fn notif ->
           notif
-          |> Ecto.Changeset.change(inserted_at: NaiveDateTime.add(now, -80, :day) |> NaiveDateTime.truncate(:second))
+          |> Ecto.Changeset.change(
+            inserted_at: NaiveDateTime.add(now, -80, :day) |> NaiveDateTime.truncate(:second)
+          )
           |> Repo.update!()
         end)
 
@@ -37,7 +41,9 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
         )
         |> then(fn notif ->
           notif
-          |> Ecto.Changeset.change(inserted_at: NaiveDateTime.add(now, -100, :day) |> NaiveDateTime.truncate(:second))
+          |> Ecto.Changeset.change(
+            inserted_at: NaiveDateTime.add(now, -100, :day) |> NaiveDateTime.truncate(:second)
+          )
           |> Repo.update!()
         end)
 
@@ -45,13 +51,22 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
       assert :ok = perform_job(NotificationCleanup, %{})
 
       # Verify old read notification was deleted
-      refute Repo.get(OGrupoDeEstudos.Engagement.Notifications.Notification, old_read_notification.id)
+      refute Repo.get(
+               OGrupoDeEstudos.Engagement.Notifications.Notification,
+               old_read_notification.id
+             )
 
       # Verify recent read notification still exists
-      assert Repo.get(OGrupoDeEstudos.Engagement.Notifications.Notification, recent_read_notification.id)
+      assert Repo.get(
+               OGrupoDeEstudos.Engagement.Notifications.Notification,
+               recent_read_notification.id
+             )
 
       # Verify unread notifications are preserved
-      assert Repo.get(OGrupoDeEstudos.Engagement.Notifications.Notification, old_unread_notification.id)
+      assert Repo.get(
+               OGrupoDeEstudos.Engagement.Notifications.Notification,
+               old_unread_notification.id
+             )
     end
 
     test "handles empty notification table gracefully" do
@@ -68,14 +83,19 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
         )
         |> then(fn notif ->
           notif
-          |> Ecto.Changeset.change(inserted_at: NaiveDateTime.add(now, -100, :day) |> NaiveDateTime.truncate(:second))
+          |> Ecto.Changeset.change(
+            inserted_at: NaiveDateTime.add(now, -100, :day) |> NaiveDateTime.truncate(:second)
+          )
           |> Repo.update!()
         end)
 
       assert :ok = perform_job(NotificationCleanup, %{})
 
       # Should be deleted because inserted_at is >90 days old and it's read
-      refute Repo.get(OGrupoDeEstudos.Engagement.Notifications.Notification, old_inserted_notification.id)
+      refute Repo.get(
+               OGrupoDeEstudos.Engagement.Notifications.Notification,
+               old_inserted_notification.id
+             )
     end
   end
 end

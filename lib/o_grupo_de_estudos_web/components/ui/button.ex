@@ -19,8 +19,7 @@ defmodule OGrupoDeEstudosWeb.UI.Button do
   attr :loading, :boolean, default: false
   attr :class, :any, default: nil
 
-  attr :rest, :global,
-    include: ~w(disabled phx-click phx-value-id data-confirm name value form)
+  attr :rest, :global, include: ~w(disabled phx-click phx-value-id data-confirm name value form)
 
   slot :inner_block, required: true
 
@@ -61,6 +60,9 @@ defmodule OGrupoDeEstudosWeb.UI.Button do
   defp size_classes(:lg), do: "h-12 min-h-[44px] px-5 text-base"
 
   defp variant_classes(:primary), do: "bg-ink-900 text-ink-100 hover:bg-ink-800"
-  defp variant_classes(:ghost), do: "bg-transparent text-ink-700 border border-ink-300 hover:bg-ink-100"
+
+  defp variant_classes(:ghost),
+    do: "bg-transparent text-ink-700 border border-ink-300 hover:bg-ink-100"
+
   defp variant_classes(:danger), do: "bg-accent-red text-ink-100 hover:opacity-90"
 end

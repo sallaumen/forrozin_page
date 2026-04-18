@@ -102,7 +102,14 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
     test "selecting source sets the pill", %{conn: conn} do
       step = insert(:step, code: "BF", name: "Base frontal")
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      html = render_click(lv, "select_source", %{"id" => step.id, "code" => "BF", "name" => "Base frontal"})
+
+      html =
+        render_click(lv, "select_source", %{
+          "id" => step.id,
+          "code" => "BF",
+          "name" => "Base frontal"
+        })
+
       assert html =~ "BF"
       assert html =~ "clear_source"
     end
@@ -110,7 +117,13 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
     test "clearing source removes the pill", %{conn: conn} do
       step = insert(:step, code: "BF", name: "Base frontal")
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      render_click(lv, "select_source", %{"id" => step.id, "code" => "BF", "name" => "Base frontal"})
+
+      render_click(lv, "select_source", %{
+        "id" => step.id,
+        "code" => "BF",
+        "name" => "Base frontal"
+      })
+
       html = render_click(lv, "clear_source", %{})
       assert html =~ "search_source"
       refute html =~ "clear_source"
@@ -126,7 +139,14 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
     test "selecting target sets the pill", %{conn: conn} do
       step = insert(:step, code: "SC", name: "Sacada simples")
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      html = render_click(lv, "select_target", %{"id" => step.id, "code" => "SC", "name" => "Sacada simples"})
+
+      html =
+        render_click(lv, "select_target", %{
+          "id" => step.id,
+          "code" => "SC",
+          "name" => "Sacada simples"
+        })
+
       assert html =~ "SC"
       assert html =~ "clear_target"
     end
@@ -137,8 +157,19 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
       step_a = insert(:step, code: "BF", name: "Base frontal")
       step_b = insert(:step, code: "SC", name: "Sacada simples")
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      render_click(lv, "select_source", %{"id" => step_a.id, "code" => "BF", "name" => "Base frontal"})
-      render_click(lv, "select_target", %{"id" => step_b.id, "code" => "SC", "name" => "Sacada simples"})
+
+      render_click(lv, "select_source", %{
+        "id" => step_a.id,
+        "code" => "BF",
+        "name" => "Base frontal"
+      })
+
+      render_click(lv, "select_target", %{
+        "id" => step_b.id,
+        "code" => "SC",
+        "name" => "Sacada simples"
+      })
+
       html = render_click(lv, "create_connection", %{})
       assert html =~ "BF"
       assert html =~ "SC"
@@ -157,8 +188,19 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
       step_b = insert(:step, code: "SC")
       insert(:connection, source_step: step_a, target_step: step_b)
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph")
-      render_click(lv, "select_source", %{"id" => step_a.id, "code" => "BF", "name" => "Base frontal"})
-      render_click(lv, "select_target", %{"id" => step_b.id, "code" => "SC", "name" => "Sacada simples"})
+
+      render_click(lv, "select_source", %{
+        "id" => step_a.id,
+        "code" => "BF",
+        "name" => "Base frontal"
+      })
+
+      render_click(lv, "select_target", %{
+        "id" => step_b.id,
+        "code" => "SC",
+        "name" => "Sacada simples"
+      })
+
       html = render_click(lv, "create_connection", %{})
       assert html =~ "BF"
     end

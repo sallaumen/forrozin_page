@@ -159,7 +159,11 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       assert OGrupoDeEstudos.Engagement.following?(viewer.id, profile.id)
     end
 
-    test "toggle_follow unfollows on second click", %{conn: conn, viewer: viewer, profile: profile} do
+    test "toggle_follow unfollows on second click", %{
+      conn: conn,
+      viewer: viewer,
+      profile: profile
+    } do
       OGrupoDeEstudos.Engagement.toggle_follow(viewer.id, profile.id)
       conn = logged_in_conn(conn, viewer)
 
@@ -195,7 +199,11 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
   end
 
   describe "delete comment" do
-    test "author can delete own comment via event", %{conn: conn, viewer: viewer, profile: profile} do
+    test "author can delete own comment via event", %{
+      conn: conn,
+      viewer: viewer,
+      profile: profile
+    } do
       conn = logged_in_conn(conn, viewer)
 
       OGrupoDeEstudos.Engagement.create_profile_comment(%{

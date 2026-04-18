@@ -9,7 +9,8 @@ defmodule OGrupoDeEstudosWeb.UI.Select do
   attr :name, :string, required: true
   attr :label, :string, required: true
 
-  attr :options, :list, required: true,
+  attr :options, :list,
+    required: true,
     doc: "list of {label, value} tuples"
 
   attr :value, :string, default: nil
@@ -29,7 +30,10 @@ defmodule OGrupoDeEstudosWeb.UI.Select do
 
     ~H"""
     <div data-ui="select">
-      <label for={@id} class="block text-xs font-sans font-semibold text-ink-700 mb-1 tracking-wider uppercase">
+      <label
+        for={@id}
+        class="block text-xs font-sans font-semibold text-ink-700 mb-1 tracking-wider uppercase"
+      >
         {@label}
       </label>
       <select

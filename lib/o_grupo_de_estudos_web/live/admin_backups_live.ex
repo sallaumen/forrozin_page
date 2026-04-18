@@ -79,9 +79,13 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
             connections = length(Map.get(data, "connections", []))
             sections = length(Map.get(data, "sections", []))
             "#{steps} passos, #{connections} conexões, #{sections} seções"
-          _ -> "formato inválido"
+
+          _ ->
+            "formato inválido"
         end
-      _ -> "erro ao ler"
+
+      _ ->
+        "erro ao ler"
     end
   end
 

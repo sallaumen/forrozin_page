@@ -1,5 +1,11 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Backups" notification_count={assigns[:notification_count] || 0} />
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    title="Backups"
+    notification_count={assigns[:notification_count] || 0}
+  />
   <.flash kind={:info} flash={@flash} />
   <.flash kind={:error} flash={@flash} />
 
@@ -79,7 +85,8 @@
                   class={[
                     "px-3 py-1.5 rounded cursor-pointer font-serif text-xs font-semibold whitespace-nowrap border",
                     suspicious?(backup) && "bg-accent-red/10 text-accent-red border-accent-red/30",
-                    !suspicious?(backup) && "bg-transparent text-accent-orange border-accent-orange"
+                    !suspicious?(backup) &&
+                      "bg-transparent text-accent-orange border-accent-orange"
                   ]}
                 >
                   Restaurar
@@ -119,8 +126,7 @@
   <footer class="border-t border-ink-900/10 p-6 text-center bg-ink-200 mt-auto">
     <p class="text-xs text-ink-600">
       <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
-      <span class="text-ink-400 mx-2">·</span>
-      O Grupo de Estudos
+      <span class="text-ink-400 mx-2">·</span> O Grupo de Estudos
     </p>
   </footer>
 </div>

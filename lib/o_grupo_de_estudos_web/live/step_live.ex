@@ -23,7 +23,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     case Encyclopedia.fetch_step_with_details(code, admin: admin) do
       {:ok, _} ->
         step =
-          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts, :last_edited_by])
+          StepQuery.get_by(
+            code: code,
+            preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
+          )
 
         can_edit = admin or step.suggested_by_id == user_id
 
@@ -111,26 +114,26 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       {:noreply, socket}
     else
       case Admin.update_step(socket.assigns.step, params) do
-      {:ok, updated} ->
-        updated =
-          StepQuery.get_by(
-            code: updated.code,
-            preload: [
-              :category,
-              :technical_concepts,
-              :suggested_by,
-              connections_as_source: :target_step,
-              connections_as_target: :source_step
-            ]
-          )
+        {:ok, updated} ->
+          updated =
+            StepQuery.get_by(
+              code: updated.code,
+              preload: [
+                :category,
+                :technical_concepts,
+                :suggested_by,
+                connections_as_source: :target_step,
+                connections_as_target: :source_step
+              ]
+            )
 
-        {:noreply,
-         assign(socket, step: updated, page_title: updated.name)
-         |> put_flash(:info, "Passo atualizado")}
+          {:noreply,
+           assign(socket, step: updated, page_title: updated.name)
+           |> put_flash(:info, "Passo atualizado")}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Erro ao salvar")}
-    end
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Erro ao salvar")}
+      end
     end
   end
 
@@ -506,7 +509,9 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   def handle_event("start_suggest", %{"field" => field}, socket) do
     step = socket.assigns.step
     current_value = Map.get(step, String.to_existing_atom(field)) || ""
-    {:noreply, assign(socket, suggesting_field: field, suggestion_value: to_string(current_value))}
+
+    {:noreply,
+     assign(socket, suggesting_field: field, suggestion_value: to_string(current_value))}
   end
 
   def handle_event("cancel_suggest", _, socket) do
@@ -657,7 +662,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
         step =
-          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts, :last_edited_by])
+          StepQuery.get_by(
+            code: code,
+            preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
+          )
 
         out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
         inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])

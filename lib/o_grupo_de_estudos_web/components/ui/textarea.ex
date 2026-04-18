@@ -16,8 +16,7 @@ defmodule OGrupoDeEstudosWeb.UI.Textarea do
   attr :errors, :list, default: []
   attr :class, :any, default: nil
 
-  attr :rest, :global,
-    include: ~w(placeholder required disabled minlength maxlength)
+  attr :rest, :global, include: ~w(placeholder required disabled minlength maxlength)
 
   def textarea(assigns) do
     assigns =
@@ -27,7 +26,10 @@ defmodule OGrupoDeEstudosWeb.UI.Textarea do
 
     ~H"""
     <div data-ui="textarea">
-      <label for={@id} class="block text-xs font-sans font-semibold text-ink-700 mb-1 tracking-wider uppercase">
+      <label
+        for={@id}
+        class="block text-xs font-sans font-semibold text-ink-700 mb-1 tracking-wider uppercase"
+      >
         {@label}
       </label>
       <textarea

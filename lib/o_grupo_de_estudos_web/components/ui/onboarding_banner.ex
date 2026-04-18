@@ -21,8 +21,10 @@ defmodule OGrupoDeEstudosWeb.UI.OnboardingBanner do
               Explore passos, descubra conexões no mapa e contribua com a comunidade.
             </p>
           </div>
-          <a href="/about"
-            class="text-xs font-medium text-gold-500 bg-gold-500/10 border border-gold-500/30 rounded-full py-1.5 px-4 no-underline hover:bg-gold-500/20 flex-shrink-0 font-sans">
+          <a
+            href="/about"
+            class="text-xs font-medium text-gold-500 bg-gold-500/10 border border-gold-500/30 rounded-full py-1.5 px-4 no-underline hover:bg-gold-500/20 flex-shrink-0 font-sans"
+          >
             Como funciona
           </a>
           <button

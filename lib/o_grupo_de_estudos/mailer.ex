@@ -23,7 +23,8 @@ defmodule OGrupoDeEstudos.Mailer do
   end
 
   defp filtrar_local?(email) do
-    Application.get_env(:o_grupo_de_estudos, :filtrar_emails_teste, false) and dominio_teste?(email)
+    Application.get_env(:o_grupo_de_estudos, :filtrar_emails_teste, false) and
+      dominio_teste?(email)
   end
 
   defp dominio_teste?(email) do

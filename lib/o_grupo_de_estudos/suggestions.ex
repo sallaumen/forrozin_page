@@ -39,11 +39,14 @@ defmodule OGrupoDeEstudos.Suggestions do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
     Multi.new()
-    |> Multi.update(:suggestion, Suggestion.review_changeset(suggestion, %{
-      status: "approved",
-      reviewed_by_id: admin.id,
-      reviewed_at: now
-    }))
+    |> Multi.update(
+      :suggestion,
+      Suggestion.review_changeset(suggestion, %{
+        status: "approved",
+        reviewed_by_id: admin.id,
+        reviewed_at: now
+      })
+    )
     |> Multi.run(:apply, fn _repo, %{suggestion: s} ->
       apply_suggestion(s)
     end)

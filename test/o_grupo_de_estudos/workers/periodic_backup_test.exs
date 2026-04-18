@@ -5,7 +5,10 @@ defmodule OGrupoDeEstudos.Workers.PeriodicBackupTest do
 
   setup do
     dir =
-      Path.join(System.tmp_dir!(), "o_grupo_de_estudos_backup_worker_#{System.unique_integer([:positive])}")
+      Path.join(
+        System.tmp_dir!(),
+        "o_grupo_de_estudos_backup_worker_#{System.unique_integer([:positive])}"
+      )
 
     File.mkdir_p!(dir)
     on_exit(fn -> File.rm_rf!(dir) end)

@@ -66,7 +66,10 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   def handle_event("load_more", _, socket) do
     user = socket.assigns.current_user
     page = socket.assigns.page + 1
-    more_raw = Engagement.list_notifications(user.id, limit: @page_size, offset: page * @page_size)
+
+    more_raw =
+      Engagement.list_notifications(user.id, limit: @page_size, offset: page * @page_size)
+
     all_raw = socket.assigns.raw_notifications ++ more_raw
     grouped = Grouper.group(all_raw)
 

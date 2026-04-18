@@ -29,7 +29,11 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
       %{label: "Mapa", path: "/graph/visual", icon: "hero-map"},
       %{label: "Comunidade", path: "/community", icon: "hero-users"},
       %{label: "Alertas", path: "/notifications", icon: "hero-bell"},
-      %{label: "Perfil", path: "/users/#{assigns.current_user.username}", icon: "hero-user-circle"}
+      %{
+        label: "Perfil",
+        path: "/users/#{assigns.current_user.username}",
+        icon: "hero-user-circle"
+      }
     ]
 
     assigns = assign(assigns, :tabs, tabs)
@@ -66,7 +70,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
               "animate-notification-pop pointer-events-none"
             ]}
           >
-            <%= if @notification_count > 99, do: "99+", else: @notification_count %>
+            {if @notification_count > 99, do: "99+", else: @notification_count}
           </span>
         </li>
       </ul>

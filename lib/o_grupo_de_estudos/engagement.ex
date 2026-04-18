@@ -17,7 +17,14 @@ defmodule OGrupoDeEstudos.Engagement do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Authorization.Policy
 
-  alias OGrupoDeEstudos.Engagement.{Favorite, Follow, Like, LikeQuery, ProfileComment, ProfileCommentQuery}
+  alias OGrupoDeEstudos.Engagement.{
+    Favorite,
+    Follow,
+    Like,
+    LikeQuery,
+    ProfileComment,
+    ProfileCommentQuery
+  }
 
   alias OGrupoDeEstudos.Engagement.Comments.{
     StepComment,
@@ -488,11 +495,14 @@ defmodule OGrupoDeEstudos.Engagement do
       nil ->
         result =
           Multi.new()
-          |> Multi.insert(:favorite, Favorite.changeset(%Favorite{}, %{
-            user_id: user_id,
-            favoritable_type: favoritable_type,
-            favoritable_id: favoritable_id
-          }))
+          |> Multi.insert(
+            :favorite,
+            Favorite.changeset(%Favorite{}, %{
+              user_id: user_id,
+              favoritable_type: favoritable_type,
+              favoritable_id: favoritable_id
+            })
+          )
           |> Multi.run(:like, fn _repo, _changes ->
             if LikeQuery.exists?(user_id, favoritable_type, favoritable_id) do
               {:ok, :already_liked}
@@ -568,7 +578,7 @@ defmodule OGrupoDeEstudos.Engagement do
       on: f.favoritable_id == s.id and f.favoritable_type == "sequence",
       where: f.user_id == ^user_id and is_nil(s.deleted_at),
       order_by: [desc: f.inserted_at],
-      preload: [:user, sequence_steps: :step]
+      preload: [:user, sequence_steps: [step: :category]]
     )
     |> Repo.all()
   end

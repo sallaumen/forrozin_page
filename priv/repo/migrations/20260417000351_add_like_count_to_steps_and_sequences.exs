@@ -29,13 +29,13 @@ defmodule OGrupoDeEstudos.Repo.Migrations.AddLikeCountToStepsAndSequences do
     )
 
     create index(:steps, ["like_count DESC", "inserted_at DESC"],
-      name: :steps_engagement_idx,
-      where: "status = 'published' AND wip = false"
-    )
+             name: :steps_engagement_idx,
+             where: "status = 'published' AND wip = false"
+           )
 
     create index(:sequences, ["like_count DESC", "inserted_at DESC"],
-      name: :sequences_engagement_idx,
-      where: "deleted_at IS NULL"
-    )
+             name: :sequences_engagement_idx,
+             where: "deleted_at IS NULL"
+           )
   end
 end

@@ -8,6 +8,7 @@ defmodule OGrupoDeEstudosWeb.RootLayoutTest do
       {:ok, _view, html} = live(conn, ~p"/")
 
       assert html =~ ~s(<meta name="viewport")
+
       assert html =~ "viewport-fit=cover",
              "viewport meta should include viewport-fit=cover to enable safe-area-inset"
     end
@@ -24,10 +25,13 @@ defmodule OGrupoDeEstudosWeb.RootLayoutTest do
 
       assert html =~ ~s(<link rel="preload"),
              "root layout should include a <link rel=\"preload\"> for fonts"
+
       assert html =~ "Inter-Variable.woff2",
              "root layout should preload Inter-Variable.woff2 to avoid FOIT"
+
       assert html =~ ~s(as="font"),
              "preload link should declare as=\"font\""
+
       assert html =~ "crossorigin",
              "preload link for font must have crossorigin attribute"
     end
@@ -37,6 +41,7 @@ defmodule OGrupoDeEstudosWeb.RootLayoutTest do
 
       assert html =~ ~s(<link rel="manifest"),
              "root layout should reference /manifest.json"
+
       assert html =~ "manifest.json"
     end
   end

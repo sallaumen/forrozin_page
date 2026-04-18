@@ -45,7 +45,11 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
 
   def handle_event("select_source", %{"id" => id, "code" => code, "name" => name}, socket) do
     {:noreply,
-     assign(socket, source_selected: %{id: id, code: code, name: name}, source_search: "", source_results: [])}
+     assign(socket,
+       source_selected: %{id: id, code: code, name: name},
+       source_search: "",
+       source_results: []
+     )}
   end
 
   def handle_event("clear_source", _params, socket) do
@@ -67,7 +71,11 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
 
   def handle_event("select_target", %{"id" => id, "code" => code, "name" => name}, socket) do
     {:noreply,
-     assign(socket, target_selected: %{id: id, code: code, name: name}, target_search: "", target_results: [])}
+     assign(socket,
+       target_selected: %{id: id, code: code, name: name},
+       target_search: "",
+       target_results: []
+     )}
   end
 
   def handle_event("clear_target", _params, socket) do

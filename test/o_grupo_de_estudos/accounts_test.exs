@@ -1,8 +1,6 @@
 defmodule OGrupoDeEstudos.AccountsTest do
   use OGrupoDeEstudos.DataCase, async: true
 
-  import Swoosh.TestAssertions
-
   alias OGrupoDeEstudos.Accounts
 
   @valid_attrs %{
@@ -54,7 +52,7 @@ defmodule OGrupoDeEstudos.AccountsTest do
 
   describe "validate_confirmation_token/1" do
     test "confirms email with valid token" do
-      user = insert(:user, confirmed_at: nil, confirmation_token: "valid_token_123")
+      insert(:user, confirmed_at: nil, confirmation_token: "valid_token_123")
       assert {:ok, confirmed} = Accounts.validate_confirmation_token("valid_token_123")
       assert confirmed.confirmed_at != nil
       assert confirmed.confirmation_token == nil

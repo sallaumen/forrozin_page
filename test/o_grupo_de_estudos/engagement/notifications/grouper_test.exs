@@ -10,9 +10,29 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.GrouperTest do
     target_id = Ecto.UUID.generate()
     receiver = insert(:user)
 
-    n1 = insert(:notification, actor: user1, user: receiver, group_key: "like:sc:#{target_id}", action: "liked_comment")
-    n2 = insert(:notification, actor: user2, user: receiver, group_key: "like:sc:#{target_id}", action: "liked_comment")
-    n3 = insert(:notification, actor: user3, user: receiver, group_key: "other:key", action: "replied_comment")
+    n1 =
+      insert(:notification,
+        actor: user1,
+        user: receiver,
+        group_key: "like:sc:#{target_id}",
+        action: "liked_comment"
+      )
+
+    n2 =
+      insert(:notification,
+        actor: user2,
+        user: receiver,
+        group_key: "like:sc:#{target_id}",
+        action: "liked_comment"
+      )
+
+    n3 =
+      insert(:notification,
+        actor: user3,
+        user: receiver,
+        group_key: "other:key",
+        action: "replied_comment"
+      )
 
     grouped = Grouper.group([n1, n2, n3])
     assert length(grouped) == 2
@@ -26,7 +46,13 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.GrouperTest do
     receiver = insert(:user)
 
     n1 = insert(:notification, user: receiver, group_key: "like:sc:#{target_id}", read_at: nil)
-    n2 = insert(:notification, user: receiver, group_key: "like:sc:#{target_id}", read_at: NaiveDateTime.utc_now())
+
+    n2 =
+      insert(:notification,
+        user: receiver,
+        group_key: "like:sc:#{target_id}",
+        read_at: NaiveDateTime.utc_now()
+      )
 
     [group] = Grouper.group([n1, n2])
     refute group.read

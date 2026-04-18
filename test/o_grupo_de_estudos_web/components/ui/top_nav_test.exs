@@ -12,33 +12,36 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
 
   describe "top_nav/1" do
     test "renders brand link to /collection" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :primary
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary
+        })
 
       assert html =~ ~s(href="/collection")
       assert html =~ "O Grupo de Estudos"
     end
 
     test "has data-ui attribute with data-mode" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :primary
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary
+        })
 
       assert html =~ ~s(data-ui="top-nav")
       assert html =~ ~s(data-mode="primary")
     end
 
     test "desktop nav includes Acervo, Mapa, Comunidade links" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :primary
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary
+        })
 
       assert html =~ "Acervo"
       assert html =~ "Mapa"
@@ -46,11 +49,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
     end
 
     test "admin sees admin links when is_admin=true" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: true,
-        nav_mode: :primary
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: true,
+          nav_mode: :primary
+        })
 
       assert html =~ "Conexões"
       assert html =~ ~s(href="/admin/links")
@@ -58,11 +62,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
     end
 
     test "non-admin does NOT see admin links" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :primary
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary
+        })
 
       refute html =~ "Conexões"
       refute html =~ "/admin/links"
@@ -70,11 +75,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
     end
 
     test "greeting + settings + logout always present for authenticated user" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :primary
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary
+        })
 
       assert html =~ "Tavano"
       assert html =~ ~s(href="/users/tavano")
@@ -83,33 +89,36 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
     end
 
     test "detail mode renders back button (data-ui=\"back-button\")" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :detail,
-        title: "BF — Base Fundamental"
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :detail,
+          title: "BF — Base Fundamental"
+        })
 
       assert html =~ ~s(data-ui="back-button")
     end
 
     test "detail mode shows title when provided" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :detail,
-        title: "Configurações"
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :detail,
+          title: "Configurações"
+        })
 
       assert html =~ "Configurações"
     end
 
     test "detail mode without title renders without error" do
-      html = render_component(&TopNav.top_nav/1, %{
-        current_user: user(),
-        is_admin: false,
-        nav_mode: :detail
-      })
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :detail
+        })
 
       assert html =~ ~s(data-mode="detail")
     end

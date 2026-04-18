@@ -21,15 +21,17 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
       {:ok, socket |> put_flash(:error, "Acesso restrito") |> redirect(to: ~p"/collection")}
     else
       errors = load_errors(0)
-      {:ok, assign(socket,
-        page_title: "Erros do Sistema",
-        is_admin: true,
-        nav_mode: :primary,
-        errors: errors,
-        page: 0,
-        has_more: length(errors) == @page_size,
-        expanded: nil
-      )}
+
+      {:ok,
+       assign(socket,
+         page_title: "Erros do Sistema",
+         is_admin: true,
+         nav_mode: :primary,
+         errors: errors,
+         page: 0,
+         has_more: length(errors) == @page_size,
+         expanded: nil
+       )}
     end
   end
 
@@ -37,11 +39,13 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   def handle_event("load_more", _, socket) do
     page = socket.assigns.page + 1
     more = load_errors(page)
-    {:noreply, assign(socket,
-      page: page,
-      errors: socket.assigns.errors ++ more,
-      has_more: length(more) == @page_size
-    )}
+
+    {:noreply,
+     assign(socket,
+       page: page,
+       errors: socket.assigns.errors ++ more,
+       has_more: length(more) == @page_size
+     )}
   end
 
   def handle_event("toggle_expand", %{"id" => id}, socket) do
@@ -51,12 +55,15 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
 
   def handle_event("clear_all", _, socket) do
     Repo.delete_all(ErrorLog)
-    {:noreply, assign(socket, errors: [], page: 0, has_more: false)
+
+    {:noreply,
+     assign(socket, errors: [], page: 0, has_more: false)
      |> put_flash(:info, "Todos os erros foram limpos.")}
   end
 
   def handle_event("copy_error", %{"id" => id}, socket) do
     error = Enum.find(socket.assigns.errors, &(&1.id == id))
+
     if error do
       text = format_for_copy(error)
       {:noreply, push_event(socket, "copy_to_clipboard", %{text: text})}
@@ -90,6 +97,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
 
   defp time_ago(datetime) do
     diff = NaiveDateTime.diff(NaiveDateTime.utc_now(), datetime, :second)
+
     cond do
       diff < 60 -> "agora"
       diff < 3600 -> "#{div(diff, 60)}min"

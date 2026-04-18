@@ -40,3 +40,8 @@ config :o_grupo_de_estudos, Oban, testing: :inline
 
 # Mailer — captura emails nos testes via Swoosh.TestAssertions
 config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Test
+
+# Avoid DB writes from detached processes during SQL Sandbox tests.
+config :o_grupo_de_estudos,
+  async_device_tracking: false,
+  persist_error_logs: false

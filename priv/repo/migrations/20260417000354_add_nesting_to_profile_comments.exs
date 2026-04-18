@@ -13,9 +13,9 @@ defmodule OGrupoDeEstudos.Repo.Migrations.AddNestingToProfileComments do
     create index(:profile_comments, [:parent_profile_comment_id])
 
     create index(:profile_comments, ["like_count DESC", "inserted_at DESC"],
-      name: :profile_comments_engagement_idx,
-      where: "deleted_at IS NULL"
-    )
+             name: :profile_comments_engagement_idx,
+             where: "deleted_at IS NULL"
+           )
 
     execute(
       """

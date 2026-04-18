@@ -21,13 +21,13 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateStepComments do
     create index(:step_comments, [:parent_step_comment_id])
 
     create index(:step_comments, [:step_id, "like_count DESC", "inserted_at DESC"],
-      name: :step_comments_engagement_idx,
-      where: "deleted_at IS NULL"
-    )
+             name: :step_comments_engagement_idx,
+             where: "deleted_at IS NULL"
+           )
 
     create index(:step_comments, [:parent_step_comment_id, :inserted_at],
-      name: :step_comments_parent_idx,
-      where: "parent_step_comment_id IS NOT NULL"
-    )
+             name: :step_comments_parent_idx,
+             where: "parent_step_comment_id IS NOT NULL"
+           )
   end
 end

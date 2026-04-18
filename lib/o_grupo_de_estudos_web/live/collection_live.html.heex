@@ -1,5 +1,10 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    notification_count={assigns[:notification_count] || 0}
+  />
   <.onboarding_banner />
   <%!-- Secondary toolbar: page-specific actions (admin) --%>
   <%= if @is_admin do %>
@@ -77,11 +82,15 @@
           <button
             phx-click="filter"
             phx-value-category={cat.name}
-            style={@category_filter == cat.name && "background: #{cat.color}; border-color: transparent;"}
+            style={
+              @category_filter == cat.name &&
+                "background: #{cat.color}; border-color: transparent;"
+            }
             class={[
               "inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded-full cursor-pointer font-serif italic tracking-tight border",
               @category_filter == cat.name && "text-ink-100 font-bold",
-              @category_filter != cat.name && "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
+              @category_filter != cat.name &&
+                "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
             ]}
           >
             {cat.label}
@@ -106,7 +115,11 @@
           </button>
           <button
             phx-click="toggle_suggest"
-            style={if @suggest_mode, do: "border-color: #c0392b; background: #c0392b10; color: #c0392b;", else: "border-color: #8e44ad; background: #8e44ad; color: white;"}
+            style={
+              if @suggest_mode,
+                do: "border-color: #c0392b; background: #c0392b10; color: #c0392b;",
+                else: "border-color: #8e44ad; background: #8e44ad; color: white;"
+            }
             class="text-xs py-2 px-4 rounded-full cursor-pointer font-serif font-bold tracking-wide border-2 transition-all"
           >
             {if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir um passo"}
@@ -117,7 +130,10 @@
   </div>
 
   <%!-- Suggestion form — always in DOM, hidden via CSS to preserve inputs --%>
-  <div class={["max-w-4xl mx-auto p-4 my-3 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md", !@suggest_mode && "hidden"]}>
+  <div class={[
+    "max-w-4xl mx-auto p-4 my-3 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md",
+    !@suggest_mode && "hidden"
+  ]}>
     <div class="text-xs font-bold uppercase tracking-widest mb-3" style="color: #8e44ad;">
       Sugerir novo passo
     </div>
@@ -185,7 +201,10 @@
       </form>
     </div>
     <%!-- Inline error message --%>
-    <div :if={@suggest_error} class="mt-2 py-2 px-3 bg-accent-red/10 border border-accent-red/30 rounded text-sm text-accent-red font-sans">
+    <div
+      :if={@suggest_error}
+      class="mt-2 py-2 px-3 bg-accent-red/10 border border-accent-red/30 rounded text-sm text-accent-red font-sans"
+    >
       {@suggest_error}
     </div>
   </div>
@@ -289,12 +308,13 @@
   </div>
 
   <%!-- Drawer --%>
-  <div class={[
-    "fixed top-[110px] right-0 w-[380px] max-w-screen h-[calc(100vh-110px)] z-40",
-    "bg-ink-50 border-l border-ink-200 shadow-lg overflow-y-auto p-6 font-serif",
-    "transition-transform duration-200"
-  ]}
-  style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
+  <div
+    class={[
+      "fixed top-[110px] right-0 w-[380px] max-w-screen h-[calc(100vh-110px)] z-40",
+      "bg-ink-50 border-l border-ink-200 shadow-lg overflow-y-auto p-6 font-serif",
+      "transition-transform duration-200"
+    ]}
+    style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
   >
     <button
       phx-click="close_drawer"
@@ -314,20 +334,32 @@
           <div class="text-xl font-bold text-ink-900 leading-snug flex-1">
             {@drawer_item.name}
           </div>
-          <button phx-click="toggle_drawer_like"
+          <button
+            phx-click="toggle_drawer_like"
             class="p-1.5 rounded-lg border border-ink-200 hover:border-accent-red/40 transition-colors"
-            title={if @drawer_liked, do: "Remover curtida", else: "Curtir"}>
+            title={if @drawer_liked, do: "Remover curtida", else: "Curtir"}
+          >
             <.icon
               name={if @drawer_liked, do: "hero-heart-solid", else: "hero-heart"}
-              class={["w-5 h-5", @drawer_liked && "text-accent-red", !@drawer_liked && "text-ink-400"]}
+              class={[
+                "w-5 h-5",
+                @drawer_liked && "text-accent-red",
+                !@drawer_liked && "text-ink-400"
+              ]}
             />
           </button>
-          <button phx-click="toggle_drawer_favorite"
+          <button
+            phx-click="toggle_drawer_favorite"
             class="p-1.5 rounded-lg border border-ink-200 hover:border-gold-500/40 transition-colors"
-            title={if @drawer_favorited, do: "Remover favorito", else: "Favoritar"}>
+            title={if @drawer_favorited, do: "Remover favorito", else: "Favoritar"}
+          >
             <.icon
               name={if @drawer_favorited, do: "hero-star-solid", else: "hero-star"}
-              class={["w-5 h-5", @drawer_favorited && "text-gold-500", !@drawer_favorited && "text-ink-400"]}
+              class={[
+                "w-5 h-5",
+                @drawer_favorited && "text-gold-500",
+                !@drawer_favorited && "text-ink-400"
+              ]}
             />
           </button>
         </div>
@@ -354,7 +386,11 @@
               class="no-underline flex items-center gap-2"
             >
               <span
-                style={if @drawer_item.approved, do: "background: #27ae60;", else: "background: #8e44ad;"}
+                style={
+                  if @drawer_item.approved,
+                    do: "background: #27ae60;",
+                    else: "background: #8e44ad;"
+                }
                 class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold font-serif flex-shrink-0"
               >
                 {author_initial}
@@ -673,9 +709,12 @@
   <footer class="border-t border-ink-300/40 p-6 text-center bg-ink-200 mt-auto">
     <p class="text-xs text-ink-600">
       <a href="/about" class="text-ink-500 no-underline hover:text-ink-900">Quem somos</a>
-      <span class="text-ink-400 mx-2">·</span>
-      O Grupo de Estudos
+      <span class="text-ink-400 mx-2">·</span> O Grupo de Estudos
     </p>
   </footer>
-  <.bottom_nav current_user={@current_user} current_path="/collection" notification_count={assigns[:notification_count] || 0} />
+  <.bottom_nav
+    current_user={@current_user}
+    current_path="/collection"
+    notification_count={assigns[:notification_count] || 0}
+  />
 </div>

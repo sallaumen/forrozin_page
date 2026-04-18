@@ -18,7 +18,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     is_admin = Accounts.admin?(socket.assigns.current_user)
     graph = Encyclopedia.build_graph()
 
-    seq_saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
     liked_codes = Engagement.liked_step_codes(socket.assigns.current_user.id)
 
     {:ok,
@@ -28,10 +27,17 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:edit_mode, false)
      |> assign(:seq_panel, true)
      |> assign(:seq_mobile_visible, false)
-     |> assign(:seq_view, :saved)
+     |> assign(:seq_view, :library)
      |> assign(:seq_results, [])
      |> assign(:seq_warnings, [])
-     |> assign(:seq_saved, seq_saved)
+     |> assign(:seq_saved, [])
+     |> assign(:seq_library, [])
+     |> assign(:seq_library_all, [])
+     |> assign(:seq_library_search, "")
+     |> assign(:seq_library_origin_filter, "all")
+     |> assign(:seq_library_category_filter, "all")
+     |> assign(:seq_owned_ids, MapSet.new())
+     |> assign(:seq_favorite_ids, MapSet.new())
      |> assign(:seq_active, nil)
      |> assign(:seq_active_id, nil)
      |> assign(:seq_saving, nil)
@@ -40,14 +46,19 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_required_codes, [])
      |> assign(:seq_required_search, "")
      |> assign(:seq_required_suggestions, [])
+     |> assign(:graph_search_query, "")
+     |> assign(:graph_search_results, [])
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
      |> assign(:seq_missing_edges, [])
      |> assign(:seq_favorites_list, [])
      |> assign(:liked_step_codes, liked_codes)
      |> assign_graph_data(graph, false)
+     |> assign_sequence_library()
      |> push_event("set_liked_steps", %{codes: liked_codes})
-     |> push_event("set_favorited_steps", %{codes: favorited_step_codes(socket.assigns.current_user.id)})}
+     |> push_event("set_favorited_steps", %{
+       codes: favorited_step_codes(socket.assigns.current_user.id)
+     })}
   end
 
   @impl true
@@ -61,17 +72,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         step_codes = Enum.map(steps, & &1.step.code)
         step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
 
-        # Determine if this is user's own sequence or a favorited one
-        is_own = saved.user_id == socket.assigns.current_user.id
-        view = if is_own, do: :saved, else: :favorites
-
-        # Load favorites list if needed
-        favorites = if view == :favorites do
-          Engagement.list_user_favorites(socket.assigns.current_user.id, "sequence")
-        else
-          socket.assigns.seq_favorites_list
-        end
-
         edges = Map.get(socket.assigns, :edges, [])
         missing = find_missing_edges(step_codes, edges)
 
@@ -82,8 +82,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
          |> assign(:seq_missing_edges, missing)
          |> assign(:seq_panel, true)
          |> assign(:seq_mobile_visible, true)
-         |> assign(:seq_view, view)
-         |> assign(:seq_favorites_list, favorites)
+         |> assign(:seq_view, :library)
          |> push_event("highlight_sequence", %{steps: step_codes})}
     end
   end
@@ -94,18 +93,13 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   def handle_event("toggle_seq_panel", _params, socket) do
     new_open = not socket.assigns.seq_panel
 
-    saved =
-      if new_open,
-        do: Sequences.list_user_sequences(socket.assigns.current_user.id),
-        else: socket.assigns.seq_saved
-
     socket =
       socket
       |> assign(:seq_panel, new_open)
-      |> assign(:seq_saved, saved)
-      |> assign(:seq_view, :saved)
+      |> assign(:seq_view, :library)
       |> assign(:seq_manual_steps, [])
       |> assign(:seq_manual_error, nil)
+      |> maybe_refresh_sequence_library(new_open)
 
     socket =
       if not new_open,
@@ -134,7 +128,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     required_codes = socket.assigns.seq_required_codes
 
     max_bf = parse_int(Map.get(params, "max_bf_visits", "1"), 1)
-    include_community = Map.get(params, "include_community") in ["true", "on"]
 
     gen_params = %{
       start_code: start_code,
@@ -143,8 +136,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       required_codes: required_codes,
       allow_repeats: allow_repeats,
       cyclic: cyclic,
-      max_bf_visits: max_bf,
-      include_community: include_community
+      max_bf_visits: max_bf
     }
 
     {:ok, sequences, warnings} = Sequences.generate(gen_params)
@@ -215,7 +207,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     end
   end
 
-  def handle_event("create_missing_connection", %{"source" => src_code, "target" => tgt_code}, socket) do
+  def handle_event(
+        "create_missing_connection",
+        %{"source" => src_code, "target" => tgt_code},
+        socket
+      ) do
     if socket.assigns.is_admin do
       alias OGrupoDeEstudos.Encyclopedia.StepQuery
       source = StepQuery.get_by(code: src_code)
@@ -229,7 +225,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
         # Reload graph edges + recalculate missing
         graph = Encyclopedia.build_graph()
-        step_codes = if socket.assigns.seq_active, do: Enum.map(socket.assigns.seq_active, & &1.code), else: []
+
+        step_codes =
+          if socket.assigns.seq_active,
+            do: Enum.map(socket.assigns.seq_active, & &1.code),
+            else: []
+
         missing = if step_codes != [], do: find_missing_edges(step_codes, graph.edges), else: []
 
         {:noreply,
@@ -274,12 +275,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
       case Sequences.create_sequence(user_id, name, step_ids) do
         {:ok, _saved} ->
-          saved = Sequences.list_user_sequences(user_id)
-
           {:noreply,
            socket
            |> assign(:seq_saving, nil)
-           |> assign(:seq_saved, saved)}
+           |> assign_sequence_library()}
 
         {:error, _changeset} ->
           {:noreply, socket}
@@ -295,9 +294,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
     if sequence do
       {:ok, _} = Sequences.delete_sequence(sequence)
-      new_saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
 
-      {:noreply, assign(socket, :seq_saved, new_saved)}
+      {:noreply, assign_sequence_library(socket)}
     else
       {:noreply, socket}
     end
@@ -312,15 +310,60 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_saving, nil)}
   end
 
+  def handle_event("show_seq_library", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_view, :library)
+     |> assign_sequence_library()}
+  end
+
   def handle_event("show_seq_saved", _params, socket) do
-    saved = Sequences.list_user_sequences(socket.assigns.current_user.id)
-    {:noreply, socket |> assign(:seq_saved, saved) |> assign(:seq_view, :saved)}
+    {:noreply,
+     socket
+     |> assign(:seq_view, :library)
+     |> assign_sequence_library()}
   end
 
   def handle_event("show_seq_favorites", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_view, :library)
+     |> assign_sequence_library()}
+  end
+
+  def handle_event("search_sequence_library", params, socket) do
+    term = params["value"] || params["term"] || ""
+
+    {:noreply,
+     socket
+     |> assign(:seq_library_search, term)
+     |> assign_filtered_sequence_library()}
+  end
+
+  def handle_event("filter_sequence_library_origin", %{"origin" => origin}, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_library_origin_filter, origin)
+     |> assign_filtered_sequence_library()}
+  end
+
+  def handle_event("filter_sequence_library_category", %{"category" => category}, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_library_category_filter, category)
+     |> assign_filtered_sequence_library()}
+  end
+
+  def handle_event("toggle_sequence_favorite_graph", %{"id" => seq_id}, socket) do
     user_id = socket.assigns.current_user.id
-    favorites = Engagement.list_user_favorites(user_id, "sequence")
-    {:noreply, socket |> assign(:seq_favorites_list, favorites) |> assign(:seq_view, :favorites)}
+
+    case Engagement.toggle_favorite(user_id, "sequence", seq_id) do
+      {:ok, _} ->
+        {:noreply, assign_sequence_library(socket)}
+
+      {:error, _changeset} ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("show_seq_manual", _params, socket) do
@@ -388,14 +431,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
         case Sequences.create_manual_sequence(user_id, attrs) do
           {:ok, _saved} ->
-            saved = Sequences.list_user_sequences(user_id)
-
             {:noreply,
              socket
              |> assign(:seq_manual_steps, [])
              |> assign(:seq_manual_error, nil)
-             |> assign(:seq_saved, saved)
-             |> assign(:seq_view, :saved)
+             |> assign(:seq_view, :library)
+             |> assign_sequence_library()
              |> push_event("set_manual_mode", %{active: false})}
 
           {:error, :invalid_codes} ->
@@ -484,6 +525,44 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   def handle_event("remove_required_step", %{"code" => code}, socket) do
     new_required = Enum.reject(socket.assigns.seq_required_codes, &(&1 == code))
     {:noreply, assign(socket, :seq_required_codes, new_required)}
+  end
+
+  def handle_event("search_graph_step", %{"value" => term}, socket) do
+    term = String.trim(term)
+
+    results =
+      if String.length(term) >= 1 do
+        search_graph_nodes(socket.assigns.graph_search_nodes, term)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:graph_search_query, term)
+     |> assign(:graph_search_results, results)}
+  end
+
+  def handle_event("select_graph_step", %{"code" => code}, socket) do
+    label =
+      case Enum.find(socket.assigns.graph_search_nodes, &(&1.code == code)) do
+        nil -> code
+        step -> "#{step.code} · #{step.name}"
+      end
+
+    {:noreply,
+     socket
+     |> assign(:graph_search_query, label)
+     |> assign(:graph_search_results, [])
+     |> push_event("focus_graph_node", %{code: code})}
+  end
+
+  def handle_event("clear_graph_search", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:graph_search_query, "")
+     |> assign(:graph_search_results, [])
+     |> push_event("clear_graph_focus", %{})}
   end
 
   def handle_event("toggle_edit_mode", _params, socket) do
@@ -618,14 +697,195 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
     from(f in OGrupoDeEstudos.Engagement.Favorite,
       where: f.user_id == ^user_id and f.favoritable_type == "step",
-      join: s in OGrupoDeEstudos.Encyclopedia.Step, on: s.id == f.favoritable_id,
+      join: s in OGrupoDeEstudos.Encyclopedia.Step,
+      on: s.id == f.favoritable_id,
       select: s.code
     )
     |> OGrupoDeEstudos.Repo.all()
   end
 
+  defp maybe_refresh_sequence_library(socket, true), do: assign_sequence_library(socket)
+  defp maybe_refresh_sequence_library(socket, false), do: socket
+
+  defp assign_sequence_library(socket) do
+    user_id = socket.assigns.current_user.id
+    saved = Sequences.list_user_sequences(user_id)
+    favorites = Engagement.list_user_favorites(user_id, "sequence")
+    public = Sequences.list_all_public_sequences()
+
+    all =
+      (saved ++ favorites ++ public)
+      |> Enum.uniq_by(& &1.id)
+
+    owned_ids = saved |> Enum.map(& &1.id) |> MapSet.new()
+    all_ids = Enum.map(all, & &1.id)
+    favorite_ids = Engagement.favorites_map(user_id, "sequence", all_ids)
+
+    all =
+      Enum.sort_by(all, fn sequence ->
+        {
+          sequence_library_rank(sequence, owned_ids, favorite_ids),
+          -Map.get(sequence, :like_count, 0),
+          normalize_sequence_date(sequence.inserted_at),
+          normalize_search_text(sequence.name)
+        }
+      end)
+
+    socket
+    |> assign(:seq_saved, saved)
+    |> assign(:seq_favorites_list, favorites)
+    |> assign(:seq_library_all, all)
+    |> assign(:seq_owned_ids, owned_ids)
+    |> assign(:seq_favorite_ids, favorite_ids)
+    |> assign_filtered_sequence_library()
+  end
+
+  defp assign_filtered_sequence_library(socket) do
+    filtered =
+      filter_sequence_library(
+        socket.assigns.seq_library_all,
+        socket.assigns.seq_library_search,
+        socket.assigns.seq_library_origin_filter,
+        socket.assigns.seq_library_category_filter,
+        socket.assigns.seq_owned_ids,
+        socket.assigns.seq_favorite_ids
+      )
+
+    assign(socket, :seq_library, filtered)
+  end
+
+  defp sequence_library_rank(sequence, owned_ids, favorite_ids) do
+    owned? = MapSet.member?(owned_ids, sequence.id)
+    favorite? = MapSet.member?(favorite_ids, sequence.id)
+
+    cond do
+      owned? and favorite? -> 0
+      owned? -> 1
+      favorite? -> 2
+      true -> 3
+    end
+  end
+
+  defp normalize_sequence_date(nil), do: 0
+
+  defp normalize_sequence_date(%NaiveDateTime{} = date),
+    do: -NaiveDateTime.diff(date, ~N[1970-01-01 00:00:00])
+
+  defp filter_sequence_library(
+         sequences,
+         search,
+         origin_filter,
+         category_filter,
+         owned_ids,
+         favorite_ids
+       ) do
+    search = normalize_search_text(search)
+
+    sequences
+    |> Enum.filter(fn sequence ->
+      sequence_matches_origin_filter?(sequence, origin_filter, owned_ids, favorite_ids)
+    end)
+    |> Enum.filter(fn sequence ->
+      search == "" or sequence_matches_search?(sequence, search)
+    end)
+    |> Enum.filter(fn sequence ->
+      category_filter == "all" or sequence_has_category?(sequence, category_filter)
+    end)
+  end
+
+  defp sequence_matches_origin_filter?(sequence, "favorites", _owned_ids, favorite_ids),
+    do: MapSet.member?(favorite_ids, sequence.id)
+
+  defp sequence_matches_origin_filter?(sequence, "community", owned_ids, _favorite_ids),
+    do: not MapSet.member?(owned_ids, sequence.id) and sequence.public
+
+  defp sequence_matches_origin_filter?(_sequence, _origin_filter, _owned_ids, _favorite_ids),
+    do: true
+
+  defp sequence_matches_search?(sequence, search) do
+    sequence_text =
+      [
+        sequence.name,
+        sequence.description,
+        if(Ecto.assoc_loaded?(sequence.user) && sequence.user,
+          do: sequence.user.username,
+          else: nil
+        )
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" ")
+      |> normalize_search_text()
+
+    steps_text =
+      sequence.sequence_steps
+      |> Enum.map(fn sequence_step ->
+        step = sequence_step.step
+        category = if Ecto.assoc_loaded?(step.category), do: step.category, else: nil
+
+        [
+          step.code,
+          step.name,
+          if(category, do: category.name, else: nil),
+          if(category, do: category.label, else: nil)
+        ]
+      end)
+      |> List.flatten()
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" ")
+      |> normalize_search_text()
+
+    String.contains?(sequence_text, search) or String.contains?(steps_text, search)
+  end
+
+  defp sequence_has_category?(sequence, category_filter) do
+    Enum.any?(sequence.sequence_steps, fn sequence_step ->
+      step = sequence_step.step
+      Ecto.assoc_loaded?(step.category) && step.category && step.category.name == category_filter
+    end)
+  end
+
+  defp sequence_category_labels(sequence) do
+    sequence.sequence_steps
+    |> Enum.map(fn sequence_step ->
+      step = sequence_step.step
+
+      if Ecto.assoc_loaded?(step.category) && step.category do
+        {step.category.name, step.category.label, step.category.color}
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq_by(fn {name, _label, _color} -> name end)
+    |> Enum.take(3)
+  end
+
+  defp normalize_search_text(nil), do: ""
+
+  defp normalize_search_text(text) do
+    text
+    |> to_string()
+    |> :unicode.characters_to_nfd_binary()
+    |> String.replace(~r/\p{Mn}/u, "")
+    |> String.downcase()
+  end
+
   defp assign_graph_data(socket, graph, include_orphans) do
     graph_json = build_json(graph, include_orphans)
+
+    connected_codes =
+      graph.edges
+      |> Enum.flat_map(&[&1.source_step.code, &1.target_step.code])
+      |> MapSet.new()
+
+    graph_search_nodes =
+      graph.nodes
+      |> Enum.filter(&(include_orphans or MapSet.member?(connected_codes, &1.code)))
+      |> Enum.map(fn step ->
+        %{
+          code: step.code,
+          name: step.name,
+          category: if(step.category, do: step.category.label, else: "Outros")
+        }
+      end)
 
     connected_count =
       graph.edges
@@ -642,9 +902,33 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
     socket
     |> assign(:graph_json, graph_json)
+    |> assign(:graph_search_nodes, graph_search_nodes)
     |> assign(:node_count, connected_count)
     |> assign(:edge_count, length(graph.edges))
     |> assign(:categories, categories)
+  end
+
+  defp search_graph_nodes(nodes, term) do
+    term = String.downcase(term)
+
+    nodes
+    |> Enum.filter(fn node ->
+      String.contains?(String.downcase(node.code), term) or
+        String.contains?(String.downcase(node.name), term) or
+        String.contains?(String.downcase(node.category), term)
+    end)
+    |> Enum.sort_by(fn node ->
+      code = String.downcase(node.code)
+      name = String.downcase(node.name)
+
+      cond do
+        code == term -> {0, node.name}
+        String.starts_with?(code, term) -> {1, node.name}
+        String.starts_with?(name, term) -> {2, node.name}
+        true -> {3, node.name}
+      end
+    end)
+    |> Enum.take(8)
   end
 
   defp build_json(%{nodes: nodes, edges: edges}, include_orphans) do

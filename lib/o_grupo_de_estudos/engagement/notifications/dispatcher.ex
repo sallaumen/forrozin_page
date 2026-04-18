@@ -120,8 +120,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         do: [comment.user_id],
         else: []
 
-    {recipients, "liked_comment", "sequence_comment", "sequence",
-     comment && comment.sequence_id}
+    {recipients, "liked_comment", "sequence_comment", "sequence", comment && comment.sequence_id}
   end
 
   defp determine_like_context(actor_id, "profile_comment", comment_id) do

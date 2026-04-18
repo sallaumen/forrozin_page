@@ -83,6 +83,166 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "Bases"
     end
 
+    test "renders unified graph search and finds visible steps by name or code", %{conn: conn} do
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step_a = insert(:step, code: "BF", name: "Base frontal", section: section, category: cat)
+      step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
+      insert(:connection, source_step: step_a, target_step: step_b)
+
+      {:ok, lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      assert html =~ ~s(id="graph-step-search")
+
+      html = render_keyup(lv, "search_graph_step", %{"value" => "sacada"})
+
+      assert html =~ ~s(id="graph-step-search-results")
+      assert html =~ ~s(id="graph-search-result-SC")
+      assert html =~ "Sacada simples"
+    end
+
+    test "graph search only suggests steps currently visible on the map", %{conn: conn} do
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step_a = insert(:step, code: "BF", name: "Base frontal", section: section, category: cat)
+      step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
+
+      insert(:step,
+        code: "ORF",
+        name: "Passo sem conexão",
+        section: section,
+        category: cat
+      )
+
+      insert(:connection, source_step: step_a, target_step: step_b)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html = render_keyup(lv, "search_graph_step", %{"value" => "sem conexão"})
+
+      refute html =~ ~s(id="graph-search-result-ORF")
+    end
+
+    test "sequence library shows public examples before the user saves anything", %{conn: conn} do
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+      sequence = insert(:sequence, name: "Sequência exemplo", user: insert(:user))
+      insert(:sequence_step, sequence: sequence, step: step, position: 1)
+
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      assert html =~ ~s(id="seq-library-search")
+      assert html =~ "Sequência exemplo"
+      assert html =~ "exemplo"
+      assert html =~ "BA"
+    end
+
+    test "sequence library combines saved and favorited sequences", %{conn: conn} do
+      user = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+
+      saved = insert(:sequence, name: "Minha sequência", user: user)
+      insert(:sequence_step, sequence: saved, step: step, position: 1)
+
+      favorite = insert(:sequence, name: "Favorita da roda", user: insert(:user))
+      insert(:sequence_step, sequence: favorite, step: step, position: 1)
+
+      {:ok, :favorited} =
+        OGrupoDeEstudos.Engagement.toggle_favorite(user.id, "sequence", favorite.id)
+
+      {:ok, _lv, html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      assert html =~ "Minha sequência"
+      assert html =~ "salva"
+      assert html =~ "Favorita da roda"
+      assert html =~ "favorita"
+    end
+
+    test "sequence library filters by step category", %{conn: conn} do
+      bases = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      giros = insert(:category, name: "giros", label: "Giros", color: "#3498db")
+      base_section = insert(:section, category: bases)
+      giro_section = insert(:section, category: giros)
+
+      base_step =
+        insert(:step, code: "BA", name: "Balanço", section: base_section, category: bases)
+
+      giro_step =
+        insert(:step, code: "G1", name: "Giro simples", section: giro_section, category: giros)
+
+      base_seq = insert(:sequence, name: "Sequência de base", user: insert(:user))
+      insert(:sequence_step, sequence: base_seq, step: base_step, position: 1)
+
+      giro_seq = insert(:sequence, name: "Sequência de giro", user: insert(:user))
+      insert(:sequence_step, sequence: giro_seq, step: giro_step, position: 1)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html =
+        render_click(lv, "filter_sequence_library_category", %{
+          "category" => "bases"
+        })
+
+      assert html =~ "Sequência de base"
+      refute html =~ "Sequência de giro"
+    end
+
+    test "sequence library filters only favorited sequences", %{conn: conn} do
+      user = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+
+      saved = insert(:sequence, name: "Minha sequência", user: user)
+      insert(:sequence_step, sequence: saved, step: step, position: 1)
+
+      favorite = insert(:sequence, name: "Favorita da comunidade", user: insert(:user))
+      insert(:sequence_step, sequence: favorite, step: step, position: 1)
+
+      example = insert(:sequence, name: "Exemplo público", user: insert(:user))
+      insert(:sequence_step, sequence: example, step: step, position: 1)
+
+      {:ok, :favorited} =
+        OGrupoDeEstudos.Engagement.toggle_favorite(user.id, "sequence", favorite.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      assert has_element?(lv, "#seq-library-origin-filter")
+
+      lv
+      |> element("#seq-library-origin-favorites")
+      |> render_click()
+
+      assert has_element?(lv, "#seq-library-card-#{favorite.id}")
+      refute has_element?(lv, "#seq-library-card-#{saved.id}")
+      refute has_element?(lv, "#seq-library-card-#{example.id}")
+    end
+
+    test "sequence library filters community sequences separately from saved ones", %{conn: conn} do
+      user = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+
+      saved = insert(:sequence, name: "Minha sequência", user: user)
+      insert(:sequence_step, sequence: saved, step: step, position: 1)
+
+      community = insert(:sequence, name: "Sequência da comunidade", user: insert(:user))
+      insert(:sequence_step, sequence: community, step: step, position: 1)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      lv
+      |> element("#seq-library-origin-community")
+      |> render_click()
+
+      assert has_element?(lv, "#seq-library-card-#{community.id}")
+      refute has_element?(lv, "#seq-library-card-#{saved.id}")
+    end
+
     test "redirects to /login when not authenticated", %{conn: conn} do
       {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/graph/visual")
     end

@@ -39,47 +39,77 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
         </.link>
 
         <nav class="flex items-center gap-4">
-          <.link navigate={~p"/collection"} class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline">
+          <.link
+            navigate={~p"/collection"}
+            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+          >
             Acervo
           </.link>
-          <.link navigate={~p"/graph/visual"} class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline">
+          <.link
+            navigate={~p"/graph/visual"}
+            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+          >
             Mapa
           </.link>
-          <.link navigate={~p"/community"} class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline">
+          <.link
+            navigate={~p"/community"}
+            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+          >
             Comunidade
           </.link>
 
           <%= if @is_admin do %>
-            <.link navigate={~p"/graph"} class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline">
+            <.link
+              navigate={~p"/graph"}
+              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
+            >
               Conexões
             </.link>
-            <.link navigate={~p"/admin/links"} class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline">
+            <.link
+              navigate={~p"/admin/links"}
+              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
+            >
               Links
             </.link>
-            <.link navigate={~p"/admin/backups"} class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline">
+            <.link
+              navigate={~p"/admin/backups"}
+              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
+            >
               Backups
             </.link>
-            <.link navigate={~p"/admin/suggestions"} class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline">
+            <.link
+              navigate={~p"/admin/suggestions"}
+              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
+            >
               Sugestões
             </.link>
-            <.link navigate={~p"/admin/errors"} class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline">
+            <.link
+              navigate={~p"/admin/errors"}
+              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
+            >
               Erros
             </.link>
           <% end %>
 
           <.link navigate={~p"/notifications"} class="relative group no-underline">
-            <.icon name="hero-bell-solid" class={[
-              "size-5 transition-colors",
-              @notification_count > 0 && "text-accent-orange",
-              @notification_count == 0 && "text-ink-400 group-hover:text-ink-200"
-            ]} />
-            <span :if={@notification_count > 0} class={[
-              "absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-0.5",
-              "flex items-center justify-center",
-              "bg-accent-red text-white text-[10px] font-bold rounded-full",
-              "animate-notification-pop"
-            ]}>
-              <%= if @notification_count > 99, do: "99+", else: @notification_count %>
+            <.icon
+              name="hero-bell-solid"
+              class={[
+                "size-5 transition-colors",
+                @notification_count > 0 && "text-accent-orange",
+                @notification_count == 0 && "text-ink-400 group-hover:text-ink-200"
+              ]}
+            />
+            <span
+              :if={@notification_count > 0}
+              class={[
+                "absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-0.5",
+                "flex items-center justify-center",
+                "bg-accent-red text-white text-[10px] font-bold rounded-full",
+                "animate-notification-pop"
+              ]}
+            >
+              {if @notification_count > 99, do: "99+", else: @notification_count}
             </span>
           </.link>
 
@@ -102,7 +132,10 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           <form method="post" action={~p"/logout"} class="m-0">
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-            <button type="submit" class="text-[11px] text-ink-600 bg-transparent border-0 cursor-pointer">
+            <button
+              type="submit"
+              class="text-[11px] text-ink-600 bg-transparent border-0 cursor-pointer"
+            >
               sair
             </button>
           </form>
@@ -153,7 +186,10 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             <form method="post" action={~p"/logout"} class="m-0">
               <input type="hidden" name="_method" value="delete" />
               <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
-              <button type="submit" class="text-[11px] text-ink-600 bg-transparent border-0 cursor-pointer">
+              <button
+                type="submit"
+                class="text-[11px] text-ink-600 bg-transparent border-0 cursor-pointer"
+              >
                 sair
               </button>
             </form>

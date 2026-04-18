@@ -1,11 +1,16 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Conexões" notification_count={assigns[:notification_count] || 0} />
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    title="Conexões"
+    notification_count={assigns[:notification_count] || 0}
+  />
 
   <.flash kind={:info} flash={@flash} />
   <.flash kind={:error} flash={@flash} />
 
   <div class="max-w-[960px] mx-auto px-6 pt-14 pb-20 w-full box-border">
-
     <%!-- Header --%>
     <div class="flex items-start justify-between gap-6 mb-8 flex-wrap">
       <div>
@@ -13,7 +18,9 @@
           Mapa de Passos
         </h1>
         <p class="text-sm text-ink-600 leading-relaxed">
-          {length(@nodes)} nós · {Enum.reduce(@edges_by_source, 0, fn {_, v}, acc -> acc + length(v) end)} conexões
+          {length(@nodes)} nós · {Enum.reduce(@edges_by_source, 0, fn {_, v}, acc ->
+            acc + length(v)
+          end)} conexões
         </p>
       </div>
 
@@ -39,7 +46,6 @@
       </p>
 
       <div class="flex gap-3 items-start mb-4 flex-wrap">
-
         <%!-- Origem --%>
         <div class="flex-1 min-w-[200px]">
           <p class="font-sans text-xs text-ink-500 uppercase tracking-wider mb-1.5">Origem</p>
@@ -75,7 +81,9 @@
                       phx-value-name={step.name}
                       class="w-full text-left px-3 py-2 flex gap-2 items-center hover:bg-ink-50 cursor-pointer border-none border-b border-ink-100 last:border-b-0 font-sans"
                     >
-                      <code class="font-mono text-xs font-bold text-ink-700 min-w-[60px]">{step.code}</code>
+                      <code class="font-mono text-xs font-bold text-ink-700 min-w-[60px]">
+                        {step.code}
+                      </code>
                       <span class="text-xs text-ink-600">{step.name}</span>
                     </button>
                   <% end %>
@@ -125,7 +133,9 @@
                       phx-value-name={step.name}
                       class="w-full text-left px-3 py-2 flex gap-2 items-center hover:bg-ink-50 cursor-pointer border-none border-b border-ink-100 last:border-b-0 font-sans"
                     >
-                      <code class="font-mono text-xs font-bold text-ink-700 min-w-[60px]">{step.code}</code>
+                      <code class="font-mono text-xs font-bold text-ink-700 min-w-[60px]">
+                        {step.code}
+                      </code>
                       <span class="text-xs text-ink-600">{step.name}</span>
                     </button>
                   <% end %>
@@ -134,12 +144,15 @@
             </div>
           <% end %>
         </div>
-
       </div>
 
       <%!-- Rótulo + botão --%>
       <% pode_conectar = not is_nil(@source_selected) and not is_nil(@target_selected) %>
-      <form phx-submit="create_connection" phx-change="update_connection_label" class="flex gap-3 items-center flex-wrap">
+      <form
+        phx-submit="create_connection"
+        phx-change="update_connection_label"
+        class="flex gap-3 items-center flex-wrap"
+      >
         <input
           type="text"
           name="label"
@@ -190,17 +203,16 @@
       <div class="flex flex-col gap-1">
         <%= for node <- @nodes do %>
           <% matches_filter =
-               filter_term == "" or
-                 String.contains?(String.downcase(node.code), filter_term) or
-                 String.contains?(String.downcase(node.name), filter_term) or
-                 (Map.get(@edges_by_source, node.id, [])
-                  |> Enum.any?(fn e ->
-                    String.contains?(String.downcase(e.target_step.code), filter_term) or
-                      String.contains?(String.downcase(e.target_step.name), filter_term)
-                  end)) %>
+            filter_term == "" or
+              String.contains?(String.downcase(node.code), filter_term) or
+              String.contains?(String.downcase(node.name), filter_term) or
+              Map.get(@edges_by_source, node.id, [])
+              |> Enum.any?(fn e ->
+                String.contains?(String.downcase(e.target_step.code), filter_term) or
+                  String.contains?(String.downcase(e.target_step.name), filter_term)
+              end) %>
           <%= if matches_filter do %>
             <div class="bg-ink-50 border border-ink-200 rounded-lg px-4 py-3 flex items-start gap-4 flex-wrap">
-
               <%!-- Nó fonte --%>
               <div class="flex flex-col gap-0.5 min-w-[110px]">
                 <span class="font-sans text-[10px] font-bold tracking-widest text-ink-400 uppercase">
@@ -228,7 +240,9 @@
                         >
                           {edge.target_step.code}
                         </.link>
-                        <span class="font-sans text-xs text-ink-500">{edge.target_step.name}</span>
+                        <span class="font-sans text-xs text-ink-500">
+                          {edge.target_step.name}
+                        </span>
                         <button
                           phx-click="delete_connection"
                           phx-value-connection_id={edge.id}
@@ -239,7 +253,9 @@
                         </button>
                       </div>
                       <%= if edge.label do %>
-                        <span class="font-sans text-[10px] text-ink-500 italic">{edge.label}</span>
+                        <span class="font-sans text-[10px] text-ink-500 italic">
+                          {edge.label}
+                        </span>
                       <% end %>
                       <form phx-submit="edit_connection_label" class="flex gap-1 mt-0.5">
                         <input type="hidden" name="connection_id" value={edge.id} />
@@ -265,12 +281,10 @@
                   sem saídas mapeadas
                 </span>
               <% end %>
-
             </div>
           <% end %>
         <% end %>
       </div>
     <% end %>
-
   </div>
 </div>

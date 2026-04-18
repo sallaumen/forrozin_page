@@ -18,15 +18,13 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateNotifications do
     end
 
     create index(:notifications, [:user_id, :read_at, :inserted_at],
-      name: :notifications_user_feed_idx
-    )
+             name: :notifications_user_feed_idx
+           )
 
-    create index(:notifications, [:user_id, :group_key],
-      name: :notifications_user_group_idx
-    )
+    create index(:notifications, [:user_id, :group_key], name: :notifications_user_group_idx)
 
     create index(:notifications, [:actor_id, :target_type, :target_id],
-      name: :notifications_actor_target_idx
-    )
+             name: :notifications_actor_target_idx
+           )
   end
 end

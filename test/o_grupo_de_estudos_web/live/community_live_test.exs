@@ -224,7 +224,16 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       user = insert(:user)
       author = insert(:user)
       section = insert(:section)
-      step = insert(:step, section: section, code: "COM-LK", name: "Passo Curtido", suggested_by: author, approved: true)
+
+      step =
+        insert(:step,
+          section: section,
+          code: "COM-LK",
+          name: "Passo Curtido",
+          suggested_by: author,
+          approved: true
+        )
+
       conn = log_in_user(conn, user)
 
       {:ok, view, _html} = live(conn, ~p"/community")

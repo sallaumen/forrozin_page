@@ -1,5 +1,5 @@
 defmodule OGrupoDeEstudos.Encyclopedia.ConnectionTest do
-  use OGrupoDeEstudos.DataCase, async: true
+  use OGrupoDeEstudos.DataCase, async: false
 
   alias OGrupoDeEstudos.Encyclopedia.Connection
 

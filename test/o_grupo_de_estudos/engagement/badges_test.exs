@@ -14,10 +14,12 @@ defmodule OGrupoDeEstudos.Engagement.BadgesTest do
 
     test "marks Explorador as earned when user liked 5+ steps" do
       user = insert(:user)
+
       for _ <- 1..5 do
         step = insert(:step)
         Engagement.toggle_like(user.id, "step", step.id)
       end
+
       badges = Badges.compute(user.id)
       explorador = Enum.find(badges, &(&1.key == :explorador))
       assert explorador.earned
@@ -28,9 +30,11 @@ defmodule OGrupoDeEstudos.Engagement.BadgesTest do
     test "marks Comentarista as earned when user made 5+ comments" do
       user = insert(:user)
       step = insert(:step)
+
       for i <- 1..5 do
         Engagement.create_step_comment(user, step.id, %{body: "Comment #{i}"})
       end
+
       badges = Badges.compute(user.id)
       comentarista = Enum.find(badges, &(&1.key == :comentarista))
       assert comentarista.earned
@@ -38,10 +42,12 @@ defmodule OGrupoDeEstudos.Engagement.BadgesTest do
 
     test "computes progress correctly for partial achievement" do
       user = insert(:user)
+
       for _ <- 1..3 do
         step = insert(:step)
         Engagement.toggle_like(user.id, "step", step.id)
       end
+
       badges = Badges.compute(user.id)
       explorador = Enum.find(badges, &(&1.key == :explorador))
       refute explorador.earned
@@ -58,10 +64,12 @@ defmodule OGrupoDeEstudos.Engagement.BadgesTest do
 
     test "returns highest-rank earned badge" do
       user = insert(:user)
+
       for _ <- 1..15 do
         step = insert(:step)
         Engagement.toggle_like(user.id, "step", step.id)
       end
+
       badge = Badges.primary(user.id)
       # With 15 likes: Curador (15 threshold) is earned AND higher rank than Explorador (5)
       assert badge.key == :curador

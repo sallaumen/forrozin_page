@@ -95,8 +95,15 @@ defmodule OGrupoDeEstudos.Accounts.User do
 
   defp sanitize_username(changeset) do
     case get_change(changeset, :username) do
-      nil -> changeset
-      username -> put_change(changeset, :username, username |> String.trim_leading("@") |> String.downcase())
+      nil ->
+        changeset
+
+      username ->
+        put_change(
+          changeset,
+          :username,
+          username |> String.trim_leading("@") |> String.downcase()
+        )
     end
   end
 

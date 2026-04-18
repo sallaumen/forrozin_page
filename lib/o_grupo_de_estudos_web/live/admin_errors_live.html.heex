@@ -1,5 +1,10 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} notification_count={assigns[:notification_count] || 0} />
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    notification_count={assigns[:notification_count] || 0}
+  />
 
   <main class="flex-1 max-w-5xl mx-auto px-4 py-8 w-full box-border">
     <div class="flex items-center justify-between mb-6">
@@ -45,10 +50,14 @@
                 {error.level}
               </span>
               <div class="flex-1 min-w-0">
-                <p class="text-sm text-ink-800 font-mono truncate">{String.slice(error.message, 0, 120)}</p>
+                <p class="text-sm text-ink-800 font-mono truncate">
+                  {String.slice(error.message, 0, 120)}
+                </p>
                 <div class="flex items-center gap-2 mt-1">
                   <span class="text-[10px] text-ink-400">{time_ago(error.inserted_at)}</span>
-                  <span :if={error.source} class="text-[10px] text-ink-400 truncate max-w-[200px]">{error.source}</span>
+                  <span :if={error.source} class="text-[10px] text-ink-400 truncate max-w-[200px]">
+                    {error.source}
+                  </span>
                 </div>
               </div>
               <button

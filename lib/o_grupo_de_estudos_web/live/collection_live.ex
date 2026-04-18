@@ -536,7 +536,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-
   defp reload_expanded(socket) do
     step_id = socket.assigns.expanded_step
     user = socket.assigns.current_user
@@ -754,7 +753,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
               expanded_step={assigns[:expanded_step]}
               expanded_comments={assigns[:expanded_comments] || []}
               expanded_links={assigns[:expanded_links] || []}
-              expanded_comment_likes={assigns[:expanded_comment_likes] || %{liked_ids: MapSet.new(), counts: %{}}}
+              expanded_comment_likes={
+                assigns[:expanded_comment_likes] || %{liked_ids: MapSet.new(), counts: %{}}
+              }
               expanded_replies_map={assigns[:expanded_replies_map] || %{}}
               expanded_replying_to={assigns[:expanded_replying_to]}
               expanded_video={assigns[:expanded_video]}
@@ -807,13 +808,17 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   def step_item(assigns) do
     has_links = MapSet.member?(assigns.steps_with_links, assigns.step.id)
     is_expanded = assigns.expanded_step == assigns.step.id
+
     cat_name =
       case assigns.step do
         %{category: %{name: name}} when is_binary(name) -> name
         _ -> nil
       end
+
     can_expand = cat_name not in @non_expandable_categories
-    assigns = assign(assigns, has_links: has_links, is_expanded: is_expanded, can_expand: can_expand)
+
+    assigns =
+      assign(assigns, has_links: has_links, is_expanded: is_expanded, can_expand: can_expand)
 
     ~H"""
     <% is_mine = @step.suggested_by_id != nil and @step.suggested_by_id == @current_user_id %>
@@ -885,14 +890,23 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
             phx-click="toggle_step_like"
             phx-value-id={@step.id}
             class="flex items-center gap-0.5 p-0.5"
-            title={if MapSet.member?(@step_likes.liked_ids, @step.id), do: "Remover curtida", else: "Curtir"}
+            title={
+              if MapSet.member?(@step_likes.liked_ids, @step.id),
+                do: "Remover curtida",
+                else: "Curtir"
+            }
           >
             <.icon
-              name={if MapSet.member?(@step_likes.liked_ids, @step.id), do: "hero-heart-solid", else: "hero-heart"}
+              name={
+                if MapSet.member?(@step_likes.liked_ids, @step.id),
+                  do: "hero-heart-solid",
+                  else: "hero-heart"
+              }
               class={[
                 "w-4 h-4",
                 MapSet.member?(@step_likes.liked_ids, @step.id) && "text-accent-red",
-                !MapSet.member?(@step_likes.liked_ids, @step.id) && "text-ink-300 hover:text-accent-red/60"
+                !MapSet.member?(@step_likes.liked_ids, @step.id) &&
+                  "text-ink-300 hover:text-accent-red/60"
               ]}
             />
             <span class="text-[10px] tabular-nums text-ink-400">
@@ -931,8 +945,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
                 <%= for link <- @expanded_links do %>
                   <div class="rounded-lg border border-ink-200 overflow-hidden">
                     <div class="flex items-center gap-2 px-3 py-2">
-                      <a href={link.url} target="_blank" rel="noopener"
-                        class="flex-1 text-sm text-accent-orange hover:underline truncate no-underline">
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener"
+                        class="flex-1 text-sm text-accent-orange hover:underline truncate no-underline"
+                      >
                         {link.title || link.url}
                       </a>
                       <%= if youtube_id(link.url) do %>
@@ -945,7 +963,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
                             @expanded_video != link.id && "bg-ink-100 text-ink-500 hover:bg-ink-200"
                           ]}
                         >
-                          <%= if @expanded_video == link.id, do: "▲ Fechar", else: "▶ Assistir" %>
+                          {if @expanded_video == link.id, do: "▲ Fechar", else: "▶ Assistir"}
                         </button>
                       <% end %>
                     </div>

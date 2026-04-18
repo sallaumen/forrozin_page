@@ -14,8 +14,11 @@ defmodule OGrupoDeEstudosWeb.UI.PWAInstallBanner do
       class="hidden fixed bottom-14 left-0 right-0 z-30 md:bottom-0"
     >
       <div class="bg-gold-500 px-4 py-2 flex items-center gap-3 shadow-lg">
-        <img src="/icons/icon-192.png" alt="OGE"
-          class="w-8 h-8 rounded-lg flex-shrink-0 border border-ink-900/20 shadow-sm" />
+        <img
+          src="/icons/icon-192.png"
+          alt="OGE"
+          class="w-8 h-8 rounded-lg flex-shrink-0 border border-ink-900/20 shadow-sm"
+        />
         <div class="flex-1 min-w-0">
           <p class="text-xs font-bold text-ink-900 font-serif leading-tight">
             O Grupo de Estudos na sua tela inicial

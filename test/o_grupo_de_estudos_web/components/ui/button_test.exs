@@ -52,7 +52,12 @@ defmodule OGrupoDeEstudosWeb.UI.ButtonTest do
     end
 
     test "data-confirm attribute passes through" do
-      html = render_component(&Button.button/1, %{"data-confirm": "Tem certeza?", inner_block: slot("Delete")})
+      html =
+        render_component(&Button.button/1, %{
+          "data-confirm": "Tem certeza?",
+          inner_block: slot("Delete")
+        })
+
       assert html =~ ~s(data-confirm="Tem certeza?")
     end
   end

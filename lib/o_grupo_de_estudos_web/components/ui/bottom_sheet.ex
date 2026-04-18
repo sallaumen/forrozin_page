@@ -63,7 +63,11 @@ defmodule OGrupoDeEstudosWeb.UI.BottomSheet do
         <div data-bottom-sheet-handle class="md:hidden flex justify-center py-2">
           <div class="w-10 h-1 bg-ink-300 rounded-full"></div>
         </div>
-        <div class={["flex items-center px-4 pt-2 pb-3", @title && "justify-between border-b border-ink-200", !@title && "justify-end"]}>
+        <div class={[
+          "flex items-center px-4 pt-2 pb-3",
+          @title && "justify-between border-b border-ink-200",
+          !@title && "justify-end"
+        ]}>
           <h2 :if={@title} class="text-lg font-serif font-bold text-ink-900">{@title}</h2>
           <button
             type="button"

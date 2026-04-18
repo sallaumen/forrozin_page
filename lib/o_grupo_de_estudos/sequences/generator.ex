@@ -41,18 +41,8 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       params
       |> Map.put_new(:cyclic, true)
       |> Map.put_new(:max_bf_visits, 1)
-      |> Map.put_new(:include_community, false)
 
-    step_filters = [public_only: true, preload: [:category]]
-
-    step_filters =
-      if params.include_community do
-        step_filters
-      else
-        [{:approved_only, true} | step_filters]
-      end
-
-    steps = StepQuery.list_by(step_filters)
+    steps = StepQuery.list_by(public_only: true, preload: [:category])
     connections = ConnectionQuery.list_by(preload: [])
 
     step_map = Map.new(steps, &{&1.id, &1})

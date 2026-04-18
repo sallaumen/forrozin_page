@@ -1,5 +1,11 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <.top_nav current_user={@current_user} is_admin={@is_admin} nav_mode={@nav_mode} title="Configurações" notification_count={assigns[:notification_count] || 0} />
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    title="Configurações"
+    notification_count={assigns[:notification_count] || 0}
+  />
 
   <main class="flex-1 max-w-4xl mx-auto px-4 py-8 w-full box-border">
     <h1 class="text-2xl md:text-3xl font-bold text-ink-900 mb-6">
@@ -60,7 +66,10 @@
       <section class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4">
         <div class="flex flex-col md:flex-row gap-4">
           <div class="flex-1">
-            <label for="name" class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block">
+            <label
+              for="name"
+              class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block"
+            >
               Nome completo
             </label>
             <input
@@ -72,7 +81,10 @@
             />
           </div>
           <div class="flex-1">
-            <label for="username" class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block">
+            <label
+              for="username"
+              class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block"
+            >
               Usuário
             </label>
             <div class="relative">
@@ -98,7 +110,10 @@
         </label>
         <div class="flex flex-col md:flex-row gap-4">
           <div class="md:w-[160px]">
-            <label for="settings-country" class="text-[10px] text-ink-500 uppercase tracking-wider mb-1 block">
+            <label
+              for="settings-country"
+              class="text-[10px] text-ink-500 uppercase tracking-wider mb-1 block"
+            >
               País
             </label>
             <select
@@ -108,21 +123,41 @@
             >
               <option value="BR" selected={@country == "BR"}>Brasil</option>
               <option disabled>──────────</option>
-              <option :for={
-                {code, label} <- [
-                  {"AR", "Argentina"}, {"DE", "Alemanha"}, {"AU", "Austrália"},
-                  {"CA", "Canadá"}, {"CL", "Chile"}, {"CO", "Colômbia"},
-                  {"ES", "Espanha"}, {"US", "Estados Unidos"}, {"FR", "França"},
-                  {"IE", "Irlanda"}, {"IT", "Itália"}, {"JP", "Japão"},
-                  {"MX", "México"}, {"NL", "Países Baixos"}, {"PT", "Portugal"},
-                  {"GB", "Reino Unido"}, {"UY", "Uruguai"}
-                ]
-              } value={code} selected={@country == code}>{label}</option>
+              <option
+                :for={
+                  {code, label} <- [
+                    {"AR", "Argentina"},
+                    {"DE", "Alemanha"},
+                    {"AU", "Austrália"},
+                    {"CA", "Canadá"},
+                    {"CL", "Chile"},
+                    {"CO", "Colômbia"},
+                    {"ES", "Espanha"},
+                    {"US", "Estados Unidos"},
+                    {"FR", "França"},
+                    {"IE", "Irlanda"},
+                    {"IT", "Itália"},
+                    {"JP", "Japão"},
+                    {"MX", "México"},
+                    {"NL", "Países Baixos"},
+                    {"PT", "Portugal"},
+                    {"GB", "Reino Unido"},
+                    {"UY", "Uruguai"}
+                  ]
+                }
+                value={code}
+                selected={@country == code}
+              >
+                {label}
+              </option>
             </select>
           </div>
           <%= if @country == "BR" do %>
             <div class="w-[100px]">
-              <label for="settings-state" class="text-[10px] text-ink-500 uppercase tracking-wider mb-1 block">
+              <label
+                for="settings-state"
+                class="text-[10px] text-ink-500 uppercase tracking-wider mb-1 block"
+              >
                 Estado
               </label>
               <select
@@ -132,15 +167,23 @@
               >
                 <option value="">UF</option>
                 <option
-                  :for={uf <- ~w(AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO)}
+                  :for={
+                    uf <-
+                      ~w(AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO)
+                  }
                   value={uf}
                   selected={@state == uf}
-                >{uf}</option>
+                >
+                  {uf}
+                </option>
               </select>
             </div>
           <% end %>
           <div class="flex-1">
-            <label for="settings-city" class="text-[10px] text-ink-500 uppercase tracking-wider mb-1 block">
+            <label
+              for="settings-city"
+              class="text-[10px] text-ink-500 uppercase tracking-wider mb-1 block"
+            >
               Cidade
             </label>
             <input
@@ -222,11 +265,19 @@
 
     <%!-- Install as app section --%>
     <section class="mt-8 pt-6 border-t border-ink-200">
-      <h2 class="text-sm font-bold text-ink-700 uppercase tracking-widest mb-3">Instalar como app</h2>
+      <h2 class="text-sm font-bold text-ink-700 uppercase tracking-widest mb-3">
+        Instalar como app
+      </h2>
       <div class="flex items-center gap-4 p-4 bg-ink-50 rounded-lg border border-ink-200">
-        <img src="/icons/icon-192.png" alt="OGE" class="w-12 h-12 rounded-xl flex-shrink-0 shadow-sm" />
+        <img
+          src="/icons/icon-192.png"
+          alt="OGE"
+          class="w-12 h-12 rounded-xl flex-shrink-0 shadow-sm"
+        />
         <div class="flex-1">
-          <p class="text-sm font-bold text-ink-800 font-serif">O Grupo de Estudos na sua tela inicial</p>
+          <p class="text-sm font-bold text-ink-800 font-serif">
+            O Grupo de Estudos na sua tela inicial
+          </p>
           <p class="text-xs text-ink-500 mt-0.5">Acesso rápido, sem precisar abrir o navegador</p>
         </div>
         <button

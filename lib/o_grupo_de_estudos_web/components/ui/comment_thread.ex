@@ -112,7 +112,11 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
           <span>Fechar {if @comment.reply_count == 1, do: "resposta", else: "respostas"}</span>
         <% else %>
           <.icon name="hero-chevron-down-mini" class="size-3.5" />
-          <span>Ver {@comment.reply_count} {if @comment.reply_count == 1, do: "resposta", else: "respostas"}</span>
+          <span>
+            Ver {@comment.reply_count} {if @comment.reply_count == 1,
+              do: "resposta",
+              else: "respostas"}
+          </span>
         <% end %>
       </button>
     </div>
@@ -153,7 +157,10 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
       assigns
       |> assign(:user, user)
       |> assign(:liked?, liked?(assigns.likes_map, assigns.comment.id))
-      |> assign(:can_delete?, can_delete?(assigns.comment, assigns.current_user, assigns.is_admin))
+      |> assign(
+        :can_delete?,
+        can_delete?(assigns.comment, assigns.current_user, assigns.is_admin)
+      )
       |> assign(:initial, if(user, do: String.upcase(String.first(user.username)), else: "?"))
       |> assign(:badge, badge)
 

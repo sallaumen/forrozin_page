@@ -29,7 +29,10 @@ defmodule OGrupoDeEstudosWeb.UI.Input do
 
     ~H"""
     <div data-ui="input">
-      <label for={@id} class="block text-xs font-sans font-semibold text-ink-700 mb-1 tracking-wider uppercase">
+      <label
+        for={@id}
+        class="block text-xs font-sans font-semibold text-ink-700 mb-1 tracking-wider uppercase"
+      >
         {@label}
       </label>
       <input

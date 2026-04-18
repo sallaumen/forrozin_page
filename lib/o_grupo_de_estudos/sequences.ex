@@ -112,22 +112,26 @@ defmodule OGrupoDeEstudos.Sequences do
 
   @doc "Lists all sequences belonging to a user, with steps preloaded."
   def list_user_sequences(user_id) do
-    SequenceQuery.list_by(user_id: user_id, preload: [sequence_steps: :step])
+    SequenceQuery.list_by(user_id: user_id, preload: [sequence_steps: [step: :category]])
   end
 
   @doc "Lists all public sequences belonging to a user, with steps preloaded."
   def list_public_user_sequences(user_id) do
-    SequenceQuery.list_by(user_id: user_id, public: true, preload: [sequence_steps: :step])
+    SequenceQuery.list_by(
+      user_id: user_id,
+      public: true,
+      preload: [sequence_steps: [step: :category]]
+    )
   end
 
   @doc "Lists all public sequences, with steps and user preloaded."
   def list_all_public_sequences do
-    SequenceQuery.list_by(public: true, preload: [:user, sequence_steps: :step])
+    SequenceQuery.list_by(public: true, preload: [:user, sequence_steps: [step: :category]])
   end
 
   @doc "Fetches a single sequence by id, with steps preloaded. Returns `nil` if not found."
   def get_sequence(id) do
-    SequenceQuery.get_by(id: id, preload: [sequence_steps: :step])
+    SequenceQuery.get_by(id: id, preload: [sequence_steps: [step: :category]])
   end
 
   @doc "Soft-deletes a sequence by setting deleted_at. The sequence is excluded from all default queries."

@@ -55,7 +55,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
 
   @impl true
   def ordered_by_engagement(query),
-    do: order_by(query, [c], [desc: c.like_count, desc: c.inserted_at])
+    do: order_by(query, [c], desc: c.like_count, desc: c.inserted_at)
 
   @impl true
   def schema, do: ProfileComment

@@ -52,7 +52,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
         following_count = Engagement.count_following(user.id)
         followers_count = Engagement.count_followers(user.id)
-        is_following = if !is_own_profile, do: Engagement.following?(current_user.id, user.id), else: false
+
+        is_following =
+          if !is_own_profile, do: Engagement.following?(current_user.id, user.id), else: false
 
         # Badges
         badges = Badges.compute(user.id)
@@ -110,12 +112,15 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
     case Engagement.toggle_follow(current.id, profile.id) do
       {:ok, _} ->
-        {:noreply, assign(socket,
-          is_following: Engagement.following?(current.id, profile.id),
-          following_count: Engagement.count_following(profile.id),
-          followers_count: Engagement.count_followers(profile.id)
-        )}
-      {:error, _} -> {:noreply, socket}
+        {:noreply,
+         assign(socket,
+           is_following: Engagement.following?(current.id, profile.id),
+           following_count: Engagement.count_following(profile.id),
+           followers_count: Engagement.count_followers(profile.id)
+         )}
+
+      {:error, _} ->
+        {:noreply, socket}
     end
   end
 

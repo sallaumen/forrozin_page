@@ -129,48 +129,63 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   def handle_event("switch_followers_tab", %{"tab" => tab}, socket) do
     user = socket.assigns.current_user
-    list = case tab do
-      "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
-      "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
-    end
+
+    list =
+      case tab do
+        "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
+        "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
+      end
+
     user_ids = Enum.map(list, & &1.id)
-    {:noreply, assign(socket,
-      followers_sub_tab: tab,
-      followers_list: list,
-      followers_following_map: following_ids_set(user.id, user_ids)
-    )}
+
+    {:noreply,
+     assign(socket,
+       followers_sub_tab: tab,
+       followers_list: list,
+       followers_following_map: following_ids_set(user.id, user_ids)
+     )}
   end
 
   def handle_event("search_followers", params, socket) do
     term = params["value"] || params["term"] || ""
     user = socket.assigns.current_user
-    list = case socket.assigns.followers_sub_tab do
-      "following" -> Engagement.list_following(user.id, search: term)
-      "followers" -> Engagement.list_followers(user.id, search: term)
-    end
+
+    list =
+      case socket.assigns.followers_sub_tab do
+        "following" -> Engagement.list_following(user.id, search: term)
+        "followers" -> Engagement.list_followers(user.id, search: term)
+      end
+
     user_ids = Enum.map(list, & &1.id)
-    {:noreply, assign(socket,
-      followers_search: term,
-      followers_list: list,
-      followers_following_map: following_ids_set(user.id, user_ids)
-    )}
+
+    {:noreply,
+     assign(socket,
+       followers_search: term,
+       followers_list: list,
+       followers_following_map: following_ids_set(user.id, user_ids)
+     )}
   end
 
   def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
     user = socket.assigns.current_user
     Engagement.toggle_follow(user.id, target_id)
-    list = case socket.assigns.followers_sub_tab do
-      "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
-      "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
-    end
+
+    list =
+      case socket.assigns.followers_sub_tab do
+        "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
+        "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
+      end
+
     user_ids = Enum.map(list, & &1.id)
-    {:noreply, assign(socket,
-      followers_list: list,
-      following_count: Engagement.count_following(user.id),
-      followers_count: Engagement.count_followers(user.id),
-      followers_following_map: following_ids_set(user.id, user_ids),
-      following_user_ids: load_following_user_ids(user.id)
-    )}
+
+    {:noreply,
+     assign(socket,
+       followers_list: list,
+       following_count: Engagement.count_following(user.id),
+       followers_count: Engagement.count_followers(user.id),
+       followers_following_map: following_ids_set(user.id, user_ids),
+       following_user_ids: load_following_user_ids(user.id)
+     )}
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
@@ -207,6 +222,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   def handle_event("search_sequences", params, socket) do
     term = params["value"] || params["term"] || ""
+
     filtered =
       if term == "" do
         socket.assigns.sequences_all
@@ -254,9 +270,10 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       if step do
         OGrupoDeEstudos.Admin.update_step(step, %{approved: true})
 
-        steps = OGrupoDeEstudos.Encyclopedia.list_suggested_steps_filtered(
-          filter: socket.assigns.active_tab
-        )
+        steps =
+          OGrupoDeEstudos.Encyclopedia.list_suggested_steps_filtered(
+            filter: socket.assigns.active_tab
+          )
 
         {:noreply,
          socket
@@ -385,8 +402,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     replies_map = socket.assigns.expanded_seq_replies_map
 
     if Map.has_key?(replies_map, comment_id) do
-      {:noreply,
-       assign(socket, :expanded_seq_replies_map, Map.delete(replies_map, comment_id))}
+      {:noreply, assign(socket, :expanded_seq_replies_map, Map.delete(replies_map, comment_id))}
     else
       replies = Engagement.list_replies(SequenceCommentQuery, comment_id)
       new_map = Map.put(replies_map, comment_id, replies)
@@ -398,20 +414,21 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   def handle_event("search_people", params, socket) do
     term = params["value"] || params["term"] || ""
 
-    results = if String.length(term) >= 2 do
-      import Ecto.Query
-      term_like = "%#{String.downcase(term)}%"
+    results =
+      if String.length(term) >= 2 do
+        import Ecto.Query
+        term_like = "%#{String.downcase(term)}%"
 
-      from(u in OGrupoDeEstudos.Accounts.User,
-        where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
-        where: u.id != ^socket.assigns.current_user.id,
-        order_by: [asc: u.username],
-        limit: 5
-      )
-      |> OGrupoDeEstudos.Repo.all()
-    else
-      []
-    end
+        from(u in OGrupoDeEstudos.Accounts.User,
+          where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
+          where: u.id != ^socket.assigns.current_user.id,
+          order_by: [asc: u.username],
+          limit: 5
+        )
+        |> OGrupoDeEstudos.Repo.all()
+      else
+        []
+      end
 
     {:noreply, assign(socket, people_search: term, people_results: results)}
   end

@@ -175,6 +175,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
 
     test "delete button not shown when current_user is not owner and not admin" do
       other_user = user(id: "u2", username: "outro")
+
       html =
         render_component(
           &CommentThread.comment_thread/1,
@@ -192,6 +193,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
 
     test "delete button shown when is_admin is true even if not owner" do
       other_user = user(id: "u2", username: "admin")
+
       html =
         render_component(
           &CommentThread.comment_thread/1,

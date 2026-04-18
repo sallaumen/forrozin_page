@@ -94,6 +94,33 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         assert Map.has_key?(step, :name)
       end
     end
+
+    test "uses every public graph step without requiring approval" do
+      step_a =
+        insert(:step,
+          code: "UA",
+          name: "Unapproved start",
+          wip: false,
+          status: "published",
+          approved: false
+        )
+
+      step_b =
+        insert(:step,
+          code: "UB",
+          name: "Unapproved target",
+          wip: false,
+          status: "published",
+          approved: false
+        )
+
+      insert(:connection, source_step: step_a, target_step: step_b)
+
+      {:ok, [sequence], []} =
+        Generator.generate(base_params("UA", length: 2, count: 1))
+
+      assert Enum.map(sequence, & &1.code) == ["UA", "UB"]
+    end
   end
 
   # ---------------------------------------------------------------------------

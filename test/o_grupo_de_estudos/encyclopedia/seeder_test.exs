@@ -2,7 +2,15 @@ defmodule OGrupoDeEstudos.Encyclopedia.SeederTest do
   use OGrupoDeEstudos.DataCase, async: false
 
   alias OGrupoDeEstudos.Encyclopedia
-  alias OGrupoDeEstudos.Encyclopedia.{Category, TechnicalConcept, Step, Section, Seeder, Subsection}
+
+  alias OGrupoDeEstudos.Encyclopedia.{
+    Category,
+    TechnicalConcept,
+    Step,
+    Section,
+    Seeder,
+    Subsection
+  }
 
   describe "seed!/0" do
     test "inserts categories" do

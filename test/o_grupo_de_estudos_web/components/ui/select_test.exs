@@ -7,12 +7,14 @@ defmodule OGrupoDeEstudosWeb.UI.SelectTest do
 
   describe "select/1" do
     test "renders labeled select with options" do
-      html = render_component(&Select.select/1, %{
-        id: "category",
-        name: "step[category]",
-        label: "Categoria",
-        options: [{"Sacadas", "sacadas"}, {"Travas", "travas"}]
-      })
+      html =
+        render_component(&Select.select/1, %{
+          id: "category",
+          name: "step[category]",
+          label: "Categoria",
+          options: [{"Sacadas", "sacadas"}, {"Travas", "travas"}]
+        })
+
       assert html =~ ~s(<label for="category")
       assert html =~ "<select"
       assert html =~ ~s(id="category")
@@ -24,29 +26,41 @@ defmodule OGrupoDeEstudosWeb.UI.SelectTest do
     end
 
     test "value matches an option to select it" do
-      html = render_component(&Select.select/1, %{
-        id: "x", name: "x", label: "X",
-        options: [{"A", "a"}, {"B", "b"}],
-        value: "b"
-      })
+      html =
+        render_component(&Select.select/1, %{
+          id: "x",
+          name: "x",
+          label: "X",
+          options: [{"A", "a"}, {"B", "b"}],
+          value: "b"
+        })
+
       assert html =~ ~r/<option[^>]*value="b"[^>]*selected/
     end
 
     test "placeholder option when :prompt is set" do
-      html = render_component(&Select.select/1, %{
-        id: "x", name: "x", label: "X",
-        prompt: "Selecione...",
-        options: [{"A", "a"}]
-      })
+      html =
+        render_component(&Select.select/1, %{
+          id: "x",
+          name: "x",
+          label: "X",
+          prompt: "Selecione...",
+          options: [{"A", "a"}]
+        })
+
       assert html =~ "Selecione..."
     end
 
     test "error state sets aria-invalid" do
-      html = render_component(&Select.select/1, %{
-        id: "x", name: "x", label: "X",
-        options: [{"A", "a"}],
-        errors: ["obrigatório"]
-      })
+      html =
+        render_component(&Select.select/1, %{
+          id: "x",
+          name: "x",
+          label: "X",
+          options: [{"A", "a"}],
+          errors: ["obrigatório"]
+        })
+
       assert html =~ ~s(aria-invalid="true")
     end
   end
