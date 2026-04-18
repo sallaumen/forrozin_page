@@ -750,7 +750,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp can_manage_sequence?(_socket, nil), do: false
 
   defp can_manage_sequence?(socket, sequence) do
-    socket.assigns.is_admin or sequence.user_id == socket.assigns.current_user.id
+    sequence.user_id == socket.assigns.current_user.id
   end
 
   defp maybe_clear_deleted_sequence(socket, sequence_id) do

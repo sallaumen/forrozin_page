@@ -267,7 +267,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute has_element?(lv, "#seq-library-card-#{sequence.id}")
     end
 
-    test "admin can delete a community sequence from the library card", %{conn: conn} do
+    test "admin cannot delete a community sequence from the library card", %{conn: conn} do
       author = insert(:user)
       cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
       section = insert(:section, category: cat)
@@ -278,11 +278,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/graph/visual")
 
-      lv
-      |> element("#seq-library-delete-#{sequence.id}")
-      |> render_click()
+      refute has_element?(lv, "#seq-library-delete-#{sequence.id}")
 
-      refute OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
+      render_click(lv, "delete_sequence", %{"id" => sequence.id})
+
+      assert OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
     end
 
     test "non-owner cannot delete a public sequence by forging the event", %{conn: conn} do
