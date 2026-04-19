@@ -826,27 +826,64 @@ const GraphVisual = {
           return
         }
         cancelGhost()
-        closeDrawer(); clearSpotlight(cy); activeCategory = null; resetLegend()
+        closeDrawer()
+        closeMobileLegend()
+        clearSpotlight(cy)
+        activeCategory = null
+        resetLegend()
       }
     })
 
     // Legend buttons
-    const legendBtns = document.querySelectorAll("#graph-legend button[data-category]")
+    const legendBtns = document.querySelectorAll("[data-graph-legend-filter][data-category]")
+    const mobileLegendToggle = document.getElementById("graph-legend-mobile-toggle")
+    const mobileLegendPanel = document.getElementById("graph-legend-mobile-panel")
+
     function resetLegend() {
-      legendBtns.forEach(b => { b.style.background = "transparent"; b.style.fontWeight = "normal" })
+      legendBtns.forEach(b => {
+        b.style.background = ""
+        b.style.fontWeight = ""
+        b.setAttribute("aria-pressed", "false")
+      })
     }
+
+    function activateLegendCategory(catName) {
+      legendBtns.forEach(btn => {
+        if (btn.dataset.category !== catName) return
+        btn.style.background = "rgba(60,40,20,0.08)"
+        btn.style.fontWeight = "700"
+        btn.setAttribute("aria-pressed", "true")
+      })
+    }
+
+    function closeMobileLegend() {
+      if (!mobileLegendPanel || !mobileLegendToggle) return
+      mobileLegendPanel.classList.add("hidden")
+      mobileLegendToggle.setAttribute("aria-expanded", "false")
+    }
+
+    mobileLegendToggle?.addEventListener("click", () => {
+      if (!mobileLegendPanel) return
+      const willOpen = mobileLegendPanel.classList.contains("hidden")
+      mobileLegendPanel.classList.toggle("hidden", !willOpen)
+      mobileLegendToggle.setAttribute("aria-expanded", willOpen ? "true" : "false")
+    })
 
     legendBtns.forEach(btn => {
       btn.addEventListener("click", () => {
         const catName = btn.dataset.category
         closeDrawer()
+        closeMobileLegend()
         if (activeCategory === catName) {
-          activeCategory = null; clearSpotlight(cy); resetLegend(); return
+          activeCategory = null
+          clearSpotlight(cy)
+          resetLegend()
+          return
         }
         activeCategory = catName
         applyCategorySpotlight(cy, catName)
         resetLegend()
-        btn.style.background = "rgba(60,40,20,0.08)"; btn.style.fontWeight = "700"
+        activateLegendCategory(catName)
       })
     })
   },

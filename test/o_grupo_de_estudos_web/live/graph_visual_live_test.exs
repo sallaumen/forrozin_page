@@ -85,7 +85,53 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       assert html =~ "graph-legend"
+      assert html =~ "graph-legend-desktop"
+      assert html =~ "graph-legend-mobile-toggle"
+      assert html =~ "graph-legend-mobile-panel"
+      assert html =~ ~s(data-graph-legend-filter)
       assert html =~ "Bases"
+      refute html =~ ~r/\d+\s+passos\s+·\s+\d+\s+conexões/
+    end
+
+    test "legend hides low-value category filters", %{conn: conn} do
+      bases = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      convencoes = insert(:category, name: "convencoes", label: "Convenções", color: "#f1c40f")
+      footwork = insert(:category, name: "footwork", label: "Forró Footwork", color: "#e67e22")
+
+      bases_section = insert(:section, category: bases)
+      convencoes_section = insert(:section, category: convencoes)
+      footwork_section = insert(:section, category: footwork)
+
+      step_a =
+        insert(:step, code: "BF", name: "Base frontal", section: bases_section, category: bases)
+
+      step_b =
+        insert(:step,
+          code: "CV",
+          name: "Convenção teste",
+          section: convencoes_section,
+          category: convencoes
+        )
+
+      step_c =
+        insert(:step,
+          code: "FW",
+          name: "Footwork teste",
+          section: footwork_section,
+          category: footwork
+        )
+
+      insert(:connection, source_step: step_a, target_step: step_b)
+      insert(:connection, source_step: step_b, target_step: step_c)
+
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      assert html =~ ~s(id="legend-desktop-bases")
+      assert html =~ ~s(id="legend-mobile-bases")
+      refute html =~ ~s(id="legend-desktop-convencoes")
+      refute html =~ ~s(id="legend-mobile-convencoes")
+      refute html =~ ~s(id="legend-desktop-footwork")
+      refute html =~ ~s(id="legend-mobile-footwork")
     end
 
     test "renders unified graph search and finds visible steps by name or code", %{conn: conn} do

@@ -1047,28 +1047,76 @@
       <div id="orphan-list"></div>
     </div>
 
-    <%!-- Color legend — bottom bar --%>
+    <%!-- Graph category filters --%>
     <div
       id="graph-legend"
-      style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 10;"
-      class="flex gap-2 py-1.5 px-4 bg-ink-50/92 rounded-full border border-ink-900/10 shadow-sm flex-nowrap items-center max-w-[95vw]"
+      class="pointer-events-none absolute inset-x-0 bottom-20 z-10 md:bottom-4"
     >
-      <span class="text-[9px] text-ink-500 font-bold tracking-[1.5px] uppercase whitespace-nowrap">
-        {@node_count} passos · {@edge_count} conexões
-      </span>
-      <span class="w-px bg-ink-900/15 mx-1 self-stretch"></span>
-      <%= for cat <- @categories do %>
+      <div
+        id="graph-legend-desktop"
+        style="margin-left: 280px; width: calc(100% - 280px);"
+        class="hidden justify-center px-5 md:flex"
+      >
+        <div class="pointer-events-auto flex max-w-[calc(100vw-320px)] flex-nowrap items-center gap-2 overflow-x-auto rounded-full border border-ink-900/10 bg-ink-50/92 px-4 py-1.5 shadow-sm">
+          <%= for cat <- graph_legend_categories(@categories) do %>
+            <button
+              id={"legend-desktop-#{cat.name}"}
+              type="button"
+              data-graph-legend-filter
+              data-category={cat.name}
+              aria-pressed="false"
+              style={"border-color: #{cat.color}30;"}
+              class="flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-full border bg-transparent px-2 py-0.5 font-serif text-[9px] font-semibold tracking-[0.3px] text-ink-700 transition-colors hover:bg-ink-900/5"
+            >
+              <span style={"width: 8px; height: 8px; border-radius: 50%; background: #{cat.color}; flex-shrink: 0;"}>
+              </span>
+              {cat.label}
+            </button>
+          <% end %>
+        </div>
+      </div>
+
+      <div
+        id="graph-legend-mobile"
+        class="pointer-events-auto absolute bottom-0 left-3 flex flex-col items-start gap-2 md:hidden"
+      >
         <button
-          id={"legend-#{cat.name}"}
-          data-category={cat.name}
-          style={"border-color: #{cat.color}30;"}
-          class="flex items-center gap-1 py-0.5 px-2 rounded-full border bg-transparent cursor-pointer font-serif text-[9px] text-ink-700 tracking-[0.3px] transition-colors whitespace-nowrap"
+          id="graph-legend-mobile-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="graph-legend-mobile-panel"
+          class="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-ink-900/10 bg-ink-50/95 px-4 py-2 font-serif text-xs font-bold text-ink-800 shadow-md transition hover:bg-white"
         >
-          <span style={"width: 8px; height: 8px; border-radius: 50%; background: #{cat.color}; flex-shrink: 0;"}>
-          </span>
-          {cat.label}
+          <.icon name="hero-funnel" class="size-4 text-accent-orange" /> Filtros
         </button>
-      <% end %>
+
+        <div
+          id="graph-legend-mobile-panel"
+          style="width: min(82vw, 280px);"
+          class="hidden rounded-lg border border-ink-900/10 bg-ink-50/95 p-2 shadow-lg"
+        >
+          <div class="mb-2 px-1 font-serif text-[10px] font-bold uppercase tracking-widest text-ink-500">
+            Categorias
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <%= for cat <- graph_legend_categories(@categories) do %>
+              <button
+                id={"legend-mobile-#{cat.name}"}
+                type="button"
+                data-graph-legend-filter
+                data-category={cat.name}
+                aria-pressed="false"
+                style={"border-color: #{cat.color}30;"}
+                class="flex min-h-[34px] cursor-pointer items-center gap-1 rounded-full border bg-transparent px-2.5 py-1 font-serif text-[11px] font-semibold text-ink-700 transition-colors hover:bg-ink-900/5"
+              >
+                <span style={"width: 8px; height: 8px; border-radius: 50%; background: #{cat.color}; flex-shrink: 0;"}>
+                </span>
+                {cat.label}
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
     </div>
 
     <%!-- Side drawer — populated by JS on node click --%>
