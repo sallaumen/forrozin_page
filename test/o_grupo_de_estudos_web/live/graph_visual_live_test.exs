@@ -494,5 +494,15 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "translateX(100%)",
              "graph drawer should use transform: translateX(100%) for off-screen positioning"
     end
+
+    test "step detail drawer uses fixed header and stays hidden on mobile", %{conn: conn} do
+      {:ok, _view, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      assert html =~ ~s(id="drawer-header")
+      assert html =~ ~s(id="drawer-header-content")
+      assert html =~ ~s(id="drawer-content" class="min-h-0 flex-1 overflow-y-auto p-6")
+      assert html =~ "hidden bg-ink-50"
+      assert html =~ "md:flex md:flex-col"
+    end
   end
 end
