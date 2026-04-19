@@ -699,6 +699,11 @@ const GraphVisual = {
     // Apply liked step borders after layout (layout is synchronous here)
     applyLikedStepStyling()
 
+    const initialSequenceSteps = this._consumeInitialSequenceSteps()
+    if (initialSequenceSteps && initialSequenceSteps.length > 0) {
+      this._pendingHighlight = initialSequenceSteps
+    }
+
     // Apply pending sequence highlight (from ?seq= param navigation)
     if (this._pendingHighlight) {
       setTimeout(() => {
@@ -844,6 +849,20 @@ const GraphVisual = {
         btn.style.background = "rgba(60,40,20,0.08)"; btn.style.fontWeight = "700"
       })
     })
+  },
+
+  _consumeInitialSequenceSteps() {
+    const raw = this.el.dataset.initialSequenceSteps
+    if (!raw || raw === "[]") return null
+
+    this.el.dataset.initialSequenceSteps = ""
+
+    try {
+      const steps = JSON.parse(raw)
+      return Array.isArray(steps) ? steps : null
+    } catch (_error) {
+      return null
+    }
   },
 
   // ---------------------------------------------------------------------------

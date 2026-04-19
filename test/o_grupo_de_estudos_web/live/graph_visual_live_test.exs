@@ -143,6 +143,27 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "BA"
     end
 
+    test "sequence query param renders initial sequence steps for the graph hook", %{conn: conn} do
+      user = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step_a = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+      step_b = insert(:step, code: "SC", name: "Sacada simples", section: section, category: cat)
+      insert(:connection, source_step: step_a, target_step: step_b)
+
+      sequence = insert(:sequence, name: "Sequência da comunidade", user: user)
+      insert(:sequence_step, sequence: sequence, step: step_a, position: 1)
+      insert(:sequence_step, sequence: sequence, step: step_b, position: 2)
+
+      {:ok, _lv, html} = live(log_in_user(conn, user), ~p"/graph/visual?seq=#{sequence.id}")
+
+      assert html =~ ~s(data-initial-sequence-steps=)
+      assert html =~ "BA"
+      assert html =~ "SC"
+      assert html =~ ~s(id="seq-library-card-#{sequence.id}")
+      assert html =~ "max-md:hidden"
+    end
+
     test "sequence panel keeps its header outside the scrollable content", %{conn: conn} do
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 

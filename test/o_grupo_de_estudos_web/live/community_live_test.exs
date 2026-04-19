@@ -146,6 +146,14 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       assert html =~ "BF"
     end
 
+    test "view on map link carries the selected sequence id", %{conn: conn, sequence: seq} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+
+      render_click(lv, "switch_section", %{"section" => "sequences"})
+
+      assert has_element?(lv, ~s|a[href="/graph/visual?seq=#{seq.id}"]|)
+    end
+
     test "sequences tab shows author username", %{conn: conn, author: author} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
       html = render_click(lv, "switch_section", %{"section" => "sequences"})

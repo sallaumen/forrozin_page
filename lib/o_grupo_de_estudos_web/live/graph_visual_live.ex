@@ -40,6 +40,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_favorite_ids, MapSet.new())
      |> assign(:seq_active, nil)
      |> assign(:seq_active_id, nil)
+     |> assign(:seq_initial_steps_json, "[]")
      |> assign(:seq_saving, nil)
      |> assign(:seq_start_code, "")
      |> assign(:seq_start_suggestions, [])
@@ -83,9 +84,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
          socket
          |> assign(:seq_active, step_list)
          |> assign(:seq_active_id, saved.id)
+         |> assign(:seq_initial_steps_json, Jason.encode!(step_codes))
          |> assign(:seq_missing_edges, missing)
          |> assign(:seq_panel, true)
-         |> assign(:seq_mobile_visible, true)
+         |> assign(:seq_mobile_visible, false)
          |> assign(:seq_view, :library)
          |> push_event("highlight_sequence", %{steps: step_codes})}
     end
@@ -163,6 +165,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       {:noreply,
        socket
        |> assign(:seq_active, sequence)
+       |> assign(:seq_active_id, nil)
+       |> assign(:seq_initial_steps_json, "[]")
        |> assign(:seq_mobile_visible, false)
        |> push_event("highlight_sequence", %{steps: step_codes})}
     else
@@ -184,7 +188,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       {:noreply,
        socket
        |> assign(:seq_active, step_list)
-       |> assign(:seq_active_id, id)
+       |> assign(:seq_active_id, saved.id)
+       |> assign(:seq_initial_steps_json, Jason.encode!(step_codes))
        |> assign(:seq_missing_edges, missing)
        |> assign(:seq_mobile_visible, false)
        |> push_event("highlight_sequence", %{steps: step_codes})}
@@ -260,6 +265,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      socket
      |> assign(:seq_active, nil)
      |> assign(:seq_active_id, nil)
+     |> assign(:seq_initial_steps_json, "[]")
      |> assign(:seq_missing_edges, [])
      |> push_event("clear_highlight", %{})}
   end
