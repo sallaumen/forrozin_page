@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_active_id, nil)
      |> assign(:seq_initial_steps_json, "[]")
      |> assign(:seq_saving, nil)
-     |> assign(:seq_start_code, "")
+     |> assign(:seq_start_code, "BF")
      |> assign(:seq_start_suggestions, [])
      |> assign(:seq_required_codes, [])
      |> assign(:seq_required_search, "")
@@ -128,7 +128,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     allow_repeats = Map.get(params, "allow_repeats") in ["true", "on"]
     cyclic = Map.get(params, "cyclic") in ["true", "on"]
     min_length = if allow_repeats, do: 8, else: 4
-    length_val = parse_int(Map.get(params, "length", "6"), 6) |> max(min_length)
+    length_val = parse_int(Map.get(params, "length", "10"), 10) |> max(min_length)
     count_val = parse_int(Map.get(params, "count", "3"), 3)
 
     required_codes = socket.assigns.seq_required_codes
