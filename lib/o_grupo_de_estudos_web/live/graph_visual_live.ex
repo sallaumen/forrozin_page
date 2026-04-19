@@ -13,6 +13,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 
+  @graph_legend_hidden_categories ~w(convencoes footwork)
+
   @impl true
   def mount(_params, _session, socket) do
     is_admin = Accounts.admin?(socket.assigns.current_user)
@@ -938,6 +940,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     |> Enum.take(3)
   end
 
+  defp graph_legend_categories(categories) do
+    Enum.reject(categories, &(&1.name in @graph_legend_hidden_categories))
+  end
+
   defp normalize_search_text(nil), do: ""
 
   defp normalize_search_text(text) do
@@ -967,12 +973,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         }
       end)
 
-    connected_count =
-      graph.edges
-      |> Enum.flat_map(&[&1.source_step_id, &1.target_step_id])
-      |> MapSet.new()
-      |> MapSet.size()
-
     categories =
       graph.nodes
       |> Enum.map(& &1.category)
@@ -983,8 +983,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     socket
     |> assign(:graph_json, graph_json)
     |> assign(:graph_search_nodes, graph_search_nodes)
-    |> assign(:node_count, connected_count)
-    |> assign(:edge_count, length(graph.edges))
     |> assign(:categories, categories)
   end
 
