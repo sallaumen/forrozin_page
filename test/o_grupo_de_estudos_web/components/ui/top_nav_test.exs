@@ -74,6 +74,37 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
       refute html =~ "/admin/backups"
     end
 
+    test "optional edit action renders after admin links" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: true,
+          nav_mode: :primary,
+          edit_action_enabled: true,
+          edit_action_event: "toggle_edit_mode",
+          edit_mode: false
+        })
+
+      assert html =~ ~s(id="top-nav-edit-button")
+      assert html =~ ~s(phx-click="toggle_edit_mode")
+      assert html =~ "Editar"
+      assert html =~ "Erros"
+    end
+
+    test "optional edit action reflects active edit mode" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: true,
+          nav_mode: :primary,
+          edit_action_enabled: true,
+          edit_mode: true
+        })
+
+      assert html =~ ~s(aria-pressed="true")
+      assert html =~ "Sair edição"
+    end
+
     test "greeting + settings + logout always present for authenticated user" do
       html =
         render_component(&TopNav.top_nav/1, %{

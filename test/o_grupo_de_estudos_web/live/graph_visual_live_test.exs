@@ -173,11 +173,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "min-h-0 flex-1 overflow-y-auto"
     end
 
-    test "desktop graph controls have breathing room below the top nav", %{conn: conn} do
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+    test "admin edit action is available in the top nav instead of floating controls", %{
+      conn: conn
+    } do
+      {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph/visual")
 
-      assert html =~ ~s(id="graph-controls")
-      assert html =~ "top-[4.75rem]"
+      assert html =~ ~s(id="top-nav-edit-button")
+      assert html =~ ~s(phx-click="toggle_edit_mode")
+      refute html =~ ~s(id="graph-controls")
     end
 
     test "viewing a sequence on the map closes the mobile sequence panel", %{conn: conn} do

@@ -24,6 +24,9 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   attr :notification_dropdown_enabled, :boolean, default: false
   attr :notification_dropdown_open, :boolean, default: false
   attr :notification_preview_groups, :list, default: []
+  attr :edit_action_enabled, :boolean, default: false
+  attr :edit_action_event, :string, default: "toggle_edit_mode"
+  attr :edit_mode, :boolean, default: false
 
   def top_nav(assigns) do
     ~H"""
@@ -93,6 +96,27 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               Erros
             </.link>
           <% end %>
+
+          <button
+            :if={@edit_action_enabled}
+            id="top-nav-edit-button"
+            type="button"
+            phx-click={@edit_action_event}
+            aria-pressed={to_string(@edit_mode)}
+            class={[
+              "inline-flex min-h-8 items-center gap-1.5 rounded border px-3 py-1 font-serif text-[11px] font-semibold tracking-[0.5px] transition-colors",
+              @edit_mode &&
+                "border-accent-red/50 bg-accent-red/15 text-accent-red hover:bg-accent-red/20",
+              !@edit_mode &&
+                "border-ink-100/15 bg-transparent text-ink-400 hover:border-accent-orange/40 hover:text-ink-100"
+            ]}
+          >
+            <.icon
+              name={if @edit_mode, do: "hero-x-mark", else: "hero-pencil-square"}
+              class="size-3.5"
+            />
+            <span>{if @edit_mode, do: "Sair edição", else: "Editar"}</span>
+          </button>
 
           <%= if @notification_dropdown_enabled do %>
             <div class="relative">

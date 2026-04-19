@@ -7,6 +7,9 @@
     notification_dropdown_enabled={true}
     notification_dropdown_open={assigns[:notification_dropdown_open] || false}
     notification_preview_groups={assigns[:notification_preview_groups] || []}
+    edit_action_enabled={@is_admin}
+    edit_action_event="toggle_edit_mode"
+    edit_mode={@edit_mode}
   />
   <%!-- Graph search: unified step lookup for the visible map --%>
   <div class="fixed top-[58px] left-3 right-3 z-30 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2">
@@ -57,35 +60,6 @@
         </button>
       </div>
     </div>
-  </div>
-
-  <%!-- Graph controls: below nav bar, top-right --%>
-  <div
-    id="graph-controls"
-    class="hidden md:flex absolute top-[4.75rem] right-4 z-30 gap-2 items-center"
-  >
-    <button
-      phx-click="toggle_seq_panel"
-      class={[
-        "font-serif text-xs font-semibold py-1.5 px-4 rounded-full cursor-pointer tracking-wide transition-all shadow-sm",
-        @seq_panel && "bg-accent-orange text-white hover:bg-accent-orange/90",
-        !@seq_panel && "bg-ink-100 text-ink-800 hover:bg-ink-50 border border-accent-orange/40"
-      ]}
-    >
-      Sequências
-    </button>
-    <%= if @is_admin do %>
-      <button
-        phx-click="toggle_edit_mode"
-        class={[
-          "font-serif text-[11px] py-1 px-3 rounded cursor-pointer tracking-wide border transition-colors",
-          @edit_mode && "border-accent-red bg-accent-red/10 text-accent-red",
-          !@edit_mode && "border-ink-400/25 bg-ink-900/80 text-ink-400"
-        ]}
-      >
-        {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
-      </button>
-    <% end %>
   </div>
 
   <%!-- Graph canvas — fills remaining viewport --%>
