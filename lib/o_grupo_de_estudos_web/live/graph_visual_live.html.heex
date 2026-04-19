@@ -1054,10 +1054,9 @@
     >
       <div
         id="graph-legend-desktop"
-        style="margin-left: 280px; width: calc(100% - 280px);"
         class="hidden justify-center px-5 md:flex"
       >
-        <div class="pointer-events-auto flex max-w-[calc(100vw-320px)] flex-nowrap items-center gap-2 overflow-x-auto rounded-full border border-ink-900/10 bg-ink-50/92 px-4 py-1.5 shadow-sm">
+        <div class="pointer-events-auto flex max-w-[95vw] flex-nowrap items-center gap-2 overflow-x-auto rounded-full border border-ink-900/10 bg-ink-50/92 px-4 py-1.5 shadow-sm">
           <%= for cat <- graph_legend_categories(@categories) do %>
             <button
               id={"legend-desktop-#{cat.name}"}
