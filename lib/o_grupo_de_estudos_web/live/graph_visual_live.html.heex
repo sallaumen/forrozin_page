@@ -634,7 +634,7 @@
               <%= for seq <- @seq_library do %>
                 <% owned? = MapSet.member?(@seq_owned_ids, seq.id) %>
                 <% favorited? = MapSet.member?(@seq_favorite_ids, seq.id) %>
-                <% can_manage? = owned? %>
+                <% can_manage? = owned? or @is_admin %>
                 <% active? = @seq_active_id == seq.id %>
                 <% categories = sequence_category_labels(seq) %>
                 <div
