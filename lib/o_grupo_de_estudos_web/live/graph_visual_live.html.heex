@@ -60,7 +60,10 @@
   </div>
 
   <%!-- Graph controls: below nav bar, top-right --%>
-  <div class="hidden md:flex absolute top-14 right-4 z-30 gap-2 items-center">
+  <div
+    id="graph-controls"
+    class="hidden md:flex absolute top-[4.75rem] right-4 z-30 gap-2 items-center"
+  >
     <button
       phx-click="toggle_seq_panel"
       class={[
@@ -309,7 +312,9 @@
 
               <%!-- Options --%>
               <div class="bg-ink-100/60 rounded-lg p-3 flex flex-col gap-2.5">
-                <span class="text-[9px] font-bold text-ink-500 uppercase tracking-wider">Opções</span>
+                <span class="text-[9px] font-bold text-ink-500 uppercase tracking-wider">
+                  Opções
+                </span>
                 <label for="cyclic" class="flex items-center gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -330,7 +335,8 @@
                     class="w-4 h-4 accent-accent-orange cursor-pointer shrink-0"
                   />
                   <span class="text-[11px] text-ink-700 leading-tight">
-                    Permitir repetições <span class="text-ink-500 text-[9px]">(mín. 8 passos)</span>
+                    Permitir repetições
+                    <span class="text-ink-500 text-[9px]">(mín. 8 passos)</span>
                   </span>
                 </label>
                 <div class="flex items-center gap-2.5">
