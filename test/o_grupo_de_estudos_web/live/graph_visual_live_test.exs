@@ -173,6 +173,13 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "min-h-0 flex-1 overflow-y-auto"
     end
 
+    test "desktop graph controls have breathing room below the top nav", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      assert html =~ ~s(id="graph-controls")
+      assert html =~ "top-[4.75rem]"
+    end
+
     test "viewing a sequence on the map closes the mobile sequence panel", %{conn: conn} do
       user = insert(:user)
       cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
@@ -524,6 +531,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ ~s(id="drawer-content" class="min-h-0 flex-1 overflow-y-auto p-6")
       assert html =~ "hidden bg-ink-50"
       assert html =~ "md:flex md:flex-col"
+    end
+
+    test "applying a new sequence highlight does not refit before focusing the sequence" do
+      js = File.read!("assets/js/app.js")
+
+      assert js =~ "_clearSequenceHighlight({ refit: false })"
+      assert js =~ "if (refit) {"
+      assert js =~ "cy.animate({ fit: { padding: 60 }, duration: 400 })"
     end
   end
 end

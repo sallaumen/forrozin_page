@@ -872,8 +872,9 @@ const GraphVisual = {
     if (!this._cy) return
     const cy = this._cy
 
-    // Clear any previous highlight
-    this._clearSequenceHighlight()
+    // Clear previous highlight styling without moving the camera. The camera
+    // should animate only once, directly to the newly selected sequence.
+    this._clearSequenceHighlight({ refit: false })
 
     // 1. Group positions by step code (handles repeated nodes)
     const positionsByCode = {}
@@ -956,7 +957,8 @@ const GraphVisual = {
     if (existing) existing.remove()
   },
 
-  _clearSequenceHighlight() {
+  _clearSequenceHighlight(options = {}) {
+    const { refit = true } = options
     const cy = this._cy
     if (!cy || !this._seqHighlightActive) return
 
@@ -993,8 +995,9 @@ const GraphVisual = {
     // Re-apply liked step borders now that sequence highlight is gone
     applyLikedStepStyling()
 
-    // Fit back to full graph
-    cy.animate({ fit: { padding: 60 }, duration: 400 })
+    if (refit) {
+      cy.animate({ fit: { padding: 60 }, duration: 400 })
+    }
   },
 
   _focusGraphNode(code) {
