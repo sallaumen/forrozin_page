@@ -7,23 +7,11 @@
     notification_dropdown_enabled={true}
     notification_dropdown_open={assigns[:notification_dropdown_open] || false}
     notification_preview_groups={assigns[:notification_preview_groups] || []}
+    edit_action_enabled={@is_admin}
+    edit_action_event="toggle_edit_mode"
+    edit_mode={@edit_mode}
   />
   <.onboarding_banner />
-  <%!-- Secondary toolbar: page-specific actions (admin) --%>
-  <%= if @is_admin do %>
-    <div class="bg-ink-900 border-t border-ink-100/10 py-1.5 px-6 flex justify-end">
-      <button
-        phx-click="toggle_edit_mode"
-        class={[
-          "font-serif text-xs py-1 px-3 rounded cursor-pointer tracking-wide border",
-          @edit_mode && "border-accent-red bg-accent-red/20 text-accent-red",
-          !@edit_mode && "border-ink-400/40 bg-transparent text-ink-400"
-        ]}
-      >
-        {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
-      </button>
-    </div>
-  <% end %>
 
   <%!-- Hero --%>
   <div class="border-b border-ink-300/50 px-6 pt-12 pb-9 bg-ink-200">

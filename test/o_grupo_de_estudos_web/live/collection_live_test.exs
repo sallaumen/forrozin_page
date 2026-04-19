@@ -236,8 +236,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     end
 
     test "admin sees edit button", %{conn: conn} do
-      {:ok, _lv, html} = live(admin_conn(conn), ~p"/collection")
+      {:ok, lv, html} = live(admin_conn(conn), ~p"/collection")
+
       assert html =~ "Editar"
+      assert has_element?(lv, "#top-nav-edit-button")
     end
 
     test "admin updates step name via drawer", %{conn: conn} do

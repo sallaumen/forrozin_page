@@ -8,22 +8,10 @@
     notification_dropdown_enabled={true}
     notification_dropdown_open={assigns[:notification_dropdown_open] || false}
     notification_preview_groups={assigns[:notification_preview_groups] || []}
+    edit_action_enabled={@can_edit}
+    edit_action_event="toggle_edit"
+    edit_mode={@edit_mode}
   />
-  <%!-- Secondary toolbar: page-specific actions --%>
-  <%= if @can_edit do %>
-    <div class="bg-ink-900 border-t border-white/[0.08] py-1.5 px-6 flex justify-end">
-      <button
-        phx-click="toggle_edit"
-        class={[
-          "font-serif text-xs py-1 px-3 rounded cursor-pointer tracking-wide border",
-          @edit_mode && "border-accent-red bg-accent-red/20 text-accent-red",
-          !@edit_mode && "border-ink-400/40 bg-transparent text-ink-400"
-        ]}
-      >
-        {if @edit_mode, do: "✕ Sair edição", else: "✏ Editar"}
-      </button>
-    </div>
-  <% end %>
 
   <%!-- Content --%>
   <div class="max-w-[760px] mx-auto px-6 pt-10 pb-20 w-full box-border">
