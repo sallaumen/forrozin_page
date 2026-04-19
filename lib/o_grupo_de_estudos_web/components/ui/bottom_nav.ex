@@ -17,7 +17,6 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
   use OGrupoDeEstudosWeb, :verified_routes
 
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
-  import OGrupoDeEstudosWeb.UI.PWAInstallBanner
 
   attr :current_user, :map, required: true
   attr :current_path, :string, required: true
@@ -39,7 +38,6 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
     assigns = assign(assigns, :tabs, tabs)
 
     ~H"""
-    <.pwa_install_banner />
     <nav
       data-ui="bottom-nav"
       class={[
