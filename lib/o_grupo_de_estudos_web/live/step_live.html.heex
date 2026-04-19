@@ -5,6 +5,9 @@
     nav_mode={@nav_mode}
     title={@step.code}
     notification_count={assigns[:notification_count] || 0}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={assigns[:notification_dropdown_open] || false}
+    notification_preview_groups={assigns[:notification_preview_groups] || []}
   />
   <%!-- Secondary toolbar: page-specific actions --%>
   <%= if @can_edit do %>

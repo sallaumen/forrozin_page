@@ -379,6 +379,12 @@ defmodule OGrupoDeEstudos.Engagement do
     _error -> :ok
   end
 
+  defp safe_dispatch_follow(follower_id, followed_id) do
+    Dispatcher.notify_follow(follower_id, followed_id)
+  rescue
+    _error -> :ok
+  end
+
   defp schema_and_field_for("step"), do: {StepComment, :step_id}
   defp schema_and_field_for("sequence"), do: {SequenceComment, :sequence_id}
   defp schema_and_field_for("profile"), do: {ProfileComment, :profile_id}
@@ -401,8 +407,12 @@ defmodule OGrupoDeEstudos.Engagement do
         |> Follow.changeset(%{follower_id: follower_id, followed_id: followed_id})
         |> Repo.insert()
         |> case do
-          {:ok, _} -> {:ok, :followed}
-          {:error, changeset} -> {:error, changeset}
+          {:ok, _} ->
+            safe_dispatch_follow(follower_id, followed_id)
+            {:ok, :followed}
+
+          {:error, changeset} ->
+            {:error, changeset}
         end
 
       follow ->

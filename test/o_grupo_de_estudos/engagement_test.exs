@@ -711,6 +711,26 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.following?(user.id, other.id)
     end
 
+    test "toggle_follow/2 notifies the followed user", %{user: user} do
+      other = insert(:user)
+
+      assert {:ok, :followed} = Engagement.toggle_follow(user.id, other.id)
+
+      notification =
+        Repo.one!(
+          from n in Notification,
+            where:
+              n.user_id == ^other.id and
+                n.actor_id == ^user.id and
+                n.action == "followed_user"
+        )
+
+      assert notification.target_type == "profile"
+      assert notification.target_id == user.id
+      assert notification.parent_type == "profile"
+      assert notification.parent_id == user.id
+    end
+
     test "toggle_follow/2 removes follow on second call", %{user: user} do
       other = insert(:user)
       {:ok, :followed} = Engagement.toggle_follow(user.id, other.id)

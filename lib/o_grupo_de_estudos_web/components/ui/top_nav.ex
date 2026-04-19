@@ -21,6 +21,9 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   attr :nav_mode, :atom, values: [:primary, :detail], default: :primary
   attr :title, :string, default: nil
   attr :notification_count, :integer, default: 0
+  attr :notification_dropdown_enabled, :boolean, default: false
+  attr :notification_dropdown_open, :boolean, default: false
+  attr :notification_preview_groups, :list, default: []
 
   def top_nav(assigns) do
     ~H"""
@@ -91,27 +94,131 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             </.link>
           <% end %>
 
-          <.link navigate={~p"/notifications"} class="relative group no-underline">
-            <.icon
-              name="hero-bell-solid"
-              class={[
-                "size-5 transition-colors",
-                @notification_count > 0 && "text-accent-orange",
-                @notification_count == 0 && "text-ink-400 group-hover:text-ink-200"
-              ]}
-            />
-            <span
-              :if={@notification_count > 0}
-              class={[
-                "absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-0.5",
-                "flex items-center justify-center",
-                "bg-accent-red text-white text-[10px] font-bold rounded-full",
-                "animate-notification-pop"
-              ]}
-            >
-              {if @notification_count > 99, do: "99+", else: @notification_count}
-            </span>
-          </.link>
+          <%= if @notification_dropdown_enabled do %>
+            <div class="relative">
+              <button
+                type="button"
+                id="top-nav-notifications-button"
+                phx-click="toggle_notifications_dropdown"
+                aria-haspopup="dialog"
+                aria-expanded={@notification_dropdown_open}
+                class="relative group flex h-9 w-9 items-center justify-center rounded border border-transparent bg-transparent text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/70"
+              >
+                <.icon
+                  name="hero-bell-solid"
+                  class={[
+                    "size-5 transition-colors",
+                    @notification_count > 0 && "text-accent-orange",
+                    @notification_count == 0 && "text-ink-400 group-hover:text-ink-200"
+                  ]}
+                />
+                <span
+                  :if={@notification_count > 0}
+                  class={[
+                    "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-0.5",
+                    "flex items-center justify-center",
+                    "bg-accent-red text-white text-[10px] font-bold rounded-full",
+                    "animate-notification-pop"
+                  ]}
+                >
+                  {if @notification_count > 99, do: "99+", else: @notification_count}
+                </span>
+              </button>
+
+              <div
+                :if={@notification_dropdown_open}
+                id="top-nav-notifications-panel"
+                phx-click-away="close_notifications_dropdown"
+                class="absolute right-0 top-[calc(100%+10px)] z-50 w-[380px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-md border border-ink-900/10 bg-ink-50 text-ink-900 shadow-[0_18px_45px_rgba(30,22,16,0.24)]"
+                role="dialog"
+                aria-label="Notificações"
+              >
+                <div class="flex items-center justify-between border-b border-ink-900/10 px-4 py-3">
+                  <div>
+                    <div class="text-sm font-bold text-ink-900">Notificações</div>
+                    <div class="text-[11px] text-ink-500">Novas aparecem com ponto laranja.</div>
+                  </div>
+                  <.link
+                    navigate={~p"/notifications"}
+                    class="text-[11px] font-semibold text-accent-orange no-underline hover:text-accent-orange/80"
+                  >
+                    Abrir tudo
+                  </.link>
+                </div>
+
+                <div class="max-h-[420px] overflow-y-auto">
+                  <%= if @notification_preview_groups == [] do %>
+                    <div class="px-4 py-8 text-center">
+                      <.icon name="hero-bell" class="mx-auto mb-3 size-9 text-ink-300" />
+                      <p class="m-0 text-sm font-semibold text-ink-700">
+                        Nenhuma notificação ainda
+                      </p>
+                      <p class="mx-auto mt-1 max-w-[230px] text-xs leading-relaxed text-ink-500">
+                        Quando alguém interagir com você, aparece aqui.
+                      </p>
+                    </div>
+                  <% else %>
+                    <.link
+                      :for={notif <- @notification_preview_groups}
+                      navigate={notification_path(notif)}
+                      class={[
+                        "flex items-start gap-3 border-b border-ink-900/[0.06] px-4 py-3 text-left no-underline transition last:border-b-0 hover:bg-accent-orange/[0.06]",
+                        !notif.read && "bg-accent-orange/[0.04]"
+                      ]}
+                    >
+                      <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-900 text-xs font-bold text-ink-50">
+                        {notification_initial(notif)}
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <p class="m-0 text-sm leading-snug text-ink-700">
+                          <span class="font-bold text-ink-900">{primary_actor_name(notif)}</span>
+                          <span :if={notif.count > 1} class="text-ink-500">
+                            e mais {notif.count - 1}
+                          </span>
+                          <span>{action_text(notif)}</span>
+                          <span
+                            :if={target_name(notif)}
+                            class="font-semibold text-accent-orange"
+                          >
+                            {target_name(notif)}
+                          </span>
+                        </p>
+                        <p class="m-0 mt-1 text-[11px] text-ink-400">
+                          {time_ago(notif.latest_at)}
+                        </p>
+                      </div>
+                      <span
+                        :if={!notif.read}
+                        class="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-orange"
+                      />
+                    </.link>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <.link navigate={~p"/notifications"} class="relative group no-underline">
+              <.icon
+                name="hero-bell-solid"
+                class={[
+                  "size-5 transition-colors",
+                  @notification_count > 0 && "text-accent-orange",
+                  @notification_count == 0 && "text-ink-400 group-hover:text-ink-200"
+                ]}
+              />
+              <span
+                :if={@notification_count > 0}
+                class={[
+                  "absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-0.5",
+                  "flex items-center justify-center",
+                  "bg-accent-red text-white text-[10px] font-bold rounded-full",
+                  "animate-notification-pop"
+                ]}
+              >
+                {if @notification_count > 99, do: "99+", else: @notification_count}
+              </span>
+            </.link>
+          <% end %>
 
           <span class="w-px h-4 bg-ink-100/15"></span>
 
@@ -198,5 +305,74 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
       </div>
     </header>
     """
+  end
+
+  defp notification_initial(%{actors_data: [actor | _]}) do
+    (actor.name || actor.username || "?")
+    |> String.first()
+    |> String.upcase()
+  end
+
+  defp notification_initial(_), do: "?"
+
+  defp primary_actor_name(%{actors_data: [actor | _]}) do
+    actor.name || actor.username || "Alguém"
+  end
+
+  defp primary_actor_name(_), do: "Alguém"
+
+  defp notification_path(%{action: "followed_user", parent_type: "profile", parent_id: id}) do
+    profile_path(id)
+  end
+
+  defp notification_path(%{parent_type: "step", parent_id: id}) do
+    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
+      nil -> ~p"/collection"
+      step -> ~p"/steps/#{step.code}"
+    end
+  end
+
+  defp notification_path(%{parent_type: "profile", parent_id: id}) do
+    profile_path(id)
+  end
+
+  defp notification_path(%{parent_type: "sequence"}), do: ~p"/community"
+  defp notification_path(_), do: ~p"/collection"
+
+  defp profile_path(id) do
+    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Accounts.User, id) do
+      nil -> ~p"/collection"
+      user -> ~p"/users/#{user.username}"
+    end
+  end
+
+  defp target_name(%{parent_type: "step", parent_id: id}) when not is_nil(id) do
+    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
+      nil -> nil
+      step -> step.name
+    end
+  end
+
+  defp target_name(_), do: nil
+
+  defp action_text(%{action: "followed_user"}), do: " começou a te seguir"
+  defp action_text(%{action: "liked_comment"}), do: " curtiu seu comentário"
+  defp action_text(%{action: "replied_comment"}), do: " respondeu ao seu comentário"
+  defp action_text(%{action: "liked_step"}), do: " curtiu o passo "
+  defp action_text(%{action: "liked_sequence"}), do: " curtiu a sequência"
+  defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão"
+  defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
+  defp action_text(_), do: " interagiu"
+
+  defp time_ago(datetime) do
+    diff = NaiveDateTime.diff(NaiveDateTime.utc_now(), datetime, :second)
+
+    cond do
+      diff < 60 -> "agora"
+      diff < 3_600 -> "#{div(diff, 60)}min"
+      diff < 86_400 -> "#{div(diff, 3_600)}h"
+      diff < 604_800 -> "#{div(diff, 86_400)}d"
+      true -> "#{div(diff, 604_800)}sem"
+    end
   end
 end

@@ -30,6 +30,21 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
     raw = Engagement.list_notifications(user.id, limit: @page_size)
     grouped = Grouper.group(raw)
 
+    notification_count =
+      if connected?(socket) do
+        Engagement.mark_all_read(user)
+
+        Phoenix.PubSub.broadcast(
+          OGrupoDeEstudos.PubSub,
+          "notifications:#{user.id}",
+          {:notifications_read, :all}
+        )
+
+        0
+      else
+        socket.assigns[:notification_count] || 0
+      end
+
     {:ok,
      assign(socket,
        page_title: "Notificações",
@@ -38,7 +53,8 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        page: 0,
        has_more: length(raw) == @page_size,
        nav_mode: :primary,
-       is_admin: Accounts.admin?(user)
+       is_admin: Accounts.admin?(user),
+       notification_count: notification_count
      )}
   end
 
@@ -141,6 +157,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   defp action_text(%{action: "replied_comment"}), do: " respondeu ao seu comentário"
   defp action_text(%{action: "liked_step"}), do: " curtiu o passo"
   defp action_text(%{action: "liked_sequence"}), do: " curtiu a sequência"
+  defp action_text(%{action: "followed_user"}), do: " começou a te seguir"
   defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão ✓"
   defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
   defp action_text(_), do: " interagiu"

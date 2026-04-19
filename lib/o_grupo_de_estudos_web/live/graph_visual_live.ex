@@ -163,6 +163,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       {:noreply,
        socket
        |> assign(:seq_active, sequence)
+       |> assign(:seq_mobile_visible, false)
        |> push_event("highlight_sequence", %{steps: step_codes})}
     else
       {:noreply, socket}
@@ -185,6 +186,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
        |> assign(:seq_active, step_list)
        |> assign(:seq_active_id, id)
        |> assign(:seq_missing_edges, missing)
+       |> assign(:seq_mobile_visible, false)
        |> push_event("highlight_sequence", %{steps: step_codes})}
     else
       {:noreply, socket}

@@ -4,6 +4,9 @@
     is_admin={@is_admin}
     nav_mode={@nav_mode}
     notification_count={assigns[:notification_count] || 0}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={assigns[:notification_dropdown_open] || false}
+    notification_preview_groups={assigns[:notification_preview_groups] || []}
   />
   <.onboarding_banner />
   <%!-- Secondary toolbar: page-specific actions (admin) --%>
@@ -311,57 +314,63 @@
   <div
     class={[
       "fixed top-[110px] right-0 w-[380px] max-w-screen h-[calc(100vh-110px)] z-40",
-      "bg-ink-50 border-l border-ink-200 shadow-lg overflow-y-auto p-6 font-serif",
+      "bg-ink-50 border-l border-ink-200 shadow-lg flex flex-col overflow-hidden font-serif",
       "transition-transform duration-200"
     ]}
     style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
   >
-    <button
-      phx-click="close_drawer"
-      aria-label="Fechar"
-      class="absolute top-3 right-2 inline-flex items-center justify-center min-h-[44px] min-w-[44px] bg-transparent border-0 text-xl text-ink-500 cursor-pointer"
-    >
-      ×
-    </button>
-
     <%= if @drawer_type == :step and @drawer_item do %>
       <%!-- Step header --%>
-      <div class="mb-4">
-        <div class="text-[11px] text-ink-500 tracking-wide mb-1">
-          {@drawer_item.code}
-        </div>
-        <div class="flex items-center gap-3 mb-2">
-          <div class="text-xl font-bold text-ink-900 leading-snug flex-1">
-            {@drawer_item.name}
+      <div
+        id="collection-drawer-header"
+        class="shrink-0 border-b border-ink-200 bg-ink-50 p-6 pr-4"
+      >
+        <div class="flex items-start gap-3 mb-2">
+          <div class="min-w-0 flex-1">
+            <div class="text-[11px] text-ink-500 tracking-wide mb-1">
+              {@drawer_item.code}
+            </div>
+            <div class="text-xl font-bold text-ink-900 leading-snug">
+              {@drawer_item.name}
+            </div>
           </div>
-          <button
-            phx-click="toggle_drawer_like"
-            class="p-1.5 rounded-lg border border-ink-200 hover:border-accent-red/40 transition-colors"
-            title={if @drawer_liked, do: "Remover curtida", else: "Curtir"}
-          >
-            <.icon
-              name={if @drawer_liked, do: "hero-heart-solid", else: "hero-heart"}
-              class={[
-                "w-5 h-5",
-                @drawer_liked && "text-accent-red",
-                !@drawer_liked && "text-ink-400"
-              ]}
-            />
-          </button>
-          <button
-            phx-click="toggle_drawer_favorite"
-            class="p-1.5 rounded-lg border border-ink-200 hover:border-gold-500/40 transition-colors"
-            title={if @drawer_favorited, do: "Remover favorito", else: "Favoritar"}
-          >
-            <.icon
-              name={if @drawer_favorited, do: "hero-star-solid", else: "hero-star"}
-              class={[
-                "w-5 h-5",
-                @drawer_favorited && "text-gold-500",
-                !@drawer_favorited && "text-ink-400"
-              ]}
-            />
-          </button>
+          <div class="flex shrink-0 items-center gap-1.5">
+            <button
+              phx-click="toggle_drawer_like"
+              class="p-1.5 rounded-lg border border-ink-200 hover:border-accent-red/40 transition-colors"
+              title={if @drawer_liked, do: "Remover curtida", else: "Curtir"}
+            >
+              <.icon
+                name={if @drawer_liked, do: "hero-heart-solid", else: "hero-heart"}
+                class={[
+                  "w-5 h-5",
+                  @drawer_liked && "text-accent-red",
+                  !@drawer_liked && "text-ink-400"
+                ]}
+              />
+            </button>
+            <button
+              phx-click="toggle_drawer_favorite"
+              class="p-1.5 rounded-lg border border-ink-200 hover:border-gold-500/40 transition-colors"
+              title={if @drawer_favorited, do: "Remover favorito", else: "Favoritar"}
+            >
+              <.icon
+                name={if @drawer_favorited, do: "hero-star-solid", else: "hero-star"}
+                class={[
+                  "w-5 h-5",
+                  @drawer_favorited && "text-gold-500",
+                  !@drawer_favorited && "text-ink-400"
+                ]}
+              />
+            </button>
+            <button
+              phx-click="close_drawer"
+              aria-label="Fechar"
+              class="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg border border-transparent bg-transparent text-ink-500 transition hover:bg-ink-100 hover:text-ink-900"
+            >
+              <.icon name="hero-x-mark" class="size-5" />
+            </button>
+          </div>
         </div>
         <%= if @drawer_item.category do %>
           <span
@@ -424,284 +433,302 @@
         <% end %>
       </div>
 
-      <%!-- Note or edit form --%>
-      <%= if @can_edit_drawer do %>
-        <form
-          phx-submit="update_step"
-          class="mb-4 flex flex-col gap-2"
-        >
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Nome
-          </label>
-          <input
-            type="text"
-            name="step[name]"
-            value={@drawer_item.name}
-            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
-          />
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Código
-          </label>
-          <input
-            type="text"
-            name="step[code]"
-            value={@drawer_item.code}
-            class="w-full py-2.5 px-3 border border-ink-300 rounded font-mono text-base text-ink-900 box-border"
-          />
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Nota mecânica
-          </label>
-          <textarea
-            name="step[note]"
-            rows="4"
-            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
-          ><%= @drawer_item.note %></textarea>
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Categoria
-          </label>
-          <select
-            name="step[category_id]"
-            class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
-          >
-            <%= for cat <- @categories do %>
-              <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
-                {cat.label}
-              </option>
-            <% end %>
-          </select>
-          <div class="flex gap-2.5 items-center">
-            <label class="text-[11px] text-ink-700 flex items-center gap-1">
-              <input type="hidden" name="step[wip]" value="false" />
-              <input type="checkbox" name="step[wip]" value="true" checked={@drawer_item.wip} />
-              WIP
-            </label>
-            <label class="text-[11px] text-ink-700 flex items-center gap-1">
-              <input type="hidden" name="step[highlighted]" value="false" />
-              <input
-                type="checkbox"
-                name="step[highlighted]"
-                value="true"
-                checked={@drawer_item.highlighted}
-              /> Destacado no mapa
-            </label>
-          </div>
-          <button
-            type="submit"
-            class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
-          >
-            Salvar passo
-          </button>
-        </form>
-      <% else %>
-        <%= if @drawer_item.note do %>
-          <div class="text-xs text-ink-700 italic leading-relaxed mb-4 py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
-            {@drawer_item.note}
-          </div>
-        <% end %>
-      <% end %>
-
-      <%!-- Connections --%>
-      <div class="text-xs text-ink-800 mb-3 font-semibold">
-        {length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas
-      </div>
-
-      <%= if @drawer_connections_out != [] do %>
-        <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mb-1.5">
-          Saídas →
-        </div>
-        <%= for conn <- @drawer_connections_out do %>
-          <div class="flex items-center py-1 border-b border-ink-200/40">
-            <span
-              phx-click="open_step"
-              phx-value-code={conn.target_step.code}
-              class="text-sm text-ink-900 cursor-pointer flex-1"
-            >
-              <code class="text-[10px] text-ink-500 mr-1">
-                {conn.target_step.code}
-              </code>
-              {conn.target_step.name}
-            </span>
-            <%= if @can_edit_drawer do %>
-              <button
-                phx-click="delete_step_connection"
-                phx-value-source={@drawer_item.code}
-                phx-value-target={conn.target_step.code}
-                data-confirm={"Remover #{@drawer_item.code} → #{conn.target_step.code}?"}
-                class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
-              >
-                ×
-              </button>
-            <% end %>
-          </div>
-        <% end %>
-      <% end %>
-
-      <%= if @drawer_connections_in != [] do %>
-        <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mt-2.5 mb-1.5">
-          ← Entradas
-        </div>
-        <%= for conn <- @drawer_connections_in do %>
-          <div class="flex items-center py-1 border-b border-ink-200/40">
-            <span
-              phx-click="open_step"
-              phx-value-code={conn.source_step.code}
-              class="text-sm text-ink-900 cursor-pointer flex-1"
-            >
-              <code class="text-[10px] text-ink-500 mr-1">
-                {conn.source_step.code}
-              </code>
-              {conn.source_step.name}
-            </span>
-            <%= if @can_edit_drawer do %>
-              <button
-                phx-click="delete_step_connection"
-                phx-value-source={conn.source_step.code}
-                phx-value-target={@drawer_item.code}
-                data-confirm={"Remover #{conn.source_step.code} → #{@drawer_item.code}?"}
-                class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
-              >
-                ×
-              </button>
-            <% end %>
-          </div>
-        <% end %>
-      <% end %>
-
-      <%= if @can_edit_drawer do %>
-        <div class="mt-2.5 relative">
+      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6">
+        <%!-- Note or edit form --%>
+        <%= if @can_edit_drawer do %>
           <form
-            phx-submit="create_step_connection"
-            phx-change="search_connection"
-            class="flex gap-1.5"
+            phx-submit="update_step"
+            class="mb-4 flex flex-col gap-2"
           >
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Nome
+            </label>
             <input
               type="text"
-              name="target_code"
-              value={@connection_search}
-              placeholder="Buscar passo por código ou nome..."
-              autocomplete="off"
-              phx-debounce="150"
-              class="flex-1 py-2 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900"
+              name="step[name]"
+              value={@drawer_item.name}
+              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
             />
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Código
+            </label>
+            <input
+              type="text"
+              name="step[code]"
+              value={@drawer_item.code}
+              class="w-full py-2.5 px-3 border border-ink-300 rounded font-mono text-base text-ink-900 box-border"
+            />
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Nota mecânica
+            </label>
+            <textarea
+              name="step[note]"
+              rows="4"
+              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
+            ><%= @drawer_item.note %></textarea>
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Categoria
+            </label>
+            <select
+              name="step[category_id]"
+              class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
+            >
+              <%= for cat <- @categories do %>
+                <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
+                  {cat.label}
+                </option>
+              <% end %>
+            </select>
+            <div class="flex gap-2.5 items-center">
+              <label class="text-[11px] text-ink-700 flex items-center gap-1">
+                <input type="hidden" name="step[wip]" value="false" />
+                <input type="checkbox" name="step[wip]" value="true" checked={@drawer_item.wip} />
+                WIP
+              </label>
+              <label class="text-[11px] text-ink-700 flex items-center gap-1">
+                <input type="hidden" name="step[highlighted]" value="false" />
+                <input
+                  type="checkbox"
+                  name="step[highlighted]"
+                  value="true"
+                  checked={@drawer_item.highlighted}
+                /> Destacado no mapa
+              </label>
+            </div>
             <button
               type="submit"
-              class="py-2 px-3.5 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer text-xs whitespace-nowrap"
+              class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
             >
-              + Conexão
+              Salvar passo
             </button>
           </form>
-          <%= if @connection_suggestions != [] do %>
-            <div class="absolute top-[42px] left-0 right-[60px] bg-ink-50 border border-ink-300 rounded shadow-lg z-10 max-h-[200px] overflow-y-auto">
-              <%= for step <- @connection_suggestions do %>
-                <div
-                  phx-click="select_connection_target"
-                  phx-value-code={step.code}
-                  class="py-2 px-3 cursor-pointer border-b border-ink-200/40 font-serif text-sm text-ink-900 hover:bg-ink-200/60"
+        <% else %>
+          <%= if @drawer_item.note do %>
+            <div class="text-xs text-ink-700 italic leading-relaxed mb-4 py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
+              {@drawer_item.note}
+            </div>
+          <% end %>
+        <% end %>
+
+        <%!-- Connections --%>
+        <div class="text-xs text-ink-800 mb-3 font-semibold">
+          {length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas
+        </div>
+
+        <%= if @drawer_connections_out != [] do %>
+          <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mb-1.5">
+            Saídas →
+          </div>
+          <%= for conn <- @drawer_connections_out do %>
+            <div class="flex items-center py-1 border-b border-ink-200/40">
+              <span
+                phx-click="open_step"
+                phx-value-code={conn.target_step.code}
+                class="text-sm text-ink-900 cursor-pointer flex-1"
+              >
+                <code class="text-[10px] text-ink-500 mr-1">
+                  {conn.target_step.code}
+                </code>
+                {conn.target_step.name}
+              </span>
+              <%= if @can_edit_drawer do %>
+                <button
+                  phx-click="delete_step_connection"
+                  phx-value-source={@drawer_item.code}
+                  phx-value-target={conn.target_step.code}
+                  data-confirm={"Remover #{@drawer_item.code} → #{conn.target_step.code}?"}
+                  class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
                 >
-                  <code
-                    style={"color: #{if step.category, do: step.category.color, else: "#9a7a5a"};"}
-                    class="text-[11px] mr-1.5"
-                  >
-                    {step.code}
-                  </code>
-                  {step.name}
-                  <%= if step.category do %>
-                    <span
-                      style={"color: #{step.category.color};"}
-                      class="text-[10px] italic ml-1.5"
-                    >
-                      {step.category.label}
-                    </span>
-                  <% end %>
-                </div>
+                  ×
+                </button>
               <% end %>
             </div>
           <% end %>
-        </div>
-      <% end %>
+        <% end %>
 
-      <%= if @drawer_link_count > 0 do %>
-        <div class="mt-4 py-2.5 px-3.5 bg-gold-500/10 border border-gold-500/30 rounded-md text-xs text-ink-700 italic">
-          🎬 {@drawer_link_count} link(s) disponível(is). Ver no passo completo
-        </div>
-      <% end %>
-      <.link
-        navigate={~p"/steps/#{@drawer_item.code}"}
-        class="block mt-3 py-3 px-4 text-center bg-ink-900 text-ink-100 rounded-md no-underline text-sm font-semibold tracking-wide"
-      >
-        Ver passo completo →
-      </.link>
+        <%= if @drawer_connections_in != [] do %>
+          <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mt-2.5 mb-1.5">
+            ← Entradas
+          </div>
+          <%= for conn <- @drawer_connections_in do %>
+            <div class="flex items-center py-1 border-b border-ink-200/40">
+              <span
+                phx-click="open_step"
+                phx-value-code={conn.source_step.code}
+                class="text-sm text-ink-900 cursor-pointer flex-1"
+              >
+                <code class="text-[10px] text-ink-500 mr-1">
+                  {conn.source_step.code}
+                </code>
+                {conn.source_step.name}
+              </span>
+              <%= if @can_edit_drawer do %>
+                <button
+                  phx-click="delete_step_connection"
+                  phx-value-source={conn.source_step.code}
+                  phx-value-target={@drawer_item.code}
+                  data-confirm={"Remover #{conn.source_step.code} → #{@drawer_item.code}?"}
+                  class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
+                >
+                  ×
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+
+        <%= if @can_edit_drawer do %>
+          <div class="mt-2.5 relative">
+            <form
+              phx-submit="create_step_connection"
+              phx-change="search_connection"
+              class="flex gap-1.5"
+            >
+              <input
+                type="text"
+                name="target_code"
+                value={@connection_search}
+                placeholder="Buscar passo por código ou nome..."
+                autocomplete="off"
+                phx-debounce="150"
+                class="flex-1 py-2 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900"
+              />
+              <button
+                type="submit"
+                class="py-2 px-3.5 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer text-xs whitespace-nowrap"
+              >
+                + Conexão
+              </button>
+            </form>
+            <%= if @connection_suggestions != [] do %>
+              <div class="absolute top-[42px] left-0 right-[60px] bg-ink-50 border border-ink-300 rounded shadow-lg z-10 max-h-[200px] overflow-y-auto">
+                <%= for step <- @connection_suggestions do %>
+                  <div
+                    phx-click="select_connection_target"
+                    phx-value-code={step.code}
+                    class="py-2 px-3 cursor-pointer border-b border-ink-200/40 font-serif text-sm text-ink-900 hover:bg-ink-200/60"
+                  >
+                    <code
+                      style={"color: #{if step.category, do: step.category.color, else: "#9a7a5a"};"}
+                      class="text-[11px] mr-1.5"
+                    >
+                      {step.code}
+                    </code>
+                    {step.name}
+                    <%= if step.category do %>
+                      <span
+                        style={"color: #{step.category.color};"}
+                        class="text-[10px] italic ml-1.5"
+                      >
+                        {step.category.label}
+                      </span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%= if @drawer_link_count > 0 do %>
+          <div class="mt-4 py-2.5 px-3.5 bg-gold-500/10 border border-gold-500/30 rounded-md text-xs text-ink-700 italic">
+            🎬 {@drawer_link_count} link(s) disponível(is). Ver no passo completo
+          </div>
+        <% end %>
+        <.link
+          navigate={~p"/steps/#{@drawer_item.code}"}
+          class="block mt-3 py-3 px-4 text-center bg-ink-900 text-ink-100 rounded-md no-underline text-sm font-semibold tracking-wide"
+        >
+          Ver passo completo →
+        </.link>
+      </div>
     <% end %>
 
     <%= if @drawer_type == :section and @drawer_item do %>
-      <div class="mb-4">
-        <div class="text-[11px] text-ink-500 tracking-wide mb-1">
-          Seção {if @drawer_item.num, do: "##{@drawer_item.num}"}
-        </div>
-        <div class="text-xl font-bold text-ink-900 leading-snug mb-2">
-          {@drawer_item.title}
+      <div
+        id="collection-drawer-header"
+        class="shrink-0 border-b border-ink-200 bg-ink-50 p-6 pr-4"
+      >
+        <div class="flex items-start gap-3">
+          <div class="min-w-0 flex-1">
+            <div class="text-[11px] text-ink-500 tracking-wide mb-1">
+              Seção {if @drawer_item.num, do: "##{@drawer_item.num}"}
+            </div>
+            <div class="text-xl font-bold text-ink-900 leading-snug">
+              {@drawer_item.title}
+            </div>
+          </div>
+          <button
+            phx-click="close_drawer"
+            aria-label="Fechar"
+            class="inline-flex min-h-[36px] min-w-[36px] shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-ink-500 transition hover:bg-ink-100 hover:text-ink-900"
+          >
+            <.icon name="hero-x-mark" class="size-5" />
+          </button>
         </div>
       </div>
-      <%= if @edit_mode do %>
-        <form phx-submit="update_section" class="flex flex-col gap-2">
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Título
-          </label>
-          <input
-            type="text"
-            name="section[title]"
-            value={@drawer_item.title}
-            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
-          />
-          <input type="hidden" name="section[position]" value={@drawer_item.position} />
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Descrição
-          </label>
-          <textarea
-            name="section[description]"
-            rows="3"
-            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
-          ><%= @drawer_item.description %></textarea>
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Nota
-          </label>
-          <textarea
-            name="section[note]"
-            rows="2"
-            class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
-          ><%= @drawer_item.note %></textarea>
-          <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-            Categoria
-          </label>
-          <select
-            name="section[category_id]"
-            class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
-          >
-            <%= for cat <- @categories do %>
-              <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
-                {cat.label}
-              </option>
-            <% end %>
-          </select>
-          <button
-            type="submit"
-            class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
-          >
-            Salvar seção
-          </button>
-        </form>
-      <% else %>
-        <%= if @drawer_item.description do %>
-          <p class="text-sm text-ink-600 italic leading-relaxed mb-3">
-            {@drawer_item.description}
-          </p>
+      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6">
+        <%= if @edit_mode do %>
+          <form phx-submit="update_section" class="flex flex-col gap-2">
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Título
+            </label>
+            <input
+              type="text"
+              name="section[title]"
+              value={@drawer_item.title}
+              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
+            />
+            <input type="hidden" name="section[position]" value={@drawer_item.position} />
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Descrição
+            </label>
+            <textarea
+              name="section[description]"
+              rows="3"
+              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
+            ><%= @drawer_item.description %></textarea>
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Nota
+            </label>
+            <textarea
+              name="section[note]"
+              rows="2"
+              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
+            ><%= @drawer_item.note %></textarea>
+            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
+              Categoria
+            </label>
+            <select
+              name="section[category_id]"
+              class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
+            >
+              <%= for cat <- @categories do %>
+                <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
+                  {cat.label}
+                </option>
+              <% end %>
+            </select>
+            <button
+              type="submit"
+              class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
+            >
+              Salvar seção
+            </button>
+          </form>
+        <% else %>
+          <%= if @drawer_item.description do %>
+            <p class="text-sm text-ink-600 italic leading-relaxed mb-3">
+              {@drawer_item.description}
+            </p>
+          <% end %>
+          <%= if @drawer_item.note do %>
+            <div class="text-xs text-ink-700 italic leading-relaxed py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
+              {@drawer_item.note}
+            </div>
+          <% end %>
         <% end %>
-        <%= if @drawer_item.note do %>
-          <div class="text-xs text-ink-700 italic leading-relaxed py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
-            {@drawer_item.note}
-          </div>
-        <% end %>
-      <% end %>
+      </div>
     <% end %>
   </div>
 

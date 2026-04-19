@@ -78,6 +78,26 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     insert_and_broadcast(all_recipients, builder)
   end
 
+  @doc "Dispatches a notification when one user starts following another."
+  def notify_follow(follower_id, followed_id) when follower_id != followed_id do
+    insert_and_broadcast([followed_id], fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: follower_id,
+        action: "followed_user",
+        group_key: "follow:#{followed_id}",
+        target_type: "profile",
+        target_id: follower_id,
+        parent_type: "profile",
+        parent_id: follower_id,
+        inserted_at: now()
+      }
+    end)
+  end
+
+  def notify_follow(_follower_id, _followed_id), do: :ok
+
   # ── Private: recipient determination ───────────────────
 
   defp determine_comment_recipients(comment, actor, query_mod) do

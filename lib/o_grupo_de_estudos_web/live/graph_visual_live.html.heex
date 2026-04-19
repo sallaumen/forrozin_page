@@ -4,6 +4,9 @@
     is_admin={@is_admin}
     nav_mode={@nav_mode}
     notification_count={assigns[:notification_count] || 0}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={assigns[:notification_dropdown_open] || false}
+    notification_preview_groups={assigns[:notification_preview_groups] || []}
   />
   <%!-- Graph search: unified step lookup for the visible map --%>
   <div class="fixed top-[58px] left-3 right-3 z-30 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2">
@@ -111,8 +114,8 @@
     <div
       id="seq-panel"
       class={[
-        "bg-[#fffef9] shadow-[2px_0_12px_rgba(0,0,0,0.06)] overflow-y-auto font-serif z-40",
-        "max-md:fixed max-md:inset-x-0 max-md:bottom-16 max-md:max-h-[70vh] max-md:rounded-t-lg max-md:border-t-2 max-md:border-accent-orange/30",
+        "bg-[#fffef9] shadow-[2px_0_12px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden font-serif z-40",
+        "max-md:fixed max-md:inset-x-0 max-md:bottom-16 max-md:h-[70vh] max-md:max-h-[70vh] max-md:rounded-t-lg max-md:border-t-2 max-md:border-accent-orange/30",
         "md:absolute md:top-0 md:left-0 md:w-[280px] md:h-full md:border-r md:border-accent-orange/25",
         !@seq_panel && "md:-translate-x-full",
         !@seq_mobile_visible && "max-md:hidden"
@@ -120,7 +123,7 @@
       style="transition: transform 0.2s ease;"
     >
       <%!-- Panel header --%>
-      <div class="p-4 border-b border-accent-orange/15">
+      <div id="seq-panel-header" class="shrink-0 p-4 border-b border-accent-orange/15">
         <div class="flex items-center justify-between mb-3">
           <div class="text-xs font-bold text-accent-orange uppercase tracking-widest">
             Sequências
@@ -131,7 +134,7 @@
             class="md:hidden w-8 h-8 inline-flex items-center justify-center text-ink-700 bg-ink-100 rounded-full shadow-sm text-base leading-none"
             aria-label="Fechar painel de sequências"
           >
-            ✕
+            <.icon name="hero-x-mark" class="size-4" />
           </button>
         </div>
         <%!-- Segmented control: Biblioteca | Gerar | Manual --%>
@@ -169,887 +172,890 @@
         </div>
       </div>
 
-      <%!-- View: Config form --%>
-      <%= if @seq_view == :config do %>
-        <div class="p-4">
-          <form
-            phx-submit="generate_sequences"
-            class="flex flex-col gap-3.5"
-          >
-            <%!-- Start step --%>
-            <div>
-              <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
-                Passo inicial
-              </label>
-              <div class="relative">
-                <input
-                  type="text"
-                  name="start_code"
-                  id="seq-start-input"
-                  value={@seq_start_code}
-                  phx-keyup="search_start_step"
-                  phx-debounce="200"
-                  placeholder="Código ou nome (ex: BF)"
-                  autocomplete="off"
-                  class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
-                />
-                <%= if @seq_start_suggestions != [] do %>
-                  <div
-                    style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;"
-                    class="bg-ink-50 border border-ink-900/15 rounded-b shadow-md"
-                    phx-click-away="hide_seq_suggestions"
-                  >
-                    <%= for s <- @seq_start_suggestions do %>
-                      <button
-                        type="button"
-                        phx-click="select_start_step"
-                        phx-value-code={s.code}
-                        phx-value-name={s.name}
-                        class="block w-full text-left py-1.5 px-2.5 border-none bg-transparent cursor-pointer font-serif text-[11px] text-ink-800 border-b border-ink-900/[0.06]"
-                      >
-                        <code class="text-accent-orange mr-1.5">{s.code}</code>{s.name}
-                      </button>
-                    <% end %>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-
-            <%!-- Length + Count --%>
-            <div class="flex gap-2.5">
-              <div class="flex-1">
+      <div id="seq-panel-content" class="min-h-0 flex-1 overflow-y-auto">
+        <%!-- View: Config form --%>
+        <%= if @seq_view == :config do %>
+          <div class="p-4">
+            <form
+              phx-submit="generate_sequences"
+              class="flex flex-col gap-3.5"
+            >
+              <%!-- Start step --%>
+              <div>
                 <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
-                  Duração
+                  Passo inicial
                 </label>
-                <input
-                  type="number"
-                  name="length"
-                  min="2"
-                  max="20"
-                  value="6"
-                  class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
-                />
-              </div>
-              <div class="flex-1">
-                <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
-                  Quantidade
-                </label>
-                <input
-                  type="number"
-                  name="count"
-                  min="1"
-                  max="10"
-                  value="3"
-                  class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
-                />
-              </div>
-            </div>
-
-            <%!-- Required steps --%>
-            <div>
-              <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
-                Passos obrigatórios
-              </label>
-              <%!-- Chips --%>
-              <%= if @seq_required_codes != [] do %>
-                <div class="flex flex-wrap gap-1 mb-1.5">
-                  <%= for code <- @seq_required_codes do %>
-                    <span class="inline-flex items-center gap-1 py-0.5 px-2 bg-accent-orange/[0.09] border border-accent-orange/25 rounded-full text-[10px] text-accent-orange">
-                      {code}
-                      <button
-                        type="button"
-                        phx-click="remove_required_step"
-                        phx-value-code={code}
-                        class="bg-none border-none cursor-pointer text-accent-orange text-xs p-0 leading-none"
-                      >
-                        ×
-                      </button>
-                    </span>
+                <div class="relative">
+                  <input
+                    type="text"
+                    name="start_code"
+                    id="seq-start-input"
+                    value={@seq_start_code}
+                    phx-keyup="search_start_step"
+                    phx-debounce="200"
+                    placeholder="Código ou nome (ex: BF)"
+                    autocomplete="off"
+                    class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
+                  />
+                  <%= if @seq_start_suggestions != [] do %>
+                    <div
+                      style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;"
+                      class="bg-ink-50 border border-ink-900/15 rounded-b shadow-md"
+                      phx-click-away="hide_seq_suggestions"
+                    >
+                      <%= for s <- @seq_start_suggestions do %>
+                        <button
+                          type="button"
+                          phx-click="select_start_step"
+                          phx-value-code={s.code}
+                          phx-value-name={s.name}
+                          class="block w-full text-left py-1.5 px-2.5 border-none bg-transparent cursor-pointer font-serif text-[11px] text-ink-800 border-b border-ink-900/[0.06]"
+                        >
+                          <code class="text-accent-orange mr-1.5">{s.code}</code>{s.name}
+                        </button>
+                      <% end %>
+                    </div>
                   <% end %>
                 </div>
-              <% end %>
-              <div class="relative">
-                <input
-                  type="text"
-                  id="seq-required-input"
-                  value={@seq_required_search}
-                  phx-keyup="search_required_step"
-                  phx-debounce="200"
-                  placeholder="Adicionar passo..."
-                  autocomplete="off"
-                  class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
-                />
-                <%= if @seq_required_suggestions != [] do %>
-                  <div
-                    style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;"
-                    class="bg-ink-50 border border-ink-900/15 rounded-b shadow-md"
-                    phx-click-away="hide_seq_suggestions"
-                  >
-                    <%= for s <- @seq_required_suggestions do %>
-                      <button
-                        type="button"
-                        phx-click="select_required_step"
-                        phx-value-code={s.code}
-                        class="block w-full text-left py-1.5 px-2.5 border-none bg-transparent cursor-pointer font-serif text-[11px] text-ink-800 border-b border-ink-900/[0.06]"
-                      >
-                        <code class="text-accent-orange mr-1.5">{s.code}</code>{s.name}
-                      </button>
+              </div>
+
+              <%!-- Length + Count --%>
+              <div class="flex gap-2.5">
+                <div class="flex-1">
+                  <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
+                    Duração
+                  </label>
+                  <input
+                    type="number"
+                    name="length"
+                    min="2"
+                    max="20"
+                    value="6"
+                    class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
+                  />
+                </div>
+                <div class="flex-1">
+                  <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
+                    Quantidade
+                  </label>
+                  <input
+                    type="number"
+                    name="count"
+                    min="1"
+                    max="10"
+                    value="3"
+                    class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
+                  />
+                </div>
+              </div>
+
+              <%!-- Required steps --%>
+              <div>
+                <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
+                  Passos obrigatórios
+                </label>
+                <%!-- Chips --%>
+                <%= if @seq_required_codes != [] do %>
+                  <div class="flex flex-wrap gap-1 mb-1.5">
+                    <%= for code <- @seq_required_codes do %>
+                      <span class="inline-flex items-center gap-1 py-0.5 px-2 bg-accent-orange/[0.09] border border-accent-orange/25 rounded-full text-[10px] text-accent-orange">
+                        {code}
+                        <button
+                          type="button"
+                          phx-click="remove_required_step"
+                          phx-value-code={code}
+                          class="bg-none border-none cursor-pointer text-accent-orange text-xs p-0 leading-none"
+                        >
+                          ×
+                        </button>
+                      </span>
                     <% end %>
                   </div>
                 <% end %>
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="seq-required-input"
+                    value={@seq_required_search}
+                    phx-keyup="search_required_step"
+                    phx-debounce="200"
+                    placeholder="Adicionar passo..."
+                    autocomplete="off"
+                    class="w-full py-2 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
+                  />
+                  <%= if @seq_required_suggestions != [] do %>
+                    <div
+                      style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;"
+                      class="bg-ink-50 border border-ink-900/15 rounded-b shadow-md"
+                      phx-click-away="hide_seq_suggestions"
+                    >
+                      <%= for s <- @seq_required_suggestions do %>
+                        <button
+                          type="button"
+                          phx-click="select_required_step"
+                          phx-value-code={s.code}
+                          class="block w-full text-left py-1.5 px-2.5 border-none bg-transparent cursor-pointer font-serif text-[11px] text-ink-800 border-b border-ink-900/[0.06]"
+                        >
+                          <code class="text-accent-orange mr-1.5">{s.code}</code>{s.name}
+                        </button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
               </div>
-            </div>
 
-            <%!-- Cyclic + Allow repeats --%>
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="cyclic"
-                  id="cyclic"
-                  checked
-                  class="accent-accent-orange cursor-pointer"
-                />
-                <label for="cyclic" class="text-[11px] text-ink-700 cursor-pointer">
-                  Cíclica (volta ao início)
-                </label>
-              </div>
-              <div class="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="allow_repeats"
-                  id="allow-repeats"
-                  class="accent-accent-orange cursor-pointer"
-                />
-                <label
-                  for="allow-repeats"
-                  class="text-[11px] text-ink-700 cursor-pointer"
-                >
-                  Permitir repetições
-                  <span class="text-[9px] text-ink-500">
-                    (mín. 8 passos, máx. 3 loops iguais)
-                  </span>
-                </label>
-              </div>
-              <div class="flex items-center gap-2">
-                <label for="max-bf" class="text-[11px] text-ink-700 whitespace-nowrap">
-                  Máx. vezes na BF:
-                </label>
-                <input
-                  type="number"
-                  name="max_bf_visits"
-                  id="max-bf"
-                  min="0"
-                  max="5"
-                  value="1"
-                  class="w-[50px] py-1 px-2 border border-ink-900/20 rounded font-serif text-xs text-ink-900 text-center"
-                />
-                <span class="text-[9px] text-ink-500">(0 = evitar BF)</span>
-              </div>
-            </div>
-
-            <%!-- Submit --%>
-            <button
-              type="submit"
-              class="w-full py-2.5 bg-accent-orange text-white border-none rounded font-serif text-xs font-bold tracking-wide cursor-pointer"
-            >
-              Gerar sequências
-            </button>
-          </form>
-        </div>
-      <% end %>
-
-      <%!-- View: Results --%>
-      <%= if @seq_view == :results do %>
-        <div class="p-4">
-          <%!-- Warnings --%>
-          <%= if @seq_warnings != [] do %>
-            <div class="mb-3 py-2 px-2.5 bg-[#fff3cd] border border-[#ffc107]/20 rounded">
-              <%= for w <- @seq_warnings do %>
-                <div class="text-[10px] text-[#856404] leading-normal">{w}</div>
-              <% end %>
-            </div>
-          <% end %>
-
-          <div class="text-[10px] text-ink-500 mb-3 tracking-wide">
-            {length(@seq_results)} sequência(s) gerada(s)
-          </div>
-
-          <%!-- Sequence cards --%>
-          <%= for {seq, idx} <- Enum.with_index(@seq_results) do %>
-            <div class="mb-3 border border-accent-orange/20 rounded-md overflow-hidden bg-white">
-              <%!-- Step list --%>
-              <div class="p-2.5">
-                <%= for {step, pos} <- Enum.with_index(seq, 1) do %>
-                  <div class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]">
-                    <span class="text-[10px] font-bold text-accent-orange min-w-[16px]">
-                      {pos}.
+              <%!-- Cyclic + Allow repeats --%>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="cyclic"
+                    id="cyclic"
+                    checked
+                    class="accent-accent-orange cursor-pointer"
+                  />
+                  <label for="cyclic" class="text-[11px] text-ink-700 cursor-pointer">
+                    Cíclica (volta ao início)
+                  </label>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="allow_repeats"
+                    id="allow-repeats"
+                    class="accent-accent-orange cursor-pointer"
+                  />
+                  <label
+                    for="allow-repeats"
+                    class="text-[11px] text-ink-700 cursor-pointer"
+                  >
+                    Permitir repetições
+                    <span class="text-[9px] text-ink-500">
+                      (mín. 8 passos, máx. 3 loops iguais)
                     </span>
-                    <code class="text-[10px] text-ink-500">{step.code}</code>
-                    <span class="text-[11px] text-ink-800">{step.name}</span>
-                  </div>
+                  </label>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label for="max-bf" class="text-[11px] text-ink-700 whitespace-nowrap">
+                    Máx. vezes na BF:
+                  </label>
+                  <input
+                    type="number"
+                    name="max_bf_visits"
+                    id="max-bf"
+                    min="0"
+                    max="5"
+                    value="1"
+                    class="w-[50px] py-1 px-2 border border-ink-900/20 rounded font-serif text-xs text-ink-900 text-center"
+                  />
+                  <span class="text-[9px] text-ink-500">(0 = evitar BF)</span>
+                </div>
+              </div>
+
+              <%!-- Submit --%>
+              <button
+                type="submit"
+                class="w-full py-2.5 bg-accent-orange text-white border-none rounded font-serif text-xs font-bold tracking-wide cursor-pointer"
+              >
+                Gerar sequências
+              </button>
+            </form>
+          </div>
+        <% end %>
+
+        <%!-- View: Results --%>
+        <%= if @seq_view == :results do %>
+          <div class="p-4">
+            <%!-- Warnings --%>
+            <%= if @seq_warnings != [] do %>
+              <div class="mb-3 py-2 px-2.5 bg-[#fff3cd] border border-[#ffc107]/20 rounded">
+                <%= for w <- @seq_warnings do %>
+                  <div class="text-[10px] text-[#856404] leading-normal">{w}</div>
                 <% end %>
               </div>
-              <%!-- Actions --%>
-              <div class="py-2 px-2.5 border-t border-ink-900/[0.06] flex gap-1.5 bg-accent-orange/[0.04]">
-                <button
-                  type="button"
-                  phx-click="highlight_sequence"
-                  phx-value-index={idx}
-                  class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
-                >
-                  Ver no mapa
-                </button>
-                <%= if @seq_saving == idx do %>
-                  <form phx-submit="save_sequence" class="flex gap-1 flex-[2]">
-                    <input type="hidden" name="index" value={idx} />
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="Nome..."
-                      autofocus
-                      class="flex-1 py-1 px-1.5 border border-ink-900/20 rounded font-serif text-[10px] min-w-0"
-                    />
-                    <button
-                      type="submit"
-                      class="py-1 px-2 bg-accent-orange text-white border-none rounded font-serif text-[10px] cursor-pointer"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      type="button"
-                      phx-click="cancel_save_sequence"
-                      class="py-1 px-2 bg-transparent border border-ink-900/15 rounded font-serif text-[10px] text-ink-500 cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  </form>
-                <% else %>
+            <% end %>
+
+            <div class="text-[10px] text-ink-500 mb-3 tracking-wide">
+              {length(@seq_results)} sequência(s) gerada(s)
+            </div>
+
+            <%!-- Sequence cards --%>
+            <%= for {seq, idx} <- Enum.with_index(@seq_results) do %>
+              <div class="mb-3 border border-accent-orange/20 rounded-md overflow-hidden bg-white">
+                <%!-- Step list --%>
+                <div class="p-2.5">
+                  <%= for {step, pos} <- Enum.with_index(seq, 1) do %>
+                    <div class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]">
+                      <span class="text-[10px] font-bold text-accent-orange min-w-[16px]">
+                        {pos}.
+                      </span>
+                      <code class="text-[10px] text-ink-500">{step.code}</code>
+                      <span class="text-[11px] text-ink-800">{step.name}</span>
+                    </div>
+                  <% end %>
+                </div>
+                <%!-- Actions --%>
+                <div class="py-2 px-2.5 border-t border-ink-900/[0.06] flex gap-1.5 bg-accent-orange/[0.04]">
                   <button
                     type="button"
-                    phx-click="start_save_sequence"
+                    phx-click="highlight_sequence"
                     phx-value-index={idx}
-                    class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-900/15 rounded text-ink-600 cursor-pointer"
+                    class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
                   >
-                    Salvar
+                    Ver no mapa
                   </button>
-                <% end %>
-              </div>
-            </div>
-          <% end %>
-
-          <%!-- Navigation --%>
-          <div class="flex gap-2 mt-2">
-            <button
-              type="button"
-              phx-click="show_seq_config"
-              class="flex-1 py-2 font-serif text-[11px] bg-transparent border border-ink-900/20 rounded text-ink-600 cursor-pointer"
-            >
-              ← Voltar
-            </button>
-            <%= if @seq_active do %>
-              <button
-                type="button"
-                phx-click="clear_highlight"
-                class="flex-1 py-2 font-serif text-[11px] bg-transparent border border-accent-orange/30 rounded text-accent-orange cursor-pointer"
-              >
-                Limpar destaque
-              </button>
-            <% end %>
-          </div>
-
-          <%!-- Missing connections warning --%>
-          <%= if @seq_missing_edges != [] do %>
-            <div class="mt-3 p-2.5 bg-accent-red/10 border border-accent-red/20 rounded">
-              <p class="text-[10px] font-bold text-accent-red uppercase tracking-wider mb-1.5">
-                Conexões faltantes
-              </p>
-              <div class="space-y-1">
-                <%= for missing <- @seq_missing_edges do %>
-                  <div class="flex items-center gap-2 text-xs">
-                    <span class="text-accent-red">⚠</span>
-                    <code class="text-[10px] font-bold text-ink-700">{missing.from}</code>
-                    <span class="text-ink-400">→</span>
-                    <code class="text-[10px] font-bold text-ink-700">{missing.to}</code>
-                    <%= if @is_admin do %>
+                  <%= if @seq_saving == idx do %>
+                    <form phx-submit="save_sequence" class="flex gap-1 flex-[2]">
+                      <input type="hidden" name="index" value={idx} />
+                      <input
+                        type="text"
+                        name="name"
+                        placeholder="Nome..."
+                        autofocus
+                        class="flex-1 py-1 px-1.5 border border-ink-900/20 rounded font-serif text-[10px] min-w-0"
+                      />
+                      <button
+                        type="submit"
+                        class="py-1 px-2 bg-accent-orange text-white border-none rounded font-serif text-[10px] cursor-pointer"
+                      >
+                        ✓
+                      </button>
                       <button
                         type="button"
-                        phx-click="create_missing_connection"
-                        phx-value-source={missing.from}
-                        phx-value-target={missing.to}
-                        class="ml-auto text-[9px] py-0.5 px-2 bg-accent-green text-white rounded border-0 cursor-pointer font-medium"
+                        phx-click="cancel_save_sequence"
+                        class="py-1 px-2 bg-transparent border border-ink-900/15 rounded font-serif text-[10px] text-ink-500 cursor-pointer"
                       >
-                        Criar
+                        ✕
                       </button>
-                    <% end %>
-                  </div>
-                <% end %>
+                    </form>
+                  <% else %>
+                    <button
+                      type="button"
+                      phx-click="start_save_sequence"
+                      phx-value-index={idx}
+                      class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-900/15 rounded text-ink-600 cursor-pointer"
+                    >
+                      Salvar
+                    </button>
+                  <% end %>
+                </div>
               </div>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-
-      <%!-- View: Unified sequence library --%>
-      <%= if @seq_view == :library do %>
-        <div class="p-4">
-          <div class="mb-3">
-            <label for="seq-library-search" class="sr-only">Buscar sequência</label>
-            <input
-              type="search"
-              id="seq-library-search"
-              name="term"
-              value={@seq_library_search}
-              phx-keyup="search_sequence_library"
-              phx-debounce="200"
-              placeholder="Buscar sequência, passo ou categoria..."
-              autocomplete="off"
-              class="w-full py-2 px-2.5 border border-ink-900/20 rounded-md font-serif text-xs text-ink-900 bg-white box-border outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/50"
-            />
-          </div>
-
-          <div
-            id="seq-library-origin-filter"
-            class="mb-3 grid grid-cols-3 gap-1 rounded-md bg-ink-100 p-0.5"
-          >
-            <button
-              id="seq-library-origin-all"
-              type="button"
-              phx-click="filter_sequence_library_origin"
-              phx-value-origin="all"
-              aria-pressed={@seq_library_origin_filter == "all"}
-              class={[
-                "min-h-8 rounded py-1.5 px-1 font-serif text-[10px] font-semibold cursor-pointer transition-all",
-                @seq_library_origin_filter == "all" &&
-                  "bg-white text-accent-orange shadow-sm",
-                @seq_library_origin_filter != "all" &&
-                  "bg-transparent text-ink-500 hover:text-ink-800"
-              ]}
-            >
-              Todos
-            </button>
-            <button
-              id="seq-library-origin-favorites"
-              type="button"
-              phx-click="filter_sequence_library_origin"
-              phx-value-origin="favorites"
-              aria-pressed={@seq_library_origin_filter == "favorites"}
-              class={[
-                "min-h-8 rounded py-1.5 px-1 font-serif text-[10px] font-semibold cursor-pointer transition-all",
-                @seq_library_origin_filter == "favorites" &&
-                  "bg-white text-gold-500 shadow-sm",
-                @seq_library_origin_filter != "favorites" &&
-                  "bg-transparent text-ink-500 hover:text-ink-800"
-              ]}
-            >
-              Favoritos
-            </button>
-            <button
-              id="seq-library-origin-community"
-              type="button"
-              phx-click="filter_sequence_library_origin"
-              phx-value-origin="community"
-              aria-pressed={@seq_library_origin_filter == "community"}
-              class={[
-                "min-h-8 rounded py-1.5 px-1 font-serif text-[10px] font-semibold cursor-pointer transition-all",
-                @seq_library_origin_filter == "community" &&
-                  "bg-white text-accent-green shadow-sm",
-                @seq_library_origin_filter != "community" &&
-                  "bg-transparent text-ink-500 hover:text-ink-800"
-              ]}
-            >
-              Comunidade
-            </button>
-          </div>
-
-          <div class="flex gap-1.5 overflow-x-auto pb-2 mb-3">
-            <button
-              type="button"
-              phx-click="filter_sequence_library_category"
-              phx-value-category="all"
-              class={[
-                "shrink-0 py-1 px-2.5 rounded-full border font-serif text-[10px] font-semibold cursor-pointer transition-colors",
-                @seq_library_category_filter == "all" &&
-                  "bg-ink-900 text-ink-50 border-ink-900",
-                @seq_library_category_filter != "all" &&
-                  "bg-white text-ink-500 border-ink-900/12 hover:text-ink-900"
-              ]}
-            >
-              Todas
-            </button>
-            <%= for cat <- @categories do %>
-              <button
-                type="button"
-                phx-click="filter_sequence_library_category"
-                phx-value-category={cat.name}
-                style={
-                  if @seq_library_category_filter == cat.name,
-                    do: "background: #{cat.color}; border-color: #{cat.color};",
-                    else: "border-color: #{cat.color}30;"
-                }
-                class={[
-                  "shrink-0 py-1 px-2.5 rounded-full border font-serif text-[10px] font-semibold cursor-pointer transition-colors",
-                  @seq_library_category_filter == cat.name && "text-white",
-                  @seq_library_category_filter != cat.name &&
-                    "bg-white text-ink-500 hover:text-ink-900"
-                ]}
-              >
-                {cat.label}
-              </button>
             <% end %>
-          </div>
 
-          <div class="mb-3 text-[10px] text-ink-500">
-            {length(@seq_library)} sequência(s)
-            <%= case @seq_library_origin_filter do %>
-              <% "favorites" -> %>
-                · favoritas
-              <% "community" -> %>
-                · comunidade
-              <% _ -> %>
-            <% end %>
-            <%= if @seq_library_search != "" do %>
-              · buscando “{@seq_library_search}”
-            <% end %>
-          </div>
-
-          <%= if @seq_library == [] do %>
-            <div class="flex flex-col items-center gap-3 py-8 px-2 text-center">
-              <div class="text-sm font-semibold text-ink-900">
-                Nenhuma sequência encontrada
-              </div>
-              <div class="text-xs text-ink-500 leading-relaxed max-w-[220px]">
-                Tente buscar por nome de passo, código ou categoria.
-              </div>
+            <%!-- Navigation --%>
+            <div class="flex gap-2 mt-2">
               <button
                 type="button"
                 phx-click="show_seq_config"
-                class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-white rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
+                class="flex-1 py-2 font-serif text-[11px] bg-transparent border border-ink-900/20 rounded text-ink-600 cursor-pointer"
               >
-                Gerar uma sequência
+                ← Voltar
+              </button>
+              <%= if @seq_active do %>
+                <button
+                  type="button"
+                  phx-click="clear_highlight"
+                  class="flex-1 py-2 font-serif text-[11px] bg-transparent border border-accent-orange/30 rounded text-accent-orange cursor-pointer"
+                >
+                  Limpar destaque
+                </button>
+              <% end %>
+            </div>
+
+            <%!-- Missing connections warning --%>
+            <%= if @seq_missing_edges != [] do %>
+              <div class="mt-3 p-2.5 bg-accent-red/10 border border-accent-red/20 rounded">
+                <p class="text-[10px] font-bold text-accent-red uppercase tracking-wider mb-1.5">
+                  Conexões faltantes
+                </p>
+                <div class="space-y-1">
+                  <%= for missing <- @seq_missing_edges do %>
+                    <div class="flex items-center gap-2 text-xs">
+                      <span class="text-accent-red">⚠</span>
+                      <code class="text-[10px] font-bold text-ink-700">{missing.from}</code>
+                      <span class="text-ink-400">→</span>
+                      <code class="text-[10px] font-bold text-ink-700">{missing.to}</code>
+                      <%= if @is_admin do %>
+                        <button
+                          type="button"
+                          phx-click="create_missing_connection"
+                          phx-value-source={missing.from}
+                          phx-value-target={missing.to}
+                          class="ml-auto text-[9px] py-0.5 px-2 bg-accent-green text-white rounded border-0 cursor-pointer font-medium"
+                        >
+                          Criar
+                        </button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%!-- View: Unified sequence library --%>
+        <%= if @seq_view == :library do %>
+          <div class="p-4">
+            <div class="mb-3">
+              <label for="seq-library-search" class="sr-only">Buscar sequência</label>
+              <input
+                type="search"
+                id="seq-library-search"
+                name="term"
+                value={@seq_library_search}
+                phx-keyup="search_sequence_library"
+                phx-debounce="200"
+                placeholder="Buscar sequência, passo ou categoria..."
+                autocomplete="off"
+                class="w-full py-2 px-2.5 border border-ink-900/20 rounded-md font-serif text-xs text-ink-900 bg-white box-border outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/50"
+              />
+            </div>
+
+            <div
+              id="seq-library-origin-filter"
+              class="mb-3 grid grid-cols-3 gap-1 rounded-md bg-ink-100 p-0.5"
+            >
+              <button
+                id="seq-library-origin-all"
+                type="button"
+                phx-click="filter_sequence_library_origin"
+                phx-value-origin="all"
+                aria-pressed={@seq_library_origin_filter == "all"}
+                class={[
+                  "min-h-8 rounded py-1.5 px-1 font-serif text-[10px] font-semibold cursor-pointer transition-all",
+                  @seq_library_origin_filter == "all" &&
+                    "bg-white text-accent-orange shadow-sm",
+                  @seq_library_origin_filter != "all" &&
+                    "bg-transparent text-ink-500 hover:text-ink-800"
+                ]}
+              >
+                Todos
+              </button>
+              <button
+                id="seq-library-origin-favorites"
+                type="button"
+                phx-click="filter_sequence_library_origin"
+                phx-value-origin="favorites"
+                aria-pressed={@seq_library_origin_filter == "favorites"}
+                class={[
+                  "min-h-8 rounded py-1.5 px-1 font-serif text-[10px] font-semibold cursor-pointer transition-all",
+                  @seq_library_origin_filter == "favorites" &&
+                    "bg-white text-gold-500 shadow-sm",
+                  @seq_library_origin_filter != "favorites" &&
+                    "bg-transparent text-ink-500 hover:text-ink-800"
+                ]}
+              >
+                Favoritos
+              </button>
+              <button
+                id="seq-library-origin-community"
+                type="button"
+                phx-click="filter_sequence_library_origin"
+                phx-value-origin="community"
+                aria-pressed={@seq_library_origin_filter == "community"}
+                class={[
+                  "min-h-8 rounded py-1.5 px-1 font-serif text-[10px] font-semibold cursor-pointer transition-all",
+                  @seq_library_origin_filter == "community" &&
+                    "bg-white text-accent-green shadow-sm",
+                  @seq_library_origin_filter != "community" &&
+                    "bg-transparent text-ink-500 hover:text-ink-800"
+                ]}
+              >
+                Comunidade
               </button>
             </div>
-          <% else %>
-            <div class="space-y-3">
-              <%= for seq <- @seq_library do %>
-                <% owned? = MapSet.member?(@seq_owned_ids, seq.id) %>
-                <% favorited? = MapSet.member?(@seq_favorite_ids, seq.id) %>
-                <% can_manage? = owned? or @is_admin %>
-                <% active? = @seq_active_id == seq.id %>
-                <% categories = sequence_category_labels(seq) %>
-                <div
-                  id={"seq-library-card-#{seq.id}"}
+
+            <div class="flex gap-1.5 overflow-x-auto pb-2 mb-3">
+              <button
+                type="button"
+                phx-click="filter_sequence_library_category"
+                phx-value-category="all"
+                class={[
+                  "shrink-0 py-1 px-2.5 rounded-full border font-serif text-[10px] font-semibold cursor-pointer transition-colors",
+                  @seq_library_category_filter == "all" &&
+                    "bg-ink-900 text-ink-50 border-ink-900",
+                  @seq_library_category_filter != "all" &&
+                    "bg-white text-ink-500 border-ink-900/12 hover:text-ink-900"
+                ]}
+              >
+                Todas
+              </button>
+              <%= for cat <- @categories do %>
+                <button
+                  type="button"
+                  phx-click="filter_sequence_library_category"
+                  phx-value-category={cat.name}
+                  style={
+                    if @seq_library_category_filter == cat.name,
+                      do: "background: #{cat.color}; border-color: #{cat.color};",
+                      else: "border-color: #{cat.color}30;"
+                  }
                   class={[
-                    "rounded-md p-3 transition-colors",
-                    active? && "border-2 border-accent-orange bg-accent-orange/5",
-                    !active? && owned? && "border border-accent-orange/25 bg-white",
-                    !active? && !owned? && favorited? && "border border-gold-500/30 bg-gold-500/5",
-                    !active? && !owned? && !favorited? && "border border-ink-900/12 bg-white"
+                    "shrink-0 py-1 px-2.5 rounded-full border font-serif text-[10px] font-semibold cursor-pointer transition-colors",
+                    @seq_library_category_filter == cat.name && "text-white",
+                    @seq_library_category_filter != cat.name &&
+                      "bg-white text-ink-500 hover:text-ink-900"
                   ]}
                 >
-                  <div class="flex items-start justify-between gap-2 mb-1.5">
-                    <div class="min-w-0">
-                      <div class="text-xs font-bold text-ink-900 leading-snug">
-                        {seq.name}
-                      </div>
-                      <div class="text-[10px] text-ink-500 mt-0.5">
-                        {length(seq.sequence_steps)} passos
-                        <%= if Ecto.assoc_loaded?(seq.user) && seq.user do %>
-                          · @{seq.user.username}
-                        <% end %>
-                      </div>
-                    </div>
-                    <div class="flex shrink-0 items-start gap-1">
-                      <span
-                        :if={owned?}
-                        class="rounded-full bg-accent-orange/10 px-2 py-0.5 text-[9px] font-bold text-accent-orange"
-                      >
-                        salva
-                      </span>
-                      <span
-                        :if={!owned? && favorited?}
-                        class="rounded-full bg-gold-500/10 px-2 py-0.5 text-[9px] font-bold text-gold-500"
-                      >
-                        favorita
-                      </span>
-                      <span
-                        :if={!owned? && !favorited?}
-                        class="rounded-full bg-ink-900/[0.06] px-2 py-0.5 text-[9px] font-bold text-ink-500"
-                      >
-                        exemplo
-                      </span>
-                      <button
-                        :if={can_manage?}
-                        id={"seq-library-delete-#{seq.id}"}
-                        type="button"
-                        phx-click="delete_sequence"
-                        phx-value-id={seq.id}
-                        data-confirm="Deletar esta sequência? Essa ação não pode ser desfeita."
-                        aria-label={"Deletar sequência #{seq.name}"}
-                        class="inline-flex h-6 w-6 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
-                      >
-                        <.icon name="hero-x-mark" class="size-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="mb-2 flex flex-wrap gap-1">
-                    <%= for sequence_step <- Enum.take(seq.sequence_steps, 8) do %>
-                      <code class="rounded-sm border border-gold-500/15 bg-gold-500/10 px-1.5 py-px text-[9px] font-bold text-ink-700">
-                        {sequence_step.step.code}
-                      </code>
-                    <% end %>
-                    <span
-                      :if={length(seq.sequence_steps) > 8}
-                      class="text-[9px] text-ink-400"
-                    >
-                      +{length(seq.sequence_steps) - 8}
-                    </span>
-                  </div>
-
-                  <div :if={categories != []} class="mb-2 flex flex-wrap gap-1">
-                    <%= for {_name, label, color} <- categories do %>
-                      <span
-                        class="rounded-full border px-2 py-0.5 text-[9px] font-semibold"
-                        style={"background: #{color}12; color: #{color}; border-color: #{color}30;"}
-                      >
-                        {label}
-                      </span>
-                    <% end %>
-                  </div>
-
-                  <div class="flex gap-1.5">
-                    <button
-                      type="button"
-                      phx-click="highlight_saved_sequence"
-                      phx-value-id={seq.id}
-                      class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
-                    >
-                      Ver no mapa
-                    </button>
-                    <button
-                      type="button"
-                      phx-click="toggle_sequence_favorite_graph"
-                      phx-value-id={seq.id}
-                      class={[
-                        "py-1.5 px-2 font-serif text-[10px] bg-transparent border rounded cursor-pointer",
-                        favorited? && "border-gold-500/40 text-gold-500",
-                        !favorited? &&
-                          "border-ink-300 text-ink-600 hover:border-gold-500/40 hover:text-gold-500"
-                      ]}
-                    >
-                      {if favorited?, do: "Favorita", else: "Favoritar"}
-                    </button>
-                    <button
-                      :if={can_manage?}
-                      id={"seq-library-edit-#{seq.id}"}
-                      type="button"
-                      phx-click="edit_saved_sequence"
-                      phx-value-id={seq.id}
-                      class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-300 rounded text-ink-600 cursor-pointer hover:border-accent-orange hover:text-accent-orange"
-                    >
-                      Editar
-                    </button>
-                  </div>
-                </div>
+                  {cat.label}
+                </button>
               <% end %>
             </div>
-          <% end %>
 
-          <%= if @seq_active do %>
-            <button
-              type="button"
-              phx-click="clear_highlight"
-              class="w-full mt-3 py-2 font-serif text-[11px] bg-transparent border border-accent-orange/30 rounded text-accent-orange cursor-pointer"
-            >
-              Limpar destaque
-            </button>
-          <% end %>
-        </div>
-      <% end %>
-
-      <%!-- View: Favorited sequences (from community) --%>
-      <%= if @seq_view == :favorites do %>
-        <div class="p-4">
-          <%= if @seq_favorites_list == [] do %>
-            <div class="text-center py-8">
-              <p class="text-sm font-bold text-ink-600 mb-1">Nenhuma sequência favoritada</p>
-              <p class="text-xs text-ink-400">
-                Favorite sequências na Comunidade e elas aparecem aqui.
-              </p>
-            </div>
-          <% else %>
-            <div class="space-y-3">
-              <%= for seq <- @seq_favorites_list do %>
-                <div class={[
-                  "rounded p-3 transition-colors",
-                  @seq_active_id == seq.id && "border-2 border-accent-orange bg-accent-orange/5",
-                  @seq_active_id != seq.id && "border border-gold-500/20 bg-ink-50"
-                ]}>
-                  <div class="flex items-start justify-between gap-2 mb-1">
-                    <div>
-                      <div class="text-xs font-bold text-ink-900">{seq.name}</div>
-                      <div class="text-[10px] text-ink-500">
-                        {length(seq.sequence_steps)} passos
-                        <%= if seq.user do %>
-                          · por @{seq.user.username}
-                        <% end %>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex gap-1.5 mt-2">
-                    <button
-                      type="button"
-                      phx-click="highlight_saved_sequence"
-                      phx-value-id={seq.id}
-                      class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
-                    >
-                      Ver no mapa
-                    </button>
-                  </div>
-                </div>
+            <div class="mb-3 text-[10px] text-ink-500">
+              {length(@seq_library)} sequência(s)
+              <%= case @seq_library_origin_filter do %>
+                <% "favorites" -> %>
+                  · favoritas
+                <% "community" -> %>
+                  · comunidade
+                <% _ -> %>
+              <% end %>
+              <%= if @seq_library_search != "" do %>
+                · buscando “{@seq_library_search}”
               <% end %>
             </div>
-          <% end %>
-        </div>
-      <% end %>
 
-      <%!-- View: Manual sequence builder --%>
-      <%= if @seq_view == :manual do %>
-        <div class="p-4">
-          <div class="mb-3 flex items-start justify-between gap-2">
-            <div>
-              <div class="text-xs font-bold text-ink-900">
-                {if @seq_editing_id, do: "Editar sequência", else: "Criar sequência"}
-              </div>
-              <p class="text-[11px] text-ink-700 leading-normal m-0 mt-1 italic">
-                Clique nos nós do grafo para montar a sequência passo a passo.
-              </p>
-            </div>
-            <button
-              :if={@seq_editing_id}
-              id="seq-manual-delete"
-              type="button"
-              phx-click="delete_sequence"
-              phx-value-id={@seq_editing_id}
-              data-confirm="Deletar esta sequência? Essa ação não pode ser desfeita."
-              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
-              aria-label="Deletar sequência em edição"
-            >
-              <.icon name="hero-x-mark" class="size-4" />
-            </button>
-          </div>
-
-          <p class="text-[11px] text-ink-700 leading-normal m-0 mb-3 italic">
-            <%= if @seq_editing_id do %>
-              Ajuste os dados e salve para atualizar esta sequência.
-            <% else %>
-              Dê um nome e salve quando terminar.
-            <% end %>
-          </p>
-
-          <%!-- Step list --%>
-          <div class="mb-3 min-h-[36px] border border-dashed border-ink-900/18 rounded p-2">
-            <%= if @seq_manual_steps == [] do %>
-              <div class="text-[11px] text-ink-400 text-center py-1.5 italic">
-                Nenhum passo ainda
-              </div>
-            <% else %>
-              <%= for {step, idx} <- Enum.with_index(@seq_manual_steps) do %>
-                <div class="flex items-center gap-1 py-0.5 border-b border-ink-900/[0.05]">
-                  <span class="text-[10px] font-bold text-accent-green min-w-[16px]">
-                    {idx + 1}.
-                  </span>
-                  <code class="text-[10px] text-ink-500">{step.code}</code>
-                  <span class="flex-1 text-[11px] text-ink-800 truncate">{step.name}</span>
-                  <div class="flex flex-col shrink-0">
-                    <button
-                      :if={idx > 0}
-                      type="button"
-                      phx-click="move_manual_step"
-                      phx-value-index={idx}
-                      phx-value-direction="up"
-                      class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
-                      title="Mover pra cima"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      :if={idx < length(@seq_manual_steps) - 1}
-                      type="button"
-                      phx-click="move_manual_step"
-                      phx-value-index={idx}
-                      phx-value-direction="down"
-                      class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
-                      title="Mover pra baixo"
-                    >
-                      ▼
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    phx-click="remove_manual_step"
-                    phx-value-index={idx}
-                    class="bg-none border-none cursor-pointer text-accent-red text-[13px] p-0 px-0.5 leading-none shrink-0"
-                    title="Remover"
-                  >
-                    ×
-                  </button>
+            <%= if @seq_library == [] do %>
+              <div class="flex flex-col items-center gap-3 py-8 px-2 text-center">
+                <div class="text-sm font-semibold text-ink-900">
+                  Nenhuma sequência encontrada
                 </div>
-              <% end %>
-            <% end %>
-          </div>
-
-          <%!-- Error --%>
-          <%= if @seq_manual_error do %>
-            <div class="mb-2.5 py-1.5 px-2.5 bg-[#fdecea] border border-accent-red/20 rounded text-[11px] text-accent-red">
-              {@seq_manual_error}
-            </div>
-          <% end %>
-
-          <%!-- Save form --%>
-          <form
-            id="seq-manual-form"
-            phx-submit="save_manual_sequence"
-            class="flex flex-col gap-2.5"
-          >
-            <div>
-              <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
-                Nome da sequência *
-              </label>
-              <input
-                type="text"
-                id="seq-manual-name"
-                name="name"
-                value={@seq_manual_name}
-                placeholder="Ex: Sequência de terça"
-                class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
-              />
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
-                Descrição (opcional)
-              </label>
-              <textarea
-                id="seq-manual-description"
-                name="description"
-                rows="2"
-                placeholder="Observações sobre a sequência..."
-                class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border resize-y"
-              >{@seq_manual_description}</textarea>
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
-                URL do vídeo (opcional)
-              </label>
-              <input
-                type="text"
-                id="seq-manual-video-url"
-                name="video_url"
-                value={@seq_manual_video_url}
-                placeholder="https://youtu.be/..."
-                class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
-              />
-            </div>
-            <button
-              type="submit"
-              class="w-full py-2.5 bg-accent-green text-white border-none rounded font-serif text-xs font-bold tracking-wide cursor-pointer"
-            >
-              {if @seq_editing_id, do: "Atualizar sequência", else: "Salvar sequência"}
-            </button>
-          </form>
-        </div>
-      <% end %>
-
-      <%!-- View: Saved sequences --%>
-      <%= if @seq_view == :saved do %>
-        <div class="p-4">
-          <%= if @seq_saved == [] do %>
-            <div class="flex flex-col items-center gap-3 py-8 px-2 text-center">
-              <div class="text-4xl">♬</div>
-              <div class="text-sm font-semibold text-ink-900">
-                Nenhuma sequência salva ainda
-              </div>
-              <div class="text-xs text-ink-500 leading-relaxed max-w-[220px]">
-                Crie sua primeira sequência! Use o gerador pra
-                explorar caminhos no mapa, ou monte manual passo a passo.
-              </div>
-              <div class="flex flex-col gap-2 w-full mt-2">
+                <div class="text-xs text-ink-500 leading-relaxed max-w-[220px]">
+                  Tente buscar por nome de passo, código ou categoria.
+                </div>
                 <button
                   type="button"
                   phx-click="show_seq_config"
                   class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-white rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
                 >
-                  Gerar sequências
-                </button>
-                <button
-                  type="button"
-                  phx-click="show_seq_manual"
-                  class="w-full py-2 px-4 font-serif text-xs font-semibold bg-transparent text-accent-green border border-accent-green/50 rounded-md hover:bg-accent-green/5 transition-colors"
-                >
-                  Criar manual
+                  Gerar uma sequência
                 </button>
               </div>
-            </div>
-          <% else %>
-            <%= for saved_seq <- @seq_saved do %>
-              <div class={[
-                "mb-2.5 p-2.5 rounded-md transition-colors",
-                @seq_active_id == saved_seq.id &&
-                  "border-2 border-accent-orange bg-accent-orange/5",
-                @seq_active_id != saved_seq.id && "border border-ink-900/12 bg-white"
-              ]}>
-                <div class="flex items-start justify-between mb-1.5">
-                  <div>
-                    <div class="text-xs font-bold text-ink-900 mb-0.5">
-                      {saved_seq.name}
+            <% else %>
+              <div class="space-y-3">
+                <%= for seq <- @seq_library do %>
+                  <% owned? = MapSet.member?(@seq_owned_ids, seq.id) %>
+                  <% favorited? = MapSet.member?(@seq_favorite_ids, seq.id) %>
+                  <% can_manage? = owned? or @is_admin %>
+                  <% active? = @seq_active_id == seq.id %>
+                  <% categories = sequence_category_labels(seq) %>
+                  <div
+                    id={"seq-library-card-#{seq.id}"}
+                    class={[
+                      "rounded-md p-3 transition-colors",
+                      active? && "border-2 border-accent-orange bg-accent-orange/5",
+                      !active? && owned? && "border border-accent-orange/25 bg-white",
+                      !active? && !owned? && favorited? &&
+                        "border border-gold-500/30 bg-gold-500/5",
+                      !active? && !owned? && !favorited? && "border border-ink-900/12 bg-white"
+                    ]}
+                  >
+                    <div class="flex items-start justify-between gap-2 mb-1.5">
+                      <div class="min-w-0">
+                        <div class="text-xs font-bold text-ink-900 leading-snug">
+                          {seq.name}
+                        </div>
+                        <div class="text-[10px] text-ink-500 mt-0.5">
+                          {length(seq.sequence_steps)} passos
+                          <%= if Ecto.assoc_loaded?(seq.user) && seq.user do %>
+                            · @{seq.user.username}
+                          <% end %>
+                        </div>
+                      </div>
+                      <div class="flex shrink-0 items-start gap-1">
+                        <span
+                          :if={owned?}
+                          class="rounded-full bg-accent-orange/10 px-2 py-0.5 text-[9px] font-bold text-accent-orange"
+                        >
+                          salva
+                        </span>
+                        <span
+                          :if={!owned? && favorited?}
+                          class="rounded-full bg-gold-500/10 px-2 py-0.5 text-[9px] font-bold text-gold-500"
+                        >
+                          favorita
+                        </span>
+                        <span
+                          :if={!owned? && !favorited?}
+                          class="rounded-full bg-ink-900/[0.06] px-2 py-0.5 text-[9px] font-bold text-ink-500"
+                        >
+                          exemplo
+                        </span>
+                        <button
+                          :if={can_manage?}
+                          id={"seq-library-delete-#{seq.id}"}
+                          type="button"
+                          phx-click="delete_sequence"
+                          phx-value-id={seq.id}
+                          data-confirm="Deletar esta sequência? Essa ação não pode ser desfeita."
+                          aria-label={"Deletar sequência #{seq.name}"}
+                          class="inline-flex h-6 w-6 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
+                        >
+                          <.icon name="hero-x-mark" class="size-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div class="text-[10px] text-ink-500">
-                      {length(saved_seq.sequence_steps)} passos
+
+                    <div class="mb-2 flex flex-wrap gap-1">
+                      <%= for sequence_step <- Enum.take(seq.sequence_steps, 8) do %>
+                        <code class="rounded-sm border border-gold-500/15 bg-gold-500/10 px-1.5 py-px text-[9px] font-bold text-ink-700">
+                          {sequence_step.step.code}
+                        </code>
+                      <% end %>
+                      <span
+                        :if={length(seq.sequence_steps) > 8}
+                        class="text-[9px] text-ink-400"
+                      >
+                        +{length(seq.sequence_steps) - 8}
+                      </span>
+                    </div>
+
+                    <div :if={categories != []} class="mb-2 flex flex-wrap gap-1">
+                      <%= for {_name, label, color} <- categories do %>
+                        <span
+                          class="rounded-full border px-2 py-0.5 text-[9px] font-semibold"
+                          style={"background: #{color}12; color: #{color}; border-color: #{color}30;"}
+                        >
+                          {label}
+                        </span>
+                      <% end %>
+                    </div>
+
+                    <div class="flex gap-1.5">
+                      <button
+                        type="button"
+                        phx-click="highlight_saved_sequence"
+                        phx-value-id={seq.id}
+                        class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
+                      >
+                        Ver no mapa
+                      </button>
+                      <button
+                        type="button"
+                        phx-click="toggle_sequence_favorite_graph"
+                        phx-value-id={seq.id}
+                        class={[
+                          "py-1.5 px-2 font-serif text-[10px] bg-transparent border rounded cursor-pointer",
+                          favorited? && "border-gold-500/40 text-gold-500",
+                          !favorited? &&
+                            "border-ink-300 text-ink-600 hover:border-gold-500/40 hover:text-gold-500"
+                        ]}
+                      >
+                        {if favorited?, do: "Favorita", else: "Favoritar"}
+                      </button>
+                      <button
+                        :if={can_manage?}
+                        id={"seq-library-edit-#{seq.id}"}
+                        type="button"
+                        phx-click="edit_saved_sequence"
+                        phx-value-id={seq.id}
+                        class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-300 rounded text-ink-600 cursor-pointer hover:border-accent-orange hover:text-accent-orange"
+                      >
+                        Editar
+                      </button>
                     </div>
                   </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%= if @seq_active do %>
+              <button
+                type="button"
+                phx-click="clear_highlight"
+                class="w-full mt-3 py-2 font-serif text-[11px] bg-transparent border border-accent-orange/30 rounded text-accent-orange cursor-pointer"
+              >
+                Limpar destaque
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%!-- View: Favorited sequences (from community) --%>
+        <%= if @seq_view == :favorites do %>
+          <div class="p-4">
+            <%= if @seq_favorites_list == [] do %>
+              <div class="text-center py-8">
+                <p class="text-sm font-bold text-ink-600 mb-1">Nenhuma sequência favoritada</p>
+                <p class="text-xs text-ink-400">
+                  Favorite sequências na Comunidade e elas aparecem aqui.
+                </p>
+              </div>
+            <% else %>
+              <div class="space-y-3">
+                <%= for seq <- @seq_favorites_list do %>
+                  <div class={[
+                    "rounded p-3 transition-colors",
+                    @seq_active_id == seq.id && "border-2 border-accent-orange bg-accent-orange/5",
+                    @seq_active_id != seq.id && "border border-gold-500/20 bg-ink-50"
+                  ]}>
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                      <div>
+                        <div class="text-xs font-bold text-ink-900">{seq.name}</div>
+                        <div class="text-[10px] text-ink-500">
+                          {length(seq.sequence_steps)} passos
+                          <%= if seq.user do %>
+                            · por @{seq.user.username}
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex gap-1.5 mt-2">
+                      <button
+                        type="button"
+                        phx-click="highlight_saved_sequence"
+                        phx-value-id={seq.id}
+                        class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
+                      >
+                        Ver no mapa
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%!-- View: Manual sequence builder --%>
+        <%= if @seq_view == :manual do %>
+          <div class="p-4">
+            <div class="mb-3 flex items-start justify-between gap-2">
+              <div>
+                <div class="text-xs font-bold text-ink-900">
+                  {if @seq_editing_id, do: "Editar sequência", else: "Criar sequência"}
                 </div>
-                <div class="flex gap-1.5">
+                <p class="text-[11px] text-ink-700 leading-normal m-0 mt-1 italic">
+                  Clique nos nós do grafo para montar a sequência passo a passo.
+                </p>
+              </div>
+              <button
+                :if={@seq_editing_id}
+                id="seq-manual-delete"
+                type="button"
+                phx-click="delete_sequence"
+                phx-value-id={@seq_editing_id}
+                data-confirm="Deletar esta sequência? Essa ação não pode ser desfeita."
+                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
+                aria-label="Deletar sequência em edição"
+              >
+                <.icon name="hero-x-mark" class="size-4" />
+              </button>
+            </div>
+
+            <p class="text-[11px] text-ink-700 leading-normal m-0 mb-3 italic">
+              <%= if @seq_editing_id do %>
+                Ajuste os dados e salve para atualizar esta sequência.
+              <% else %>
+                Dê um nome e salve quando terminar.
+              <% end %>
+            </p>
+
+            <%!-- Step list --%>
+            <div class="mb-3 min-h-[36px] border border-dashed border-ink-900/18 rounded p-2">
+              <%= if @seq_manual_steps == [] do %>
+                <div class="text-[11px] text-ink-400 text-center py-1.5 italic">
+                  Nenhum passo ainda
+                </div>
+              <% else %>
+                <%= for {step, idx} <- Enum.with_index(@seq_manual_steps) do %>
+                  <div class="flex items-center gap-1 py-0.5 border-b border-ink-900/[0.05]">
+                    <span class="text-[10px] font-bold text-accent-green min-w-[16px]">
+                      {idx + 1}.
+                    </span>
+                    <code class="text-[10px] text-ink-500">{step.code}</code>
+                    <span class="flex-1 text-[11px] text-ink-800 truncate">{step.name}</span>
+                    <div class="flex flex-col shrink-0">
+                      <button
+                        :if={idx > 0}
+                        type="button"
+                        phx-click="move_manual_step"
+                        phx-value-index={idx}
+                        phx-value-direction="up"
+                        class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
+                        title="Mover pra cima"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        :if={idx < length(@seq_manual_steps) - 1}
+                        type="button"
+                        phx-click="move_manual_step"
+                        phx-value-index={idx}
+                        phx-value-direction="down"
+                        class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
+                        title="Mover pra baixo"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      phx-click="remove_manual_step"
+                      phx-value-index={idx}
+                      class="bg-none border-none cursor-pointer text-accent-red text-[13px] p-0 px-0.5 leading-none shrink-0"
+                      title="Remover"
+                    >
+                      ×
+                    </button>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+
+            <%!-- Error --%>
+            <%= if @seq_manual_error do %>
+              <div class="mb-2.5 py-1.5 px-2.5 bg-[#fdecea] border border-accent-red/20 rounded text-[11px] text-accent-red">
+                {@seq_manual_error}
+              </div>
+            <% end %>
+
+            <%!-- Save form --%>
+            <form
+              id="seq-manual-form"
+              phx-submit="save_manual_sequence"
+              class="flex flex-col gap-2.5"
+            >
+              <div>
+                <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
+                  Nome da sequência *
+                </label>
+                <input
+                  type="text"
+                  id="seq-manual-name"
+                  name="name"
+                  value={@seq_manual_name}
+                  placeholder="Ex: Sequência de terça"
+                  class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
+                />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
+                  Descrição (opcional)
+                </label>
+                <textarea
+                  id="seq-manual-description"
+                  name="description"
+                  rows="2"
+                  placeholder="Observações sobre a sequência..."
+                  class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border resize-y"
+                >{@seq_manual_description}</textarea>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1">
+                  URL do vídeo (opcional)
+                </label>
+                <input
+                  type="text"
+                  id="seq-manual-video-url"
+                  name="video_url"
+                  value={@seq_manual_video_url}
+                  placeholder="https://youtu.be/..."
+                  class="w-full py-1.5 px-2.5 border border-ink-900/20 rounded font-serif text-xs text-ink-900 bg-white box-border"
+                />
+              </div>
+              <button
+                type="submit"
+                class="w-full py-2.5 bg-accent-green text-white border-none rounded font-serif text-xs font-bold tracking-wide cursor-pointer"
+              >
+                {if @seq_editing_id, do: "Atualizar sequência", else: "Salvar sequência"}
+              </button>
+            </form>
+          </div>
+        <% end %>
+
+        <%!-- View: Saved sequences --%>
+        <%= if @seq_view == :saved do %>
+          <div class="p-4">
+            <%= if @seq_saved == [] do %>
+              <div class="flex flex-col items-center gap-3 py-8 px-2 text-center">
+                <div class="text-4xl">♬</div>
+                <div class="text-sm font-semibold text-ink-900">
+                  Nenhuma sequência salva ainda
+                </div>
+                <div class="text-xs text-ink-500 leading-relaxed max-w-[220px]">
+                  Crie sua primeira sequência! Use o gerador pra
+                  explorar caminhos no mapa, ou monte manual passo a passo.
+                </div>
+                <div class="flex flex-col gap-2 w-full mt-2">
                   <button
                     type="button"
-                    phx-click="highlight_saved_sequence"
-                    phx-value-id={saved_seq.id}
-                    class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
+                    phx-click="show_seq_config"
+                    class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-white rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
                   >
-                    Ver no mapa
+                    Gerar sequências
                   </button>
                   <button
                     type="button"
-                    phx-click="edit_saved_sequence"
-                    phx-value-id={saved_seq.id}
-                    class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-300 rounded text-ink-600 cursor-pointer hover:border-accent-orange hover:text-accent-orange"
+                    phx-click="show_seq_manual"
+                    class="w-full py-2 px-4 font-serif text-xs font-semibold bg-transparent text-accent-green border border-accent-green/50 rounded-md hover:bg-accent-green/5 transition-colors"
                   >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    phx-click="delete_sequence"
-                    phx-value-id={saved_seq.id}
-                    class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-red/30 rounded text-accent-red cursor-pointer"
-                    data-confirm="Deletar esta sequência?"
-                  >
-                    Deletar
+                    Criar manual
                   </button>
                 </div>
               </div>
+            <% else %>
+              <%= for saved_seq <- @seq_saved do %>
+                <div class={[
+                  "mb-2.5 p-2.5 rounded-md transition-colors",
+                  @seq_active_id == saved_seq.id &&
+                    "border-2 border-accent-orange bg-accent-orange/5",
+                  @seq_active_id != saved_seq.id && "border border-ink-900/12 bg-white"
+                ]}>
+                  <div class="flex items-start justify-between mb-1.5">
+                    <div>
+                      <div class="text-xs font-bold text-ink-900 mb-0.5">
+                        {saved_seq.name}
+                      </div>
+                      <div class="text-[10px] text-ink-500">
+                        {length(saved_seq.sequence_steps)} passos
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex gap-1.5">
+                    <button
+                      type="button"
+                      phx-click="highlight_saved_sequence"
+                      phx-value-id={saved_seq.id}
+                      class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
+                    >
+                      Ver no mapa
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="edit_saved_sequence"
+                      phx-value-id={saved_seq.id}
+                      class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-300 rounded text-ink-600 cursor-pointer hover:border-accent-orange hover:text-accent-orange"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="delete_sequence"
+                      phx-value-id={saved_seq.id}
+                      class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-red/30 rounded text-accent-red cursor-pointer"
+                      data-confirm="Deletar esta sequência?"
+                    >
+                      Deletar
+                    </button>
+                  </div>
+                </div>
+              <% end %>
             <% end %>
-          <% end %>
-          <%= if @seq_active do %>
-            <button
-              type="button"
-              phx-click="clear_highlight"
-              class="w-full mt-2 py-2 font-serif text-[11px] bg-transparent border border-accent-orange/30 rounded text-accent-orange cursor-pointer"
-            >
-              Limpar destaque
-            </button>
-          <% end %>
-        </div>
-      <% end %>
+            <%= if @seq_active do %>
+              <button
+                type="button"
+                phx-click="clear_highlight"
+                class="w-full mt-2 py-2 font-serif text-[11px] bg-transparent border border-accent-orange/30 rounded text-accent-orange cursor-pointer"
+              >
+                Limpar destaque
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
     </div>
 
     <%!-- Orphan panel — left side, only in edit mode --%>

@@ -39,6 +39,28 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
       {:ok, _view, html} = live(conn, ~p"/notifications")
       assert html =~ "respondeu"
     end
+
+    test "marks unread notifications as read when opened while keeping new marker", %{conn: conn} do
+      {conn, user} = logged_in_conn(conn)
+      actor = insert(:user)
+
+      notification =
+        insert(:notification,
+          user: user,
+          actor: actor,
+          action: "followed_user",
+          target_type: "profile",
+          target_id: actor.id,
+          parent_type: "profile",
+          parent_id: actor.id,
+          read_at: nil
+        )
+
+      {:ok, view, _html} = live(conn, ~p"/notifications")
+
+      assert has_element?(view, "#notification-unread-#{notification.id}")
+      assert Engagement.unread_count(user.id) == 0
+    end
   end
 
   describe "mark_all_read" do

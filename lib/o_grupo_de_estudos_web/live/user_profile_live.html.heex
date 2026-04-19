@@ -5,6 +5,9 @@
     nav_mode={@nav_mode}
     title={OGrupoDeEstudos.Accounts.first_name(@profile_user) || @profile_user.username}
     notification_count={assigns[:notification_count] || 0}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={assigns[:notification_dropdown_open] || false}
+    notification_preview_groups={assigns[:notification_preview_groups] || []}
   />
 
   <%!-- Profile --%>

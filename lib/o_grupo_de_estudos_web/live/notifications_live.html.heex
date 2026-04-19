@@ -6,15 +6,11 @@
 />
 
 <main class="max-w-2xl mx-auto px-4 pt-4 pb-24 font-sans">
-  <div class="flex items-center justify-between mb-4">
+  <div class="mb-4">
     <h1 class="text-xl font-serif font-bold text-ink-800">Notificações</h1>
-    <button
-      :if={@notification_count > 0}
-      phx-click="mark_all_read"
-      class="text-xs text-accent-orange hover:text-accent-orange/80 font-medium"
-    >
-      Marcar tudo como lido
-    </button>
+    <p class="m-0 mt-1 text-xs text-ink-500">
+      Novas notificações aparecem com um ponto laranja e são marcadas como vistas ao abrir.
+    </p>
   </div>
 
   <%= if @notifications == [] do %>
@@ -50,7 +46,7 @@
         </div>
 
         <%!-- Content --%>
-        <div class="flex-1 min-w-0" phx-click="mark_read" phx-value-id={notif.id}>
+        <div class="flex-1 min-w-0">
           <p class="text-sm text-ink-700">
             <.link
               :if={primary_actor_username(notif)}
@@ -76,6 +72,7 @@
         <%!-- Unread dot --%>
         <div
           :if={!notif.read}
+          id={"notification-unread-#{notif.id}"}
           class="w-2.5 h-2.5 rounded-full bg-accent-orange flex-shrink-0 mt-2"
         />
       </div>

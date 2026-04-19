@@ -169,4 +169,22 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
 
     assert author_notifications == []
   end
+
+  test "following a user creates a follow notification" do
+    follower = insert(:user)
+    followed = insert(:user)
+
+    Engagement.toggle_follow(follower.id, followed.id)
+
+    [notification] =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^followed.id and n.action == "followed_user"
+      )
+
+    assert notification.actor_id == follower.id
+    assert notification.target_type == "profile"
+    assert notification.parent_type == "profile"
+    assert notification.parent_id == follower.id
+  end
 end

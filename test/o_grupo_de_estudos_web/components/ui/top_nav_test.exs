@@ -88,6 +88,38 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
       assert html =~ "sair"
     end
 
+    test "desktop notifications can render as a dropdown trigger" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary,
+          notification_dropdown_enabled: true,
+          notification_dropdown_open: false,
+          notification_preview_groups: [],
+          notification_count: 2
+        })
+
+      assert html =~ ~s(id="top-nav-notifications-button")
+      assert html =~ ~s(phx-click="toggle_notifications_dropdown")
+      assert html =~ "2"
+    end
+
+    test "desktop notifications dropdown shows empty state when open" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary,
+          notification_dropdown_enabled: true,
+          notification_dropdown_open: true,
+          notification_preview_groups: []
+        })
+
+      assert html =~ ~s(id="top-nav-notifications-panel")
+      assert html =~ "Nenhuma notificação ainda"
+    end
+
     test "detail mode renders back button (data-ui=\"back-button\")" do
       html =
         render_component(&TopNav.top_nav/1, %{

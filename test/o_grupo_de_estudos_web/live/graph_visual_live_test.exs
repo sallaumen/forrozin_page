@@ -143,6 +143,33 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "BA"
     end
 
+    test "sequence panel keeps its header outside the scrollable content", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      assert html =~ ~s(id="seq-panel-header")
+      assert html =~ ~s(id="seq-panel-content")
+      assert html =~ "flex flex-col overflow-hidden"
+      assert html =~ "min-h-0 flex-1 overflow-y-auto"
+    end
+
+    test "viewing a sequence on the map closes the mobile sequence panel", %{conn: conn} do
+      user = insert(:user)
+      cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
+      section = insert(:section, category: cat)
+      step = insert(:step, code: "BA", name: "Balanço", section: section, category: cat)
+
+      sequence = insert(:sequence, name: "Sequência mobile", user: user)
+      insert(:sequence_step, sequence: sequence, step: step, position: 1)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      html = render_click(lv, "show_seq_mobile", %{})
+      refute html =~ "max-md:hidden"
+
+      html = render_click(lv, "highlight_saved_sequence", %{"id" => sequence.id})
+      assert html =~ "max-md:hidden"
+    end
+
     test "sequence library combines saved and favorited sequences", %{conn: conn} do
       user = insert(:user)
       cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")

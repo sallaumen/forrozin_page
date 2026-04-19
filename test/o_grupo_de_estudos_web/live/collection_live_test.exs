@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
 
   import Phoenix.LiveViewTest
 
+  alias OGrupoDeEstudos.Engagement
+
   defp logged_in_conn(conn) do
     user = insert(:user)
     log_in_user(conn, user)
@@ -29,6 +31,35 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       html = render_click(lv, "expand_all", %{})
       assert html =~ "Base frontal"
       refute html =~ "Sacada Suspensa"
+    end
+
+    test "desktop notification dropdown marks visible notifications as read", %{conn: conn} do
+      user = insert(:user)
+      actor = insert(:user, name: "Maria Seguidora")
+
+      insert(:notification,
+        user: user,
+        actor: actor,
+        action: "followed_user",
+        group_key: "follow:#{user.id}",
+        target_type: "profile",
+        target_id: actor.id,
+        parent_type: "profile",
+        parent_id: actor.id,
+        read_at: nil
+      )
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/collection")
+
+      html =
+        lv
+        |> element("#top-nav-notifications-button")
+        |> render_click()
+
+      assert html =~ ~s(id="top-nav-notifications-panel")
+      assert html =~ "Maria Seguidora"
+      assert html =~ "começou a te seguir"
+      assert Engagement.unread_count(user.id) == 0
     end
 
     test "does not display draft steps", %{conn: conn} do
@@ -157,6 +188,19 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       html = render_click(lv, "open_step", %{"code" => "BF"})
       assert html =~ "Base frontal"
       assert html =~ "Mechanical note"
+    end
+
+    test "drawer keeps step actions in a fixed header above scrollable content", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      insert(:step, section: section, code: "BF", name: "Base frontal", note: "Mechanical note")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+
+      html = render_click(lv, "open_step", %{"code" => "BF"})
+
+      assert html =~ ~s(id="collection-drawer-header")
+      assert html =~ ~s(id="collection-drawer-body")
+      assert html =~ "flex flex-col overflow-hidden"
+      assert html =~ "min-h-0 flex-1 overflow-y-auto p-6"
     end
 
     test "close_drawer hides the panel", %{conn: conn} do
