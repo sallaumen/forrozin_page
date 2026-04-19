@@ -1,4 +1,5 @@
 # Editors & AI tools
+.agents/
 .claude/
 .cursor/
 .idea/
