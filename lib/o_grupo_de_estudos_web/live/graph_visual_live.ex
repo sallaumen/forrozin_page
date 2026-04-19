@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Sequences}
+  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Media, Sequences}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
@@ -18,6 +18,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   @impl true
   def mount(_params, _session, socket) do
     is_admin = Accounts.admin?(socket.assigns.current_user)
+    can_3d = socket.assigns.current_user.username == "tata"
     graph = Encyclopedia.build_graph()
 
     liked_codes = Engagement.liked_step_codes(socket.assigns.current_user.id)
@@ -59,6 +60,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_manual_video_url, "")
      |> assign(:seq_missing_edges, [])
      |> assign(:seq_favorites_list, [])
+     |> assign(:can_3d, can_3d)
+     |> assign(:three_d_mode, false)
+     |> assign(:three_d_steps, [])
+     |> assign(:three_d_current_step, 0)
+     |> assign(:three_d_playing, false)
+     |> assign(:three_d_speed, 1.0)
      |> assign(:liked_step_codes, liked_codes)
      |> assign_graph_data(graph, false)
      |> assign_sequence_library()
@@ -176,7 +183,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     end
   end
 
-  def handle_event("highlight_saved_sequence", %{"id" => id}, socket) do
+  def handle_event("highlight_saved_sequence", %{"id" => id} = params, socket) do
     saved = Sequences.get_sequence(id)
 
     if saved do
@@ -187,14 +194,37 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       edges = Map.get(socket.assigns, :edges, [])
       missing = find_missing_edges(step_codes, edges)
 
-      {:noreply,
-       socket
-       |> assign(:seq_active, step_list)
-       |> assign(:seq_active_id, saved.id)
-       |> assign(:seq_initial_steps_json, Jason.encode!(step_codes))
-       |> assign(:seq_missing_edges, missing)
-       |> assign(:seq_mobile_visible, false)
-       |> push_event("highlight_sequence", %{steps: step_codes})}
+      socket =
+        socket
+        |> assign(:seq_active, step_list)
+        |> assign(:seq_active_id, saved.id)
+        |> assign(:seq_initial_steps_json, Jason.encode!(step_codes))
+        |> assign(:seq_missing_edges, missing)
+        |> assign(:seq_mobile_visible, false)
+        |> push_event("highlight_sequence", %{steps: step_codes})
+
+      # If "then_3d" param is set, enter 3D mode after highlighting
+      socket =
+        if params["then_3d"] == "true" do
+          loaded_steps =
+            step_codes
+            |> Enum.map(&StepQuery.get_by(code: &1))
+            |> Enum.reject(&is_nil/1)
+            |> OGrupoDeEstudos.Repo.preload(:category)
+
+          animation_data = Media.build_sequence_animation(loaded_steps)
+
+          socket
+          |> assign(:three_d_mode, true)
+          |> assign(:three_d_steps, animation_data)
+          |> assign(:three_d_current_step, 0)
+          |> assign(:three_d_playing, true)
+          |> push_event("load_animation", %{steps: animation_data})
+        else
+          socket
+        end
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -743,6 +773,75 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     else
       {:noreply, socket}
     end
+  end
+
+  # ── 3D Mode ──────────────────────────────────────────────────────────
+
+  def handle_event("enter_3d_mode", _params, socket) do
+    seq_active = socket.assigns.seq_active
+
+    if seq_active && is_list(seq_active) && seq_active != [] do
+      step_codes = Enum.map(seq_active, & &1.code)
+
+      steps =
+        step_codes
+        |> Enum.map(fn code -> StepQuery.get_by(code: code) end)
+        |> Enum.reject(&is_nil/1)
+        |> OGrupoDeEstudos.Repo.preload(:category)
+
+      animation_data = Media.build_sequence_animation(steps)
+
+      {:noreply,
+       socket
+       |> assign(:three_d_mode, true)
+       |> assign(:three_d_steps, animation_data)
+       |> assign(:three_d_current_step, 0)
+       |> assign(:three_d_playing, true)
+       |> push_event("load_animation", %{steps: animation_data})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("exit_3d_mode", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:three_d_mode, false)
+     |> assign(:three_d_steps, [])
+     |> assign(:three_d_current_step, 0)
+     |> assign(:three_d_playing, false)}
+  end
+
+  def handle_event("three_d_play", _params, socket), do: {:noreply, assign(socket, :three_d_playing, true)}
+  def handle_event("three_d_pause", _params, socket), do: {:noreply, assign(socket, :three_d_playing, false)}
+
+  def handle_event("three_d_next", _params, socket) do
+    max_idx = length(socket.assigns.three_d_steps) - 1
+    new_idx = min(socket.assigns.three_d_current_step + 1, max_idx)
+    {:noreply, assign(socket, :three_d_current_step, new_idx)}
+  end
+
+  def handle_event("three_d_prev", _params, socket) do
+    new_idx = max(socket.assigns.three_d_current_step - 1, 0)
+    {:noreply, assign(socket, :three_d_current_step, new_idx)}
+  end
+
+  def handle_event("three_d_speed", %{"speed" => speed_str}, socket) do
+    speed =
+      case Float.parse(speed_str) do
+        {s, _} -> s
+        _ -> 1.0
+      end
+
+    {:noreply, assign(socket, :three_d_speed, speed)}
+  end
+
+  def handle_event("step_changed", %{"index" => index}, socket) do
+    {:noreply, assign(socket, :three_d_current_step, index)}
+  end
+
+  def handle_event("playback_ended", _params, socket) do
+    {:noreply, assign(socket, :three_d_playing, false)}
   end
 
   defp favorited_step_codes(user_id) do

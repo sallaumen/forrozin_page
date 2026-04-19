@@ -24,6 +24,7 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/o_grupo_de_estudos"
 import topbar from "../vendor/topbar"
+import ThreeCanvas from "./three_canvas"
 
 // ---------------------------------------------------------------------------
 // Canonical category order for radial sectors.
@@ -1491,17 +1492,19 @@ const PWAInstall = {
       return
     }
 
-    // Don't show if dismissed this session
-    if (sessionStorage.getItem('pwa_banner_dismissed')) {
-      return
+    // Show at most once per week (localStorage persists across sessions)
+    const lastDismissed = localStorage.getItem('pwa_banner_dismissed_at')
+    if (lastDismissed) {
+      const weekMs = 7 * 24 * 60 * 60 * 1000
+      if (Date.now() - parseInt(lastDismissed) < weekMs) return
     }
 
     const banner = this.el
     const installBtn = document.getElementById('pwa-install-btn')
     const dismissBtn = document.getElementById('pwa-dismiss-btn')
 
-    // Show after 2s
-    setTimeout(() => banner.classList.remove('hidden'), 2000)
+    // Show after 3s delay
+    setTimeout(() => banner.classList.remove('hidden'), 3000)
 
     if (installBtn) {
       installBtn.addEventListener('click', async () => {
@@ -1511,7 +1514,7 @@ const PWAInstall = {
           const { outcome } = await window._deferredPWAPrompt.userChoice
           if (outcome === 'accepted') {
             banner.classList.add('hidden')
-            sessionStorage.setItem('pwa_banner_dismissed', '1')
+            localStorage.setItem('pwa_banner_dismissed_at', Date.now().toString())
           }
           window._deferredPWAPrompt = null
         } else {
@@ -1524,7 +1527,7 @@ const PWAInstall = {
     if (dismissBtn) {
       dismissBtn.addEventListener('click', () => {
         banner.classList.add('hidden')
-        sessionStorage.setItem('pwa_banner_dismissed', '1')
+        localStorage.setItem('pwa_banner_dismissed_at', Date.now().toString())
       })
     }
   }
@@ -1610,7 +1613,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, OnboardingBanner},
+  hooks: {...colocatedHooks, GraphVisual, ThreeCanvas, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, OnboardingBanner},
 })
 
 // Show progress bar on live navigation and form submits

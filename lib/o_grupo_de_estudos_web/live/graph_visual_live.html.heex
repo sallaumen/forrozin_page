@@ -62,8 +62,9 @@
     </div>
   </div>
 
-  <%!-- Graph canvas — fills remaining viewport --%>
+  <%!-- Graph canvas / 3D canvas — fills remaining viewport --%>
   <div class="flex-1 relative overflow-hidden">
+    <%!-- 2D Graph --%>
     <div
       id="graph-canvas"
       phx-hook="GraphVisual"
@@ -76,6 +77,106 @@
       style="width: 100%; height: calc(100vh - 86px); background: #f7f3ec;"
     >
     </div>
+
+    <%!-- 3D Dance Visualization — overlays graph canvas --%>
+    <%= if @three_d_mode do %>
+      <div
+        id="three-canvas"
+        phx-hook="ThreeCanvas"
+        phx-update="ignore"
+        style="position: absolute; inset: 0; z-index: 15; background: #0a0a0a;"
+      >
+      </div>
+
+      <%!-- 3D mode header bar --%>
+      <div class="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/70 to-transparent pointer-events-none">
+        <button
+          type="button"
+          phx-click="exit_3d_mode"
+          class="pointer-events-auto flex items-center gap-2 py-2 px-4 bg-ink-900/80 text-ink-200 border border-ink-700/50 rounded-lg font-serif text-xs cursor-pointer hover:bg-ink-800 transition-colors backdrop-blur-sm"
+        >
+          <.icon name="hero-arrow-left" class="w-3.5 h-3.5" /> Voltar ao grafo
+        </button>
+        <div class="pointer-events-auto flex items-center gap-3">
+          <span class="text-[11px] text-ink-400 font-serif">
+            Passo {@three_d_current_step + 1}/{length(@three_d_steps)}
+          </span>
+          <div class="flex items-center gap-1">
+            <%= for speed <- [0.5, 1.0, 2.0] do %>
+              <button
+                type="button"
+                phx-click="three_d_speed"
+                phx-value-speed={speed}
+                class={[
+                  "py-1 px-2 rounded text-[10px] font-bold font-serif cursor-pointer transition-colors",
+                  @three_d_speed == speed && "bg-gold-500 text-ink-900",
+                  @three_d_speed != speed && "bg-ink-800/60 text-ink-400 hover:text-ink-200"
+                ]}
+              >
+                {speed}x
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%!-- 3D playback controls (bottom) --%>
+      <div class="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center pb-6 pt-8 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
+        <%!-- Step name --%>
+        <div class="mb-3 text-center pointer-events-none">
+          <%= if @three_d_steps != [] do %>
+            <% current = Enum.at(@three_d_steps, @three_d_current_step) %>
+            <%= if current do %>
+              <div class="text-xs text-gold-500 font-bold font-serif tracking-wider uppercase">{current.category}</div>
+              <div class="text-lg text-ink-100 font-bold font-serif mt-0.5">
+                <span class="text-gold-500/70 mr-1">{current.code}</span>
+                {current.name}
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+
+        <%!-- Controls --%>
+        <div class="pointer-events-auto flex items-center gap-4">
+          <button
+            type="button"
+            phx-click="three_d_prev"
+            class="w-10 h-10 rounded-full bg-ink-800/60 text-ink-300 flex items-center justify-center cursor-pointer hover:bg-ink-700/60 transition-colors border-0 backdrop-blur-sm"
+          >
+            <.icon name="hero-backward" class="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            phx-click={if @three_d_playing, do: "three_d_pause", else: "three_d_play"}
+            class="w-14 h-14 rounded-full bg-gold-500 text-ink-900 flex items-center justify-center cursor-pointer hover:bg-gold-400 transition-colors border-0 shadow-lg shadow-gold-500/30"
+          >
+            <%= if @three_d_playing do %>
+              <.icon name="hero-pause" class="w-7 h-7" />
+            <% else %>
+              <.icon name="hero-play" class="w-7 h-7 ml-0.5" />
+            <% end %>
+          </button>
+          <button
+            type="button"
+            phx-click="three_d_next"
+            class="w-10 h-10 rounded-full bg-ink-800/60 text-ink-300 flex items-center justify-center cursor-pointer hover:bg-ink-700/60 transition-colors border-0 backdrop-blur-sm"
+          >
+            <.icon name="hero-forward" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <%!-- Step indicators --%>
+        <div class="flex gap-1.5 mt-3 pointer-events-none">
+          <%= for {_step, idx} <- Enum.with_index(@three_d_steps) do %>
+            <div class={[
+              "w-2 h-2 rounded-full transition-colors",
+              idx == @three_d_current_step && "bg-gold-500",
+              idx != @three_d_current_step && "bg-ink-600"
+            ]} />
+          <% end %>
+        </div>
+      </div>
+    <% end %>
 
     <%!-- Mobile floating sequence panel trigger --%>
     <button
@@ -709,6 +810,16 @@
                         class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
                       >
                         Ver no mapa
+                      </button>
+                      <button
+                        :if={@can_3d}
+                        type="button"
+                        phx-click="highlight_saved_sequence"
+                        phx-value-id={seq.id}
+                        phx-value-then_3d="true"
+                        class="py-1.5 px-2.5 font-serif text-[10px] bg-gold-500/10 border border-gold-500/30 rounded text-gold-500 cursor-pointer hover:bg-gold-500/20 transition-colors font-bold"
+                      >
+                        3D
                       </button>
                       <button
                         type="button"
