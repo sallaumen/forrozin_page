@@ -18,7 +18,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
       assert html =~ ~s(data-ui="bottom-nav")
     end
 
-    test "renders 4 tab links" do
+    test "renders tab links including the sequence generator" do
       html =
         render_component(&BottomNav.bottom_nav/1, %{
           current_user: user(),
@@ -27,6 +27,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
 
       assert html =~ ~s(href="/collection")
       assert html =~ ~s(href="/graph/visual")
+      assert html =~ ~s(href="/graph/visual?mode=generator")
       assert html =~ ~s(href="/community")
       assert html =~ ~s(href="/users/tavano")
     end
@@ -40,8 +41,20 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
 
       assert html =~ "Acervo"
       assert html =~ "Mapa"
+      assert html =~ "Gerador"
       assert html =~ "Comunidade"
       assert html =~ "Perfil"
+    end
+
+    test "generator tab can be active independently from the map tab" do
+      html =
+        render_component(&BottomNav.bottom_nav/1, %{
+          current_user: user(),
+          current_path: "/graph/visual?mode=generator"
+        })
+
+      assert html =~ ~s(href="/graph/visual?mode=generator")
+      assert html =~ ~s(data-active="true")
     end
 
     test "active tab marked with data-active=true when current_path matches" do

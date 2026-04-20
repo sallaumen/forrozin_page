@@ -82,6 +82,18 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   @impl true
+  def handle_params(%{"mode" => "generator"}, _uri, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_panel, true)
+     |> assign(:seq_mobile_visible, true)
+     |> assign(:seq_view, :config)
+     |> assign(:seq_results, [])
+     |> assign(:seq_warnings, [])
+     |> assign(:seq_saving, nil)
+     |> deactivate_manual_mode()}
+  end
+
   def handle_params(%{"seq" => seq_id}, _uri, socket) do
     case Sequences.get_sequence(seq_id) do
       nil ->

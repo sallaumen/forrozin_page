@@ -26,6 +26,12 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
     tabs = [
       %{label: "Acervo", path: "/collection", icon: "hero-rectangle-stack"},
       %{label: "Mapa", path: "/graph/visual", icon: "hero-map"},
+      %{
+        label: "Gerador",
+        path: "/graph/visual?mode=generator",
+        icon: "hero-sparkles",
+        accent: true
+      },
       %{label: "Comunidade", path: "/community", icon: "hero-users"},
       %{label: "Alertas", path: "/notifications", icon: "hero-bell"},
       %{
@@ -53,7 +59,9 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
             data-active={active?(@current_path, tab.path)}
             class={[
               "flex flex-col items-center justify-center gap-0.5 h-full w-full no-underline font-sans",
-              "text-ink-500 data-[active=true]:text-ink-900"
+              Map.get(tab, :accent) &&
+                "text-accent-orange data-[active=true]:text-accent-orange",
+              !Map.get(tab, :accent) && "text-ink-500 data-[active=true]:text-ink-900"
             ]}
           >
             <.icon name={tab.icon} class="size-6" />

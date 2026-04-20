@@ -1500,7 +1500,12 @@
   </div>
   <.bottom_nav
     current_user={@current_user}
-    current_path="/graph/visual"
+    current_path={
+      if(@seq_view in [:config, :results],
+        do: "/graph/visual?mode=generator",
+        else: "/graph/visual"
+      )
+    }
     notification_count={assigns[:notification_count] || 0}
   />
 </div>

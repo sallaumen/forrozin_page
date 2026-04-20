@@ -697,6 +697,13 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       assert html =~ "#{step_b.code} · #{step_b.name}"
     end
+
+    test "generator mode query opens the automatic generator directly", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
+
+      assert html =~ "Gerador automático"
+      refute html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
+    end
   end
 
   describe "drawer overflow prevention" do
