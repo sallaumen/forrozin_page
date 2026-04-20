@@ -793,6 +793,7 @@ const GraphVisual = {
       }
 
       hook._activeCategory = null
+      hook._resetLegend()
       applySpotlight(cy, node)
       openDrawer(node, cy, isEditMode && isAdmin, hook)
     })
@@ -810,6 +811,7 @@ const GraphVisual = {
     cy.on("mouseover", "node", function(evt) {
       if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't interfere with sequence highlight
+      if (hook._activeCategory) return // Category filters stay fixed until the user changes them.
       const node = evt.target
       cy.batch(() => {
         cy.elements().style({ opacity: 0.25 })
