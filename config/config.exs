@@ -54,7 +54,7 @@ config :phoenix, :json_library, Jason
 # Oban — filas de jobs assíncronos
 config :o_grupo_de_estudos, Oban,
   repo: OGrupoDeEstudos.Repo,
-  queues: [email: 10, backup: 1, maintenance: 1],
+  queues: [email: 10, tracking: 5, backup: 1, maintenance: 1],
   plugins: [
     Oban.Plugins.Pruner,
     {Oban.Plugins.Cron,
