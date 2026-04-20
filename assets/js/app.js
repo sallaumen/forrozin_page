@@ -461,6 +461,7 @@ const GraphVisual = {
     cytoscape.use(cytoscapeCola)
     window._cytoscape = cytoscape
 
+    this._bindGraphLegendInteractions()
     this._initGraph()
 
     // Listen for server push events
@@ -529,6 +530,13 @@ const GraphVisual = {
 
   updated() { this._initGraph() },
 
+  destroyed() {
+    if (this._graphLegendClickHandler) {
+      document.removeEventListener("click", this._graphLegendClickHandler)
+      this._graphLegendClickHandler = null
+    }
+  },
+
   _showToast(message) {
     const toast = document.createElement("div")
     toast.textContent = message
@@ -587,8 +595,11 @@ const GraphVisual = {
 
     // Build elements: step nodes + edges (no compound parents)
     const elements = []
+    const nodeColorById = {}
 
     nodes.forEach(n => {
+      nodeColorById[n.id] = n.cor || "#9a7a5a"
+
       elements.push({
         data: {
           id: n.id, label: n.nome, categoria: n.categoria,
@@ -602,9 +613,14 @@ const GraphVisual = {
     })
 
     edges.forEach(e => {
-      const d = { source: e.from, target: e.to, spread: e.spread || 0 }
+      const d = {
+        source: e.from,
+        target: e.to,
+        spread: e.spread || 0,
+        cor: e.to === CENTER_CODE ? "#1a1a1a" : nodeColorById[e.from] || "#9a7a5a"
+      }
       if (e.label) d.label = e.label
-      elements.push({ data: d })
+      elements.push({ data: d, selectable: false })
     })
 
     const cy = window._cytoscape({
@@ -615,8 +631,14 @@ const GraphVisual = {
           selector: "node",
           style: {
             "shape": "roundrectangle",
-            "width": "label",
-            "height": "label",
+            "width": function(e) {
+              if (e.data("highlighted")) return 132
+              return e.degree() >= 10 ? 104 : 88
+            },
+            "height": function(e) {
+              if (e.data("highlighted")) return 76
+              return e.degree() >= 10 ? 58 : 48
+            },
             "padding": function(e) {
               if (e.data("highlighted")) return "20px 30px"
               return e.degree() >= 10 ? "12px 18px" : "8px 14px"
@@ -639,23 +661,16 @@ const GraphVisual = {
               return d >= 12 ? 15 : d >= 6 ? 14 : 13
             },
             "color": "#1a0e05", "text-max-width": "180px",
-            "min-width": "80px",
-            "shadow-blur": function(e) {
-              if (e.data("highlighted")) return 20
-              return e.degree() >= 10 ? 10 : 4
-            },
-            "shadow-color": "rgba(60,40,20,0.12)",
-            "shadow-offset-x": 0, "shadow-offset-y": 2, "shadow-opacity": 1
+            "min-width": "80px"
           }
         },
         {
           selector: "node:selected",
           style: {
             "background-color": "data(cor)", "background-opacity": 0.15,
-            "border-width": 3, "border-opacity": 1, "shadow-blur": 16, "shadow-opacity": 1
+            "border-width": 3, "border-opacity": 1
           }
         },
-        { selector: "node:grabbed", style: { "shadow-blur": 20, "shadow-opacity": 1 } },
         {
           selector: "edge",
           style: {
@@ -678,21 +693,13 @@ const GraphVisual = {
           }
         }
       ],
-      wheelSensitivity: 0.3, minZoom: 0.06, maxZoom: 5,
+      minZoom: 0.06, maxZoom: 5,
       autoungrabifyNodes: true
     })
 
     this._cy = cy
     window._cyInstance = cy
-
-    // Inherit source category color to edges — except edges pointing to BF get black
-    cy.edges().forEach(edge => {
-      if (edge.target().id() === CENTER_CODE) {
-        edge.data("cor", "#1a1a1a")
-      } else {
-        edge.data("cor", edge.source().data("cor") || "#9a7a5a")
-      }
-    })
+    cy.edges().unselectify()
 
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)
@@ -727,8 +734,8 @@ const GraphVisual = {
     })
 
     // ── Interactions ──
-    let activeCategory = null
     const hook = this
+    this._activeCategory = null
     const isAdmin = el.dataset.admin === "true"
     const isEditMode = el.dataset.editMode === "true"
     this._isAdmin = isAdmin
@@ -785,7 +792,7 @@ const GraphVisual = {
         }
       }
 
-      activeCategory = null
+      hook._activeCategory = null
       applySpotlight(cy, node)
       openDrawer(node, cy, isEditMode && isAdmin, hook)
     })
@@ -793,7 +800,10 @@ const GraphVisual = {
     cy.on("tap", function(evt) {
       if (evt.target === cy) {
         if (ghostSourceId) { cancelGhost(); return }
-        clearSpotlight(cy); closeDrawer(); activeCategory = null; resetLegend()
+        clearSpotlight(cy)
+        closeDrawer()
+        hook._activeCategory = null
+        hook._resetLegend()
       }
     })
 
@@ -811,7 +821,7 @@ const GraphVisual = {
     cy.on("mouseout", "node", function() {
       if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't clear sequence highlight
-      if (!activeCategory) clearSpotlight(cy)
+      if (!hook._activeCategory) clearSpotlight(cy)
     })
 
     document.getElementById("drawer-close")?.addEventListener("click", () => {
@@ -828,65 +838,94 @@ const GraphVisual = {
         }
         cancelGhost()
         closeDrawer()
-        closeMobileLegend()
+        hook._closeMobileLegend()
         clearSpotlight(cy)
-        activeCategory = null
-        resetLegend()
+        hook._activeCategory = null
+        hook._resetLegend()
       }
     })
+  },
 
-    // Legend buttons
-    const legendBtns = document.querySelectorAll("[data-graph-legend-filter][data-category]")
-    const mobileLegendToggle = document.getElementById("graph-legend-mobile-toggle")
-    const mobileLegendPanel = document.getElementById("graph-legend-mobile-panel")
+  _bindGraphLegendInteractions() {
+    if (this._graphLegendClickHandler) return
 
-    function resetLegend() {
-      legendBtns.forEach(b => {
-        b.style.background = ""
-        b.style.fontWeight = ""
-        b.setAttribute("aria-pressed", "false")
-      })
+    this._graphLegendClickHandler = event => {
+      const toggle = event.target.closest?.("#graph-legend-mobile-toggle")
+
+      if (toggle) {
+        const panel = document.getElementById("graph-legend-mobile-panel")
+        if (!panel) return
+
+        const willOpen = panel.classList.contains("hidden")
+        panel.classList.toggle("hidden", !willOpen)
+        toggle.setAttribute("aria-expanded", willOpen ? "true" : "false")
+        return
+      }
+
+      const btn = event.target.closest?.("[data-graph-legend-filter][data-category]")
+      if (!btn) return
+
+      const cy = this._cy
+      if (!cy) return
+
+      const catName = btn.dataset.category
+      closeDrawer()
+      this._closeMobileLegend()
+
+      const sequenceActive = this._seqHighlightActive || window._seqHighlightActive
+
+      if (this._activeCategory === catName && !sequenceActive) {
+        this._activeCategory = null
+        clearSpotlight(cy)
+        this._resetLegend()
+        return
+      }
+
+      const applyCategory = () => {
+        if (!this._cy) return
+        this._activeCategory = catName
+        applyCategorySpotlight(this._cy, catName)
+        this._resetLegend()
+        this._activateLegendCategory(catName)
+      }
+
+      if (sequenceActive) {
+        this._clearSequenceHighlight({ refit: false })
+        this.pushEvent("clear_highlight", {})
+        setTimeout(applyCategory, 120)
+        return
+      }
+
+      applyCategory()
     }
 
-    function activateLegendCategory(catName) {
-      legendBtns.forEach(btn => {
-        if (btn.dataset.category !== catName) return
-        btn.style.background = "rgba(60,40,20,0.08)"
-        btn.style.fontWeight = "700"
-        btn.setAttribute("aria-pressed", "true")
-      })
-    }
+    document.addEventListener("click", this._graphLegendClickHandler)
+  },
 
-    function closeMobileLegend() {
-      if (!mobileLegendPanel || !mobileLegendToggle) return
-      mobileLegendPanel.classList.add("hidden")
-      mobileLegendToggle.setAttribute("aria-expanded", "false")
-    }
-
-    mobileLegendToggle?.addEventListener("click", () => {
-      if (!mobileLegendPanel) return
-      const willOpen = mobileLegendPanel.classList.contains("hidden")
-      mobileLegendPanel.classList.toggle("hidden", !willOpen)
-      mobileLegendToggle.setAttribute("aria-expanded", willOpen ? "true" : "false")
+  _resetLegend() {
+    document.querySelectorAll("[data-graph-legend-filter][data-category]").forEach(btn => {
+      btn.style.background = ""
+      btn.style.fontWeight = ""
+      btn.setAttribute("aria-pressed", "false")
     })
+  },
 
-    legendBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const catName = btn.dataset.category
-        closeDrawer()
-        closeMobileLegend()
-        if (activeCategory === catName) {
-          activeCategory = null
-          clearSpotlight(cy)
-          resetLegend()
-          return
-        }
-        activeCategory = catName
-        applyCategorySpotlight(cy, catName)
-        resetLegend()
-        activateLegendCategory(catName)
-      })
+  _activateLegendCategory(catName) {
+    document.querySelectorAll("[data-graph-legend-filter][data-category]").forEach(btn => {
+      if (btn.dataset.category !== catName) return
+      btn.style.background = "rgba(60,40,20,0.08)"
+      btn.style.fontWeight = "700"
+      btn.setAttribute("aria-pressed", "true")
     })
+  },
+
+  _closeMobileLegend() {
+    const panel = document.getElementById("graph-legend-mobile-panel")
+    const toggle = document.getElementById("graph-legend-mobile-toggle")
+    if (!panel || !toggle) return
+
+    panel.classList.add("hidden")
+    toggle.setAttribute("aria-expanded", "false")
   },
 
   _consumeInitialSequenceSteps() {
@@ -980,9 +1019,13 @@ const GraphVisual = {
     this._removeSeqExitButton()
     const container = this.el.parentElement
     const btn = document.createElement("button")
+    const isMobile = window.matchMedia("(max-width: 767px)").matches
+
     btn.id = "seq-exit-btn"
-    btn.textContent = "✕ Sair da sequência"
-    btn.style.cssText = "position:absolute;top:60px;right:12px;z-index:25;padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:20px;font-family:Georgia,serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);letter-spacing:0.5px;transition:opacity 0.2s;"
+    btn.textContent = isMobile ? "Sair da sequência" : "✕ Sair da sequência"
+    btn.style.cssText = isMobile
+      ? "position:absolute;top:58px;right:12px;z-index:25;min-height:38px;padding:7px 13px;background:#c0392b;color:white;border:none;border-radius:8px;font-family:Georgia,serif;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.12);letter-spacing:0.2px;transition:opacity 0.2s;"
+      : "position:absolute;top:60px;right:12px;z-index:25;padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:20px;font-family:Georgia,serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);letter-spacing:0.5px;transition:opacity 0.2s;"
     btn.addEventListener("click", () => {
       this._clearSequenceHighlight()
       this.pushEvent("clear_highlight", {})
@@ -1016,12 +1059,14 @@ const GraphVisual = {
         })
       })
 
-      // Restore edges
-      cy.edges().style({
-        opacity: 0.45,
-        "line-color": "data(cor)",
-        "target-arrow-color": "data(cor)",
-        width: 1.5
+      cy.edges().forEach(edge => {
+        const color = edge.data("cor") || "#9a7a5a"
+        edge.style({
+          opacity: 0.45,
+          "line-color": color,
+          "target-arrow-color": color,
+          width: 1.5
+        })
       })
     })
 
