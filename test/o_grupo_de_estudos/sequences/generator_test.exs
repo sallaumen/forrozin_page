@@ -187,6 +187,53 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       assert [_] = sequences
       assert [_, _, _, _, _, _, _, _, _, _] = hd(sequences)
     end
+
+    test "limits repeated identical transitions when max_same_pair_loops is provided" do
+      first =
+        insert(:step,
+          code: "L0",
+          name: "Loop 0",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+
+      second =
+        insert(:step,
+          code: "L1",
+          name: "Loop 1",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+
+      insert(:connection, source_step: first, target_step: second)
+      insert(:connection, source_step: second, target_step: first)
+
+      {:ok, [], warnings} =
+        Generator.generate(
+          base_params("L0",
+            length: 7,
+            count: 1,
+            allow_repeats: true
+          )
+          |> Map.put(:max_same_pair_loops, 2)
+        )
+
+      assert "Gerou 0 de 1 sequências solicitadas" in warnings
+
+      {:ok, [sequence], _warnings} =
+        Generator.generate(
+          base_params("L0",
+            length: 7,
+            count: 1,
+            allow_repeats: true
+          )
+          |> Map.put(:max_same_pair_loops, 3)
+        )
+
+      assert Enum.map(sequence, & &1.code) == ["L0", "L1", "L0", "L1", "L0", "L1", "L0"]
+    end
   end
 
   # ---------------------------------------------------------------------------

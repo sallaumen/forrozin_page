@@ -469,20 +469,60 @@
                     <span class="text-ink-500">(última conexão volta ao ponto inicial)</span>
                   </span>
                 </label>
-                <label for="allow-repeats" class="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="allow_repeats"
-                    id="allow-repeats"
-                    class="w-4 h-4 accent-accent-orange cursor-pointer shrink-0"
-                  />
-                  <span class="text-[11px] text-ink-700 leading-tight">
-                    Permitir loops curtos
-                    <span class="text-ink-500 text-[9px]">
-                      (trechos como A → B → A, mín. 8 passos)
+                <fieldset class="space-y-1.5">
+                  <legend class="text-[11px] font-semibold text-ink-700">
+                    Como tratar loops
+                  </legend>
+                  <p class="text-[10px] leading-snug text-ink-500">
+                    Loop é quando a sequência volta para um trecho pequeno, como A → B → A.
+                  </p>
+                  <label for="loop-mode-none" class="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loop_mode"
+                      id="loop-mode-none"
+                      value="none"
+                      checked
+                      class="mt-0.5 h-4 w-4 accent-accent-orange cursor-pointer shrink-0"
+                    />
+                    <span class="text-[11px] text-ink-700 leading-tight">
+                      Sem loops
+                      <span class="block text-[9px] text-ink-500">
+                        Mais limpo para aprender o caminho.
+                      </span>
                     </span>
-                  </span>
-                </label>
+                  </label>
+                  <label for="loop-mode-light" class="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loop_mode"
+                      id="loop-mode-light"
+                      value="light"
+                      class="mt-0.5 h-4 w-4 accent-accent-orange cursor-pointer shrink-0"
+                    />
+                    <span class="text-[11px] text-ink-700 leading-tight">
+                      Loops leves
+                      <span class="block text-[9px] text-ink-500">
+                        Permite repetir um trecho até 2 vezes. Mín. 8 passos.
+                      </span>
+                    </span>
+                  </label>
+                  <label for="loop-mode-free" class="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loop_mode"
+                      id="loop-mode-free"
+                      value="free"
+                      class="mt-0.5 h-4 w-4 accent-accent-orange cursor-pointer shrink-0"
+                    />
+                    <span class="text-[11px] text-ink-700 leading-tight">
+                      Mais livre
+                      <span class="block text-[9px] text-ink-500">
+                        Explora repetições maiores quando o grafo permitir.
+                      </span>
+                    </span>
+                  </label>
+                </fieldset>
                 <div class="flex items-center gap-2.5">
                   <label for="max-bf" class="text-[11px] text-ink-700">
                     Limite de Base frontal no meio:

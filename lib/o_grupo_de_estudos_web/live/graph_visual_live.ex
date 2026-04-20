@@ -159,7 +159,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> Map.get("start_query", Map.get(params, "start_code", ""))
       |> resolve_step_code(socket.assigns.graph_search_nodes, Map.get(params, "start_code", ""))
 
-    allow_repeats = Map.get(params, "allow_repeats") in ["true", "on"]
+    loop_mode = Map.get(params, "loop_mode", "none")
+
+    allow_repeats =
+      loop_mode in ["light", "free"] or Map.get(params, "allow_repeats") in ["true", "on"]
+
     cyclic = Map.get(params, "cyclic") in ["true", "on"]
     min_length = if allow_repeats, do: 8, else: 4
     length_val = parse_int(Map.get(params, "length", "10"), 10) |> max(min_length)
@@ -176,7 +180,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       required_codes: required_codes,
       allow_repeats: allow_repeats,
       cyclic: cyclic,
-      max_bf_visits: max_bf
+      max_bf_visits: max_bf,
+      max_same_pair_loops: max_same_pair_loops(loop_mode)
     }
 
     {:ok, sequences, warnings} = Sequences.generate(gen_params)
@@ -1087,6 +1092,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   defp step_code?(steps, code), do: Enum.any?(steps, &(&1.code == code))
+
+  defp max_same_pair_loops("free"), do: 3
+  defp max_same_pair_loops("light"), do: 2
+  defp max_same_pair_loops(_mode), do: 1
 
   defp step_display_label(%{code: code, name: name}), do: "#{code} · #{name}"
 

@@ -18,7 +18,8 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
           count: pos_integer(),
           required_codes: [String.t()],
           allow_repeats: boolean(),
-          cyclic: boolean()
+          cyclic: boolean(),
+          max_same_pair_loops: pos_integer()
         }
 
   @required_weight 5
@@ -41,6 +42,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       params
       |> Map.put_new(:cyclic, true)
       |> Map.put_new(:max_bf_visits, 1)
+      |> Map.put_new(:max_same_pair_loops, @max_same_pair_loops)
 
     steps = StepQuery.list_by(public_only: true, preload: [:category])
     connections = ConnectionQuery.list_by(preload: [])
@@ -160,6 +162,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       start_id: start_id,
       bf_id: bf_id,
       max_bf: max_bf,
+      max_same_pair_loops: params.max_same_pair_loops,
       step_map: step_map,
       target_length: target_length
     }
@@ -227,7 +230,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       repeat_ok =
         if state.allow_repeats do
           pair_count = Map.get(state.pair_counts, {current, n}, 0)
-          pair_count < @max_same_pair_loops
+          pair_count < state.max_same_pair_loops
         else
           not MapSet.member?(state.visited, n) or
             (state.cyclic and n == state.start_id and steps_remaining == 1)

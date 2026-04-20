@@ -668,7 +668,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "Opções para gerar"
       assert html =~ "Quero incluir estes passos"
       assert html =~ "Fechar a sequência no início"
-      assert html =~ "Permitir loops curtos"
+      assert html =~ "Como tratar loops"
+      assert html =~ "Sem loops"
+      assert html =~ "Loops leves"
       assert html =~ "Limite de Base frontal"
 
       refute html =~ "Duração"
