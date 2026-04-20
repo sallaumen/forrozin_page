@@ -563,22 +563,56 @@
               </div>
             <% end %>
 
-            <div class="text-[10px] text-ink-500 mb-3 tracking-wide">
-              {length(@seq_results)} sequência(s) gerada(s)
+            <div class="mb-3">
+              <div class="text-xs font-bold text-ink-900">
+                Opções geradas
+              </div>
+              <div class="text-[10px] text-ink-500 tracking-wide">
+                {length(@seq_results)} sequência(s) para comparar
+              </div>
             </div>
 
             <%!-- Sequence cards --%>
             <%= for {seq, idx} <- Enum.with_index(@seq_results) do %>
               <div class="mb-3 border border-accent-orange/20 rounded-md overflow-hidden bg-white">
+                <div class="border-b border-ink-900/[0.06] bg-accent-orange/[0.04] px-2.5 py-2">
+                  <div class="mb-1.5 flex items-center justify-between gap-2">
+                    <div class="text-xs font-bold text-ink-900">
+                      Opção {idx + 1}
+                    </div>
+                    <div class="text-[9px] font-semibold uppercase tracking-wider text-accent-orange">
+                      gerada
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <%= for badge <- sequence_summary_badges(seq) do %>
+                      <span class="rounded-full border border-ink-900/10 bg-white px-2 py-0.5 text-[9px] font-semibold text-ink-600">
+                        {badge}
+                      </span>
+                    <% end %>
+                  </div>
+                  <p
+                    :if={sequence_has_inner_loop?(seq)}
+                    class="mt-1.5 text-[10px] leading-snug text-ink-500"
+                  >
+                    Loop curto: esta opção revisita pelo menos um passo no meio do caminho.
+                  </p>
+                </div>
                 <%!-- Step list --%>
                 <div class="p-2.5">
                   <%= for {step, pos} <- Enum.with_index(seq, 1) do %>
-                    <div class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]">
+                    <div
+                      class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]"
+                      aria-label={step_display_label(step)}
+                    >
                       <span class="text-[10px] font-bold text-accent-orange min-w-[16px]">
                         {pos}.
                       </span>
-                      <code class="text-[10px] text-ink-500">{step.code}</code>
-                      <span class="text-[11px] text-ink-800">{step.name}</span>
+                      <span class="text-[11px] text-ink-800">
+                        <code class="text-[10px] text-ink-500">{step.code}</code>
+                        <span class="text-ink-400">·</span>
+                        {step.name}
+                      </span>
                     </div>
                   <% end %>
                 </div>

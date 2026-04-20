@@ -706,6 +706,48 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "Gerador automático"
       refute html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
     end
+
+    test "generated sequence cards include a readable summary", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      step_c =
+        insert(:step,
+          code: "TR",
+          name: "Travada",
+          section: step_a.section,
+          category: step_a.category
+        )
+
+      step_d =
+        insert(:step,
+          code: "SA",
+          name: "Saída",
+          section: step_a.section,
+          category: step_a.category
+        )
+
+      insert(:connection, source_step: step_b, target_step: step_c)
+      insert(:connection, source_step: step_c, target_step: step_d)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
+
+      html =
+        render_submit(lv, "generate_sequences", %{
+          "start_query" => "BF · Base frontal",
+          "start_code" => "BF",
+          "length" => "4",
+          "count" => "1",
+          "loop_mode" => "none",
+          "max_bf_visits" => "1"
+        })
+
+      assert html =~ "Opção 1"
+      assert html =~ "4 passos"
+      assert html =~ "sem loops"
+      assert html =~ "BF · Base frontal"
+    end
   end
 
   describe "drawer overflow prevention" do

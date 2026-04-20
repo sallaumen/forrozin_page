@@ -1097,6 +1097,34 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp max_same_pair_loops("light"), do: 2
   defp max_same_pair_loops(_mode), do: 1
 
+  defp sequence_summary_badges(sequence) do
+    [
+      "#{length(sequence)} passos",
+      if(sequence_closes_at_start?(sequence), do: "fecha no início", else: nil),
+      if(sequence_has_inner_loop?(sequence), do: "tem loop curto", else: "sem loops")
+    ]
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp sequence_closes_at_start?([first | _] = sequence) do
+    List.last(sequence).code == first.code
+  end
+
+  defp sequence_closes_at_start?(_sequence), do: false
+
+  defp sequence_has_inner_loop?(sequence) do
+    codes = Enum.map(sequence, & &1.code)
+
+    codes =
+      if length(codes) > 1 and List.first(codes) == List.last(codes) do
+        Enum.drop(codes, -1)
+      else
+        codes
+      end
+
+    length(codes) != length(Enum.uniq(codes))
+  end
+
   defp step_display_label(%{code: code, name: name}), do: "#{code} · #{name}"
 
   defp step_display_label(code, steps) do
