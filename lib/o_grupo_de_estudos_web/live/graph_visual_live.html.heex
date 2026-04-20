@@ -380,6 +380,27 @@
                 <p class="mb-2 text-[10px] leading-snug text-ink-500">
                   Adicione passos que você quer que apareçam, quando houver caminho possível.
                 </p>
+                <%= if @seq_manual_favorite_steps != [] do %>
+                  <div id="seq-required-favorites" class="mb-3">
+                    <div class="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-ink-500">
+                      Favoritos
+                    </div>
+                    <div class="flex gap-1.5 overflow-x-auto pb-1">
+                      <%= for step <- @seq_manual_favorite_steps,
+                              step.code not in @seq_required_codes do %>
+                        <button
+                          type="button"
+                          id={"seq-required-favorite-#{step.code}"}
+                          phx-click="select_required_step"
+                          phx-value-code={step.code}
+                          class="shrink-0 rounded-full border border-accent-green/25 bg-accent-green/[0.07] px-2.5 py-1.5 text-left font-serif text-[10px] font-semibold text-accent-green transition hover:bg-accent-green/[0.12]"
+                        >
+                          <code class="mr-1 font-bold">{step.code}</code>{step.name}
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
                 <%!-- Chips --%>
                 <%= if @seq_required_codes != [] do %>
                   <div class="flex flex-wrap gap-1.5 mb-2">

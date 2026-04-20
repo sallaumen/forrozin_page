@@ -676,6 +676,27 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute html =~ "Permitir repetições"
       refute html =~ "Máx. vezes na BF"
     end
+
+    test "generator exposes favorited steps as required-step shortcuts", %{
+      conn: conn,
+      step_b: step_b
+    } do
+      user = insert(:user)
+      {:ok, :favorited} = OGrupoDeEstudos.Engagement.toggle_favorite(user.id, "step", step_b.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+      html = render_click(lv, "show_seq_config", %{})
+
+      assert html =~ "Favoritos"
+      assert has_element?(lv, "#seq-required-favorite-#{step_b.code}")
+
+      html =
+        lv
+        |> element("#seq-required-favorite-#{step_b.code}")
+        |> render_click()
+
+      assert html =~ "#{step_b.code} · #{step_b.name}"
+    end
   end
 
   describe "drawer overflow prevention" do
