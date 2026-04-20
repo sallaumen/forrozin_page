@@ -438,6 +438,23 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute js =~ ~S/name: node.data("nome") || node.id()/
     end
 
+    test "manual graph taps highlight outgoing options without refocusing the camera" do
+      js = File.read!("assets/js/app.js")
+
+      assert js =~ "_applyManualStepGuide(node)"
+      assert js =~ ~S/node.outgoers("edge")/
+      assert js =~ "if (hook._manualGuideActive) return"
+      assert js =~ ~S/if (this._manualMode || this.el.dataset.manualMode === "true") return/
+      assert js =~ "_clearManualStepGuide()"
+    end
+
+    test "graph hook avoids rebuilding the graph on unrelated LiveView updates" do
+      js = File.read!("assets/js/app.js")
+
+      refute js =~ "updated() { this._initGraph() }"
+      assert js =~ "this._graphSignatureValue !== this._graphSignature()"
+    end
+
     test "manual step search adds a step by name", %{conn: conn, step_a: step_a} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
       render_click(lv, "toggle_seq_panel", %{})
