@@ -54,6 +54,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:graph_search_results, [])
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
+     |> assign(:seq_manual_search, "")
+     |> assign(:seq_manual_suggestions, [])
+     |> assign(:seq_manual_favorite_steps, [])
      |> assign(:seq_editing_id, nil)
      |> assign(:seq_manual_name, "")
      |> assign(:seq_manual_description, "")
@@ -68,6 +71,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:three_d_speed, 1.0)
      |> assign(:liked_step_codes, liked_codes)
      |> assign_graph_data(graph, false)
+     |> assign_manual_favorite_steps()
      |> assign_sequence_library()
      |> push_event("set_liked_steps", %{codes: liked_codes})
      |> push_event("set_favorited_steps", %{
@@ -114,6 +118,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> assign(:seq_view, :library)
       |> assign(:seq_manual_steps, [])
       |> assign(:seq_manual_error, nil)
+      |> assign(:seq_manual_search, "")
+      |> assign(:seq_manual_suggestions, [])
+      |> assign(:seq_editing_id, nil)
       |> maybe_refresh_sequence_library(new_open)
 
     socket =
@@ -242,6 +249,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
        |> assign(:seq_view, :manual)
        |> assign(:seq_manual_steps, manual_steps)
        |> assign(:seq_manual_error, nil)
+       |> assign(:seq_manual_search, "")
+       |> assign(:seq_manual_suggestions, [])
        |> assign(:seq_editing_id, saved.id)
        |> assign(:seq_manual_name, saved.name || "")
        |> assign(:seq_manual_description, saved.description || "")
@@ -358,28 +367,32 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_view, :config)
      |> assign(:seq_results, [])
      |> assign(:seq_warnings, [])
-     |> assign(:seq_saving, nil)}
+     |> assign(:seq_saving, nil)
+     |> deactivate_manual_mode()}
   end
 
   def handle_event("show_seq_library", _params, socket) do
     {:noreply,
      socket
      |> assign(:seq_view, :library)
-     |> assign_sequence_library()}
+     |> assign_sequence_library()
+     |> deactivate_manual_mode()}
   end
 
   def handle_event("show_seq_saved", _params, socket) do
     {:noreply,
      socket
      |> assign(:seq_view, :library)
-     |> assign_sequence_library()}
+     |> assign_sequence_library()
+     |> deactivate_manual_mode()}
   end
 
   def handle_event("show_seq_favorites", _params, socket) do
     {:noreply,
      socket
      |> assign(:seq_view, :library)
-     |> assign_sequence_library()}
+     |> assign_sequence_library()
+     |> deactivate_manual_mode()}
   end
 
   def handle_event("search_sequence_library", params, socket) do
@@ -423,27 +436,96 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_view, :manual)
      |> assign(:seq_manual_steps, [])
      |> assign(:seq_manual_error, nil)
+     |> assign(:seq_manual_search, "")
+     |> assign(:seq_manual_suggestions, [])
      |> assign(:seq_editing_id, nil)
      |> assign(:seq_manual_name, "")
      |> assign(:seq_manual_description, "")
      |> assign(:seq_manual_video_url, "")
+     |> assign_manual_favorite_steps()
      |> push_event("set_manual_mode", %{active: true})}
   end
 
   def handle_event("add_manual_step", %{"code" => code, "name" => name}, socket) do
-    step = %{code: code, name: name}
-    new_steps = socket.assigns.seq_manual_steps ++ [step]
-    {:noreply, assign(socket, :seq_manual_steps, new_steps)}
+    {:noreply, append_manual_step(socket, %{code: code, name: name})}
+  end
+
+  def handle_event("search_manual_step", params, socket) do
+    term = String.trim(params["value"] || params["manual_step_search"] || "")
+    suggestions = manual_step_suggestions(socket, term)
+
+    {:noreply,
+     socket
+     |> assign(:seq_manual_search, term)
+     |> assign(:seq_manual_suggestions, suggestions)}
+  end
+
+  def handle_event("add_manual_step_by_search", params, socket) do
+    term = String.trim(params["manual_step_search"] || socket.assigns.seq_manual_search || "")
+
+    case find_manual_step(socket, term) do
+      nil ->
+        {:noreply,
+         socket
+         |> assign(:seq_manual_search, term)
+         |> assign(:seq_manual_suggestions, manual_step_suggestions(socket, term))
+         |> assign(:seq_manual_error, "Escolha um passo da lista para adicionar.")}
+
+      step ->
+        {:noreply,
+         socket
+         |> append_manual_step(step)
+         |> assign(:seq_manual_search, "")
+         |> assign(:seq_manual_suggestions, [])}
+    end
+  end
+
+  def handle_event("select_manual_step", %{"code" => code} = params, socket) do
+    step =
+      case Enum.find(socket.assigns.graph_search_nodes, &(&1.code == code)) do
+        nil -> %{code: code, name: params["name"] || code}
+        found -> %{code: found.code, name: found.name}
+      end
+
+    {:noreply,
+     socket
+     |> append_manual_step(step)
+     |> assign(:seq_manual_search, "")
+     |> assign(:seq_manual_suggestions, [])}
+  end
+
+  def handle_event("clear_manual_step_search", _params, socket) do
+    {:noreply, assign(socket, seq_manual_search: "", seq_manual_suggestions: [])}
+  end
+
+  def handle_event("cancel_manual_sequence", _params, socket) do
+    {:noreply,
+     socket
+     |> reset_manual_draft()
+     |> assign(:seq_view, :library)
+     |> assign_sequence_library()
+     |> push_event("set_manual_mode", %{active: false})
+     |> push_event("clear_highlight", %{})}
   end
 
   def handle_event("remove_manual_step", %{"index" => index_str}, socket) do
-    index = parse_int(index_str, -1)
-    new_steps = List.delete_at(socket.assigns.seq_manual_steps, index)
-    {:noreply, assign(socket, :seq_manual_steps, new_steps)}
+    index = parse_index(index_str)
+
+    if valid_index?(socket.assigns.seq_manual_steps, index) do
+      new_steps = List.delete_at(socket.assigns.seq_manual_steps, index)
+
+      {:noreply,
+       socket
+       |> assign(:seq_manual_steps, new_steps)
+       |> assign(:seq_manual_error, nil)
+       |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("move_manual_step", %{"index" => index_str, "direction" => dir}, socket) do
-    index = parse_int(index_str, -1)
+    index = parse_index(index_str)
     steps = socket.assigns.seq_manual_steps
     new_index = if dir == "up", do: index - 1, else: index + 1
 
@@ -511,6 +593,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
              socket
              |> assign(:seq_manual_steps, [])
              |> assign(:seq_manual_error, nil)
+             |> assign(:seq_manual_search, "")
+             |> assign(:seq_manual_suggestions, [])
              |> assign(:seq_editing_id, nil)
              |> assign(:seq_manual_name, "")
              |> assign(:seq_manual_description, "")
@@ -768,6 +852,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       {:noreply,
        socket
        |> assign(:liked_step_codes, liked_codes)
+       |> assign_manual_favorite_steps()
        |> push_event("set_liked_steps", %{codes: liked_codes})
        |> push_event("set_favorited_steps", %{codes: fav_codes})}
     else
@@ -863,6 +948,91 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   defp can_manage_sequence?(socket, sequence) do
     socket.assigns.is_admin or sequence.user_id == socket.assigns.current_user.id
+  end
+
+  defp append_manual_step(socket, %{code: code, name: name}) do
+    step = %{code: code, name: name}
+    new_steps = socket.assigns.seq_manual_steps ++ [step]
+
+    socket
+    |> assign(:seq_manual_steps, new_steps)
+    |> assign(:seq_manual_error, nil)
+    |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})
+  end
+
+  defp manual_step_suggestions(_socket, ""), do: []
+
+  defp manual_step_suggestions(socket, term) do
+    socket.assigns.graph_search_nodes
+    |> search_graph_nodes(term)
+    |> Enum.take(6)
+  end
+
+  defp find_manual_step(_socket, ""), do: nil
+
+  defp find_manual_step(socket, term) do
+    normalized_term = normalize_search_text(term)
+
+    exact =
+      Enum.find(socket.assigns.graph_search_nodes, fn step ->
+        normalize_search_text(step.code) == normalized_term or
+          normalize_search_text(step.name) == normalized_term
+      end)
+
+    step = exact || List.first(manual_step_suggestions(socket, term))
+
+    if step do
+      %{code: step.code, name: step.name}
+    end
+  end
+
+  defp valid_index?(steps, index), do: index >= 0 and index < length(steps)
+
+  defp parse_index(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {index, ""} when index >= 0 -> index
+      _ -> -1
+    end
+  end
+
+  defp parse_index(value) when is_integer(value) and value >= 0, do: value
+  defp parse_index(_value), do: -1
+
+  defp reset_manual_draft(socket) do
+    socket
+    |> assign(:seq_manual_steps, [])
+    |> assign(:seq_manual_error, nil)
+    |> assign(:seq_manual_search, "")
+    |> assign(:seq_manual_suggestions, [])
+    |> assign(:seq_editing_id, nil)
+    |> assign(:seq_manual_name, "")
+    |> assign(:seq_manual_description, "")
+    |> assign(:seq_manual_video_url, "")
+  end
+
+  defp deactivate_manual_mode(socket) do
+    socket
+    |> assign(:seq_manual_search, "")
+    |> assign(:seq_manual_suggestions, [])
+    |> push_event("set_manual_mode", %{active: false})
+  end
+
+  defp assign_manual_favorite_steps(socket) do
+    visible_by_code =
+      socket.assigns.graph_search_nodes
+      |> Map.new(&{&1.code, &1})
+
+    favorite_steps =
+      socket.assigns.current_user.id
+      |> Engagement.list_user_favorites("step")
+      |> Enum.filter(&Map.has_key?(visible_by_code, &1.code))
+      |> Enum.map(fn step ->
+        visible = Map.fetch!(visible_by_code, step.code)
+        %{code: visible.code, name: visible.name, category: visible.category}
+      end)
+      |> Enum.take(8)
+
+    assign(socket, :seq_manual_favorite_steps, favorite_steps)
   end
 
   defp maybe_clear_deleted_sequence(socket, sequence_id) do

@@ -12,7 +12,7 @@
     edit_mode={@edit_mode}
   />
   <%!-- Graph search: unified step lookup for the visible map --%>
-  <div class="fixed top-[58px] left-3 right-3 z-30 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2">
+  <div class="fixed top-[64px] left-3 right-3 z-30 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2">
     <div class="relative">
       <label for="graph-step-search" class="sr-only">Pesquisar passo no mapa</label>
       <input
@@ -72,10 +72,35 @@
       data-graph={@graph_json}
       data-admin={to_string(@is_admin)}
       data-edit-mode={to_string(@edit_mode)}
+      data-manual-mode={to_string(@seq_view == :manual)}
       data-user-id={@current_user.id}
       data-initial-sequence-steps={@seq_initial_steps_json}
       style="width: 100%; height: calc(100vh - 86px); background: #f7f3ec;"
     >
+    </div>
+
+    <div
+      :if={@seq_view == :manual && !@three_d_mode && !@seq_mobile_visible}
+      id="seq-manual-mode-banner"
+      class="fixed left-3 right-3 top-[112px] z-30 rounded-md border border-accent-green/25 bg-ink-50/95 px-3 py-2 font-serif shadow-[0_8px_24px_rgba(60,40,20,0.12)] backdrop-blur-sm md:left-[300px] md:right-auto md:w-[360px]"
+    >
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-accent-green">
+            Modo manual ativo
+          </div>
+          <div class="truncate text-[12px] text-ink-700">
+            {length(@seq_manual_steps)} passo(s) na sequência
+          </div>
+        </div>
+        <button
+          type="button"
+          phx-click="cancel_manual_sequence"
+          class="inline-flex min-h-[36px] shrink-0 items-center justify-center rounded-md border border-ink-900/10 bg-white px-3 text-[11px] font-bold text-ink-700 transition hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
+        >
+          Sair
+        </button>
+      </div>
     </div>
 
     <%!-- 3D Dance Visualization — overlays graph canvas --%>
@@ -962,13 +987,38 @@
         <%!-- View: Manual sequence builder --%>
         <%= if @seq_view == :manual do %>
           <div class="p-4">
+            <div class="mb-3 rounded-md border border-accent-green/20 bg-accent-green/[0.05] p-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="text-[10px] font-bold uppercase tracking-widest text-accent-green">
+                    Modo manual ativo
+                  </div>
+                  <div class="mt-1 text-sm font-bold text-ink-900">
+                    {if @seq_editing_id, do: "Editar sequência", else: "Criar sequência"}
+                  </div>
+                  <p class="m-0 mt-1 text-[11px] leading-normal text-ink-700">
+                    Busque pelo nome, use favoritos ou toque nos passos do grafo.
+                  </p>
+                </div>
+                <button
+                  id="seq-manual-cancel"
+                  type="button"
+                  phx-click="cancel_manual_sequence"
+                  class="inline-flex min-h-[38px] shrink-0 items-center justify-center rounded-md border border-ink-900/10 bg-white px-3 text-[11px] font-bold text-ink-700 transition hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
+
             <div class="mb-3 flex items-start justify-between gap-2">
               <div>
-                <div class="text-xs font-bold text-ink-900">
-                  {if @seq_editing_id, do: "Editar sequência", else: "Criar sequência"}
-                </div>
                 <p class="text-[11px] text-ink-700 leading-normal m-0 mt-1 italic">
-                  Clique nos nós do grafo para montar a sequência passo a passo.
+                  <%= if @seq_editing_id do %>
+                    Ajuste os dados e salve para atualizar esta sequência.
+                  <% else %>
+                    Dê um nome e salve quando terminar.
+                  <% end %>
                 </p>
               </div>
               <button
@@ -985,60 +1035,156 @@
               </button>
             </div>
 
-            <p class="text-[11px] text-ink-700 leading-normal m-0 mb-3 italic">
-              <%= if @seq_editing_id do %>
-                Ajuste os dados e salve para atualizar esta sequência.
-              <% else %>
-                Dê um nome e salve quando terminar.
-              <% end %>
-            </p>
+            <form
+              id="seq-manual-step-search-form"
+              phx-submit="add_manual_step_by_search"
+              class="mb-3"
+            >
+              <label
+                for="seq-manual-step-search"
+                class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-ink-600"
+              >
+                Adicionar passo
+              </label>
+              <div class="relative">
+                <input
+                  type="search"
+                  id="seq-manual-step-search"
+                  name="manual_step_search"
+                  value={@seq_manual_search}
+                  phx-keyup="search_manual_step"
+                  phx-debounce="150"
+                  placeholder="Digite o nome ou código do passo..."
+                  autocomplete="off"
+                  class="h-10 w-full rounded-md border border-ink-900/15 bg-white py-2 pl-3 pr-[82px] font-serif text-sm text-ink-900 outline-none transition focus-visible:ring-2 focus-visible:ring-accent-green/50"
+                />
+                <button
+                  type="submit"
+                  class="absolute right-1 top-1 inline-flex min-h-8 items-center justify-center rounded-md bg-accent-green px-3 text-[11px] font-bold text-white transition hover:bg-accent-green/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
+                >
+                  Add
+                </button>
+              </div>
+              <div
+                :if={@seq_manual_suggestions != []}
+                id="seq-manual-step-results"
+                class="mt-1 overflow-hidden rounded-md border border-ink-900/10 bg-white shadow-sm"
+              >
+                <button
+                  :for={step <- @seq_manual_suggestions}
+                  type="button"
+                  id={"seq-manual-step-result-#{step.code}"}
+                  phx-click="select_manual_step"
+                  phx-value-code={step.code}
+                  phx-value-name={step.name}
+                  class="flex w-full items-start gap-2 border-b border-ink-900/[0.06] bg-transparent px-2.5 py-2 text-left font-serif transition last:border-b-0 hover:bg-accent-green/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-green/50"
+                >
+                  <code class="mt-0.5 min-w-[38px] rounded border border-accent-green/25 bg-accent-green/[0.07] px-1.5 py-0.5 text-center text-[10px] font-bold text-accent-green">
+                    {step.code}
+                  </code>
+                  <span class="min-w-0">
+                    <span class="block truncate text-[12px] font-semibold text-ink-900">
+                      {step.name}
+                    </span>
+                    <span class="block text-[10px] text-ink-500">{step.category}</span>
+                  </span>
+                </button>
+              </div>
+            </form>
+
+            <div :if={@seq_manual_favorite_steps != []} class="mb-3">
+              <div class="mb-1 flex items-center justify-between gap-2">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-ink-600">
+                  Favoritos
+                </div>
+                <div class="text-[10px] text-ink-500">toque para adicionar</div>
+              </div>
+              <div class="flex gap-1.5 overflow-x-auto pb-1">
+                <button
+                  :for={step <- @seq_manual_favorite_steps}
+                  id={"seq-manual-favorite-#{step.code}"}
+                  type="button"
+                  phx-click="select_manual_step"
+                  phx-value-code={step.code}
+                  phx-value-name={step.name}
+                  class="min-h-[38px] shrink-0 rounded-md border border-gold-500/25 bg-gold-500/[0.07] px-2.5 py-1.5 text-left font-serif transition hover:bg-gold-500/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500/40"
+                >
+                  <span class="block text-[10px] font-bold text-gold-500">{step.code}</span>
+                  <span class="block max-w-[120px] truncate text-[11px] text-ink-800">
+                    {step.name}
+                  </span>
+                </button>
+              </div>
+            </div>
 
             <%!-- Step list --%>
-            <div class="mb-3 min-h-[36px] border border-dashed border-ink-900/18 rounded p-2">
+            <div class="mb-3 min-h-[72px] rounded-md border border-dashed border-ink-900/18 bg-white p-2">
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-ink-600">
+                  Ordem da sequência
+                </div>
+                <div class="rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-bold text-ink-600">
+                  {length(@seq_manual_steps)} passo(s)
+                </div>
+              </div>
               <%= if @seq_manual_steps == [] do %>
-                <div class="text-[11px] text-ink-400 text-center py-1.5 italic">
-                  Nenhum passo ainda
+                <div class="rounded border border-ink-900/[0.06] bg-ink-50 py-3 text-center text-[11px] italic text-ink-400">
+                  Nenhum passo ainda. Busque acima ou toque em um passo no grafo.
                 </div>
               <% else %>
                 <%= for {step, idx} <- Enum.with_index(@seq_manual_steps) do %>
-                  <div class="flex items-center gap-1 py-0.5 border-b border-ink-900/[0.05]">
-                    <span class="text-[10px] font-bold text-accent-green min-w-[16px]">
-                      {idx + 1}.
-                    </span>
-                    <code class="text-[10px] text-ink-500">{step.code}</code>
-                    <span class="flex-1 text-[11px] text-ink-800 truncate">{step.name}</span>
-                    <div class="flex flex-col shrink-0">
+                  <div class="mb-1.5 flex items-stretch gap-2 rounded-md border border-ink-900/[0.07] bg-ink-50 p-1.5 last:mb-0">
+                    <div class="flex w-[38px] shrink-0 flex-col gap-1">
                       <button
                         :if={idx > 0}
+                        id={"seq-manual-move-up-#{idx}"}
                         type="button"
                         phx-click="move_manual_step"
                         phx-value-index={idx}
                         phx-value-direction="up"
-                        class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
+                        class="inline-flex min-h-[32px] items-center justify-center rounded border border-ink-900/10 bg-white text-ink-500 transition hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
                         title="Mover pra cima"
+                        aria-label={"Mover #{step.code} para cima"}
                       >
-                        ▲
+                        <.icon name="hero-chevron-up" class="size-4" />
                       </button>
+                      <div :if={idx == 0} class="min-h-[32px]"></div>
                       <button
                         :if={idx < length(@seq_manual_steps) - 1}
+                        id={"seq-manual-move-down-#{idx}"}
                         type="button"
                         phx-click="move_manual_step"
                         phx-value-index={idx}
                         phx-value-direction="down"
-                        class="bg-none border-none cursor-pointer text-ink-400 hover:text-ink-700 text-[10px] p-0 leading-none"
+                        class="inline-flex min-h-[32px] items-center justify-center rounded border border-ink-900/10 bg-white text-ink-500 transition hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
                         title="Mover pra baixo"
+                        aria-label={"Mover #{step.code} para baixo"}
                       >
-                        ▼
+                        <.icon name="hero-chevron-down" class="size-4" />
                       </button>
+                      <div :if={idx == length(@seq_manual_steps) - 1} class="min-h-[32px]"></div>
+                    </div>
+                    <div class="min-w-0 flex-1 py-1">
+                      <div class="mb-1 flex items-center gap-2">
+                        <span class="rounded-full bg-accent-green/[0.10] px-2 py-0.5 text-[10px] font-bold text-accent-green">
+                          {idx + 1}/{length(@seq_manual_steps)}
+                        </span>
+                        <code class="text-[10px] font-bold text-ink-500">{step.code}</code>
+                      </div>
+                      <div class="truncate text-[12px] font-semibold text-ink-900">
+                        {step.name}
+                      </div>
                     </div>
                     <button
+                      id={"seq-manual-remove-#{idx}"}
                       type="button"
                       phx-click="remove_manual_step"
                       phx-value-index={idx}
-                      class="bg-none border-none cursor-pointer text-accent-red text-[13px] p-0 px-0.5 leading-none shrink-0"
+                      class="inline-flex min-h-[44px] min-w-[40px] shrink-0 items-center justify-center rounded-md border border-accent-red/15 bg-white text-accent-red transition hover:bg-accent-red/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
                       title="Remover"
+                      aria-label={"Remover #{step.code}"}
                     >
-                      ×
+                      <.icon name="hero-x-mark" class="size-4" />
                     </button>
                   </div>
                 <% end %>
@@ -1212,7 +1358,10 @@
     <%!-- Graph category filters --%>
     <div
       id="graph-legend"
-      class="pointer-events-none absolute inset-x-0 bottom-20 z-10 md:bottom-4"
+      class={[
+        "pointer-events-none absolute inset-x-0 bottom-20 z-10 md:bottom-4",
+        @seq_mobile_visible && "max-md:hidden"
+      ]}
     >
       <div
         id="graph-legend-desktop"

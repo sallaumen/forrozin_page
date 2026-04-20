@@ -761,7 +761,7 @@ const GraphVisual = {
 
       // Manual sequence mode: clicking a node appends it to the manual list
       if (hook._manualMode || hook.el.dataset.manualMode === "true") {
-        hook.pushEvent("add_manual_step", { code: node.id(), name: node.data("nome") || node.id() })
+        hook.pushEvent("add_manual_step", { code: node.id(), name: node.data("label") || node.id() })
         hook._showToast(`+ ${node.id()}`)
         return
       }
@@ -1019,6 +1019,8 @@ const GraphVisual = {
 
   _showSeqExitButton() {
     this._removeSeqExitButton()
+    if (this._manualMode || this.el.dataset.manualMode === "true") return
+
     const container = this.el.parentElement
     const btn = document.createElement("button")
     const isMobile = window.matchMedia("(max-width: 767px)").matches
