@@ -46,6 +46,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_initial_steps_json, "[]")
      |> assign(:seq_saving, nil)
      |> assign(:seq_start_code, "BF")
+     |> assign(:seq_start_query, "BF")
      |> assign(:seq_start_suggestions, [])
      |> assign(:seq_required_codes, [])
      |> assign(:seq_required_search, "")
@@ -71,6 +72,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:three_d_speed, 1.0)
      |> assign(:liked_step_codes, liked_codes)
      |> assign_graph_data(graph, false)
+     |> assign_default_sequence_start()
      |> assign_manual_favorite_steps()
      |> assign_sequence_library()
      |> push_event("set_liked_steps", %{codes: liked_codes})
@@ -80,6 +82,18 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   @impl true
+  def handle_params(%{"mode" => "generator"}, _uri, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_panel, true)
+     |> assign(:seq_mobile_visible, true)
+     |> assign(:seq_view, :config)
+     |> assign(:seq_results, [])
+     |> assign(:seq_warnings, [])
+     |> assign(:seq_saving, nil)
+     |> deactivate_manual_mode()}
+  end
+
   def handle_params(%{"seq" => seq_id}, _uri, socket) do
     case Sequences.get_sequence(seq_id) do
       nil ->
@@ -140,8 +154,16 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   def handle_event("generate_sequences", params, socket) do
-    start_code = Map.get(params, "start_code", "") |> String.trim()
-    allow_repeats = Map.get(params, "allow_repeats") in ["true", "on"]
+    start_code =
+      params
+      |> Map.get("start_query", Map.get(params, "start_code", ""))
+      |> resolve_step_code(socket.assigns.graph_search_nodes, Map.get(params, "start_code", ""))
+
+    loop_mode = Map.get(params, "loop_mode", "none")
+
+    allow_repeats =
+      loop_mode in ["light", "free"] or Map.get(params, "allow_repeats") in ["true", "on"]
+
     cyclic = Map.get(params, "cyclic") in ["true", "on"]
     min_length = if allow_repeats, do: 8, else: 4
     length_val = parse_int(Map.get(params, "length", "10"), 10) |> max(min_length)
@@ -158,7 +180,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       required_codes: required_codes,
       allow_repeats: allow_repeats,
       cyclic: cyclic,
-      max_bf_visits: max_bf
+      max_bf_visits: max_bf,
+      max_same_pair_loops: max_same_pair_loops(loop_mode)
     }
 
     {:ok, sequences, warnings} = Sequences.generate(gen_params)
@@ -632,16 +655,19 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
     {:noreply,
      socket
-     |> assign(:seq_start_code, term)
+     |> assign(:seq_start_query, term)
      |> assign(:seq_start_suggestions, suggestions)}
   end
 
   def handle_event("select_start_step", %{"code" => code, "name" => name}, socket) do
+    label = step_display_label(%{code: code, name: name})
+
     {:noreply,
      socket
      |> assign(:seq_start_code, code)
+     |> assign(:seq_start_query, label)
      |> assign(:seq_start_suggestions, [])
-     |> push_event("set_start_step_input", %{value: code, name: name})}
+     |> push_event("set_start_step_input", %{value: label, name: name})}
   end
 
   # Autocomplete — required steps
@@ -1033,6 +1059,79 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> Enum.take(8)
 
     assign(socket, :seq_manual_favorite_steps, favorite_steps)
+  end
+
+  defp assign_default_sequence_start(socket) do
+    code = socket.assigns.seq_start_code
+
+    assign(socket, :seq_start_query, step_display_label(code, socket.assigns.graph_search_nodes))
+  end
+
+  defp resolve_step_code(query, steps, fallback) do
+    query = String.trim(to_string(query || ""))
+    fallback = String.trim(to_string(fallback || ""))
+    prefix = query |> String.split("·", parts: 2) |> List.first() |> String.trim()
+    normalized_query = normalize_search_text(query)
+
+    cond do
+      query == "" ->
+        fallback
+
+      step_code?(steps, prefix) ->
+        prefix
+
+      match = Enum.find(steps, &(normalize_search_text(&1.code) == normalized_query)) ->
+        match.code
+
+      match = Enum.find(steps, &(normalize_search_text(&1.name) == normalized_query)) ->
+        match.code
+
+      true ->
+        fallback
+    end
+  end
+
+  defp step_code?(steps, code), do: Enum.any?(steps, &(&1.code == code))
+
+  defp max_same_pair_loops("free"), do: 3
+  defp max_same_pair_loops("light"), do: 2
+  defp max_same_pair_loops(_mode), do: 1
+
+  defp sequence_summary_badges(sequence) do
+    [
+      "#{length(sequence)} passos",
+      if(sequence_closes_at_start?(sequence), do: "fecha no início", else: nil),
+      if(sequence_has_inner_loop?(sequence), do: "tem loop curto", else: "sem loops")
+    ]
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp sequence_closes_at_start?([first | _] = sequence) do
+    List.last(sequence).code == first.code
+  end
+
+  defp sequence_closes_at_start?(_sequence), do: false
+
+  defp sequence_has_inner_loop?(sequence) do
+    codes = Enum.map(sequence, & &1.code)
+
+    codes =
+      if length(codes) > 1 and List.first(codes) == List.last(codes) do
+        Enum.drop(codes, -1)
+      else
+        codes
+      end
+
+    length(codes) != length(Enum.uniq(codes))
+  end
+
+  defp step_display_label(%{code: code, name: name}), do: "#{code} · #{name}"
+
+  defp step_display_label(code, steps) do
+    case Enum.find(steps, &(&1.code == code)) do
+      nil -> code
+      step -> step_display_label(step)
+    end
   end
 
   defp maybe_clear_deleted_sequence(socket, sequence_id) do

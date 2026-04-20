@@ -282,6 +282,14 @@
         <%!-- View: Config form --%>
         <%= if @seq_view == :config do %>
           <div class="p-4">
+            <div class="mb-4 rounded-md border border-accent-orange/15 bg-accent-orange/[0.04] p-3">
+              <h2 class="mb-1 font-serif text-sm font-bold text-ink-900">
+                Gerador automático
+              </h2>
+              <p class="text-[11px] leading-relaxed text-ink-600">
+                Escolha um ponto de partida e alguns passos que quer praticar. O sistema monta caminhos possíveis no grafo.
+              </p>
+            </div>
             <form
               phx-submit="generate_sequences"
               phx-hook="FormPersist"
@@ -296,15 +304,16 @@
                 <div class="relative">
                   <input
                     type="text"
-                    name="start_code"
+                    name="start_query"
                     id="seq-start-input"
-                    value={@seq_start_code}
+                    value={@seq_start_query}
                     phx-keyup="search_start_step"
                     phx-debounce="200"
-                    placeholder="Código ou nome (ex: BF)"
+                    placeholder="Código ou nome (ex: BF · Base frontal)"
                     autocomplete="off"
                     class="w-full py-2.5 px-3 border border-ink-900/20 rounded-lg font-serif text-xs text-ink-900 bg-white box-border"
                   />
+                  <input type="hidden" name="start_code" value={@seq_start_code} />
                   <%= if @seq_start_suggestions != [] do %>
                     <div
                       style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50;"
@@ -331,8 +340,11 @@
               <div class="flex gap-3">
                 <div class="flex-1">
                   <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1.5">
-                    Duração
+                    Tamanho da sequência
                   </label>
+                  <p class="mb-1.5 text-[10px] leading-snug text-ink-500">
+                    Número de passos no caminho.
+                  </p>
                   <input
                     type="number"
                     name="length"
@@ -344,8 +356,11 @@
                 </div>
                 <div class="flex-1">
                   <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1.5">
-                    Quantidade
+                    Opções para gerar
                   </label>
+                  <p class="mb-1.5 text-[10px] leading-snug text-ink-500">
+                    Alternativas para comparar.
+                  </p>
                   <input
                     type="number"
                     name="count"
@@ -360,14 +375,38 @@
               <%!-- Required steps --%>
               <div>
                 <label class="block text-[10px] font-bold text-ink-600 uppercase tracking-wider mb-1.5">
-                  Passos obrigatórios
+                  Quero incluir estes passos
                 </label>
+                <p class="mb-2 text-[10px] leading-snug text-ink-500">
+                  Adicione passos que você quer que apareçam, quando houver caminho possível.
+                </p>
+                <%= if @seq_manual_favorite_steps != [] do %>
+                  <div id="seq-required-favorites" class="mb-3">
+                    <div class="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-ink-500">
+                      Favoritos
+                    </div>
+                    <div class="flex gap-1.5 overflow-x-auto pb-1">
+                      <%= for step <- @seq_manual_favorite_steps,
+                              step.code not in @seq_required_codes do %>
+                        <button
+                          type="button"
+                          id={"seq-required-favorite-#{step.code}"}
+                          phx-click="select_required_step"
+                          phx-value-code={step.code}
+                          class="shrink-0 rounded-full border border-accent-green/25 bg-accent-green/[0.07] px-2.5 py-1.5 text-left font-serif text-[10px] font-semibold text-accent-green transition hover:bg-accent-green/[0.12]"
+                        >
+                          <code class="mr-1 font-bold">{step.code}</code>{step.name}
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
                 <%!-- Chips --%>
                 <%= if @seq_required_codes != [] do %>
                   <div class="flex flex-wrap gap-1.5 mb-2">
                     <%= for code <- @seq_required_codes do %>
                       <span class="inline-flex items-center gap-1 py-1 px-2.5 bg-accent-orange/[0.09] border border-accent-orange/25 rounded-full text-[10px] font-semibold text-accent-orange">
-                        {code}
+                        {step_display_label(code, @graph_search_nodes)}
                         <button
                           type="button"
                           phx-click="remove_required_step"
@@ -426,24 +465,67 @@
                     class="w-4 h-4 accent-accent-orange cursor-pointer shrink-0"
                   />
                   <span class="text-[11px] text-ink-700 leading-tight">
-                    Cíclica <span class="text-ink-500">(volta ao início)</span>
+                    Fechar a sequência no início
+                    <span class="text-ink-500">(última conexão volta ao ponto inicial)</span>
                   </span>
                 </label>
-                <label for="allow-repeats" class="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="allow_repeats"
-                    id="allow-repeats"
-                    class="w-4 h-4 accent-accent-orange cursor-pointer shrink-0"
-                  />
-                  <span class="text-[11px] text-ink-700 leading-tight">
-                    Permitir repetições
-                    <span class="text-ink-500 text-[9px]">(mín. 8 passos)</span>
-                  </span>
-                </label>
+                <fieldset class="space-y-1.5">
+                  <legend class="text-[11px] font-semibold text-ink-700">
+                    Como tratar loops
+                  </legend>
+                  <p class="text-[10px] leading-snug text-ink-500">
+                    Loop é quando a sequência volta para um trecho pequeno, como A → B → A.
+                  </p>
+                  <label for="loop-mode-none" class="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loop_mode"
+                      id="loop-mode-none"
+                      value="none"
+                      checked
+                      class="mt-0.5 h-4 w-4 accent-accent-orange cursor-pointer shrink-0"
+                    />
+                    <span class="text-[11px] text-ink-700 leading-tight">
+                      Sem loops
+                      <span class="block text-[9px] text-ink-500">
+                        Mais limpo para aprender o caminho.
+                      </span>
+                    </span>
+                  </label>
+                  <label for="loop-mode-light" class="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loop_mode"
+                      id="loop-mode-light"
+                      value="light"
+                      class="mt-0.5 h-4 w-4 accent-accent-orange cursor-pointer shrink-0"
+                    />
+                    <span class="text-[11px] text-ink-700 leading-tight">
+                      Loops leves
+                      <span class="block text-[9px] text-ink-500">
+                        Permite repetir um trecho até 2 vezes. Mín. 8 passos.
+                      </span>
+                    </span>
+                  </label>
+                  <label for="loop-mode-free" class="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="loop_mode"
+                      id="loop-mode-free"
+                      value="free"
+                      class="mt-0.5 h-4 w-4 accent-accent-orange cursor-pointer shrink-0"
+                    />
+                    <span class="text-[11px] text-ink-700 leading-tight">
+                      Mais livre
+                      <span class="block text-[9px] text-ink-500">
+                        Explora repetições maiores quando o grafo permitir.
+                      </span>
+                    </span>
+                  </label>
+                </fieldset>
                 <div class="flex items-center gap-2.5">
-                  <label for="max-bf" class="text-[11px] text-ink-700 whitespace-nowrap">
-                    Máx. vezes na BF:
+                  <label for="max-bf" class="text-[11px] text-ink-700">
+                    Limite de Base frontal no meio:
                   </label>
                   <input
                     type="number"
@@ -481,22 +563,56 @@
               </div>
             <% end %>
 
-            <div class="text-[10px] text-ink-500 mb-3 tracking-wide">
-              {length(@seq_results)} sequência(s) gerada(s)
+            <div class="mb-3">
+              <div class="text-xs font-bold text-ink-900">
+                Opções geradas
+              </div>
+              <div class="text-[10px] text-ink-500 tracking-wide">
+                {length(@seq_results)} sequência(s) para comparar
+              </div>
             </div>
 
             <%!-- Sequence cards --%>
             <%= for {seq, idx} <- Enum.with_index(@seq_results) do %>
               <div class="mb-3 border border-accent-orange/20 rounded-md overflow-hidden bg-white">
+                <div class="border-b border-ink-900/[0.06] bg-accent-orange/[0.04] px-2.5 py-2">
+                  <div class="mb-1.5 flex items-center justify-between gap-2">
+                    <div class="text-xs font-bold text-ink-900">
+                      Opção {idx + 1}
+                    </div>
+                    <div class="text-[9px] font-semibold uppercase tracking-wider text-accent-orange">
+                      gerada
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5">
+                    <%= for badge <- sequence_summary_badges(seq) do %>
+                      <span class="rounded-full border border-ink-900/10 bg-white px-2 py-0.5 text-[9px] font-semibold text-ink-600">
+                        {badge}
+                      </span>
+                    <% end %>
+                  </div>
+                  <p
+                    :if={sequence_has_inner_loop?(seq)}
+                    class="mt-1.5 text-[10px] leading-snug text-ink-500"
+                  >
+                    Loop curto: esta opção revisita pelo menos um passo no meio do caminho.
+                  </p>
+                </div>
                 <%!-- Step list --%>
                 <div class="p-2.5">
                   <%= for {step, pos} <- Enum.with_index(seq, 1) do %>
-                    <div class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]">
+                    <div
+                      class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]"
+                      aria-label={step_display_label(step)}
+                    >
                       <span class="text-[10px] font-bold text-accent-orange min-w-[16px]">
                         {pos}.
                       </span>
-                      <code class="text-[10px] text-ink-500">{step.code}</code>
-                      <span class="text-[11px] text-ink-800">{step.name}</span>
+                      <span class="text-[11px] text-ink-800">
+                        <code class="text-[10px] text-ink-500">{step.code}</code>
+                        <span class="text-ink-400">·</span>
+                        {step.name}
+                      </span>
                     </div>
                   <% end %>
                 </div>
@@ -1458,7 +1574,12 @@
   </div>
   <.bottom_nav
     current_user={@current_user}
-    current_path="/graph/visual"
+    current_path={
+      if(@seq_view in [:config, :results],
+        do: "/graph/visual?mode=generator",
+        else: "/graph/visual"
+      )
+    }
     notification_count={assigns[:notification_count] || 0}
   />
 </div>

@@ -651,6 +651,105 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
+  describe "automatic sequence generator" do
+    setup :setup_graph
+
+    test "generator form uses learner-friendly labels and code with step name", %{
+      conn: conn
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html = render_click(lv, "show_seq_config", %{})
+
+      assert html =~ "Gerador automático"
+      assert html =~ "Escolha um ponto de partida"
+      assert html =~ ~s(value="BF · Base frontal")
+      assert html =~ "Tamanho da sequência"
+      assert html =~ "Opções para gerar"
+      assert html =~ "Quero incluir estes passos"
+      assert html =~ "Fechar a sequência no início"
+      assert html =~ "Como tratar loops"
+      assert html =~ "Sem loops"
+      assert html =~ "Loops leves"
+      assert html =~ "Limite de Base frontal"
+
+      refute html =~ "Duração"
+      refute html =~ "Quantidade"
+      refute html =~ "Permitir repetições"
+      refute html =~ "Máx. vezes na BF"
+    end
+
+    test "generator exposes favorited steps as required-step shortcuts", %{
+      conn: conn,
+      step_b: step_b
+    } do
+      user = insert(:user)
+      {:ok, :favorited} = OGrupoDeEstudos.Engagement.toggle_favorite(user.id, "step", step_b.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+      html = render_click(lv, "show_seq_config", %{})
+
+      assert html =~ "Favoritos"
+      assert has_element?(lv, "#seq-required-favorite-#{step_b.code}")
+
+      html =
+        lv
+        |> element("#seq-required-favorite-#{step_b.code}")
+        |> render_click()
+
+      assert html =~ "#{step_b.code} · #{step_b.name}"
+    end
+
+    test "generator mode query opens the automatic generator directly", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
+
+      assert html =~ "Gerador automático"
+      refute html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
+    end
+
+    test "generated sequence cards include a readable summary", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      step_c =
+        insert(:step,
+          code: "TR",
+          name: "Travada",
+          section: step_a.section,
+          category: step_a.category
+        )
+
+      step_d =
+        insert(:step,
+          code: "SA",
+          name: "Saída",
+          section: step_a.section,
+          category: step_a.category
+        )
+
+      insert(:connection, source_step: step_b, target_step: step_c)
+      insert(:connection, source_step: step_c, target_step: step_d)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
+
+      html =
+        render_submit(lv, "generate_sequences", %{
+          "start_query" => "BF · Base frontal",
+          "start_code" => "BF",
+          "length" => "4",
+          "count" => "1",
+          "loop_mode" => "none",
+          "max_bf_visits" => "1"
+        })
+
+      assert html =~ "Opção 1"
+      assert html =~ "4 passos"
+      assert html =~ "sem loops"
+      assert html =~ "BF · Base frontal"
+    end
+  end
+
   describe "drawer overflow prevention" do
     test "step detail drawer does not use right: -Npx — prevents horizontal scroll", %{
       conn: conn
