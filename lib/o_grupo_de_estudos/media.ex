@@ -30,7 +30,11 @@ defmodule OGrupoDeEstudos.Media do
     case get_step_animation(step_id) do
       nil ->
         %StepAnimation{}
-        |> StepAnimation.changeset(%{step_id: step_id, keyframes: keyframes, duration_ms: duration_ms})
+        |> StepAnimation.changeset(%{
+          step_id: step_id,
+          keyframes: keyframes,
+          duration_ms: duration_ms
+        })
         |> Repo.insert()
 
       existing ->
@@ -59,7 +63,11 @@ defmodule OGrupoDeEstudos.Media do
     case get_category_pose(category_id) do
       nil ->
         %CategoryPoseDefault{}
-        |> CategoryPoseDefault.changeset(%{category_id: category_id, keyframes: keyframes, duration_ms: duration_ms})
+        |> CategoryPoseDefault.changeset(%{
+          category_id: category_id,
+          keyframes: keyframes,
+          duration_ms: duration_ms
+        })
         |> Repo.insert()
 
       existing ->
@@ -112,7 +120,8 @@ defmodule OGrupoDeEstudos.Media do
     ]
   end
 
-  @oz 0.35  # face-to-face distance
+  # face-to-face distance
+  @oz 0.35
 
   def neutral_leader do
     %{
@@ -135,6 +144,7 @@ defmodule OGrupoDeEstudos.Media do
 
   def neutral_follower do
     oz = @oz
+
     %{
       "hip" => %{"x" => 0, "y" => 0.88, "z" => oz},
       "torso" => %{"x" => 0, "y" => 1.16, "z" => oz},

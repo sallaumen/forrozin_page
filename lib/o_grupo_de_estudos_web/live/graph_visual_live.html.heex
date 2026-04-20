@@ -127,7 +127,9 @@
           <%= if @three_d_steps != [] do %>
             <% current = Enum.at(@three_d_steps, @three_d_current_step) %>
             <%= if current do %>
-              <div class="text-xs text-gold-500 font-bold font-serif tracking-wider uppercase">{current.category}</div>
+              <div class="text-xs text-gold-500 font-bold font-serif tracking-wider uppercase">
+                {current.category}
+              </div>
               <div class="text-lg text-ink-100 font-bold font-serif mt-0.5">
                 <span class="text-gold-500/70 mr-1">{current.code}</span>
                 {current.name}
@@ -645,7 +647,7 @@
               </button>
             </div>
 
-            <div class="flex gap-1.5 overflow-x-auto pb-2 mb-3">
+            <div class="mb-3 hidden gap-1.5 overflow-x-auto pb-2 md:flex">
               <button
                 type="button"
                 phx-click="filter_sequence_library_category"
@@ -681,6 +683,55 @@
                 </button>
               <% end %>
             </div>
+
+            <details
+              id="seq-library-category-filter-mobile"
+              class="mb-3 rounded-md border border-ink-900/10 bg-white md:hidden"
+            >
+              <summary class="flex min-h-[42px] cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 font-serif text-[11px] font-bold text-ink-700 [&::-webkit-details-marker]:hidden">
+                <span class="uppercase tracking-widest text-ink-500">Categorias</span>
+                <span class="rounded-full bg-ink-100 px-2.5 py-1 text-accent-orange">
+                  {sequence_category_filter_label(@seq_library_category_filter, @categories)}
+                </span>
+              </summary>
+              <div class="border-t border-ink-900/10 p-2">
+                <div class="flex gap-1.5 overflow-x-auto pb-1">
+                  <button
+                    type="button"
+                    phx-click="filter_sequence_library_category"
+                    phx-value-category="all"
+                    class={[
+                      "shrink-0 rounded-full border px-3 py-1.5 font-serif text-[10px] font-semibold transition-colors",
+                      @seq_library_category_filter == "all" &&
+                        "border-ink-900 bg-ink-900 text-ink-50",
+                      @seq_library_category_filter != "all" &&
+                        "border-ink-900/12 bg-white text-ink-500"
+                    ]}
+                  >
+                    Todas
+                  </button>
+                  <%= for cat <- @categories do %>
+                    <button
+                      type="button"
+                      phx-click="filter_sequence_library_category"
+                      phx-value-category={cat.name}
+                      style={
+                        if @seq_library_category_filter == cat.name,
+                          do: "background: #{cat.color}; border-color: #{cat.color};",
+                          else: "border-color: #{cat.color}30;"
+                      }
+                      class={[
+                        "shrink-0 rounded-full border px-3 py-1.5 font-serif text-[10px] font-semibold transition-colors",
+                        @seq_library_category_filter == cat.name && "text-white",
+                        @seq_library_category_filter != cat.name && "bg-white text-ink-500"
+                      ]}
+                    >
+                      {cat.label}
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            </details>
 
             <div class="mb-3 text-[10px] text-ink-500">
               {length(@seq_library)} sequência(s)

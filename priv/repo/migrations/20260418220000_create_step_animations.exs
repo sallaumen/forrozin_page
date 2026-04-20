@@ -15,7 +15,10 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateStepAnimations do
 
     create table(:category_pose_defaults, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :category_id, references(:categories, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :category_id, references(:categories, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :keyframes, :jsonb, null: false
       add :duration_ms, :integer, default: 2000
 

@@ -812,8 +812,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:three_d_playing, false)}
   end
 
-  def handle_event("three_d_play", _params, socket), do: {:noreply, assign(socket, :three_d_playing, true)}
-  def handle_event("three_d_pause", _params, socket), do: {:noreply, assign(socket, :three_d_playing, false)}
+  def handle_event("three_d_play", _params, socket),
+    do: {:noreply, assign(socket, :three_d_playing, true)}
+
+  def handle_event("three_d_pause", _params, socket),
+    do: {:noreply, assign(socket, :three_d_playing, false)}
 
   def handle_event("three_d_next", _params, socket) do
     max_idx = length(socket.assigns.three_d_steps) - 1
@@ -1041,6 +1044,15 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   defp graph_legend_categories(categories) do
     Enum.reject(categories, &(&1.name in @graph_legend_hidden_categories))
+  end
+
+  defp sequence_category_filter_label("all", _categories), do: "Todas"
+
+  defp sequence_category_filter_label(category_name, categories) do
+    case Enum.find(categories, &(&1.name == category_name)) do
+      nil -> "Categoria"
+      category -> category.label
+    end
   end
 
   defp normalize_search_text(nil), do: ""
