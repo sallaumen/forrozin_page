@@ -651,6 +651,33 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
+  describe "automatic sequence generator" do
+    setup :setup_graph
+
+    test "generator form uses learner-friendly labels and code with step name", %{
+      conn: conn
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html = render_click(lv, "show_seq_config", %{})
+
+      assert html =~ "Gerador automático"
+      assert html =~ "Escolha um ponto de partida"
+      assert html =~ ~s(value="BF · Base frontal")
+      assert html =~ "Tamanho da sequência"
+      assert html =~ "Opções para gerar"
+      assert html =~ "Quero incluir estes passos"
+      assert html =~ "Fechar a sequência no início"
+      assert html =~ "Permitir loops curtos"
+      assert html =~ "Limite de Base frontal"
+
+      refute html =~ "Duração"
+      refute html =~ "Quantidade"
+      refute html =~ "Permitir repetições"
+      refute html =~ "Máx. vezes na BF"
+    end
+  end
+
   describe "drawer overflow prevention" do
     test "step detail drawer does not use right: -Npx — prevents horizontal scroll", %{
       conn: conn
