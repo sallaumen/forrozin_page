@@ -34,6 +34,8 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :bio, :string
     field :instagram, :string
     field :avatar_path, :string
+    field :last_seen_at, :naive_datetime
+    field :last_login_at, :naive_datetime
 
     timestamps()
   end

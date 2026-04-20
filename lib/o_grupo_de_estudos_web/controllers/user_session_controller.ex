@@ -4,6 +4,8 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
   use OGrupoDeEstudosWeb, :controller
 
   alias OGrupoDeEstudos.Accounts
+  alias OGrupoDeEstudos.Engagement.UserAccessTracking
+  alias OGrupoDeEstudosWeb.Tracking.ClientInfo
   alias OGrupoDeEstudosWeb.UserAuth
 
   def new(conn, _params) do
@@ -13,6 +15,8 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
   def create(conn, %{"session" => %{"username" => username, "password" => password}}) do
     case Accounts.check_credentials(username, password) do
       {:ok, user} ->
+        UserAccessTracking.track_login(user, ClientInfo.from_conn(conn), :password)
+
         conn
         |> UserAuth.login(user)
         |> put_flash(:info, "Bem-vindo, #{user.username}!")
@@ -31,6 +35,8 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
             conn |> redirect(to: ~p"/login")
 
           user ->
+            UserAccessTracking.track_login(user, ClientInfo.from_conn(conn), :auto_login)
+
             conn
             |> UserAuth.login(user)
             |> redirect(to: ~p"/collection")
