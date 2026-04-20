@@ -478,6 +478,8 @@ const GraphVisual = {
 
     // Sequence highlight events — retry if graph not ready yet
     this.handleEvent("highlight_sequence", ({ steps }) => {
+      if (this._manualMode || this.el.dataset.manualMode === "true") return
+
       if (this._cy) {
         this._applySequenceHighlight(steps)
       } else {
@@ -514,6 +516,11 @@ const GraphVisual = {
     this.handleEvent("set_manual_mode", ({ active }) => {
       this._manualMode = active
       this.el.dataset.manualMode = active ? "true" : "false"
+      if (active) {
+        this._clearSequenceHighlight({ refit: false })
+      } else {
+        this._clearManualStepGuide()
+      }
     })
 
     // Liked steps: highlight with red border
@@ -528,13 +535,26 @@ const GraphVisual = {
     })
   },
 
-  updated() { this._initGraph() },
+  updated() {
+    if (this._graphSignatureValue !== this._graphSignature()) {
+      this._initGraph()
+    }
+  },
 
   destroyed() {
     if (this._graphLegendClickHandler) {
       document.removeEventListener("click", this._graphLegendClickHandler)
       this._graphLegendClickHandler = null
     }
+  },
+
+  _graphSignature() {
+    return [
+      this.el.dataset.graph || "",
+      this.el.dataset.editMode || "",
+      this.el.dataset.admin || "",
+      this.el.dataset.userId || ""
+    ].join("|")
   },
 
   _showToast(message) {
@@ -588,10 +608,17 @@ const GraphVisual = {
     const raw = el.dataset.graph
     if (!raw) return
 
+    const graphSignature = this._graphSignature()
+    if (this._cy && this._graphSignatureValue === graphSignature) return
+
     const { nodes, edges } = JSON.parse(raw)
     if (this._cy) { this._cy.destroy(); this._cy = null }
+    this._graphSignatureValue = graphSignature
+    this._manualGuideActive = false
+    this._manualGuideSourceId = null
 
     const currentUserId = el.dataset.userId
+    this._currentUserId = currentUserId
 
     // Build elements: step nodes + edges (no compound parents)
     const elements = []
@@ -761,8 +788,12 @@ const GraphVisual = {
 
       // Manual sequence mode: clicking a node appends it to the manual list
       if (hook._manualMode || hook.el.dataset.manualMode === "true") {
+        if (hook._seqHighlightActive) {
+          hook._clearSequenceHighlight({ refit: false })
+          hook.pushEvent("clear_highlight", {})
+        }
         hook.pushEvent("add_manual_step", { code: node.id(), name: node.data("label") || node.id() })
-        hook._showToast(`+ ${node.id()}`)
+        hook._applyManualStepGuide(node)
         return
       }
 
@@ -801,6 +832,10 @@ const GraphVisual = {
     cy.on("tap", function(evt) {
       if (evt.target === cy) {
         if (ghostSourceId) { cancelGhost(); return }
+        if (hook._manualMode || hook.el.dataset.manualMode === "true") {
+          hook._clearManualStepGuide()
+          return
+        }
         clearSpotlight(cy)
         closeDrawer()
         hook._activeCategory = null
@@ -811,6 +846,7 @@ const GraphVisual = {
     cy.on("mouseover", "node", function(evt) {
       if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't interfere with sequence highlight
+      if (hook._manualGuideActive) return // Manual mode keeps outgoing options fixed.
       if (hook._activeCategory) return // Category filters stay fixed until the user changes them.
       const node = evt.target
       cy.batch(() => {
@@ -823,6 +859,7 @@ const GraphVisual = {
     cy.on("mouseout", "node", function() {
       if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't clear sequence highlight
+      if (hook._manualGuideActive) return // Manual mode keeps outgoing options fixed.
       if (!hook._activeCategory) clearSpotlight(cy)
     })
 
@@ -836,6 +873,10 @@ const GraphVisual = {
         if (hook._seqHighlightActive) {
           hook._clearSequenceHighlight()
           hook.pushEvent("clear_highlight", {})
+          return
+        }
+        if (hook._manualGuideActive) {
+          hook._clearManualStepGuide()
           return
         }
         cancelGhost()
@@ -1015,6 +1056,96 @@ const GraphVisual = {
     if (nodes.length > 0) {
       cy.animate({ fit: { eles: nodes, padding: 80 }, duration: 400 })
     }
+  },
+
+  _applyManualStepGuide(node) {
+    const cy = this._cy
+    if (!cy || !node || node.length === 0) return
+
+    this._clearManualStepGuide({ applyLiked: false })
+
+    const outgoingEdges = node.outgoers("edge")
+    const outgoingTargets = outgoingEdges.targets()
+    const outgoingCount = outgoingTargets.length
+
+    cy.batch(() => {
+      cy.elements().style({ opacity: 0.16 })
+
+      node.style({
+        opacity: 1,
+        "border-color": "#e67e22",
+        "border-width": 5,
+        "border-style": "solid",
+        "background-color": "#fff8f0"
+      })
+
+      outgoingEdges.forEach(edge => {
+        edge.style({
+          opacity: 1,
+          "line-color": "#2f8f5b",
+          "line-opacity": 1,
+          "target-arrow-color": "#2f8f5b",
+          width: 3.5
+        })
+      })
+
+      outgoingTargets.forEach(target => {
+        target.style({
+          opacity: 1,
+          "border-color": "#2f8f5b",
+          "border-width": 4,
+          "border-style": "solid",
+          "background-color": "#f3fbf5"
+        })
+      })
+    })
+
+    this._manualGuideActive = true
+    this._manualGuideSourceId = node.id()
+
+    if (outgoingCount > 0) {
+      this._showToast(`${node.id()} selecionado · ${outgoingCount} saída(s) possível(is)`)
+    } else {
+      this._showToast(`${node.id()} selecionado · sem saídas cadastradas`)
+    }
+  },
+
+  _clearManualStepGuide(options = {}) {
+    const { applyLiked = true } = options
+    const cy = this._cy
+    if (!cy) return
+
+    cy.batch(() => {
+      cy.nodes().forEach(node => {
+        const suggestedByCurrentUser =
+          node.data("suggestedById") && node.data("suggestedById") === this._currentUserId
+
+        node.style({
+          opacity: 1,
+          "border-color": node.data("cor") || "#9a7a5a",
+          "border-width": node.data("highlighted") ? 5 : (node.degree() >= 10 ? 3 : 2),
+          "border-style": node.data("suggested") ? "dashed" : "solid",
+          "background-color": suggestedByCurrentUser ? "#fce4ec" : "#fffef9"
+        })
+      })
+
+      cy.edges().forEach(edge => {
+        const color = edge.data("cor") || "#9a7a5a"
+
+        edge.style({
+          opacity: 0.45,
+          "line-color": color,
+          "line-opacity": 0.45,
+          "target-arrow-color": color,
+          width: 1.5
+        })
+      })
+    })
+
+    this._manualGuideActive = false
+    this._manualGuideSourceId = null
+
+    if (applyLiked) applyLikedStepStyling()
   },
 
   _showSeqExitButton() {
