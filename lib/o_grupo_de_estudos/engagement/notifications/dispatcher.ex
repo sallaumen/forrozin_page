@@ -100,13 +100,13 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   # ── Study request notifications ────────────────────────
 
-  @doc "Notifies teacher that a student wants to study with them."
-  def notify_study_request(student_id, teacher_id, link_id) do
-    insert_and_broadcast([teacher_id], fn user_id ->
+  @doc "Notifies the recipient that someone wants to study with them."
+  def notify_study_request(initiator_id, recipient_id, link_id) do
+    insert_and_broadcast([recipient_id], fn user_id ->
       %{
         id: Ecto.UUID.generate(),
         user_id: user_id,
-        actor_id: student_id,
+        actor_id: initiator_id,
         action: "study_request",
         group_key: "study_request:#{link_id}",
         target_type: "study_link",
