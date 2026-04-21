@@ -2,8 +2,13 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   @moduledoc """
   Generates step sequences by traversing the directed connection graph.
 
-  Uses randomized DFS with weighted selection for required steps.
-  Supports cyclic sequences (start == end) and loop limiting.
+  Uses DFS with backtracking and weighted random selection.
+  Features:
+  - Backtracking on dead-ends (never wastes an attempt)
+  - Weighted neighbor selection: highlighted steps, required steps,
+    category diversity, cyclic proximity, random noise
+  - Anti-repetition between sequences (edges already used get penalized)
+  - Progressive constraint relaxation when count isn't met
   """
 
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
@@ -12,35 +17,25 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   @type sequence :: [step_info()]
   @type result :: {:ok, [sequence()], [String.t()]}
 
-  @type params :: %{
-          start_code: String.t(),
-          length: pos_integer(),
-          count: pos_integer(),
-          required_codes: [String.t()],
-          allow_repeats: boolean(),
-          cyclic: boolean(),
-          max_same_pair_loops: pos_integer()
-        }
-
-  @required_weight 5
-  @max_attempts_per_sequence 200
+  @max_attempts 50
   @max_same_pair_loops 3
   @bf_code "BF"
 
-  @doc """
-  Generate sequences traversing the step connection graph.
+  # Weight constants
+  @weight_base 1.0
+  @weight_highlighted 2.0
+  @weight_required 4.0
+  @weight_category_mix 1.5
+  @weight_cyclic_close 6.0
+  @weight_noise_max 1.5
+  @penalty_used_edge 2.0
 
-  Options:
-  - `cyclic: true` (default) — sequence must end at `start_code`
-  - `allow_repeats: true` — steps can appear multiple times (max #{@max_same_pair_loops} identical transitions)
-  - `required_codes` — best-effort inclusion of these steps
-  """
-  @spec generate(params()) :: result()
+  @spec generate(map()) :: result()
   def generate(params) do
     params =
       params
-      |> Map.put_new(:cyclic, true)
-      |> Map.put_new(:max_bf_visits, 1)
+      |> Map.put_new(:cyclic, false)
+      |> Map.put_new(:max_bf_visits, 3)
       |> Map.put_new(:max_same_pair_loops, @max_same_pair_loops)
 
     steps = StepQuery.list_by(public_only: true, preload: [:category])
@@ -52,81 +47,308 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
     start_id = Map.get(code_to_id, params.start_code)
 
-    # Resolve required codes and track which ones didn't resolve
     {required_ids, unresolved_codes} =
       resolve_required_ids(params.required_codes, code_to_id)
 
-    required_id_set = MapSet.new(required_ids)
+    if is_nil(start_id) do
+      {:ok, [], ["Passo inicial '#{params.start_code}' não encontrado"]}
+    else
+      reachable = reachable_from(start_id, adjacency)
+      required_id_set = MapSet.new(required_ids)
 
-    # Check reachability of required steps from start
-    unreachable_codes =
-      if start_id do
-        reachable = reachable_from(start_id, adjacency)
-
+      unreachable_codes =
         required_ids
         |> Enum.reject(&MapSet.member?(reachable, &1))
         |> Enum.map(fn id -> step_map[id] && step_map[id].code end)
         |> Enum.reject(&is_nil/1)
-      else
-        []
-      end
 
-    cond do
-      is_nil(start_id) ->
-        {:ok, [], ["Passo inicial '#{params.start_code}' não encontrado"]}
+      # Pre-compute reverse distances to start (for cyclic guidance)
+      reverse_adj = build_reverse_adjacency(connections)
+      dist_to_start = bfs_distances(start_id, reverse_adj)
 
-      true ->
-        sequences =
-          1..params.count
-          |> Enum.map(fn _ ->
-            generate_one(
-              start_id,
-              params.length,
-              adjacency,
-              required_id_set,
-              params.allow_repeats,
-              params.cyclic,
-              step_map,
-              params
-            )
-          end)
-          |> Enum.reject(&is_nil/1)
-          |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+      ctx = %{
+        start_id: start_id,
+        adjacency: adjacency,
+        step_map: step_map,
+        required_ids: required_id_set,
+        bf_id: Map.get(code_to_id, @bf_code),
+        dist_to_start: dist_to_start,
+        reachable: reachable
+      }
 
-        warnings =
-          build_warnings(sequences, required_ids, step_map, params) ++
-            unresolved_warnings(unresolved_codes) ++
-            unreachable_warnings(unreachable_codes)
+      {sequences, relaxation_warnings} =
+        generate_with_relaxation(ctx, params)
 
-        {:ok, sequences, warnings}
+      warnings =
+        build_warnings(sequences, required_ids, step_map, params) ++
+          unresolved_warnings(unresolved_codes) ++
+          unreachable_warnings(unreachable_codes) ++
+          relaxation_warnings
+
+      {:ok, sequences, warnings}
     end
   end
 
-  # ── Required code resolution ─────────────────────────────────────────
+  # ── Progressive relaxation ──────────────────────────────────────────
 
-  defp resolve_required_ids(nil, _code_to_id), do: {[], []}
-  defp resolve_required_ids([], _code_to_id), do: {[], []}
-
-  defp resolve_required_ids(codes, code_to_id) do
-    {resolved, unresolved} =
-      Enum.split_with(codes, &Map.has_key?(code_to_id, &1))
-
-    ids = Enum.map(resolved, &Map.fetch!(code_to_id, &1))
-    {ids, unresolved}
-  end
-
-  defp unresolved_warnings([]), do: []
-
-  defp unresolved_warnings(codes) do
-    ["Passo(s) obrigatório(s) não encontrado(s): #{Enum.join(codes, ", ")}"]
-  end
-
-  defp unreachable_warnings([]), do: []
-
-  defp unreachable_warnings(codes) do
-    [
-      "Passo(s) obrigatório(s) inalcançável(is) a partir do passo inicial: #{Enum.join(codes, ", ")}"
+  defp generate_with_relaxation(ctx, params) do
+    # Level 0: original constraints
+    # Level 1: allow repeats
+    # Level 2: allow repeats + more BF
+    # Level 3: allow repeats + more BF + shorter
+    relaxation_levels = [
+      {params, []},
+      {%{params | allow_repeats: true}, ["Algumas sequências permitem repetição de passos"]},
+      {%{params | allow_repeats: true} |> Map.put(:max_bf_visits, 5),
+       ["Algumas sequências permitem repetição de passos"]},
+      {%{params | allow_repeats: true, length: max(params.length - 2, 3)}
+       |> Map.put(:max_bf_visits, 5),
+       ["Algumas sequências são mais curtas para viabilizar a geração"]}
     ]
+
+    do_relaxation(relaxation_levels, ctx, [], params.count)
+  end
+
+  defp do_relaxation([], _ctx, sequences, _target_count), do: {sequences, []}
+
+  defp do_relaxation([{level_params, warnings} | rest], ctx, sequences, target_count) do
+    remaining = target_count - length(sequences)
+
+    if remaining <= 0 do
+      {sequences, []}
+    else
+      used_edges = edges_from_sequences(sequences)
+
+      new_seqs =
+        generate_batch(ctx, level_params, remaining, used_edges)
+
+      all_seqs =
+        (sequences ++ new_seqs)
+        |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+
+      if length(all_seqs) >= target_count do
+        final_warnings = if new_seqs != [] and warnings != [], do: warnings, else: []
+        {Enum.take(all_seqs, target_count), final_warnings}
+      else
+        do_relaxation(rest, ctx, all_seqs, target_count)
+      end
+    end
+  end
+
+  defp edges_from_sequences(sequences) do
+    Enum.reduce(sequences, MapSet.new(), fn seq, acc ->
+      seq
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.reduce(acc, fn [a, b], set -> MapSet.put(set, {a.id, b.id}) end)
+    end)
+  end
+
+  # ── Batch generation ────────────────────────────────────────────────
+
+  defp generate_batch(ctx, params, count, used_edges) do
+    bf_id = ctx.bf_id
+    start_id = ctx.start_id
+
+    max_bf =
+      if params.cyclic and start_id == bf_id,
+        do: max(Map.get(params, :max_bf_visits, 3) + 2, 5),
+        else: Map.get(params, :max_bf_visits, 3)
+
+    Enum.reduce(1..count, {[], used_edges}, fn _, {seqs, edges} ->
+      case generate_one(ctx, params, max_bf, edges) do
+        nil ->
+          {seqs, edges}
+
+        seq ->
+          new_edges = seq_edges(seq, edges)
+          {[seq | seqs], new_edges}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+  end
+
+  defp seq_edges(seq, existing) do
+    seq
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.reduce(existing, fn [a, b], set -> MapSet.put(set, {a.id, b.id}) end)
+  end
+
+  # ── Single sequence generation (DFS with backtracking) ──────────────
+
+  defp generate_one(ctx, params, max_bf, used_edges) do
+    Enum.reduce_while(1..@max_attempts, nil, fn _, _acc ->
+      state = %{
+        visited: MapSet.new([ctx.start_id]),
+        pair_counts: %{},
+        step_counts: %{ctx.start_id => 1},
+        allow_repeats: params.allow_repeats,
+        cyclic: params.cyclic,
+        max_bf: max_bf,
+        max_same_pair_loops: params.max_same_pair_loops,
+        target_length: params.length,
+        used_edges: used_edges,
+        recent_categories: []
+      }
+
+      case dfs_walk([ctx.start_id], state, ctx) do
+        nil -> {:cont, nil}
+        path -> {:halt, format_path(path, ctx.step_map)}
+      end
+    end)
+  end
+
+  # ── DFS with backtracking ───────────────────────────────────────────
+
+  defp dfs_walk(path, state, ctx) when length(path) == state.target_length do
+    if state.cyclic do
+      [current | _] = path
+      if current == ctx.start_id, do: path, else: nil
+    else
+      path
+    end
+  end
+
+  defp dfs_walk([current | _] = path, state, ctx) do
+    neighbors = Map.get(ctx.adjacency, current, [])
+    steps_remaining = state.target_length - length(path)
+    valid = filter_neighbors(neighbors, current, state, ctx, steps_remaining)
+
+    if valid == [] do
+      nil
+    else
+      # Score and sort neighbors with weighted randomization
+      scored =
+        valid
+        |> Enum.map(fn n -> {n, score_neighbor(n, current, state, ctx, steps_remaining)} end)
+        |> Enum.sort_by(fn {_, s} -> -s end)
+
+      # Try neighbors in weighted-random order (backtracking)
+      try_neighbors(scored, path, state, ctx)
+    end
+  end
+
+  defp try_neighbors([], _path, _state, _ctx), do: nil
+
+  defp try_neighbors([{next, _score} | rest], path, state, ctx) do
+    [current | _] = path
+    pair = {current, next}
+
+    new_state = %{
+      state
+      | visited: MapSet.put(state.visited, next),
+        pair_counts: Map.update(state.pair_counts, pair, 1, &(&1 + 1)),
+        step_counts: Map.update(state.step_counts, next, 1, &(&1 + 1)),
+        recent_categories: recent_cats(next, state, ctx)
+    }
+
+    case dfs_walk([next | path], new_state, ctx) do
+      nil -> try_neighbors(rest, path, state, ctx)
+      result -> result
+    end
+  end
+
+  defp recent_cats(node_id, state, ctx) do
+    cat =
+      case Map.get(ctx.step_map, node_id) do
+        nil -> nil
+        step -> step.category_id
+      end
+
+    [cat | state.recent_categories] |> Enum.take(3)
+  end
+
+  # ── Neighbor scoring ─────────────────────────────────────────────────
+  #
+  # Each bonus/penalty is computed independently and summed.
+  # Final score is clamped to min 0.1 so every valid neighbor has a chance.
+
+  defp score_neighbor(n, current, state, ctx, steps_remaining) do
+    step = Map.get(ctx.step_map, n)
+
+    bonuses = [
+      bonus_highlighted(step),
+      bonus_required(n, state, ctx),
+      bonus_category_mix(step, state),
+      bonus_cyclic(n, state, ctx, steps_remaining),
+      penalty_used_edge(current, n, state),
+      noise()
+    ]
+
+    max(@weight_base + Enum.sum(bonuses), 0.1)
+  end
+
+  defp bonus_highlighted(nil), do: 0.0
+  defp bonus_highlighted(step), do: if(step.highlighted, do: @weight_highlighted, else: 0.0)
+
+  defp bonus_required(n, state, ctx) do
+    remaining = MapSet.difference(ctx.required_ids, state.visited)
+    if MapSet.member?(remaining, n), do: @weight_required, else: 0.0
+  end
+
+  defp bonus_category_mix(nil, _state), do: 0.0
+
+  defp bonus_category_mix(step, state) do
+    if step.category_id not in state.recent_categories,
+      do: @weight_category_mix,
+      else: 0.0
+  end
+
+  defp bonus_cyclic(n, state, ctx, steps_remaining) do
+    cond do
+      # Cyclic mode: strong guidance toward start in final steps
+      state.cyclic and steps_remaining <= 3 ->
+        dist = Map.get(ctx.dist_to_start, n, :infinity)
+
+        cond do
+          n == ctx.start_id and steps_remaining == 1 -> @weight_cyclic_close * 2
+          dist == :infinity -> -3.0
+          dist <= steps_remaining -> @weight_cyclic_close / max(dist, 1)
+          true -> -1.0
+        end
+
+      # Non-cyclic: gentle bonus for naturally closing the loop
+      not state.cyclic and steps_remaining == 1 and n == ctx.start_id ->
+        2.0
+
+      true ->
+        0.0
+    end
+  end
+
+  defp penalty_used_edge(current, n, state) do
+    if MapSet.member?(state.used_edges, {current, n}),
+      do: -@penalty_used_edge,
+      else: 0.0
+  end
+
+  defp noise, do: :rand.uniform() * @weight_noise_max
+
+  # ── Neighbor filtering ───────────────────────────────────────────────
+
+  defp filter_neighbors(neighbors, current, state, ctx, steps_remaining) do
+    Enum.filter(neighbors, fn n ->
+      # Only consider reachable nodes
+      reachable = MapSet.member?(ctx.reachable, n)
+
+      repeat_ok =
+        if state.allow_repeats do
+          pair_count = Map.get(state.pair_counts, {current, n}, 0)
+          pair_count < state.max_same_pair_loops
+        else
+          not MapSet.member?(state.visited, n) or
+            (state.cyclic and n == ctx.start_id and steps_remaining == 1)
+        end
+
+      bf_ok =
+        if n == ctx.bf_id and ctx.bf_id != nil do
+          Map.get(state.step_counts, n, 0) < state.max_bf
+        else
+          true
+        end
+
+      reachable and repeat_ok and bf_ok
+    end)
   end
 
   # ── Graph helpers ────────────────────────────────────────────────────
@@ -134,6 +356,12 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   defp build_adjacency(connections) do
     Enum.reduce(connections, %{}, fn conn, acc ->
       Map.update(acc, conn.source_step_id, [conn.target_step_id], &[conn.target_step_id | &1])
+    end)
+  end
+
+  defp build_reverse_adjacency(connections) do
+    Enum.reduce(connections, %{}, fn conn, acc ->
+      Map.update(acc, conn.target_step_id, [conn.source_step_id], &[conn.source_step_id | &1])
     end)
   end
 
@@ -155,155 +383,43 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     do_bfs(new_visited, Enum.uniq(next_queue), adjacency)
   end
 
-  # ── Sequence generation ──────────────────────────────────────────────
-
-  defp generate_one(
-         start_id,
-         target_length,
-         adjacency,
-         required_ids,
-         allow_repeats,
-         cyclic,
-         step_map,
-         params
-       ) do
-    Enum.reduce_while(1..@max_attempts_per_sequence, nil, fn _, _acc ->
-      path =
-        walk(
-          start_id,
-          target_length,
-          adjacency,
-          required_ids,
-          allow_repeats,
-          cyclic,
-          step_map,
-          params
-        )
-
-      valid =
-        cond do
-          is_nil(path) -> false
-          length(path) != target_length -> false
-          cyclic and List.last(path).id != start_id -> false
-          true -> true
-        end
-
-      if valid, do: {:halt, path}, else: {:cont, nil}
-    end)
+  @doc false
+  def bfs_distances(start_id, adjacency) do
+    do_bfs_dist(%{start_id => 0}, [start_id], adjacency, 0)
   end
 
-  defp walk(
-         start_id,
-         target_length,
-         adjacency,
-         required_ids,
-         allow_repeats,
-         cyclic,
-         step_map,
-         params
-       ) do
-    code_to_id = Map.new(Map.values(step_map), &{&1.code, &1.id})
-    bf_id = Map.get(code_to_id, @bf_code)
+  defp do_bfs_dist(dists, [], _adj, _depth), do: dists
 
-    max_bf =
-      if cyclic and start_id == bf_id do
-        3
-      else
-        Map.get(params, :max_bf_visits, 1)
-      end
+  defp do_bfs_dist(dists, queue, adj, depth) do
+    next_queue =
+      Enum.flat_map(queue, fn node ->
+        Map.get(adj, node, [])
+        |> Enum.reject(&Map.has_key?(dists, &1))
+      end)
+      |> Enum.uniq()
 
-    state = %{
-      visited: MapSet.new([start_id]),
-      pair_counts: %{},
-      step_counts: %{start_id => 1},
-      adjacency: adjacency,
-      required_ids: required_ids,
-      allow_repeats: allow_repeats,
-      cyclic: cyclic,
-      start_id: start_id,
-      bf_id: bf_id,
-      max_bf: max_bf,
-      max_same_pair_loops: params.max_same_pair_loops,
-      step_map: step_map,
-      target_length: target_length
-    }
+    new_dists =
+      Enum.reduce(next_queue, dists, fn node, acc ->
+        Map.put(acc, node, depth + 1)
+      end)
 
-    do_walk([start_id], state)
+    do_bfs_dist(new_dists, next_queue, adj, depth + 1)
   end
 
-  defp do_walk(path, state) when length(path) == state.target_length do
-    if state.cyclic do
-      [current | _] = path
+  # ── Required code resolution ─────────────────────────────────────────
 
-      if current == state.start_id do
-        format_path(path, state.step_map)
-      else
-        nil
-      end
-    else
-      format_path(path, state.step_map)
-    end
+  defp resolve_required_ids(nil, _code_to_id), do: {[], []}
+  defp resolve_required_ids([], _code_to_id), do: {[], []}
+
+  defp resolve_required_ids(codes, code_to_id) do
+    {resolved, unresolved} =
+      Enum.split_with(codes, &Map.has_key?(code_to_id, &1))
+
+    ids = Enum.map(resolved, &Map.fetch!(code_to_id, &1))
+    {ids, unresolved}
   end
 
-  defp do_walk([current | _rest] = path, state) do
-    neighbors = Map.get(state.adjacency, current, [])
-    steps_remaining = state.target_length - length(path)
-
-    valid_neighbors = filter_neighbors(neighbors, current, path, state, steps_remaining)
-
-    if valid_neighbors == [] do
-      nil
-    else
-      remaining_required = MapSet.difference(state.required_ids, state.visited)
-
-      weighted =
-        Enum.flat_map(valid_neighbors, fn n ->
-          weight =
-            cond do
-              state.cyclic and steps_remaining == 1 and n == state.start_id -> 20
-              MapSet.member?(remaining_required, n) -> @required_weight
-              true -> 1
-            end
-
-          List.duplicate(n, weight)
-        end)
-
-      next = Enum.random(weighted)
-      pair = {current, next}
-
-      new_state = %{
-        state
-        | visited: MapSet.put(state.visited, next),
-          pair_counts: Map.update(state.pair_counts, pair, 1, &(&1 + 1)),
-          step_counts: Map.update(state.step_counts, next, 1, &(&1 + 1))
-      }
-
-      do_walk([next | path], new_state)
-    end
-  end
-
-  defp filter_neighbors(neighbors, current, _path, state, steps_remaining) do
-    Enum.filter(neighbors, fn n ->
-      repeat_ok =
-        if state.allow_repeats do
-          pair_count = Map.get(state.pair_counts, {current, n}, 0)
-          pair_count < state.max_same_pair_loops
-        else
-          not MapSet.member?(state.visited, n) or
-            (state.cyclic and n == state.start_id and steps_remaining == 1)
-        end
-
-      bf_ok =
-        if n == state.bf_id and state.bf_id != nil do
-          current_bf_count = Map.get(state.step_counts, n, 0)
-          current_bf_count < state.max_bf
-        else
-          true
-        end
-
-      repeat_ok and bf_ok
-    end)
-  end
+  # ── Path formatting ──────────────────────────────────────────────────
 
   defp format_path(path, step_map) do
     path
@@ -320,25 +436,18 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   defp build_warnings(sequences, required_ids, step_map, params) do
     required_warnings =
       if required_ids != [] do
-        missed_per_sequence =
-          Enum.map(sequences, fn seq ->
+        missed =
+          Enum.flat_map(sequences, fn seq ->
             seq_ids = MapSet.new(Enum.map(seq, & &1.id))
             Enum.reject(required_ids, &MapSet.member?(seq_ids, &1))
           end)
+          |> Enum.uniq()
+          |> Enum.map(&Map.get(step_map, &1))
+          |> Enum.reject(&is_nil/1)
+          |> Enum.map(& &1.code)
 
-        if Enum.any?(missed_per_sequence, &(&1 != [])) do
-          missed_count = Enum.count(missed_per_sequence, &(&1 != []))
-
-          missed_codes =
-            missed_per_sequence
-            |> List.flatten()
-            |> Enum.uniq()
-            |> Enum.map(&Map.get(step_map, &1))
-            |> Enum.reject(&is_nil/1)
-            |> Enum.map(& &1.code)
-            |> Enum.join(", ")
-
-          ["#{missed_codes} não incluído(s) em #{missed_count} sequência(s)"]
+        if missed != [] do
+          ["#{Enum.join(missed, ", ")} não incluído(s) em algumas sequências"]
         else
           []
         end
@@ -354,5 +463,19 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       end
 
     required_warnings ++ count_warnings
+  end
+
+  defp unresolved_warnings([]), do: []
+
+  defp unresolved_warnings(codes) do
+    ["Passo(s) obrigatório(s) não encontrado(s): #{Enum.join(codes, ", ")}"]
+  end
+
+  defp unreachable_warnings([]), do: []
+
+  defp unreachable_warnings(codes) do
+    [
+      "Passo(s) obrigatório(s) inalcançável(is) a partir do passo inicial: #{Enum.join(codes, ", ")}"
+    ]
   end
 end
