@@ -34,6 +34,8 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :bio, :string
     field :instagram, :string
     field :avatar_path, :string
+    field :is_teacher, :boolean, default: false
+    field :invite_slug, :string
 
     timestamps()
   end
@@ -50,7 +52,8 @@ defmodule OGrupoDeEstudos.Accounts.User do
       :name,
       :country,
       :state,
-      :city
+      :city,
+      :is_teacher
     ])
     |> validate_required([:username, :email, :password, :name, :country, :city])
     |> sanitize_username()
@@ -64,15 +67,27 @@ defmodule OGrupoDeEstudos.Accounts.User do
     |> validate_state_for_brazil()
     |> validate_length(:password, min: @min_password)
     |> validate_inclusion(:role, @valid_roles)
+    |> put_invite_slug()
     |> unique_constraint(:username, message: "nome de usuário já existe")
     |> unique_constraint(:email, message: "email já cadastrado")
+    |> unique_constraint(:invite_slug, message: "link de convite já existe")
     |> hash_password()
   end
 
   @doc "Changeset for updating profile fields."
   def profile_changeset(user, attrs) do
     user
-    |> cast(attrs, [:bio, :instagram, :avatar_path, :name, :username, :country, :state, :city])
+    |> cast(attrs, [
+      :bio,
+      :instagram,
+      :avatar_path,
+      :name,
+      :username,
+      :country,
+      :state,
+      :city,
+      :is_teacher
+    ])
     |> sanitize_username()
     |> validate_length(:bio, max: 2000)
     |> validate_length(:instagram, max: 100)
@@ -132,6 +147,19 @@ defmodule OGrupoDeEstudos.Accounts.User do
       |> validate_inclusion(:state, @valid_states, message: "selecione um estado válido")
     else
       changeset
+    end
+  end
+
+  defp put_invite_slug(changeset) do
+    case {get_field(changeset, :invite_slug), get_field(changeset, :username)} do
+      {nil, username} when is_binary(username) and username != "" ->
+        put_change(changeset, :invite_slug, "prof-#{username}")
+
+      {"", username} when is_binary(username) and username != "" ->
+        put_change(changeset, :invite_slug, "prof-#{username}")
+
+      _ ->
+        changeset
     end
   end
 
