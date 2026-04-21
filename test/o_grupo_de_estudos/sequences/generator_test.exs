@@ -52,9 +52,17 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     #   S3
     #   |
     #   S4
-    s = for i <- 0..4 do
-      insert(:step, code: "S#{i}", name: "Step #{i}", wip: false, status: "published", approved: true)
-    end
+    s =
+      for i <- 0..4 do
+        insert(:step,
+          code: "S#{i}",
+          name: "Step #{i}",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+      end
+
     [s0, s1, s2, s3, s4] = s
 
     insert(:connection, source_step: s0, target_step: s1)
@@ -92,7 +100,12 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     test "each step has :id, :code, :name" do
       build_linear_chain(3)
       {:ok, [seq], _} = Generator.generate(base_params("C0", length: 3, count: 1))
-      for step <- seq, do: assert(Map.has_key?(step, :id) and Map.has_key?(step, :code) and Map.has_key?(step, :name))
+
+      for step <- seq,
+          do:
+            assert(
+              Map.has_key?(step, :id) and Map.has_key?(step, :code) and Map.has_key?(step, :name)
+            )
     end
 
     test "handles length of 1" do
@@ -123,7 +136,14 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
 
     test "isolated start step returns empty with warning" do
-      insert(:step, code: "ALONE", name: "Lonely", wip: false, status: "published", approved: true)
+      insert(:step,
+        code: "ALONE",
+        name: "Lonely",
+        wip: false,
+        status: "published",
+        approved: true
+      )
+
       {:ok, seqs, warnings} = Generator.generate(base_params("ALONE", length: 3, count: 1))
       assert seqs == []
       assert Enum.any?(warnings, &(&1 =~ "sequências"))
@@ -144,7 +164,10 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
     test "fails gracefully when path too long for graph" do
       build_linear_chain(3)
-      {:ok, seqs, warnings} = Generator.generate(base_params("C0", length: 5, count: 1, allow_repeats: false))
+
+      {:ok, seqs, warnings} =
+        Generator.generate(base_params("C0", length: 5, count: 1, allow_repeats: false))
+
       assert seqs == [] or Enum.any?(warnings, &(&1 =~ "sequências"))
     end
   end
@@ -157,13 +180,20 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     test "generates sequence longer than graph with repeats" do
       {steps, _} = build_linear_chain(3)
       add_loop(steps)
-      {:ok, [seq], _} = Generator.generate(base_params("C0", length: 10, count: 1, allow_repeats: true))
+
+      {:ok, [seq], _} =
+        Generator.generate(base_params("C0", length: 10, count: 1, allow_repeats: true))
+
       assert length(seq) == 10
     end
 
     test "respects max_same_pair_loops" do
-      s0 = insert(:step, code: "L0", name: "Loop 0", wip: false, status: "published", approved: true)
-      s1 = insert(:step, code: "L1", name: "Loop 1", wip: false, status: "published", approved: true)
+      s0 =
+        insert(:step, code: "L0", name: "Loop 0", wip: false, status: "published", approved: true)
+
+      s1 =
+        insert(:step, code: "L1", name: "Loop 1", wip: false, status: "published", approved: true)
+
       insert(:connection, source_step: s0, target_step: s1)
       insert(:connection, source_step: s1, target_step: s0)
 
@@ -172,16 +202,20 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       # The relaxation may try but still fail — or produce shorter sequence
       {:ok, seqs, _warnings} =
         Generator.generate(
-          base_params("L0", length: 7, count: 1, allow_repeats: true) |> Map.put(:max_same_pair_loops, 2)
+          base_params("L0", length: 7, count: 1, allow_repeats: true)
+          |> Map.put(:max_same_pair_loops, 2)
         )
+
       # Either no result, or a shorter relaxed result
       assert seqs == [] or length(hd(seqs)) < 7
 
       # With max_same_pair_loops=3, length 7 works
       {:ok, [seq], _} =
         Generator.generate(
-          base_params("L0", length: 7, count: 1, allow_repeats: true) |> Map.put(:max_same_pair_loops, 3)
+          base_params("L0", length: 7, count: 1, allow_repeats: true)
+          |> Map.put(:max_same_pair_loops, 3)
         )
+
       assert Enum.map(seq, & &1.code) == ["L0", "L1", "L0", "L1", "L0", "L1", "L0"]
     end
   end
@@ -208,6 +242,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       build_diamond_graph()
       {:ok, seqs, _} = Generator.generate(base_params("S0", length: 5, count: 3, cyclic: true))
       assert length(seqs) >= 1
+
       for seq <- seqs do
         assert hd(seq).code == "S0" and List.last(seq).code == "S0"
       end
@@ -221,34 +256,49 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   describe "required_codes" do
     test "includes required step when reachable" do
       build_linear_chain(5)
+
       {:ok, [seq], warnings} =
         Generator.generate(base_params("C0", length: 5, count: 1, required_codes: ["C3"]))
+
       assert "C3" in Enum.map(seq, & &1.code)
       assert warnings == []
     end
 
     test "warns when required code does not exist" do
       build_linear_chain(3)
+
       {:ok, _, warnings} =
         Generator.generate(base_params("C0", length: 3, count: 1, required_codes: ["GHOST"]))
+
       assert Enum.any?(warnings, &(&1 =~ "GHOST"))
     end
 
     test "warns when required step is unreachable" do
       build_linear_chain(3)
-      d0 = insert(:step, code: "D0", name: "Disc 0", wip: false, status: "published", approved: true)
-      d1 = insert(:step, code: "D1", name: "Disc 1", wip: false, status: "published", approved: true)
+
+      d0 =
+        insert(:step, code: "D0", name: "Disc 0", wip: false, status: "published", approved: true)
+
+      d1 =
+        insert(:step, code: "D1", name: "Disc 1", wip: false, status: "published", approved: true)
+
       insert(:connection, source_step: d0, target_step: d1)
 
       {:ok, _, warnings} =
         Generator.generate(base_params("C0", length: 3, count: 1, required_codes: ["D0"]))
+
       assert Enum.any?(warnings, &(&1 =~ "inalcançável"))
     end
 
     test "handles nil required_codes" do
       build_linear_chain(3)
+
       {:ok, [_], warnings} =
-        Generator.generate(base_params("C0", length: 3, count: 1) |> Map.put(:required_codes, nil))
+        Generator.generate(
+          base_params("C0", length: 3, count: 1)
+          |> Map.put(:required_codes, nil)
+        )
+
       refute Enum.any?(warnings, &(&1 =~ "não encontrado"))
     end
   end
@@ -292,7 +342,8 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
       # Request 3 sequences of length 5 without repeats — impossible
       # But with relaxation (allow repeats), should produce more
-      {:ok, seqs, _warnings} = Generator.generate(base_params("C0", length: 5, count: 3, cyclic: false))
+      {:ok, seqs, _warnings} =
+        Generator.generate(base_params("C0", length: 5, count: 3, cyclic: false))
 
       # Relaxation should kick in and produce at least 1 sequence
       assert length(seqs) >= 1

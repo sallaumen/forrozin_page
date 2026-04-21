@@ -13,254 +13,240 @@
   />
   <.onboarding_banner />
 
-  <%!-- Hero --%>
-  <div class="border-b border-ink-300/50 px-6 pt-12 pb-9 bg-ink-200">
-    <div class="max-w-4xl mx-auto">
-      <h1 class="text-4xl md:text-5xl font-bold text-ink-900 tracking-tight leading-tight mb-4">
-        O grupo de estudos.
-      </h1>
-      <p class="text-base text-ink-700 leading-relaxed max-w-xl mb-2.5">
-        {total_steps(@sections)} passos de forró catalogados aqui.
-        Nomes inventados, descrições duvidosas, mas feito com carinho.
-      </p>
-      <p class="text-sm text-ink-500 italic leading-relaxed max-w-xl">
-        Sentiu falta de algum passo?
-        <a
-          href="#"
-          phx-click="toggle_suggest"
-          style="color: #8e44ad;"
-          class="font-semibold no-underline"
-        >
-          Sugere aí
-        </a>
-        , a gente cresce junto.
-      </p>
+  <div id="collection-shell" data-layout="wide">
+    <%!-- Hero --%>
+    <div class="border-b border-ink-300/50 px-6 pt-12 pb-9 bg-ink-200">
+      <div class="max-w-[1600px] mx-auto">
+        <h1 class="text-4xl md:text-5xl font-bold text-ink-900 tracking-tight leading-tight mb-4">
+          O grupo de estudos.
+        </h1>
+        <p class="text-base text-ink-700 leading-relaxed max-w-2xl mb-2.5">
+          {total_steps(@sections)} passos de forró catalogados aqui.
+          Nomes inventados, descrições duvidosas, mas feito com carinho.
+        </p>
+        <p class="text-sm text-ink-500 italic leading-relaxed max-w-2xl">
+          Sentiu falta de algum passo?
+          <a
+            href="#"
+            phx-click="toggle_suggest"
+            style="color: #8e44ad;"
+            class="font-semibold no-underline"
+          >
+            Sugere aí
+          </a>
+          , a gente cresce junto.
+        </p>
+      </div>
     </div>
-  </div>
 
-  <%!-- Controles (sticky) --%>
-  <div class="sticky top-[47px] z-30 bg-ink-200/95 backdrop-blur-sm border-b border-ink-300/40 py-3.5 px-6">
-    <div class="max-w-4xl mx-auto flex gap-2.5 flex-wrap items-center">
-      <%!-- Busca --%>
-      <form phx-change="search" class="flex-1 min-w-[200px] relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">
-          ⌕
-        </span>
-        <input
-          name="term"
-          value={@search}
-          placeholder="Buscar por sigla, nome..."
-          autocomplete="off"
-          phx-debounce="250"
-          class="w-full bg-ink-50 border border-ink-300 rounded py-2 pl-8 pr-3 text-ink-900 text-sm outline-none font-serif box-border focus-visible:ring-2 focus-visible:ring-ink-900"
-        />
-      </form>
+    <%!-- Controles (sticky) --%>
+    <div
+      id="collection-controls"
+      class="sticky top-[48px] md:top-[66px] z-30 bg-ink-200/95 backdrop-blur-sm border-b border-ink-300/40 py-3.5 px-6"
+    >
+      <div class="max-w-[1600px] mx-auto flex gap-2.5 flex-wrap items-center">
+        <%!-- Busca --%>
+        <form phx-change="search" class="flex-1 min-w-[200px] relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">
+            ⌕
+          </span>
+          <input
+            name="term"
+            value={@search}
+            placeholder="Buscar por sigla, nome..."
+            autocomplete="off"
+            phx-debounce="250"
+            class="w-full bg-ink-50 border border-ink-300 rounded py-2 pl-8 pr-3 text-ink-900 text-sm outline-none font-serif box-border focus-visible:ring-2 focus-visible:ring-ink-900"
+          />
+        </form>
 
-      <%!-- Filtros de categoria --%>
-      <div class="flex gap-1.5 flex-wrap">
-        <button
-          phx-click="filter"
-          phx-value-category="all"
-          class={[
-            "inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded-full cursor-pointer font-serif italic tracking-tight border",
-            @category_filter == "all" && "bg-ink-900 text-ink-100 border-transparent font-bold",
-            @category_filter != "all" && "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
-          ]}
-        >
-          Todos
-        </button>
-        <%= for cat <- @categories do %>
+        <%!-- Filtros de categoria --%>
+        <div class="flex gap-1.5 flex-wrap">
           <button
             phx-click="filter"
-            phx-value-category={cat.name}
-            style={
-              @category_filter == cat.name &&
-                "background: #{cat.color}; border-color: transparent;"
-            }
+            phx-value-category="all"
             class={[
               "inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded-full cursor-pointer font-serif italic tracking-tight border",
-              @category_filter == cat.name && "text-ink-100 font-bold",
-              @category_filter != cat.name &&
+              @category_filter == "all" && "bg-ink-900 text-ink-100 border-transparent font-bold",
+              @category_filter != "all" &&
                 "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
             ]}
           >
-            {cat.label}
+            Todos
           </button>
+          <%= for cat <- @categories do %>
+            <button
+              phx-click="filter"
+              phx-value-category={cat.name}
+              style={
+                @category_filter == cat.name &&
+                  "background: #{cat.color}; border-color: transparent;"
+              }
+              class={[
+                "inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded-full cursor-pointer font-serif italic tracking-tight border",
+                @category_filter == cat.name && "text-ink-100 font-bold",
+                @category_filter != cat.name &&
+                  "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
+              ]}
+            >
+              {cat.label}
+            </button>
+          <% end %>
+        </div>
+
+        <%!-- Expandir / recolher + Sugerir --%>
+        <%= if @search == "" do %>
+          <div class="flex gap-1.5 ml-auto items-center">
+            <button
+              phx-click="expand_all"
+              class="inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
+            >
+              + expandir
+            </button>
+            <button
+              phx-click="collapse_all"
+              class="inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
+            >
+              − fechar
+            </button>
+            <button
+              phx-click="toggle_suggest"
+              style={
+                if @suggest_mode,
+                  do: "border-color: #c0392b; background: #c0392b10; color: #c0392b;",
+                  else: "border-color: #8e44ad; background: #8e44ad; color: white;"
+              }
+              class="text-xs py-2 px-4 rounded-full cursor-pointer font-serif font-bold tracking-wide border-2 transition-all"
+            >
+              {if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir um passo"}
+            </button>
+          </div>
         <% end %>
       </div>
-
-      <%!-- Expandir / recolher + Sugerir --%>
-      <%= if @search == "" do %>
-        <div class="flex gap-1.5 ml-auto items-center">
-          <button
-            phx-click="expand_all"
-            class="inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
-          >
-            + expandir
-          </button>
-          <button
-            phx-click="collapse_all"
-            class="inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
-          >
-            − fechar
-          </button>
-          <button
-            phx-click="toggle_suggest"
-            style={
-              if @suggest_mode,
-                do: "border-color: #c0392b; background: #c0392b10; color: #c0392b;",
-                else: "border-color: #8e44ad; background: #8e44ad; color: white;"
-            }
-            class="text-xs py-2 px-4 rounded-full cursor-pointer font-serif font-bold tracking-wide border-2 transition-all"
-          >
-            {if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir um passo"}
-          </button>
-        </div>
-      <% end %>
     </div>
-  </div>
 
-  <%!-- Suggestion form — always in DOM, hidden via CSS to preserve inputs --%>
-  <div class={[
-    "max-w-4xl mx-auto p-4 my-3 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md",
-    !@suggest_mode && "hidden"
-  ]}>
-    <div class="text-xs font-bold uppercase tracking-widest mb-3" style="color: #8e44ad;">
-      Sugerir novo passo
-    </div>
-    <div phx-update="ignore" id="suggest-form-wrapper">
-      <form
-        phx-submit="create_suggested_step"
-        id="suggest-step-form"
-        class="flex flex-wrap gap-2.5 items-end"
-      >
-        <div class="flex-1 min-w-[150px]">
-          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-            Nome
-          </label>
-          <input
-            type="text"
-            name="step[name]"
-            placeholder="Ex: Base lateral"
-            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
-          />
-        </div>
-        <div class="w-[100px]">
-          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-            Código
-          </label>
-          <input
-            type="text"
-            name="step[code]"
-            placeholder="Ex: BL"
-            class="w-full py-2 px-2.5 border border-ink-300 rounded font-mono text-sm text-ink-900 box-border"
-          />
-        </div>
-        <div class="flex-[2] min-w-[200px]">
-          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-            Nota (opcional)
-          </label>
-          <input
-            type="text"
-            name="step[note]"
-            placeholder="Descrição opcional"
-            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
-          />
-        </div>
-        <div class="w-[180px]">
-          <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-            Seção
-          </label>
-          <select
-            name="step[section_id]"
-            class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
-          >
-            <option value="">Sem seção</option>
-            <%= for section <- @sections do %>
-              <option value={section.id}>{section.title}</option>
-            <% end %>
-          </select>
-        </div>
-        <button
-          type="submit"
-          phx-disable-with="Enviando..."
-          class="py-2 px-4 text-white border-0 rounded cursor-pointer font-serif text-xs tracking-wide"
-          style="background: #8e44ad;"
+    <%!-- Suggestion form — always in DOM, hidden via CSS to preserve inputs --%>
+    <div class={[
+      "max-w-[1600px] mx-auto p-4 my-3 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md",
+      !@suggest_mode && "hidden"
+    ]}>
+      <div class="text-xs font-bold uppercase tracking-widest mb-3" style="color: #8e44ad;">
+        Sugerir novo passo
+      </div>
+      <div phx-update="ignore" id="suggest-form-wrapper">
+        <form
+          phx-submit="create_suggested_step"
+          id="suggest-step-form"
+          class="flex flex-wrap gap-2.5 items-end"
         >
-          Sugerir
+          <div class="flex-1 min-w-[150px]">
+            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+              Nome
+            </label>
+            <input
+              type="text"
+              name="step[name]"
+              placeholder="Ex: Base lateral"
+              class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
+            />
+          </div>
+          <div class="w-[100px]">
+            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+              Código
+            </label>
+            <input
+              type="text"
+              name="step[code]"
+              placeholder="Ex: BL"
+              class="w-full py-2 px-2.5 border border-ink-300 rounded font-mono text-sm text-ink-900 box-border"
+            />
+          </div>
+          <div class="flex-[2] min-w-[200px]">
+            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+              Nota (opcional)
+            </label>
+            <input
+              type="text"
+              name="step[note]"
+              placeholder="Descrição opcional"
+              class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
+            />
+          </div>
+          <div class="w-[180px]">
+            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+              Seção
+            </label>
+            <select
+              name="step[section_id]"
+              class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
+            >
+              <option value="">Sem seção</option>
+              <%= for section <- @sections do %>
+                <option value={section.id}>{section.title}</option>
+              <% end %>
+            </select>
+          </div>
+          <button
+            type="submit"
+            phx-disable-with="Enviando..."
+            class="py-2 px-4 text-white border-0 rounded cursor-pointer font-serif text-xs tracking-wide"
+            style="background: #8e44ad;"
+          >
+            Sugerir
+          </button>
+        </form>
+      </div>
+      <%!-- Inline error message --%>
+      <div
+        :if={@suggest_error}
+        class="mt-2 py-2 px-3 bg-accent-red/10 border border-accent-red/30 rounded text-sm text-accent-red font-sans"
+      >
+        {@suggest_error}
+      </div>
+    </div>
+
+    <%!-- Tabs --%>
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10">
+      <div class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
+        <button
+          phx-click="switch_tab"
+          phx-value-tab="acervo"
+          class={[
+            "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
+            @active_tab == "acervo" && "text-ink-900 border-ink-900 font-bold",
+            @active_tab != "acervo" && "text-ink-500 border-transparent font-normal"
+          ]}
+        >
+          Acervo
         </button>
-      </form>
+        <button
+          phx-click="switch_tab"
+          phx-value-tab="meus_passos"
+          style={if @active_tab == "meus_passos", do: "color: #8e44ad; border-color: #8e44ad;"}
+          class={[
+            "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
+            @active_tab == "meus_passos" && "font-bold",
+            @active_tab != "meus_passos" && "text-ink-500 border-transparent font-normal"
+          ]}
+        >
+          Meus passos
+        </button>
+      </div>
     </div>
-    <%!-- Inline error message --%>
-    <div
-      :if={@suggest_error}
-      class="mt-2 py-2 px-3 bg-accent-red/10 border border-accent-red/30 rounded text-sm text-accent-red font-sans"
-    >
-      {@suggest_error}
-    </div>
-  </div>
 
-  <%!-- Tabs --%>
-  <div class="max-w-4xl mx-auto px-4">
-    <div class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
-      <button
-        phx-click="switch_tab"
-        phx-value-tab="acervo"
-        class={[
-          "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
-          @active_tab == "acervo" && "text-ink-900 border-ink-900 font-bold",
-          @active_tab != "acervo" && "text-ink-500 border-transparent font-normal"
-        ]}
-      >
-        Acervo
-      </button>
-      <button
-        phx-click="switch_tab"
-        phx-value-tab="meus_passos"
-        style={if @active_tab == "meus_passos", do: "color: #8e44ad; border-color: #8e44ad;"}
-        class={[
-          "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
-          @active_tab == "meus_passos" && "font-bold",
-          @active_tab != "meus_passos" && "text-ink-500 border-transparent font-normal"
-        ]}
-      >
-        Meus passos
-      </button>
-    </div>
-  </div>
-
-  <%!-- Conteúdo --%>
-  <div class="max-w-4xl mx-auto px-4 pt-6 pb-20 w-full box-border">
-    <%= if @active_tab == "meus_passos" do %>
-      <%!-- Meus passos tab --%>
-      <%= if @my_steps == [] do %>
-        <div class="text-center py-14 px-5 text-ink-500 italic">
-          Você ainda não sugeriu nenhum passo. Use o botão "+ Sugerir passo" acima!
-        </div>
-      <% else %>
-        <p class="text-xs mb-4 font-semibold" style="color: #8e44ad;">
-          {length(@my_steps)} passo(s) sugerido(s) por você
-        </p>
-        <%= for step <- @my_steps do %>
-          <.step_item
-            step={step}
-            current_user_id={@current_user.id}
-            steps_with_links={@steps_with_links}
-          />
-        <% end %>
-      <% end %>
-    <% else %>
-      <%!-- Acervo tab --%>
-      <%= if @search != "" do %>
-        <%= if @search_results == [] do %>
-          <div class="text-center py-20 px-5 text-ink-500 italic">
-            Nenhum resultado para "{@search}"
+    <%!-- Conteúdo --%>
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 pt-6 pb-20 w-full box-border">
+      <%= if @active_tab == "meus_passos" do %>
+        <%!-- Meus passos tab --%>
+        <%= if @my_steps == [] do %>
+          <div class="text-center py-14 px-5 text-ink-500 italic">
+            Você ainda não sugeriu nenhum passo. Use o botão "+ Sugerir passo" acima!
           </div>
         <% else %>
-          <p class="text-xs text-ink-500 mb-4 font-mono">
-            {length(@search_results)} resultado(s)
+          <p class="text-xs mb-4 font-semibold" style="color: #8e44ad;">
+            {length(@my_steps)} passo(s) sugerido(s) por você
           </p>
-          <%= for step <- @search_results do %>
+          <%= for step <- @my_steps do %>
             <.step_item
               step={step}
               current_user_id={@current_user.id}
@@ -269,33 +255,53 @@
           <% end %>
         <% end %>
       <% else %>
-        <%= if filtered_sections(@sections, @category_filter) == [] do %>
-          <div class="text-center py-20 px-5 text-ink-500 italic">
-            Nenhuma seção encontrada para esta categoria.
-          </div>
+        <%!-- Acervo tab --%>
+        <%= if @search != "" do %>
+          <%= if @search_results == [] do %>
+            <div class="text-center py-20 px-5 text-ink-500 italic">
+              Nenhum resultado para "{@search}"
+            </div>
+          <% else %>
+            <p class="text-xs text-ink-500 mb-4 font-mono">
+              {length(@search_results)} resultado(s)
+            </p>
+            <%= for step <- @search_results do %>
+              <.step_item
+                step={step}
+                current_user_id={@current_user.id}
+                steps_with_links={@steps_with_links}
+              />
+            <% end %>
+          <% end %>
         <% else %>
-          <%= for section <- filtered_sections(@sections, @category_filter) do %>
-            <.section_card
-              section={section}
-              open={Map.get(@open_sections, section.id, false)}
-              edit_mode={@edit_mode}
-              current_user_id={@current_user.id}
-              steps_with_links={@steps_with_links}
-              step_likes={@step_likes}
-              expanded_step={@expanded_step}
-              expanded_comments={@expanded_comments}
-              expanded_links={@expanded_links}
-              expanded_comment_likes={@expanded_comment_likes}
-              expanded_replies_map={@expanded_replies_map}
-              expanded_replying_to={@expanded_replying_to}
-              expanded_video={@expanded_video}
-              is_admin={@is_admin}
-              current_user={@current_user}
-            />
+          <%= if filtered_sections(@sections, @category_filter) == [] do %>
+            <div class="text-center py-20 px-5 text-ink-500 italic">
+              Nenhuma seção encontrada para esta categoria.
+            </div>
+          <% else %>
+            <%= for section <- filtered_sections(@sections, @category_filter) do %>
+              <.section_card
+                section={section}
+                open={Map.get(@open_sections, section.id, false)}
+                edit_mode={@edit_mode}
+                current_user_id={@current_user.id}
+                steps_with_links={@steps_with_links}
+                step_likes={@step_likes}
+                expanded_step={@expanded_step}
+                expanded_comments={@expanded_comments}
+                expanded_links={@expanded_links}
+                expanded_comment_likes={@expanded_comment_likes}
+                expanded_replies_map={@expanded_replies_map}
+                expanded_replying_to={@expanded_replying_to}
+                expanded_video={@expanded_video}
+                is_admin={@is_admin}
+                current_user={@current_user}
+              />
+            <% end %>
           <% end %>
         <% end %>
       <% end %>
-    <% end %>
+    </div>
   </div>
 
   <%!-- Drawer --%>

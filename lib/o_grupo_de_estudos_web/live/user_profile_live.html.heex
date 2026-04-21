@@ -70,7 +70,9 @@
                   phx-click="request_study"
                   class="text-sm py-1.5 px-5 rounded-full font-medium border border-gold-500/40 bg-gold-500/10 text-gold-600 transition-colors cursor-pointer hover:bg-gold-500/20"
                 >
-                  <%= if @current_user.is_teacher and not @is_profile_teacher, do: "Convidar aluno", else: "Quero estudar" %>
+                  {if @current_user.is_teacher and not @is_profile_teacher,
+                    do: "Convidar aluno",
+                    else: "Quero estudar"}
                 </button>
               <% :pending_sent -> %>
                 <span class="text-sm py-1.5 px-5 rounded-full font-medium border border-ink-300 bg-ink-100 text-ink-500">

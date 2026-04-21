@@ -48,7 +48,19 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
       assert html =~ "Comunidade"
     end
 
-    test "admin sees admin links when is_admin=true" do
+    test "desktop nav exposes separate public-nav and centered brand regions" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary
+        })
+
+      assert html =~ ~s(id="top-nav-desktop-primary-nav")
+      assert html =~ ~s(id="top-nav-desktop-brand")
+    end
+
+    test "admin sees a dedicated admin trigger instead of inline admin links" do
       html =
         render_component(&TopNav.top_nav/1, %{
           current_user: user(),
@@ -56,9 +68,9 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
           nav_mode: :primary
         })
 
-      assert html =~ "Conexões"
-      assert html =~ ~s(href="/admin/links")
-      assert html =~ ~s(href="/admin/backups")
+      assert html =~ ~s(id="top-nav-admin-trigger")
+      assert html =~ ~s(id="top-nav-admin-menu")
+      assert html =~ "Admin"
     end
 
     test "non-admin does NOT see admin links" do
@@ -69,7 +81,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
           nav_mode: :primary
         })
 
-      refute html =~ "Conexões"
+      refute html =~ ~s(id="top-nav-admin-trigger")
       refute html =~ "/admin/links"
       refute html =~ "/admin/backups"
     end

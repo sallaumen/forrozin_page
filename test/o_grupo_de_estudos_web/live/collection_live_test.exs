@@ -23,6 +23,14 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ "Bases"
     end
 
+    test "renders collection inside a wide desktop shell", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/collection")
+
+      assert html =~ ~s(id="collection-shell")
+      assert html =~ ~s(data-layout="wide")
+      assert html =~ ~s(id="collection-controls")
+    end
+
     test "does not display wip steps when expanding the section", %{conn: conn} do
       section = insert(:section)
       insert(:step, section: section, name: "Base frontal", wip: false)
