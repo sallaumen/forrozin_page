@@ -43,26 +43,30 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
         <nav id="top-nav-desktop-primary-nav" class="flex items-center gap-1.5 justify-self-start">
           <.link
             navigate={~p"/collection"}
-            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
+            class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
+            <.icon name="hero-rectangle-stack" class="size-4" />
             Acervo
           </.link>
           <.link
             navigate={~p"/graph/visual"}
-            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
+            class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
+            <.icon name="hero-map" class="size-4" />
             Mapa
           </.link>
           <.link
             navigate={~p"/study"}
-            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
+            class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
+            <.icon name="hero-book-open" class="size-4" />
             Estudos
           </.link>
           <.link
             navigate={~p"/community"}
-            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
+            class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
+            <.icon name="hero-users" class="size-4" />
             Comunidade
           </.link>
         </nav>
