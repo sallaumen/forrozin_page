@@ -98,6 +98,44 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_follow(_follower_id, _followed_id), do: :ok
 
+  # ── Study request notifications ────────────────────────
+
+  @doc "Notifies teacher that a student wants to study with them."
+  def notify_study_request(student_id, teacher_id, link_id) do
+    insert_and_broadcast([teacher_id], fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: student_id,
+        action: "study_request",
+        group_key: "study_request:#{link_id}",
+        target_type: "study_link",
+        target_id: link_id,
+        parent_type: "study_link",
+        parent_id: link_id,
+        inserted_at: now()
+      }
+    end)
+  end
+
+  @doc "Notifies student that teacher accepted their study request."
+  def notify_study_accepted(teacher_id, student_id, link_id) do
+    insert_and_broadcast([student_id], fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: teacher_id,
+        action: "study_accepted",
+        group_key: "study_accepted:#{link_id}",
+        target_type: "study_link",
+        target_id: link_id,
+        parent_type: "study_link",
+        parent_id: link_id,
+        inserted_at: now()
+      }
+    end)
+  end
+
   # ── Private: recipient determination ───────────────────
 
   defp determine_comment_recipients(comment, actor, query_mod) do

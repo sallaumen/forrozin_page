@@ -355,6 +355,10 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
     profile_path(id)
   end
 
+  defp notification_path(%{parent_type: "study_link"}) do
+    ~p"/study"
+  end
+
   defp notification_path(%{parent_type: "step", parent_id: id}) do
     case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
       nil -> ~p"/collection"
@@ -392,6 +396,8 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   defp action_text(%{action: "liked_sequence"}), do: " curtiu a sequência"
   defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão"
   defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
+  defp action_text(%{action: "study_request"}), do: " quer estudar com você"
+  defp action_text(%{action: "study_accepted"}), do: " aceitou seu pedido de estudo"
   defp action_text(_), do: " interagiu"
 
   defp time_ago(datetime) do

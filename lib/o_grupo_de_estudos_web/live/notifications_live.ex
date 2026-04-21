@@ -160,6 +160,8 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   defp action_text(%{action: "followed_user"}), do: " começou a te seguir"
   defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão ✓"
   defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
+  defp action_text(%{action: "study_request"}), do: " quer estudar com você"
+  defp action_text(%{action: "study_accepted"}), do: " aceitou seu pedido de estudo"
   defp action_text(_), do: " interagiu"
 
   defp time_ago(datetime) do

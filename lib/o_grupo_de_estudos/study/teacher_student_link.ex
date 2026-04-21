@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudos.Study.TeacherStudentLink do
 
   schema "teacher_student_links" do
     field :active, :boolean, default: true
+    field :pending, :boolean, default: false
     field :ended_at, :utc_datetime_usec
 
     belongs_to :teacher, User
@@ -22,7 +23,7 @@ defmodule OGrupoDeEstudos.Study.TeacherStudentLink do
 
   def changeset(link, attrs) do
     link
-    |> cast(attrs, [:teacher_id, :student_id, :active, :ended_at])
+    |> cast(attrs, [:teacher_id, :student_id, :active, :pending, :ended_at])
     |> validate_required([:teacher_id, :student_id])
     |> validate_teacher_student_difference()
     |> foreign_key_constraint(:teacher_id)

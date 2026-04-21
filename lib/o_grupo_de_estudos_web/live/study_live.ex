@@ -33,7 +33,11 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
        personal_step_suggestions: [],
        section_history_open: false,
        section_teachers_open: true,
-       section_students_open: false
+       section_students_open: false,
+       teacher_search: "",
+       teacher_search_results: [],
+       pending_requests:
+         if(user.is_teacher, do: Study.list_pending_requests_for_teacher(user.id), else: [])
      )}
   end
 
@@ -98,6 +102,71 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
        personal_related_steps: updated_steps,
        personal_history: Study.list_personal_note_history(socket.assigns.current_user.id)
      )}
+  end
+
+  # ── Teacher search & request ──────────────────────────────────────────
+
+  def handle_event("search_teacher", %{"term" => term}, socket) do
+    results = Study.search_teachers(term, socket.assigns.current_user.id)
+    {:noreply, assign(socket, teacher_search: term, teacher_search_results: results)}
+  end
+
+  def handle_event("request_teacher", %{"id" => teacher_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Study.request_teacher_link(user, teacher_id) do
+      {:ok, _link} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Pedido enviado! O professor será notificado.")
+         |> assign(teacher_search: "", teacher_search_results: [])}
+
+      {:error, :already_connected} ->
+        {:noreply, put_flash(socket, :info, "Vocês já estão conectados.")}
+
+      {:error, :already_pending} ->
+        {:noreply, put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível enviar o pedido.")}
+    end
+  end
+
+  def handle_event("accept_request", %{"id" => link_id}, socket) do
+    user = socket.assigns.current_user
+    link = Study.get_link_for_member(link_id, user.id)
+
+    if link do
+      case Study.accept_link_request(link, user) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Aluno aceito!")
+           |> assign(
+             pending_requests: Study.list_pending_requests_for_teacher(user.id),
+             student_links: Study.list_student_links_for_teacher(user.id)
+           )}
+
+        _ ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("reject_request", %{"id" => link_id}, socket) do
+    user = socket.assigns.current_user
+    link = Study.get_link_for_member(link_id, user.id)
+
+    if link do
+      Study.reject_link_request(link, user)
+
+      {:noreply,
+       assign(socket, pending_requests: Study.list_pending_requests_for_teacher(user.id))}
+    else
+      {:noreply, socket}
+    end
   end
 
   defp note_preview(content) when is_binary(content) do

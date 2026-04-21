@@ -169,9 +169,51 @@
       </button>
 
       <div :if={@section_teachers_open} class="px-4 pb-4 border-t border-ink-100">
-        <%= if @teacher_links == [] do %>
-          <p class="text-xs text-ink-500 py-3 m-0">
-            Nenhum professor conectado ainda. Peça o link de convite de um professor ou busque na comunidade.
+        <%!-- Teacher search --%>
+        <div class="mt-3 mb-3">
+          <form phx-change="search_teacher" class="relative">
+            <input
+              name="term"
+              type="text"
+              value={@teacher_search}
+              autocomplete="off"
+              placeholder="Buscar professor por nome ou @usuario..."
+              class="w-full rounded-lg border border-ink-200 bg-ink-50/50 px-3 py-2 font-serif text-xs text-ink-700 box-border focus:border-accent-orange/40 outline-none transition-colors"
+            />
+          </form>
+          <div :if={@teacher_search_results != []} class="mt-1 rounded-lg border border-ink-200 bg-white shadow-md overflow-hidden">
+            <%= for teacher <- @teacher_search_results do %>
+              <div class="flex items-center justify-between px-3 py-2.5 border-b border-ink-100 last:border-b-0">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
+                    {String.first(teacher.name || teacher.username) |> String.upcase()}
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-ink-900 m-0">{teacher.name}</p>
+                    <p class="text-[10px] text-ink-500 m-0">
+                      @{teacher.username}
+                      <%= if teacher.city do %>
+                        <span class="text-ink-400">· {teacher.city}</span>
+                      <% end %>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  phx-click="request_teacher"
+                  phx-value-id={teacher.id}
+                  class="text-[10px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-3 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors"
+                >
+                  Estudar
+                </button>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <%= if @teacher_links == [] and @teacher_search_results == [] do %>
+          <p class="text-xs text-ink-500 py-1 m-0">
+            Busque por um professor acima ou peça o link de convite dele.
           </p>
         <% else %>
           <div class="space-y-2 mt-3">
@@ -217,7 +259,45 @@
         </button>
 
         <div :if={@section_students_open} class="px-4 pb-4 border-t border-ink-100">
-          <%= if @student_links == [] do %>
+          <%!-- Pending requests --%>
+          <%= if @pending_requests != [] do %>
+            <div class="mt-3 mb-3 space-y-2">
+              <p class="text-[10px] font-bold text-gold-600 uppercase tracking-wider m-0">
+                Pedidos pendentes
+              </p>
+              <%= for req <- @pending_requests do %>
+                <div class="flex items-center gap-3 rounded-lg border border-gold-500/20 bg-gold-500/[0.05] px-3 py-2.5">
+                  <div class="w-7 h-7 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
+                    {String.first(req.student.name || req.student.username) |> String.upcase()}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-ink-900 m-0 truncate">{req.student.name}</p>
+                    <p class="text-[10px] text-ink-500 m-0">@{req.student.username}</p>
+                  </div>
+                  <div class="flex gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      phx-click="accept_request"
+                      phx-value-id={req.id}
+                      class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
+                    >
+                      Aceitar
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="reject_request"
+                      phx-value-id={req.id}
+                      class="text-[10px] font-bold text-ink-500 bg-ink-100 rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-ink-200 transition-colors"
+                    >
+                      Recusar
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if @student_links == [] and @pending_requests == [] do %>
             <p class="text-xs text-ink-500 py-3 m-0">
               Nenhum aluno conectado. Compartilhe seu link de convite nas configurações.
             </p>

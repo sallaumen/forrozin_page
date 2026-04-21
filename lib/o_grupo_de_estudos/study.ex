@@ -7,10 +7,119 @@ defmodule OGrupoDeEstudos.Study do
 
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Encyclopedia
+  alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.PubSub
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
   alias Phoenix.PubSub, as: PhoenixPubSub
+
+  # ── Teacher search & request ──────────────────────────────────────────
+
+  @doc "Search for teachers by name or username. Returns up to 8 results."
+  def search_teachers(term, exclude_user_id \\ nil) do
+    term = String.trim(term)
+
+    if String.length(term) < 2 do
+      []
+    else
+      pattern = "%#{term}%"
+
+      query =
+        from(u in User,
+          where: u.is_teacher == true,
+          where: ilike(u.name, ^pattern) or ilike(u.username, ^pattern),
+          order_by: [asc: u.name],
+          limit: 8,
+          select: %{id: u.id, name: u.name, username: u.username, city: u.city, state: u.state}
+        )
+
+      query =
+        if exclude_user_id,
+          do: where(query, [u], u.id != ^exclude_user_id),
+          else: query
+
+      Repo.all(query)
+    end
+  end
+
+  @doc "Student sends a request to study with a teacher. Creates a pending link."
+  def request_teacher_link(%User{id: student_id}, teacher_id) when student_id != teacher_id do
+    case Repo.get_by(TeacherStudentLink, teacher_id: teacher_id, student_id: student_id) do
+      nil ->
+        result =
+          %TeacherStudentLink{}
+          |> TeacherStudentLink.changeset(%{
+            teacher_id: teacher_id,
+            student_id: student_id,
+            active: false,
+            pending: true
+          })
+          |> Repo.insert()
+
+        case result do
+          {:ok, link} ->
+            Dispatcher.notify_study_request(student_id, teacher_id, link.id)
+            {:ok, link}
+
+          error ->
+            error
+        end
+
+      %{active: true} ->
+        {:error, :already_connected}
+
+      %{pending: true} ->
+        {:error, :already_pending}
+
+      existing ->
+        # Reactivate as pending
+        existing
+        |> TeacherStudentLink.changeset(%{pending: true, active: false, ended_at: nil})
+        |> Repo.update()
+    end
+  end
+
+  def request_teacher_link(%User{}, _teacher_id), do: {:error, :cannot_link_self}
+
+  @doc "Teacher accepts a pending request from a student."
+  def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: teacher_id})
+      when teacher_id == link.teacher_id do
+    result =
+      link
+      |> TeacherStudentLink.changeset(%{pending: false, active: true})
+      |> Repo.update()
+
+    case result do
+      {:ok, updated_link} ->
+        Dispatcher.notify_study_accepted(teacher_id, link.student_id, link.id)
+        {:ok, updated_link}
+
+      error ->
+        error
+    end
+  end
+
+  def accept_link_request(_, _), do: {:error, :invalid}
+
+  @doc "Teacher rejects a pending request."
+  def reject_link_request(%TeacherStudentLink{pending: true} = link, %User{id: teacher_id})
+      when teacher_id == link.teacher_id do
+    Repo.delete(link)
+  end
+
+  def reject_link_request(_, _), do: {:error, :invalid}
+
+  @doc "List pending requests for a teacher."
+  def list_pending_requests_for_teacher(teacher_id) do
+    from(link in TeacherStudentLink,
+      where: link.teacher_id == ^teacher_id and link.pending == true,
+      preload: [:student],
+      order_by: [desc: link.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  # ── Invite flow (existing) ────────────────────────────────────────────
 
   def accept_invite(%User{id: student_id}, invite_slug) when is_binary(invite_slug) do
     invite_slug = String.trim(invite_slug)
