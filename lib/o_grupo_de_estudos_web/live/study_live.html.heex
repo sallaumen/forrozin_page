@@ -220,20 +220,19 @@
             <%= for link <- @teacher_links do %>
               <div class="rounded-lg border border-ink-100 bg-ink-50/30 overflow-hidden">
                 <div class="flex items-center gap-3 px-3.5 pt-3 pb-2">
-                  <div class="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
-                    {String.first(link.teacher.name || link.teacher.username) |> String.upcase()}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.teacher.name}</p>
-                    <p class="text-[10px] text-ink-500 m-0">
-                      @{link.teacher.username}<%= if link.teacher.city do %><span class="text-ink-400"> · {link.teacher.city}</span><% end %>
-                    </p>
-                  </div>
                   <.link
                     navigate={~p"/users/#{link.teacher.username}"}
-                    class="text-[10px] text-ink-400 no-underline hover:text-ink-600 transition-colors"
+                    class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
                   >
-                    <.icon name="hero-user" class="w-3.5 h-3.5" />
+                    <div class="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
+                      {String.first(link.teacher.name || link.teacher.username) |> String.upcase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.teacher.name}</p>
+                      <p class="text-[10px] text-ink-500 m-0">
+                        @{link.teacher.username}<%= if link.teacher.city do %><span class="text-ink-400"> · {link.teacher.city}</span><% end %>
+                      </p>
+                    </div>
                   </.link>
                 </div>
                 <div class="flex items-center justify-between px-3.5 pb-3 pt-1">
@@ -329,20 +328,19 @@
               <%= for link <- @student_links do %>
                 <div class="rounded-lg border border-ink-100 bg-ink-50/30 overflow-hidden">
                   <div class="flex items-center gap-3 px-3.5 pt-3 pb-2">
-                    <div class="w-9 h-9 rounded-full bg-ink-800 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
-                      {String.first(link.student.name || link.student.username) |> String.upcase()}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.student.name}</p>
-                      <p class="text-[10px] text-ink-500 m-0">
-                        @{link.student.username}<%= if link.student.city do %><span class="text-ink-400"> · {link.student.city}</span><% end %>
-                      </p>
-                    </div>
                     <.link
                       navigate={~p"/users/#{link.student.username}"}
-                      class="text-[10px] text-ink-400 no-underline hover:text-ink-600 transition-colors"
+                      class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
                     >
-                      <.icon name="hero-user" class="w-3.5 h-3.5" />
+                      <div class="w-9 h-9 rounded-full bg-ink-800 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
+                        {String.first(link.student.name || link.student.username) |> String.upcase()}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.student.name}</p>
+                        <p class="text-[10px] text-ink-500 m-0">
+                          @{link.student.username}<%= if link.student.city do %><span class="text-ink-400"> · {link.student.city}</span><% end %>
+                        </p>
+                      </div>
                     </.link>
                   </div>
                   <div class="flex items-center justify-between px-3.5 pb-3 pt-1">

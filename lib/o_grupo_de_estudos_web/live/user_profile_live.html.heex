@@ -90,6 +90,13 @@
                 >
                   Estudando juntos
                 </.link>
+                <button
+                  phx-click="end_study_link"
+                  data-confirm="Tem certeza que deseja encerrar esse vínculo de estudo?"
+                  class="text-xs py-1 px-3 rounded-full font-medium border border-ink-200 bg-transparent text-ink-400 transition-colors cursor-pointer hover:text-ink-600 hover:border-ink-300"
+                >
+                  Encerrar
+                </button>
               <% _ -> %>
             <% end %>
           <% end %>

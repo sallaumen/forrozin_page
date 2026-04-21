@@ -325,6 +325,35 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     end
   end
 
+  def handle_event("end_study_link", _params, socket) do
+    current = socket.assigns.current_user
+    profile = socket.assigns.profile_user
+
+    import Ecto.Query
+    alias OGrupoDeEstudos.Study.TeacherStudentLink
+
+    link =
+      OGrupoDeEstudos.Repo.one(
+        from(l in TeacherStudentLink,
+          where:
+            l.active == true and
+              ((l.teacher_id == ^profile.id and l.student_id == ^current.id) or
+                 (l.teacher_id == ^current.id and l.student_id == ^profile.id))
+        )
+      )
+
+    if link do
+      Study.end_link(link, current)
+
+      {:noreply,
+       socket
+       |> assign(:study_link_status, study_link_status(current, profile))
+       |> put_flash(:info, "Vínculo de estudo encerrado.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
   defp study_link_status(current_user, profile_user) do
     if current_user.id == profile_user.id do
       nil
