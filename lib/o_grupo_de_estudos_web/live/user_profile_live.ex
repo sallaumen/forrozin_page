@@ -84,7 +84,11 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            primary_badge: primary_badge,
            is_profile_teacher: user.is_teacher,
            study_link_status: study_link_status(current_user, user),
-           student_count: if(user.is_teacher, do: length(Study.list_student_links_for_teacher(user.id)), else: 0),
+           student_count:
+             if(user.is_teacher,
+               do: length(Study.list_student_links_for_teacher(user.id)),
+               else: 0
+             ),
            profile_tab: "steps",
            favorite_steps: [],
            favorite_sequences: [],
@@ -207,39 +211,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     {:noreply, assign(socket, favorite_sub_tab: tab)}
   end
 
-  # --- helpers ---
-
-  defp reload_comments(socket, current_user) do
-    profile_user = socket.assigns.profile_user
-
-    comments =
-      ProfileCommentQuery.list_by(
-        profile_id: profile_user.id,
-        preload: [:author]
-      )
-
-    comment_ids = Enum.map(comments, & &1.id)
-    comment_likes = Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
-
-    assign(socket, comments: comments, comment_likes: comment_likes)
-  end
-
-  defp reload_all_likes(socket, current_user) do
-    steps = socket.assigns.user_steps
-    sequences = socket.assigns.user_sequences
-    comments = socket.assigns.comments
-
-    step_ids = Enum.map(steps, & &1.id)
-    sequence_ids = Enum.map(sequences, & &1.id)
-    comment_ids = Enum.map(comments, & &1.id)
-
-    assign(socket,
-      step_likes: Engagement.likes_map(current_user.id, "step", step_ids),
-      sequence_likes: Engagement.likes_map(current_user.id, "sequence", sequence_ids),
-      comment_likes: Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
-    )
-  end
-
   # Student requests teacher OR teacher invites student
   def handle_event("request_study", params, socket) do
     current = socket.assigns.current_user
@@ -277,7 +248,10 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         {:noreply,
          socket
          |> assign(:study_link_status, :pending_sent)
-         |> put_flash(:info, "Pedido enviado! #{Accounts.first_name(profile)} será notificado(a).")}
+         |> put_flash(
+           :info,
+           "Pedido enviado! #{Accounts.first_name(profile)} será notificado(a)."
+         )}
 
       {:error, :already_connected} ->
         {:noreply, put_flash(socket, :info, "Vocês já estão conectados.")}
@@ -352,6 +326,39 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     else
       {:noreply, socket}
     end
+  end
+
+  # --- helpers ---
+
+  defp reload_comments(socket, current_user) do
+    profile_user = socket.assigns.profile_user
+
+    comments =
+      ProfileCommentQuery.list_by(
+        profile_id: profile_user.id,
+        preload: [:author]
+      )
+
+    comment_ids = Enum.map(comments, & &1.id)
+    comment_likes = Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
+
+    assign(socket, comments: comments, comment_likes: comment_likes)
+  end
+
+  defp reload_all_likes(socket, current_user) do
+    steps = socket.assigns.user_steps
+    sequences = socket.assigns.user_sequences
+    comments = socket.assigns.comments
+
+    step_ids = Enum.map(steps, & &1.id)
+    sequence_ids = Enum.map(sequences, & &1.id)
+    comment_ids = Enum.map(comments, & &1.id)
+
+    assign(socket,
+      step_likes: Engagement.likes_map(current_user.id, "step", step_ids),
+      sequence_likes: Engagement.likes_map(current_user.id, "sequence", sequence_ids),
+      comment_likes: Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
+    )
   end
 
   defp study_link_status(current_user, profile_user) do

@@ -142,9 +142,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
 
   defp primary_actor_name(_), do: "Alguém"
 
-  defp primary_actor_username(%{actors_data: [actor | _]}), do: actor.username
-  defp primary_actor_username(_), do: nil
-
   defp target_name(%{parent_type: "step", parent_id: id}) when not is_nil(id) do
     case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
       nil -> nil
