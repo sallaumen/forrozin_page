@@ -23,8 +23,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
        page_title: "Estudos",
        is_admin: Accounts.admin?(user),
        today: today,
-       teachers: Study.list_teachers_for_student(user.id),
-       students: if(user.is_teacher, do: Study.list_students_for_teacher(user.id), else: []),
+       teacher_links: Study.list_teacher_links_for_student(user.id),
+       student_links:
+         if(user.is_teacher, do: Study.list_student_links_for_teacher(user.id), else: []),
        today_note: today_note,
        today_note_content: if(today_note, do: today_note.content, else: ""),
        personal_history: Study.list_personal_note_history(user.id)

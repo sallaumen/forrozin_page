@@ -43,19 +43,29 @@
       <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="m-0 text-xl font-bold text-ink-900">Meus professores</h2>
-          <span class="text-xs text-ink-400">{length(@teachers)}</span>
+          <span class="text-xs text-ink-400">{length(@teacher_links)}</span>
         </div>
 
         <div class="mt-4 space-y-3">
-          <%= if @teachers == [] do %>
+          <%= if @teacher_links == [] do %>
             <p class="text-sm leading-7 text-ink-500">
               Quando você se conectar com um professor, ele aparece aqui.
             </p>
           <% else %>
-            <%= for teacher <- @teachers do %>
+            <%= for link <- @teacher_links do %>
               <div class="rounded border border-ink-200 bg-ink-100 px-4 py-3">
-                <p class="m-0 text-sm font-semibold text-ink-900">{teacher.name}</p>
-                <p class="mt-1 text-xs text-ink-500">@{teacher.username}</p>
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <p class="m-0 text-sm font-semibold text-ink-900">{link.teacher.name}</p>
+                    <p class="mt-1 text-xs text-ink-500">@{link.teacher.username}</p>
+                  </div>
+                  <.link
+                    navigate={~p"/study/shared/#{link.id}"}
+                    class="text-xs font-semibold text-accent-orange no-underline"
+                  >
+                    Abrir diário
+                  </.link>
+                </div>
               </div>
             <% end %>
           <% end %>
@@ -65,21 +75,31 @@
       <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
         <div class="flex items-center justify-between">
           <h2 class="m-0 text-xl font-bold text-ink-900">Meus alunos</h2>
-          <span class="text-xs text-ink-400">{length(@students)}</span>
+          <span class="text-xs text-ink-400">{length(@student_links)}</span>
         </div>
 
         <div class="mt-4 space-y-3">
-          <%= if @students == [] do %>
+          <%= if @student_links == [] do %>
             <p class="text-sm leading-7 text-ink-500">
               {if @current_user.is_teacher,
                 do: "Seus alunos conectados vão aparecer aqui.",
                 else: "Ative o modo professor nas configurações para acompanhar alunos aqui."}
             </p>
           <% else %>
-            <%= for student <- @students do %>
+            <%= for link <- @student_links do %>
               <div class="rounded border border-ink-200 bg-ink-100 px-4 py-3">
-                <p class="m-0 text-sm font-semibold text-ink-900">{student.name}</p>
-                <p class="mt-1 text-xs text-ink-500">@{student.username}</p>
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <p class="m-0 text-sm font-semibold text-ink-900">{link.student.name}</p>
+                    <p class="mt-1 text-xs text-ink-500">@{link.student.username}</p>
+                  </div>
+                  <.link
+                    navigate={~p"/study/shared/#{link.id}"}
+                    class="text-xs font-semibold text-accent-orange no-underline"
+                  >
+                    Abrir diário
+                  </.link>
+                </div>
               </div>
             <% end %>
           <% end %>

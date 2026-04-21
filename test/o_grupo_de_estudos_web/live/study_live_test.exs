@@ -27,13 +27,14 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
     test "shows linked teachers and students", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
-      {:ok, _link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
       conn = log_in_user(conn, teacher)
 
       {:ok, _lv, html} = live(conn, ~p"/study")
 
       assert html =~ "Meus alunos"
       assert html =~ student.name
+      assert html =~ "/study/shared/#{link.id}"
     end
   end
 end
