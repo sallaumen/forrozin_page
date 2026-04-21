@@ -103,6 +103,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         socket = reload_all_likes(socket, current_user)
         {:noreply, socket}
 
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, "Calma! Muitas ações seguidas. Espere alguns segundinhos.")}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível registrar o like.")}
     end
@@ -121,6 +124,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            following_count: Engagement.count_following(profile.id),
            followers_count: Engagement.count_followers(profile.id)
          )}
+
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, "Calma! Muitas ações seguidas. Espere alguns segundinhos.")}
 
       {:error, _} ->
         {:noreply, socket}

@@ -37,6 +37,8 @@ defmodule OGrupoDeEstudos.Sequences.Sequence do
     ])
     |> validate_required([:name, :user_id])
     |> validate_length(:name, min: 1, max: 100)
+    |> validate_length(:description, max: 5_000)
+    |> validate_length(:video_url, max: 500)
     |> validate_url()
     |> foreign_key_constraint(:user_id)
   end
