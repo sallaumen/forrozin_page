@@ -104,15 +104,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         step_codes = Enum.map(steps, & &1.step.code)
         step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
 
-        edges = Map.get(socket.assigns, :edges, [])
-        missing = find_missing_edges(step_codes, edges)
-
         {:noreply,
          socket
          |> assign(:seq_active, step_list)
          |> assign(:seq_active_id, saved.id)
          |> assign(:seq_initial_steps_json, Jason.encode!(step_codes))
-         |> assign(:seq_missing_edges, missing)
+         |> assign(:seq_missing_edges, [])
          |> assign(:seq_panel, true)
          |> assign(:seq_mobile_visible, false)
          |> assign(:seq_view, :library)
@@ -191,7 +188,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_results, sequences)
      |> assign(:seq_warnings, warnings)
      |> assign(:seq_view, :results)
-     |> assign(:seq_saving, nil)}
+     |> assign(:seq_saving, nil)
+     |> assign(:seq_missing_edges, [])}
   end
 
   def handle_event("highlight_sequence", %{"index" => index_str}, socket) do
@@ -221,15 +219,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       step_codes = Enum.map(steps, & &1.step.code)
       step_list = Enum.map(steps, &%{id: &1.step.id, code: &1.step.code, name: &1.step.name})
 
-      edges = Map.get(socket.assigns, :edges, [])
-      missing = find_missing_edges(step_codes, edges)
-
       socket =
         socket
         |> assign(:seq_active, step_list)
         |> assign(:seq_active_id, saved.id)
         |> assign(:seq_initial_steps_json, Jason.encode!(step_codes))
-        |> assign(:seq_missing_edges, missing)
+        |> assign(:seq_missing_edges, [])
         |> assign(:seq_mobile_visible, false)
         |> push_event("highlight_sequence", %{steps: step_codes})
 
@@ -278,6 +273,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
        |> assign(:seq_manual_name, saved.name || "")
        |> assign(:seq_manual_description, saved.description || "")
        |> assign(:seq_manual_video_url, saved.video_url || "")
+       |> recompute_manual_missing_edges(manual_steps)
        |> push_event("set_manual_mode", %{active: true})
        |> push_event("highlight_sequence", %{steps: Enum.map(manual_steps, & &1.code)})}
     else
@@ -321,6 +317,32 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       end
     else
       {:noreply, socket}
+    end
+  end
+
+  def handle_event(
+        "suggest_missing_connection",
+        %{"source" => src_code, "target" => tgt_code},
+        socket
+      ) do
+    user = socket.assigns.current_user
+    source = StepQuery.get_by(code: src_code)
+
+    if source do
+      case OGrupoDeEstudos.Suggestions.create(user, %{
+             target_type: "connection",
+             target_id: source.id,
+             action: "create_connection",
+             new_value: "#{src_code}\u2192#{tgt_code}"
+           }) do
+        {:ok, _} ->
+          {:noreply, put_flash(socket, :info, "Sugestão de conexão #{src_code} → #{tgt_code} enviada!")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
     end
   end
 
@@ -465,6 +487,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_manual_name, "")
      |> assign(:seq_manual_description, "")
      |> assign(:seq_manual_video_url, "")
+     |> assign(:seq_missing_edges, [])
      |> assign_manual_favorite_steps()
      |> push_event("set_manual_mode", %{active: true})}
   end
@@ -541,6 +564,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
        socket
        |> assign(:seq_manual_steps, new_steps)
        |> assign(:seq_manual_error, nil)
+       |> recompute_manual_missing_edges(new_steps)
        |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})}
     else
       {:noreply, socket}
@@ -559,6 +583,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       {:noreply,
        socket
        |> assign(:seq_manual_steps, new_steps)
+       |> recompute_manual_missing_edges(new_steps)
        |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})}
     else
       {:noreply, socket}
@@ -983,6 +1008,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     socket
     |> assign(:seq_manual_steps, new_steps)
     |> assign(:seq_manual_error, nil)
+    |> recompute_manual_missing_edges(new_steps)
     |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})
   end
 
@@ -1471,6 +1497,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         }
       end)
     end)
+  end
+
+  defp recompute_manual_missing_edges(socket, manual_steps) do
+    step_codes = Enum.map(manual_steps, & &1.code)
+    edges = Map.get(socket.assigns, :edges, [])
+    assign(socket, :seq_missing_edges, find_missing_edges(step_codes, edges))
   end
 
   defp find_missing_edges(step_codes, edges) do
