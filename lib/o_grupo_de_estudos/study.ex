@@ -44,6 +44,15 @@ defmodule OGrupoDeEstudos.Study do
     |> preload_note()
   end
 
+  def list_personal_note_history(user_id) do
+    from(note in Note,
+      where: note.kind == "personal" and note.owner_user_id == ^user_id,
+      order_by: [desc: note.note_date]
+    )
+    |> Repo.all()
+    |> Repo.preload(:related_steps)
+  end
+
   def list_teachers_for_student(student_id) do
     from(link in TeacherStudentLink,
       join: teacher in assoc(link, :teacher),

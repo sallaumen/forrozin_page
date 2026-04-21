@@ -1,0 +1,143 @@
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    title="Estudos"
+    notification_count={assigns[:notification_count] || 0}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={assigns[:notification_dropdown_open] || false}
+    notification_preview_groups={assigns[:notification_preview_groups] || []}
+  />
+
+  <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 pb-24 md:pb-8">
+    <section class="grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
+      <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
+        <p class="text-xs font-bold uppercase tracking-[2px] text-accent-orange">
+          Área de estudo
+        </p>
+        <h1 class="mt-3 text-3xl font-bold text-ink-900">Estudos</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-ink-600">
+          Organize o que você praticou hoje, acompanhe seus professores e mantenha o histórico do que vem estudando.
+        </p>
+        <p
+          :if={is_nil(@today_note)}
+          class="mt-4 rounded border border-accent-orange/20 bg-accent-orange/10 px-4 py-3 text-sm text-accent-orange"
+        >
+          Você ainda não registrou seu estudo de hoje.
+        </p>
+      </div>
+
+      <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
+        <p class="text-xs font-bold uppercase tracking-[2px] text-ink-500">Hoje</p>
+        <p class="mt-3 text-2xl font-bold text-ink-900">
+          {Calendar.strftime(@today, "%d/%m/%Y")}
+        </p>
+        <p class="mt-3 text-sm leading-7 text-ink-500">
+          Seu diário pessoal fica aqui embaixo, sempre pronto para continuar de onde você parou.
+        </p>
+      </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-2">
+      <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="m-0 text-xl font-bold text-ink-900">Meus professores</h2>
+          <span class="text-xs text-ink-400">{length(@teachers)}</span>
+        </div>
+
+        <div class="mt-4 space-y-3">
+          <%= if @teachers == [] do %>
+            <p class="text-sm leading-7 text-ink-500">
+              Quando você se conectar com um professor, ele aparece aqui.
+            </p>
+          <% else %>
+            <%= for teacher <- @teachers do %>
+              <div class="rounded border border-ink-200 bg-ink-100 px-4 py-3">
+                <p class="m-0 text-sm font-semibold text-ink-900">{teacher.name}</p>
+                <p class="mt-1 text-xs text-ink-500">@{teacher.username}</p>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="m-0 text-xl font-bold text-ink-900">Meus alunos</h2>
+          <span class="text-xs text-ink-400">{length(@students)}</span>
+        </div>
+
+        <div class="mt-4 space-y-3">
+          <%= if @students == [] do %>
+            <p class="text-sm leading-7 text-ink-500">
+              {if @current_user.is_teacher,
+                do: "Seus alunos conectados vão aparecer aqui.",
+                else: "Ative o modo professor nas configurações para acompanhar alunos aqui."}
+            </p>
+          <% else %>
+            <%= for student <- @students do %>
+              <div class="rounded border border-ink-200 bg-ink-100 px-4 py-3">
+                <p class="m-0 text-sm font-semibold text-ink-900">{student.name}</p>
+                <p class="mt-1 text-xs text-ink-500">@{student.username}</p>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
+      <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 class="m-0 text-xl font-bold text-ink-900">Meu diário</h2>
+          <span class="text-xs text-ink-400">Hoje</span>
+        </div>
+
+        <.form
+          for={to_form(%{"content" => @today_note_content}, as: :personal_note)}
+          id="study-personal-note-form"
+          phx-change="save_personal_note"
+          class="mt-4"
+        >
+          <textarea
+            id="study-personal-note-content"
+            name="personal_note[content]"
+            rows="10"
+            placeholder="Escreva o que você estudou, o que funcionou e o que quer revisitar."
+            class="w-full rounded border border-ink-300 bg-ink-50 px-4 py-3 font-serif text-base leading-7 text-ink-900 box-border"
+          >{@today_note_content}</textarea>
+        </.form>
+      </div>
+
+      <div class="rounded-lg border border-ink-200 bg-ink-50 p-5 shadow-sm">
+        <h2 class="m-0 text-xl font-bold text-ink-900">Histórico</h2>
+
+        <div class="mt-4 space-y-3">
+          <%= if @personal_history == [] do %>
+            <p class="text-sm leading-7 text-ink-500">
+              As suas notas anteriores aparecem aqui conforme você for registrando os estudos.
+            </p>
+          <% else %>
+            <%= for note <- @personal_history do %>
+              <div class="rounded border border-ink-200 bg-ink-100 px-4 py-3">
+                <p class="m-0 text-sm font-semibold text-ink-900">
+                  {Calendar.strftime(note.note_date, "%d/%m/%Y")}
+                </p>
+                <p class="mt-1 text-sm leading-6 text-ink-500">
+                  {note_preview(note.content)}
+                </p>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <.bottom_nav
+    current_user={@current_user}
+    current_path={~p"/study"}
+    notification_count={assigns[:notification_count] || 0}
+  />
+</div>
