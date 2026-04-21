@@ -2,8 +2,8 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   @moduledoc """
   Generates step sequences by traversing the directed connection graph.
 
-  Uses randomized DFS with backtracking and weighted selection for required
-  steps. Supports cyclic sequences (start == end) and loop limiting.
+  Uses randomized DFS with weighted selection for required steps.
+  Supports cyclic sequences (start == end) and loop limiting.
   """
 
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
@@ -23,8 +23,9 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         }
 
   @required_weight 5
-  @max_attempts_per_sequence 100
+  @max_attempts_per_sequence 200
   @max_same_pair_loops 3
+  @bf_code "BF"
 
   @doc """
   Generate sequences traversing the step connection graph.
@@ -35,8 +36,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   - `required_codes` — best-effort inclusion of these steps
   """
   @spec generate(params()) :: result()
-  @bf_code "BF"
-
   def generate(params) do
     params =
       params
@@ -52,47 +51,111 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     adjacency = build_adjacency(connections)
 
     start_id = Map.get(code_to_id, params.start_code)
-    required_ids = resolve_required_ids(params.required_codes, code_to_id)
+
+    # Resolve required codes and track which ones didn't resolve
+    {required_ids, unresolved_codes} =
+      resolve_required_ids(params.required_codes, code_to_id)
+
     required_id_set = MapSet.new(required_ids)
 
-    if is_nil(start_id) do
-      {:ok, [], ["Passo inicial '#{params.start_code}' não encontrado"]}
-    else
-      sequences =
-        1..params.count
-        |> Enum.map(fn _ ->
-          generate_one(
-            start_id,
-            params.length,
-            adjacency,
-            required_id_set,
-            params.allow_repeats,
-            params.cyclic,
-            step_map,
-            params
-          )
-        end)
-        |> Enum.reject(&is_nil/1)
-        |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+    # Check reachability of required steps from start
+    unreachable_codes =
+      if start_id do
+        reachable = reachable_from(start_id, adjacency)
 
-      warnings = build_warnings(sequences, required_ids, step_map, params)
-      {:ok, sequences, warnings}
+        required_ids
+        |> Enum.reject(&MapSet.member?(reachable, &1))
+        |> Enum.map(fn id -> step_map[id] && step_map[id].code end)
+        |> Enum.reject(&is_nil/1)
+      else
+        []
+      end
+
+    cond do
+      is_nil(start_id) ->
+        {:ok, [], ["Passo inicial '#{params.start_code}' não encontrado"]}
+
+      true ->
+        sequences =
+          1..params.count
+          |> Enum.map(fn _ ->
+            generate_one(
+              start_id,
+              params.length,
+              adjacency,
+              required_id_set,
+              params.allow_repeats,
+              params.cyclic,
+              step_map,
+              params
+            )
+          end)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+
+        warnings =
+          build_warnings(sequences, required_ids, step_map, params) ++
+            unresolved_warnings(unresolved_codes) ++
+            unreachable_warnings(unreachable_codes)
+
+        {:ok, sequences, warnings}
     end
   end
 
-  defp resolve_required_ids(nil, _code_to_id), do: []
+  # ── Required code resolution ─────────────────────────────────────────
+
+  defp resolve_required_ids(nil, _code_to_id), do: {[], []}
+  defp resolve_required_ids([], _code_to_id), do: {[], []}
 
   defp resolve_required_ids(codes, code_to_id) do
-    codes
-    |> Enum.map(&Map.get(code_to_id, &1))
-    |> Enum.reject(&is_nil/1)
+    {resolved, unresolved} =
+      Enum.split_with(codes, &Map.has_key?(code_to_id, &1))
+
+    ids = Enum.map(resolved, &Map.fetch!(code_to_id, &1))
+    {ids, unresolved}
   end
+
+  defp unresolved_warnings([]), do: []
+
+  defp unresolved_warnings(codes) do
+    ["Passo(s) obrigatório(s) não encontrado(s): #{Enum.join(codes, ", ")}"]
+  end
+
+  defp unreachable_warnings([]), do: []
+
+  defp unreachable_warnings(codes) do
+    [
+      "Passo(s) obrigatório(s) inalcançável(is) a partir do passo inicial: #{Enum.join(codes, ", ")}"
+    ]
+  end
+
+  # ── Graph helpers ────────────────────────────────────────────────────
 
   defp build_adjacency(connections) do
     Enum.reduce(connections, %{}, fn conn, acc ->
       Map.update(acc, conn.source_step_id, [conn.target_step_id], &[conn.target_step_id | &1])
     end)
   end
+
+  @doc false
+  def reachable_from(start_id, adjacency) do
+    do_bfs(MapSet.new([start_id]), [start_id], adjacency)
+  end
+
+  defp do_bfs(visited, [], _adjacency), do: visited
+
+  defp do_bfs(visited, queue, adjacency) do
+    next_queue =
+      Enum.flat_map(queue, fn node ->
+        Map.get(adjacency, node, [])
+        |> Enum.reject(&MapSet.member?(visited, &1))
+      end)
+
+    new_visited = Enum.reduce(next_queue, visited, &MapSet.put(&2, &1))
+    do_bfs(new_visited, Enum.uniq(next_queue), adjacency)
+  end
+
+  # ── Sequence generation ──────────────────────────────────────────────
 
   defp generate_one(
          start_id,
@@ -142,8 +205,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     code_to_id = Map.new(Map.values(step_map), &{&1.code, &1.id})
     bf_id = Map.get(code_to_id, @bf_code)
 
-    # BF limit: for cyclic starting at BF, allow 3 (start + end + 1 mid)
-    # For others, use configurable max_bf_visits (default 1)
     max_bf =
       if cyclic and start_id == bf_id do
         3
@@ -172,11 +233,9 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   defp do_walk(path, state) when length(path) == state.target_length do
     if state.cyclic do
-      # Last step must be start — check if we can reach start from current
       [current | _] = path
 
       if current == state.start_id do
-        # Already at start — this works
         format_path(path, state.step_map)
       else
         nil
@@ -197,7 +256,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     else
       remaining_required = MapSet.difference(state.required_ids, state.visited)
 
-      # If cyclic and near the end, weight start_id heavily
       weighted =
         Enum.flat_map(valid_neighbors, fn n ->
           weight =
@@ -226,7 +284,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   defp filter_neighbors(neighbors, current, _path, state, steps_remaining) do
     Enum.filter(neighbors, fn n ->
-      # Check repeat rules
       repeat_ok =
         if state.allow_repeats do
           pair_count = Map.get(state.pair_counts, {current, n}, 0)
@@ -236,7 +293,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
             (state.cyclic and n == state.start_id and steps_remaining == 1)
         end
 
-      # Check BF visit limit
       bf_ok =
         if n == state.bf_id and state.bf_id != nil do
           current_bf_count = Map.get(state.step_counts, n, 0)
@@ -258,6 +314,8 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     end)
     |> Enum.reject(&is_nil/1)
   end
+
+  # ── Warnings ─────────────────────────────────────────────────────────
 
   defp build_warnings(sequences, required_ids, step_map, params) do
     required_warnings =

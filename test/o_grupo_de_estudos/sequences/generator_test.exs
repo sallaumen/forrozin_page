@@ -7,9 +7,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   # Helpers — build a small connected graph in the DB for each test
   # ---------------------------------------------------------------------------
 
-  # Creates N public steps: [s0, s1, ..., sN-1]
-  # Connects them in a linear chain: s0 -> s1 -> s2 -> ... -> sN-1
-  # Returns {steps_list, step_map_by_code}
   defp build_linear_chain(n) when n >= 2 do
     steps =
       for i <- 0..(n - 1) do
@@ -22,7 +19,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         )
       end
 
-    # Connect each step to the next
     steps
     |> Enum.chunk_every(2, 1, :discard)
     |> Enum.each(fn [src, tgt] ->
@@ -33,7 +29,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     {steps, by_code}
   end
 
-  # Adds a loop back from the last step to first (enables cycles)
   defp add_loop(steps) do
     insert(:connection, source_step: List.last(steps), target_step: hd(steps))
   end
@@ -79,7 +74,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       {:ok, [sequence], _warnings} =
         Generator.generate(base_params("C0", length: 4, count: 1))
 
-      assert [_, _, _, _] = sequence
+      assert length(sequence) == 4
     end
 
     test "each step in the result has :id, :code, and :name keys" do
@@ -147,25 +142,21 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
   describe "generate/1 — allow_repeats: false" do
     test "does not repeat steps in a sequence" do
-      # Linear chain: C0 -> C1 -> C2 -> C3 (no loops, so no repeats possible)
       build_linear_chain(4)
 
       {:ok, [sequence], _warnings} =
         Generator.generate(base_params("C0", length: 4, allow_repeats: false))
 
       codes = Enum.map(sequence, & &1.code)
-
       assert codes == Enum.uniq(codes)
     end
 
     test "returns nil (no sequence) when graph is too short without repeats" do
-      # Chain of 3 steps, request length 5 without repeats = impossible
       build_linear_chain(3)
 
       {:ok, sequences, warnings} =
         Generator.generate(base_params("C0", length: 5, count: 1, allow_repeats: false))
 
-      # Either no sequence generated or a warning about count
       assert sequences == [] or "Gerou 0 de 1 sequências solicitadas" in warnings
     end
   end
@@ -176,16 +167,14 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
   describe "generate/1 — allow_repeats: true" do
     test "can generate a sequence longer than the number of steps when repeats are allowed" do
-      # 3-step chain with a loop so the random walk can cycle
       {steps, _by_code} = build_linear_chain(3)
       add_loop(steps)
 
       {:ok, sequences, _warnings} =
         Generator.generate(base_params("C0", length: 10, count: 1, allow_repeats: true))
 
-      # Should succeed because we can revisit steps
       assert [_] = sequences
-      assert [_, _, _, _, _, _, _, _, _, _] = hd(sequences)
+      assert length(hd(sequences)) == 10
     end
 
     test "limits repeated identical transitions when max_same_pair_loops is provided" do
@@ -242,65 +231,121 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
   describe "generate/1 — required_codes" do
     test "includes required step when it is reachable" do
-      # Chain: C0 -> C1 -> C2 -> C3 -> C4
       build_linear_chain(5)
 
       {:ok, [sequence], warnings} =
         Generator.generate(base_params("C0", length: 5, count: 1, required_codes: ["C3"]))
 
       codes = Enum.map(sequence, & &1.code)
-
-      # The required step must be in the sequence (chain forces it anyway)
       assert "C3" in codes
       assert warnings == []
     end
 
-    test "emits a warning when required step cannot always be included" do
-      # Only 2 steps, chain C0 -> C1, request length 2, require C_MISSING
-      build_linear_chain(2)
+    test "warns when required code does not exist in the database" do
+      build_linear_chain(3)
 
       {:ok, _sequences, warnings} =
-        Generator.generate(base_params("C0", length: 2, count: 1, required_codes: ["MISSING"]))
+        Generator.generate(base_params("C0", length: 3, count: 1, required_codes: ["FANTASMA"]))
 
-      # MISSING is not a valid step, so it can't be resolved — no warning about it
-      # (unresolvable codes are silently dropped; only reachable-but-missed codes warn)
-      # This tests that we don't crash on unknown required codes
-      assert is_list(warnings)
+      assert Enum.any?(warnings, &(&1 =~ "FANTASMA"))
+      assert Enum.any?(warnings, &(&1 =~ "não encontrado"))
     end
 
-    test "warning mentions missed required step codes" do
-      # Two disconnected paths: C0 -> C1 -> C2 and C3 -> C4 -> C5
-      # Request a sequence from C0 that requires C3 (unreachable from C0)
-      {steps_a, _} = build_linear_chain(3)
-      # Rename steps to avoid code collision with chain helper
-      _steps_b =
-        for i <- 3..5 do
-          insert(:step,
-            code: "D#{i}",
-            name: "Dead Step #{i}",
-            wip: false,
-            status: "published",
-            approved: true
-          )
-        end
+    test "warns when required step is unreachable from start" do
+      # Two disconnected components: C0->C1->C2 and D0->D1
+      build_linear_chain(3)
 
-      # D3, D4, D5 connected among themselves but not to C0..C2
-      d3 = Repo.get_by!(OGrupoDeEstudos.Encyclopedia.Step, code: "D3")
-      d4 = Repo.get_by!(OGrupoDeEstudos.Encyclopedia.Step, code: "D4")
-      d5 = Repo.get_by!(OGrupoDeEstudos.Encyclopedia.Step, code: "D5")
-      insert(:connection, source_step: d3, target_step: d4)
-      insert(:connection, source_step: d4, target_step: d5)
+      d0 =
+        insert(:step,
+          code: "D0",
+          name: "Disconnected 0",
+          wip: false,
+          status: "published",
+          approved: true
+        )
 
-      # Now require D3 in a sequence starting from C0 (impossible to reach)
+      d1 =
+        insert(:step,
+          code: "D1",
+          name: "Disconnected 1",
+          wip: false,
+          status: "published",
+          approved: true
+        )
+
+      insert(:connection, source_step: d0, target_step: d1)
+
+      {:ok, _sequences, warnings} =
+        Generator.generate(base_params("C0", length: 3, count: 1, required_codes: ["D0"]))
+
+      assert Enum.any?(warnings, &(&1 =~ "inalcançável"))
+      assert Enum.any?(warnings, &(&1 =~ "D0"))
+    end
+
+    test "warning mentions missed required step codes for reachable but not included" do
+      # Chain: C0 -> C1 -> C2 -> C3 -> C4
+      # With length=3, C0->C1->C2 is the only path
+      # C4 is reachable but can't fit in length 3
+      build_linear_chain(5)
+
+      {:ok, [sequence], warnings} =
+        Generator.generate(base_params("C0", length: 3, count: 1, required_codes: ["C4"]))
+
+      codes = Enum.map(sequence, & &1.code)
+
+      # C4 is at position 4 but we only have 3 steps, so it likely won't be included
+      if "C4" not in codes do
+        assert Enum.any?(warnings, &(&1 =~ "C4"))
+      end
+    end
+
+    test "handles multiple required codes, some valid and some invalid" do
+      build_linear_chain(5)
+
+      {:ok, _sequences, warnings} =
+        Generator.generate(
+          base_params("C0", length: 5, count: 1, required_codes: ["C2", "INEXISTENTE", "C4"])
+        )
+
+      # Should warn about INEXISTENTE being not found
+      assert Enum.any?(warnings, &(&1 =~ "INEXISTENTE"))
+    end
+
+    test "does not warn about unresolved codes when required_codes is empty" do
+      build_linear_chain(3)
+
+      {:ok, [_sequence], warnings} =
+        Generator.generate(base_params("C0", length: 3, count: 1, required_codes: []))
+
+      refute Enum.any?(warnings, &(&1 =~ "não encontrado"))
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Cyclic sequences
+  # ---------------------------------------------------------------------------
+
+  describe "generate/1 — cyclic" do
+    test "cyclic sequence starts and ends with the same step" do
+      # C0→C1→C2→C3→C0 needs length=5 to complete the cycle
+      {steps, _} = build_linear_chain(4)
+      add_loop(steps)
+
+      {:ok, [sequence], _warnings} =
+        Generator.generate(base_params("C0", length: 5, count: 1, cyclic: true))
+
+      assert hd(sequence).code == "C0"
+      assert List.last(sequence).code == "C0"
+    end
+
+    test "cyclic sequence fails when no loop exists" do
+      build_linear_chain(4)
+
       {:ok, sequences, warnings} =
-        Generator.generate(base_params("C0", length: 3, count: 3, required_codes: ["D3"]))
+        Generator.generate(base_params("C0", length: 4, count: 1, cyclic: true))
 
-      # Sequences were generated (starting from C0)
-      assert length(sequences) >= 1
-
-      # D3 could not be reached, so a warning must mention it
-      _ = steps_a
-      assert Enum.any?(warnings, fn w -> w =~ "D3" end)
+      assert sequences == []
+      assert Enum.any?(warnings, &(&1 =~ "sequências"))
     end
   end
 
@@ -310,65 +355,20 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
   describe "generate/1 — count" do
     test "generates multiple distinct sequences when multiple paths exist" do
-      # Build a branching graph so multiple paths exist
-      # B0 -> B1, B0 -> B2, B1 -> B3, B2 -> B4
-      # Two distinct paths of length 3: B0->B1->B3 and B0->B2->B4
-      s0 =
-        insert(:step,
-          code: "B0",
-          name: "Branch 0",
-          wip: false,
-          status: "published",
-          approved: true
-        )
-
-      s1 =
-        insert(:step,
-          code: "B1",
-          name: "Branch 1",
-          wip: false,
-          status: "published",
-          approved: true
-        )
-
-      s2 =
-        insert(:step,
-          code: "B2",
-          name: "Branch 2",
-          wip: false,
-          status: "published",
-          approved: true
-        )
-
-      s3 =
-        insert(:step,
-          code: "B3",
-          name: "Branch 3",
-          wip: false,
-          status: "published",
-          approved: true
-        )
-
-      s4 =
-        insert(:step,
-          code: "B4",
-          name: "Branch 4",
-          wip: false,
-          status: "published",
-          approved: true
-        )
+      s0 = insert(:step, code: "B0", name: "Branch 0", wip: false, status: "published", approved: true)
+      s1 = insert(:step, code: "B1", name: "Branch 1", wip: false, status: "published", approved: true)
+      s2 = insert(:step, code: "B2", name: "Branch 2", wip: false, status: "published", approved: true)
+      s3 = insert(:step, code: "B3", name: "Branch 3", wip: false, status: "published", approved: true)
+      s4 = insert(:step, code: "B4", name: "Branch 4", wip: false, status: "published", approved: true)
 
       insert(:connection, source_step: s0, target_step: s1)
       insert(:connection, source_step: s0, target_step: s2)
       insert(:connection, source_step: s1, target_step: s3)
       insert(:connection, source_step: s2, target_step: s4)
 
-      # Request many more sequences than paths exist so randomness will cover both
       {:ok, sequences, _warnings} =
         Generator.generate(base_params("B0", length: 3, count: 20))
 
-      # After deduplication we should have discovered both distinct paths.
-      # With 20 independent attempts (each 50/50), P(missing one path) = (0.5)^20 < 0.000001
       distinct_middles =
         sequences
         |> Enum.map(fn seq -> Enum.at(seq, 1).code end)
@@ -379,26 +379,99 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
 
     test "emits warning when fewer sequences than requested are generated" do
-      # Completely linear chain — only one possible path of length 3
       build_linear_chain(3)
 
       {:ok, sequences, warnings} =
         Generator.generate(base_params("C0", length: 3, count: 5))
 
-      # At most 1 distinct path exists
       assert length(sequences) <= 1
       assert Enum.any?(warnings, fn w -> w =~ "sequências" end)
     end
 
     test "deduplicates identical sequences" do
-      # Single linear path: only one sequence possible
       build_linear_chain(3)
 
       {:ok, sequences, _warnings} =
         Generator.generate(base_params("C0", length: 3, count: 3))
 
-      # Must be deduplicated — at most 1 distinct sequence
       assert length(sequences) <= 1
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Reachability
+  # ---------------------------------------------------------------------------
+
+  describe "reachable_from/2" do
+    test "finds all reachable nodes via BFS" do
+      {steps, _} = build_linear_chain(4)
+
+      connections = OGrupoDeEstudos.Encyclopedia.ConnectionQuery.list_by(preload: [])
+      adjacency = Map.new(connections |> Enum.group_by(& &1.source_step_id), fn {k, v} ->
+        {k, Enum.map(v, & &1.target_step_id)}
+      end)
+
+      reachable = Generator.reachable_from(hd(steps).id, adjacency)
+
+      # C0 can reach all 4 steps
+      assert MapSet.size(reachable) == 4
+
+      # C2 can only reach C2, C3
+      reachable_from_c2 = Generator.reachable_from(Enum.at(steps, 2).id, adjacency)
+      assert MapSet.size(reachable_from_c2) == 2
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Edge cases
+  # ---------------------------------------------------------------------------
+
+  describe "generate/1 — edge cases" do
+    test "handles length of 1 (just the start step)" do
+      build_linear_chain(3)
+
+      {:ok, [sequence], _warnings} =
+        Generator.generate(base_params("C0", length: 1, count: 1))
+
+      assert length(sequence) == 1
+      assert hd(sequence).code == "C0"
+    end
+
+    test "handles length of 2" do
+      build_linear_chain(3)
+
+      {:ok, [sequence], _warnings} =
+        Generator.generate(base_params("C0", length: 2, count: 1))
+
+      assert length(sequence) == 2
+      assert hd(sequence).code == "C0"
+      assert List.last(sequence).code == "C1"
+    end
+
+    test "handles nil required_codes gracefully" do
+      build_linear_chain(3)
+
+      {:ok, [_sequence], warnings} =
+        Generator.generate(base_params("C0", length: 3, count: 1) |> Map.put(:required_codes, nil))
+
+      refute Enum.any?(warnings, &(&1 =~ "não encontrado"))
+    end
+
+    test "start step with no outgoing connections returns empty with warning" do
+      # Isolated step with no connections
+      insert(:step,
+        code: "ALONE",
+        name: "Lonely",
+        wip: false,
+        status: "published",
+        approved: true
+      )
+
+      {:ok, sequences, warnings} =
+        Generator.generate(base_params("ALONE", length: 3, count: 1))
+
+      assert sequences == []
+      assert Enum.any?(warnings, &(&1 =~ "sequências"))
     end
   end
 end
