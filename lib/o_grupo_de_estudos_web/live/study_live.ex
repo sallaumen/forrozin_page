@@ -30,7 +30,10 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
        today_note_content: if(today_note, do: today_note.content, else: ""),
        personal_history: Study.list_personal_note_history(user.id),
        personal_related_steps: if(today_note, do: today_note.related_steps, else: []),
-       personal_step_suggestions: []
+       personal_step_suggestions: [],
+       section_history_open: false,
+       section_teachers_open: true,
+       section_students_open: false
      )}
   end
 
@@ -51,6 +54,11 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("save_personal_note", _params, socket), do: {:noreply, socket}
+
+  def handle_event("toggle_section", %{"section" => section}, socket) do
+    key = String.to_existing_atom("section_#{section}_open")
+    {:noreply, assign(socket, key, not socket.assigns[key])}
+  end
 
   def handle_event("search_personal_step", %{"term" => term}, socket) do
     {:noreply, assign(socket, :personal_step_suggestions, Study.search_related_steps(term))}

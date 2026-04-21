@@ -12,25 +12,36 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
   end
 
   describe "study home" do
-    test "shows study overview and diary section for authenticated user", %{conn: conn} do
+    test "shows diary and sections for authenticated user", %{conn: conn} do
       user = insert(:user)
       conn = log_in_user(conn, user)
 
       {:ok, _lv, html} = live(conn, ~p"/study")
 
-      assert html =~ "Estudos"
       assert html =~ "Meu diário"
       assert html =~ "Meus professores"
-      assert html =~ "Você ainda não registrou seu estudo de hoje."
+      assert html =~ "Sem registro hoje"
     end
 
-    test "shows linked teachers and students", %{conn: conn} do
+    test "hides students section when user is not a teacher", %{conn: conn} do
+      user = insert(:user, is_teacher: false)
+      conn = log_in_user(conn, user)
+
+      {:ok, _lv, html} = live(conn, ~p"/study")
+
+      refute html =~ "Meus alunos"
+    end
+
+    test "shows students section when user is a teacher", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
       conn = log_in_user(conn, teacher)
 
-      {:ok, _lv, html} = live(conn, ~p"/study")
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      # Expand students section
+      html = render_click(lv, "toggle_section", %{"section" => "students"})
 
       assert html =~ "Meus alunos"
       assert html =~ student.name
