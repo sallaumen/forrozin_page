@@ -48,10 +48,36 @@
             >
               {if @is_following, do: "Seguindo ✓", else: "Seguir"}
             </button>
+            <%= case @study_link_status do %>
+              <% :available -> %>
+                <button
+                  phx-click="request_study"
+                  class="text-sm py-1.5 px-5 rounded-full font-medium border border-gold-500/40 bg-gold-500/10 text-gold-600 transition-colors cursor-pointer hover:bg-gold-500/20"
+                >
+                  Quero estudar
+                </button>
+              <% :pending -> %>
+                <span class="text-sm py-1.5 px-5 rounded-full font-medium border border-ink-300 bg-ink-100 text-ink-500">
+                  Pedido enviado
+                </span>
+              <% :connected -> %>
+                <.link
+                  navigate={~p"/study"}
+                  class="text-sm py-1.5 px-5 rounded-full font-medium border border-accent-green/40 bg-accent-green/10 text-accent-green no-underline"
+                >
+                  Estudando juntos
+                </.link>
+              <% _ -> %>
+            <% end %>
           <% end %>
         </div>
-        <div class="text-sm text-ink-500">
-          @{@profile_user.username}
+        <div class="flex items-center gap-2 text-sm text-ink-500">
+          <span>@{@profile_user.username}</span>
+          <%= if @is_profile_teacher do %>
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-gold-600 bg-gold-500/10 border border-gold-500/20 rounded-full px-2 py-0.5">
+              <.icon name="hero-academic-cap" class="w-3 h-3" /> Professor
+            </span>
+          <% end %>
         </div>
         <%= if @profile_user.instagram do %>
           <a
@@ -92,6 +118,16 @@
           </div>
           <div class="text-sm text-ink-900 font-semibold">
             {@profile_user.country}
+          </div>
+        </div>
+      <% end %>
+      <%= if @is_profile_teacher and @student_count > 0 do %>
+        <div>
+          <div class="text-[10px] text-gold-600 uppercase tracking-widest mb-0.5">
+            Alunos
+          </div>
+          <div class="text-sm text-ink-900 font-semibold">
+            {@student_count}
           </div>
         </div>
       <% end %>

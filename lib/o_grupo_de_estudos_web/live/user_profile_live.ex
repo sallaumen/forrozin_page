@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.UserProfileLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences, Suggestions}
+  alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences, Study, Suggestions}
   alias OGrupoDeEstudos.Engagement.{Badges, ProfileCommentQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
@@ -82,6 +82,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            is_following: is_following,
            badges: badges,
            primary_badge: primary_badge,
+           is_profile_teacher: user.is_teacher,
+           study_link_status: study_link_status(current_user, user),
+           student_count: if(user.is_teacher, do: length(Study.list_student_links_for_teacher(user.id)), else: 0),
            profile_tab: "steps",
            favorite_steps: [],
            favorite_sequences: [],
@@ -235,5 +238,47 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
       sequence_likes: Engagement.likes_map(current_user.id, "sequence", sequence_ids),
       comment_likes: Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
     )
+  end
+
+  def handle_event("request_study", _params, socket) do
+    current = socket.assigns.current_user
+    profile = socket.assigns.profile_user
+
+    case Study.request_teacher_link(current, profile.id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:study_link_status, :pending)
+         |> put_flash(:info, "Pedido enviado! #{Accounts.first_name(profile)} será notificado(a).")}
+
+      {:error, :already_connected} ->
+        {:noreply, put_flash(socket, :info, "Vocês já estão conectados.")}
+
+      {:error, :already_pending} ->
+        {:noreply, put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta.")}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  defp study_link_status(current_user, profile_user) do
+    if current_user.id == profile_user.id or not profile_user.is_teacher do
+      nil
+    else
+      import Ecto.Query
+      alias OGrupoDeEstudos.Study.TeacherStudentLink
+
+      case OGrupoDeEstudos.Repo.one(
+             from(l in TeacherStudentLink,
+               where: l.teacher_id == ^profile_user.id and l.student_id == ^current_user.id
+             )
+           ) do
+        nil -> :available
+        %{active: true} -> :connected
+        %{pending: true} -> :pending
+        _ -> :available
+      end
+    end
   end
 end
