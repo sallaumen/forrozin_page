@@ -36,6 +36,8 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :avatar_path, :string
     field :is_teacher, :boolean, default: false
     field :invite_slug, :string
+    field :last_seen_at, :naive_datetime
+    field :last_login_at, :naive_datetime
 
     timestamps()
   end

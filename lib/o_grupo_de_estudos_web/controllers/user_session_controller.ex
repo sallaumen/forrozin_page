@@ -4,7 +4,9 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
   use OGrupoDeEstudosWeb, :controller
 
   alias OGrupoDeEstudos.Accounts
+  alias OGrupoDeEstudos.Engagement.UserAccessTracking
   alias OGrupoDeEstudos.Study
+  alias OGrupoDeEstudosWeb.Tracking.ClientInfo
   alias OGrupoDeEstudosWeb.UserAuth
 
   def new(conn, params) do
@@ -28,6 +30,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
     case Accounts.check_credentials(username, password) do
       {:ok, user} ->
         maybe_accept_teacher_invite(user, session_params["teacher_invite"])
+        UserAccessTracking.track_login(user, ClientInfo.from_conn(conn), :password)
         redirect_to = session_params["return_to"] || ~p"/collection"
 
         conn
@@ -52,6 +55,8 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
             conn |> redirect(to: ~p"/login")
 
           user ->
+            UserAccessTracking.track_login(user, ClientInfo.from_conn(conn), :auto_login)
+
             conn
             |> UserAuth.login(user)
             |> redirect(to: ~p"/collection")

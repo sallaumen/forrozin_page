@@ -461,6 +461,7 @@ const GraphVisual = {
     cytoscape.use(cytoscapeCola)
     window._cytoscape = cytoscape
 
+    this._bindGraphLegendInteractions()
     this._initGraph()
 
     // Listen for server push events
@@ -477,6 +478,8 @@ const GraphVisual = {
 
     // Sequence highlight events — retry if graph not ready yet
     this.handleEvent("highlight_sequence", ({ steps }) => {
+      if (this._manualMode || this.el.dataset.manualMode === "true") return
+
       if (this._cy) {
         this._applySequenceHighlight(steps)
       } else {
@@ -513,6 +516,11 @@ const GraphVisual = {
     this.handleEvent("set_manual_mode", ({ active }) => {
       this._manualMode = active
       this.el.dataset.manualMode = active ? "true" : "false"
+      if (active) {
+        this._clearSequenceHighlight({ refit: false })
+      } else {
+        this._clearManualStepGuide()
+      }
     })
 
     // Liked steps: highlight with red border
@@ -527,7 +535,27 @@ const GraphVisual = {
     })
   },
 
-  updated() { this._initGraph() },
+  updated() {
+    if (this._graphSignatureValue !== this._graphSignature()) {
+      this._initGraph()
+    }
+  },
+
+  destroyed() {
+    if (this._graphLegendClickHandler) {
+      document.removeEventListener("click", this._graphLegendClickHandler)
+      this._graphLegendClickHandler = null
+    }
+  },
+
+  _graphSignature() {
+    return [
+      this.el.dataset.graph || "",
+      this.el.dataset.editMode || "",
+      this.el.dataset.admin || "",
+      this.el.dataset.userId || ""
+    ].join("|")
+  },
 
   _showToast(message) {
     const toast = document.createElement("div")
@@ -580,15 +608,25 @@ const GraphVisual = {
     const raw = el.dataset.graph
     if (!raw) return
 
+    const graphSignature = this._graphSignature()
+    if (this._cy && this._graphSignatureValue === graphSignature) return
+
     const { nodes, edges } = JSON.parse(raw)
     if (this._cy) { this._cy.destroy(); this._cy = null }
+    this._graphSignatureValue = graphSignature
+    this._manualGuideActive = false
+    this._manualGuideSourceId = null
 
     const currentUserId = el.dataset.userId
+    this._currentUserId = currentUserId
 
     // Build elements: step nodes + edges (no compound parents)
     const elements = []
+    const nodeColorById = {}
 
     nodes.forEach(n => {
+      nodeColorById[n.id] = n.cor || "#9a7a5a"
+
       elements.push({
         data: {
           id: n.id, label: n.nome, categoria: n.categoria,
@@ -602,9 +640,14 @@ const GraphVisual = {
     })
 
     edges.forEach(e => {
-      const d = { source: e.from, target: e.to, spread: e.spread || 0 }
+      const d = {
+        source: e.from,
+        target: e.to,
+        spread: e.spread || 0,
+        cor: e.to === CENTER_CODE ? "#1a1a1a" : nodeColorById[e.from] || "#9a7a5a"
+      }
       if (e.label) d.label = e.label
-      elements.push({ data: d })
+      elements.push({ data: d, selectable: false })
     })
 
     const cy = window._cytoscape({
@@ -615,8 +658,14 @@ const GraphVisual = {
           selector: "node",
           style: {
             "shape": "roundrectangle",
-            "width": "label",
-            "height": "label",
+            "width": function(e) {
+              if (e.data("highlighted")) return 132
+              return e.degree() >= 10 ? 104 : 88
+            },
+            "height": function(e) {
+              if (e.data("highlighted")) return 76
+              return e.degree() >= 10 ? 58 : 48
+            },
             "padding": function(e) {
               if (e.data("highlighted")) return "20px 30px"
               return e.degree() >= 10 ? "12px 18px" : "8px 14px"
@@ -639,23 +688,16 @@ const GraphVisual = {
               return d >= 12 ? 15 : d >= 6 ? 14 : 13
             },
             "color": "#1a0e05", "text-max-width": "180px",
-            "min-width": "80px",
-            "shadow-blur": function(e) {
-              if (e.data("highlighted")) return 20
-              return e.degree() >= 10 ? 10 : 4
-            },
-            "shadow-color": "rgba(60,40,20,0.12)",
-            "shadow-offset-x": 0, "shadow-offset-y": 2, "shadow-opacity": 1
+            "min-width": "80px"
           }
         },
         {
           selector: "node:selected",
           style: {
             "background-color": "data(cor)", "background-opacity": 0.15,
-            "border-width": 3, "border-opacity": 1, "shadow-blur": 16, "shadow-opacity": 1
+            "border-width": 3, "border-opacity": 1
           }
         },
-        { selector: "node:grabbed", style: { "shadow-blur": 20, "shadow-opacity": 1 } },
         {
           selector: "edge",
           style: {
@@ -678,21 +720,13 @@ const GraphVisual = {
           }
         }
       ],
-      wheelSensitivity: 0.3, minZoom: 0.06, maxZoom: 5,
+      minZoom: 0.06, maxZoom: 5,
       autoungrabifyNodes: true
     })
 
     this._cy = cy
     window._cyInstance = cy
-
-    // Inherit source category color to edges — except edges pointing to BF get black
-    cy.edges().forEach(edge => {
-      if (edge.target().id() === CENTER_CODE) {
-        edge.data("cor", "#1a1a1a")
-      } else {
-        edge.data("cor", edge.source().data("cor") || "#9a7a5a")
-      }
-    })
+    cy.edges().unselectify()
 
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)
@@ -727,8 +761,8 @@ const GraphVisual = {
     })
 
     // ── Interactions ──
-    let activeCategory = null
     const hook = this
+    this._activeCategory = null
     const isAdmin = el.dataset.admin === "true"
     const isEditMode = el.dataset.editMode === "true"
     this._isAdmin = isAdmin
@@ -754,8 +788,12 @@ const GraphVisual = {
 
       // Manual sequence mode: clicking a node appends it to the manual list
       if (hook._manualMode || hook.el.dataset.manualMode === "true") {
-        hook.pushEvent("add_manual_step", { code: node.id(), name: node.data("nome") || node.id() })
-        hook._showToast(`+ ${node.id()}`)
+        if (hook._seqHighlightActive) {
+          hook._clearSequenceHighlight({ refit: false })
+          hook.pushEvent("clear_highlight", {})
+        }
+        hook.pushEvent("add_manual_step", { code: node.id(), name: node.data("label") || node.id() })
+        hook._applyManualStepGuide(node)
         return
       }
 
@@ -785,7 +823,8 @@ const GraphVisual = {
         }
       }
 
-      activeCategory = null
+      hook._activeCategory = null
+      hook._resetLegend()
       applySpotlight(cy, node)
       openDrawer(node, cy, isEditMode && isAdmin, hook)
     })
@@ -793,13 +832,22 @@ const GraphVisual = {
     cy.on("tap", function(evt) {
       if (evt.target === cy) {
         if (ghostSourceId) { cancelGhost(); return }
-        clearSpotlight(cy); closeDrawer(); activeCategory = null; resetLegend()
+        if (hook._manualMode || hook.el.dataset.manualMode === "true") {
+          hook._clearManualStepGuide()
+          return
+        }
+        clearSpotlight(cy)
+        closeDrawer()
+        hook._activeCategory = null
+        hook._resetLegend()
       }
     })
 
     cy.on("mouseover", "node", function(evt) {
       if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't interfere with sequence highlight
+      if (hook._manualGuideActive) return // Manual mode keeps outgoing options fixed.
+      if (hook._activeCategory) return // Category filters stay fixed until the user changes them.
       const node = evt.target
       cy.batch(() => {
         cy.elements().style({ opacity: 0.25 })
@@ -811,7 +859,8 @@ const GraphVisual = {
     cy.on("mouseout", "node", function() {
       if (document.getElementById("graph-drawer").dataset.open === "true") return
       if (hook._seqHighlightActive) return // Don't clear sequence highlight
-      if (!activeCategory) clearSpotlight(cy)
+      if (hook._manualGuideActive) return // Manual mode keeps outgoing options fixed.
+      if (!hook._activeCategory) clearSpotlight(cy)
     })
 
     document.getElementById("drawer-close")?.addEventListener("click", () => {
@@ -826,67 +875,100 @@ const GraphVisual = {
           hook.pushEvent("clear_highlight", {})
           return
         }
-        cancelGhost()
-        closeDrawer()
-        closeMobileLegend()
-        clearSpotlight(cy)
-        activeCategory = null
-        resetLegend()
-      }
-    })
-
-    // Legend buttons
-    const legendBtns = document.querySelectorAll("[data-graph-legend-filter][data-category]")
-    const mobileLegendToggle = document.getElementById("graph-legend-mobile-toggle")
-    const mobileLegendPanel = document.getElementById("graph-legend-mobile-panel")
-
-    function resetLegend() {
-      legendBtns.forEach(b => {
-        b.style.background = ""
-        b.style.fontWeight = ""
-        b.setAttribute("aria-pressed", "false")
-      })
-    }
-
-    function activateLegendCategory(catName) {
-      legendBtns.forEach(btn => {
-        if (btn.dataset.category !== catName) return
-        btn.style.background = "rgba(60,40,20,0.08)"
-        btn.style.fontWeight = "700"
-        btn.setAttribute("aria-pressed", "true")
-      })
-    }
-
-    function closeMobileLegend() {
-      if (!mobileLegendPanel || !mobileLegendToggle) return
-      mobileLegendPanel.classList.add("hidden")
-      mobileLegendToggle.setAttribute("aria-expanded", "false")
-    }
-
-    mobileLegendToggle?.addEventListener("click", () => {
-      if (!mobileLegendPanel) return
-      const willOpen = mobileLegendPanel.classList.contains("hidden")
-      mobileLegendPanel.classList.toggle("hidden", !willOpen)
-      mobileLegendToggle.setAttribute("aria-expanded", willOpen ? "true" : "false")
-    })
-
-    legendBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const catName = btn.dataset.category
-        closeDrawer()
-        closeMobileLegend()
-        if (activeCategory === catName) {
-          activeCategory = null
-          clearSpotlight(cy)
-          resetLegend()
+        if (hook._manualGuideActive) {
+          hook._clearManualStepGuide()
           return
         }
-        activeCategory = catName
-        applyCategorySpotlight(cy, catName)
-        resetLegend()
-        activateLegendCategory(catName)
-      })
+        cancelGhost()
+        closeDrawer()
+        hook._closeMobileLegend()
+        clearSpotlight(cy)
+        hook._activeCategory = null
+        hook._resetLegend()
+      }
     })
+  },
+
+  _bindGraphLegendInteractions() {
+    if (this._graphLegendClickHandler) return
+
+    this._graphLegendClickHandler = event => {
+      const toggle = event.target.closest?.("#graph-legend-mobile-toggle")
+
+      if (toggle) {
+        const panel = document.getElementById("graph-legend-mobile-panel")
+        if (!panel) return
+
+        const willOpen = panel.classList.contains("hidden")
+        panel.classList.toggle("hidden", !willOpen)
+        toggle.setAttribute("aria-expanded", willOpen ? "true" : "false")
+        return
+      }
+
+      const btn = event.target.closest?.("[data-graph-legend-filter][data-category]")
+      if (!btn) return
+
+      const cy = this._cy
+      if (!cy) return
+
+      const catName = btn.dataset.category
+      closeDrawer()
+      this._closeMobileLegend()
+
+      const sequenceActive = this._seqHighlightActive || window._seqHighlightActive
+
+      if (this._activeCategory === catName && !sequenceActive) {
+        this._activeCategory = null
+        clearSpotlight(cy)
+        this._resetLegend()
+        return
+      }
+
+      const applyCategory = () => {
+        if (!this._cy) return
+        this._activeCategory = catName
+        applyCategorySpotlight(this._cy, catName)
+        this._resetLegend()
+        this._activateLegendCategory(catName)
+      }
+
+      if (sequenceActive) {
+        this._clearSequenceHighlight({ refit: false })
+        this.pushEvent("clear_highlight", {})
+        setTimeout(applyCategory, 120)
+        return
+      }
+
+      applyCategory()
+    }
+
+    document.addEventListener("click", this._graphLegendClickHandler)
+  },
+
+  _resetLegend() {
+    document.querySelectorAll("[data-graph-legend-filter][data-category]").forEach(btn => {
+      btn.style.background = ""
+      btn.style.fontWeight = ""
+      btn.setAttribute("aria-pressed", "false")
+    })
+  },
+
+  _activateLegendCategory(catName) {
+    document.querySelectorAll("[data-graph-legend-filter][data-category]").forEach(btn => {
+      if (btn.dataset.category !== catName) return
+      btn.style.background = "rgba(60,40,20,0.08)"
+      btn.style.fontWeight = "700"
+      btn.setAttribute("aria-pressed", "true")
+    })
+  },
+
+  _closeMobileLegend() {
+    const panel = document.getElementById("graph-legend-mobile-panel")
+    const toggle = document.getElementById("graph-legend-mobile-toggle")
+    if (!panel || !toggle) return
+
+    panel.classList.add("hidden")
+    toggle.setAttribute("aria-expanded", "false")
   },
 
   _consumeInitialSequenceSteps() {
@@ -976,13 +1058,109 @@ const GraphVisual = {
     }
   },
 
+  _applyManualStepGuide(node) {
+    const cy = this._cy
+    if (!cy || !node || node.length === 0) return
+
+    this._clearManualStepGuide({ applyLiked: false })
+
+    const outgoingEdges = node.outgoers("edge")
+    const outgoingTargets = outgoingEdges.targets()
+    const outgoingCount = outgoingTargets.length
+
+    cy.batch(() => {
+      cy.elements().style({ opacity: 0.16 })
+
+      node.style({
+        opacity: 1,
+        "border-color": "#e67e22",
+        "border-width": 5,
+        "border-style": "solid",
+        "background-color": "#fff8f0"
+      })
+
+      outgoingEdges.forEach(edge => {
+        edge.style({
+          opacity: 1,
+          "line-color": "#2f8f5b",
+          "line-opacity": 1,
+          "target-arrow-color": "#2f8f5b",
+          width: 3.5
+        })
+      })
+
+      outgoingTargets.forEach(target => {
+        target.style({
+          opacity: 1,
+          "border-color": "#2f8f5b",
+          "border-width": 4,
+          "border-style": "solid",
+          "background-color": "#f3fbf5"
+        })
+      })
+    })
+
+    this._manualGuideActive = true
+    this._manualGuideSourceId = node.id()
+
+    if (outgoingCount > 0) {
+      this._showToast(`${node.id()} selecionado · ${outgoingCount} saída(s) possível(is)`)
+    } else {
+      this._showToast(`${node.id()} selecionado · sem saídas cadastradas`)
+    }
+  },
+
+  _clearManualStepGuide(options = {}) {
+    const { applyLiked = true } = options
+    const cy = this._cy
+    if (!cy) return
+
+    cy.batch(() => {
+      cy.nodes().forEach(node => {
+        const suggestedByCurrentUser =
+          node.data("suggestedById") && node.data("suggestedById") === this._currentUserId
+
+        node.style({
+          opacity: 1,
+          "border-color": node.data("cor") || "#9a7a5a",
+          "border-width": node.data("highlighted") ? 5 : (node.degree() >= 10 ? 3 : 2),
+          "border-style": node.data("suggested") ? "dashed" : "solid",
+          "background-color": suggestedByCurrentUser ? "#fce4ec" : "#fffef9"
+        })
+      })
+
+      cy.edges().forEach(edge => {
+        const color = edge.data("cor") || "#9a7a5a"
+
+        edge.style({
+          opacity: 0.45,
+          "line-color": color,
+          "line-opacity": 0.45,
+          "target-arrow-color": color,
+          width: 1.5
+        })
+      })
+    })
+
+    this._manualGuideActive = false
+    this._manualGuideSourceId = null
+
+    if (applyLiked) applyLikedStepStyling()
+  },
+
   _showSeqExitButton() {
     this._removeSeqExitButton()
+    if (this._manualMode || this.el.dataset.manualMode === "true") return
+
     const container = this.el.parentElement
     const btn = document.createElement("button")
+    const isMobile = window.matchMedia("(max-width: 767px)").matches
+
     btn.id = "seq-exit-btn"
-    btn.textContent = "✕ Sair da sequência"
-    btn.style.cssText = "position:absolute;top:60px;right:12px;z-index:25;padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:20px;font-family:Georgia,serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);letter-spacing:0.5px;transition:opacity 0.2s;"
+    btn.textContent = isMobile ? "Sair da sequência" : "✕ Sair da sequência"
+    btn.style.cssText = isMobile
+      ? "position:absolute;top:58px;right:12px;z-index:25;min-height:38px;padding:7px 13px;background:#c0392b;color:white;border:none;border-radius:8px;font-family:Georgia,serif;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.12);letter-spacing:0.2px;transition:opacity 0.2s;"
+      : "position:absolute;top:60px;right:12px;z-index:25;padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:20px;font-family:Georgia,serif;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);letter-spacing:0.5px;transition:opacity 0.2s;"
     btn.addEventListener("click", () => {
       this._clearSequenceHighlight()
       this.pushEvent("clear_highlight", {})
@@ -1016,12 +1194,14 @@ const GraphVisual = {
         })
       })
 
-      // Restore edges
-      cy.edges().style({
-        opacity: 0.45,
-        "line-color": "data(cor)",
-        "target-arrow-color": "data(cor)",
-        width: 1.5
+      cy.edges().forEach(edge => {
+        const color = edge.data("cor") || "#9a7a5a"
+        edge.style({
+          opacity: 0.45,
+          "line-color": color,
+          "target-arrow-color": color,
+          width: 1.5
+        })
       })
     })
 

@@ -241,10 +241,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
 
       html = render_click(lv, "show_seq_mobile", %{})
-      refute html =~ "max-md:hidden"
+      refute html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
 
       html = render_click(lv, "highlight_saved_sequence", %{"id" => sequence.id})
-      assert html =~ "max-md:hidden"
+      assert html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
     end
 
     test "sequence library combines saved and favorited sequences", %{conn: conn} do
@@ -431,6 +431,101 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ step_a.code
     end
 
+    test "graph taps send the node label as the manual step name" do
+      js = File.read!("assets/js/app.js")
+
+      assert js =~ ~S/name: node.data("label") || node.id()/
+      refute js =~ ~S/name: node.data("nome") || node.id()/
+    end
+
+    test "manual graph taps highlight outgoing options without refocusing the camera" do
+      js = File.read!("assets/js/app.js")
+
+      assert js =~ "_applyManualStepGuide(node)"
+      assert js =~ ~S/node.outgoers("edge")/
+      assert js =~ "if (hook._manualGuideActive) return"
+      assert js =~ ~S/if (this._manualMode || this.el.dataset.manualMode === "true") return/
+      assert js =~ "_clearManualStepGuide()"
+    end
+
+    test "graph hook avoids rebuilding the graph on unrelated LiveView updates" do
+      js = File.read!("assets/js/app.js")
+
+      refute js =~ "updated() { this._initGraph() }"
+      assert js =~ "this._graphSignatureValue !== this._graphSignature()"
+    end
+
+    test "manual step search adds a step by name", %{conn: conn, step_a: step_a} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      render_click(lv, "toggle_seq_panel", %{})
+      render_click(lv, "show_seq_manual", %{})
+
+      html = render_change(lv, "search_manual_step", %{"value" => step_a.name})
+      assert html =~ "seq-manual-step-result-#{step_a.code}"
+
+      html =
+        render_submit(lv, "add_manual_step_by_search", %{
+          "manual_step_search" => step_a.name
+        })
+
+      assert html =~ step_a.code
+      assert html =~ step_a.name
+    end
+
+    test "manual mode exposes favorited steps as quick add buttons", %{
+      conn: conn,
+      step_a: step_a
+    } do
+      user = insert(:user)
+      {:ok, :favorited} = OGrupoDeEstudos.Engagement.toggle_favorite(user.id, "step", step_a.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+      html = render_click(lv, "show_seq_manual", %{})
+
+      assert html =~ "Favoritos"
+      assert has_element?(lv, "#seq-manual-favorite-#{step_a.code}")
+
+      html =
+        lv
+        |> element("#seq-manual-favorite-#{step_a.code}")
+        |> render_click()
+
+      assert html =~ step_a.code
+    end
+
+    test "cancel_manual_sequence exits manual mode and clears draft", %{
+      conn: conn,
+      step_a: step_a
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      render_click(lv, "toggle_seq_panel", %{})
+      render_click(lv, "show_seq_manual", %{})
+      render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
+
+      html =
+        lv
+        |> element("#seq-manual-cancel")
+        |> render_click()
+
+      assert html =~ ~s(id="seq-library-search")
+      refute has_element?(lv, "#seq-manual-form")
+    end
+
+    test "manual step rows use larger left-side reorder controls", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      render_click(lv, "toggle_seq_panel", %{})
+      render_click(lv, "show_seq_manual", %{})
+      render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
+      render_click(lv, "add_manual_step", %{"code" => step_b.code, "name" => step_b.name})
+
+      assert has_element?(lv, "#seq-manual-move-up-1")
+      assert has_element?(lv, "#seq-manual-remove-1")
+    end
+
     test "remove_manual_step removes step by index", %{conn: conn, step_a: step_a} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
       render_click(lv, "toggle_seq_panel", %{})
@@ -553,6 +648,105 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
       assert has_element?(lv, "#seq-library-search")
       refute has_element?(lv, "#seq-manual-form")
+    end
+  end
+
+  describe "automatic sequence generator" do
+    setup :setup_graph
+
+    test "generator form uses learner-friendly labels and code with step name", %{
+      conn: conn
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html = render_click(lv, "show_seq_config", %{})
+
+      assert html =~ "Gerador automático"
+      assert html =~ "Escolha um ponto de partida"
+      assert html =~ ~s(value="BF · Base frontal")
+      assert html =~ "Tamanho da sequência"
+      assert html =~ "Opções para gerar"
+      assert html =~ "Quero incluir estes passos"
+      assert html =~ "Fechar a sequência no início"
+      assert html =~ "Como tratar loops"
+      assert html =~ "Sem loops"
+      assert html =~ "Loops leves"
+      assert html =~ "Limite de Base frontal"
+
+      refute html =~ "Duração"
+      refute html =~ "Quantidade"
+      refute html =~ "Permitir repetições"
+      refute html =~ "Máx. vezes na BF"
+    end
+
+    test "generator exposes favorited steps as required-step shortcuts", %{
+      conn: conn,
+      step_b: step_b
+    } do
+      user = insert(:user)
+      {:ok, :favorited} = OGrupoDeEstudos.Engagement.toggle_favorite(user.id, "step", step_b.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+      html = render_click(lv, "show_seq_config", %{})
+
+      assert html =~ "Favoritos"
+      assert has_element?(lv, "#seq-required-favorite-#{step_b.code}")
+
+      html =
+        lv
+        |> element("#seq-required-favorite-#{step_b.code}")
+        |> render_click()
+
+      assert html =~ "#{step_b.code} · #{step_b.name}"
+    end
+
+    test "generator mode query opens the automatic generator directly", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
+
+      assert html =~ "Gerador automático"
+      refute html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
+    end
+
+    test "generated sequence cards include a readable summary", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      step_c =
+        insert(:step,
+          code: "TR",
+          name: "Travada",
+          section: step_a.section,
+          category: step_a.category
+        )
+
+      step_d =
+        insert(:step,
+          code: "SA",
+          name: "Saída",
+          section: step_a.section,
+          category: step_a.category
+        )
+
+      insert(:connection, source_step: step_b, target_step: step_c)
+      insert(:connection, source_step: step_c, target_step: step_d)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
+
+      html =
+        render_submit(lv, "generate_sequences", %{
+          "start_query" => "BF · Base frontal",
+          "start_code" => "BF",
+          "length" => "4",
+          "count" => "1",
+          "loop_mode" => "none",
+          "max_bf_visits" => "1"
+        })
+
+      assert html =~ "Opção 1"
+      assert html =~ "4 passos"
+      assert html =~ "sem loops"
+      assert html =~ "BF · Base frontal"
     end
   end
 
