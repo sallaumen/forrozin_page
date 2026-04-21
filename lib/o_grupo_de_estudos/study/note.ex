@@ -31,7 +31,8 @@ defmodule OGrupoDeEstudos.Study.Note do
   def changeset(note, attrs) do
     note
     |> cast(attrs, [:kind, :note_date, :content, :owner_user_id, :teacher_student_link_id])
-    |> validate_required([:kind, :note_date, :content])
+    |> put_default_content()
+    |> validate_required([:kind, :note_date])
     |> validate_inclusion(:kind, @kinds)
     |> validate_kind_scope()
     |> foreign_key_constraint(:owner_user_id)
@@ -58,6 +59,13 @@ defmodule OGrupoDeEstudos.Study.Note do
 
       _ ->
         changeset
+    end
+  end
+
+  defp put_default_content(changeset) do
+    case get_field(changeset, :content) do
+      nil -> put_change(changeset, :content, "")
+      _ -> changeset
     end
   end
 end

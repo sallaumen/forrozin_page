@@ -35,5 +35,31 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert html =~ "vínculo foi encerrado"
       assert html =~ "somente leitura"
     end
+
+    test "can search and add related steps to the shared diary", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+
+      step =
+        insert(:step,
+          code: "BF",
+          name: "Base frontal",
+          approved: true,
+          wip: false,
+          status: "published"
+        )
+
+      {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      conn = log_in_user(conn, teacher)
+      {:ok, lv, _html} = live(conn, ~p"/study/shared/#{link.id}")
+
+      assert render_change(lv, "search_shared_step", %{"term" => "base"}) =~ "Base frontal"
+
+      lv
+      |> element("#add-shared-step-#{step.id}")
+      |> render_click()
+
+      assert has_element?(lv, "#shared-related-step-#{step.id}")
+    end
   end
 end

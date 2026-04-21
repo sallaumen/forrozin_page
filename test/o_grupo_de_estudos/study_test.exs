@@ -25,4 +25,18 @@ defmodule OGrupoDeEstudos.StudyTest do
       assert Study.get_personal_note(user.id, today) == nil
     end
   end
+
+  describe "search_related_steps/1" do
+    test "returns public steps by code or name" do
+      insert(:step,
+        code: "SC",
+        name: "Sacada simples",
+        approved: true,
+        wip: false,
+        status: "published"
+      )
+
+      assert [%{code: "SC"} | _] = Study.search_related_steps("sac")
+    end
+  end
 end

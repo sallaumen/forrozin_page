@@ -6,6 +6,7 @@ defmodule OGrupoDeEstudos.Study do
   import Ecto.Query
 
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.PubSub
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
@@ -49,6 +50,16 @@ defmodule OGrupoDeEstudos.Study do
   def get_shared_note(link_id, date) do
     Repo.get_by(Note, kind: "shared", teacher_student_link_id: link_id, note_date: date)
     |> preload_note()
+  end
+
+  def search_related_steps(term) when is_binary(term) do
+    if String.trim(term) == "" do
+      []
+    else
+      term
+      |> Encyclopedia.search_steps()
+      |> Enum.take(6)
+    end
   end
 
   def list_personal_note_history(user_id) do

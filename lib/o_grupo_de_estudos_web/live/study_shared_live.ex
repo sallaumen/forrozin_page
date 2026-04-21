@@ -36,7 +36,13 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
            today: today,
            today_note: Study.get_shared_note(link.id, today),
            today_note_content: note_content(Study.get_shared_note(link.id, today)),
-           history: Study.list_shared_note_history(link.id)
+           history: Study.list_shared_note_history(link.id),
+           shared_related_steps:
+             case Study.get_shared_note(link.id, today) do
+               nil -> []
+               note -> note.related_steps
+             end,
+           shared_step_suggestions: []
          )}
     end
   end
@@ -47,7 +53,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
       {:ok, note} =
         Study.upsert_shared_note(socket.assigns.link, socket.assigns.today, %{
           content: content,
-          step_ids: []
+          step_ids: Enum.map(socket.assigns.shared_related_steps, & &1.id)
         })
 
       {:noreply,
@@ -63,6 +69,46 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
 
   def handle_event("save_shared_note", _params, socket), do: {:noreply, socket}
 
+  def handle_event("search_shared_step", %{"term" => term}, socket) do
+    {:noreply, assign(socket, :shared_step_suggestions, Study.search_related_steps(term))}
+  end
+
+  def handle_event("add_shared_step", %{"id" => step_id}, socket) do
+    step = Enum.find(socket.assigns.shared_step_suggestions, &(&1.id == step_id))
+    updated_steps = prepend_unique_step(socket.assigns.shared_related_steps, step)
+
+    {:ok, today_note} =
+      Study.upsert_shared_note(socket.assigns.link, socket.assigns.today, %{
+        content: socket.assigns.today_note_content,
+        step_ids: Enum.map(updated_steps, & &1.id)
+      })
+
+    {:noreply,
+     assign(socket,
+       today_note: today_note,
+       shared_related_steps: updated_steps,
+       shared_step_suggestions: [],
+       history: Study.list_shared_note_history(socket.assigns.link.id)
+     )}
+  end
+
+  def handle_event("remove_shared_step", %{"id" => step_id}, socket) do
+    updated_steps = Enum.reject(socket.assigns.shared_related_steps, &(&1.id == step_id))
+
+    {:ok, today_note} =
+      Study.upsert_shared_note(socket.assigns.link, socket.assigns.today, %{
+        content: socket.assigns.today_note_content,
+        step_ids: Enum.map(updated_steps, & &1.id)
+      })
+
+    {:noreply,
+     assign(socket,
+       today_note: today_note,
+       shared_related_steps: updated_steps,
+       history: Study.list_shared_note_history(socket.assigns.link.id)
+     )}
+  end
+
   @impl true
   def handle_info({:study_note_updated, link_id}, %{assigns: %{link: %{id: link_id}}} = socket) do
     note = Study.get_shared_note(link_id, socket.assigns.today)
@@ -71,7 +117,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
      assign(socket,
        today_note: note,
        today_note_content: note_content(note),
-       history: Study.list_shared_note_history(link_id)
+       history: Study.list_shared_note_history(link_id),
+       shared_related_steps: if(note, do: note.related_steps, else: [])
      )}
   end
 
@@ -91,4 +138,10 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   end
 
   defp note_preview(_), do: ""
+
+  defp prepend_unique_step(steps, nil), do: steps
+
+  defp prepend_unique_step(steps, step) do
+    [step | Enum.reject(steps, &(&1.id == step.id))]
+  end
 end

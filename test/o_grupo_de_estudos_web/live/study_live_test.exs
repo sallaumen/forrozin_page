@@ -36,5 +36,29 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert html =~ student.name
       assert html =~ "/study/shared/#{link.id}"
     end
+
+    test "can search and add related steps to the personal diary", %{conn: conn} do
+      user = insert(:user)
+
+      step =
+        insert(:step,
+          code: "SC",
+          name: "Sacada simples",
+          approved: true,
+          wip: false,
+          status: "published"
+        )
+
+      conn = log_in_user(conn, user)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      assert render_change(lv, "search_personal_step", %{"term" => "sac"}) =~ "Sacada simples"
+
+      lv
+      |> element("#add-personal-step-#{step.id}")
+      |> render_click()
+
+      assert has_element?(lv, "#personal-related-step-#{step.id}")
+    end
   end
 end
