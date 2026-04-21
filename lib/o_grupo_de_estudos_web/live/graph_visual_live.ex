@@ -168,7 +168,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
     required_codes = socket.assigns.seq_required_codes
 
-    max_bf = parse_int(Map.get(params, "max_bf_visits", "1"), 1)
+    max_bf = parse_int(Map.get(params, "max_bf_visits", "3"), 3)
 
     gen_params = %{
       start_code: start_code,
