@@ -115,7 +115,12 @@ defmodule OGrupoDeEstudos.Study do
 
       existing ->
         existing
-        |> TeacherStudentLink.changeset(%{pending: true, active: false, ended_at: nil, initiated_by_id: teacher_id})
+        |> TeacherStudentLink.changeset(%{
+          pending: true,
+          active: false,
+          ended_at: nil,
+          initiated_by_id: teacher_id
+        })
         |> Repo.update()
     end
   end
@@ -124,7 +129,8 @@ defmodule OGrupoDeEstudos.Study do
 
   @doc "Accept a pending link request. Either side can accept if they didn't initiate."
   def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: acceptor_id})
-      when acceptor_id in [link.teacher_id, link.student_id] and acceptor_id != link.initiated_by_id do
+      when acceptor_id in [link.teacher_id, link.student_id] and
+             acceptor_id != link.initiated_by_id do
     result =
       link
       |> TeacherStudentLink.changeset(%{pending: false, active: true})
@@ -223,6 +229,17 @@ defmodule OGrupoDeEstudos.Study do
     |> Repo.preload(:related_steps)
   end
 
+  def personal_note_week_count(user_id, today \\ Date.utc_today()) do
+    week_start = Date.add(today, -6)
+
+    from(note in Note,
+      where: note.kind == "personal" and note.owner_user_id == ^user_id,
+      where: note.note_date >= ^week_start and note.note_date <= ^today,
+      select: count(note.id)
+    )
+    |> Repo.one()
+  end
+
   def list_teachers_for_student(student_id) do
     list_teacher_links_for_student(student_id)
     |> Enum.map(& &1.teacher)
@@ -249,6 +266,37 @@ defmodule OGrupoDeEstudos.Study do
       order_by: [asc: link.inserted_at]
     )
     |> Repo.all()
+  end
+
+  def list_shared_activity_for_user(user_or_id, today \\ Date.utc_today())
+
+  def list_shared_activity_for_user(%User{id: user_id}, today) do
+    list_shared_activity_for_user(user_id, today)
+  end
+
+  def list_shared_activity_for_user(user_id, today) do
+    from(link in TeacherStudentLink,
+      where:
+        (link.teacher_id == ^user_id or link.student_id == ^user_id) and link.pending == false,
+      preload: [:teacher, :student],
+      order_by: [desc: link.updated_at]
+    )
+    |> Repo.all()
+    |> Enum.map(fn link ->
+      today_note = get_shared_note(link.id, today)
+      last_note = List.first(list_shared_note_history(link.id))
+      counterpart = if link.teacher_id == user_id, do: link.student, else: link.teacher
+
+      %{
+        link_id: link.id,
+        active: link.active,
+        counterpart: counterpart,
+        has_today_note?: not is_nil(today_note),
+        today_note_preview: dashboard_note_preview(today_note),
+        last_note_at: if(last_note, do: last_note.updated_at),
+        last_note_preview: dashboard_note_preview(last_note)
+      }
+    end)
   end
 
   def upsert_personal_note(%User{id: user_id}, date, attrs) do
@@ -360,6 +408,14 @@ defmodule OGrupoDeEstudos.Study do
 
   defp preload_note(nil), do: nil
   defp preload_note(%Note{} = note), do: Repo.preload(note, :related_steps)
+
+  defp dashboard_note_preview(nil), do: nil
+
+  defp dashboard_note_preview(%Note{content: content}) do
+    content
+    |> String.trim()
+    |> String.slice(0, 120)
+  end
 
   defp normalize_content(nil), do: ""
   defp normalize_content(content), do: String.trim(content)
