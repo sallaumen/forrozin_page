@@ -168,7 +168,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
     user = socket.assigns.current_user
-    Engagement.toggle_follow(user.id, target_id)
+    result = Engagement.toggle_follow(user.id, target_id)
+    socket = OGrupoDeEstudosWeb.Helpers.RateLimit.maybe_flash_rate_limit(socket, result)
 
     list =
       case socket.assigns.followers_sub_tab do
@@ -365,6 +366,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
     case Engagement.create_sequence_comment(user, seq_id, %{body: body}) do
       {:ok, _} -> {:noreply, reload_seq_expanded(socket)}
+      {:error, :rate_limited} -> {:noreply, put_flash(socket, :error, "Calma! Muitos comentários seguidos. Espere alguns segundinhos.")}
       {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao postar comentário.")}
     end
   end

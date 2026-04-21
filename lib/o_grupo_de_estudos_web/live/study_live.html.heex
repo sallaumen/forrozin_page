@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
+<div id="study-home-shell" class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav
     current_user={@current_user}
     is_admin={@is_admin}
@@ -10,133 +10,500 @@
     notification_preview_groups={assigns[:notification_preview_groups] || []}
   />
 
-  <main class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-5 pb-24 md:pb-8">
-    <%!-- ═══ Header compacto ═══ --%>
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-bold text-ink-900 m-0">Meu diário</h1>
-        <p class="text-xs text-ink-500 mt-0.5">
-          {Calendar.strftime(@today, "%A, %d de %B")}
-        </p>
-      </div>
-      <%= if is_nil(@today_note) do %>
-        <span class="text-[10px] font-semibold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-3 py-1">
-          Sem registro hoje
-        </span>
-      <% else %>
-        <span class="text-[10px] font-semibold text-accent-green bg-accent-green/10 border border-accent-green/20 rounded-full px-3 py-1">
-          Registrado
-        </span>
-      <% end %>
-    </div>
-
-    <%!-- ═══ Diário de hoje (PRINCIPAL — always visible, above the fold) ═══ --%>
-    <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
-      <.form
-        for={to_form(%{"content" => @today_note_content}, as: :personal_note)}
-        id="study-personal-note-form"
-        phx-change="save_personal_note"
+  <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-6 px-4 py-6 pb-24 md:pb-8 xl:px-8">
+    <section id="study-overview-grid" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+      <section
+        id="study-diary-panel"
+        class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
       >
-        <textarea
-          id="study-personal-note-content"
-          name="personal_note[content]"
-          rows="6"
-          placeholder="O que você estudou hoje? O que funcionou? O que quer revisitar?"
-          class="w-full rounded-lg border border-ink-200 bg-ink-50 px-4 py-3 font-serif text-sm leading-7 text-ink-900 box-border resize-y focus:border-accent-orange/40 focus:ring-1 focus:ring-accent-orange/20 outline-none transition-colors"
-        >{@today_note_content}</textarea>
-      </.form>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="max-w-2xl">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-orange m-0">
+              Estudos
+            </p>
+            <h1 class="mt-2 text-2xl font-bold text-ink-900 md:text-3xl m-0">Diário de hoje</h1>
+            <p class="mt-1 text-sm text-ink-500">
+              {Calendar.strftime(@today, "%A, %d de %B")}
+            </p>
+            <p class="mt-3 text-sm leading-7 text-ink-600 m-0">
+              Escreve rapidinho o que você praticou, o que ficou gostoso e o que vale revisitar.
+            </p>
+          </div>
 
-      <%!-- Passos vinculados --%>
-      <div class="mt-3">
-        <div :if={@personal_related_steps != []} class="flex flex-wrap gap-1.5 mb-3">
-          <%= for step <- @personal_related_steps do %>
-            <button
-              id={"personal-related-step-#{step.id}"}
-              type="button"
-              phx-click="remove_personal_step"
-              phx-value-id={step.id}
-              class="inline-flex items-center gap-1.5 rounded-full border border-accent-orange/25 bg-accent-orange/[0.07] px-2.5 py-1 text-[11px] font-semibold text-accent-orange cursor-pointer hover:bg-accent-orange/15 transition-colors"
+          <div class="flex flex-wrap items-center gap-2">
+            <span
+              id="study-weekly-summary"
+              class="rounded-full border border-ink-200 bg-ink-50 px-3 py-1 text-[11px] font-semibold text-ink-600"
             >
-              <code class="font-bold">{step.code}</code>
-              <span class="text-ink-600">{step.name}</span>
-              <span class="text-accent-orange/50 ml-0.5">&times;</span>
-            </button>
-          <% end %>
+              {@weekly_note_count} {if @weekly_note_count == 1, do: "registro", else: "registros"} nesta semana
+            </span>
+            <span class={[
+              "rounded-full border px-3 py-1 text-[11px] font-semibold",
+              @today_status.tone == :success &&
+                "border-accent-green/25 bg-accent-green/10 text-accent-green",
+              @today_status.tone == :warning &&
+                "border-accent-orange/25 bg-accent-orange/10 text-accent-orange"
+            ]}>
+              {@today_status.label}
+            </span>
+          </div>
         </div>
 
-        <div class="relative">
-          <form phx-change="search_personal_step">
-            <input
-              id="personal-step-search"
-              name="term"
-              type="text"
-              autocomplete="off"
-              placeholder="+ Vincular passo ao estudo de hoje"
-              class="w-full rounded-lg border border-ink-200 bg-ink-50/50 px-3 py-2 font-serif text-xs text-ink-700 box-border focus:border-accent-orange/40 outline-none transition-colors"
-            />
-          </form>
+        <.form
+          for={to_form(%{"content" => @today_note_content}, as: :personal_note)}
+          id="study-diary-form"
+          phx-change="save_personal_note"
+          class="mt-5"
+        >
+          <textarea
+            id="study-personal-note-content"
+            name="personal_note[content]"
+            rows="7"
+            placeholder="O que você praticou hoje? O que ficou gostoso? O que quer revisitar na próxima aula?"
+            class="w-full rounded-xl border border-ink-200 bg-ink-50 px-4 py-4 font-serif text-sm leading-7 text-ink-900 box-border resize-y outline-none transition-colors focus:border-accent-orange/40 focus:ring-1 focus:ring-accent-orange/20"
+          >{@today_note_content}</textarea>
+        </.form>
 
-          <div
-            :if={@personal_step_suggestions != []}
-            class="mt-1 rounded-lg border border-ink-200 bg-white shadow-md overflow-hidden"
-          >
-            <%= for step <- @personal_step_suggestions do %>
+        <div id="study-related-steps-panel" class="mt-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-sm font-bold text-ink-900 m-0">Passos relacionados</h2>
+              <p class="mt-1 text-xs text-ink-500 m-0">
+                Vincule os passos do acervo sem poluir o texto da sua nota.
+              </p>
+            </div>
+          </div>
+
+          <div :if={@personal_related_steps != []} class="mt-3 flex flex-wrap gap-1.5">
+            <%= for step <- @personal_related_steps do %>
               <button
-                id={"add-personal-step-#{step.id}"}
+                id={"personal-related-step-#{step.id}"}
                 type="button"
-                phx-click="add_personal_step"
+                phx-click="remove_personal_step"
                 phx-value-id={step.id}
-                class="flex w-full items-center justify-between px-3 py-2.5 text-left border-b border-ink-100 last:border-b-0 cursor-pointer hover:bg-ink-50 transition-colors bg-transparent border-0"
+                class="inline-flex items-center gap-1.5 rounded-full border border-accent-orange/25 bg-accent-orange/[0.07] px-2.5 py-1 text-[11px] font-semibold text-accent-orange cursor-pointer hover:bg-accent-orange/15 transition-colors"
               >
-                <span class="text-xs text-ink-800">
-                  <code class="text-accent-orange font-bold mr-1">{step.code}</code>{step.name}
-                </span>
-                <span class="text-[10px] font-semibold text-accent-orange">Adicionar</span>
+                <code class="font-bold">{step.code}</code>
+                <span class="text-ink-600">{step.name}</span>
+                <span class="text-accent-orange/50 ml-0.5">&times;</span>
               </button>
             <% end %>
           </div>
+
+          <div class="relative mt-3">
+            <form phx-change="search_personal_step">
+              <input
+                id="personal-step-search"
+                name="term"
+                type="text"
+                autocomplete="off"
+                placeholder="+ Vincular passo ao estudo de hoje"
+                class="w-full rounded-xl border border-ink-200 bg-ink-50/80 px-3 py-2.5 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
+              />
+            </form>
+
+            <div
+              :if={@personal_step_suggestions != []}
+              class="mt-2 overflow-hidden rounded-xl border border-ink-200 bg-white shadow-md"
+            >
+              <%= for step <- @personal_step_suggestions do %>
+                <button
+                  id={"add-personal-step-#{step.id}"}
+                  type="button"
+                  phx-click="add_personal_step"
+                  phx-value-id={step.id}
+                  class="flex w-full items-center justify-between px-3 py-2.5 text-left border-b border-ink-100 last:border-b-0 cursor-pointer hover:bg-ink-50 transition-colors bg-transparent border-x-0 border-t-0"
+                >
+                  <span class="text-xs text-ink-800">
+                    <code class="text-accent-orange font-bold mr-1">{step.code}</code>{step.name}
+                  </span>
+                  <span class="text-[10px] font-semibold text-accent-orange">Adicionar</span>
+                </button>
+              <% end %>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <aside id="study-movement-panel" class="flex flex-col gap-4">
+        <section class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-orange m-0">
+              Movimento
+            </p>
+            <h2 class="mt-2 text-lg font-bold text-ink-900 m-0">O que está vivo agora</h2>
+            <p class="mt-2 text-xs leading-6 text-ink-500 m-0">
+              Quando um diário conjunto ganhar vida, ele sobe aqui para você não perder o fio da meada.
+            </p>
+          </div>
+
+          <div class="mt-4 space-y-3">
+            <%= if @movement_cards == [] do %>
+              <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
+                <p class="text-sm leading-7 text-ink-500 m-0">
+                  Seus diários compartilhados vão aparecer aqui assim que algum professor ou aluno movimentar a nota.
+                </p>
+              </div>
+            <% else %>
+              <%= for movement <- @movement_cards do %>
+                <article
+                  id={"study-movement-card-#{movement.link_id}"}
+                  class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3"
+                >
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class={[
+                      "rounded-full px-2.5 py-1 text-[10px] font-semibold border",
+                      movement.has_today_note? &&
+                        "border-accent-green/25 bg-accent-green/10 text-accent-green",
+                      !movement.has_today_note? &&
+                        "border-ink-200 bg-white text-ink-500"
+                    ]}>
+                      {if movement.has_today_note?,
+                        do: "Diário conjunto hoje",
+                        else: "Último movimento"}
+                    </span>
+
+                    <span
+                      :if={!movement.active}
+                      class="rounded-full border border-ink-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-ink-500"
+                    >
+                      vínculo encerrado
+                    </span>
+                  </div>
+
+                  <.link
+                    id={"study-profile-link-#{movement.counterpart.username}"}
+                    navigate={~p"/users/#{movement.counterpart.username}"}
+                    class="mt-3 block text-base font-bold text-ink-900 no-underline hover:text-accent-orange transition-colors"
+                  >
+                    {movement.counterpart.name}
+                  </.link>
+                  <p class="mt-1 text-xs text-ink-500 m-0">@{movement.counterpart.username}</p>
+
+                  <p
+                    :if={movement.last_note_preview}
+                    class="mt-3 text-sm leading-6 text-ink-600 m-0"
+                  >
+                    {movement.last_note_preview}
+                  </p>
+
+                  <.link
+                    id={"study-open-shared-note-#{movement.link_id}"}
+                    navigate={~p"/study/shared/#{movement.link_id}"}
+                    class="mt-3 inline-flex rounded-full bg-accent-orange px-4 py-2 text-xs font-bold text-white no-underline hover:bg-accent-orange/90 transition-colors"
+                  >
+                    Abrir diário
+                  </.link>
+                </article>
+              <% end %>
+            <% end %>
+          </div>
+        </section>
+      </aside>
     </section>
 
-    <%!-- ═══ Histórico (colapsável) ═══ --%>
-    <section class="rounded-xl border border-ink-200 bg-white shadow-sm overflow-hidden">
-      <button
-        type="button"
-        phx-click="toggle_section"
-        phx-value-section="history"
-        class="w-full flex items-center justify-between px-4 py-3 bg-transparent border-0 cursor-pointer hover:bg-ink-50 transition-colors"
+    <section class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+      <section
+        id="study-people-panel"
+        class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
       >
-        <div class="flex items-center gap-2">
-          <h2 class="text-sm font-bold text-ink-900 m-0">Histórico</h2>
-          <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
-            {length(@personal_history)} {if length(@personal_history) == 1,
-              do: "dia",
-              else: "dias"}
-          </span>
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-orange m-0">
+              Pessoas de estudo
+            </p>
+            <h2 class="mt-2 text-lg font-bold text-ink-900 m-0">Quem vale abrir agora</h2>
+            <p class="mt-2 text-xs leading-6 text-ink-500 m-0">
+              Seus vínculos ficam aqui, junto com busca, pedidos e atalhos para entrar nos diários conjuntos.
+            </p>
+          </div>
         </div>
-        <.icon
-          name={if @section_history_open, do: "hero-chevron-up", else: "hero-chevron-down"}
-          class="w-4 h-4 text-ink-400"
-        />
-      </button>
 
-      <div :if={@section_history_open} class="px-4 pb-4 border-t border-ink-100">
-        <%= if @personal_history == [] do %>
-          <p class="text-xs text-ink-500 py-3 m-0">
-            Suas notas anteriores vão aparecer aqui.
-          </p>
-        <% else %>
-          <div class="space-y-2 mt-3">
+        <div class="mt-5">
+          <button
+            type="button"
+            phx-click="toggle_section"
+            phx-value-section="teachers"
+            class="flex w-full items-center justify-between rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 cursor-pointer transition-colors hover:bg-ink-100/60"
+          >
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-ink-900 m-0">Meus professores</h3>
+              <span :if={@teacher_links != []} class="text-[10px] text-ink-400 font-medium">
+                {length(@teacher_links)}
+              </span>
+            </div>
+            <.icon
+              name={if @section_teachers_open, do: "hero-chevron-up", else: "hero-chevron-down"}
+              class="w-4 h-4 text-ink-400"
+            />
+          </button>
+
+          <div :if={@section_teachers_open} class="mt-3 space-y-3">
+            <form phx-change="search_teacher" class="relative">
+              <input
+                id="study-teacher-search"
+                name="term"
+                type="text"
+                value={@teacher_search}
+                autocomplete="off"
+                placeholder="Buscar professor por nome ou @usuario..."
+                class="w-full rounded-xl border border-ink-200 bg-ink-50/80 px-3 py-2.5 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
+              />
+            </form>
+
+            <div
+              :if={@teacher_search_results != []}
+              class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm"
+            >
+              <%= for teacher <- @teacher_search_results do %>
+                <div class="flex items-center justify-between gap-3 px-3 py-3 border-b border-ink-100 last:border-b-0">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
+                      {String.first(teacher.name || teacher.username) |> String.upcase()}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-xs font-semibold text-ink-900 m-0 truncate">
+                        {teacher.name}
+                      </p>
+                      <p class="text-[10px] text-ink-500 m-0">
+                        @{teacher.username}
+                        <%= if teacher.city do %>
+                          <span class="text-ink-400"> ·    {teacher.city}</span>
+                        <% end %>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="request_teacher"
+                    phx-value-id={teacher.id}
+                    class="text-[10px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-3 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors shrink-0"
+                  >
+                    Estudar
+                  </button>
+                </div>
+              <% end %>
+            </div>
+
+            <%= if @teacher_links == [] and @teacher_search_results == [] do %>
+              <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
+                <p class="text-xs leading-6 text-ink-500 m-0">
+                  Busque por um professor acima ou peça o link de convite dele.
+                </p>
+              </div>
+            <% else %>
+              <div class="space-y-3">
+                <%= for link <- @teacher_links do %>
+                  <article class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3">
+                    <div class="flex items-start gap-3">
+                      <.link
+                        navigate={~p"/users/#{link.teacher.username}"}
+                        class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
+                      >
+                        <div class="w-10 h-10 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
+                          {String.first(link.teacher.name || link.teacher.username)
+                          |> String.upcase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-bold text-ink-900 m-0 truncate">
+                            {link.teacher.name}
+                          </p>
+                          <p class="text-[11px] text-ink-500 m-0">
+                            @{link.teacher.username}
+                            <%= if link.teacher.city do %>
+                              <span class="text-ink-400"> ·    {link.teacher.city}</span>
+                            <% end %>
+                          </p>
+                        </div>
+                      </.link>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                      <span class="text-[10px] text-ink-400">
+                        Desde {Calendar.strftime(link.inserted_at, "%d/%m/%Y")}
+                      </span>
+                      <.link
+                        navigate={~p"/study/shared/#{link.id}"}
+                        class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-4 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shadow-sm"
+                      >
+                        Abrir diário
+                      </.link>
+                    </div>
+                  </article>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <%= if @current_user.is_teacher do %>
+          <div class="mt-5">
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section="students"
+              class="flex w-full items-center justify-between rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 cursor-pointer transition-colors hover:bg-ink-100/60"
+            >
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-ink-900 m-0">Meus alunos</h3>
+                <span :if={@student_links != []} class="text-[10px] text-ink-400 font-medium">
+                  {length(@student_links)}
+                </span>
+                <span
+                  :if={@pending_requests != []}
+                  class="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-accent-red text-white text-[10px] font-bold px-1.5"
+                >
+                  {length(@pending_requests)}
+                </span>
+              </div>
+              <.icon
+                name={if @section_students_open, do: "hero-chevron-up", else: "hero-chevron-down"}
+                class="w-4 h-4 text-ink-400"
+              />
+            </button>
+
+            <div :if={@section_students_open} class="mt-3 space-y-3">
+              <%= if @pending_requests != [] do %>
+                <div class="space-y-2">
+                  <p class="text-[10px] font-bold text-gold-600 uppercase tracking-wider m-0">
+                    Pedidos pendentes
+                  </p>
+                  <%= for req <- @pending_requests do %>
+                    <div class="flex items-center gap-3 rounded-xl border border-gold-500/20 bg-gold-500/[0.05] px-3 py-3">
+                      <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
+                        {String.first(req.student.name || req.student.username) |> String.upcase()}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-ink-900 m-0 truncate">
+                          {req.student.name}
+                        </p>
+                        <p class="text-[10px] text-ink-500 m-0">@{req.student.username}</p>
+                      </div>
+                      <div class="flex gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          phx-click="accept_request"
+                          phx-value-id={req.id}
+                          class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
+                        >
+                          Aceitar
+                        </button>
+                        <button
+                          type="button"
+                          phx-click="reject_request"
+                          phx-value-id={req.id}
+                          class="text-[10px] font-bold text-ink-500 bg-ink-100 rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-ink-200 transition-colors"
+                        >
+                          Recusar
+                        </button>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+
+              <%= if @student_links == [] and @pending_requests == [] do %>
+                <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
+                  <p class="text-xs leading-6 text-ink-500 m-0">
+                    Nenhum aluno conectado. Compartilhe seu link de convite nas configurações.
+                  </p>
+                </div>
+              <% else %>
+                <div class="space-y-3">
+                  <%= for link <- @student_links do %>
+                    <article class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3">
+                      <div class="flex items-start gap-3">
+                        <.link
+                          navigate={~p"/users/#{link.student.username}"}
+                          class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
+                        >
+                          <div class="w-10 h-10 rounded-full bg-ink-800 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
+                            {String.first(link.student.name || link.student.username)
+                            |> String.upcase()}
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-ink-900 m-0 truncate">
+                              {link.student.name}
+                            </p>
+                            <p class="text-[11px] text-ink-500 m-0">
+                              @{link.student.username}
+                              <%= if link.student.city do %>
+                                <span class="text-ink-400"> ·    {link.student.city}</span>
+                              <% end %>
+                            </p>
+                          </div>
+                        </.link>
+                      </div>
+                      <div class="mt-3 flex items-center justify-between gap-3">
+                        <span class="text-[10px] text-ink-400">
+                          Desde {Calendar.strftime(link.inserted_at, "%d/%m/%Y")}
+                        </span>
+                        <.link
+                          navigate={~p"/study/shared/#{link.id}"}
+                          class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-4 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shadow-sm"
+                        >
+                          Abrir diário
+                        </.link>
+                      </div>
+                    </article>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </section>
+
+      <section
+        id="study-history-panel"
+        class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
+      >
+        <button
+          type="button"
+          phx-click="toggle_section"
+          phx-value-section="history"
+          class="flex w-full items-center justify-between bg-transparent border-0 px-0 py-0 cursor-pointer"
+        >
+          <div class="text-left">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-orange m-0">
+              Histórico
+            </p>
+            <h2 class="mt-2 text-lg font-bold text-ink-900 m-0">Memória de estudo</h2>
+            <p class="mt-2 text-xs leading-6 text-ink-500 m-0">
+              Abra quando quiser revisitar suas notas passadas e os passos que marcaram cada dia.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
+              {length(@personal_history)} {if length(@personal_history) == 1,
+                do: "dia",
+                else: "dias"}
+            </span>
+            <.icon
+              name={if @section_history_open, do: "hero-chevron-up", else: "hero-chevron-down"}
+              class="w-4 h-4 text-ink-400"
+            />
+          </div>
+        </button>
+
+        <div :if={@section_history_open} class="mt-4 space-y-3">
+          <%= if @personal_history == [] do %>
+            <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
+              <p class="text-sm leading-7 text-ink-500 m-0">
+                Suas notas anteriores vão aparecer aqui conforme você for registrando seus estudos.
+              </p>
+            </div>
+          <% else %>
             <%= for note <- @personal_history do %>
-              <div class="rounded-lg border border-ink-100 bg-ink-50/50 px-3 py-2.5">
-                <div class="flex items-center justify-between">
+              <article class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3">
+                <div class="flex items-center justify-between gap-3">
                   <span class="text-[11px] font-bold text-ink-700">
                     {Calendar.strftime(note.note_date, "%d/%m/%Y")}
                   </span>
-                  <div :if={note.related_steps != []} class="flex gap-1">
+
+                  <div :if={note.related_steps != []} class="flex flex-wrap justify-end gap-1">
                     <%= for step <- Enum.take(note.related_steps, 3) do %>
-                      <code class="text-[9px] bg-accent-orange/10 text-accent-orange rounded px-1 py-0.5">
+                      <code class="rounded bg-accent-orange/10 px-1.5 py-0.5 text-[9px] text-accent-orange">
                         {step.code}
                       </code>
                     <% end %>
@@ -145,248 +512,19 @@
                     </span>
                   </div>
                 </div>
+
                 <p
                   :if={note.content && note.content != ""}
-                  class="text-xs text-ink-600 mt-1 m-0 leading-relaxed line-clamp-2"
+                  class="mt-2 text-sm leading-6 text-ink-600 m-0"
                 >
                   {note_preview(note.content)}
                 </p>
-              </div>
+              </article>
             <% end %>
-          </div>
-        <% end %>
-      </div>
-    </section>
-
-    <%!-- ═══ Meus professores (colapsável) ═══ --%>
-    <section class="rounded-xl border border-ink-200 bg-white shadow-sm overflow-hidden">
-      <button
-        type="button"
-        phx-click="toggle_section"
-        phx-value-section="teachers"
-        class="w-full flex items-center justify-between px-4 py-3 bg-transparent border-0 cursor-pointer hover:bg-ink-50 transition-colors"
-      >
-        <div class="flex items-center gap-2">
-          <h2 class="text-sm font-bold text-ink-900 m-0">Meus professores</h2>
-          <span :if={@teacher_links != []} class="text-[10px] text-ink-400 font-medium">
-            {length(@teacher_links)}
-          </span>
-        </div>
-        <.icon
-          name={if @section_teachers_open, do: "hero-chevron-up", else: "hero-chevron-down"}
-          class="w-4 h-4 text-ink-400"
-        />
-      </button>
-
-      <div :if={@section_teachers_open} class="px-4 pb-4 border-t border-ink-100">
-        <%!-- Teacher search --%>
-        <div class="mt-3 mb-3">
-          <form phx-change="search_teacher" class="relative">
-            <input
-              name="term"
-              type="text"
-              value={@teacher_search}
-              autocomplete="off"
-              placeholder="Buscar professor por nome ou @usuario..."
-              class="w-full rounded-lg border border-ink-200 bg-ink-50/50 px-3 py-2 font-serif text-xs text-ink-700 box-border focus:border-accent-orange/40 outline-none transition-colors"
-            />
-          </form>
-          <div
-            :if={@teacher_search_results != []}
-            class="mt-1 rounded-lg border border-ink-200 bg-white shadow-md overflow-hidden"
-          >
-            <%= for teacher <- @teacher_search_results do %>
-              <div class="flex items-center justify-between px-3 py-2.5 border-b border-ink-100 last:border-b-0">
-                <div class="flex items-center gap-2">
-                  <div class="w-7 h-7 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                    {String.first(teacher.name || teacher.username) |> String.upcase()}
-                  </div>
-                  <div>
-                    <p class="text-xs font-semibold text-ink-900 m-0">{teacher.name}</p>
-                    <p class="text-[10px] text-ink-500 m-0">
-                      @{teacher.username}
-                      <%= if teacher.city do %>
-                        <span class="text-ink-400">· {teacher.city}</span>
-                      <% end %>
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  phx-click="request_teacher"
-                  phx-value-id={teacher.id}
-                  class="text-[10px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-3 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors"
-                >
-                  Estudar
-                </button>
-              </div>
-            <% end %>
-          </div>
-        </div>
-
-        <%= if @teacher_links == [] and @teacher_search_results == [] do %>
-          <p class="text-xs text-ink-500 py-1 m-0">
-            Busque por um professor acima ou peça o link de convite dele.
-          </p>
-        <% else %>
-          <div class="space-y-2.5 mt-3">
-            <%= for link <- @teacher_links do %>
-              <div class="rounded-lg border border-ink-100 bg-ink-50/30 overflow-hidden">
-                <div class="flex items-center gap-3 px-3.5 pt-3 pb-2">
-                  <.link
-                    navigate={~p"/users/#{link.teacher.username}"}
-                    class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
-                  >
-                    <div class="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
-                      {String.first(link.teacher.name || link.teacher.username) |> String.upcase()}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-xs font-bold text-ink-900 m-0 truncate">
-                        {link.teacher.name}
-                      </p>
-                      <p class="text-[10px] text-ink-500 m-0">
-                        @{link.teacher.username}
-                        <%= if link.teacher.city do %>
-                          <span class="text-ink-400"> ·  {link.teacher.city}</span>
-                        <% end %>
-                      </p>
-                    </div>
-                  </.link>
-                </div>
-                <div class="flex items-center justify-between px-3.5 pb-3 pt-1">
-                  <span class="text-[10px] text-ink-400">
-                    Desde {Calendar.strftime(link.inserted_at, "%d/%m/%Y")}
-                  </span>
-                  <.link
-                    navigate={~p"/study/shared/#{link.id}"}
-                    class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-4 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shadow-sm"
-                  >
-                    Abrir diário
-                  </.link>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    </section>
-
-    <%!-- ═══ Meus alunos (colapsável, SÓ se is_teacher) ═══ --%>
-    <%= if @current_user.is_teacher do %>
-      <section class="rounded-xl border border-ink-200 bg-white shadow-sm overflow-hidden">
-        <button
-          type="button"
-          phx-click="toggle_section"
-          phx-value-section="students"
-          class="w-full flex items-center justify-between px-4 py-3 bg-transparent border-0 cursor-pointer hover:bg-ink-50 transition-colors"
-        >
-          <div class="flex items-center gap-2">
-            <h2 class="text-sm font-bold text-ink-900 m-0">Meus alunos</h2>
-            <span :if={@student_links != []} class="text-[10px] text-ink-400 font-medium">
-              {length(@student_links)}
-            </span>
-            <span
-              :if={@pending_requests != []}
-              class="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-accent-red text-white text-[10px] font-bold px-1.5"
-            >
-              {length(@pending_requests)}
-            </span>
-          </div>
-          <.icon
-            name={if @section_students_open, do: "hero-chevron-up", else: "hero-chevron-down"}
-            class="w-4 h-4 text-ink-400"
-          />
-        </button>
-
-        <div :if={@section_students_open} class="px-4 pb-4 border-t border-ink-100">
-          <%!-- Pending requests --%>
-          <%= if @pending_requests != [] do %>
-            <div class="mt-3 mb-3 space-y-2">
-              <p class="text-[10px] font-bold text-gold-600 uppercase tracking-wider m-0">
-                Pedidos pendentes
-              </p>
-              <%= for req <- @pending_requests do %>
-                <div class="flex items-center gap-3 rounded-lg border border-gold-500/20 bg-gold-500/[0.05] px-3 py-2.5">
-                  <div class="w-7 h-7 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                    {String.first(req.student.name || req.student.username) |> String.upcase()}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-semibold text-ink-900 m-0 truncate">
-                      {req.student.name}
-                    </p>
-                    <p class="text-[10px] text-ink-500 m-0">@{req.student.username}</p>
-                  </div>
-                  <div class="flex gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      phx-click="accept_request"
-                      phx-value-id={req.id}
-                      class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
-                    >
-                      Aceitar
-                    </button>
-                    <button
-                      type="button"
-                      phx-click="reject_request"
-                      phx-value-id={req.id}
-                      class="text-[10px] font-bold text-ink-500 bg-ink-100 rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-ink-200 transition-colors"
-                    >
-                      Recusar
-                    </button>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-
-          <%= if @student_links == [] and @pending_requests == [] do %>
-            <p class="text-xs text-ink-500 py-3 m-0">
-              Nenhum aluno conectado. Compartilhe seu link de convite nas configurações.
-            </p>
-          <% else %>
-            <div class="space-y-2.5 mt-3">
-              <%= for link <- @student_links do %>
-                <div class="rounded-lg border border-ink-100 bg-ink-50/30 overflow-hidden">
-                  <div class="flex items-center gap-3 px-3.5 pt-3 pb-2">
-                    <.link
-                      navigate={~p"/users/#{link.student.username}"}
-                      class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
-                    >
-                      <div class="w-9 h-9 rounded-full bg-ink-800 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
-                        {String.first(link.student.name || link.student.username)
-                        |> String.upcase()}
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <p class="text-xs font-bold text-ink-900 m-0 truncate">
-                          {link.student.name}
-                        </p>
-                        <p class="text-[10px] text-ink-500 m-0">
-                          @{link.student.username}
-                          <%= if link.student.city do %>
-                            <span class="text-ink-400"> ·  {link.student.city}</span>
-                          <% end %>
-                        </p>
-                      </div>
-                    </.link>
-                  </div>
-                  <div class="flex items-center justify-between px-3.5 pb-3 pt-1">
-                    <span class="text-[10px] text-ink-400">
-                      Desde {Calendar.strftime(link.inserted_at, "%d/%m/%Y")}
-                    </span>
-                    <.link
-                      navigate={~p"/study/shared/#{link.id}"}
-                      class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-4 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shadow-sm"
-                    >
-                      Abrir diário
-                    </.link>
-                  </div>
-                </div>
-              <% end %>
-            </div>
           <% end %>
         </div>
       </section>
-    <% end %>
+    </section>
   </main>
 
   <.bottom_nav
