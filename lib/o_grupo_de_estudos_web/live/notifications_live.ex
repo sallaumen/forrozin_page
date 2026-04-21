@@ -125,6 +125,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   end
 
   defp notification_path(%{parent_type: "sequence"}), do: "/community"
+  defp notification_path(%{parent_type: "study_link"}), do: "/study"
 
   defp notification_path(%{parent_type: "profile", parent_id: id}) do
     case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Accounts.User, id) do

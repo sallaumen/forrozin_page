@@ -52,7 +52,8 @@ defmodule OGrupoDeEstudos.Study do
             teacher_id: teacher_id,
             student_id: student_id,
             active: false,
-            pending: true
+            pending: true,
+            initiated_by_id: student_id
           })
           |> Repo.insert()
 
@@ -81,9 +82,49 @@ defmodule OGrupoDeEstudos.Study do
 
   def request_teacher_link(%User{}, _teacher_id), do: {:error, :cannot_link_self}
 
-  @doc "Teacher accepts a pending request from a student."
-  def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: teacher_id})
-      when teacher_id == link.teacher_id do
+  @doc "Teacher invites a student. Creates a pending link that student needs to accept."
+  def invite_student_link(%User{id: teacher_id, is_teacher: true}, student_id)
+      when teacher_id != student_id do
+    case Repo.get_by(TeacherStudentLink, teacher_id: teacher_id, student_id: student_id) do
+      nil ->
+        result =
+          %TeacherStudentLink{}
+          |> TeacherStudentLink.changeset(%{
+            teacher_id: teacher_id,
+            student_id: student_id,
+            active: false,
+            pending: true,
+            initiated_by_id: teacher_id
+          })
+          |> Repo.insert()
+
+        case result do
+          {:ok, link} ->
+            Dispatcher.notify_study_request(teacher_id, student_id, link.id)
+            {:ok, link}
+
+          error ->
+            error
+        end
+
+      %{active: true} ->
+        {:error, :already_connected}
+
+      %{pending: true} ->
+        {:error, :already_pending}
+
+      existing ->
+        existing
+        |> TeacherStudentLink.changeset(%{pending: true, active: false, ended_at: nil, initiated_by_id: teacher_id})
+        |> Repo.update()
+    end
+  end
+
+  def invite_student_link(_, _), do: {:error, :not_teacher}
+
+  @doc "Accept a pending link request. Either side can accept if they didn't initiate."
+  def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: acceptor_id})
+      when acceptor_id in [link.teacher_id, link.student_id] and acceptor_id != link.initiated_by_id do
     result =
       link
       |> TeacherStudentLink.changeset(%{pending: false, active: true})
@@ -91,7 +132,9 @@ defmodule OGrupoDeEstudos.Study do
 
     case result do
       {:ok, updated_link} ->
-        Dispatcher.notify_study_accepted(teacher_id, link.student_id, link.id)
+        # Notify the person who initiated that their request was accepted
+        other_id = if acceptor_id == link.teacher_id, do: link.student_id, else: link.teacher_id
+        Dispatcher.notify_study_accepted(acceptor_id, other_id, link.id)
         {:ok, updated_link}
 
       error ->

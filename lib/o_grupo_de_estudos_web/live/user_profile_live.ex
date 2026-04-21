@@ -240,15 +240,34 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     )
   end
 
+  # Student requests teacher OR teacher invites student
   def handle_event("request_study", _params, socket) do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
 
-    case Study.request_teacher_link(current, profile.id) do
+    result =
+      cond do
+        # Current user is student, profile is teacher → request
+        profile.is_teacher and not current.is_teacher ->
+          Study.request_teacher_link(current, profile.id)
+
+        # Current user is teacher, profile is anyone → invite
+        current.is_teacher ->
+          Study.invite_student_link(current, profile.id)
+
+        # Both non-teachers viewing teacher → request
+        profile.is_teacher ->
+          Study.request_teacher_link(current, profile.id)
+
+        true ->
+          {:error, :invalid}
+      end
+
+    case result do
       {:ok, _} ->
         {:noreply,
          socket
-         |> assign(:study_link_status, :pending)
+         |> assign(:study_link_status, :pending_sent)
          |> put_flash(:info, "Pedido enviado! #{Accounts.first_name(profile)} será notificado(a).")}
 
       {:error, :already_connected} ->
@@ -262,22 +281,71 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     end
   end
 
+  # Accept pending request directly from profile
+  def handle_event("accept_study", _params, socket) do
+    current = socket.assigns.current_user
+    profile = socket.assigns.profile_user
+
+    import Ecto.Query
+    alias OGrupoDeEstudos.Study.TeacherStudentLink
+
+    # Find the pending link between these two users (either direction)
+    link =
+      OGrupoDeEstudos.Repo.one(
+        from(l in TeacherStudentLink,
+          where:
+            l.pending == true and
+              ((l.teacher_id == ^profile.id and l.student_id == ^current.id) or
+                 (l.teacher_id == ^current.id and l.student_id == ^profile.id))
+        )
+      )
+
+    if link do
+      case Study.accept_link_request(link, current) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:study_link_status, :connected)
+           |> put_flash(:info, "Conexão aceita!")}
+
+        _ ->
+          {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   defp study_link_status(current_user, profile_user) do
-    if current_user.id == profile_user.id or not profile_user.is_teacher do
+    if current_user.id == profile_user.id do
       nil
     else
       import Ecto.Query
       alias OGrupoDeEstudos.Study.TeacherStudentLink
 
-      case OGrupoDeEstudos.Repo.one(
-             from(l in TeacherStudentLink,
-               where: l.teacher_id == ^profile_user.id and l.student_id == ^current_user.id
-             )
-           ) do
-        nil -> :available
-        %{active: true} -> :connected
-        %{pending: true} -> :pending
-        _ -> :available
+      # Check both directions: profile as teacher OR profile as student
+      link =
+        OGrupoDeEstudos.Repo.one(
+          from(l in TeacherStudentLink,
+            where:
+              (l.teacher_id == ^profile_user.id and l.student_id == ^current_user.id) or
+                (l.teacher_id == ^current_user.id and l.student_id == ^profile_user.id)
+          )
+        )
+
+      case link do
+        nil ->
+          # Can they connect? Only show button if either is teacher
+          if profile_user.is_teacher or current_user.is_teacher, do: :available, else: nil
+
+        %{active: true} ->
+          :connected
+
+        %{pending: true, initiated_by_id: initiated_id} ->
+          if initiated_id == current_user.id, do: :pending_sent, else: :pending_received
+
+        _ ->
+          :available
       end
     end
   end

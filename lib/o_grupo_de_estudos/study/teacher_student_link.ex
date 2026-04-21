@@ -15,6 +15,7 @@ defmodule OGrupoDeEstudos.Study.TeacherStudentLink do
 
     belongs_to :teacher, User
     belongs_to :student, User
+    belongs_to :initiated_by, User
 
     has_many :notes, Note
 
@@ -23,7 +24,7 @@ defmodule OGrupoDeEstudos.Study.TeacherStudentLink do
 
   def changeset(link, attrs) do
     link
-    |> cast(attrs, [:teacher_id, :student_id, :active, :pending, :ended_at])
+    |> cast(attrs, [:teacher_id, :student_id, :active, :pending, :ended_at, :initiated_by_id])
     |> validate_required([:teacher_id, :student_id])
     |> validate_teacher_student_difference()
     |> foreign_key_constraint(:teacher_id)

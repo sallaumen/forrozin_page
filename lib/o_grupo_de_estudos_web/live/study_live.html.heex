@@ -251,6 +251,12 @@
             <span :if={@student_links != []} class="text-[10px] text-ink-400 font-medium">
               {length(@student_links)}
             </span>
+            <span
+              :if={@pending_requests != []}
+              class="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-accent-red text-white text-[10px] font-bold px-1.5"
+            >
+              {length(@pending_requests)}
+            </span>
           </div>
           <.icon
             name={if @section_students_open, do: "hero-chevron-up", else: "hero-chevron-down"}
