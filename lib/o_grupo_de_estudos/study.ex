@@ -44,6 +44,26 @@ defmodule OGrupoDeEstudos.Study do
     |> preload_note()
   end
 
+  def list_teachers_for_student(student_id) do
+    from(link in TeacherStudentLink,
+      join: teacher in assoc(link, :teacher),
+      where: link.student_id == ^student_id and link.active == true,
+      order_by: [asc: teacher.name],
+      select: teacher
+    )
+    |> Repo.all()
+  end
+
+  def list_students_for_teacher(teacher_id) do
+    from(link in TeacherStudentLink,
+      join: student in assoc(link, :student),
+      where: link.teacher_id == ^teacher_id and link.active == true,
+      order_by: [asc: student.name],
+      select: student
+    )
+    |> Repo.all()
+  end
+
   def upsert_personal_note(%User{id: user_id}, date, attrs) do
     content = normalize_content(Map.get(attrs, :content) || Map.get(attrs, "content"))
     step_ids = normalize_step_ids(Map.get(attrs, :step_ids) || Map.get(attrs, "step_ids"))

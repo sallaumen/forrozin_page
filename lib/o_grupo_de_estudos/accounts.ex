@@ -90,6 +90,10 @@ defmodule OGrupoDeEstudos.Accounts do
 
   Returns `{:ok, user}` or `{:error, changeset}`.
   """
+  def change_profile(user, attrs \\ %{}) do
+    User.profile_changeset(user, attrs)
+  end
+
   def update_profile(user, attrs) do
     user
     |> User.profile_changeset(attrs)

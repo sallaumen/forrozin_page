@@ -33,7 +33,13 @@
       </div>
     </div>
 
-    <form phx-change="validate" phx-submit="save" phx-hook="FormPersist" id="settings-form">
+    <.form
+      for={@form}
+      phx-change="validate"
+      phx-submit="save"
+      phx-hook="FormPersist"
+      id="settings-form"
+    >
       <%!-- Avatar upload --%>
       <section class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4">
         <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block">
@@ -76,10 +82,10 @@
               Nome completo
             </label>
             <input
-              id="name"
-              name="name"
+              id={@form[:name].id}
+              name={@form[:name].name}
               type="text"
-              value={@name}
+              value={@form[:name].value}
               class="w-full py-2 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 bg-ink-50 box-border"
             />
           </div>
@@ -95,10 +101,10 @@
                 @
               </span>
               <input
-                id="username"
-                name="username"
+                id={@form[:username].id}
+                name={@form[:username].name}
                 type="text"
-                value={@username}
+                value={@form[:username].value}
                 class="w-full py-2 pl-8 pr-3 border border-ink-300 rounded font-serif text-base text-ink-900 bg-ink-50 box-border"
               />
             </div>
@@ -121,7 +127,7 @@
             </label>
             <select
               id="settings-country"
-              name="country"
+              name={@form[:country].name}
               class="w-full py-2 px-2 border border-ink-300 rounded font-serif text-sm text-ink-900 bg-ink-50 box-border"
             >
               <option value="BR" selected={@country == "BR"}>Brasil</option>
@@ -165,7 +171,7 @@
               </label>
               <select
                 id="settings-state"
-                name="state"
+                name={@form[:state].name}
                 class="w-full py-2 px-2 border border-ink-300 rounded font-serif text-sm text-ink-900 bg-ink-50 box-border"
               >
                 <option value="">UF</option>
@@ -175,7 +181,7 @@
                       ~w(AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO)
                   }
                   value={uf}
-                  selected={@state == uf}
+                  selected={@form[:state].value == uf}
                 >
                   {uf}
                 </option>
@@ -191,13 +197,28 @@
             </label>
             <input
               id="settings-city"
-              name="city"
+              name={@form[:city].name}
               type="text"
-              value={@city}
+              value={@form[:city].value}
               class="w-full py-2 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 bg-ink-50 box-border"
             />
           </div>
         </div>
+      </section>
+
+      <section class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4">
+        <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-3 block">
+          Área de estudo
+        </label>
+        <.input
+          field={@form[:is_teacher]}
+          type="checkbox"
+          label="Sou professor(a)"
+          class="mr-2 h-4 w-4 accent-accent-orange"
+        />
+        <p class="mt-2 text-sm text-ink-500">
+          Ative isso para ganhar o espaço de professor e compartilhar seu convite fixo com alunos.
+        </p>
       </section>
 
       <%!-- Bio --%>
@@ -209,15 +230,15 @@
           Bio
         </label>
         <textarea
-          id="bio"
-          name="bio"
+          id={@form[:bio].id}
+          name={@form[:bio].name}
           rows="5"
           maxlength="2000"
           placeholder="Escreva um pouco sobre você..."
           class="w-full py-2 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 bg-ink-50 resize-y box-border"
-        >{@bio}</textarea>
+        >{@form[:bio].value}</textarea>
         <div class="text-xs text-ink-500 mt-1 text-right">
-          {String.length(@bio)}/2000
+          {@bio_length}/2000
         </div>
       </section>
 
@@ -235,14 +256,41 @@
           </span>
           <input
             id="instagram"
-            name="instagram"
+            name={@form[:instagram].name}
             type="text"
-            value={@instagram}
+            value={@form[:instagram].value}
             maxlength="100"
             placeholder="seu_usuario"
             class="flex-1 py-2 px-3 border border-ink-300 rounded-r font-serif text-base text-ink-900 bg-ink-50 box-border"
           />
         </div>
+      </section>
+
+      <section
+        :if={Phoenix.HTML.Form.normalize_value("checkbox", @form[:is_teacher].value)}
+        class="bg-ink-50 border border-ink-200 rounded-md p-5 mb-4"
+      >
+        <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold mb-1 block">
+          Convite para alunos
+        </label>
+        <p class="text-sm text-ink-500 mb-3">
+          Compartilhe seu link fixo para conectar alunos automaticamente com a sua área de estudos.
+        </p>
+        <input
+          id="settings-invite-url"
+          type="text"
+          readonly
+          value={@invite_url}
+          class="w-full py-2 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 bg-ink-100 box-border mb-3"
+        />
+        <a
+          href={"https://wa.me/?text=" <> URI.encode(@invite_message)}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center rounded bg-accent-orange px-4 py-2 text-sm font-semibold text-white no-underline"
+        >
+          Compartilhar no WhatsApp
+        </a>
       </section>
 
       <%!-- Feedback messages --%>
@@ -264,7 +312,7 @@
       >
         Salvar
       </button>
-    </form>
+    </.form>
 
     <%!-- Install as app section --%>
     <section class="mt-8 pt-6 border-t border-ink-200">
