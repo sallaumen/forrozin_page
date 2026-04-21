@@ -443,6 +443,9 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       {:ok, _comment} ->
         {:noreply, reload_step_comments(socket)}
 
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, "Calma! Muitos comentários seguidos. Espere alguns segundinhos.")}
+
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Não foi possível postar o comentário.")}
     end

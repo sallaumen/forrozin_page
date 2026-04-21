@@ -49,6 +49,12 @@ defmodule OGrupoDeEstudos.Engagement do
   or `{:ok, :unliked}` when an existing like is removed.
   """
   def toggle_like(user_id, likeable_type, likeable_id) do
+    with :ok <- OGrupoDeEstudos.RateLimiter.check("like", user_id, limit: 20, window_seconds: 10) do
+      do_toggle_like(user_id, likeable_type, likeable_id)
+    end
+  end
+
+  defp do_toggle_like(user_id, likeable_type, likeable_id) do
     case Repo.get_by(Like,
            user_id: user_id,
            likeable_type: likeable_type,
@@ -287,6 +293,13 @@ defmodule OGrupoDeEstudos.Engagement do
   end
 
   defp create_comment(schema_mod, query_mod, user, parent_id, attrs) do
+    case OGrupoDeEstudos.RateLimiter.check("comment", user.id, limit: 5, window_seconds: 10) do
+      {:error, :rate_limited} -> {:error, :rate_limited}
+      :ok -> do_create_comment(schema_mod, query_mod, user, parent_id, attrs)
+    end
+  end
+
+  defp do_create_comment(schema_mod, query_mod, user, parent_id, attrs) do
     parent_field = query_mod.parent_field()
     user_field = query_mod.user_field()
 
@@ -401,6 +414,12 @@ defmodule OGrupoDeEstudos.Engagement do
   or `{:error, changeset}` when validation fails (e.g. self-follow).
   """
   def toggle_follow(follower_id, followed_id) do
+    with :ok <- OGrupoDeEstudos.RateLimiter.check("follow", follower_id, limit: 5, window_seconds: 10) do
+      do_toggle_follow(follower_id, followed_id)
+    end
+  end
+
+  defp do_toggle_follow(follower_id, followed_id) do
     case Repo.get_by(Follow, follower_id: follower_id, followed_id: followed_id) do
       nil ->
         %Follow{}
@@ -442,7 +461,8 @@ defmodule OGrupoDeEstudos.Engagement do
       join: f in Follow,
       on: f.followed_id == u.id,
       where: f.follower_id == ^user_id,
-      order_by: [desc: f.inserted_at]
+      order_by: [desc: f.inserted_at],
+      limit: 200
     )
     |> maybe_search_users(search)
     |> Repo.all()
@@ -460,7 +480,8 @@ defmodule OGrupoDeEstudos.Engagement do
       join: f in Follow,
       on: f.follower_id == u.id,
       where: f.followed_id == ^user_id,
-      order_by: [desc: f.inserted_at]
+      order_by: [desc: f.inserted_at],
+      limit: 200
     )
     |> maybe_search_users(search)
     |> Repo.all()

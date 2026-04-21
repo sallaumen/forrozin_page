@@ -34,6 +34,7 @@ defmodule OGrupoDeEstudos.Study.Note do
     |> put_default_content()
     |> validate_required([:kind, :note_date])
     |> validate_inclusion(:kind, @kinds)
+    |> validate_length(:content, max: 50_000)
     |> validate_kind_scope()
     |> foreign_key_constraint(:owner_user_id)
     |> foreign_key_constraint(:teacher_student_link_id)

@@ -43,5 +43,6 @@ config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Tes
 
 # Avoid DB writes from detached processes during SQL Sandbox tests.
 config :o_grupo_de_estudos,
+  env: :test,
   async_device_tracking: false,
   persist_error_logs: false
