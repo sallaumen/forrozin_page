@@ -241,17 +241,26 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   end
 
   # Student requests teacher OR teacher invites student
-  def handle_event("request_study", _params, socket) do
+  def handle_event("request_study", params, socket) do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
+    role = params["role"]
 
     result =
       cond do
-        # Current user is student, profile is teacher → request
+        # Explicit role: "student" = I want to be their student (they become teacher)
+        role == "student" and profile.is_teacher ->
+          Study.request_teacher_link(current, profile.id)
+
+        # Explicit role: "teacher" = I want them as my student (I become teacher)
+        role == "teacher" and current.is_teacher ->
+          Study.invite_student_link(current, profile.id)
+
+        # Default: current user is student, profile is teacher → request
         profile.is_teacher and not current.is_teacher ->
           Study.request_teacher_link(current, profile.id)
 
-        # Current user is teacher, profile is anyone → invite
+        # Default: current user is teacher → invite
         current.is_teacher ->
           Study.invite_student_link(current, profile.id)
 
@@ -335,8 +344,14 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
       case link do
         nil ->
-          # Can they connect? Only show button if either is teacher
-          if profile_user.is_teacher or current_user.is_teacher, do: :available, else: nil
+          cond do
+            # Both are teachers → show both options
+            profile_user.is_teacher and current_user.is_teacher -> :available_both
+            # One is teacher → single button
+            profile_user.is_teacher or current_user.is_teacher -> :available
+            # Neither → no button
+            true -> nil
+          end
 
         %{active: true} ->
           :connected
