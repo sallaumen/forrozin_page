@@ -152,6 +152,10 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
     end
   end
 
+  defp target_name(%{action: "liked_sequence"}), do: nil
+  defp target_name(%{action: "followed_user"}), do: nil
+  defp target_name(%{action: "study_request"}), do: "Ver pedido →"
+  defp target_name(%{action: "study_accepted"}), do: "Ir para estudos →"
   defp target_name(_), do: nil
 
   defp action_text(%{action: "liked_comment"}), do: " curtiu seu comentário"
