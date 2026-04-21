@@ -26,6 +26,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
     tabs = [
       %{label: "Acervo", path: "/collection", icon: "hero-rectangle-stack"},
       %{label: "Mapa", path: "/graph/visual", icon: "hero-map"},
+      %{label: "Estudos", path: "/study", icon: "hero-book-open"},
       %{
         label: "Gerador",
         path: "/graph/visual?mode=generator",

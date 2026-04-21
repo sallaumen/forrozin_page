@@ -4,18 +4,27 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.Accounts
+  alias OGrupoDeEstudos.Study
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :redirect_if_authenticated}
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, page_title: "Cadastro", form: to_form(%{}, as: :user))}
+  def mount(params, _session, socket) do
+    teacher_invite_slug = params["teacher_invite"]
+
+    {:ok,
+     assign(socket,
+       page_title: "Cadastro",
+       teacher_invite_slug: teacher_invite_slug,
+       form: to_form(%{}, as: :user)
+     )}
   end
 
   @impl true
   def handle_event("register", %{"user" => params}, socket) do
     case Accounts.register_user(params) do
       {:ok, user} ->
+        maybe_accept_teacher_invite(user, socket.assigns.teacher_invite_slug)
         token = Phoenix.Token.sign(OGrupoDeEstudosWeb.Endpoint, "auto_login", user.id)
 
         {:noreply,
@@ -26,6 +35,16 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset, as: :user))}
+    end
+  end
+
+  defp maybe_accept_teacher_invite(_user, nil), do: :ok
+  defp maybe_accept_teacher_invite(_user, ""), do: :ok
+
+  defp maybe_accept_teacher_invite(user, teacher_invite_slug) do
+    case Study.accept_invite(user, teacher_invite_slug) do
+      {:ok, _link} -> :ok
+      _ -> :ok
     end
   end
 end

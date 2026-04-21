@@ -58,6 +58,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             Mapa
           </.link>
           <.link
+            navigate={~p"/study"}
+            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+          >
+            Estudos
+          </.link>
+          <.link
             navigate={~p"/community"}
             class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
           >

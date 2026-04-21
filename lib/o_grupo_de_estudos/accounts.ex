@@ -71,6 +71,9 @@ defmodule OGrupoDeEstudos.Accounts do
     Repo.get(User, id)
   end
 
+  @doc "Finds a user by invite slug."
+  def get_user_by_invite_slug(invite_slug), do: Repo.get_by(User, invite_slug: invite_slug)
+
   @doc "Checks if the user has the admin role."
   def admin?(%User{role: "admin"}), do: true
   def admin?(_), do: false
@@ -87,6 +90,10 @@ defmodule OGrupoDeEstudos.Accounts do
 
   Returns `{:ok, user}` or `{:error, changeset}`.
   """
+  def change_profile(user, attrs \\ %{}) do
+    User.profile_changeset(user, attrs)
+  end
+
   def update_profile(user, attrs) do
     user
     |> User.profile_changeset(attrs)

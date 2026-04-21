@@ -19,6 +19,7 @@ defmodule OGrupoDeEstudos.Factory do
   alias OGrupoDeEstudos.Engagement.Comments.{StepComment, SequenceComment}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
+  alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
 
   def user_factory do
     %User{
@@ -27,6 +28,8 @@ defmodule OGrupoDeEstudos.Factory do
       email: sequence(:email, &"usuario#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
       role: "user",
+      is_teacher: false,
+      invite_slug: sequence(:invite_slug, &"prof-usuario#{&1}"),
       country: "BR",
       state: "PR",
       city: "Curitiba",
@@ -41,6 +44,8 @@ defmodule OGrupoDeEstudos.Factory do
       email: sequence(:email, &"admin#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
       role: "admin",
+      is_teacher: true,
+      invite_slug: sequence(:admin_invite_slug, &"prof-admin#{&1}"),
       country: "BR",
       state: "PR",
       city: "Curitiba",
@@ -192,6 +197,30 @@ defmodule OGrupoDeEstudos.Factory do
       new_value: "New Name",
       status: "pending",
       user: build(:user)
+    }
+  end
+
+  def teacher_student_link_factory do
+    %TeacherStudentLink{
+      teacher: build(:user, is_teacher: true),
+      student: build(:user),
+      active: true
+    }
+  end
+
+  def study_note_factory do
+    %Note{
+      kind: "personal",
+      note_date: Date.utc_today(),
+      content: "Treino do dia",
+      owner_user: build(:user)
+    }
+  end
+
+  def study_note_step_factory do
+    %NoteStep{
+      study_note: build(:study_note),
+      step: build(:step)
     }
   end
 end

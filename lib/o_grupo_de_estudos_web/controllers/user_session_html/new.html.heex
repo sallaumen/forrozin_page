@@ -49,6 +49,13 @@
 
         <form method="post" action={~p"/login"}>
           <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+          <input
+            :if={@teacher_invite}
+            type="hidden"
+            name="session[teacher_invite]"
+            value={@teacher_invite}
+          />
+          <input :if={@return_to} type="hidden" name="session[return_to]" value={@return_to} />
 
           <div class="mb-[18px]">
             <label class="block text-[11px] tracking-[1.5px] text-ink-500 uppercase mb-2">

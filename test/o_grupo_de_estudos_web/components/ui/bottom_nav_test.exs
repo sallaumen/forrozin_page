@@ -18,7 +18,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
       assert html =~ ~s(data-ui="bottom-nav")
     end
 
-    test "renders tab links including the sequence generator" do
+    test "renders tab links including estudos and generator" do
       html =
         render_component(&BottomNav.bottom_nav/1, %{
           current_user: user(),
@@ -27,8 +27,10 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
 
       assert html =~ ~s(href="/collection")
       assert html =~ ~s(href="/graph/visual")
+      assert html =~ ~s(href="/study")
       assert html =~ ~s(href="/graph/visual?mode=generator")
       assert html =~ ~s(href="/community")
+      assert html =~ ~s(href="/notifications")
       assert html =~ ~s(href="/users/tavano")
     end
 
@@ -41,8 +43,10 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
 
       assert html =~ "Acervo"
       assert html =~ "Mapa"
+      assert html =~ "Estudos"
       assert html =~ "Gerador"
       assert html =~ "Comunidade"
+      assert html =~ "Alertas"
       assert html =~ "Perfil"
     end
 

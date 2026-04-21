@@ -82,6 +82,38 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
       changeset = User.registration_changeset(%User{}, Map.put(@valid_attrs, :role, "superadmin"))
       assert errors_on(changeset).role != []
     end
+
+    test "accepts is_teacher flag" do
+      changeset = User.registration_changeset(%User{}, Map.put(@valid_attrs, :is_teacher, true))
+
+      assert changeset.valid?
+      assert get_field(changeset, :is_teacher)
+    end
+  end
+
+  describe "profile_changeset/2" do
+    test "allows toggling is_teacher from profile settings" do
+      user = %User{
+        name: "Tatá Tavano",
+        username: "tata",
+        country: "BR",
+        state: "PR",
+        city: "Curitiba"
+      }
+
+      changeset =
+        User.profile_changeset(user, %{
+          name: "Tatá Tavano",
+          username: "tata",
+          country: "BR",
+          state: "PR",
+          city: "Curitiba",
+          is_teacher: true
+        })
+
+      assert changeset.valid?
+      assert get_field(changeset, :is_teacher)
+    end
   end
 
   describe "confirmation_changeset/1" do

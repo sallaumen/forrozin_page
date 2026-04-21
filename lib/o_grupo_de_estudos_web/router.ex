@@ -53,6 +53,9 @@ defmodule OGrupoDeEstudosWeb.Router do
     live "/notifications", NotificationsLive
     live "/graph", GraphLive
     live "/graph/visual", GraphVisualLive
+    live "/study", StudyLive
+    live "/study/shared/:id", StudySharedLive
+    live "/study/invite/:slug", StudyInviteLive
     live "/steps/:code", StepLive
     live "/users/:username", UserProfileLive
     live "/settings", SettingsLive

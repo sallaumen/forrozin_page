@@ -49,6 +49,13 @@
           Crie sua conta para acessar o acervo de passos.
         </p>
 
+        <div
+          :if={@teacher_invite_slug}
+          class="mb-6 rounded border border-accent-orange/30 bg-accent-orange/8 px-4 py-3 text-sm text-ink-700"
+        >
+          Você está entrando por um convite de professor. Depois do cadastro, a conexão já fica pronta para estudar junto.
+        </div>
+
         <.form
           for={@form}
           phx-submit="register"
@@ -113,6 +120,15 @@
               Mínimo 8 caracteres, sem frescura. Não precisa de caractere especial, número, letra maiúscula nem nada.
               Mas por favor, use uma senha que você não usa em nenhum outro site. A gente faz o nosso melhor, mas não somos especialistas em segurança ;)
             </p>
+          </div>
+
+          <div class="rounded border border-[rgba(180,120,40,0.22)] bg-ink-50 px-4 py-3">
+            <.input
+              field={@form[:is_teacher]}
+              type="checkbox"
+              label="Também ensino forró e quero acessar a área de professor"
+              class="mr-2 h-4 w-4 accent-accent-orange"
+            />
           </div>
 
           <div>
