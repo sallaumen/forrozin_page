@@ -115,7 +115,12 @@ defmodule OGrupoDeEstudos.Study do
 
       existing ->
         existing
-        |> TeacherStudentLink.changeset(%{pending: true, active: false, ended_at: nil, initiated_by_id: teacher_id})
+        |> TeacherStudentLink.changeset(%{
+          pending: true,
+          active: false,
+          ended_at: nil,
+          initiated_by_id: teacher_id
+        })
         |> Repo.update()
     end
   end
@@ -124,7 +129,8 @@ defmodule OGrupoDeEstudos.Study do
 
   @doc "Accept a pending link request. Either side can accept if they didn't initiate."
   def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: acceptor_id})
-      when acceptor_id in [link.teacher_id, link.student_id] and acceptor_id != link.initiated_by_id do
+      when acceptor_id in [link.teacher_id, link.student_id] and
+             acceptor_id != link.initiated_by_id do
     result =
       link
       |> TeacherStudentLink.changeset(%{pending: false, active: true})
@@ -270,7 +276,8 @@ defmodule OGrupoDeEstudos.Study do
 
   def list_shared_activity_for_user(user_id, today) do
     from(link in TeacherStudentLink,
-      where: (link.teacher_id == ^user_id or link.student_id == ^user_id) and link.pending == false,
+      where:
+        (link.teacher_id == ^user_id or link.student_id == ^user_id) and link.pending == false,
       preload: [:teacher, :student],
       order_by: [desc: link.updated_at]
     )

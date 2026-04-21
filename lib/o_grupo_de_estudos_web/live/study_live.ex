@@ -16,45 +16,33 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
     today = Date.utc_today()
-    today_note = Study.get_personal_note(user.id, today)
+    dashboard = build_dashboard(user, today)
 
     {:ok,
-     assign(socket,
-       page_title: "Estudos",
-       is_admin: Accounts.admin?(user),
-       today: today,
-       teacher_links: Study.list_teacher_links_for_student(user.id),
-       student_links:
-         if(user.is_teacher, do: Study.list_student_links_for_teacher(user.id), else: []),
-       today_note: today_note,
-       today_note_content: if(today_note, do: today_note.content, else: ""),
-       personal_history: Study.list_personal_note_history(user.id),
-       personal_related_steps: if(today_note, do: today_note.related_steps, else: []),
-       personal_step_suggestions: [],
-       section_history_open: false,
-       section_teachers_open: true,
-       section_students_open: false,
-       teacher_search: "",
-       teacher_search_results: [],
-       pending_requests:
-         if(user.is_teacher, do: Study.list_pending_requests_for_teacher(user.id), else: [])
-     )}
+     socket
+     |> assign(:page_title, "Estudos")
+     |> assign(:is_admin, Accounts.admin?(user))
+     |> assign(:today, today)
+     |> assign(:personal_step_suggestions, [])
+     |> assign(:section_history_open, false)
+     |> assign(:section_teachers_open, true)
+     |> assign(:section_students_open, false)
+     |> assign(:teacher_search, "")
+     |> assign(:teacher_search_results, [])
+     |> assign_dashboard(dashboard)}
   end
 
   @impl true
   def handle_event("save_personal_note", %{"personal_note" => %{"content" => content}}, socket) do
-    {:ok, today_note} =
+    {:ok, _today_note} =
       Study.upsert_personal_note(socket.assigns.current_user, socket.assigns.today, %{
         content: content,
         step_ids: Enum.map(socket.assigns.personal_related_steps, & &1.id)
       })
 
-    {:noreply,
-     assign(socket,
-       today_note: today_note,
-       today_note_content: content,
-       personal_history: Study.list_personal_note_history(socket.assigns.current_user.id)
-     )}
+    dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
+
+    {:noreply, socket |> assign_dashboard(dashboard) |> assign(:today_note_content, content)}
   end
 
   def handle_event("save_personal_note", _params, socket), do: {:noreply, socket}
@@ -72,36 +60,29 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     step = Enum.find(socket.assigns.personal_step_suggestions, &(&1.id == step_id))
     updated_steps = prepend_unique_step(socket.assigns.personal_related_steps, step)
 
-    {:ok, today_note} =
+    {:ok, _today_note} =
       Study.upsert_personal_note(socket.assigns.current_user, socket.assigns.today, %{
         content: socket.assigns.today_note_content,
         step_ids: Enum.map(updated_steps, & &1.id)
       })
 
-    {:noreply,
-     assign(socket,
-       today_note: today_note,
-       personal_related_steps: updated_steps,
-       personal_step_suggestions: [],
-       personal_history: Study.list_personal_note_history(socket.assigns.current_user.id)
-     )}
+    dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
+
+    {:noreply, socket |> assign_dashboard(dashboard) |> assign(:personal_step_suggestions, [])}
   end
 
   def handle_event("remove_personal_step", %{"id" => step_id}, socket) do
     updated_steps = Enum.reject(socket.assigns.personal_related_steps, &(&1.id == step_id))
 
-    {:ok, today_note} =
+    {:ok, _today_note} =
       Study.upsert_personal_note(socket.assigns.current_user, socket.assigns.today, %{
         content: socket.assigns.today_note_content,
         step_ids: Enum.map(updated_steps, & &1.id)
       })
 
-    {:noreply,
-     assign(socket,
-       today_note: today_note,
-       personal_related_steps: updated_steps,
-       personal_history: Study.list_personal_note_history(socket.assigns.current_user.id)
-     )}
+    dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
+
+    {:noreply, assign_dashboard(socket, dashboard)}
   end
 
   # ── Teacher search & request ──────────────────────────────────────────
@@ -139,13 +120,12 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     if link do
       case Study.accept_link_request(link, user) do
         {:ok, _} ->
+          dashboard = build_dashboard(user, socket.assigns.today)
+
           {:noreply,
            socket
            |> put_flash(:info, "Aluno aceito!")
-           |> assign(
-             pending_requests: Study.list_pending_requests_for_teacher(user.id),
-             student_links: Study.list_student_links_for_teacher(user.id)
-           )}
+           |> assign_dashboard(dashboard)}
 
         _ ->
           {:noreply, socket}
@@ -161,11 +141,54 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
     if link do
       Study.reject_link_request(link, user)
+      dashboard = build_dashboard(user, socket.assigns.today)
 
-      {:noreply,
-       assign(socket, pending_requests: Study.list_pending_requests_for_teacher(user.id))}
+      {:noreply, assign_dashboard(socket, dashboard)}
     else
       {:noreply, socket}
+    end
+  end
+
+  defp assign_dashboard(socket, dashboard) do
+    socket
+    |> assign(:today_note, dashboard.today_note)
+    |> assign(:today_note_content, dashboard.today_note_content)
+    |> assign(:personal_related_steps, dashboard.personal_related_steps)
+    |> assign(:personal_history, dashboard.personal_history)
+    |> assign(:weekly_note_count, dashboard.weekly_note_count)
+    |> assign(:today_status, dashboard.today_status)
+    |> assign(:movement_cards, dashboard.movement_cards)
+    |> assign(:teacher_links, dashboard.teacher_links)
+    |> assign(:student_links, dashboard.student_links)
+    |> assign(:pending_requests, dashboard.pending_requests)
+  end
+
+  defp build_dashboard(user, today) do
+    today_note = Study.get_personal_note(user.id, today)
+
+    %{
+      today_note: today_note,
+      today_note_content: if(today_note, do: today_note.content, else: ""),
+      personal_related_steps: if(today_note, do: today_note.related_steps, else: []),
+      personal_history: Study.list_personal_note_history(user.id),
+      weekly_note_count: Study.personal_note_week_count(user.id, today),
+      today_status: personal_today_status(today_note),
+      movement_cards: Study.list_shared_activity_for_user(user.id, today),
+      teacher_links: Study.list_teacher_links_for_student(user.id),
+      student_links:
+        if(user.is_teacher, do: Study.list_student_links_for_teacher(user.id), else: []),
+      pending_requests:
+        if(user.is_teacher, do: Study.list_pending_requests_for_teacher(user.id), else: [])
+    }
+  end
+
+  defp personal_today_status(nil), do: %{label: "Sem registro ainda", tone: :warning}
+
+  defp personal_today_status(today_note) do
+    cond do
+      today_note.related_steps != [] -> %{label: "Com passo vinculado", tone: :success}
+      String.trim(today_note.content || "") != "" -> %{label: "Registrado hoje", tone: :success}
+      true -> %{label: "Sem registro ainda", tone: :warning}
     end
   end
 
