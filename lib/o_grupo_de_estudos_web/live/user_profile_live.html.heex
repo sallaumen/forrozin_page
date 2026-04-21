@@ -251,7 +251,7 @@
     <%!-- Profile tabs --%>
     <div class="px-4 mb-4">
       <div class="flex w-full p-0.5 bg-ink-100 rounded-md">
-        <%= for {tab, label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"favorites", "Favoritos ★"}, {"contributions", "Contribuições"}] do %>
+        <%= for {tab, label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"favorites", "Favoritos"}, {"contributions", "Contribuições"}] do %>
           <button
             phx-click="switch_profile_tab"
             phx-value-tab={tab}
