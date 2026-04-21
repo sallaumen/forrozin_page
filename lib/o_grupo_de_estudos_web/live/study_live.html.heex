@@ -76,7 +76,10 @@
             />
           </form>
 
-          <div :if={@personal_step_suggestions != []} class="mt-1 rounded-lg border border-ink-200 bg-white shadow-md overflow-hidden">
+          <div
+            :if={@personal_step_suggestions != []}
+            class="mt-1 rounded-lg border border-ink-200 bg-white shadow-md overflow-hidden"
+          >
             <%= for step <- @personal_step_suggestions do %>
               <button
                 id={"add-personal-step-#{step.id}"}
@@ -107,7 +110,9 @@
         <div class="flex items-center gap-2">
           <h2 class="text-sm font-bold text-ink-900 m-0">Histórico</h2>
           <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
-            {length(@personal_history)} {if length(@personal_history) == 1, do: "dia", else: "dias"}
+            {length(@personal_history)} {if length(@personal_history) == 1,
+              do: "dia",
+              else: "dias"}
           </span>
         </div>
         <.icon
@@ -131,14 +136,19 @@
                   </span>
                   <div :if={note.related_steps != []} class="flex gap-1">
                     <%= for step <- Enum.take(note.related_steps, 3) do %>
-                      <code class="text-[9px] bg-accent-orange/10 text-accent-orange rounded px-1 py-0.5">{step.code}</code>
+                      <code class="text-[9px] bg-accent-orange/10 text-accent-orange rounded px-1 py-0.5">
+                        {step.code}
+                      </code>
                     <% end %>
                     <span :if={length(note.related_steps) > 3} class="text-[9px] text-ink-400">
                       +{length(note.related_steps) - 3}
                     </span>
                   </div>
                 </div>
-                <p :if={note.content && note.content != ""} class="text-xs text-ink-600 mt-1 m-0 leading-relaxed line-clamp-2">
+                <p
+                  :if={note.content && note.content != ""}
+                  class="text-xs text-ink-600 mt-1 m-0 leading-relaxed line-clamp-2"
+                >
                   {note_preview(note.content)}
                 </p>
               </div>
@@ -181,7 +191,10 @@
               class="w-full rounded-lg border border-ink-200 bg-ink-50/50 px-3 py-2 font-serif text-xs text-ink-700 box-border focus:border-accent-orange/40 outline-none transition-colors"
             />
           </form>
-          <div :if={@teacher_search_results != []} class="mt-1 rounded-lg border border-ink-200 bg-white shadow-md overflow-hidden">
+          <div
+            :if={@teacher_search_results != []}
+            class="mt-1 rounded-lg border border-ink-200 bg-white shadow-md overflow-hidden"
+          >
             <%= for teacher <- @teacher_search_results do %>
               <div class="flex items-center justify-between px-3 py-2.5 border-b border-ink-100 last:border-b-0">
                 <div class="flex items-center gap-2">
@@ -228,9 +241,14 @@
                       {String.first(link.teacher.name || link.teacher.username) |> String.upcase()}
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.teacher.name}</p>
+                      <p class="text-xs font-bold text-ink-900 m-0 truncate">
+                        {link.teacher.name}
+                      </p>
                       <p class="text-[10px] text-ink-500 m-0">
-                        @{link.teacher.username}<%= if link.teacher.city do %><span class="text-ink-400"> · {link.teacher.city}</span><% end %>
+                        @{link.teacher.username}
+                        <%= if link.teacher.city do %>
+                          <span class="text-ink-400"> ·  {link.teacher.city}</span>
+                        <% end %>
                       </p>
                     </div>
                   </.link>
@@ -293,7 +311,9 @@
                     {String.first(req.student.name || req.student.username) |> String.upcase()}
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="text-xs font-semibold text-ink-900 m-0 truncate">{req.student.name}</p>
+                    <p class="text-xs font-semibold text-ink-900 m-0 truncate">
+                      {req.student.name}
+                    </p>
                     <p class="text-[10px] text-ink-500 m-0">@{req.student.username}</p>
                   </div>
                   <div class="flex gap-1.5 shrink-0">
@@ -333,12 +353,18 @@
                       class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
                     >
                       <div class="w-9 h-9 rounded-full bg-ink-800 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
-                        {String.first(link.student.name || link.student.username) |> String.upcase()}
+                        {String.first(link.student.name || link.student.username)
+                        |> String.upcase()}
                       </div>
                       <div class="flex-1 min-w-0">
-                        <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.student.name}</p>
+                        <p class="text-xs font-bold text-ink-900 m-0 truncate">
+                          {link.student.name}
+                        </p>
                         <p class="text-[10px] text-ink-500 m-0">
-                          @{link.student.username}<%= if link.student.city do %><span class="text-ink-400"> · {link.student.city}</span><% end %>
+                          @{link.student.username}
+                          <%= if link.student.city do %>
+                            <span class="text-ink-400"> ·  {link.student.city}</span>
+                          <% end %>
                         </p>
                       </div>
                     </.link>

@@ -336,7 +336,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
              new_value: "#{src_code}\u2192#{tgt_code}"
            }) do
         {:ok, _} ->
-          {:noreply, put_flash(socket, :info, "Sugestão de conexão #{src_code} → #{tgt_code} enviada!")}
+          {:noreply,
+           put_flash(socket, :info, "Sugestão de conexão #{src_code} → #{tgt_code} enviada!")}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}

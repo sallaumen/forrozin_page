@@ -35,72 +35,94 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
       data-mode={@nav_mode}
       class="bg-ink-900 text-ink-100 sticky top-0 z-40 font-serif"
     >
-      <%!-- Desktop layout (>=md): always full horizontal nav --%>
-      <div class="hidden md:flex items-center justify-between px-6 py-3 max-w-7xl mx-auto">
-        <.link
-          navigate={~p"/collection"}
-          class="text-sm font-bold tracking-[2px] uppercase text-ink-100 hover:text-ink-200 no-underline"
-        >
-          O Grupo de Estudos
-        </.link>
-
-        <nav class="flex items-center gap-4">
+      <%!-- Desktop layout (>=md): three-zone shell --%>
+      <div
+        id="top-nav-desktop-shell"
+        class="hidden md:grid mx-auto w-full max-w-[1680px] grid-cols-[1fr_auto_1fr] items-center gap-6 px-6 py-3 lg:px-8 xl:px-10"
+      >
+        <nav id="top-nav-desktop-primary-nav" class="flex items-center gap-1.5 justify-self-start">
           <.link
             navigate={~p"/collection"}
-            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
             Acervo
           </.link>
           <.link
             navigate={~p"/graph/visual"}
-            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
             Mapa
           </.link>
           <.link
             navigate={~p"/study"}
-            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
             Estudos
           </.link>
           <.link
             navigate={~p"/community"}
-            class="text-xs text-ink-400 hover:text-ink-100 tracking-[0.5px] no-underline"
+            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
             Comunidade
           </.link>
+        </nav>
 
+        <div id="top-nav-desktop-brand" class="justify-self-center">
+          <.link
+            navigate={~p"/collection"}
+            class="text-sm font-bold tracking-[2.8px] uppercase text-ink-50 hover:text-ink-100 no-underline"
+          >
+            O Grupo de Estudos
+          </.link>
+        </div>
+
+        <nav id="top-nav-desktop-actions" class="flex items-center gap-2 justify-self-end">
           <%= if @is_admin do %>
-            <.link
-              navigate={~p"/graph"}
-              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
-            >
-              Conexões
-            </.link>
-            <.link
-              navigate={~p"/admin/links"}
-              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
-            >
-              Links
-            </.link>
-            <.link
-              navigate={~p"/admin/backups"}
-              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
-            >
-              Backups
-            </.link>
-            <.link
-              navigate={~p"/admin/suggestions"}
-              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
-            >
-              Sugestões
-            </.link>
-            <.link
-              navigate={~p"/admin/errors"}
-              class="text-[11px] text-ink-500 hover:text-ink-100 tracking-[0.5px] no-underline"
-            >
-              Erros
-            </.link>
+            <details id="top-nav-admin-menu" class="group relative">
+              <summary
+                id="top-nav-admin-trigger"
+                class="flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full border border-ink-100/10 px-3 py-1.5 text-[12px] font-semibold text-ink-300 transition hover:border-ink-100/20 hover:bg-ink-100/5 hover:text-ink-50 [&::-webkit-details-marker]:hidden"
+              >
+                <span>Admin</span>
+                <.icon
+                  name="hero-chevron-down"
+                  class="size-3.5 transition group-open:rotate-180"
+                />
+              </summary>
+
+              <div class="absolute right-0 top-[calc(100%+12px)] z-50 w-56 overflow-hidden rounded-md border border-ink-900/10 bg-ink-50 p-1.5 text-ink-900 shadow-[0_18px_45px_rgba(30,22,16,0.24)]">
+                <.link
+                  navigate={~p"/graph"}
+                  class="flex items-center rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
+                >
+                  Conexões
+                </.link>
+                <.link
+                  navigate={~p"/admin/links"}
+                  class="flex items-center rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
+                >
+                  Links
+                </.link>
+                <.link
+                  navigate={~p"/admin/backups"}
+                  class="flex items-center rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
+                >
+                  Backups
+                </.link>
+                <.link
+                  navigate={~p"/admin/suggestions"}
+                  class="flex items-center rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
+                >
+                  Sugestões
+                </.link>
+                <.link
+                  navigate={~p"/admin/errors"}
+                  class="flex items-center rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
+                >
+                  Erros
+                </.link>
+              </div>
+            </details>
           <% end %>
 
           <button
@@ -110,11 +132,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             phx-click={@edit_action_event}
             aria-pressed={to_string(@edit_mode)}
             class={[
-              "inline-flex min-h-8 items-center gap-1.5 rounded border px-3 py-1 font-serif text-[11px] font-semibold tracking-[0.5px] transition-colors",
+              "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 font-serif text-[11px] font-semibold tracking-[0.5px] transition-colors",
               @edit_mode &&
                 "border-accent-red/50 bg-accent-red/15 text-accent-red hover:bg-accent-red/20",
               !@edit_mode &&
-                "border-ink-100/15 bg-transparent text-ink-400 hover:border-accent-orange/40 hover:text-ink-100"
+                "border-ink-100/10 bg-transparent text-ink-400 hover:border-accent-orange/40 hover:text-ink-100"
             ]}
           >
             <.icon
@@ -124,6 +146,8 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             <span>{if @edit_mode, do: "Sair edição", else: "Editar"}</span>
           </button>
 
+          <span class="h-5 w-px bg-ink-100/10" />
+
           <%= if @notification_dropdown_enabled do %>
             <div class="relative">
               <button
@@ -132,7 +156,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 phx-click="toggle_notifications_dropdown"
                 aria-haspopup="dialog"
                 aria-expanded={@notification_dropdown_open}
-                class="relative group flex h-9 w-9 items-center justify-center rounded border border-transparent bg-transparent text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/70"
+                class="relative group flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-transparent text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/70"
               >
                 <.icon
                   name="hero-bell-solid"
@@ -250,28 +274,28 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             </.link>
           <% end %>
 
-          <span class="w-px h-4 bg-ink-100/15"></span>
+          <span class="h-5 w-px bg-ink-100/10"></span>
 
           <.link
             navigate={~p"/users/#{@current_user.username}"}
-            class="text-xs text-ink-100 tracking-[0.5px] no-underline"
+            class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-xs text-ink-100 tracking-[0.5px] transition hover:bg-ink-100/5 no-underline"
           >
             Olá, <strong>{OGrupoDeEstudos.Accounts.first_name(@current_user)}</strong>
           </.link>
           <.link
             navigate={~p"/settings"}
-            class="text-sm text-ink-400 no-underline"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 no-underline"
             title="Configurações"
             aria-label="Configurações"
           >
-            ⚙
+            <.icon name="hero-cog-6-tooth-solid" class="size-4.5" />
           </.link>
           <form method="post" action={~p"/logout"} class="m-0">
             <input type="hidden" name="_method" value="delete" />
             <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
             <button
               type="submit"
-              class="text-[11px] text-ink-600 bg-transparent border-0 cursor-pointer"
+              class="inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[11px] font-medium text-ink-500 transition hover:bg-ink-100/5 hover:text-ink-100 bg-transparent border-0 cursor-pointer"
             >
               sair
             </button>
@@ -314,11 +338,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             <% end %>
             <.link
               navigate={~p"/settings"}
-              class="text-base text-ink-400 no-underline"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 no-underline"
               title="Configurações"
               aria-label="Configurações"
             >
-              ⚙
+              <.icon name="hero-cog-6-tooth-solid" class="size-4.5" />
             </.link>
             <form method="post" action={~p"/logout"} class="m-0">
               <input type="hidden" name="_method" value="delete" />
