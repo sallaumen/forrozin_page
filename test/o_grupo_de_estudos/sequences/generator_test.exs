@@ -265,6 +265,36 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       end
     end
 
+    test "waypoint sequences follow valid directed edges" do
+      build_linear_chain(6)
+      connections = OGrupoDeEstudos.Encyclopedia.ConnectionQuery.list_by(preload: [])
+
+      edge_set =
+        MapSet.new(connections, fn c -> {c.source_step_id, c.target_step_id} end)
+
+      {:ok, seqs, _warnings} =
+        Generator.generate(base_params("C0", length: 6, count: 2, required_codes: ["C4"]))
+
+      for seq <- seqs do
+        # Every consecutive pair must be a valid directed edge
+        seq
+        |> Enum.chunk_every(2, 1, :discard)
+        |> Enum.each(fn [a, b] ->
+          assert MapSet.member?(edge_set, {a.id, b.id}),
+                 "Invalid edge: #{a.code} → #{b.code}"
+        end)
+      end
+    end
+
+    test "waypoint sequence starts at the requested step" do
+      build_linear_chain(5)
+
+      {:ok, [seq], _warnings} =
+        Generator.generate(base_params("C0", length: 5, count: 1, required_codes: ["C3"]))
+
+      assert hd(seq).code == "C0"
+    end
+
     test "guarantees multiple required steps in same sequence" do
       build_linear_chain(6)
 
@@ -301,6 +331,20 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
       # Both orderings should appear
       assert c2_first > 0 or c3_first > 0
+    end
+
+    test "pads sequence to requested length after reaching waypoints" do
+      {steps, _} = build_linear_chain(6)
+      # Add loop so padding can continue past the end
+      add_loop(steps)
+
+      {:ok, [seq], _warnings} =
+        Generator.generate(base_params("C0", length: 6, count: 1, required_codes: ["C2"]))
+
+      # C2 is at index 2 in the chain — shortest path is 3 steps (C0→C1→C2)
+      # But we asked for 6, so the sequence should be padded
+      assert "C2" in Enum.map(seq, & &1.code)
+      assert length(seq) == 6
     end
 
     test "adjusts length when path through waypoints is longer" do
