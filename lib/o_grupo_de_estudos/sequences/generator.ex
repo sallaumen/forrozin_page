@@ -2,13 +2,12 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   @moduledoc """
   Generates step sequences by traversing the directed connection graph.
 
-  Uses DFS with backtracking and weighted random selection.
-  Features:
-  - Backtracking on dead-ends (never wastes an attempt)
-  - Weighted neighbor selection: highlighted steps, required steps,
-    category diversity, cyclic proximity, random noise
-  - Anti-repetition between sequences (edges already used get penalized)
-  - Progressive constraint relaxation when count isn't met
+  Two algorithms:
+  - **Waypoint mode** (when required_codes is non-empty): guarantees all
+    required steps appear by finding BFS paths between consecutive waypoints.
+    Permutes waypoint order across sequences for variety.
+  - **DFS mode** (no required steps): randomized DFS with backtracking,
+    weighted neighbor selection, and progressive constraint relaxation.
   """
 
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
@@ -21,7 +20,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   @max_same_pair_loops 3
   @bf_code "BF"
 
-  # Weight constants
+  # Weight constants (DFS mode)
   @weight_base 1.0
   @weight_highlighted 2.0
   @weight_required 4.0
@@ -38,7 +37,8 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       |> Map.put_new(:max_bf_visits, 3)
       |> Map.put_new(:max_same_pair_loops, @max_same_pair_loops)
 
-    steps = StepQuery.list_by(public_only: true, preload: [:category])
+    # Load all steps with connections (no public_only filter)
+    steps = StepQuery.list_by(preload: [:category])
     connections = ConnectionQuery.list_by(preload: [])
 
     step_map = Map.new(steps, &{&1.id, &1})
@@ -54,15 +54,15 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       {:ok, [], ["Passo inicial '#{params.start_code}' não encontrado"]}
     else
       reachable = reachable_from(start_id, adjacency)
-      required_id_set = MapSet.new(required_ids)
+
+      {reachable_required_ids, unreachable_ids} =
+        Enum.split_with(required_ids, &MapSet.member?(reachable, &1))
 
       unreachable_codes =
-        required_ids
-        |> Enum.reject(&MapSet.member?(reachable, &1))
+        unreachable_ids
         |> Enum.map(fn id -> step_map[id] && step_map[id].code end)
         |> Enum.reject(&is_nil/1)
 
-      # Pre-compute reverse distances to start (for cyclic guidance)
       reverse_adj = build_reverse_adjacency(connections)
       dist_to_start = bfs_distances(start_id, reverse_adj)
 
@@ -70,32 +70,165 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         start_id: start_id,
         adjacency: adjacency,
         step_map: step_map,
-        required_ids: required_id_set,
+        required_ids: MapSet.new(reachable_required_ids),
         bf_id: Map.get(code_to_id, @bf_code),
         dist_to_start: dist_to_start,
         reachable: reachable
       }
 
-      {sequences, relaxation_warnings} =
-        generate_with_relaxation(ctx, params)
+      if reachable_required_ids != [] do
+        {sequences, waypoint_warnings} =
+          generate_waypoint_sequences(ctx, params, reachable_required_ids)
 
-      warnings =
-        build_warnings(sequences, required_ids, step_map, params) ++
-          unresolved_warnings(unresolved_codes) ++
-          unreachable_warnings(unreachable_codes) ++
-          relaxation_warnings
+        warnings =
+          waypoint_warnings ++
+            unresolved_warnings(unresolved_codes) ++
+            unreachable_warnings(unreachable_codes)
 
-      {:ok, sequences, warnings}
+        {:ok, sequences, warnings}
+      else
+        {sequences, relaxation_warnings} =
+          generate_with_relaxation(ctx, params)
+
+        warnings =
+          build_dfs_warnings(sequences, required_ids, step_map, params) ++
+            unresolved_warnings(unresolved_codes) ++
+            unreachable_warnings(unreachable_codes) ++
+            relaxation_warnings
+
+        {:ok, sequences, warnings}
+      end
     end
   end
 
-  # ── Progressive relaxation ──────────────────────────────────────────
+  # ── Waypoint-based generation ────────────────────────────────────────
+
+  defp generate_waypoint_sequences(ctx, params, required_ids) do
+    perms = shuffled_permutations(required_ids, params.count)
+
+    {sequences, path_warnings} =
+      Enum.reduce(perms, {[], []}, fn perm, {seqs, warns} ->
+        waypoints = waypoint_list(ctx.start_id, perm, params.cyclic)
+
+        case connect_waypoints(waypoints, ctx.adjacency) do
+          {:ok, path} ->
+            formatted = format_path(path, ctx.step_map)
+            {[formatted | seqs], warns}
+
+          {:error, from_id, to_id} ->
+            from_code = code_for(ctx.step_map, from_id)
+            to_code = code_for(ctx.step_map, to_id)
+            {seqs, ["Não existe caminho de #{from_code} para #{to_code} no grafo" | warns]}
+        end
+      end)
+
+    sequences =
+      sequences
+      |> Enum.reverse()
+      |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+      |> Enum.take(params.count)
+
+    warnings =
+      Enum.uniq(path_warnings) ++
+        length_warnings(sequences, params.length) ++
+        count_warnings(sequences, params.count)
+
+    {sequences, warnings}
+  end
+
+  defp waypoint_list(start_id, required_ids, true = _cyclic) do
+    [start_id | required_ids] ++ [start_id]
+  end
+
+  defp waypoint_list(start_id, required_ids, false) do
+    [start_id | required_ids]
+  end
+
+  defp connect_waypoints(waypoints, adjacency) do
+    segments = Enum.chunk_every(waypoints, 2, 1, :discard)
+
+    Enum.reduce_while(segments, {:ok, []}, fn [from, to], {:ok, acc} ->
+      case bfs_path(from, to, adjacency) do
+        {:ok, path} ->
+          trimmed = if acc == [], do: path, else: tl(path)
+          {:cont, {:ok, acc ++ trimmed}}
+
+        :no_path ->
+          {:halt, {:error, from, to}}
+      end
+    end)
+  end
+
+  defp code_for(step_map, id) do
+    case Map.get(step_map, id) do
+      nil -> "?"
+      step -> step.code
+    end
+  end
+
+  # ── BFS path finder (randomized for variety) ─────────────────────────
+
+  defp bfs_path(source, target, _adj) when source == target, do: {:ok, [source]}
+
+  defp bfs_path(source, target, adjacency) do
+    bfs_path_loop([source], MapSet.new([source]), %{}, target, adjacency)
+  end
+
+  defp bfs_path_loop([], _visited, _parents, _target, _adj), do: :no_path
+
+  defp bfs_path_loop(queue, visited, parents, target, adj) do
+    {next_queue, new_visited, new_parents} =
+      Enum.reduce(queue, {[], visited, parents}, fn node, {nq, vis, par} ->
+        neighbors = Map.get(adj, node, []) |> Enum.shuffle()
+
+        Enum.reduce(neighbors, {nq, vis, par}, fn n, {q, v, p} ->
+          if MapSet.member?(v, n) do
+            {q, v, p}
+          else
+            {[n | q], MapSet.put(v, n), Map.put(p, n, node)}
+          end
+        end)
+      end)
+
+    if MapSet.member?(new_visited, target) and not MapSet.member?(visited, target) do
+      {:ok, trace_path(target, new_parents)}
+    else
+      bfs_path_loop(Enum.uniq(next_queue), new_visited, new_parents, target, adj)
+    end
+  end
+
+  defp trace_path(node, parents) do
+    case Map.get(parents, node) do
+      nil -> [node]
+      parent -> trace_path(parent, parents) ++ [node]
+    end
+  end
+
+  # ── Permutation helpers ──────────────────────────────────────────────
+
+  defp shuffled_permutations(list, count) when length(list) <= 6 do
+    perms = all_permutations(list) |> Enum.shuffle()
+
+    if length(perms) >= count do
+      Enum.take(perms, count)
+    else
+      perms |> Stream.cycle() |> Enum.take(count)
+    end
+  end
+
+  defp shuffled_permutations(list, count) do
+    1..count |> Enum.map(fn _ -> Enum.shuffle(list) end)
+  end
+
+  defp all_permutations([]), do: [[]]
+
+  defp all_permutations(list) do
+    for elem <- list, rest <- all_permutations(list -- [elem]), do: [elem | rest]
+  end
+
+  # ── Progressive relaxation (DFS mode) ────────────────────────────────
 
   defp generate_with_relaxation(ctx, params) do
-    # Level 0: original constraints
-    # Level 1: allow repeats
-    # Level 2: allow repeats + more BF
-    # Level 3: allow repeats + more BF + shorter
     relaxation_levels = [
       {params, []},
       {%{params | allow_repeats: true}, ["Algumas sequências permitem repetição de passos"]},
@@ -143,7 +276,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     end)
   end
 
-  # ── Batch generation ────────────────────────────────────────────────
+  # ── Batch generation (DFS mode) ──────────────────────────────────────
 
   defp generate_batch(ctx, params, count, used_edges) do
     bf_id = ctx.bf_id
@@ -217,13 +350,11 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     if valid == [] do
       nil
     else
-      # Score and sort neighbors with weighted randomization
       scored =
         valid
         |> Enum.map(fn n -> {n, score_neighbor(n, current, state, ctx, steps_remaining)} end)
         |> Enum.sort_by(fn {_, s} -> -s end)
 
-      # Try neighbors in weighted-random order (backtracking)
       try_neighbors(scored, path, state, ctx)
     end
   end
@@ -258,10 +389,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     [cat | state.recent_categories] |> Enum.take(3)
   end
 
-  # ── Neighbor scoring ─────────────────────────────────────────────────
-  #
-  # Each bonus/penalty is computed independently and summed.
-  # Final score is clamped to min 0.1 so every valid neighbor has a chance.
+  # ── Neighbor scoring (DFS mode) ────────────────────────────────────
 
   defp score_neighbor(n, current, state, ctx, steps_remaining) do
     step = Map.get(ctx.step_map, n)
@@ -296,7 +424,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   defp bonus_cyclic(n, state, ctx, steps_remaining) do
     cond do
-      # Cyclic mode: strong guidance toward start in final steps
       state.cyclic and steps_remaining <= 3 ->
         dist = Map.get(ctx.dist_to_start, n, :infinity)
 
@@ -307,7 +434,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
           true -> -1.0
         end
 
-      # Non-cyclic: gentle bonus for naturally closing the loop
       not state.cyclic and steps_remaining == 1 and n == ctx.start_id ->
         2.0
 
@@ -324,11 +450,10 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   defp noise, do: :rand.uniform() * @weight_noise_max
 
-  # ── Neighbor filtering ───────────────────────────────────────────────
+  # ── Neighbor filtering (DFS mode) ──────────────────────────────────
 
   defp filter_neighbors(neighbors, current, state, ctx, steps_remaining) do
     Enum.filter(neighbors, fn n ->
-      # Only consider reachable nodes
       reachable = MapSet.member?(ctx.reachable, n)
 
       repeat_ok =
@@ -351,7 +476,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     end)
   end
 
-  # ── Graph helpers ────────────────────────────────────────────────────
+  # ── Graph helpers ──────────────────────────────────────────────────
 
   defp build_adjacency(connections) do
     Enum.reduce(connections, %{}, fn conn, acc ->
@@ -406,7 +531,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     do_bfs_dist(new_dists, next_queue, adj, depth + 1)
   end
 
-  # ── Required code resolution ─────────────────────────────────────────
+  # ── Required code resolution ───────────────────────────────────────
 
   defp resolve_required_ids(nil, _code_to_id), do: {[], []}
   defp resolve_required_ids([], _code_to_id), do: {[], []}
@@ -419,7 +544,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     {ids, unresolved}
   end
 
-  # ── Path formatting ──────────────────────────────────────────────────
+  # ── Path formatting ────────────────────────────────────────────────
 
   defp format_path(path, step_map) do
     path
@@ -431,9 +556,36 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     |> Enum.reject(&is_nil/1)
   end
 
-  # ── Warnings ─────────────────────────────────────────────────────────
+  # ── Warnings ───────────────────────────────────────────────────────
 
-  defp build_warnings(sequences, required_ids, step_map, params) do
+  defp length_warnings([], _target), do: []
+
+  defp length_warnings(sequences, target) do
+    lengths = Enum.map(sequences, &length/1)
+    min_len = Enum.min(lengths)
+    max_len = Enum.max(lengths)
+
+    cond do
+      min_len == max_len and min_len != target ->
+        ["Tamanho ajustado para #{min_len} passos para incluir todos os obrigatórios"]
+
+      min_len != target or max_len != target ->
+        ["Tamanho variou entre #{min_len} e #{max_len} passos para incluir todos os obrigatórios"]
+
+      true ->
+        []
+    end
+  end
+
+  defp count_warnings(sequences, target) do
+    if length(sequences) < target do
+      ["Gerou #{length(sequences)} de #{target} sequências solicitadas"]
+    else
+      []
+    end
+  end
+
+  defp build_dfs_warnings(sequences, required_ids, step_map, params) do
     required_warnings =
       if required_ids != [] do
         missed =
@@ -455,12 +607,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         []
       end
 
-    count_warnings =
-      if length(sequences) < params.count do
-        ["Gerou #{length(sequences)} de #{params.count} sequências solicitadas"]
-      else
-        []
-      end
+    count_warnings = count_warnings(sequences, params.count)
 
     required_warnings ++ count_warnings
   end

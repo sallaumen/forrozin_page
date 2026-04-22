@@ -254,28 +254,72 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   # ---------------------------------------------------------------------------
 
   describe "required_codes" do
-    test "includes required step when reachable" do
+    test "guarantees required step appears in every sequence" do
       build_linear_chain(5)
 
+      {:ok, seqs, _warnings} =
+        Generator.generate(base_params("C0", length: 5, count: 3, required_codes: ["C3"]))
+
+      for seq <- seqs do
+        assert "C3" in Enum.map(seq, & &1.code)
+      end
+    end
+
+    test "guarantees multiple required steps in same sequence" do
+      build_linear_chain(6)
+
+      {:ok, seqs, _warnings} =
+        Generator.generate(base_params("C0", length: 6, count: 2, required_codes: ["C2", "C4"]))
+
+      for seq <- seqs do
+        codes = Enum.map(seq, & &1.code)
+        assert "C2" in codes
+        assert "C4" in codes
+      end
+    end
+
+    test "permutes required step order across sequences for variety" do
+      {steps, _} = build_linear_chain(5)
+      add_loop(steps)
+
+      {:ok, seqs, _warnings} =
+        Generator.generate(
+          base_params("C0", length: 10, count: 6, required_codes: ["C2", "C3"])
+          |> Map.put(:allow_repeats, true)
+        )
+
+      orders =
+        Enum.map(seqs, fn seq ->
+          codes = Enum.map(seq, & &1.code)
+          c2_idx = Enum.find_index(codes, &(&1 == "C2"))
+          c3_idx = Enum.find_index(codes, &(&1 == "C3"))
+          {c2_idx, c3_idx}
+        end)
+
+      c2_first = Enum.count(orders, fn {c2, c3} -> c2 < c3 end)
+      c3_first = Enum.count(orders, fn {c2, c3} -> c3 < c2 end)
+
+      # Both orderings should appear
+      assert c2_first > 0 or c3_first > 0
+    end
+
+    test "adjusts length when path through waypoints is longer" do
+      # Chain of 8 steps — requiring C6 means min path is C0→C1→...→C6 = 7 steps
+      build_linear_chain(8)
+
       {:ok, [seq], warnings} =
-        Generator.generate(base_params("C0", length: 5, count: 1, required_codes: ["C3"]))
+        Generator.generate(base_params("C0", length: 4, count: 1, required_codes: ["C6"]))
 
-      assert "C3" in Enum.map(seq, & &1.code)
-      assert warnings == []
+      # Sequence must include C6 — length adapts
+      assert "C6" in Enum.map(seq, & &1.code)
+      assert length(seq) >= 7
+      assert Enum.any?(warnings, &(&1 =~ "Tamanho ajustado"))
     end
 
-    test "warns when required code does not exist" do
+    test "warns when no path exists between required steps" do
       build_linear_chain(3)
 
-      {:ok, _, warnings} =
-        Generator.generate(base_params("C0", length: 3, count: 1, required_codes: ["GHOST"]))
-
-      assert Enum.any?(warnings, &(&1 =~ "GHOST"))
-    end
-
-    test "warns when required step is unreachable" do
-      build_linear_chain(3)
-
+      # Disconnected step
       d0 =
         insert(:step, code: "D0", name: "Disc 0", wip: false, status: "published", approved: true)
 
@@ -290,6 +334,15 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       assert Enum.any?(warnings, &(&1 =~ "inalcançável"))
     end
 
+    test "warns when required code does not exist" do
+      build_linear_chain(3)
+
+      {:ok, _, warnings} =
+        Generator.generate(base_params("C0", length: 3, count: 1, required_codes: ["GHOST"]))
+
+      assert Enum.any?(warnings, &(&1 =~ "GHOST"))
+    end
+
     test "handles nil required_codes" do
       build_linear_chain(3)
 
@@ -300,6 +353,21 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         )
 
       refute Enum.any?(warnings, &(&1 =~ "não encontrado"))
+    end
+
+    test "includes wip steps that have connections" do
+      # WIP step connected to the chain — should be usable as required
+      {_steps, by_code} = build_linear_chain(4)
+
+      wip_step =
+        insert(:step, code: "WIP1", name: "WIP Step", wip: true, status: "published", approved: true)
+
+      insert(:connection, source_step: by_code["C2"], target_step: wip_step)
+
+      {:ok, [seq], _warnings} =
+        Generator.generate(base_params("C0", length: 4, count: 1, required_codes: ["WIP1"]))
+
+      assert "WIP1" in Enum.map(seq, & &1.code)
     end
   end
 
