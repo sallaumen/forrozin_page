@@ -102,6 +102,11 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   end
 
   # ── Waypoint-based generation ────────────────────────────────────────
+  #
+  # Hybrid explore-then-correct: for each waypoint segment, the algorithm
+  # randomly walks the graph for a random "budget" of steps (exploration),
+  # then BFS course-corrects to the waypoint. This produces diverse entry
+  # edges into each required step across sequences.
 
   defp generate_waypoint_sequences(ctx, params, required_ids) do
     perms = shuffled_permutations(required_ids, params.count)
@@ -110,10 +115,8 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       Enum.reduce(perms, {[], []}, fn perm, {seqs, warns} ->
         waypoints = waypoint_list(ctx.start_id, perm, params.cyclic)
 
-        case connect_waypoints(waypoints, ctx.adjacency) do
-          {:ok, base_path} ->
-            # Pad with random walk if under target length
-            path = pad_path(base_path, params.length, ctx)
+        case build_exploratory_path(waypoints, params.length, ctx) do
+          {:ok, path} ->
             formatted = format_path_forward(path, ctx.step_map)
             {[formatted | seqs], warns}
 
@@ -146,11 +149,121 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     [start_id | required_ids]
   end
 
-  defp connect_waypoints(waypoints, adjacency) do
+  defp build_exploratory_path(waypoints, target_length, ctx) do
     segments = Enum.chunk_every(waypoints, 2, 1, :discard)
 
+    # Compute minimum BFS distance for each segment
+    min_dists =
+      Enum.map(segments, fn [from, to] ->
+        case bfs_path(from, to, ctx.adjacency) do
+          {:ok, path} -> length(path) - 1
+          :no_path -> :no_path
+        end
+      end)
+
+    # Check for impossible segments
+    impossible =
+      Enum.zip(segments, min_dists)
+      |> Enum.find(fn {_seg, dist} -> dist == :no_path end)
+
+    case impossible do
+      {[from, to], _} ->
+        {:error, from, to}
+
+      nil ->
+        total_min = Enum.sum(min_dists) + 1
+        extra = max(target_length - total_min, 0)
+
+        # Try multiple times with different random budgets
+        result =
+          Enum.reduce_while(1..@max_attempts, nil, fn _, _ ->
+            budgets = distribute_budget(extra, length(segments))
+
+            case try_exploratory_path(segments, budgets, ctx) do
+              {:ok, path} -> {:halt, {:ok, path}}
+              :retry -> {:cont, nil}
+            end
+          end)
+
+        case result do
+          {:ok, path} ->
+            padded = pad_path(path, target_length, ctx)
+            {:ok, padded}
+
+          nil ->
+            # Fallback: just use shortest paths (BFS only, no exploration)
+            connect_waypoints_shortest(segments, ctx.adjacency)
+        end
+    end
+  end
+
+  defp try_exploratory_path(segments, budgets, ctx) do
+    Enum.zip(segments, budgets)
+    |> Enum.reduce_while({:ok, [ctx.start_id]}, fn {[_from, to], budget}, {:ok, path} ->
+      current = List.last(path)
+
+      # Phase 1: Random walk for `budget` steps (free exploration)
+      explored = random_walk(current, budget, ctx)
+
+      # Phase 2: BFS course-correct from walk end to waypoint
+      walk_end = List.last(explored)
+
+      case bfs_path(walk_end, to, ctx.adjacency) do
+        {:ok, correction} ->
+          # Merge: path + exploration (skip first, it's current) + correction (skip first)
+          explore_tail = if length(explored) > 1, do: tl(explored), else: []
+          correct_tail = if length(correction) > 1, do: tl(correction), else: []
+          {:cont, {:ok, path ++ explore_tail ++ correct_tail}}
+
+        :no_path ->
+          {:halt, :retry}
+      end
+    end)
+  end
+
+  defp random_walk(_current, 0, _ctx), do: []
+
+  defp random_walk(current, steps, ctx) do
+    do_random_walk([current], steps, MapSet.new([current]), ctx)
+    |> Enum.reverse()
+  end
+
+  defp do_random_walk(path, 0, _visited, _ctx), do: path
+
+  defp do_random_walk([current | _] = path, remaining, visited, ctx) do
+    neighbors =
+      Map.get(ctx.adjacency, current, [])
+      |> Enum.filter(&MapSet.member?(ctx.reachable, &1))
+
+    unvisited = Enum.reject(neighbors, &MapSet.member?(visited, &1))
+    candidates = if unvisited != [], do: unvisited, else: neighbors
+
+    case candidates do
+      [] -> path
+      _ ->
+        next = Enum.random(candidates)
+        do_random_walk([next | path], remaining - 1, MapSet.put(visited, next), ctx)
+    end
+  end
+
+  defp distribute_budget(0, n), do: List.duplicate(0, n)
+
+  defp distribute_budget(extra, n) do
+    # Distribute `extra` steps randomly across `n` segments
+    slots = for _ <- 1..extra, do: :rand.uniform(n) - 1
+
+    base = List.duplicate(0, n)
+
+    Enum.reduce(slots, base, fn slot, acc ->
+      List.update_at(acc, slot, &(&1 + 1))
+    end)
+  end
+
+  defp connect_waypoints_shortest(segments, adjacency) do
     Enum.reduce_while(segments, {:ok, []}, fn [from, to], {:ok, acc} ->
-      case bfs_path(from, to, adjacency) do
+      start_node = if acc == [], do: from, else: List.last(acc)
+
+      case bfs_path(start_node, to, adjacency) do
         {:ok, path} ->
           trimmed = if acc == [], do: path, else: tl(path)
           {:cont, {:ok, acc ++ trimmed}}
@@ -162,44 +275,14 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   end
 
   # Extends path to target_length by random walk from the last node.
-  # Allows revisiting nodes (except immediate backtrack) to explore the graph.
   defp pad_path(path, target_length, _ctx) when length(path) >= target_length, do: path
 
   defp pad_path(path, target_length, ctx) do
     remaining = target_length - length(path)
-    visited = MapSet.new(path)
-
-    do_pad(Enum.reverse(path), remaining, visited, ctx)
-    |> Enum.reverse()
-  end
-
-  # path is reversed here: [last_added, ..., first]
-  defp do_pad(path, 0, _visited, _ctx), do: path
-
-  defp do_pad([current | _] = path, remaining, visited, ctx) do
-    neighbors =
-      Map.get(ctx.adjacency, current, [])
-      |> Enum.filter(&MapSet.member?(ctx.reachable, &1))
-
-    # Prefer unvisited neighbors, but allow revisits if needed
-    unvisited = Enum.reject(neighbors, &MapSet.member?(visited, &1))
-    candidates = if unvisited != [], do: unvisited, else: neighbors
-
-    case candidates do
-      [] ->
-        # Dead end — return what we have
-        path
-
-      _ ->
-        next = Enum.random(candidates)
-
-        do_pad(
-          [next | path],
-          remaining - 1,
-          MapSet.put(visited, next),
-          ctx
-        )
-    end
+    current = List.last(path)
+    tail = random_walk(current, remaining, ctx)
+    tail_trimmed = if length(tail) > 1, do: tl(tail), else: []
+    path ++ tail_trimmed
   end
 
   defp code_for(step_map, id) do
