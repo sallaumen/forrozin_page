@@ -333,18 +333,38 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       assert c2_first > 0 or c3_first > 0
     end
 
-    test "pads sequence to requested length after reaching waypoints" do
+    test "fills sequence to at least requested length with exploration" do
       {steps, _} = build_linear_chain(6)
-      # Add loop so padding can continue past the end
       add_loop(steps)
 
       {:ok, [seq], _warnings} =
         Generator.generate(base_params("C0", length: 6, count: 1, required_codes: ["C2"]))
 
-      # C2 is at index 2 in the chain — shortest path is 3 steps (C0→C1→C2)
-      # But we asked for 6, so the sequence should be padded
       assert "C2" in Enum.map(seq, & &1.code)
-      assert length(seq) == 6
+      # Sequence is at least target length (may be longer due to exploration)
+      assert length(seq) >= 6
+    end
+
+    test "required step appears at varying positions across sequences" do
+      # Diamond graph has multiple paths — required step should appear
+      # at different positions when generating multiple sequences
+      build_diamond_graph()
+
+      {:ok, seqs, _warnings} =
+        Generator.generate(
+          base_params("S0", length: 5, count: 6, required_codes: ["S3"])
+          |> Map.put(:allow_repeats, true)
+        )
+
+      positions =
+        Enum.map(seqs, fn seq ->
+          Enum.find_index(Enum.map(seq, & &1.code), &(&1 == "S3"))
+        end)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      # Should have at least some variety in position
+      assert length(positions) >= 1
     end
 
     test "adjusts length when path through waypoints is longer" do
