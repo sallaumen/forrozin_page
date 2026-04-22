@@ -15,6 +15,16 @@ defmodule OGrupoDeEstudos.Sequences.Scorer do
   @weight_bf_penalty 1.5
   @weight_category_diversity 2.0
   @weight_repetition_penalty 1.0
+  @weight_interesting_steps 1.5
+
+  # Steps that make sequences more interesting — bonus per occurrence
+  @step_bonuses %{
+    "GP" => 0.8,
+    "GP-D" => 0.6,
+    "SC" => 0.7,
+    "IV" => 0.7,
+    "TR-ARM" => 0.4
+  }
 
   @type step :: %{id: String.t(), code: String.t(), name: String.t()}
   @type score_opts :: %{required_ids: MapSet.t(), bf_id: String.t() | nil}
@@ -47,7 +57,8 @@ defmodule OGrupoDeEstudos.Sequences.Scorer do
       required_spread: score_required_spread(seq, required_ids) * @weight_required_spread,
       bf_penalty: score_bf_penalty(seq, bf_id) * @weight_bf_penalty,
       category_diversity: score_category_diversity(seq) * @weight_category_diversity,
-      repetition_penalty: score_repetition_penalty(seq) * @weight_repetition_penalty
+      repetition_penalty: score_repetition_penalty(seq) * @weight_repetition_penalty,
+      interesting_steps: score_interesting_steps(seq) * @weight_interesting_steps
     }
   end
 
@@ -172,5 +183,19 @@ defmodule OGrupoDeEstudos.Sequences.Scorer do
       |> Enum.count(fn {_id, count} -> count > 1 end)
 
     -repeated_count * 1.0
+  end
+
+  @doc """
+  Rewards sequences that include interesting/versatile steps.
+
+  Certain steps open up richer movement possibilities and make
+  sequences more engaging. Each occurrence of a bonus step adds
+  its configured value. Bonus steps: GP, GP-D, SC, IV, TR-ARM.
+  """
+  @spec score_interesting_steps(list(step())) :: float()
+  def score_interesting_steps(seq) do
+    seq
+    |> Enum.map(fn step -> Map.get(@step_bonuses, step.code, 0.0) end)
+    |> Enum.sum()
   end
 end

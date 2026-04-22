@@ -163,6 +163,37 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
     end
   end
 
+  # ── score_interesting_steps ───────────────────────────────────────────
+
+  describe "score_interesting_steps/1" do
+    test "returns 0 for steps with no bonuses" do
+      assert Scorer.score_interesting_steps(seq(~w(A B C))) == 0.0
+    end
+
+    test "gives bonus for GP" do
+      score = Scorer.score_interesting_steps(seq(~w(A GP B)))
+      assert score > 0.0
+    end
+
+    test "gives bonus for SC, IV, TR-ARM" do
+      assert Scorer.score_interesting_steps(seq(~w(SC))) > 0.0
+      assert Scorer.score_interesting_steps(seq(~w(IV))) > 0.0
+      assert Scorer.score_interesting_steps(seq(~w(TR-ARM))) > 0.0
+    end
+
+    test "GP has higher bonus than TR-ARM" do
+      gp_score = Scorer.score_interesting_steps(seq(~w(GP)))
+      tr_score = Scorer.score_interesting_steps(seq(~w(TR-ARM)))
+      assert gp_score > tr_score
+    end
+
+    test "accumulates bonuses for multiple interesting steps" do
+      one = Scorer.score_interesting_steps(seq(~w(A GP B)))
+      two = Scorer.score_interesting_steps(seq(~w(A GP B IV)))
+      assert two > one
+    end
+  end
+
   # ── rank/2 ───────────────────────────────────────────────────────────
 
   describe "rank/2" do
@@ -188,6 +219,7 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
       assert Map.has_key?(breakdown, :category_diversity)
       assert Map.has_key?(breakdown, :repetition_penalty)
       assert Map.has_key?(breakdown, :required_spread)
+      assert Map.has_key?(breakdown, :interesting_steps)
     end
 
     test "sequence with fewer BFs ranks higher" do
