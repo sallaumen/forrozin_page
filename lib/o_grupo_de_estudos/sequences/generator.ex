@@ -185,24 +185,33 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         total_min = Enum.sum(min_dists) + 1
         extra = max(target_length - total_min, 0)
 
-        # Try multiple times with different random budgets
+        # Distribute budget across N segments + 1 post-waypoint slot
+        # This ensures exploration happens both BEFORE and AFTER waypoints,
+        # so required steps end up distributed across the sequence, not always at the end
+        num_slots = length(segments) + 1
+
         result =
           Enum.reduce_while(1..@max_attempts, nil, fn _, _ ->
-            budgets = distribute_budget(extra, length(segments))
+            all_budgets = distribute_budget(extra, num_slots)
+            {segment_budgets, [post_budget]} = Enum.split(all_budgets, length(segments))
 
-            case try_exploratory_path(segments, budgets, ctx) do
-              {:ok, path} -> {:halt, {:ok, path}}
-              :retry -> {:cont, nil}
+            case try_exploratory_path(segments, segment_budgets, ctx) do
+              {:ok, path} ->
+                # Add post-waypoint exploration, then ensure at least target_length
+                with_post = pad_path(path, length(path) + post_budget, ctx)
+                final = pad_path(with_post, target_length, ctx)
+                {:halt, {:ok, final}}
+
+              :retry ->
+                {:cont, nil}
             end
           end)
 
         case result do
-          {:ok, path} ->
-            padded = pad_path(path, target_length, ctx)
-            {:ok, padded}
+          {:ok, path} -> {:ok, path}
 
           nil ->
-            # Fallback: just use shortest paths (BFS only, no exploration)
+            # Fallback: shortest paths only
             connect_waypoints_shortest(segments, ctx.adjacency)
         end
     end
@@ -221,7 +230,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
       case bfs_path(walk_end, to, ctx.adjacency) do
         {:ok, correction} ->
-          # Merge: path + exploration (skip first, it's current) + correction (skip first)
           explore_tail = if length(explored) > 1, do: tl(explored), else: []
           correct_tail = if length(correction) > 1, do: tl(correction), else: []
           {:cont, {:ok, path ++ explore_tail ++ correct_tail}}
@@ -709,19 +717,12 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   defp length_warnings([], _target), do: []
 
   defp length_warnings(sequences, target) do
-    lengths = Enum.map(sequences, &length/1)
-    min_len = Enum.min(lengths)
-    max_len = Enum.max(lengths)
+    min_len = sequences |> Enum.map(&length/1) |> Enum.min()
 
-    cond do
-      min_len == max_len and min_len != target ->
-        ["Tamanho ajustado para #{min_len} passos para incluir todos os obrigatórios"]
-
-      min_len != target or max_len != target ->
-        ["Tamanho variou entre #{min_len} e #{max_len} passos para incluir todos os obrigatórios"]
-
-      true ->
-        []
+    if min_len > target do
+      ["Tamanho ajustado para #{min_len} passos para incluir todos os obrigatórios"]
+    else
+      []
     end
   end
 
