@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   """
 
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
+  alias OGrupoDeEstudos.Sequences.Scorer
 
   @type step_info :: %{id: String.t(), code: String.t(), name: String.t()}
   @type sequence :: [step_info()]
@@ -18,6 +19,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   @max_attempts 50
   @max_same_pair_loops 3
+  @overgeneration_factor 5
   @bf_code "BF"
 
   # Weight constants (DFS mode)
@@ -109,9 +111,10 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   # edges into each required step across sequences.
 
   defp generate_waypoint_sequences(ctx, params, required_ids) do
-    perms = shuffled_permutations(required_ids, params.count)
+    pool_size = params.count * @overgeneration_factor
+    perms = shuffled_permutations(required_ids, pool_size)
 
-    {sequences, path_warnings} =
+    {pool, path_warnings} =
       Enum.reduce(perms, {[], []}, fn perm, {seqs, warns} ->
         waypoints = waypoint_list(ctx.start_id, perm, params.cyclic)
 
@@ -127,10 +130,18 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         end
       end)
 
-    sequences =
-      sequences
+    unique_pool =
+      pool
       |> Enum.reverse()
       |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+
+    # Rank by quality and take the best
+    scorer_opts = %{required_ids: ctx.required_ids, bf_id: ctx.bf_id}
+
+    sequences =
+      unique_pool
+      |> Scorer.rank(scorer_opts)
+      |> Enum.map(fn {seq, _score, _breakdown} -> seq end)
       |> Enum.take(params.count)
 
     warnings =
