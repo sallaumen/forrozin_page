@@ -110,46 +110,56 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   # then BFS course-corrects to the waypoint. This produces diverse entry
   # edges into each required step across sequences.
 
+  @zones [:beginning, :middle, :end]
+
   defp generate_waypoint_sequences(ctx, params, required_ids) do
-    pool_size = params.count * @overgeneration_factor
-    perms = shuffled_permutations(required_ids, pool_size)
+    zones = @zones |> Stream.cycle() |> Enum.take(params.count)
+    scorer_opts = %{required_ids: ctx.required_ids, bf_id: ctx.bf_id}
 
-    {pool, path_warnings} =
-      Enum.reduce(perms, {[], []}, fn perm, {seqs, warns} ->
-        waypoints = waypoint_list(ctx.start_id, perm, params.cyclic)
+    {sequences, all_warnings} =
+      Enum.reduce(zones, {[], []}, fn zone, {seqs, warns} ->
+        {candidates, zone_warns} =
+          generate_zone_candidates(zone, ctx, params, required_ids)
 
-        case build_exploratory_path(waypoints, params.length, ctx) do
-          {:ok, path} ->
-            formatted = format_path_forward(path, ctx.step_map)
-            {[formatted | seqs], warns}
+        best =
+          candidates
+          |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+          |> Scorer.rank(scorer_opts)
+          |> List.first()
 
-          {:error, from_id, to_id} ->
-            from_code = code_for(ctx.step_map, from_id)
-            to_code = code_for(ctx.step_map, to_id)
-            {seqs, ["Não existe caminho de #{from_code} para #{to_code} no grafo" | warns]}
+        case best do
+          {seq, _score, _breakdown} -> {[seq | seqs], warns ++ zone_warns}
+          nil -> {seqs, warns ++ zone_warns}
         end
       end)
 
-    unique_pool =
-      pool
-      |> Enum.reverse()
-      |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
-
-    # Rank by quality and take the best
-    scorer_opts = %{required_ids: ctx.required_ids, bf_id: ctx.bf_id}
-
-    sequences =
-      unique_pool
-      |> Scorer.rank(scorer_opts)
-      |> Enum.map(fn {seq, _score, _breakdown} -> seq end)
-      |> Enum.take(params.count)
+    sequences = Enum.reverse(sequences)
 
     warnings =
-      Enum.uniq(path_warnings) ++
+      Enum.uniq(all_warnings) ++
         length_warnings(sequences, params.length) ++
         count_warnings(sequences, params.count)
 
     {sequences, warnings}
+  end
+
+  defp generate_zone_candidates(zone, ctx, params, required_ids) do
+    perms = shuffled_permutations(required_ids, @overgeneration_factor)
+
+    Enum.reduce(perms, {[], []}, fn perm, {seqs, warns} ->
+      waypoints = waypoint_list(ctx.start_id, perm, params.cyclic)
+
+      case build_zone_path(waypoints, params.length, zone, ctx) do
+        {:ok, path} ->
+          formatted = format_path_forward(path, ctx.step_map)
+          {[formatted | seqs], warns}
+
+        {:error, from_id, to_id} ->
+          from_code = code_for(ctx.step_map, from_id)
+          to_code = code_for(ctx.step_map, to_id)
+          {seqs, ["Não existe caminho de #{from_code} para #{to_code} no grafo" | warns]}
+      end
+    end)
   end
 
   defp waypoint_list(start_id, required_ids, true = _cyclic) do
@@ -160,10 +170,9 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     [start_id | required_ids]
   end
 
-  defp build_exploratory_path(waypoints, target_length, ctx) do
+  defp build_zone_path(waypoints, target_length, zone, ctx) do
     segments = Enum.chunk_every(waypoints, 2, 1, :discard)
 
-    # Compute minimum BFS distance for each segment
     min_dists =
       Enum.map(segments, fn [from, to] ->
         case bfs_path(from, to, ctx.adjacency) do
@@ -172,7 +181,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         end
       end)
 
-    # Check for impossible segments
     impossible =
       Enum.zip(segments, min_dists)
       |> Enum.find(fn {_seg, dist} -> dist == :no_path end)
@@ -185,22 +193,27 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         total_min = Enum.sum(min_dists) + 1
         extra = max(target_length - total_min, 0)
 
-        # Distribute budget across N segments + 1 post-waypoint slot
-        # This ensures exploration happens both BEFORE and AFTER waypoints,
-        # so required steps end up distributed across the sequence, not always at the end
-        num_slots = length(segments) + 1
+        # Split budget between pre-waypoint and post-waypoint based on zone
+        {pre_fraction, _post_fraction} = zone_budget_split(zone)
 
         result =
           Enum.reduce_while(1..@max_attempts, nil, fn _, _ ->
-            all_budgets = distribute_budget(extra, num_slots)
-            {segment_budgets, [post_budget]} = Enum.split(all_budgets, length(segments))
+            # Add jitter (±20%) to the fraction for variety within each zone
+            jitter = (:rand.uniform() - 0.5) * 0.4
+            actual_pre = max(min(pre_fraction + jitter, 0.95), 0.05)
+
+            pre_budget = round(extra * actual_pre)
+            post_budget = extra - pre_budget
+
+            segment_budgets = distribute_budget(pre_budget, length(segments))
 
             case try_exploratory_path(segments, segment_budgets, ctx) do
               {:ok, path} ->
-                # Add post-waypoint exploration, then ensure at least target_length
                 with_post = pad_path(path, length(path) + post_budget, ctx)
                 final = pad_path(with_post, target_length, ctx)
-                {:halt, {:ok, final}}
+                # Trim excess to stay close to target_length
+                trimmed = trim_to_target(final, target_length, ctx.required_ids)
+                {:halt, {:ok, trimmed}}
 
               :retry ->
                 {:cont, nil}
@@ -209,12 +222,34 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
         case result do
           {:ok, path} -> {:ok, path}
-
-          nil ->
-            # Fallback: shortest paths only
-            connect_waypoints_shortest(segments, ctx.adjacency)
+          nil -> connect_waypoints_shortest(segments, ctx.adjacency)
         end
     end
+  end
+
+  defp zone_budget_split(:beginning), do: {0.15, 0.85}
+  defp zone_budget_split(:middle), do: {0.50, 0.50}
+  defp zone_budget_split(:end), do: {0.85, 0.15}
+
+  # Trim path to target_length without cutting required steps
+  defp trim_to_target(path, target_length, _required_ids) when length(path) <= target_length do
+    path
+  end
+
+  defp trim_to_target(path, target_length, required_ids) do
+    # Find the latest required step position — can't trim before that
+    max_required_pos =
+      path
+      |> Enum.with_index()
+      |> Enum.filter(fn {id, _idx} -> MapSet.member?(required_ids, id) end)
+      |> Enum.map(fn {_id, idx} -> idx end)
+      |> case do
+        [] -> 0
+        positions -> Enum.max(positions)
+      end
+
+    safe_length = max(target_length, max_required_pos + 2)
+    Enum.take(path, safe_length)
   end
 
   defp try_exploratory_path(segments, budgets, ctx) do
