@@ -111,8 +111,10 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         waypoints = waypoint_list(ctx.start_id, perm, params.cyclic)
 
         case connect_waypoints(waypoints, ctx.adjacency) do
-          {:ok, path} ->
-            formatted = format_path(path, ctx.step_map)
+          {:ok, base_path} ->
+            # Pad with random walk if under target length
+            path = pad_path(base_path, params.length, ctx)
+            formatted = format_path_forward(path, ctx.step_map)
             {[formatted | seqs], warns}
 
           {:error, from_id, to_id} ->
@@ -157,6 +159,47 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
           {:halt, {:error, from, to}}
       end
     end)
+  end
+
+  # Extends path to target_length by random walk from the last node.
+  # Allows revisiting nodes (except immediate backtrack) to explore the graph.
+  defp pad_path(path, target_length, _ctx) when length(path) >= target_length, do: path
+
+  defp pad_path(path, target_length, ctx) do
+    remaining = target_length - length(path)
+    visited = MapSet.new(path)
+
+    do_pad(Enum.reverse(path), remaining, visited, ctx)
+    |> Enum.reverse()
+  end
+
+  # path is reversed here: [last_added, ..., first]
+  defp do_pad(path, 0, _visited, _ctx), do: path
+
+  defp do_pad([current | _] = path, remaining, visited, ctx) do
+    neighbors =
+      Map.get(ctx.adjacency, current, [])
+      |> Enum.filter(&MapSet.member?(ctx.reachable, &1))
+
+    # Prefer unvisited neighbors, but allow revisits if needed
+    unvisited = Enum.reject(neighbors, &MapSet.member?(visited, &1))
+    candidates = if unvisited != [], do: unvisited, else: neighbors
+
+    case candidates do
+      [] ->
+        # Dead end — return what we have
+        path
+
+      _ ->
+        next = Enum.random(candidates)
+
+        do_pad(
+          [next | path],
+          remaining - 1,
+          MapSet.put(visited, next),
+          ctx
+        )
+    end
   end
 
   defp code_for(step_map, id) do
@@ -546,9 +589,20 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   # ── Path formatting ────────────────────────────────────────────────
 
+  # DFS builds path reversed ([last | ... | first]), so we reverse it
   defp format_path(path, step_map) do
     path
     |> Enum.reverse()
+    |> format_ids(step_map)
+  end
+
+  # Waypoint paths are already in correct order
+  defp format_path_forward(path, step_map) do
+    format_ids(path, step_map)
+  end
+
+  defp format_ids(ids, step_map) do
+    ids
     |> Enum.map(fn id ->
       step = Map.get(step_map, id)
       if step, do: %{id: step.id, code: step.code, name: step.name}, else: nil
