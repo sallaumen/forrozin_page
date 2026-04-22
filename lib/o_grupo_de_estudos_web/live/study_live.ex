@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    today = Date.utc_today()
+    today = OGrupoDeEstudos.Brazil.today()
     dashboard = build_dashboard(user, today)
 
     {:ok,

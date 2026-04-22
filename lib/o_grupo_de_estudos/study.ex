@@ -229,7 +229,7 @@ defmodule OGrupoDeEstudos.Study do
     |> Repo.preload(:related_steps)
   end
 
-  def personal_note_week_count(user_id, today \\ Date.utc_today()) do
+  def personal_note_week_count(user_id, today \\ OGrupoDeEstudos.Brazil.today()) do
     week_start = Date.add(today, -6)
 
     from(note in Note,
@@ -268,7 +268,7 @@ defmodule OGrupoDeEstudos.Study do
     |> Repo.all()
   end
 
-  def list_shared_activity_for_user(user_or_id, today \\ Date.utc_today())
+  def list_shared_activity_for_user(user_or_id, today \\ OGrupoDeEstudos.Brazil.today())
 
   def list_shared_activity_for_user(%User{id: user_id}, today) do
     list_shared_activity_for_user(user_id, today)

@@ -98,6 +98,7 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
   def format_timestamp(nil), do: "Data desconhecida"
 
   def format_timestamp(%NaiveDateTime{} = dt) do
-    Calendar.strftime(dt, "%d/%m/%Y às %H:%M:%S")
+    local = OGrupoDeEstudos.Brazil.to_local(dt)
+    Calendar.strftime(local, "%d/%m/%Y às %H:%M:%S")
   end
 end

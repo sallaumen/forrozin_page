@@ -176,7 +176,7 @@
           Membro desde
         </div>
         <div class="text-sm text-ink-900 font-semibold">
-          {Calendar.strftime(@profile_user.inserted_at, "%B %Y")}
+          {OGrupoDeEstudos.Brazil.format_month_year(@profile_user.inserted_at)}
         </div>
       </div>
     </div>
@@ -555,7 +555,7 @@
                   @{comment.author.username}
                 </.link>
                 <span class="text-xs text-ink-500">
-                  {Calendar.strftime(comment.inserted_at, "%d/%m/%Y %H:%M")}
+                  {OGrupoDeEstudos.Brazil.format_datetime(comment.inserted_at)}
                 </span>
               </div>
               <div class="text-sm text-ink-900 leading-relaxed whitespace-pre-wrap break-words">

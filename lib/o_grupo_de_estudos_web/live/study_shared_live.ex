@@ -25,7 +25,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
           Phoenix.PubSub.subscribe(OGrupoDeEstudos.PubSub, Study.note_topic(link))
         end
 
-        today = Date.utc_today()
+        today = OGrupoDeEstudos.Brazil.today()
 
         {:ok,
          assign(socket,

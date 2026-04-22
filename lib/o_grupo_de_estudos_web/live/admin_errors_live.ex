@@ -92,7 +92,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   end
 
   defp format_time(dt) do
-    Calendar.strftime(dt, "%d/%m/%Y %H:%M:%S")
+    OGrupoDeEstudos.Brazil.format_datetime_full(dt)
   end
 
   defp time_ago(datetime) do

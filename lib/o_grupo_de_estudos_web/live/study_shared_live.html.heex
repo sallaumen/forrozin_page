@@ -20,7 +20,7 @@
 
       <div class="mt-4 flex flex-wrap gap-3 text-sm text-ink-500">
         <span class="rounded-full border border-ink-200 px-3 py-1">
-          {Calendar.strftime(@today, "%d/%m/%Y")}
+          {OGrupoDeEstudos.Brazil.format_date(@today)}
         </span>
         <span class={[
           "rounded-full border px-3 py-1",
@@ -132,7 +132,7 @@
             <%= for note <- @history do %>
               <div class="rounded border border-ink-200 bg-ink-100 px-4 py-3">
                 <p class="m-0 text-sm font-semibold text-ink-900">
-                  {Calendar.strftime(note.note_date, "%d/%m/%Y")}
+                  {OGrupoDeEstudos.Brazil.format_date(note.note_date)}
                 </p>
                 <p class="mt-1 text-sm leading-6 text-ink-500">
                   {note_preview(note.content)}

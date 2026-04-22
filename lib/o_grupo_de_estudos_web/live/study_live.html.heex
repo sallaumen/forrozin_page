@@ -23,7 +23,7 @@
             </p>
             <h1 class="mt-2 text-2xl font-bold text-ink-900 md:text-3xl m-0">Diário de hoje</h1>
             <p class="mt-1 text-sm text-ink-500">
-              {Calendar.strftime(@today, "%A, %d de %B")}
+              {OGrupoDeEstudos.Brazil.format_today()}
             </p>
             <p class="mt-3 text-sm leading-7 text-ink-600 m-0">
               Escreve rapidinho o que você praticou, o que ficou gostoso e o que vale revisitar.
@@ -319,7 +319,7 @@
                     </div>
                     <div class="mt-3 flex items-center justify-between gap-3">
                       <span class="text-[10px] text-ink-400">
-                        Desde {Calendar.strftime(link.inserted_at, "%d/%m/%Y")}
+                        Desde {OGrupoDeEstudos.Brazil.format_date(link.inserted_at)}
                       </span>
                       <.link
                         navigate={~p"/study/shared/#{link.id}"}
@@ -435,7 +435,7 @@
                       </div>
                       <div class="mt-3 flex items-center justify-between gap-3">
                         <span class="text-[10px] text-ink-400">
-                          Desde {Calendar.strftime(link.inserted_at, "%d/%m/%Y")}
+                          Desde {OGrupoDeEstudos.Brazil.format_date(link.inserted_at)}
                         </span>
                         <.link
                           navigate={~p"/study/shared/#{link.id}"}
@@ -498,7 +498,7 @@
               <article class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3">
                 <div class="flex items-center justify-between gap-3">
                   <span class="text-[11px] font-bold text-ink-700">
-                    {Calendar.strftime(note.note_date, "%d/%m/%Y")}
+                    {OGrupoDeEstudos.Brazil.format_date(note.note_date)}
                   </span>
 
                   <div :if={note.related_steps != []} class="flex flex-wrap justify-end gap-1">
