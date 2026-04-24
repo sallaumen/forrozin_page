@@ -10,12 +10,22 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
       )
 
     if Phoenix.LiveView.connected?(socket) && socket.assigns[:current_user] do
-      user_id = socket.assigns.current_user.id
-      Phoenix.PubSub.subscribe(OGrupoDeEstudos.PubSub, "notifications:#{user_id}")
-      unread = OGrupoDeEstudos.Engagement.unread_count(user_id)
-      {:cont, assign(socket, :notification_count, unread)}
+      user = socket.assigns.current_user
+      Phoenix.PubSub.subscribe(OGrupoDeEstudos.PubSub, "notifications:#{user.id}")
+      unread = OGrupoDeEstudos.Engagement.unread_count(user.id)
+
+      pending_suggestions =
+        if OGrupoDeEstudos.Accounts.admin?(user),
+          do: OGrupoDeEstudos.Suggestions.count_pending(),
+          else: 0
+
+      {:cont,
+       assign(socket,
+         notification_count: unread,
+         pending_suggestions_count: pending_suggestions
+       )}
     else
-      {:cont, assign(socket, :notification_count, 0)}
+      {:cont, assign(socket, notification_count: 0, pending_suggestions_count: 0)}
     end
   end
 end

@@ -23,9 +23,19 @@ defmodule OGrupoDeEstudos.Suggestions do
   - `"remove_connection"` — requires `old_value` with the label
   """
   def create(user, attrs) do
-    %Suggestion{}
-    |> Suggestion.changeset(Map.put(attrs, :user_id, user.id))
-    |> Repo.insert()
+    result =
+      %Suggestion{}
+      |> Suggestion.changeset(Map.put(attrs, :user_id, user.id))
+      |> Repo.insert()
+
+    case result do
+      {:ok, suggestion} ->
+        Dispatcher.notify_suggestion(:suggestion_created, suggestion)
+        {:ok, suggestion}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -100,6 +110,16 @@ defmodule OGrupoDeEstudos.Suggestions do
   @doc "Counts pending suggestions (for admin nav badge)."
   def count_pending do
     SuggestionQuery.count_by(status: "pending")
+  end
+
+  @doc "Lists a user's pending suggestions for a specific step."
+  def list_user_pending_for_step(user_id, step_id) do
+    SuggestionQuery.list_by(
+      user_id: user_id,
+      target_id: step_id,
+      status: "pending",
+      preload: []
+    )
   end
 
   @doc "Lists all suggestions (any status), preloading author and reviewer."

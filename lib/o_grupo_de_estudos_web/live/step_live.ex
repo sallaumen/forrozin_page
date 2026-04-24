@@ -3,7 +3,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement}
+  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Suggestions}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
@@ -93,7 +93,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            suggestion_value: "",
            suggesting_connection: false,
            connection_suggest_search: "",
-           connection_suggest_results: []
+           connection_suggest_results: [],
+           my_pending_suggestions: Suggestions.list_user_pending_for_step(user_id, step.id)
          )}
 
       {:error, :not_found} ->
@@ -527,8 +528,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     field = socket.assigns.suggesting_field
     old_value = Map.get(step, String.to_existing_atom(field)) || ""
 
-    alias OGrupoDeEstudos.Suggestions
-
     case Suggestions.create(user, %{
            target_type: "step",
            target_id: step.id,
@@ -541,7 +540,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         {:noreply,
          socket
          |> assign(suggesting_field: nil, suggestion_value: "")
-         |> put_flash(:info, "Sugestão enviada! Um admin vai revisar.")}
+         |> assign(:my_pending_suggestions, Suggestions.list_user_pending_for_step(user.id, step.id))
+         |> put_flash(:info, "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis.")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}
@@ -585,8 +585,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     user = socket.assigns.current_user
     step = socket.assigns.step
 
-    alias OGrupoDeEstudos.Suggestions
-
     case Suggestions.create(user, %{
            target_type: "connection",
            target_id: step.id,
@@ -601,7 +599,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            connection_suggest_search: "",
            connection_suggest_results: []
          )
-         |> put_flash(:info, "Sugestão de conexão enviada!")}
+         |> assign(:my_pending_suggestions, Suggestions.list_user_pending_for_step(user.id, step.id))
+         |> put_flash(:info, "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis.")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao sugerir conexão")}
@@ -613,6 +612,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     alias OGrupoDeEstudos.Suggestions
 
+    step = socket.assigns.step
+
     case Suggestions.create(user, %{
            target_type: "connection",
            target_id: conn_id,
@@ -620,7 +621,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            old_value: label
          }) do
       {:ok, _} ->
-        {:noreply, put_flash(socket, :info, "Sugestão de remoção enviada!")}
+        {:noreply,
+         socket
+         |> assign(:my_pending_suggestions, Suggestions.list_user_pending_for_step(user.id, step.id))
+         |> put_flash(:info, "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis.")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao sugerir remoção")}

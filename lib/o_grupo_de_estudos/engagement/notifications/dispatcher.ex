@@ -268,6 +268,33 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   # ── Suggestion notifications ───────────────────────────────
 
   @doc """
+  Notifies all admins that a new suggestion was submitted.
+  The suggestion author is excluded from receiving the notification.
+  """
+  def notify_suggestion(:suggestion_created, suggestion) do
+    admin_ids =
+      from(u in User, where: u.role == "admin", select: u.id)
+      |> Repo.all()
+
+    recipients = admin_ids -- [suggestion.user_id]
+
+    insert_and_broadcast(recipients, fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: suggestion.user_id,
+        action: "suggestion_created",
+        group_key: "suggestion:#{suggestion.id}",
+        target_type: "suggestion",
+        target_id: suggestion.id,
+        parent_type: suggestion.target_type,
+        parent_id: suggestion.target_id,
+        inserted_at: now()
+      }
+    end)
+  end
+
+  @doc """
   Dispatches a notification to the suggestion author when an admin reviews it.
 
   Sends `suggestion_approved` or `suggestion_rejected` based on `suggestion.status`.

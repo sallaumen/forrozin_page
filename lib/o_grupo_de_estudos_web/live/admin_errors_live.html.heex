@@ -2,6 +2,7 @@
   <.top_nav
     current_user={@current_user}
     is_admin={@is_admin}
+    pending_suggestions_count={assigns[:pending_suggestions_count] || 0}
     nav_mode={@nav_mode}
     notification_count={assigns[:notification_count] || 0}
   />

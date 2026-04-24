@@ -24,6 +24,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   attr :notification_dropdown_enabled, :boolean, default: false
   attr :notification_dropdown_open, :boolean, default: false
   attr :notification_preview_groups, :list, default: []
+  attr :pending_suggestions_count, :integer, default: 0
   attr :edit_action_enabled, :boolean, default: false
   attr :edit_action_event, :string, default: "toggle_edit_mode"
   attr :edit_mode, :boolean, default: false
@@ -88,6 +89,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 class="flex min-h-9 cursor-pointer list-none items-center gap-1.5 rounded-full border border-ink-100/10 px-3 py-1.5 text-[12px] font-semibold text-ink-300 transition hover:border-ink-100/20 hover:bg-ink-100/5 hover:text-ink-50 [&::-webkit-details-marker]:hidden"
               >
                 <span>Admin</span>
+                <span
+                  :if={@pending_suggestions_count > 0}
+                  class="inline-flex min-w-[16px] items-center justify-center rounded-full bg-accent-orange px-1 py-0.5 text-[9px] font-bold text-white"
+                >
+                  {@pending_suggestions_count}
+                </span>
                 <.icon
                   name="hero-chevron-down"
                   class="size-3.5 transition group-open:rotate-180"
@@ -115,9 +122,15 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 </.link>
                 <.link
                   navigate={~p"/admin/suggestions"}
-                  class="flex items-center rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
+                  class="flex items-center justify-between rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
                 >
-                  Sugestões
+                  <span>Sugestões</span>
+                  <span
+                    :if={@pending_suggestions_count > 0}
+                    class="inline-flex min-w-[20px] items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[10px] font-bold text-white"
+                  >
+                    {@pending_suggestions_count}
+                  </span>
                 </.link>
                 <.link
                   navigate={~p"/admin/errors"}
@@ -422,6 +435,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   defp action_text(%{action: "replied_comment"}), do: " respondeu ao seu comentário"
   defp action_text(%{action: "liked_step"}), do: " curtiu o passo "
   defp action_text(%{action: "liked_sequence"}), do: " curtiu a sequência"
+  defp action_text(%{action: "suggestion_created"}), do: " enviou uma sugestão"
   defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão"
   defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
   defp action_text(%{action: "study_request"}), do: " quer estudar com você"

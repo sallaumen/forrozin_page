@@ -274,4 +274,103 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
       assert Suggestions.count_pending() == 1
     end
   end
+
+  # ── Admin notifications on create ───────────────────────
+
+  describe "admin notification on create" do
+    test "notifies admins when a user creates a suggestion", %{user: user, admin: admin, step: step} do
+      alias OGrupoDeEstudos.Engagement.Notifications.Notification
+
+      {:ok, _} =
+        Suggestions.create(user, %{
+          target_type: "step",
+          target_id: step.id,
+          action: "edit_field",
+          field: "name",
+          old_value: step.name,
+          new_value: "Notificação Test"
+        })
+
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.user_id == ^admin.id and n.action == "suggestion_created"
+        )
+
+      assert length(notifications) == 1
+      assert hd(notifications).actor_id == user.id
+    end
+
+    test "does not notify the author when they are admin", %{admin: admin, step: step} do
+      alias OGrupoDeEstudos.Engagement.Notifications.Notification
+
+      {:ok, _} =
+        Suggestions.create(admin, %{
+          target_type: "step",
+          target_id: step.id,
+          action: "edit_field",
+          field: "name",
+          old_value: step.name,
+          new_value: "Admin Self"
+        })
+
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.user_id == ^admin.id and n.action == "suggestion_created"
+        )
+
+      assert notifications == []
+    end
+  end
+
+  # ── list_user_pending_for_step/2 ────────────────────────
+
+  describe "list_user_pending_for_step/2" do
+    test "returns only user's pending suggestions for the step", %{user: user, admin: admin, step: step} do
+      {:ok, _} =
+        Suggestions.create(user, %{
+          target_type: "step",
+          target_id: step.id,
+          action: "edit_field",
+          field: "name",
+          old_value: step.name,
+          new_value: "Pending"
+        })
+
+      # Approved suggestion (should not appear)
+      {:ok, s2} =
+        Suggestions.create(user, %{
+          target_type: "step",
+          target_id: step.id,
+          action: "edit_field",
+          field: "note",
+          old_value: "",
+          new_value: "Approved"
+        })
+
+      Suggestions.approve(s2, admin)
+
+      result = Suggestions.list_user_pending_for_step(user.id, step.id)
+      assert length(result) == 1
+      assert hd(result).new_value == "Pending"
+    end
+
+    test "does not return other user's suggestions", %{user: user, step: step} do
+      other = insert(:user)
+
+      {:ok, _} =
+        Suggestions.create(other, %{
+          target_type: "step",
+          target_id: step.id,
+          action: "edit_field",
+          field: "name",
+          old_value: step.name,
+          new_value: "Other User"
+        })
+
+      result = Suggestions.list_user_pending_for_step(user.id, step.id)
+      assert result == []
+    end
+  end
 end

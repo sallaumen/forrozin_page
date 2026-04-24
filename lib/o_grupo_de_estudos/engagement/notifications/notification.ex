@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
     timestamps(updated_at: false)
   end
 
-  @valid_actions ~w(liked_comment replied_comment liked_step liked_sequence followed_user suggestion_approved suggestion_rejected study_request study_accepted)
+  @valid_actions ~w(liked_comment replied_comment liked_step liked_sequence followed_user suggestion_created suggestion_approved suggestion_rejected study_request study_accepted)
   @valid_target_types ~w(step_comment sequence_comment profile_comment step sequence profile suggestion study_link)
   @valid_parent_types ~w(step sequence profile suggestion study_link)
 

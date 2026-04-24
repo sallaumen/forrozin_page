@@ -179,4 +179,67 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
       assert Engagement.liked?(user.id, "step_comment", comment.id)
     end
   end
+
+  describe "pending suggestions visibility" do
+    test "shows user's pending suggestions on the step page", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "PS1", name: "Passo Sugestão")
+
+      OGrupoDeEstudos.Suggestions.create(user, %{
+        target_type: "step",
+        target_id: step.id,
+        action: "edit_field",
+        field: "name",
+        old_value: "Passo Sugestão",
+        new_value: "Nome Melhorado"
+      })
+
+      {:ok, _lv, html} = live(conn, ~p"/steps/PS1")
+
+      assert html =~ "Suas sugestões pendentes"
+      assert html =~ "Nome Melhorado"
+    end
+
+    test "does not show other user's pending suggestions", %{conn: conn} do
+      user = insert(:user)
+      other = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "PS2", name: "Outro Passo")
+
+      OGrupoDeEstudos.Suggestions.create(other, %{
+        target_type: "step",
+        target_id: step.id,
+        action: "edit_field",
+        field: "name",
+        old_value: "Outro Passo",
+        new_value: "Sugestão Alheia"
+      })
+
+      {:ok, _lv, html} = live(conn, ~p"/steps/PS2")
+
+      refute html =~ "Suas sugestões pendentes"
+      refute html =~ "Sugestão Alheia"
+    end
+
+    test "updates pending list after submitting suggestion", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      _step = insert(:step, section: section, code: "PS3", name: "Passo Flash")
+
+      {:ok, lv, _html} = live(conn, ~p"/steps/PS3")
+
+      lv |> render_click("start_suggest", %{"field" => "name"})
+      lv |> render_click("submit_suggestion", %{"value" => "Nome Novo"})
+
+      html = render(lv)
+
+      # After submit, pending suggestions block should appear
+      assert html =~ "Suas sugestões pendentes"
+      assert html =~ "Nome Novo"
+    end
+  end
 end

@@ -145,9 +145,10 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
   end
 
   describe "format_timestamp/1" do
-    test "formats a valid NaiveDateTime" do
+    test "formats a valid NaiveDateTime with Brazilian timezone" do
       dt = ~N[2026-04-15 12:00:00]
-      assert OGrupoDeEstudosWeb.AdminBackupsLive.format_timestamp(dt) == "15/04/2026 às 12:00:00"
+      # 12:00 UTC → 09:00 BRT (UTC-3)
+      assert OGrupoDeEstudosWeb.AdminBackupsLive.format_timestamp(dt) == "15/04/2026 às 09:00:00"
     end
 
     test "returns fallback for nil" do

@@ -39,6 +39,9 @@ defmodule OGrupoDeEstudos.Suggestions.SuggestionQuery do
   defp apply_filter({:action, action}, query),
     do: where(query, [s], s.action == ^action)
 
+  defp apply_filter({:target_id, id}, query),
+    do: where(query, [s], s.target_id == ^id)
+
   defp apply_filter({:limit, n}, query),
     do: limit(query, ^n)
 
