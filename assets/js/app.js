@@ -1789,11 +1789,27 @@ const OnboardingBanner = {
   }
 }
 
+// Hook: AutoDismiss — auto-hides flash messages after a configurable delay
+const AutoDismiss = {
+  mounted() {
+    const delay = parseInt(this.el.dataset.dismissAfter || "6000", 10)
+    this._timer = setTimeout(() => {
+      this.el.style.transition = "opacity 0.4s ease, transform 0.4s ease"
+      this.el.style.opacity = "0"
+      this.el.style.transform = "translateX(100%)"
+      setTimeout(() => this.el.remove(), 400)
+    }, delay)
+  },
+  destroyed() {
+    if (this._timer) clearTimeout(this._timer)
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, ThreeCanvas, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, OnboardingBanner},
+  hooks: {...colocatedHooks, GraphVisual, ThreeCanvas, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, OnboardingBanner, AutoDismiss},
 })
 
 // Show progress bar on live navigation and form submits

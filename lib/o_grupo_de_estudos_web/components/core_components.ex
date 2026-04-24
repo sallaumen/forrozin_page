@@ -55,12 +55,14 @@ defmodule OGrupoDeEstudosWeb.CoreComponents do
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
+      phx-hook="AutoDismiss"
+      data-dismiss-after="6000"
       role="alert"
       data-kind={@kind}
       class={[
         "fixed top-4 right-4 z-50 w-80 sm:w-96 max-w-[calc(100vw-2rem)]",
         "flex items-start gap-3 rounded-md shadow-lg p-4 cursor-pointer",
-        "font-sans text-sm leading-snug",
+        "font-sans text-sm leading-snug animate-slide-in-right",
         "bg-ink-50 text-ink-900",
         "border-l-4",
         @kind == :info && "border-accent-green",
