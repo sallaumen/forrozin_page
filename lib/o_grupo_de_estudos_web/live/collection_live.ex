@@ -19,7 +19,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.CommentThread
-  import OGrupoDeEstudosWeb.UI.OnboardingBanner
   import OGrupoDeEstudosWeb.UI.PWAInstallBanner
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
