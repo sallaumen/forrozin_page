@@ -428,7 +428,7 @@
         <% end %>
       </div>
 
-      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6">
+      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
         <%!-- Note or edit form --%>
         <%= if @can_edit_drawer do %>
           <form
@@ -662,7 +662,7 @@
           </button>
         </div>
       </div>
-      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6">
+      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
         <%= if @edit_mode do %>
           <form phx-submit="update_section" class="flex flex-col gap-2">
             <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
