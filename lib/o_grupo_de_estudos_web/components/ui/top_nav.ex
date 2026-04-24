@@ -340,18 +340,59 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           </.link>
           <div class="flex items-center gap-2">
             <%= if @is_admin do %>
-              <.link navigate={~p"/admin/links"} class="text-xs text-ink-400 no-underline">
-                Links
-              </.link>
-              <.link navigate={~p"/admin/backups"} class="text-xs text-ink-400 no-underline">
-                Backups
-              </.link>
-              <.link navigate={~p"/admin/suggestions"} class="text-xs text-ink-400 no-underline">
-                Sugestões
-              </.link>
-              <.link navigate={~p"/admin/errors"} class="text-xs text-ink-400 no-underline">
-                Erros
-              </.link>
+              <details id="top-nav-mobile-admin-menu" class="group relative">
+                <summary class="flex items-center gap-1 cursor-pointer list-none text-xs font-semibold text-ink-400 [&::-webkit-details-marker]:hidden">
+                  <span>Admin</span>
+                  <span
+                    :if={@pending_suggestions_count > 0}
+                    class="inline-flex min-w-[16px] items-center justify-center rounded-full bg-accent-orange px-1 py-0.5 text-[9px] font-bold text-white"
+                  >
+                    {@pending_suggestions_count}
+                  </span>
+                  <.icon
+                    name="hero-chevron-down"
+                    class="size-3 transition group-open:rotate-180"
+                  />
+                </summary>
+                <div class="absolute right-0 top-[calc(100%+8px)] z-50 w-48 overflow-hidden rounded-md border border-ink-900/10 bg-ink-50 p-1 text-ink-900 shadow-[0_12px_32px_rgba(30,22,16,0.2)]">
+                  <.link
+                    navigate={~p"/graph"}
+                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                  >
+                    Conexões
+                  </.link>
+                  <.link
+                    navigate={~p"/admin/links"}
+                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                  >
+                    Links
+                  </.link>
+                  <.link
+                    navigate={~p"/admin/backups"}
+                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                  >
+                    Backups
+                  </.link>
+                  <.link
+                    navigate={~p"/admin/suggestions"}
+                    class="flex items-center justify-between rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                  >
+                    <span>Sugestões</span>
+                    <span
+                      :if={@pending_suggestions_count > 0}
+                      class="inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[9px] font-bold text-white"
+                    >
+                      {@pending_suggestions_count}
+                    </span>
+                  </.link>
+                  <.link
+                    navigate={~p"/admin/errors"}
+                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                  >
+                    Erros
+                  </.link>
+                </div>
+              </details>
             <% end %>
             <.link
               navigate={~p"/settings"}
