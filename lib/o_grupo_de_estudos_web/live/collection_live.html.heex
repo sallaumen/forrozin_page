@@ -355,57 +355,7 @@
                 </button>
               <% end %>
 
-              <div
-                id="collection-suggest-card"
-                class="col-span-2 flex h-full flex-col justify-between rounded-[18px] border border-fuchsia-400/40 bg-fuchsia-500/10 p-4 sm:p-5 md:col-span-3 xl:col-span-2"
-              >
-                <div>
-                  <div class="text-[11px] uppercase tracking-[0.24em] text-fuchsia-700">
-                    Colaboracao
-                  </div>
-                  <div class="mt-2 text-xl font-bold text-ink-900 sm:text-2xl">
-                    Sugerir um passo
-                  </div>
-                  <p class="mt-2 text-xs leading-5 text-ink-700 sm:mt-3 sm:text-sm sm:leading-6">
-                    Faltou alguma variacao? Manda pra comunidade sem sair do acervo.
-                  </p>
-                </div>
-                <button
-                  phx-click="toggle_suggest"
-                  class="mt-4 inline-flex min-h-[40px] items-center justify-center rounded-full bg-fuchsia-600 px-4 text-sm font-semibold text-white transition hover:bg-fuchsia-700 sm:mt-5 sm:min-h-[44px]"
-                >
-                  Abrir sugestao
-                </button>
-              </div>
             </div>
-
-            <%= if filtered_sections(@sections, @category_filter) == [] do %>
-              <div class="text-center py-20 px-5 text-ink-500 italic">
-                Nenhuma seção encontrada para esta categoria.
-              </div>
-            <% else %>
-              <div class="mt-8 space-y-2">
-                <%= for section <- filtered_sections(@sections, @category_filter) do %>
-                  <.section_card
-                    section={section}
-                    open={Map.get(@open_sections, section.id, false)}
-                    edit_mode={@edit_mode}
-                    current_user_id={@current_user.id}
-                    steps_with_links={@steps_with_links}
-                    step_likes={@step_likes}
-                    expanded_step={@expanded_step}
-                    expanded_comments={@expanded_comments}
-                    expanded_links={@expanded_links}
-                    expanded_comment_likes={@expanded_comment_likes}
-                    expanded_replies_map={@expanded_replies_map}
-                    expanded_replying_to={@expanded_replying_to}
-                    expanded_video={@expanded_video}
-                    is_admin={@is_admin}
-                    current_user={@current_user}
-                  />
-                <% end %>
-              </div>
-            <% end %>
           <% else %>
             <div id="collection-drilldown-shell" class="space-y-6">
               <div id="collection-breadcrumb" class="flex items-center gap-2 text-sm text-ink-600">
