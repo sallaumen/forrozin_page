@@ -59,9 +59,12 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         step_like_count = step.like_count
         step_favorited = Engagement.favorited?(user_id, "step", step.id)
 
+        step_image = resolve_step_image(step)
+
         {:ok,
          assign(socket,
            step: step,
+           step_image: step_image,
            page_title: step.name,
            is_admin: admin,
            can_edit: can_edit,
@@ -749,4 +752,29 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def youtube_embed_url(_), do: :external
+
+  @step_image_overrides %{
+    "SC" => "/images/collection/sacada-simples.png",
+    "SC-E" => "/images/collection/sacada-esquerda.png",
+    "SCSP" => "/images/collection/scsp.png",
+    "GP" => "/images/collection/gp.png",
+    "CA-E" => "/images/collection/caminhada.png",
+    "IV" => "/images/collection/inversao.png",
+    "TR-F" => "/images/collection/trava-frontal.png",
+    "PE" => "/images/collection/pescada.png"
+  }
+
+  defp resolve_step_image(step) do
+    case Map.get(@step_image_overrides, step.code) do
+      nil ->
+        case step.image_path do
+          nil -> nil
+          "/" <> _ -> step.image_path
+          path -> "/" <> path
+        end
+
+      override ->
+        override
+    end
+  end
 end

@@ -14,8 +14,32 @@
     edit_mode={@edit_mode}
   />
 
+  <%!-- Cover image (Notion-style) --%>
+  <%= if @step_image do %>
+    <div class="relative w-full h-[200px] md:h-[280px] overflow-hidden">
+      <img
+        src={@step_image}
+        alt={@step.name}
+        class="absolute inset-0 w-full h-full object-cover object-bottom"
+      />
+      <div class="absolute inset-0 bg-gradient-to-t from-ink-100 via-ink-100/40 to-transparent" />
+      <div class="absolute inset-x-0 bottom-0 px-6 pb-5 max-w-[760px] mx-auto w-full">
+        <code style={"font-family: monospace; font-size: 11px; font-weight: 700; color: white; background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 3px; letter-spacing: 1px;"}>
+          {@step.code}
+        </code>
+        <h1 class="mt-2 text-2xl md:text-3xl font-bold text-ink-900 m-0 leading-tight">
+          {@step.name}
+        </h1>
+      </div>
+    </div>
+  <% end %>
+
   <%!-- Content --%>
-  <div class="max-w-[760px] mx-auto px-6 pt-10 pb-20 w-full box-border">
+  <div class={[
+    "max-w-[760px] mx-auto px-6 pb-20 w-full box-border",
+    @step_image && "pt-4",
+    !@step_image && "pt-10"
+  ]}>
     <%!-- Breadcrumb --%>
     <p class="text-xs text-ink-500 mb-6 tracking-wide">
       <.link navigate={~p"/collection"} class="text-ink-500 no-underline">
