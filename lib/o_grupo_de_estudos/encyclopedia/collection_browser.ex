@@ -90,7 +90,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
 
   defp illustrated_steps(steps) do
     steps
-    |> Enum.filter(fn s -> s.image_path && not String.starts_with?(s.code, "HF-") end)
+    |> Enum.filter(& &1.image_path)
     |> Enum.sort_by(&{-(&1.like_count || 0), &1.name})
     |> Enum.take(4)
   end
