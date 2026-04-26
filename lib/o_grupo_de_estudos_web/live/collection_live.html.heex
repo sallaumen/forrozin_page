@@ -143,13 +143,23 @@
       </div>
     </div>
 
-    <%!-- Suggestion form — always in DOM, hidden via CSS to preserve inputs --%>
+    <%!-- Suggestion form — sticky below controls when active --%>
     <div class={[
-      "max-w-[1600px] mx-auto p-4 my-3 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md",
+      "sticky top-[100px] md:top-[120px] z-20 px-6 py-3",
+      "bg-ink-200/95 backdrop-blur-sm shadow-md",
       !@suggest_mode && "hidden"
     ]}>
-      <div class="text-xs font-bold uppercase tracking-widest mb-3" style="color: #8e44ad;">
-        Sugerir novo passo
+    <div class="max-w-[1600px] mx-auto p-4 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-xs font-bold uppercase tracking-widest" style="color: #8e44ad;">
+          Sugerir novo passo
+        </div>
+        <button
+          phx-click="toggle_suggest"
+          class="text-xs font-bold text-[#c0392b] bg-transparent border-0 cursor-pointer font-serif"
+        >
+          ✕ Fechar
+        </button>
       </div>
       <div id="suggest-form-wrapper">
         <form
@@ -225,6 +235,7 @@
       >
         {@suggest_error}
       </div>
+    </div>
     </div>
 
     <%!-- Tabs --%>
