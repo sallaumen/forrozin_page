@@ -1046,7 +1046,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     """
   end
 
-  def filtered_sections(sections, "all"), do: sections
+  def filtered_sections(sections, "all") do
+    sections
+    |> Enum.reject(&conventions_section?/1)
+    |> Kernel.++(Enum.filter(sections, &conventions_section?/1))
+  end
 
   def filtered_sections(sections, category) do
     Enum.filter(sections, fn s ->
@@ -1054,11 +1058,20 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end)
   end
 
-  def filtered_collection_cards(cards, "all"), do: cards
+  def filtered_collection_cards(cards, "all") do
+    cards
+    |> Enum.reject(&conventions_card?/1)
+  end
 
   def filtered_collection_cards(cards, category) do
     Enum.filter(cards, fn card -> card.category_name == category end)
   end
+
+  defp conventions_section?(%{title: "Convenções da Notação"}), do: true
+  defp conventions_section?(_), do: false
+
+  defp conventions_card?(%{title: "Convenções da Notação"}), do: true
+  defp conventions_card?(_), do: false
 
   def total_steps(sections) do
     Enum.reduce(sections, 0, fn s, acc ->

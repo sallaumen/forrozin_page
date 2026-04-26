@@ -83,13 +83,28 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
 
   describe "editorial navigation" do
     test "renders the overview grid with a filter toggle and suggest card", %{conn: conn} do
-      insert(:section, title: "Bases", position: 1)
+      category = insert(:category, name: "bases", label: "Bases", color: "#2e9f6b")
+      insert(:section, title: "Bases", position: 1, category: category)
+      insert(:section, title: "Sacadas", position: 2)
 
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      {:ok, lv, html} = live(logged_in_conn(conn), ~p"/collection")
 
       assert has_element?(lv, "#collection-overview-grid")
       assert has_element?(lv, "#collection-filter-toggle")
       assert has_element?(lv, "#collection-suggest-card")
+      assert html =~ "/images/collection/base.png"
+      assert html =~ "/images/collection/sacada-simples.png"
+    end
+
+    test "does not show conventions as a primary overview card", %{conn: conn} do
+      conventions = insert(:section, title: "Convenções da Notação", position: 1)
+      bases = insert(:section, title: "Bases", position: 2)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+
+      assert has_element?(lv, "#collection-overview-grid")
+      assert has_element?(lv, "#collection-section-card-#{bases.id}")
+      refute has_element?(lv, "#collection-section-card-#{conventions.id}")
     end
 
     test "enter_section reorganizes the page around the selected section", %{conn: conn} do
@@ -127,6 +142,24 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
                lv,
                "#collection-suggest-section option[selected][value='#{section.id}']"
              )
+    end
+
+    test "shows illustrated internal cards when a section has mapped images", %{conn: conn} do
+      category = insert(:category, name: "sacadas", label: "Sacadas", color: "#ef5b8d")
+      section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
+
+      insert(:step,
+        section: section,
+        category: category,
+        code: "SC-E",
+        name: "Sacada de esquerda"
+      )
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      html = render_click(lv, "enter_section", %{"section_id" => section.id})
+
+      assert has_element?(lv, "#collection-illustrated-step-SC-E")
+      assert html =~ "/images/collection/sacada-esquerda.png"
     end
   end
 

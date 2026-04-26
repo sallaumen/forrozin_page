@@ -47,6 +47,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowserTest do
     assert card.title == "Sacadas"
     assert card.step_count == 4
     assert card.popularity_score == 11
+    assert card.image_path == "/images/collection/sacada-simples.png"
     assert Enum.map(card.featured_steps, & &1.code) == ["SC-HIGH", "SC-MID", "SC-EXTRA"]
   end
 
@@ -83,9 +84,32 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowserTest do
 
     sections = Encyclopedia.list_sections_with_steps()
     details = CollectionBrowser.section_details(sections, section.id)
+    [card] = CollectionBrowser.build_sections(sections)
 
+    assert card.image_path == "/images/collection/giro-simples.png"
     assert details.id == section.id
     assert Enum.map(details.subsections, & &1.title) == ["Giros simples"]
     assert Enum.map(details.featured_steps, & &1.code) == ["GS-1", "GF-1", "GS-2"]
+  end
+
+  test "section_details/2 exposes illustrated steps with image overrides" do
+    category = insert(:category, name: "sacadas", label: "Sacadas", color: "#ef5b8d")
+    section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
+
+    insert(:step,
+      section: section,
+      category: category,
+      code: "SC-E",
+      name: "Sacada de esquerda",
+      like_count: 0
+    )
+
+    sections = Encyclopedia.list_sections_with_steps()
+    details = CollectionBrowser.section_details(sections, section.id)
+
+    assert Enum.map(details.illustrated_steps, & &1.code) == ["SC-E"]
+
+    assert Enum.at(details.illustrated_steps, 0).image_path ==
+             "/images/collection/sacada-esquerda.png"
   end
 end
