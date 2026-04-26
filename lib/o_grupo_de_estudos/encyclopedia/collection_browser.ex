@@ -1,15 +1,30 @@
 defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
   @moduledoc false
 
+  # Mapped by section CODE (stable, won't change if title is renamed)
   @section_image_overrides %{
-    "Bases" => "/images/collection/base.png",
-    "Sacadas" => "/images/collection/sacada-simples.png",
-    "Giros" => "/images/collection/giro-simples.png"
+    "B" => "/images/collection/base.png",
+    "SC" => "/images/collection/sacada-simples.png",
+    "SCSP" => "/images/collection/scsp.png",
+    "TR" => "/images/collection/trava-frontal.png",
+    "PE" => "/images/collection/pescada.png",
+    "CA" => "/images/collection/caminhada.png",
+    "GP" => "/images/collection/gp.png",
+    "IV" => "/images/collection/inversao.png",
+    "PI" => "/images/collection/piao.png",
+    "G" => "/images/collection/giro-simples.png"
   }
 
+  # Mapped by step CODE (stable)
   @step_image_overrides %{
     "SC" => "/images/collection/sacada-simples.png",
-    "SC-E" => "/images/collection/sacada-esquerda.png"
+    "SC-E" => "/images/collection/sacada-esquerda.png",
+    "SCSP" => "/images/collection/scsp.png",
+    "GP" => "/images/collection/gp.png",
+    "CA-E" => "/images/collection/caminhada.png",
+    "IV" => "/images/collection/inversao.png",
+    "TR-F" => "/images/collection/trava-frontal.png",
+    "PE" => "/images/collection/pescada.png"
   }
 
   def build_sections(sections) do
@@ -115,6 +130,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
   end
 
   defp section_image_path(section, steps) do
-    Map.get(@section_image_overrides, section.title) || Enum.find_value(steps, & &1.image_path)
+    Map.get(@section_image_overrides, section.code) || Enum.find_value(steps, & &1.image_path)
   end
 end
