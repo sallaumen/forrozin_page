@@ -81,6 +81,55 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     end
   end
 
+  describe "editorial navigation" do
+    test "renders the overview grid with a filter toggle and suggest card", %{conn: conn} do
+      insert(:section, title: "Bases", position: 1)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+
+      assert has_element?(lv, "#collection-overview-grid")
+      assert has_element?(lv, "#collection-filter-toggle")
+      assert has_element?(lv, "#collection-suggest-card")
+    end
+
+    test "enter_section reorganizes the page around the selected section", %{conn: conn} do
+      category = insert(:category, name: "bases", label: "Bases", color: "#2e9f6b")
+      section = insert(:section, title: "Bases", code: "B", position: 1, category: category)
+
+      insert(:step,
+        section: section,
+        category: category,
+        code: "BF",
+        name: "Base frontal",
+        like_count: 2
+      )
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      render_click(lv, "enter_section", %{"section_id" => section.id})
+
+      assert has_element?(lv, "#collection-drilldown-shell")
+      assert has_element?(lv, "#collection-breadcrumb")
+      assert has_element?(lv, "#collection-featured-step-BF")
+    end
+
+    test "opening suggest inside a section preselects that section", %{conn: conn} do
+      category = insert(:category, name: "sacadas", label: "Sacadas", color: "#ef5b8d")
+      section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      render_click(lv, "enter_section", %{"section_id" => section.id})
+      html = render_click(lv, "toggle_suggest", %{})
+
+      assert has_element?(lv, "#collection-suggest-form")
+      assert html =~ ~s(id="collection-suggest-section")
+
+      assert has_element?(
+               lv,
+               "#collection-suggest-section option[selected][value='#{section.id}']"
+             )
+    end
+  end
+
   describe "search" do
     test "displays steps matching the search term", %{conn: conn} do
       section = insert(:section)

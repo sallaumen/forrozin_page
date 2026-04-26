@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement}
+  alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
 
@@ -45,6 +46,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     socket =
       assign(socket,
         sections: sections,
+        collection_cards: Encyclopedia.list_collection_browser(admin: admin),
         categories: categories,
         open_sections: open_sections,
         search: "",
@@ -78,7 +80,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         expanded_video: nil,
         step_comment_counts: %{},
         drawer_liked: false,
-        drawer_favorited: false
+        drawer_favorited: false,
+        active_section_id: nil,
+        active_section_card: nil,
+        filters_open?: false,
+        suggest_section_id: nil
       )
 
     {:ok, socket}
@@ -93,6 +99,29 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   def handle_event("filter", %{"category" => category}, socket) do
     {:noreply, assign(socket, category_filter: category)}
+  end
+
+  def handle_event("toggle_filters", _params, socket) do
+    {:noreply, assign(socket, :filters_open?, !socket.assigns.filters_open?)}
+  end
+
+  def handle_event("enter_section", %{"section_id" => section_id}, socket) do
+    details = CollectionBrowser.section_details(socket.assigns.sections, section_id)
+
+    {:noreply,
+     assign(socket,
+       active_section_id: section_id,
+       active_section_card: details,
+       suggest_section_id: section_id
+     )}
+  end
+
+  def handle_event("back_to_overview", _params, socket) do
+    {:noreply,
+     assign(socket,
+       active_section_id: nil,
+       active_section_card: nil
+     )}
   end
 
   def handle_event("toggle_section", %{"section_id" => id}, socket) do
@@ -323,7 +352,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
           categories = Encyclopedia.list_categories()
 
           {:noreply,
-           socket |> assign(:categories, categories) |> put_flash(:info, "Categoria criada")}
+           socket
+           |> assign(categories: categories, filters_open?: true)
+           |> put_flash(:info, "Categoria criada")}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao criar categoria")}
@@ -332,7 +363,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("toggle_suggest", _params, socket) do
-    {:noreply, assign(socket, suggest_mode: not socket.assigns.suggest_mode)}
+    {:noreply,
+     assign(socket,
+       suggest_mode: not socket.assigns.suggest_mode,
+       suggest_section_id: socket.assigns.suggest_section_id || socket.assigns.active_section_id
+     )}
   end
 
   def handle_event("create_suggested_step", %{"step" => step_params}, socket) do
@@ -628,12 +663,19 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   defp reload_sections(socket) do
     sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
 
+    active_section_card =
+      if socket.assigns.active_section_id do
+        CollectionBrowser.section_details(sections, socket.assigns.active_section_id)
+      end
+
     open =
       Map.new(sections, fn s -> {s.id, Map.get(socket.assigns.open_sections, s.id, false)} end)
 
     assign(socket,
       sections: sections,
-      open_sections: open
+      collection_cards: CollectionBrowser.build_sections(sections),
+      open_sections: open,
+      active_section_card: active_section_card
     )
   end
 
@@ -1010,6 +1052,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     Enum.filter(sections, fn s ->
       s.category != nil and s.category.name == category
     end)
+  end
+
+  def filtered_collection_cards(cards, "all"), do: cards
+
+  def filtered_collection_cards(cards, category) do
+    Enum.filter(cards, fn card -> card.category_name == category end)
   end
 
   def total_steps(sections) do

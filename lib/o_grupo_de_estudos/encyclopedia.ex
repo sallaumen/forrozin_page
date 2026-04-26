@@ -14,6 +14,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
   alias OGrupoDeEstudos.Encyclopedia.{
     Category,
+    CollectionBrowser,
     ConnectionQuery,
     SectionQuery,
     StepQuery,
@@ -95,6 +96,13 @@ defmodule OGrupoDeEstudos.Encyclopedia do
       steps: {direct_steps, [:suggested_by]},
       subsections: [steps: {subsection_steps, [:suggested_by]}]
     ])
+  end
+
+  @doc "Builds the editorial browse view for collection sections."
+  def list_collection_browser(opts \\ []) do
+    opts
+    |> list_sections_with_steps()
+    |> CollectionBrowser.build_sections()
   end
 
   @doc "Counts total published, non-wip steps (public count)."

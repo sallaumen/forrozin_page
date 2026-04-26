@@ -51,6 +51,11 @@
   --color-accent-green:  #27ae60;
   --color-accent-blue:   #2980b9;
 
+  /* Collection placeholder palette — moss layers */
+  --color-collection-moss-700: #556046;
+  --color-collection-moss-500: #8eb15e;
+  --color-collection-moss-300: #b9d297;
+
   /* Tipografia */
   --font-serif: Georgia, "Iowan Old Style", serif;
   --font-sans:  "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -77,6 +82,12 @@
   --duration-fast:    200ms;
   --duration-base:    300ms;
   --duration-slow:    500ms;
+
+  /* Collection editorial fallback layers:
+     outermost cards start darker, deeper drill-down layers get lighter. */
+  --collection-layer-outer: var(--color-collection-moss-700);
+  --collection-layer-middle: var(--color-collection-moss-500);
+  --collection-layer-inner: var(--color-collection-moss-300);
 }
 
 /* Add variants based on LiveView classes */

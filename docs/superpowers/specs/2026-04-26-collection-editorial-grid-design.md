@@ -173,6 +173,20 @@ Nesta primeira implementação:
 
 O formato esperado é quadrado, para facilitar consistência no app e no desktop.
 
+### Placeholder color ramp
+
+Quando ainda não houver imagem, os blocos devem usar uma paleta musgo em camadas:
+
+- camada externa / primeiro nível: `#556046`
+- camada intermediária / segundo nível: `#8eb15e`
+- camada interna / níveis mais profundos: `#b9d297`
+
+Regra visual:
+
+- o primeiro nível começa mais escuro
+- cada aprofundamento fica um pouco mais claro
+- isso vale tanto para cards inteiros quanto para placeholders de mídia ou superfícies auxiliares
+
 ## Second-Level Content
 
 Ao entrar numa macro seção, o conteúdo deve combinar:
