@@ -385,63 +385,58 @@
               </div>
 
               <div
-                id="collection-featured-steps"
+                id="collection-section-steps"
                 class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
               >
-                <button
-                  :for={step <- @active_section_card.featured_steps}
-                  id={"collection-featured-step-#{step.code}"}
-                  phx-click="open_step"
-                  phx-value-code={step.code}
-                  class="group flex min-h-[120px] flex-col justify-between rounded-[18px] border border-ink-300/60 bg-ink-50 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:p-4"
-                >
-                  <div class="flex items-start justify-between gap-2 sm:gap-3">
-                    <div>
-                      <div class="text-[10px] uppercase tracking-[0.18em] text-ink-500">
-                        {step.code}
+                <%= for step <- @active_section_card.steps do %>
+                  <%= if step.image_path do %>
+                    <button
+                      id={"collection-step-#{step.code}"}
+                      phx-click="open_step"
+                      phx-value-code={step.code}
+                      class="group flex h-[180px] sm:h-[200px] flex-col overflow-hidden rounded-[18px] border border-ink-300/60 bg-ink-50 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                    >
+                      <div class="relative h-full w-full overflow-hidden">
+                        <img
+                          src={step.image_path}
+                          alt={step.name}
+                          class="h-full w-full object-cover"
+                        />
+                        <div class="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/25 to-transparent" />
+                        <div class="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                          <div class="text-[10px] uppercase tracking-[0.18em] text-white/80">
+                            {step.code}
+                          </div>
+                          <div class="mt-1 text-sm font-bold leading-tight text-white sm:text-base">
+                            {step.name}
+                          </div>
+                        </div>
                       </div>
-                      <div class="mt-2 text-base font-bold leading-tight text-ink-900 sm:text-lg">
-                        {step.name}
+                    </button>
+                  <% else %>
+                    <button
+                      id={"collection-step-#{step.code}"}
+                      phx-click="open_step"
+                      phx-value-code={step.code}
+                      class="group flex min-h-[120px] flex-col justify-between rounded-[18px] border border-ink-300/60 bg-ink-50 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:p-4"
+                    >
+                      <div class="flex items-start justify-between gap-2 sm:gap-3">
+                        <div>
+                          <div class="text-[10px] uppercase tracking-[0.18em] text-ink-500">
+                            {step.code}
+                          </div>
+                          <div class="mt-2 text-sm font-bold leading-tight text-ink-900 sm:text-base">
+                            {step.name}
+                          </div>
+                        </div>
+                        <span class="rounded-full bg-gold-500/15 px-2 py-1 text-[10px] font-semibold text-gold-700 sm:px-2.5 sm:text-xs">
+                          {step.like_count || 0} likes
+                        </span>
                       </div>
-                    </div>
-                    <span class="rounded-full bg-gold-500/15 px-2 py-1 text-[10px] font-semibold text-gold-700 sm:px-2.5 sm:text-xs">
-                      {step.like_count || 0} likes
-                    </span>
-                  </div>
-                </button>
+                    </button>
+                  <% end %>
+                <% end %>
               </div>
-
-              <%= if @active_section_card.illustrated_steps != [] do %>
-                <div
-                  id="collection-illustrated-steps"
-                  class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
-                >
-                  <button
-                    :for={step <- @active_section_card.illustrated_steps}
-                    id={"collection-illustrated-step-#{step.code}"}
-                    phx-click="open_step"
-                    phx-value-code={step.code}
-                    class="group flex h-[180px] sm:h-[200px] flex-col overflow-hidden rounded-[18px] border border-ink-300/60 bg-ink-50 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <div class="relative h-full w-full overflow-hidden">
-                      <img
-                        src={step.image_path}
-                        alt={step.name}
-                        class="h-full w-full object-cover"
-                      />
-                      <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
-                      <div class="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-                        <div class="text-[10px] uppercase tracking-[0.18em] text-white/80">
-                          {step.code}
-                        </div>
-                        <div class="mt-2 text-base font-bold leading-tight text-white sm:text-lg">
-                          {step.name}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              <% end %>
 
               <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                 <div

@@ -62,6 +62,12 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
   defp build_section_details(section) do
     visible_steps = normalize_steps(flatten_visible_steps(section))
 
+    # All steps sorted by likes, each appears once.
+    # Steps with image_path render as image cards, others as text cards.
+    all_sorted =
+      visible_steps
+      |> Enum.sort_by(&{-(&1.like_count || 0), &1.name})
+
     %{
       id: section.id,
       title: section.title,
@@ -70,8 +76,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
       category_name: section.category && section.category.name,
       category_label: section.category && section.category.label,
       category_color: section.category && section.category.color,
-      featured_steps: featured_steps(visible_steps),
-      illustrated_steps: illustrated_steps(visible_steps),
+      steps: all_sorted,
       subsections: Enum.map(section.subsections, &build_subsection_card/1)
     }
   end
