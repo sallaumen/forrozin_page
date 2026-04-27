@@ -23,9 +23,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.UI.PWAInstallBanner
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
+  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -75,6 +77,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         steps_with_links: steps_with_links,
         step_likes: step_likes,
         following_user_ids: following_user_ids,
+        bubble_open: false,
+        suggested_users: [],
         expanded_step: nil,
         expanded_comments: [],
         expanded_links: [],
