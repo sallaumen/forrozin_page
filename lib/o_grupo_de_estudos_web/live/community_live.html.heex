@@ -353,6 +353,13 @@
                         <.icon name="hero-heart-solid" class="size-3 text-accent-red/70" />
                         <span class="font-medium tabular-nums">{seq.like_count}</span>
                       </div>
+                      <div
+                        :if={Map.get(@seq_comment_counts, seq.id, 0) > 0}
+                        class="flex items-center gap-1 text-ink-400"
+                      >
+                        <.icon name="hero-chat-bubble-left" class="size-3" />
+                        <span class="font-medium tabular-nums">{Map.get(@seq_comment_counts, seq.id, 0)}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -463,7 +470,14 @@
                       }
                       class="size-3.5"
                     />
-                    <span>{if is_expanded, do: "Fechar", else: "Comentários"}</span>
+                    <% comment_count = Map.get(@seq_comment_counts, seq.id, 0) %>
+                    <span>
+                      <%= if is_expanded do %>
+                        Fechar
+                      <% else %>
+                        {if comment_count > 0, do: "#{comment_count} comentário(s)", else: "Comentar"}
+                      <% end %>
+                    </span>
                   </button>
                 </div>
 

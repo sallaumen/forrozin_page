@@ -51,6 +51,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        sequences_all: [],
        sequence_likes: %{liked_ids: MapSet.new(), counts: %{}},
        seq_favorites: MapSet.new(),
+       seq_comment_counts: %{},
        seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
@@ -79,6 +80,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     current_user = socket.assigns.current_user
     sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
     seq_favorites = Engagement.favorites_map(current_user.id, "sequence", sequence_ids)
+    seq_comment_counts = Engagement.comment_counts_for("sequence", sequence_ids)
 
     sorted =
       Enum.sort_by(
@@ -95,6 +97,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        sequences_all: sorted,
        sequence_likes: sequence_likes,
        seq_favorites: seq_favorites,
+       seq_comment_counts: seq_comment_counts,
        seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
