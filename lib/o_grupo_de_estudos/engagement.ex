@@ -35,6 +35,7 @@ defmodule OGrupoDeEstudos.Engagement do
 
   alias OGrupoDeEstudos.Engagement.Notifications.{Dispatcher, Notification, NotificationQuery}
 
+  alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Encyclopedia.Step
   alias OGrupoDeEstudos.Sequences.Sequence
   alias OGrupoDeEstudos.Engagement.Badges
@@ -438,6 +439,36 @@ defmodule OGrupoDeEstudos.Engagement do
         Repo.delete(follow)
         {:ok, :unfollowed}
     end
+  end
+
+  @doc """
+  Returns a list of suggested users to follow.
+  Excludes self and already-followed users.
+  Prioritizes users in the same city, then same state.
+  """
+  def suggest_users(%User{} = current_user, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 5)
+
+    followed_ids =
+      from(f in Follow, where: f.follower_id == ^current_user.id, select: f.followed_id)
+
+    from(u in User,
+      where: u.id != ^current_user.id,
+      where: u.id not in subquery(followed_ids),
+      order_by: [
+        desc:
+          fragment(
+            "CASE WHEN ? = ? THEN 2 WHEN ? = ? THEN 1 ELSE 0 END",
+            u.city,
+            ^(current_user.city || ""),
+            u.state,
+            ^(current_user.state || "")
+          ),
+        desc: u.last_seen_at
+      ],
+      limit: ^limit
+    )
+    |> Repo.all()
   end
 
   @doc "Returns `true` if follower_id is currently following followed_id."

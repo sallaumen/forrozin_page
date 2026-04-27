@@ -959,4 +959,48 @@ defmodule OGrupoDeEstudos.EngagementTest do
       refute MapSet.member?(result, not_in_scope.id)
     end
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # suggest_users
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "suggest_users/2" do
+    test "returns users not yet followed, excluding self" do
+      me = insert(:user, city: "Curitiba", state: "PR")
+      already_followed = insert(:user, city: "Curitiba", state: "PR")
+      suggestion1 = insert(:user, city: "Curitiba", state: "PR")
+      suggestion2 = insert(:user, city: "São Paulo", state: "SP")
+
+      Engagement.toggle_follow(me.id, already_followed.id)
+
+      results = Engagement.suggest_users(me, limit: 5)
+      result_ids = Enum.map(results, & &1.id)
+
+      refute me.id in result_ids
+      refute already_followed.id in result_ids
+      assert suggestion1.id in result_ids
+      assert suggestion2.id in result_ids
+    end
+
+    test "prioritizes same city users" do
+      me = insert(:user, city: "Curitiba", state: "PR")
+      same_city = insert(:user, city: "Curitiba", state: "PR")
+      diff_city = insert(:user, city: "São Paulo", state: "SP")
+
+      results = Engagement.suggest_users(me, limit: 5)
+
+      same_idx = Enum.find_index(results, &(&1.id == same_city.id))
+      diff_idx = Enum.find_index(results, &(&1.id == diff_city.id))
+
+      assert same_idx < diff_idx
+    end
+
+    test "respects limit" do
+      me = insert(:user)
+      for _ <- 1..10, do: insert(:user)
+
+      results = Engagement.suggest_users(me, limit: 3)
+      assert length(results) <= 3
+    end
+  end
 end
