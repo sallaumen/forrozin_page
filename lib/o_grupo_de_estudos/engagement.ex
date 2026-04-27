@@ -386,10 +386,9 @@ defmodule OGrupoDeEstudos.Engagement do
     _error -> :ok
   end
 
-  defp safe_dispatch_like(user_id, likeable_type, likeable_id) do
-    Dispatcher.notify_like(user_id, likeable_type, likeable_id)
-  rescue
-    _error -> :ok
+  defp safe_dispatch_like(_user_id, _likeable_type, _likeable_id) do
+    # Likes/favorites do not generate notifications
+    :ok
   end
 
   defp safe_dispatch_follow(follower_id, followed_id) do
