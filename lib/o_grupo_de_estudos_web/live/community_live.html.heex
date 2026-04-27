@@ -138,7 +138,7 @@
             <% author = step.suggested_by %>
             <% author_username = if author, do: author.username, else: "?" %>
             <% author_initial = author_username |> String.upcase() |> String.first() %>
-            <div class="bg-ink-50 rounded-lg border border-accent-green/25 shadow-sm overflow-hidden">
+            <div class="bg-ink-50 rounded-lg border border-accent-green/25 shadow-sm overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
               <%!-- Colored top accent bar --%>
               <div class="h-0.5 w-full" style={"background: #{category_color(step)};"} />
               <div class="px-4 py-4">
@@ -185,7 +185,7 @@
                       phx-click="toggle_follow"
                       phx-value-user-id={step.suggested_by_id}
                       class={[
-                        "text-[10px] py-0.5 px-2.5 rounded-full border transition-colors cursor-pointer",
+                        "text-xs py-1 px-3 rounded-full border transition-colors cursor-pointer",
                         is_following &&
                           "border-accent-orange bg-accent-orange/10 text-accent-orange",
                         !is_following &&
@@ -323,7 +323,7 @@
             <% is_favorited = MapSet.member?(@seq_favorites, seq.id) %>
             <% is_expanded = @expanded_seq == seq.id %>
             <div class={[
-              "bg-ink-50 rounded-lg border shadow-sm overflow-hidden transition-shadow",
+              "bg-ink-50 rounded-lg border shadow-sm overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5",
               is_expanded && "border-accent-orange/40 shadow-md",
               !is_expanded && "border-accent-orange/20"
             ]}>
@@ -435,7 +435,7 @@
                       phx-click="toggle_follow"
                       phx-value-user-id={seq.user_id}
                       class={[
-                        "text-[10px] py-0.5 px-2.5 rounded-full border transition-colors cursor-pointer",
+                        "text-xs py-1 px-3 rounded-full border transition-colors cursor-pointer",
                         is_following &&
                           "border-accent-orange bg-accent-orange/10 text-accent-orange",
                         !is_following &&
