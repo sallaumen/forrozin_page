@@ -680,24 +680,6 @@
         <% end %>
       </div>
 
-      <%!-- Search bar --%>
-      <div class="flex items-center gap-2 mb-4">
-        <div class="flex-1 relative">
-          <.icon
-            name="hero-magnifying-glass"
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
-          />
-          <input
-            type="text"
-            phx-keyup="search_followers"
-            phx-debounce="300"
-            name="term"
-            value={@followers_search}
-            placeholder="Buscar pessoa..."
-            class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-          />
-        </div>
-      </div>
     </div>
 
     <%!-- User cards list --%>

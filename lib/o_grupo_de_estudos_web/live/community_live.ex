@@ -156,28 +156,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
      )}
   end
 
-  def handle_event("search_followers", params, socket) do
-    term = params["value"] || params["term"] || ""
-    user = socket.assigns.current_user
-
-    list =
-      case socket.assigns.followers_sub_tab do
-        "following" -> Engagement.list_following(user.id, search: term)
-        "followers" -> Engagement.list_followers(user.id, search: term)
-      end
-
-    user_ids = Enum.map(list, & &1.id)
-    followers_stats = Engagement.user_stats_batch(user_ids)
-
-    {:noreply,
-     assign(socket,
-       followers_search: term,
-       followers_list: list,
-       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
-       followers_stats: followers_stats
-     )}
-  end
-
   def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
     user = socket.assigns.current_user
     result = Engagement.toggle_follow(user.id, target_id)
@@ -432,7 +410,30 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   def handle_event("search_people", params, socket) do
     term = params["value"] || params["term"] || ""
     results = Accounts.search_users(term, exclude_id: socket.assigns.current_user.id)
-    {:noreply, assign(socket, people_search: term, people_results: results)}
+
+    socket = assign(socket, people_search: term, people_results: results)
+
+    if socket.assigns.active_section == "followers" do
+      user = socket.assigns.current_user
+
+      list =
+        case socket.assigns.followers_sub_tab do
+          "following" -> Engagement.list_following(user.id, search: term)
+          "followers" -> Engagement.list_followers(user.id, search: term)
+        end
+
+      user_ids = Enum.map(list, & &1.id)
+
+      {:noreply,
+       assign(socket,
+         followers_search: term,
+         followers_list: list,
+         followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+         followers_stats: Engagement.user_stats_batch(user_ids)
+       )}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("delete_comment", %{"id" => id, "type" => "sequence_comment"}, socket) do

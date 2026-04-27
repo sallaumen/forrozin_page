@@ -297,7 +297,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       assert html =~ "seguidores"
     end
 
-    test "search_followers filters by name", %{conn: conn} do
+    test "search_people filters followers list by name when on followers tab", %{conn: conn} do
       user = insert(:user)
       maria = insert(:user, username: "maria_test", name: "Maria Test")
       joao = insert(:user, username: "joao_test", name: "Joao Test")
@@ -308,7 +308,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       {:ok, view, _html} = live(conn, ~p"/community")
 
       render_click(view, "switch_section", %{"section" => "followers"})
-      html = render_keyup(view, "search_followers", %{"term" => "maria"})
+      html = render_keyup(view, "search_people", %{"term" => "maria"})
 
       assert html =~ "maria_test"
       refute html =~ "joao_test"
