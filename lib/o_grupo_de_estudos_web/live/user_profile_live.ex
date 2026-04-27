@@ -10,8 +10,10 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do
@@ -93,7 +95,13 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            favorite_steps: [],
            favorite_sequences: [],
            favorite_sub_tab: "steps",
-           contributions: []
+           contributions: [],
+           bubble_open: false,
+           suggested_users: [],
+           bubble_following_list: [],
+           bubble_search: "",
+           bubble_search_results: [],
+           following_user_ids: Engagement.following_ids(current_user.id)
          )}
     end
   end

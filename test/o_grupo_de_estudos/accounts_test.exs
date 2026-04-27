@@ -135,4 +135,33 @@ defmodule OGrupoDeEstudos.AccountsTest do
       refute Accounts.admin?(user)
     end
   end
+
+  describe "search_users/2" do
+    test "returns users matching username or name, excluding given user" do
+      me = insert(:user, username: "tavano", name: "Tavano L")
+      maria = insert(:user, username: "maria_forro", name: "Maria Silva")
+      joao = insert(:user, username: "joao123", name: "João Maria")
+      _other = insert(:user, username: "carlos", name: "Carlos Souza")
+
+      results = Accounts.search_users("maria", exclude_id: me.id)
+
+      result_ids = Enum.map(results, & &1.id)
+      assert maria.id in result_ids
+      assert joao.id in result_ids
+      refute me.id in result_ids
+    end
+
+    test "returns empty list for short queries" do
+      _user = insert(:user)
+      assert Accounts.search_users("a", exclude_id: Ecto.UUID.generate()) == []
+    end
+
+    test "limits results to 5" do
+      me = insert(:user)
+      for _ <- 1..8, do: insert(:user, name: "Test User")
+
+      results = Accounts.search_users("Test", exclude_id: me.id)
+      assert length(results) <= 5
+    end
+  end
 end

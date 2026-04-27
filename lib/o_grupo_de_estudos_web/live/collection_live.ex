@@ -22,8 +22,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.PWAInstallBanner
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.InlineFollowButton
+  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.FollowHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -42,6 +46,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       end)
 
     step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", all_step_ids)
+    following_user_ids = Engagement.following_ids(socket.assigns.current_user.id)
 
     socket =
       assign(socket,
@@ -71,6 +76,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         my_steps: [],
         steps_with_links: steps_with_links,
         step_likes: step_likes,
+        following_user_ids: following_user_ids,
+        bubble_open: false,
+        suggested_users: [],
+        bubble_following_list: [],
+        bubble_search: "",
+        bubble_search_results: [],
         expanded_step: nil,
         expanded_comments: [],
         expanded_links: [],

@@ -10,8 +10,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.UI.InlineFollowButton
+  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.FollowHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @graph_legend_hidden_categories ~w(convencoes footwork)
 
@@ -22,6 +26,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     graph = Encyclopedia.build_graph()
 
     liked_codes = Engagement.liked_step_codes(socket.assigns.current_user.id)
+    following_user_ids = Engagement.following_ids(socket.assigns.current_user.id)
 
     {:ok,
      socket
@@ -71,6 +76,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:three_d_playing, false)
      |> assign(:three_d_speed, 1.0)
      |> assign(:liked_step_codes, liked_codes)
+     |> assign(:following_user_ids, following_user_ids)
+     |> assign(:bubble_open, false)
+     |> assign(:bubble_following_list, [])
+     |> assign(:bubble_search, "")
+     |> assign(:bubble_search_results, [])
+     |> assign(:suggested_users, [])
      |> assign_graph_data(graph, false)
      |> assign_default_sequence_start()
      |> assign_manual_favorite_steps()

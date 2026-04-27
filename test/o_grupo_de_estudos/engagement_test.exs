@@ -788,6 +788,45 @@ defmodule OGrupoDeEstudos.EngagementTest do
   end
 
   # ══════════════════════════════════════════════════════════════════════
+  # user_stats_batch
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "user_stats_batch/1" do
+    test "returns step count, sequence count, and primary badge per user" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+      section = insert(:section)
+
+      insert(:step, suggested_by: user1, section: section, code: "TST-A")
+      insert(:step, suggested_by: user1, section: section, code: "TST-B")
+
+      seq = insert(:sequence, user: user2, public: true)
+      step = insert(:step, section: section, code: "TST-C")
+      insert(:sequence_step, sequence: seq, step: step, position: 1)
+
+      result = Engagement.user_stats_batch([user1.id, user2.id])
+
+      assert result[user1.id].steps_count == 2
+      assert result[user1.id].sequences_count == 0
+      assert result[user2.id].steps_count == 0
+      assert result[user2.id].sequences_count == 1
+    end
+
+    test "returns zeros for user with no content" do
+      user = insert(:user)
+      result = Engagement.user_stats_batch([user.id])
+
+      assert result[user.id].steps_count == 0
+      assert result[user.id].sequences_count == 0
+      assert result[user.id].badge == nil
+    end
+
+    test "returns empty map for empty input" do
+      assert Engagement.user_stats_batch([]) == %{}
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
   # Follow edge cases
   # ══════════════════════════════════════════════════════════════════════
 
@@ -872,6 +911,96 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.count_user_favorites(user.id) == 1
       {:ok, :unfavorited} = Engagement.toggle_favorite(user.id, "step", step.id)
       assert Engagement.count_user_favorites(user.id) == 0
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # following_ids / following_ids_for
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "following_ids/1" do
+    test "returns MapSet of followed user IDs" do
+      follower = insert(:user)
+      followed1 = insert(:user)
+      followed2 = insert(:user)
+      _not_followed = insert(:user)
+
+      Engagement.toggle_follow(follower.id, followed1.id)
+      Engagement.toggle_follow(follower.id, followed2.id)
+
+      result = Engagement.following_ids(follower.id)
+
+      assert MapSet.member?(result, followed1.id)
+      assert MapSet.member?(result, followed2.id)
+      assert MapSet.size(result) == 2
+    end
+
+    test "returns empty MapSet when user follows nobody" do
+      user = insert(:user)
+      assert Engagement.following_ids(user.id) == MapSet.new()
+    end
+  end
+
+  describe "following_ids_for/2" do
+    test "returns MapSet of followed IDs scoped to given target list" do
+      follower = insert(:user)
+      followed1 = insert(:user)
+      followed2 = insert(:user)
+      not_in_scope = insert(:user)
+
+      Engagement.toggle_follow(follower.id, followed1.id)
+      Engagement.toggle_follow(follower.id, followed2.id)
+      Engagement.toggle_follow(follower.id, not_in_scope.id)
+
+      result = Engagement.following_ids_for(follower.id, [followed1.id, followed2.id])
+
+      assert MapSet.member?(result, followed1.id)
+      assert MapSet.member?(result, followed2.id)
+      refute MapSet.member?(result, not_in_scope.id)
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # suggest_users
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "suggest_users/2" do
+    test "returns users not yet followed, excluding self" do
+      me = insert(:user, city: "Curitiba", state: "PR")
+      already_followed = insert(:user, city: "Curitiba", state: "PR")
+      suggestion1 = insert(:user, city: "Curitiba", state: "PR")
+      suggestion2 = insert(:user, city: "São Paulo", state: "SP")
+
+      Engagement.toggle_follow(me.id, already_followed.id)
+
+      results = Engagement.suggest_users(me, limit: 5)
+      result_ids = Enum.map(results, & &1.id)
+
+      refute me.id in result_ids
+      refute already_followed.id in result_ids
+      assert suggestion1.id in result_ids
+      assert suggestion2.id in result_ids
+    end
+
+    test "prioritizes same city users" do
+      me = insert(:user, city: "Curitiba", state: "PR")
+      same_city = insert(:user, city: "Curitiba", state: "PR")
+      diff_city = insert(:user, city: "São Paulo", state: "SP")
+
+      results = Engagement.suggest_users(me, limit: 5)
+
+      same_idx = Enum.find_index(results, &(&1.id == same_city.id))
+      diff_idx = Enum.find_index(results, &(&1.id == diff_city.id))
+
+      assert same_idx < diff_idx
+    end
+
+    test "respects limit" do
+      me = insert(:user)
+      for _ <- 1..10, do: insert(:user)
+
+      results = Engagement.suggest_users(me, limit: 3)
+      assert length(results) <= 3
     end
   end
 end

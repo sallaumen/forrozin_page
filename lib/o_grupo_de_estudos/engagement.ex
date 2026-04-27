@@ -35,8 +35,10 @@ defmodule OGrupoDeEstudos.Engagement do
 
   alias OGrupoDeEstudos.Engagement.Notifications.{Dispatcher, Notification, NotificationQuery}
 
+  alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Encyclopedia.Step
   alias OGrupoDeEstudos.Sequences.Sequence
+  alias OGrupoDeEstudos.Engagement.Badges
 
   # ══════════════════════════════════════════════════════════════════════
   # Likes (unchanged signatures)
@@ -439,6 +441,80 @@ defmodule OGrupoDeEstudos.Engagement do
     end
   end
 
+  @doc """
+  Returns a list of suggested users to follow.
+  Excludes self and already-followed users.
+  Prioritizes users in the same city, then same state.
+  """
+  def suggest_users(%User{} = current_user, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 5)
+
+    my_followed_ids =
+      from(f in Follow, where: f.follower_id == ^current_user.id, select: f.followed_id)
+
+    # Friends of friends: people followed by users I follow, ranked by how
+    # many mutual connections recommend them.
+    fof_query =
+      from(f2 in Follow,
+        where: f2.follower_id in subquery(my_followed_ids),
+        where: f2.followed_id != ^current_user.id,
+        where: f2.followed_id not in subquery(my_followed_ids),
+        group_by: f2.followed_id,
+        select: {f2.followed_id, count(f2.id)},
+        order_by: [desc: count(f2.id)],
+        limit: ^limit
+      )
+
+    fof_results = Repo.all(fof_query)
+    fof_ids = Enum.map(fof_results, &elem(&1, 0))
+
+    if length(fof_ids) >= limit do
+      from(u in User, where: u.id in ^fof_ids)
+      |> Repo.all()
+      |> sort_by_fof_rank(fof_results)
+    else
+      # Not enough friends-of-friends — fill with city/activity fallback
+      already_excluded = [current_user.id | fof_ids]
+      remaining = limit - length(fof_ids)
+
+      fallback =
+        from(u in User,
+          where: u.id != ^current_user.id,
+          where: u.id not in ^already_excluded,
+          where: u.id not in subquery(my_followed_ids),
+          order_by: [
+            desc:
+              fragment(
+                "CASE WHEN ? = ? THEN 2 WHEN ? = ? THEN 1 ELSE 0 END",
+                u.city,
+                ^(current_user.city || ""),
+                u.state,
+                ^(current_user.state || "")
+              ),
+            desc: u.last_seen_at
+          ],
+          limit: ^remaining
+        )
+        |> Repo.all()
+
+      fof_users =
+        if fof_ids != [] do
+          from(u in User, where: u.id in ^fof_ids)
+          |> Repo.all()
+          |> sort_by_fof_rank(fof_results)
+        else
+          []
+        end
+
+      fof_users ++ fallback
+    end
+  end
+
+  defp sort_by_fof_rank(users, fof_results) do
+    rank_map = Map.new(fof_results, fn {id, count} -> {id, count} end)
+    Enum.sort_by(users, fn u -> -(Map.get(rank_map, u.id, 0)) end)
+  end
+
   @doc "Returns `true` if follower_id is currently following followed_id."
   def following?(follower_id, followed_id) do
     Repo.exists?(
@@ -494,6 +570,23 @@ defmodule OGrupoDeEstudos.Engagement do
   @doc "Returns the number of followers of the given user."
   def count_followers(user_id) do
     Repo.aggregate(from(f in Follow, where: f.followed_id == ^user_id), :count)
+  end
+
+  @doc "Returns a MapSet of all user IDs the given user is following."
+  def following_ids(user_id) do
+    from(f in Follow, where: f.follower_id == ^user_id, select: f.followed_id)
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc "Returns a MapSet of followed IDs, scoped to the given list of target user IDs."
+  def following_ids_for(user_id, target_ids) when is_list(target_ids) do
+    from(f in Follow,
+      where: f.follower_id == ^user_id and f.followed_id in ^target_ids,
+      select: f.followed_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   defp maybe_search_users(query, ""), do: query
@@ -619,6 +712,47 @@ defmodule OGrupoDeEstudos.Engagement do
       from(f in Favorite, where: f.user_id == ^user_id),
       :count
     )
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Batch stats
+  # ══════════════════════════════════════════════════════════════════════
+
+  @doc """
+  Batch-loads step count, sequence count, and primary badge for a list of user IDs.
+  Returns `%{user_id => %{steps_count: int, sequences_count: int, badge: badge | nil}}`.
+  """
+  def user_stats_batch([]), do: %{}
+
+  def user_stats_batch(user_ids) when is_list(user_ids) do
+    steps_counts =
+      from(s in Step,
+        where: s.suggested_by_id in ^user_ids and is_nil(s.deleted_at),
+        group_by: s.suggested_by_id,
+        select: {s.suggested_by_id, count(s.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    seq_counts =
+      from(s in Sequence,
+        where: s.user_id in ^user_ids and s.public == true,
+        group_by: s.user_id,
+        select: {s.user_id, count(s.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    badges = Map.new(user_ids, fn uid -> {uid, Badges.primary(uid)} end)
+
+    Map.new(user_ids, fn uid ->
+      {uid,
+       %{
+         steps_count: Map.get(steps_counts, uid, 0),
+         sequences_count: Map.get(seq_counts, uid, 0),
+         badge: Map.get(badges, uid)
+       }}
+    end)
   end
 
   # ══════════════════════════════════════════════════════════════════════

@@ -13,7 +13,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
-  alias OGrupoDeEstudos.Engagement.Badges
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -23,8 +22,10 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -52,6 +53,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        sequences_all: [],
        sequence_likes: %{liked_ids: MapSet.new(), counts: %{}},
        seq_favorites: MapSet.new(),
+       seq_comment_counts: %{},
        seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
@@ -64,9 +66,15 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        following_count: 0,
        followers_count: 0,
        followers_following_map: MapSet.new(),
-       following_user_ids: load_following_user_ids(socket.assigns.current_user.id),
+       followers_stats: %{},
+       following_user_ids: Engagement.following_ids(socket.assigns.current_user.id),
        people_search: "",
-       people_results: []
+       people_results: [],
+       suggested_users: [],
+       bubble_open: false,
+       bubble_following_list: [],
+       bubble_search: "",
+       bubble_search_results: []
      )}
   end
 
@@ -78,6 +86,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     current_user = socket.assigns.current_user
     sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
     seq_favorites = Engagement.favorites_map(current_user.id, "sequence", sequence_ids)
+    seq_comment_counts = Engagement.comment_counts_for("sequence", sequence_ids)
 
     sorted =
       Enum.sort_by(
@@ -94,6 +103,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        sequences_all: sorted,
        sequence_likes: sequence_likes,
        seq_favorites: seq_favorites,
+       seq_comment_counts: seq_comment_counts,
        seq_search: "",
        expanded_seq: nil,
        expanded_seq_comments: [],
@@ -113,7 +123,9 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     following_count = Engagement.count_following(user.id)
     followers_count = Engagement.count_followers(user.id)
     user_ids = Enum.map(following, & &1.id)
-    following_map = following_ids_set(user.id, user_ids)
+    following_map = Engagement.following_ids_for(user.id, user_ids)
+    followers_stats = Engagement.user_stats_batch(user_ids)
+    suggested_users = Engagement.suggest_users(user, limit: 5)
 
     {:noreply,
      assign(socket,
@@ -123,7 +135,9 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        following_count: following_count,
        followers_count: followers_count,
        followers_following_map: following_map,
-       followers_search: ""
+       followers_stats: followers_stats,
+       followers_search: "",
+       suggested_users: suggested_users
      )}
   end
 
@@ -137,32 +151,14 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     user_ids = Enum.map(list, & &1.id)
+    followers_stats = Engagement.user_stats_batch(user_ids)
 
     {:noreply,
      assign(socket,
        followers_sub_tab: tab,
        followers_list: list,
-       followers_following_map: following_ids_set(user.id, user_ids)
-     )}
-  end
-
-  def handle_event("search_followers", params, socket) do
-    term = params["value"] || params["term"] || ""
-    user = socket.assigns.current_user
-
-    list =
-      case socket.assigns.followers_sub_tab do
-        "following" -> Engagement.list_following(user.id, search: term)
-        "followers" -> Engagement.list_followers(user.id, search: term)
-      end
-
-    user_ids = Enum.map(list, & &1.id)
-
-    {:noreply,
-     assign(socket,
-       followers_search: term,
-       followers_list: list,
-       followers_following_map: following_ids_set(user.id, user_ids)
+       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+       followers_stats: followers_stats
      )}
   end
 
@@ -178,14 +174,18 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     user_ids = Enum.map(list, & &1.id)
+    followers_stats = Engagement.user_stats_batch(user_ids)
+    suggested_users = Engagement.suggest_users(user, limit: 5)
 
     {:noreply,
      assign(socket,
        followers_list: list,
        following_count: Engagement.count_following(user.id),
        followers_count: Engagement.count_followers(user.id),
-       followers_following_map: following_ids_set(user.id, user_ids),
-       following_user_ids: load_following_user_ids(user.id)
+       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+       followers_stats: followers_stats,
+       following_user_ids: Engagement.following_ids(user.id),
+       suggested_users: suggested_users
      )}
   end
 
@@ -415,24 +415,31 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   def handle_event("search_people", params, socket) do
     term = params["value"] || params["term"] || ""
+    results = Accounts.search_users(term, exclude_id: socket.assigns.current_user.id)
 
-    results =
-      if String.length(term) >= 2 do
-        import Ecto.Query
-        term_like = "%#{String.downcase(term)}%"
+    socket = assign(socket, people_search: term, people_results: results)
 
-        from(u in OGrupoDeEstudos.Accounts.User,
-          where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
-          where: u.id != ^socket.assigns.current_user.id,
-          order_by: [asc: u.username],
-          limit: 5
-        )
-        |> OGrupoDeEstudos.Repo.all()
-      else
-        []
-      end
+    if socket.assigns.active_section == "followers" do
+      user = socket.assigns.current_user
 
-    {:noreply, assign(socket, people_search: term, people_results: results)}
+      list =
+        case socket.assigns.followers_sub_tab do
+          "following" -> Engagement.list_following(user.id, search: term)
+          "followers" -> Engagement.list_followers(user.id, search: term)
+        end
+
+      user_ids = Enum.map(list, & &1.id)
+
+      {:noreply,
+       assign(socket,
+         followers_search: term,
+         followers_list: list,
+         followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+         followers_stats: Engagement.user_stats_batch(user_ids)
+       )}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("delete_comment", %{"id" => id, "type" => "sequence_comment"}, socket) do
@@ -447,28 +454,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   end
 
   # ── Private helpers ─────────────────────────────────────────────────────
-
-  defp following_ids_set(user_id, target_ids) do
-    import Ecto.Query
-
-    from(f in OGrupoDeEstudos.Engagement.Follow,
-      where: f.follower_id == ^user_id and f.followed_id in ^target_ids,
-      select: f.followed_id
-    )
-    |> OGrupoDeEstudos.Repo.all()
-    |> MapSet.new()
-  end
-
-  defp load_following_user_ids(user_id) do
-    import Ecto.Query
-
-    from(f in OGrupoDeEstudos.Engagement.Follow,
-      where: f.follower_id == ^user_id,
-      select: f.followed_id
-    )
-    |> OGrupoDeEstudos.Repo.all()
-    |> MapSet.new()
-  end
 
   defp filter_steps(all_steps, search, category) do
     all_steps

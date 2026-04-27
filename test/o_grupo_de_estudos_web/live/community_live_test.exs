@@ -252,6 +252,38 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
   end
 
+  describe "people suggestions" do
+    test "shows suggested users on the followers tab", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      suggestion = insert(:user, city: "Curitiba", state: "PR")
+
+      {:ok, lv, _html} = live(conn, ~p"/community")
+      html = render_click(lv, "switch_section", %{"section" => "followers"})
+
+      assert html =~ suggestion.username
+      assert html =~ "Pessoas para seguir"
+    end
+  end
+
+  describe "rich empty states" do
+    test "sequences empty state shows CTA to create", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/community")
+      html = render_click(lv, "switch_section", %{"section" => "sequences"})
+
+      assert html =~ "Criar" or html =~ "Criar a primeira"
+    end
+
+    test "following empty state shows encouragement", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/community")
+      html = render_click(lv, "switch_section", %{"section" => "followers"})
+
+      # When no followers list but suggestions may exist, still show encouragement somewhere
+      assert html =~ "Buscar pessoas" or html =~ "Pessoas para seguir" or html =~ "segue ninguém"
+    end
+  end
+
   describe "followers section" do
     test "switch to followers section shows counters", %{conn: conn} do
       user = insert(:user)
@@ -265,7 +297,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       assert html =~ "seguidores"
     end
 
-    test "search_followers filters by name", %{conn: conn} do
+    test "search_people filters followers list by name when on followers tab", %{conn: conn} do
       user = insert(:user)
       maria = insert(:user, username: "maria_test", name: "Maria Test")
       joao = insert(:user, username: "joao_test", name: "Joao Test")
@@ -276,7 +308,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       {:ok, view, _html} = live(conn, ~p"/community")
 
       render_click(view, "switch_section", %{"section" => "followers"})
-      html = render_keyup(view, "search_followers", %{"term" => "maria"})
+      html = render_keyup(view, "search_people", %{"term" => "maria"})
 
       assert html =~ "maria_test"
       refute html =~ "joao_test"
