@@ -30,7 +30,8 @@ if config_env() == :prod do
     port: String.to_integer(System.get_env("SMTP_PORT", "587")),
     username: System.get_env("SMTP_USERNAME"),
     password: System.get_env("SMTP_PASSWORD"),
-    tls: :always
+    tls: :if_available,
+    ssl: false
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
