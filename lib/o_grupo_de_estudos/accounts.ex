@@ -99,4 +99,59 @@ defmodule OGrupoDeEstudos.Accounts do
     |> User.profile_changeset(attrs)
     |> Repo.update()
   end
+
+  @doc "Finds a user by email. Returns nil if not found."
+  def get_user_by_email(email) when is_binary(email) do
+    Repo.get_by(User, email: String.downcase(String.trim(email)))
+  end
+
+  def get_user_by_email(_), do: nil
+
+  @doc "Updates a user's password. Returns `{:ok, user}` or `{:error, changeset}`."
+  def reset_password(user, new_password) do
+    user
+    |> User.password_changeset(%{password: new_password})
+    |> Repo.update()
+  end
+
+  @doc """
+  Initiates password reset: increments counter, generates token, enqueues email.
+  Always returns :ok (does not reveal if email exists).
+  """
+  def request_password_reset(email, endpoint) do
+    case get_user_by_email(email) do
+      nil ->
+        :ok
+
+      user ->
+        alias OGrupoDeEstudos.Metadata
+
+        Metadata.increment(Metadata.password_reset_count_name(), "user", user.id)
+        token = Phoenix.Token.sign(endpoint, "reset_password", user.id)
+        reset_url = OGrupoDeEstudosWeb.Endpoint.url() <> "/reset-password/#{token}"
+
+        %{user_id: user.id, reset_url: reset_url}
+        |> OGrupoDeEstudos.Workers.SendPasswordResetEmail.new()
+        |> Oban.insert()
+
+        :ok
+    end
+  end
+
+  @doc """
+  Verifies a password reset token. Returns `{:ok, user}` or `{:error, :invalid_token}`.
+  Token expires after 30 minutes (1800 seconds).
+  """
+  def verify_reset_token(endpoint, token) do
+    case Phoenix.Token.verify(endpoint, "reset_password", token, max_age: 1800) do
+      {:ok, user_id} ->
+        case get_user_by_id(user_id) do
+          nil -> {:error, :invalid_token}
+          user -> {:ok, user}
+        end
+
+      {:error, _reason} ->
+        {:error, :invalid_token}
+    end
+  end
 end

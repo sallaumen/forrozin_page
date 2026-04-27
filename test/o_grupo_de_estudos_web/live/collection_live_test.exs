@@ -31,12 +31,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ ~s(id="collection-controls")
     end
 
-    test "does not display wip steps when expanding the section", %{conn: conn} do
-      section = insert(:section)
+    test "does not display wip steps in drilldown", %{conn: conn} do
+      section = insert(:section, code: "TEST")
       insert(:step, section: section, name: "Base frontal", wip: false)
       insert(:step, section: section, name: "Sacada Suspensa", wip: true)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "expand_all", %{})
+      html = render_click(lv, "enter_section", %{"section_id" => section.id})
       assert html =~ "Base frontal"
       refute html =~ "Sacada Suspensa"
     end
@@ -70,30 +70,26 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert Engagement.unread_count(user.id) == 0
     end
 
-    test "does not display draft steps", %{conn: conn} do
-      section = insert(:section)
+    test "does not display draft steps in drilldown", %{conn: conn} do
+      section = insert(:section, code: "TEST2")
       insert(:step, section: section, name: "Publicado", status: "published")
       insert(:step, section: section, name: "Rascunho", status: "draft")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "expand_all", %{})
+      html = render_click(lv, "enter_section", %{"section_id" => section.id})
       assert html =~ "Publicado"
       refute html =~ "Rascunho"
     end
   end
 
   describe "editorial navigation" do
-    test "renders the overview grid with a filter toggle and suggest card", %{conn: conn} do
+    test "renders the overview grid with a filter toggle", %{conn: conn} do
       category = insert(:category, name: "bases", label: "Bases", color: "#2e9f6b")
-      insert(:section, title: "Bases", position: 1, category: category)
-      insert(:section, title: "Sacadas", position: 2)
+      insert(:section, title: "Bases", position: 1, category: category, code: "B")
 
-      {:ok, lv, html} = live(logged_in_conn(conn), ~p"/collection")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
 
       assert has_element?(lv, "#collection-overview-grid")
       assert has_element?(lv, "#collection-filter-toggle")
-      assert has_element?(lv, "#collection-suggest-card")
-      assert html =~ "/images/collection/base.png"
-      assert html =~ "/images/collection/sacada-simples.png"
     end
 
     test "does not show conventions as a primary overview card", %{conn: conn} do
@@ -124,7 +120,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
 
       assert has_element?(lv, "#collection-drilldown-shell")
       assert has_element?(lv, "#collection-breadcrumb")
-      assert has_element?(lv, "#collection-featured-step-BF")
+      assert has_element?(lv, "#collection-step-BF")
     end
 
     test "opening suggest inside a section preselects that section", %{conn: conn} do
@@ -144,7 +140,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
              )
     end
 
-    test "shows illustrated internal cards when a section has mapped images", %{conn: conn} do
+    test "shows step cards with images when section has mapped images", %{conn: conn} do
       category = insert(:category, name: "sacadas", label: "Sacadas", color: "#ef5b8d")
       section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
 
@@ -158,7 +154,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       html = render_click(lv, "enter_section", %{"section_id" => section.id})
 
-      assert has_element?(lv, "#collection-illustrated-step-SC-E")
+      assert has_element?(lv, "#collection-step-SC-E")
       assert html =~ "/images/collection/sacada-esquerda.png"
     end
   end
@@ -232,40 +228,22 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     end
   end
 
-  describe "expand and collapse sections" do
-    test "expand_all displays steps from all sections", %{conn: conn} do
-      section = insert(:section, title: "Bases", position: 1)
+  describe "section drilldown" do
+    test "enter_section shows all steps from the section", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1, code: "B")
       insert(:step, section: section, name: "Base frontal")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "expand_all", %{})
+      html = render_click(lv, "enter_section", %{"section_id" => section.id})
       assert html =~ "Base frontal"
     end
 
-    test "collapse_all hides steps from sections", %{conn: conn} do
-      section = insert(:section, title: "Bases", position: 1)
+    test "back_to_overview returns to section grid", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1, code: "B")
       insert(:step, section: section, name: "Base frontal")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      render_click(lv, "expand_all", %{})
-      html = render_click(lv, "collapse_all", %{})
-      refute html =~ "Base frontal"
-      assert html =~ "Bases"
-    end
-
-    test "toggle_section opens a specific section", %{conn: conn} do
-      section = insert(:section, title: "Bases", position: 1)
-      insert(:step, section: section, name: "Base frontal")
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "toggle_section", %{"section_id" => section.id})
-      assert html =~ "Base frontal"
-    end
-
-    test "toggle_section closes an already open section", %{conn: conn} do
-      section = insert(:section, title: "Bases", position: 1)
-      insert(:step, section: section, name: "Base frontal")
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      render_click(lv, "toggle_section", %{"section_id" => section.id})
-      html = render_click(lv, "toggle_section", %{"section_id" => section.id})
-      refute html =~ "Base frontal"
+      render_click(lv, "enter_section", %{"section_id" => section.id})
+      html = render_click(lv, "back_to_overview", %{})
+      assert has_element?(lv, "#collection-overview-grid")
     end
   end
 
@@ -436,23 +414,13 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert step.suggested_by_id != nil
     end
 
-    test "suggested step appears in its section when expanded" do
+    test "suggested step appears in section drilldown" do
       user = insert(:user)
-      section = insert(:section, title: "Pescadas", position: 1)
+      section = insert(:section, title: "Pescadas", position: 1, code: "PE")
       insert(:step, section: section, code: "PE-T", name: "Pescada teste", suggested_by: user)
       {:ok, lv, _html} = live(log_in_user(build_conn(), user), ~p"/collection")
-      html = render_click(lv, "expand_all", %{})
+      html = render_click(lv, "enter_section", %{"section_id" => section.id})
       assert html =~ "Pescada teste"
-      assert html =~ "Sugestão de"
-    end
-
-    test "suggested step shows badge in list" do
-      user = insert(:user)
-      section = insert(:section, title: "Bases", position: 1)
-      insert(:step, section: section, code: "SUG-1", name: "Passo sugerido", suggested_by: user)
-      {:ok, lv, _html} = live(log_in_user(build_conn(), user), ~p"/collection")
-      html = render_click(lv, "expand_all", %{})
-      assert html =~ "Sugestão de"
     end
 
     test "admin can approve a suggested step", %{conn: conn} do

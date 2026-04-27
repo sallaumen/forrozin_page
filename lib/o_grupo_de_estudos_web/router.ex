@@ -40,6 +40,8 @@ defmodule OGrupoDeEstudosWeb.Router do
 
     live "/", LandingLive
     live "/about", AboutLive
+    live "/forgot-password", ForgotPasswordLive
+    live "/reset-password/:token", ResetPasswordLive
     delete "/logout", UserSessionController, :delete
     get "/confirm/:token", UserConfirmationController, :confirm
     get "/auto-login/:token", UserSessionController, :auto_login

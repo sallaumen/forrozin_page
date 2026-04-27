@@ -110,6 +110,15 @@ defmodule OGrupoDeEstudos.Accounts.User do
     change(user, confirmed_at: now, confirmation_token: nil)
   end
 
+  @doc "Changeset for resetting the password."
+  def password_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password])
+    |> validate_required([:password])
+    |> validate_length(:password, min: 8)
+    |> hash_password()
+  end
+
   defp sanitize_username(changeset) do
     case get_change(changeset, :username) do
       nil ->

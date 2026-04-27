@@ -1,0 +1,76 @@
+defmodule OGrupoDeEstudos.AccountsPasswordResetTest do
+  use OGrupoDeEstudos.DataCase, async: true
+
+  alias OGrupoDeEstudos.{Accounts, Metadata}
+
+  describe "request_password_reset/2" do
+    test "increments reset counter for existing user" do
+      user = insert(:user, email: "reset@teste.com")
+
+      Accounts.request_password_reset("reset@teste.com", OGrupoDeEstudosWeb.Endpoint)
+
+      count = Metadata.get_integer(Metadata.password_reset_count_name(), "user", user.id)
+      assert count == 1
+    end
+
+    test "increments counter on subsequent requests" do
+      user = insert(:user, email: "multi@teste.com")
+
+      Accounts.request_password_reset("multi@teste.com", OGrupoDeEstudosWeb.Endpoint)
+      Accounts.request_password_reset("multi@teste.com", OGrupoDeEstudosWeb.Endpoint)
+      Accounts.request_password_reset("multi@teste.com", OGrupoDeEstudosWeb.Endpoint)
+
+      count = Metadata.get_integer(Metadata.password_reset_count_name(), "user", user.id)
+      assert count == 3
+    end
+
+    test "returns :ok even when email does not exist" do
+      assert :ok == Accounts.request_password_reset("nope@nowhere.com", OGrupoDeEstudosWeb.Endpoint)
+    end
+
+    test "completes without error for existing user" do
+      insert(:user, email: "job@teste.com")
+      assert :ok == Accounts.request_password_reset("job@teste.com", OGrupoDeEstudosWeb.Endpoint)
+    end
+  end
+
+  describe "verify_reset_token/2" do
+    test "returns user for valid token" do
+      user = insert(:user)
+      token = Phoenix.Token.sign(OGrupoDeEstudosWeb.Endpoint, "reset_password", user.id)
+
+      assert {:ok, found} = Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, token)
+      assert found.id == user.id
+    end
+
+    test "returns error for expired token" do
+      user = insert(:user)
+      # Sign with a different salt to simulate expiration
+      token = Phoenix.Token.sign(OGrupoDeEstudosWeb.Endpoint, "wrong_salt", user.id)
+
+      assert {:error, :invalid_token} = Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, token)
+    end
+
+    test "returns error for garbage token" do
+      assert {:error, :invalid_token} = Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, "garbage123")
+    end
+  end
+
+  describe "reset_password/2" do
+    test "updates the password" do
+      user = insert(:user)
+
+      {:ok, updated} = Accounts.reset_password(user, "novaSenha123")
+
+      assert Argon2.verify_pass("novaSenha123", updated.password_hash)
+    end
+
+    test "rejects password shorter than 8 chars" do
+      user = insert(:user)
+
+      {:error, changeset} = Accounts.reset_password(user, "short")
+
+      assert errors_on(changeset).password
+    end
+  end
+end
