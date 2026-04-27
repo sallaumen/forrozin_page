@@ -27,6 +27,10 @@ defmodule OGrupoDeEstudosWeb.Endpoint do
     only: OGrupoDeEstudosWeb.static_paths(),
     raise_on_missing_only: code_reloading?
 
+  # Serve user uploads from persistent volume (/app/uploads in production)
+  # or from priv/static/uploads in development.
+  plug OGrupoDeEstudosWeb.Plugs.UploadsStatic
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

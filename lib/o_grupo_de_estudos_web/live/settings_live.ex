@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.Accounts
+  alias OGrupoDeEstudos.Media.Storage
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
@@ -124,15 +125,12 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
     uploaded =
       consume_uploaded_entries(socket, :avatar, fn %{path: tmp_path}, entry ->
         ext = ext_from_entry(entry)
-        dest_dir = Application.app_dir(:o_grupo_de_estudos, "priv/static/uploads/avatars")
-        File.mkdir_p!(dest_dir)
-        dest = Path.join(dest_dir, "#{user.id}#{ext}")
-        File.cp!(tmp_path, dest)
-        {:ok, "/uploads/avatars/#{user.id}#{ext}"}
+        Storage.save_avatar(user.id, tmp_path, ext)
       end)
 
     case uploaded do
-      [path] -> {path, socket}
+      [{:ok, path}] -> {path, socket}
+      [{:error, reason}] -> {nil, put_flash(socket, :error, "Erro ao salvar foto: #{reason}")}
       [] -> {nil, socket}
     end
   end

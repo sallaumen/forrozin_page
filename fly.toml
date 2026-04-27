@@ -39,6 +39,10 @@ kill_signal = 'SIGTERM'
     timeout = '5s'
     path = '/healthz'
 
+[[mounts]]
+  source = 'uploads_data'
+  destination = '/app/uploads'
+
 [[vm]]
   memory = '1gb'
   cpus = 1
