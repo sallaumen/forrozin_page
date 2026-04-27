@@ -29,11 +29,11 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
 
   def social_bubble(assigns) do
     ~H"""
-    <div data-ui="social-bubble" phx-click-away="close_bubble" style="position:fixed;bottom:0;right:0;width:0;height:0;overflow:visible;z-index:39;">
+    <div data-ui="social-bubble" phx-click-away="close_bubble" class="fixed inset-0 z-[39] pointer-events-none">
       <%!-- Panel --%>
       <div
         :if={@bubble_open}
-        class="fixed bottom-[88px] md:bottom-[72px] right-3 z-50 bg-ink-50 rounded-2xl shadow-2xl border border-ink-200 w-72 max-h-[70vh] flex flex-col overflow-hidden"
+        class="absolute bottom-[88px] md:bottom-[72px] right-3 z-50 bg-ink-50 rounded-2xl shadow-2xl border border-ink-200 w-72 max-h-[70vh] flex flex-col overflow-hidden pointer-events-auto"
         style="animation: fadeSlideUp 0.15s ease-out;"
       >
         <%!-- Header --%>
@@ -149,7 +149,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
       <button
         phx-click="toggle_bubble"
         class={[
-          "fixed bottom-20 md:bottom-6 right-4 z-40 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer border-0 shadow-lg transition-all",
+          "absolute bottom-20 md:bottom-6 right-4 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer border-0 shadow-lg transition-all pointer-events-auto",
           @bubble_open && "bg-ink-700 shadow-xl scale-95",
           !@bubble_open && "bg-gradient-to-br from-accent-orange to-[#d35400] shadow-accent-orange/30"
         ]}
