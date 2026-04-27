@@ -21,11 +21,11 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
 
   def social_bubble(assigns) do
     ~H"""
-    <div data-ui="social-bubble" class="md:hidden" phx-click-away="close_bubble">
+    <div data-ui="social-bubble" phx-click-away="close_bubble">
       <%!-- Popover --%>
       <div
         :if={@bubble_open}
-        class="fixed bottom-[88px] right-4 z-50 bg-ink-50 rounded-xl shadow-xl border border-ink-200 w-56 overflow-hidden"
+        class="fixed bottom-[88px] md:bottom-[72px] right-4 z-50 bg-ink-50 rounded-xl shadow-xl border border-ink-200 w-56 overflow-hidden"
         style="animation: fadeSlideUp 0.15s ease-out;"
       >
         <%!-- Arrow --%>
@@ -83,7 +83,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
       <button
         phx-click="toggle_bubble"
         class={[
-          "fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer border-0 shadow-lg transition-all",
+          "fixed bottom-20 md:bottom-6 right-4 z-40 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer border-0 shadow-lg transition-all overflow-visible",
           @bubble_open && "bg-ink-700 shadow-xl scale-95",
           !@bubble_open && "bg-gradient-to-br from-accent-orange to-[#d35400] shadow-accent-orange/30"
         ]}
@@ -93,7 +93,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
           {if @bubble_open, do: "✕", else: "👥"}
         </span>
         <%= if !@bubble_open && length(@suggested_users) > 0 do %>
-          <span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center bg-accent-red text-white text-[9px] font-bold rounded-full">
+          <span class="absolute top-0 right-0 translate-x-1 -translate-y-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center bg-accent-red text-white text-[9px] font-bold rounded-full pointer-events-none">
             {length(@suggested_users)}
           </span>
         <% end %>
