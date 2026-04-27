@@ -602,6 +602,42 @@
         </p>
       </div>
 
+      <%!-- People suggestions --%>
+      <%= if @suggested_users != [] do %>
+        <div class="mb-5">
+          <h3 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-2">
+            Pessoas para seguir
+          </h3>
+          <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+            <%= for person <- @suggested_users do %>
+              <div class="flex-shrink-0 w-36 bg-ink-50 rounded-lg border border-ink-100 p-3 flex flex-col items-center gap-2 text-center">
+                <.link navigate={~p"/users/#{person.username}"} class="no-underline">
+                  <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-ink-800 text-ink-200 text-base font-bold">
+                    {person.username |> String.upcase() |> String.first()}
+                  </span>
+                </.link>
+                <.link
+                  navigate={~p"/users/#{person.username}"}
+                  class="text-xs font-semibold text-ink-800 no-underline truncate w-full"
+                >
+                  @{person.username}
+                </.link>
+                <p :if={person.city} class="text-[10px] text-ink-400 -mt-1 truncate w-full">
+                  {person.city}
+                </p>
+                <button
+                  phx-click="toggle_follow"
+                  phx-value-user-id={person.id}
+                  class="w-full py-1.5 rounded-full text-xs font-medium border border-accent-orange bg-accent-orange text-white cursor-pointer transition-colors hover:bg-accent-orange/90"
+                >
+                  Seguir
+                </button>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
       <%!-- Sub-tab pills --%>
       <div class="flex gap-2 mb-4">
         <%= for {tab_key, tab_label} <- [{"following", "Seguindo"}, {"followers", "Seguidores"}] do %>

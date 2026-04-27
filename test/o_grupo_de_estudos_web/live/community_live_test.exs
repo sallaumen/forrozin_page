@@ -252,6 +252,19 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
   end
 
+  describe "people suggestions" do
+    test "shows suggested users on the followers tab", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      suggestion = insert(:user, city: "Curitiba", state: "PR")
+
+      {:ok, lv, _html} = live(conn, ~p"/community")
+      html = render_click(lv, "switch_section", %{"section" => "followers"})
+
+      assert html =~ suggestion.username
+      assert html =~ "Pessoas para seguir"
+    end
+  end
+
   describe "followers section" do
     test "switch to followers section shows counters", %{conn: conn} do
       user = insert(:user)

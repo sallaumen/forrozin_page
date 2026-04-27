@@ -66,7 +66,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        followers_stats: %{},
        following_user_ids: Engagement.following_ids(socket.assigns.current_user.id),
        people_search: "",
-       people_results: []
+       people_results: [],
+       suggested_users: []
      )}
   end
 
@@ -115,6 +116,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     user_ids = Enum.map(following, & &1.id)
     following_map = Engagement.following_ids_for(user.id, user_ids)
     followers_stats = Engagement.user_stats_batch(user_ids)
+    suggested_users = Engagement.suggest_users(user, limit: 5)
 
     {:noreply,
      assign(socket,
@@ -125,7 +127,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        followers_count: followers_count,
        followers_following_map: following_map,
        followers_stats: followers_stats,
-       followers_search: ""
+       followers_search: "",
+       suggested_users: suggested_users
      )}
   end
 
@@ -185,6 +188,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
     user_ids = Enum.map(list, & &1.id)
     followers_stats = Engagement.user_stats_batch(user_ids)
+    suggested_users = Engagement.suggest_users(user, limit: 5)
 
     {:noreply,
      assign(socket,
@@ -193,7 +197,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        followers_count: Engagement.count_followers(user.id),
        followers_following_map: Engagement.following_ids_for(user.id, user_ids),
        followers_stats: followers_stats,
-       following_user_ids: Engagement.following_ids(user.id)
+       following_user_ids: Engagement.following_ids(user.id),
+       suggested_users: suggested_users
      )}
   end
 
