@@ -584,6 +584,11 @@
                   else: "· sugestão pendente"}
               </span>
             </.link>
+            <.inline_follow_button
+              target_user_id={@drawer_item.suggested_by_id}
+              current_user_id={@current_user.id}
+              following_user_ids={@following_user_ids}
+            />
             <%= if @is_admin and not @drawer_item.approved do %>
               <button
                 phx-click="approve_step"
