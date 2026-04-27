@@ -24,15 +24,13 @@ config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 if config_env() == :prod do
-  # Mailer em produção — configurar via variável de ambiente SMTP_*
-  # Exemplo com SMTP genérico (Brevo, Mailgun SMTP, etc.):
-  # config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
-  #   adapter: Swoosh.Adapters.SMTP,
-  #   relay: System.get_env("SMTP_HOST"),
-  #   port: String.to_integer(System.get_env("SMTP_PORT", "587")),
-  #   username: System.get_env("SMTP_USERNAME"),
-  #   password: System.get_env("SMTP_PASSWORD"),
-  #   tls: :always
+  config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    relay: System.get_env("SMTP_HOST", "smtp-relay.brevo.com"),
+    port: String.to_integer(System.get_env("SMTP_PORT", "587")),
+    username: System.get_env("SMTP_USERNAME"),
+    password: System.get_env("SMTP_PASSWORD"),
+    tls: :always
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """
