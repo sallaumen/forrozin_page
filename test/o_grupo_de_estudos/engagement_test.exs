@@ -788,6 +788,45 @@ defmodule OGrupoDeEstudos.EngagementTest do
   end
 
   # ══════════════════════════════════════════════════════════════════════
+  # user_stats_batch
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "user_stats_batch/1" do
+    test "returns step count, sequence count, and primary badge per user" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+      section = insert(:section)
+
+      insert(:step, suggested_by: user1, section: section, code: "TST-A")
+      insert(:step, suggested_by: user1, section: section, code: "TST-B")
+
+      seq = insert(:sequence, user: user2, public: true)
+      step = insert(:step, section: section, code: "TST-C")
+      insert(:sequence_step, sequence: seq, step: step, position: 1)
+
+      result = Engagement.user_stats_batch([user1.id, user2.id])
+
+      assert result[user1.id].steps_count == 2
+      assert result[user1.id].sequences_count == 0
+      assert result[user2.id].steps_count == 0
+      assert result[user2.id].sequences_count == 1
+    end
+
+    test "returns zeros for user with no content" do
+      user = insert(:user)
+      result = Engagement.user_stats_batch([user.id])
+
+      assert result[user.id].steps_count == 0
+      assert result[user.id].sequences_count == 0
+      assert result[user.id].badge == nil
+    end
+
+    test "returns empty map for empty input" do
+      assert Engagement.user_stats_batch([]) == %{}
+    end
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
   # Follow edge cases
   # ══════════════════════════════════════════════════════════════════════
 

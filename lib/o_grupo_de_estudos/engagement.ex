@@ -37,6 +37,7 @@ defmodule OGrupoDeEstudos.Engagement do
 
   alias OGrupoDeEstudos.Encyclopedia.Step
   alias OGrupoDeEstudos.Sequences.Sequence
+  alias OGrupoDeEstudos.Engagement.Badges
 
   # ══════════════════════════════════════════════════════════════════════
   # Likes (unchanged signatures)
@@ -636,6 +637,47 @@ defmodule OGrupoDeEstudos.Engagement do
       from(f in Favorite, where: f.user_id == ^user_id),
       :count
     )
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Batch stats
+  # ══════════════════════════════════════════════════════════════════════
+
+  @doc """
+  Batch-loads step count, sequence count, and primary badge for a list of user IDs.
+  Returns `%{user_id => %{steps_count: int, sequences_count: int, badge: badge | nil}}`.
+  """
+  def user_stats_batch([]), do: %{}
+
+  def user_stats_batch(user_ids) when is_list(user_ids) do
+    steps_counts =
+      from(s in Step,
+        where: s.suggested_by_id in ^user_ids and is_nil(s.deleted_at),
+        group_by: s.suggested_by_id,
+        select: {s.suggested_by_id, count(s.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    seq_counts =
+      from(s in Sequence,
+        where: s.user_id in ^user_ids and s.public == true,
+        group_by: s.user_id,
+        select: {s.user_id, count(s.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    badges = Map.new(user_ids, fn uid -> {uid, Badges.primary(uid)} end)
+
+    Map.new(user_ids, fn uid ->
+      {uid,
+       %{
+         steps_count: Map.get(steps_counts, uid, 0),
+         sequences_count: Map.get(seq_counts, uid, 0),
+         badge: Map.get(badges, uid)
+       }}
+    end)
   end
 
   # ══════════════════════════════════════════════════════════════════════

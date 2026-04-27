@@ -653,10 +653,10 @@
       <% else %>
         <div class="flex flex-col gap-3">
           <%= for person <- @followers_list do %>
-            <% badge = Badges.primary(person.id) %>
-            <% steps_count = length(OGrupoDeEstudos.Encyclopedia.list_user_steps(person.id)) %>
-            <% seqs_count =
-              length(OGrupoDeEstudos.Sequences.list_public_user_sequences(person.id)) %>
+            <% stats = Map.get(@followers_stats, person.id, %{steps_count: 0, sequences_count: 0, badge: nil}) %>
+            <% badge = stats.badge %>
+            <% steps_count = stats.steps_count %>
+            <% seqs_count = stats.sequences_count %>
             <% person_initial = person.username |> String.upcase() |> String.first() %>
             <% is_following = MapSet.member?(@followers_following_map, person.id) %>
             <div class="p-3 bg-ink-50 rounded-lg border border-ink-100 flex items-center gap-3">

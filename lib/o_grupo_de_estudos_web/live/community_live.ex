@@ -13,7 +13,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
-  alias OGrupoDeEstudos.Engagement.Badges
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -64,6 +63,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        following_count: 0,
        followers_count: 0,
        followers_following_map: MapSet.new(),
+       followers_stats: %{},
        following_user_ids: Engagement.following_ids(socket.assigns.current_user.id),
        people_search: "",
        people_results: []
@@ -114,6 +114,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     followers_count = Engagement.count_followers(user.id)
     user_ids = Enum.map(following, & &1.id)
     following_map = Engagement.following_ids_for(user.id, user_ids)
+    followers_stats = Engagement.user_stats_batch(user_ids)
 
     {:noreply,
      assign(socket,
@@ -123,6 +124,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        following_count: following_count,
        followers_count: followers_count,
        followers_following_map: following_map,
+       followers_stats: followers_stats,
        followers_search: ""
      )}
   end
@@ -137,12 +139,14 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     user_ids = Enum.map(list, & &1.id)
+    followers_stats = Engagement.user_stats_batch(user_ids)
 
     {:noreply,
      assign(socket,
        followers_sub_tab: tab,
        followers_list: list,
-       followers_following_map: Engagement.following_ids_for(user.id, user_ids)
+       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+       followers_stats: followers_stats
      )}
   end
 
@@ -157,12 +161,14 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     user_ids = Enum.map(list, & &1.id)
+    followers_stats = Engagement.user_stats_batch(user_ids)
 
     {:noreply,
      assign(socket,
        followers_search: term,
        followers_list: list,
-       followers_following_map: Engagement.following_ids_for(user.id, user_ids)
+       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+       followers_stats: followers_stats
      )}
   end
 
@@ -178,6 +184,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     user_ids = Enum.map(list, & &1.id)
+    followers_stats = Engagement.user_stats_batch(user_ids)
 
     {:noreply,
      assign(socket,
@@ -185,6 +192,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        following_count: Engagement.count_following(user.id),
        followers_count: Engagement.count_followers(user.id),
        followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+       followers_stats: followers_stats,
        following_user_ids: Engagement.following_ids(user.id)
      )}
   end
