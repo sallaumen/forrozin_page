@@ -7,41 +7,37 @@ defmodule OGrupoDeEstudosWeb.Emails.PasswordResetEmail do
   import Swoosh.Email
 
   @from {"O Grupo de Estudos", "noreply@ogrupodeestudos.com.br"}
+  @subject "Recuperação de senha"
 
   def new(user, reset_url, reset_count) do
-    {subject, body_text} = message_for_count(reset_count)
+    body_text = message_for_count(reset_count)
 
     new()
     |> to({user.name || user.username, user.email})
     |> from(@from)
-    |> subject(subject)
+    |> subject(@subject)
     |> html_body(html_template(user, reset_url, body_text))
     |> text_body(text_template(user, reset_url, body_text))
   end
 
   defp message_for_count(count) when count <= 1 do
-    {"Recuperação de senha",
-     "Oi! Segue o link pra você criar uma senha nova. Acontece com todo mundo, relaxa."}
+    "Oi! Segue o link pra você criar uma senha nova. Acontece com todo mundo, relaxa."
   end
 
   defp message_for_count(2) do
-    {"Senha nova de novo rsrs",
-     "Tudo bem, a gente esquece mesmo. Toma o link aí, sem julgamentos rsrs"}
+    "Tudo bem, a gente esquece mesmo. Toma o link aí, sem julgamentos rsrs"
   end
 
   defp message_for_count(3) do
-    {"Pô, de novo?! suahsuhauhs",
-     "Terceira vez já! Tô começando a achar que você gosta de receber meus emails suahsuhauhs"}
+    "Terceira vez já! Tô começando a achar que você gosta de receber meus emails suahsuhauhs"
   end
 
   defp message_for_count(4) do
-    {"Tá virando rotina kkkkkkk",
-     "Olha, vou começar a cobrar por email. Brincadeira. Toma o link kkkkkkk"}
+    "Olha, vou começar a cobrar por email. Brincadeira. Toma o link kkkkkkk"
   end
 
   defp message_for_count(_count) do
-    {"DESISTI DE VOCÊ KKKKKKKKKKYING",
-     "Sabe o que, faz o que quiser. Toma o link. Usa, esquece, pede de novo, tanto faz. Vamos gastar o servidor do Tavano mesmo KKKKKKKKKKYING"}
+    "Quer saber, faz o que quiser! Toma o link. Usa, esquece, pede de novo, tanto faz. Vamos gastar o servidor do Tavano mesmo KKKKKKKKKKYING"
   end
 
   defp html_template(user, reset_url, body_text) do

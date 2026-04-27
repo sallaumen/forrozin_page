@@ -4,6 +4,7 @@ defmodule OGrupoDeEstudos.Accounts do
   """
 
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Metadata
   alias OGrupoDeEstudos.Repo
 
   @doc """
@@ -107,15 +108,28 @@ defmodule OGrupoDeEstudos.Accounts do
 
   def get_user_by_email(_), do: nil
 
-  @doc "Updates a user's password. Returns `{:ok, user}` or `{:error, changeset}`."
+  @doc """
+  Updates a user's password and increments the reset counter.
+  Returns `{:ok, user}` or `{:error, changeset}`.
+  """
   def reset_password(user, new_password) do
-    user
-    |> User.password_changeset(%{password: new_password})
-    |> Repo.update()
+    result =
+      user
+      |> User.password_changeset(%{password: new_password})
+      |> Repo.update()
+
+    case result do
+      {:ok, _} ->
+        Metadata.increment(Metadata.password_reset_count_name(), "user", user.id)
+        result
+
+      error ->
+        error
+    end
   end
 
   @doc """
-  Initiates password reset: increments counter, generates token, enqueues email.
+  Initiates password reset: generates token and enqueues email.
   Always returns :ok (does not reveal if email exists).
   """
   def request_password_reset(email, endpoint) do
@@ -124,9 +138,6 @@ defmodule OGrupoDeEstudos.Accounts do
         :ok
 
       user ->
-        alias OGrupoDeEstudos.Metadata
-
-        Metadata.increment(Metadata.password_reset_count_name(), "user", user.id)
         token = Phoenix.Token.sign(endpoint, "reset_password", user.id)
         reset_url = OGrupoDeEstudosWeb.Endpoint.url() <> "/reset-password/#{token}"
 

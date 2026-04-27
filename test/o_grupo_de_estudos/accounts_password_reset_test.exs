@@ -4,24 +4,13 @@ defmodule OGrupoDeEstudos.AccountsPasswordResetTest do
   alias OGrupoDeEstudos.{Accounts, Metadata}
 
   describe "request_password_reset/2" do
-    test "increments reset counter for existing user" do
+    test "does not increment counter (only reset_password does)" do
       user = insert(:user, email: "reset@teste.com")
 
       Accounts.request_password_reset("reset@teste.com", OGrupoDeEstudosWeb.Endpoint)
 
       count = Metadata.get_integer(Metadata.password_reset_count_name(), "user", user.id)
-      assert count == 1
-    end
-
-    test "increments counter on subsequent requests" do
-      user = insert(:user, email: "multi@teste.com")
-
-      Accounts.request_password_reset("multi@teste.com", OGrupoDeEstudosWeb.Endpoint)
-      Accounts.request_password_reset("multi@teste.com", OGrupoDeEstudosWeb.Endpoint)
-      Accounts.request_password_reset("multi@teste.com", OGrupoDeEstudosWeb.Endpoint)
-
-      count = Metadata.get_integer(Metadata.password_reset_count_name(), "user", user.id)
-      assert count == 3
+      assert count == 0
     end
 
     test "returns :ok even when email does not exist" do
@@ -43,9 +32,8 @@ defmodule OGrupoDeEstudos.AccountsPasswordResetTest do
       assert found.id == user.id
     end
 
-    test "returns error for expired token" do
+    test "returns error for invalid salt" do
       user = insert(:user)
-      # Sign with a different salt to simulate expiration
       token = Phoenix.Token.sign(OGrupoDeEstudosWeb.Endpoint, "wrong_salt", user.id)
 
       assert {:error, :invalid_token} = Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, token)
@@ -57,12 +45,31 @@ defmodule OGrupoDeEstudos.AccountsPasswordResetTest do
   end
 
   describe "reset_password/2" do
-    test "updates the password" do
+    test "updates the password and increments counter" do
       user = insert(:user)
 
       {:ok, updated} = Accounts.reset_password(user, "novaSenha123")
 
       assert Argon2.verify_pass("novaSenha123", updated.password_hash)
+      assert Metadata.get_integer(Metadata.password_reset_count_name(), "user", user.id) == 1
+    end
+
+    test "increments counter on each successful reset" do
+      user = insert(:user)
+
+      {:ok, _} = Accounts.reset_password(user, "senha11111")
+      {:ok, _} = Accounts.reset_password(user, "senha22222")
+      {:ok, _} = Accounts.reset_password(user, "senha33333")
+
+      assert Metadata.get_integer(Metadata.password_reset_count_name(), "user", user.id) == 3
+    end
+
+    test "does not increment counter on validation error" do
+      user = insert(:user)
+
+      {:error, _} = Accounts.reset_password(user, "short")
+
+      assert Metadata.get_integer(Metadata.password_reset_count_name(), "user", user.id) == 0
     end
 
     test "rejects password shorter than 8 chars" do

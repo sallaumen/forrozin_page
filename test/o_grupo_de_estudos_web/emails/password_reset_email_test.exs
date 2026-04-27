@@ -8,37 +8,36 @@ defmodule OGrupoDeEstudosWeb.Emails.PasswordResetEmailTest do
   end
 
   describe "new/3" do
-    test "first reset has polite subject" do
-      email = PasswordResetEmail.new(fake_user(), "https://example.com/reset/abc", 1)
+    test "subject is always fixed" do
+      for count <- [1, 2, 3, 4, 5] do
+        email = PasswordResetEmail.new(fake_user(), "https://example.com/reset/abc", count)
+        assert email.subject == "Recuperação de senha"
+      end
+    end
 
-      assert email.subject == "Recuperação de senha"
+    test "first reset has polite body" do
+      email = PasswordResetEmail.new(fake_user(), "https://example.com/reset/abc", 1)
       assert email.html_body =~ "Acontece com todo mundo"
     end
 
-    test "second reset has rsrs" do
+    test "second reset has rsrs in body" do
       email = PasswordResetEmail.new(fake_user(), "https://example.com/reset/abc", 2)
-
-      assert email.subject =~ "rsrs"
       assert email.html_body =~ "rsrs"
     end
 
-    test "third reset has suahsuhauhs" do
+    test "third reset has suahsuhauhs in body" do
       email = PasswordResetEmail.new(fake_user(), "https://example.com/reset/abc", 3)
-
-      assert email.subject =~ "suahsuhauhs"
       assert email.html_body =~ "suahsuhauhs"
     end
 
-    test "fourth reset has kkkkkkk" do
+    test "fourth reset has kkkkkkk in body" do
       email = PasswordResetEmail.new(fake_user(), "https://example.com/reset/abc", 4)
-
-      assert email.subject =~ "kkkkkkk"
+      assert email.html_body =~ "kkkkkkk"
     end
 
-    test "fifth+ reset has KKKKKKKKKKYING" do
+    test "fifth+ reset has KKKKKKKKKKYING in body" do
       email = PasswordResetEmail.new(fake_user(), "https://example.com/reset/abc", 5)
-
-      assert email.subject =~ "KKKKKKKKKKYING"
+      assert email.html_body =~ "KKKKKKKKKKYING"
       assert email.html_body =~ "servidor do Tavano"
     end
 
