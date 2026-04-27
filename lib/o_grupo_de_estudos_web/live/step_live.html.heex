@@ -155,6 +155,11 @@
               <% end %>
             </span>
           </.link>
+          <.inline_follow_button
+            target_user_id={@step.suggested_by_id}
+            current_user_id={@current_user.id}
+            following_user_ids={@following_user_ids}
+          />
         </div>
       <% end %>
     </div>
@@ -388,6 +393,11 @@
               >
                 @{@step.last_edited_by.username}
               </.link>
+              <.inline_follow_button
+                target_user_id={@step.last_edited_by_id}
+                current_user_id={@current_user.id}
+                following_user_ids={@following_user_ids}
+              />
             </div>
           <% end %>
         </div>

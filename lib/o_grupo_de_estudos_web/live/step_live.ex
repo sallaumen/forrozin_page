@@ -12,8 +12,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.CommentThread
+  import OGrupoDeEstudosWeb.UI.InlineFollowButton
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.FollowHandlers
 
   @impl true
   def mount(%{"code" => code}, _session, socket) do
@@ -97,7 +99,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            suggesting_connection: false,
            connection_suggest_search: "",
            connection_suggest_results: [],
-           my_pending_suggestions: Suggestions.list_user_pending_for_step(user_id, step.id)
+           my_pending_suggestions: Suggestions.list_user_pending_for_step(user_id, step.id),
+           following_user_ids: Engagement.following_ids(user_id)
          )}
 
       {:error, :not_found} ->
