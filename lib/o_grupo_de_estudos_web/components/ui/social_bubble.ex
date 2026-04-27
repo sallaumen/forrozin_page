@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
 
   def social_bubble(assigns) do
     ~H"""
-    <div data-ui="social-bubble" phx-click-away="close_bubble">
+    <div data-ui="social-bubble" phx-click-away="close_bubble" style="position:fixed;bottom:0;right:0;width:0;height:0;overflow:visible;z-index:39;">
       <%!-- Popover --%>
       <div
         :if={@bubble_open}
