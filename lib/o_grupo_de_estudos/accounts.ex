@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudos.Accounts do
   Action context responsible for users and authentication.
   """
 
+  import Ecto.Query
+
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Metadata
   alias OGrupoDeEstudos.Repo
@@ -99,6 +101,29 @@ defmodule OGrupoDeEstudos.Accounts do
     user
     |> User.profile_changeset(attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Searches users by username or name (case-insensitive).
+  Returns up to 5 results, excluding the given user ID.
+  Requires at least 2 characters to execute.
+  """
+  def search_users(term, opts \\ []) when is_binary(term) do
+    exclude_id = Keyword.get(opts, :exclude_id)
+
+    if String.length(term) < 2 do
+      []
+    else
+      term_like = "%#{String.downcase(term)}%"
+
+      from(u in User,
+        where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
+        where: u.id != ^exclude_id,
+        order_by: [asc: u.username],
+        limit: 5
+      )
+      |> Repo.all()
+    end
   end
 
   @doc "Finds a user by email. Returns nil if not found."

@@ -415,23 +415,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   def handle_event("search_people", params, socket) do
     term = params["value"] || params["term"] || ""
-
-    results =
-      if String.length(term) >= 2 do
-        import Ecto.Query
-        term_like = "%#{String.downcase(term)}%"
-
-        from(u in OGrupoDeEstudos.Accounts.User,
-          where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
-          where: u.id != ^socket.assigns.current_user.id,
-          order_by: [asc: u.username],
-          limit: 5
-        )
-        |> OGrupoDeEstudos.Repo.all()
-      else
-        []
-      end
-
+    results = Accounts.search_users(term, exclude_id: socket.assigns.current_user.id)
     {:noreply, assign(socket, people_search: term, people_results: results)}
   end
 
