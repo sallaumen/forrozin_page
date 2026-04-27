@@ -874,4 +874,50 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.count_user_favorites(user.id) == 0
     end
   end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # following_ids / following_ids_for
+  # ══════════════════════════════════════════════════════════════════════
+
+  describe "following_ids/1" do
+    test "returns MapSet of followed user IDs" do
+      follower = insert(:user)
+      followed1 = insert(:user)
+      followed2 = insert(:user)
+      _not_followed = insert(:user)
+
+      Engagement.toggle_follow(follower.id, followed1.id)
+      Engagement.toggle_follow(follower.id, followed2.id)
+
+      result = Engagement.following_ids(follower.id)
+
+      assert MapSet.member?(result, followed1.id)
+      assert MapSet.member?(result, followed2.id)
+      assert MapSet.size(result) == 2
+    end
+
+    test "returns empty MapSet when user follows nobody" do
+      user = insert(:user)
+      assert Engagement.following_ids(user.id) == MapSet.new()
+    end
+  end
+
+  describe "following_ids_for/2" do
+    test "returns MapSet of followed IDs scoped to given target list" do
+      follower = insert(:user)
+      followed1 = insert(:user)
+      followed2 = insert(:user)
+      not_in_scope = insert(:user)
+
+      Engagement.toggle_follow(follower.id, followed1.id)
+      Engagement.toggle_follow(follower.id, followed2.id)
+      Engagement.toggle_follow(follower.id, not_in_scope.id)
+
+      result = Engagement.following_ids_for(follower.id, [followed1.id, followed2.id])
+
+      assert MapSet.member?(result, followed1.id)
+      assert MapSet.member?(result, followed2.id)
+      refute MapSet.member?(result, not_in_scope.id)
+    end
+  end
 end

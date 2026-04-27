@@ -496,6 +496,23 @@ defmodule OGrupoDeEstudos.Engagement do
     Repo.aggregate(from(f in Follow, where: f.followed_id == ^user_id), :count)
   end
 
+  @doc "Returns a MapSet of all user IDs the given user is following."
+  def following_ids(user_id) do
+    from(f in Follow, where: f.follower_id == ^user_id, select: f.followed_id)
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  @doc "Returns a MapSet of followed IDs, scoped to the given list of target user IDs."
+  def following_ids_for(user_id, target_ids) when is_list(target_ids) do
+    from(f in Follow,
+      where: f.follower_id == ^user_id and f.followed_id in ^target_ids,
+      select: f.followed_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
   defp maybe_search_users(query, ""), do: query
   defp maybe_search_users(query, nil), do: query
 

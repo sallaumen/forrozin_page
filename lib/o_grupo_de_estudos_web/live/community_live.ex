@@ -64,7 +64,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        following_count: 0,
        followers_count: 0,
        followers_following_map: MapSet.new(),
-       following_user_ids: load_following_user_ids(socket.assigns.current_user.id),
+       following_user_ids: Engagement.following_ids(socket.assigns.current_user.id),
        people_search: "",
        people_results: []
      )}
@@ -113,7 +113,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     following_count = Engagement.count_following(user.id)
     followers_count = Engagement.count_followers(user.id)
     user_ids = Enum.map(following, & &1.id)
-    following_map = following_ids_set(user.id, user_ids)
+    following_map = Engagement.following_ids_for(user.id, user_ids)
 
     {:noreply,
      assign(socket,
@@ -142,7 +142,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
      assign(socket,
        followers_sub_tab: tab,
        followers_list: list,
-       followers_following_map: following_ids_set(user.id, user_ids)
+       followers_following_map: Engagement.following_ids_for(user.id, user_ids)
      )}
   end
 
@@ -162,7 +162,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
      assign(socket,
        followers_search: term,
        followers_list: list,
-       followers_following_map: following_ids_set(user.id, user_ids)
+       followers_following_map: Engagement.following_ids_for(user.id, user_ids)
      )}
   end
 
@@ -184,8 +184,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        followers_list: list,
        following_count: Engagement.count_following(user.id),
        followers_count: Engagement.count_followers(user.id),
-       followers_following_map: following_ids_set(user.id, user_ids),
-       following_user_ids: load_following_user_ids(user.id)
+       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
+       following_user_ids: Engagement.following_ids(user.id)
      )}
   end
 
@@ -447,28 +447,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   end
 
   # ── Private helpers ─────────────────────────────────────────────────────
-
-  defp following_ids_set(user_id, target_ids) do
-    import Ecto.Query
-
-    from(f in OGrupoDeEstudos.Engagement.Follow,
-      where: f.follower_id == ^user_id and f.followed_id in ^target_ids,
-      select: f.followed_id
-    )
-    |> OGrupoDeEstudos.Repo.all()
-    |> MapSet.new()
-  end
-
-  defp load_following_user_ids(user_id) do
-    import Ecto.Query
-
-    from(f in OGrupoDeEstudos.Engagement.Follow,
-      where: f.follower_id == ^user_id,
-      select: f.followed_id
-    )
-    |> OGrupoDeEstudos.Repo.all()
-    |> MapSet.new()
-  end
 
   defp filter_steps(all_steps, search, category) do
     all_steps
