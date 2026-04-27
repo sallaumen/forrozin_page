@@ -104,7 +104,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            my_pending_suggestions: Suggestions.list_user_pending_for_step(user_id, step.id),
            following_user_ids: Engagement.following_ids(user_id),
            bubble_open: false,
-           suggested_users: []
+           suggested_users: [],
+           bubble_following_list: [],
+           bubble_search: "",
+           bubble_search_results: []
          )}
 
       {:error, :not_found} ->

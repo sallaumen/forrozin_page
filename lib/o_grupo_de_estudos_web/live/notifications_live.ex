@@ -60,6 +60,9 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        notification_count: notification_count,
        bubble_open: false,
        suggested_users: [],
+       bubble_following_list: [],
+       bubble_search: "",
+       bubble_search_results: [],
        following_user_ids: Engagement.following_ids(user.id)
      )}
   end

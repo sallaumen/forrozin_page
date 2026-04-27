@@ -98,6 +98,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            contributions: [],
            bubble_open: false,
            suggested_users: [],
+           bubble_following_list: [],
+           bubble_search: "",
+           bubble_search_results: [],
            following_user_ids: Engagement.following_ids(current_user.id)
          )}
     end

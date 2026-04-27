@@ -533,6 +533,11 @@
     suggested_users={@suggested_users}
     following_user_ids={@following_user_ids}
     bubble_open={@bubble_open}
+    bubble_following_list={@bubble_following_list}
+    bubble_search={@bubble_search}
+    bubble_search_results={@bubble_search_results}
+    following_count={assigns[:following_count] || 0}
+    followers_count={assigns[:followers_count] || 0}
   />
   <.bottom_nav
     current_user={@current_user}

@@ -32,6 +32,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
      |> assign(:bubble_open, false)
+     |> assign(:bubble_following_list, [])
+     |> assign(:bubble_search, "")
+     |> assign(:bubble_search_results, [])
      |> assign(:suggested_users, [])
      |> assign(:following_user_ids, Engagement.following_ids(user.id))
      |> assign_dashboard(dashboard)}

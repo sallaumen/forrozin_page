@@ -71,7 +71,10 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        people_search: "",
        people_results: [],
        suggested_users: [],
-       bubble_open: false
+       bubble_open: false,
+       bubble_following_list: [],
+       bubble_search: "",
+       bubble_search_results: []
      )}
   end
 
