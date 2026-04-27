@@ -1588,6 +1588,12 @@
       <div id="drawer-content" class="min-h-0 flex-1 overflow-y-auto p-6"></div>
     </div>
   </div>
+  <.social_bubble
+    current_user={@current_user}
+    suggested_users={@suggested_users}
+    following_user_ids={@following_user_ids}
+    bubble_open={@bubble_open}
+  />
   <.bottom_nav
     current_user={@current_user}
     current_path={
