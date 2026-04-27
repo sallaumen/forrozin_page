@@ -10,18 +10,10 @@
     notification_preview_groups={assigns[:notification_preview_groups] || []}
   />
 
-  <%!-- Hero (compact) --%>
-  <div class="border-b border-ink-300/50 px-6 pt-4 pb-3 bg-ink-200">
-    <div class="max-w-4xl mx-auto">
-      <h1 class="text-xl font-bold text-ink-900 tracking-tight leading-tight">
-        Comunidade
-      </h1>
-    </div>
-  </div>
-
   <%!-- Section switcher: segmented control (Passos | Sequências) --%>
-  <div class="max-w-4xl mx-auto px-4 w-full box-border mt-4">
-    <div class="flex w-full p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
+  <div class="sticky top-[48px] md:top-[52px] z-30 bg-ink-100 border-b border-ink-300/30 pb-2 pt-3 px-4">
+    <div class="max-w-4xl mx-auto w-full">
+      <div class="flex w-full p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
       <%= for {sec_key, sec_label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"followers", "Seguidores"}] do %>
         <button
           phx-click="switch_section"
@@ -35,6 +27,7 @@
           {sec_label}
         </button>
       <% end %>
+      </div>
     </div>
   </div>
 
