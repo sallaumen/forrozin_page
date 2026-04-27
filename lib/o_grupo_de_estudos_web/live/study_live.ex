@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.StudyLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Study}
+  alias OGrupoDeEstudos.{Accounts, Engagement, Study}
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -9,8 +9,10 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -29,6 +31,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:section_students_open, false)
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
+     |> assign(:bubble_open, false)
+     |> assign(:suggested_users, [])
+     |> assign(:following_user_ids, Engagement.following_ids(user.id))
      |> assign_dashboard(dashboard)}
   end
 

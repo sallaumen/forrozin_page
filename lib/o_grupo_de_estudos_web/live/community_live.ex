@@ -22,8 +22,10 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @impl true
   def mount(_params, _session, socket) do
@@ -68,7 +70,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        following_user_ids: Engagement.following_ids(socket.assigns.current_user.id),
        people_search: "",
        people_results: [],
-       suggested_users: []
+       suggested_users: [],
+       bubble_open: false
      )}
   end
 

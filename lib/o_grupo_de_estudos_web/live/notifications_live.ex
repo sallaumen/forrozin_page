@@ -21,6 +21,9 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.SocialBubble
+
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @page_size 20
 
@@ -54,7 +57,10 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        has_more: length(raw) == @page_size,
        nav_mode: :primary,
        is_admin: Accounts.admin?(user),
-       notification_count: notification_count
+       notification_count: notification_count,
+       bubble_open: false,
+       suggested_users: [],
+       following_user_ids: Engagement.following_ids(user.id)
      )}
   end
 
