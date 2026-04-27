@@ -265,6 +265,25 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
   end
 
+  describe "rich empty states" do
+    test "sequences empty state shows CTA to create", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/community")
+      html = render_click(lv, "switch_section", %{"section" => "sequences"})
+
+      assert html =~ "Criar" or html =~ "Criar a primeira"
+    end
+
+    test "following empty state shows encouragement", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/community")
+      html = render_click(lv, "switch_section", %{"section" => "followers"})
+
+      # When no followers list but suggestions may exist, still show encouragement somewhere
+      assert html =~ "Buscar pessoas" or html =~ "Pessoas para seguir" or html =~ "segue ninguém"
+    end
+  end
+
   describe "followers section" do
     test "switch to followers section shows counters", %{conn: conn} do
       user = insert(:user)

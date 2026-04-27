@@ -124,8 +124,17 @@
     <%!-- Steps content --%>
     <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
       <%= if @steps == [] do %>
-        <div class="text-center py-20 px-5 text-ink-500 italic">
-          Nenhuma sugestão encontrada.
+        <div class="text-center py-16 px-5">
+          <div class="text-4xl mb-3">🎵</div>
+          <p class="text-ink-600 font-semibold mb-1">Nenhuma sugestão encontrada</p>
+          <p class="text-sm text-ink-400 mb-4">Seja o primeiro a contribuir com a comunidade!</p>
+          <.link
+            navigate={~p"/collection?suggest=1"}
+            class="inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-bold text-white no-underline transition cursor-pointer"
+            style="background: #8e44ad;"
+          >
+            + Sugerir passo
+          </.link>
         </div>
       <% else %>
         <p class="text-xs text-accent-orange mb-4 font-semibold">
@@ -295,8 +304,16 @@
 
     <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
       <%= if @sequences == [] do %>
-        <div class="text-center py-20 px-5 text-ink-500 italic">
-          Nenhuma sequência pública encontrada ainda.
+        <div class="text-center py-16 px-5">
+          <div class="text-4xl mb-3">🗺️</div>
+          <p class="text-ink-600 font-semibold mb-1">Nenhuma sequência pública ainda</p>
+          <p class="text-sm text-ink-400 mb-4">Monte uma combinação de passos e compartilhe com todos!</p>
+          <.link
+            navigate={~p"/graph/visual?mode=generator"}
+            class="inline-flex items-center gap-1.5 rounded-full bg-accent-green px-5 py-2 text-sm font-bold text-white no-underline transition hover:bg-accent-green/90 cursor-pointer"
+          >
+            + Criar a primeira sequência
+          </.link>
         </div>
       <% else %>
         <p class="text-xs text-accent-orange mb-4 font-semibold">
@@ -679,12 +696,18 @@
     <%!-- User cards list --%>
     <div class="max-w-4xl mx-auto px-4 pt-1 pb-20 w-full box-border">
       <%= if @followers_list == [] do %>
-        <div class="text-center py-20 px-5 text-ink-500 italic">
-          <%= if @followers_sub_tab == "following" do %>
-            Você ainda não segue ninguém.
-          <% else %>
-            Ninguém ainda te segue.
-          <% end %>
+        <div class="text-center py-16 px-5">
+          <div class="text-4xl mb-3">{if @followers_sub_tab == "following", do: "👥", else: "🌱"}</div>
+          <p class="text-ink-600 font-semibold mb-1">
+            {if @followers_sub_tab == "following",
+              do: "Você ainda não segue ninguém",
+              else: "Ninguém te segue ainda"}
+          </p>
+          <p class="text-sm text-ink-400">
+            {if @followers_sub_tab == "following",
+              do: "Use a busca acima para encontrar pessoas da comunidade!",
+              else: "Contribua com passos e sequências para atrair seguidores!"}
+          </p>
         </div>
       <% else %>
         <div class="flex flex-col gap-3">
