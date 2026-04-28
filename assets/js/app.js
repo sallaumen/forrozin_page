@@ -1713,30 +1713,71 @@ const PWAInstall = {
   }
 }
 
+// All text content in this function is hardcoded (no user input), so innerHTML usage is safe.
 function showInstallInstructions() {
-  // Remove existing modal if any
   document.getElementById('pwa-instructions-modal')?.remove()
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-  const steps = isIOS
-    ? `<li>Toque em <strong>Compartilhar</strong> <span style="font-size:18px;">⬆</span></li>
-       <li>Role até <strong>"Adicionar à Tela de Início"</strong></li>
-       <li>Toque em <strong>Adicionar</strong></li>`
-    : `<li>Toque no menu <strong>⋮</strong> do navegador</li>
-       <li>Selecione <strong>"Instalar aplicativo"</strong></li>
-       <li>Confirme a instalação</li>`
+  const ua = navigator.userAgent
+  const isIOS = /iPad|iPhone|iPod/.test(ua)
+  const isSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|OPiOS/.test(ua)
+  const isChromeIOS = isIOS && /CriOS/.test(ua)
+  const isSamsung = /SamsungBrowser/.test(ua)
+
+  let title, steps, tip
+
+  if (isSafari) {
+    title = 'Como instalar no iPhone (Safari)'
+    steps = '<li>Toque no botao <strong>Compartilhar</strong> na barra inferior do Safari'
+      + '<div style="margin:6px 0 4px;font-size:28px;text-align:center;">'
+      + '<span style="display:inline-block;border:2px solid #b47828;border-radius:8px;padding:2px 10px;">\u2B06</span>'
+      + '</div></li>'
+      + '<li>Role a lista para baixo ate encontrar <strong>"Adicionar a Tela de Inicio"</strong>'
+      + '<div style="margin:4px 0;padding:6px 10px;background:#e8e0d4;border-radius:8px;font-size:12px;display:flex;align-items:center;gap:6px;">'
+      + '<span style="font-size:16px;">\u2795</span> Adicionar a Tela de Inicio</div></li>'
+      + '<li>Toque em <strong>"Adicionar"</strong> no canto superior direito</li>'
+    tip = 'Precisa ser no Safari! Chrome e outros navegadores no iPhone nao tem essa opcao.'
+  } else if (isChromeIOS) {
+    title = 'Como instalar no iPhone'
+    steps = '<li>Abra este site no <strong>Safari</strong> (nao no Chrome)</li>'
+      + '<li>No Safari, toque em <strong>Compartilhar</strong> \u2B06</li>'
+      + '<li>Selecione <strong>"Adicionar a Tela de Inicio"</strong></li>'
+      + '<li>Toque em <strong>Adicionar</strong></li>'
+    tip = 'No iPhone, so o Safari permite instalar apps na tela inicial. Copie o link e abra no Safari.'
+  } else if (isSamsung) {
+    title = 'Como instalar (Samsung Internet)'
+    steps = '<li>Toque no menu <strong>\u2630</strong> (tres barras) no canto inferior</li>'
+      + '<li>Selecione <strong>"Adicionar pagina a"</strong></li>'
+      + '<li>Escolha <strong>"Tela inicial"</strong></li>'
+    tip = null
+  } else {
+    title = 'Como instalar no celular'
+    steps = '<li>Toque no menu <strong>\u22EE</strong> (tres pontinhos) no canto superior direito do navegador</li>'
+      + '<li>Selecione <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar a tela inicial"</strong>'
+      + '<div style="margin:4px 0;padding:6px 10px;background:#e8e0d4;border-radius:8px;font-size:12px;">'
+      + '\uD83D\uDCF2 Instalar aplicativo</div></li>'
+      + '<li>Confirme tocando em <strong>"Instalar"</strong></li>'
+    tip = null
+  }
+
+  const tipHtml = tip
+    ? '<div style="margin:12px 0 16px;padding:10px 12px;background:#fef3c7;border:1px solid #f59e0b40;border-radius:10px;text-align:left;">'
+      + '<p style="margin:0;font-size:11px;color:#92400e;line-height:1.5;">'
+      + '<strong>Dica:</strong> ' + tip + '</p></div>'
+    : ''
 
   const modal = document.createElement('div')
   modal.id = 'pwa-instructions-modal'
-  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(26,14,5,0.85);padding:20px;'
-  modal.innerHTML = `
-    <div style="background:#f7f3ec;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;font-family:Georgia,serif;">
-      <img src="/icons/icon-192.png" alt="OGE" style="width:56px;height:56px;border-radius:12px;margin:0 auto 16px;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
-      <h3 style="font-size:18px;color:#1a0e05;margin:0 0 8px;font-weight:700;">Instale o Grupo de Estudos</h3>
-      <p style="font-size:13px;color:#7a5c3a;margin:0 0 16px;line-height:1.5;">Acesse como um app direto da tela inicial</p>
-      <ol style="text-align:left;font-size:13px;color:#3a2510;line-height:1.8;padding-left:20px;margin:0 0 20px;">${steps}</ol>
-      <button onclick="this.closest('#pwa-instructions-modal').remove()" style="background:#b47828;color:white;border:none;padding:10px 28px;border-radius:20px;font-family:Georgia,serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">Entendi</button>
-    </div>`
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(26,14,5,0.85);padding:0;'
+  modal.innerHTML = '<div style="background:#f7f3ec;border-radius:20px 20px 0 0;padding:28px 24px max(24px,env(safe-area-inset-bottom));max-width:400px;width:100%;font-family:Georgia,serif;animation:slideUp 0.25s ease-out;">'
+    + '<div style="width:36px;height:4px;background:#d4c8b8;border-radius:2px;margin:0 auto 20px;"></div>'
+    + '<img src="/icons/icon-192.png" alt="OGE" style="width:48px;height:48px;border-radius:12px;margin:0 auto 12px;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.15);" />'
+    + '<h3 style="font-size:17px;color:#1a0e05;margin:0 0 4px;font-weight:700;text-align:center;">' + title + '</h3>'
+    + '<p style="font-size:12px;color:#7a5c3a;margin:0 0 16px;line-height:1.5;text-align:center;">Vai ficar como um app de verdade na sua tela</p>'
+    + '<ol style="text-align:left;font-size:13px;color:#3a2510;line-height:1.7;padding-left:20px;margin:0;">' + steps + '</ol>'
+    + tipHtml
+    + '<button onclick="this.closest(\'#pwa-instructions-modal\').remove()" style="display:block;width:100%;background:#1a0e05;color:#d4a574;border:none;padding:12px;border-radius:12px;font-family:Georgia,serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.5px;margin-top:16px;">Entendi!</button>'
+    + '</div>'
+    + '<style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>'
   document.body.appendChild(modal)
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.remove()
