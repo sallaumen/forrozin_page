@@ -78,6 +78,8 @@ defmodule OGrupoDeEstudos.MixProject do
       # Qualidade de código
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      # Processamento de imagens (crop, resize)
+      {:mogrify, "~> 0.9"},
       # Factories de teste
       {:ex_machina, "~> 2.7", only: :test}
     ]
