@@ -248,9 +248,6 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                       <div class="min-w-0 flex-1">
                         <p class="m-0 text-sm leading-snug text-ink-700">
                           <span class="font-bold text-ink-900">{primary_actor_name(notif)}</span>
-                          <span :if={notif.count > 1} class="text-ink-500">
-                            e mais {notif.count - 1}
-                          </span>
                           <span>{action_text(notif)}</span>
                           <span
                             :if={target_name(notif)}
