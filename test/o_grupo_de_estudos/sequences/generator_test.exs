@@ -241,7 +241,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     test "cyclic works with diamond graph" do
       build_diamond_graph()
       {:ok, seqs, _} = Generator.generate(base_params("S0", length: 5, count: 3, cyclic: true))
-      assert length(seqs) >= 1
+      assert seqs != []
 
       for seq <- seqs do
         assert hd(seq).code == "S0" and List.last(seq).code == "S0"
@@ -364,7 +364,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         |> Enum.uniq()
 
       # Should have at least some variety in position
-      assert length(positions) >= 1
+      assert positions != []
     end
 
     test "adjusts length when path through waypoints is longer" do
@@ -484,7 +484,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         Generator.generate(base_params("C0", length: 5, count: 3, cyclic: false))
 
       # Relaxation should kick in and produce at least 1 sequence
-      assert length(seqs) >= 1
+      assert seqs != []
     end
   end
 

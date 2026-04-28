@@ -439,6 +439,14 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
     profile_path(id)
   end
 
+  defp notification_path(%{
+         action: "shared_note_updated",
+         target_type: "study_link",
+         target_id: id
+       }) do
+    ~p"/study/shared/#{id}"
+  end
+
   defp notification_path(%{parent_type: "study_link"}) do
     ~p"/study"
   end
@@ -483,6 +491,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
   defp action_text(%{action: "study_request"}), do: " quer estudar com você"
   defp action_text(%{action: "study_accepted"}), do: " aceitou seu pedido de estudo"
+  defp action_text(%{action: "shared_note_updated"}), do: " escreveu no diário compartilhado"
   defp action_text(_), do: " interagiu"
 
   defp time_ago(datetime) do

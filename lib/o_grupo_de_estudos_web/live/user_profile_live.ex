@@ -95,8 +95,10 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            favorite_sub_tab: "steps",
            contributions: [],
            bubble_open: false,
+           bubble_tab: "following",
            suggested_users: [],
            bubble_following_list: [],
+           bubble_followers_list: [],
            bubble_search: "",
            bubble_search_results: [],
            following_user_ids: Engagement.following_ids(current_user.id)
