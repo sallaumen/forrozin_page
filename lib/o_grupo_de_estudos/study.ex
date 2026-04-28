@@ -443,6 +443,14 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
+  @doc "Updates the linked steps on an existing note without changing the content."
+  def update_note_steps(note_id, step_ids) do
+    note = Repo.get!(Note, note_id)
+    step_ids = step_ids |> Enum.reject(&is_nil/1) |> Enum.uniq()
+    replace_note_steps(note, step_ids)
+    {:ok, Repo.preload(note, :related_steps, force: true)}
+  end
+
   def replace_note_steps(%Note{id: note_id}, step_ids) do
     Repo.delete_all(from ns in NoteStep, where: ns.study_note_id == ^note_id)
 

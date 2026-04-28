@@ -45,6 +45,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
                note -> note.related_steps
              end,
            shared_step_suggestions: [],
+           editing_history_note_id: nil,
+           history_step_suggestions: [],
            shared_goals: Study.list_shared_goals(link.id),
            shared_step_ranking: Study.step_frequency_ranking(:shared, link.id),
            goal_input: ""
@@ -112,6 +114,51 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
        shared_related_steps: updated_steps,
        history: Study.list_shared_note_history(socket.assigns.link.id)
      )}
+  end
+
+  # ── History note step editing ─────────────────────────────────────────
+
+  def handle_event("edit_history_steps", %{"note-id" => note_id}, socket) do
+    current = socket.assigns.editing_history_note_id
+    new_id = if current == note_id, do: nil, else: note_id
+    {:noreply, assign(socket, editing_history_note_id: new_id, history_step_suggestions: [])}
+  end
+
+  def handle_event("search_history_step", %{"term" => term}, socket) do
+    {:noreply, assign(socket, :history_step_suggestions, Study.search_related_steps(term))}
+  end
+
+  def handle_event("add_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do
+    note = Enum.find(socket.assigns.history, &(&1.id == note_id))
+
+    if note do
+      existing_ids = Enum.map(note.related_steps, & &1.id)
+      Study.update_note_steps(note_id, [step_id | existing_ids])
+    end
+
+    link = socket.assigns.link
+    history = Study.list_shared_note_history(link.id)
+    ranking = Study.step_frequency_ranking(:shared, link.id)
+
+    {:noreply,
+     assign(socket, history: history, shared_step_ranking: ranking, history_step_suggestions: [])}
+  end
+
+  def handle_event("remove_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do
+    note = Enum.find(socket.assigns.history, &(&1.id == note_id))
+
+    if note do
+      remaining_ids =
+        note.related_steps |> Enum.map(& &1.id) |> Enum.reject(&(&1 == step_id))
+
+      Study.update_note_steps(note_id, remaining_ids)
+    end
+
+    link = socket.assigns.link
+    history = Study.list_shared_note_history(link.id)
+    ranking = Study.step_frequency_ranking(:shared, link.id)
+
+    {:noreply, assign(socket, history: history, shared_step_ranking: ranking)}
   end
 
   # ── Goals ────────────────────────────────────────────────────────────

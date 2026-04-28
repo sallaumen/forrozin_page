@@ -28,6 +28,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:is_admin, Accounts.admin?(user))
      |> assign(:today, today)
      |> assign(:personal_step_suggestions, [])
+     |> assign(:editing_history_note_id, nil)
+     |> assign(:history_step_suggestions, [])
      |> assign(:section_history_open, true)
      |> assign(:section_teachers_open, true)
      |> assign(:section_students_open, false)
@@ -141,6 +143,59 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
 
     {:noreply, assign_dashboard(socket, dashboard)}
+  end
+
+  # ── History note step editing ─────────────────────────────────────────
+
+  def handle_event("edit_history_steps", %{"note-id" => note_id}, socket) do
+    current = socket.assigns.editing_history_note_id
+    new_id = if current == note_id, do: nil, else: note_id
+    {:noreply, assign(socket, editing_history_note_id: new_id, history_step_suggestions: [])}
+  end
+
+  def handle_event("search_history_step", %{"term" => term}, socket) do
+    {:noreply, assign(socket, :history_step_suggestions, Study.search_related_steps(term))}
+  end
+
+  def handle_event("add_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do
+    note = Enum.find(socket.assigns.personal_history, &(&1.id == note_id))
+
+    if note do
+      existing_ids = Enum.map(note.related_steps, & &1.id)
+      Study.update_note_steps(note_id, [step_id | existing_ids])
+    end
+
+    dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
+
+    {:noreply,
+     socket
+     |> assign_dashboard(dashboard)
+     |> assign(
+       :personal_step_ranking,
+       Study.step_frequency_ranking(:personal, socket.assigns.current_user.id)
+     )
+     |> assign(:history_step_suggestions, [])}
+  end
+
+  def handle_event("remove_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do
+    note = Enum.find(socket.assigns.personal_history, &(&1.id == note_id))
+
+    if note do
+      remaining_ids =
+        note.related_steps |> Enum.map(& &1.id) |> Enum.reject(&(&1 == step_id))
+
+      Study.update_note_steps(note_id, remaining_ids)
+    end
+
+    dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
+
+    {:noreply,
+     socket
+     |> assign_dashboard(dashboard)
+     |> assign(
+       :personal_step_ranking,
+       Study.step_frequency_ranking(:personal, socket.assigns.current_user.id)
+     )}
   end
 
   # ── Goals ────────────────────────────────────────────────────────────
