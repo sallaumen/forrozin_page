@@ -346,41 +346,51 @@
   <% end %>
 
   <%= if @active_study_tab == "students" and @current_user.is_teacher do %>
-    <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-4 px-4 py-6 pb-24 md:pb-8 xl:px-8">
-      <%!-- Stats bar --%>
-      <div class="grid grid-cols-3 gap-3">
-        <div class="rounded-xl border border-ink-200 bg-white p-4 text-center shadow-sm">
-          <div class="text-2xl font-bold text-ink-900">{length(@student_links)}</div>
-          <div class="text-[10px] text-ink-500 mt-1">alunos</div>
-        </div>
-        <div class="rounded-xl border border-ink-200 bg-white p-4 text-center shadow-sm">
-          <div class="text-2xl font-bold text-accent-green">{@students_wrote_today}</div>
-          <div class="text-[10px] text-ink-500 mt-1">escreveram hoje</div>
-        </div>
-        <div class={[
-          "rounded-xl border p-4 text-center shadow-sm",
-          @pending_requests != [] && "border-gold-500/40 bg-gold-500/[0.05]",
-          @pending_requests == [] && "border-ink-200 bg-white"
-        ]}>
+    <main class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 py-6 pb-24 md:pb-8">
+      <%!-- Stats + invite row --%>
+      <div class="flex items-stretch gap-3">
+        <div class="flex-1 grid grid-cols-3 gap-3">
+          <div class="rounded-xl border border-ink-200 bg-white p-3 text-center shadow-sm">
+            <div class="text-xl font-bold text-ink-900">{length(@student_links)}</div>
+            <div class="text-[10px] text-ink-500">alunos</div>
+          </div>
+          <div class="rounded-xl border border-ink-200 bg-white p-3 text-center shadow-sm">
+            <div class="text-xl font-bold text-accent-green">{@students_wrote_today}</div>
+            <div class="text-[10px] text-ink-500">escreveram hoje</div>
+          </div>
           <div class={[
-            "text-2xl font-bold",
-            @pending_requests != [] && "text-accent-orange",
-            @pending_requests == [] && "text-ink-400"
-          ]}>{length(@pending_requests)}</div>
-          <div class="text-[10px] text-ink-500 mt-1">pedidos</div>
+            "rounded-xl border p-3 text-center shadow-sm",
+            @pending_requests != [] && "border-gold-500/40 bg-gold-500/[0.05]",
+            @pending_requests == [] && "border-ink-200 bg-white"
+          ]}>
+            <div class={[
+              "text-xl font-bold",
+              @pending_requests != [] && "text-accent-orange",
+              @pending_requests == [] && "text-ink-400"
+            ]}>{length(@pending_requests)}</div>
+            <div class="text-[10px] text-ink-500">pedidos</div>
+          </div>
         </div>
+        <button
+          type="button"
+          phx-click="copy_invite_link"
+          class="rounded-xl border border-accent-orange/20 bg-accent-orange/[0.04] px-4 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-accent-orange/10 transition-colors shrink-0"
+        >
+          <.icon name="hero-link" class="w-4 h-4 text-accent-orange" />
+          <span class="text-[9px] font-bold text-accent-orange">Convite</span>
+        </button>
       </div>
 
       <%!-- Pending requests --%>
       <%= if @pending_requests != [] do %>
         <section class="rounded-xl border-2 border-gold-500/30 bg-gradient-to-b from-gold-500/[0.04] to-transparent p-4 shadow-sm">
-          <h3 class="text-[10px] font-bold text-gold-600 uppercase tracking-widest mb-3">
+          <h3 class="text-[10px] font-bold text-gold-600 uppercase tracking-widest mb-2">
             Pedidos pendentes
           </h3>
-          <div class="space-y-2">
+          <div class="space-y-1.5">
             <%= for req <- @pending_requests do %>
-              <div class="flex items-center gap-3 rounded-xl bg-white border border-ink-200 px-3 py-3">
-                <div class="w-9 h-9 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-xs font-bold shrink-0">
+              <div class="flex items-center gap-3 rounded-lg bg-white border border-ink-200 px-3 py-2">
+                <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
                   {String.first(req.student.name || req.student.username) |> String.upcase()}
                 </div>
                 <div class="flex-1 min-w-0">
@@ -397,7 +407,7 @@
                     type="button"
                     phx-click="accept_request"
                     phx-value-id={req.id}
-                    class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1.5 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
+                    class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
                   >
                     Aceitar
                   </button>
@@ -405,7 +415,7 @@
                     type="button"
                     phx-click="reject_request"
                     phx-value-id={req.id}
-                    class="text-[10px] font-bold text-ink-500 bg-ink-100 rounded-full px-3 py-1.5 cursor-pointer border-0 hover:bg-ink-200 transition-colors"
+                    class="text-[10px] font-bold text-ink-500 bg-ink-100 rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-ink-200 transition-colors"
                   >
                     Recusar
                   </button>
@@ -416,27 +426,9 @@
         </section>
       <% end %>
 
-      <%!-- Invite link card --%>
-      <section class="rounded-xl border border-accent-orange/20 bg-accent-orange/[0.04] p-4">
-        <div class="flex items-center gap-3">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold text-ink-800 m-0">Convide seus alunos</p>
-            <p class="text-[10px] text-ink-500 m-0 mt-0.5">Compartilhe o link e o aluno vai direto pro seu perfil.</p>
-          </div>
-          <button
-            type="button"
-            phx-click="copy_invite_link"
-            class="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-accent-orange rounded-full px-4 py-2 cursor-pointer border-0 hover:bg-accent-orange/90 transition-colors shrink-0"
-          >
-            <.icon name="hero-link" class="w-3.5 h-3.5" />
-            Copiar link
-          </button>
-        </div>
-      </section>
-
       <%!-- Student list --%>
       <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
-        <h3 class="text-sm font-bold text-ink-900 m-0 font-serif mb-4">Alunos</h3>
+        <h3 class="text-sm font-bold text-ink-900 m-0 font-serif mb-3">Alunos</h3>
 
         <%= if @student_links == [] do %>
           <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-6 text-center">
