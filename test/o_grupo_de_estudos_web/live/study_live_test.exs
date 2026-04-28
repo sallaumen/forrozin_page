@@ -110,6 +110,73 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
              )
     end
 
+    test "can add a step to a historical note via inline editor", %{conn: conn} do
+      user = insert(:user)
+
+      step =
+        insert(:step,
+          code: "GP",
+          name: "Giro paulista",
+          approved: true,
+          wip: false,
+          status: "published"
+        )
+
+      past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
+
+      assert {:ok, _note} =
+               Study.upsert_personal_note(user, past_date, %{
+                 content: "Ontem",
+                 step_ids: []
+               })
+
+      conn = log_in_user(conn, user)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      note = Study.list_personal_note_history(user.id) |> hd()
+
+      render_click(lv, "edit_history_steps", %{"note-id" => note.id})
+
+      assert render_change(lv, "search_history_step", %{"term" => "giro"}) =~ "Giro paulista"
+
+      render_click(lv, "add_history_step", %{"note-id" => note.id, "step-id" => step.id})
+
+      updated = Study.list_personal_note_history(user.id) |> hd()
+      assert Enum.any?(updated.related_steps, &(&1.id == step.id))
+    end
+
+    test "can remove a step from a historical note via inline editor", %{conn: conn} do
+      user = insert(:user)
+
+      step =
+        insert(:step,
+          code: "BL",
+          name: "Base lateral",
+          approved: true,
+          wip: false,
+          status: "published"
+        )
+
+      past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
+
+      assert {:ok, _note} =
+               Study.upsert_personal_note(user, past_date, %{
+                 content: "Ontem",
+                 step_ids: [step.id]
+               })
+
+      conn = log_in_user(conn, user)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      note = Study.list_personal_note_history(user.id) |> hd()
+
+      render_click(lv, "edit_history_steps", %{"note-id" => note.id})
+      render_click(lv, "remove_history_step", %{"note-id" => note.id, "step-id" => step.id})
+
+      updated = Study.list_personal_note_history(user.id) |> hd()
+      refute Enum.any?(updated.related_steps, &(&1.id == step.id))
+    end
+
     test "shows weekly study summary in the hero area", %{conn: conn} do
       user = insert(:user)
 

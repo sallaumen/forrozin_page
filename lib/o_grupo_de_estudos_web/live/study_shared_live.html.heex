@@ -178,6 +178,69 @@
                       <p class="mt-1.5 text-xs leading-6 text-ink-600 m-0">{note.content}</p>
                     <% end %>
                   <% end %>
+
+                  <%!-- Edit steps toggle --%>
+                  <button
+                    type="button"
+                    phx-click="edit_history_steps"
+                    phx-value-note-id={note.id}
+                    class="text-[10px] text-accent-orange font-semibold cursor-pointer bg-transparent border-0 mt-1 hover:text-accent-orange/80 transition-colors"
+                  >
+                    {if @editing_history_note_id == note.id, do: "fechar", else: "editar passos"}
+                  </button>
+
+                  <%!-- Inline step editor --%>
+                  <%= if @editing_history_note_id == note.id do %>
+                    <div class="mt-2 p-2 rounded-lg bg-ink-100/50 border border-ink-200/60">
+                      <%!-- Current steps as removable chips --%>
+                      <div :if={note.related_steps != []} class="flex flex-wrap gap-1 mb-2">
+                        <%= for step <- note.related_steps do %>
+                          <button
+                            type="button"
+                            phx-click="remove_history_step"
+                            phx-value-note-id={note.id}
+                            phx-value-step-id={step.id}
+                            class="inline-flex items-center gap-1 rounded-full bg-accent-orange/10 border border-accent-orange/20 px-2 py-0.5 text-[10px] text-accent-orange cursor-pointer hover:bg-accent-orange/20 transition-colors"
+                          >
+                            {step.code} · {step.name}
+                            <span class="text-accent-orange/50">×</span>
+                          </button>
+                        <% end %>
+                      </div>
+
+                      <%!-- Search input --%>
+                      <form phx-change="search_history_step">
+                        <input
+                          type="text"
+                          name="term"
+                          autocomplete="off"
+                          placeholder="+ Vincular passo..."
+                          class="w-full rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 font-serif text-xs text-ink-700 box-border outline-none focus:border-accent-orange/40"
+                        />
+                      </form>
+
+                      <%!-- Search results --%>
+                      <div
+                        :if={@history_step_suggestions != []}
+                        class="mt-1 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm"
+                      >
+                        <%= for step <- @history_step_suggestions do %>
+                          <button
+                            type="button"
+                            phx-click="add_history_step"
+                            phx-value-note-id={note.id}
+                            phx-value-step-id={step.id}
+                            class="flex w-full items-center justify-between px-2.5 py-1.5 text-left border-b border-ink-100 last:border-b-0 cursor-pointer hover:bg-ink-50 transition-colors bg-transparent border-x-0 border-t-0"
+                          >
+                            <span class="text-[11px] text-ink-800">
+                              <code class="text-accent-orange font-bold mr-1">{step.code}</code>{step.name}
+                            </span>
+                            <span class="text-[10px] font-semibold text-accent-orange">+</span>
+                          </button>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
                 </article>
               <% end %>
             </div>
