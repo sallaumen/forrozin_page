@@ -26,7 +26,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:is_admin, Accounts.admin?(user))
      |> assign(:today, today)
      |> assign(:personal_step_suggestions, [])
-     |> assign(:section_history_open, false)
+     |> assign(:section_history_open, true)
      |> assign(:section_teachers_open, true)
      |> assign(:section_students_open, false)
      |> assign(:teacher_search, "")
@@ -199,14 +199,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
       true -> %{label: "Sem registro ainda", tone: :warning}
     end
   end
-
-  defp note_preview(content) when is_binary(content) do
-    content
-    |> String.trim()
-    |> String.slice(0, 120)
-  end
-
-  defp note_preview(_), do: ""
 
   defp prepend_unique_step(steps, nil), do: steps
 
