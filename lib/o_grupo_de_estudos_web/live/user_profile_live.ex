@@ -10,10 +10,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
-  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
-  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do

@@ -19,13 +19,24 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
           do: OGrupoDeEstudos.Suggestions.count_pending(),
           else: 0
 
+      pending_study =
+        if user.is_teacher,
+          do: length(OGrupoDeEstudos.Study.list_pending_requests_for_teacher(user.id)),
+          else: 0
+
       {:cont,
        assign(socket,
          notification_count: unread,
-         pending_suggestions_count: pending_suggestions
+         pending_suggestions_count: pending_suggestions,
+         pending_study_count: pending_study
        )}
     else
-      {:cont, assign(socket, notification_count: 0, pending_suggestions_count: 0)}
+      {:cont,
+       assign(socket,
+         notification_count: 0,
+         pending_suggestions_count: 0,
+         pending_study_count: 0
+       )}
     end
   end
 end

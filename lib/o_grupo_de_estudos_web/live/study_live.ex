@@ -40,10 +40,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:suggested_users, [])
      |> assign(:following_user_ids, Engagement.following_ids(user.id))
      |> assign(:suggested_teachers, Study.suggest_teachers(user, limit: 5))
-     |> assign(
-       :pending_study_count,
-       if(user.is_teacher, do: length(Study.list_pending_requests_for_teacher(user.id)), else: 0)
-     )
      |> assign_dashboard(dashboard)}
   end
 
