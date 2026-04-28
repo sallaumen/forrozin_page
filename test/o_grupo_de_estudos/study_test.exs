@@ -4,14 +4,15 @@ defmodule OGrupoDeEstudos.StudyTest do
   alias OGrupoDeEstudos.Study
 
   describe "accept_invite/2" do
-    test "creates an active teacher-student link from the teacher invite slug" do
+    test "creates a pending teacher-student link from the teacher invite slug" do
       teacher = insert(:user, is_teacher: true, invite_slug: "prof-lia")
       student = insert(:user)
 
       assert {:ok, link} = Study.accept_invite(student, "prof-lia")
       assert link.teacher_id == teacher.id
       assert link.student_id == student.id
-      assert link.active
+      assert link.pending == true
+      assert link.active == false
       assert link.ended_at == nil
     end
   end
@@ -63,6 +64,7 @@ defmodule OGrupoDeEstudos.StudyTest do
       today = ~D[2026-04-21]
 
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(link, teacher)
 
       assert {:ok, _note} =
                Study.upsert_shared_note(link, today, %{

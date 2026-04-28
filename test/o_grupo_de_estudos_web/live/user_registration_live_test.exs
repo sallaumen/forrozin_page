@@ -89,8 +89,10 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLiveTest do
 
       assert {:error, {:redirect, %{to: "/auto-login/" <> _user_id}}} = result
 
+      # accept_invite now creates a pending link; teacher must approve before it becomes active
       student = Accounts.get_user_by_username("alunaana")
-      assert Enum.any?(Study.list_teachers_for_student(student.id), &(&1.id == teacher.id))
+      pending = Study.list_pending_requests_for_teacher(teacher.id)
+      assert Enum.any?(pending, &(&1.student_id == student.id))
     end
 
     test "displays errors with invalid data", %{conn: conn} do
