@@ -392,6 +392,15 @@ defmodule OGrupoDeEstudos.Study do
     |> Repo.one()
   end
 
+  @doc "Updates the teacher's private note on a student link."
+  def update_teacher_note(link_id, note) do
+    link = Repo.get!(TeacherStudentLink, link_id)
+
+    link
+    |> TeacherStudentLink.changeset(%{teacher_note: note})
+    |> Repo.update()
+  end
+
   def end_link(%TeacherStudentLink{} = link, %User{id: actor_id})
       when actor_id in [link.teacher_id, link.student_id] do
     link

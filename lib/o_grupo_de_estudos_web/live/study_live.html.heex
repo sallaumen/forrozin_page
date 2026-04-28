@@ -554,44 +554,66 @@
           <div class="space-y-2">
             <%= for link <- @student_links do %>
               <% wrote_today = Study.shared_note_exists?(link.id, @today) %>
-              <div class="flex items-center gap-3 rounded-xl bg-ink-50 border border-ink-200 px-3 py-3">
-                <.link
-                  navigate={~p"/users/#{link.student.username}"}
-                  class="no-underline flex items-center gap-3 flex-1 min-w-0"
-                >
-                  <div class={[
-                    "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                    wrote_today && "bg-ink-900 text-ink-100",
-                    !wrote_today && "bg-ink-300 text-ink-500"
-                  ]}>
-                    {String.first(link.student.name || link.student.username) |> String.upcase()}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.student.name}</p>
-                    <p class={[
-                      "text-[10px] m-0 font-semibold",
-                      wrote_today && "text-accent-green",
-                      !wrote_today && "text-ink-400"
+              <div class="rounded-xl bg-ink-50 border border-ink-200 px-3 py-3">
+                <div class="flex items-center gap-3">
+                  <.link
+                    navigate={~p"/users/#{link.student.username}"}
+                    class="no-underline flex items-center gap-3 flex-1 min-w-0"
+                  >
+                    <div class={[
+                      "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      wrote_today && "bg-ink-900 text-ink-100",
+                      !wrote_today && "bg-ink-300 text-ink-500"
                     ]}>
-                      {if wrote_today, do: "Escreveu hoje ✓", else: "Sem registro hoje"}
-                    </p>
-                  </div>
-                </.link>
-                <button
-                  :if={!wrote_today}
-                  type="button"
-                  phx-click="nudge_student"
-                  phx-value-link-id={link.id}
-                  class="text-[10px] font-semibold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2.5 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors shrink-0"
-                >
-                  Cutucada
-                </button>
-                <.link
-                  navigate={~p"/study/shared/#{link.id}"}
-                  class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-3 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
-                >
-                  Abrir
-                </.link>
+                      {String.first(link.student.name || link.student.username) |> String.upcase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-bold text-ink-900 m-0 truncate">
+                        {link.student.name}
+                      </p>
+                      <p class={[
+                        "text-[10px] m-0 font-semibold",
+                        wrote_today && "text-accent-green",
+                        !wrote_today && "text-ink-400"
+                      ]}>
+                        {if wrote_today, do: "Escreveu hoje ✓", else: "Sem registro hoje"}
+                      </p>
+                    </div>
+                  </.link>
+                  <button
+                    :if={!wrote_today}
+                    type="button"
+                    phx-click="nudge_student"
+                    phx-value-link-id={link.id}
+                    class="text-[10px] font-semibold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2.5 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors shrink-0"
+                  >
+                    Cutucada
+                  </button>
+                  <.link
+                    navigate={~p"/study/shared/#{link.id}"}
+                    class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-3 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
+                  >
+                    Abrir
+                  </.link>
+                </div>
+                <%!-- Teacher private note --%>
+                <details class="mt-1.5">
+                  <summary class="text-[10px] text-ink-400 cursor-pointer select-none font-semibold">
+                    {if (link.teacher_note || "") != "",
+                      do: "Anotacao ✎",
+                      else: "Adicionar anotacao"}
+                  </summary>
+                  <form phx-change="save_teacher_note" phx-debounce="1000" class="mt-1.5">
+                    <input type="hidden" name="link-id" value={link.id} />
+                    <textarea
+                      name="note"
+                      rows="2"
+                      placeholder="Anotacoes privadas sobre este aluno..."
+                      class="w-full rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 font-serif text-xs text-ink-700 box-border outline-none resize-y focus:border-accent-orange/40"
+                    >{link.teacher_note}</textarea>
+                    <p class="text-[9px] text-ink-400 mt-0.5 m-0">So voce ve esta anotacao.</p>
+                  </form>
+                </details>
               </div>
             <% end %>
           </div>
