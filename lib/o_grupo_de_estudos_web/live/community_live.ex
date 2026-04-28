@@ -24,6 +24,9 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
+  use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
+
+  import OGrupoDeEstudosWeb.UI.ActivityToast
 
   @impl true
   def mount(_params, _session, socket) do

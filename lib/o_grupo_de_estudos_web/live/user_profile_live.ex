@@ -12,6 +12,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
+
+  import OGrupoDeEstudosWeb.UI.ActivityToast
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do

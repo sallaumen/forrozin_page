@@ -387,13 +387,44 @@ defmodule OGrupoDeEstudos.Engagement do
     _error -> :ok
   end
 
+  defp safe_dispatch_like(user_id, "step", likeable_id) do
+    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, likeable_id) do
+      nil ->
+        :ok
+
+      step ->
+        user = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Accounts.User, user_id)
+
+        OGrupoDeEstudos.Engagement.ActivityBroadcaster.broadcast_activity(
+          user,
+          :liked_step,
+          %{step_name: step.name}
+        )
+    end
+  rescue
+    _error -> :ok
+  end
+
   defp safe_dispatch_like(_user_id, _likeable_type, _likeable_id) do
-    # Likes/favorites do not generate notifications
+    # Non-step likes do not broadcast activity toasts
     :ok
   end
 
   defp safe_dispatch_follow(follower_id, followed_id) do
     Dispatcher.notify_follow(follower_id, followed_id)
+  rescue
+    _error -> :ok
+  end
+
+  defp safe_broadcast_follow_activity(follower_id, followed_id) do
+    followed_user = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Accounts.User, followed_id)
+    follower_user = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Accounts.User, follower_id)
+
+    OGrupoDeEstudos.Engagement.ActivityBroadcaster.broadcast_activity(
+      follower_user,
+      :followed_user,
+      %{target_username: followed_user.username}
+    )
   rescue
     _error -> :ok
   end
@@ -429,6 +460,7 @@ defmodule OGrupoDeEstudos.Engagement do
         |> case do
           {:ok, _} ->
             safe_dispatch_follow(follower_id, followed_id)
+            safe_broadcast_follow_activity(follower_id, followed_id)
             {:ok, :followed}
 
           {:error, changeset} ->
@@ -577,6 +609,12 @@ defmodule OGrupoDeEstudos.Engagement do
     from(f in Follow, where: f.follower_id == ^user_id, select: f.followed_id)
     |> Repo.all()
     |> MapSet.new()
+  end
+
+  @doc "Returns a list of user IDs that follow the given user (followers)."
+  def following_ids_reverse(user_id) do
+    from(f in Follow, where: f.followed_id == ^user_id, select: f.follower_id)
+    |> Repo.all()
   end
 
   @doc "Returns a MapSet of followed IDs, scoped to the given list of target user IDs."
