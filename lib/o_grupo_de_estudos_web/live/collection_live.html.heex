@@ -11,6 +11,7 @@
     edit_action_enabled={@is_admin}
     edit_action_event="toggle_edit_mode"
     edit_mode={@edit_mode}
+    pending_study_count={assigns[:pending_study_count] || 0}
   />
   <div id="onboarding-tour-anchor" phx-hook="OnboardingTour"></div>
 

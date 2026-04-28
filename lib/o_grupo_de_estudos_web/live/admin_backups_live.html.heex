@@ -6,6 +6,7 @@
     nav_mode={@nav_mode}
     title="Backups"
     notification_count={assigns[:notification_count] || 0}
+    pending_study_count={assigns[:pending_study_count] || 0}
   />
   <.flash kind={:info} flash={@flash} />
   <.flash kind={:error} flash={@flash} />

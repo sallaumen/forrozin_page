@@ -9,6 +9,7 @@
     notification_dropdown_enabled={true}
     notification_dropdown_open={assigns[:notification_dropdown_open] || false}
     notification_preview_groups={assigns[:notification_preview_groups] || []}
+    pending_study_count={assigns[:pending_study_count] || 0}
   />
 
   <%= if @current_user.is_teacher do %>
@@ -498,18 +499,23 @@
           <div class="space-y-1.5">
             <%= for req <- @pending_requests do %>
               <div class="flex items-center gap-3 rounded-lg bg-white border border-ink-200 px-3 py-2">
-                <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                  {String.first(req.student.name || req.student.username) |> String.upcase()}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold text-ink-900 m-0 truncate">{req.student.name}</p>
-                  <p class="text-[10px] text-ink-500 m-0">
-                    @{req.student.username}
-                    <%= if req.student.city do %>
-                      <span class="text-ink-400">{" · #{req.student.city}"}</span>
-                    <% end %>
-                  </p>
-                </div>
+                <.link
+                  navigate={~p"/users/#{req.student.username}"}
+                  class="flex items-center gap-3 flex-1 min-w-0 no-underline"
+                >
+                  <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
+                    {String.first(req.student.name || req.student.username) |> String.upcase()}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-ink-900 m-0 truncate">{req.student.name}</p>
+                    <p class="text-[10px] text-ink-500 m-0">
+                      @{req.student.username}
+                      <%= if req.student.city do %>
+                        <span class="text-ink-400">{" · #{req.student.city}"}</span>
+                      <% end %>
+                    </p>
+                  </div>
+                </.link>
                 <div class="flex gap-1.5 shrink-0">
                   <button
                     type="button"
@@ -517,7 +523,7 @@
                     phx-value-id={req.id}
                     class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
                   >
-                    Aceitar
+                    Aceitar aluno
                   </button>
                   <button
                     type="button"
