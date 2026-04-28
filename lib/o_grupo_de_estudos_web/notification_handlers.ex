@@ -3,13 +3,16 @@ defmodule OGrupoDeEstudosWeb.NotificationHandlers do
 
   defmacro __using__(_opts) do
     quote do
+      alias OGrupoDeEstudos.Engagement
+      alias OGrupoDeEstudos.Engagement.Notifications.Grouper
+
       @impl true
       def handle_info({:new_notification, _count}, socket) do
         if socket.assigns[:current_user] do
           if socket.assigns[:notification_dropdown_open] do
             {:noreply, open_notifications_dropdown(socket)}
           else
-            unread = OGrupoDeEstudos.Engagement.unread_count(socket.assigns.current_user.id)
+            unread = Engagement.unread_count(socket.assigns.current_user.id)
             {:noreply, assign(socket, :notification_count, unread)}
           end
         else
@@ -37,10 +40,10 @@ defmodule OGrupoDeEstudosWeb.NotificationHandlers do
       defp open_notifications_dropdown(socket) do
         user = socket.assigns.current_user
 
-        raw = OGrupoDeEstudos.Engagement.list_notifications(user.id, limit: 8)
-        grouped = OGrupoDeEstudos.Engagement.Notifications.Grouper.group(raw)
+        raw = Engagement.list_notifications(user.id, limit: 8)
+        grouped = Grouper.group(raw)
 
-        OGrupoDeEstudos.Engagement.mark_all_read(user)
+        Engagement.mark_all_read(user)
 
         Phoenix.PubSub.broadcast(
           OGrupoDeEstudos.PubSub,

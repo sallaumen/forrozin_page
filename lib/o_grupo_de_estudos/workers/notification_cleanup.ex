@@ -12,8 +12,8 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanup do
   import Ecto.Query
   require Logger
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
+  alias OGrupoDeEstudos.Repo
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do

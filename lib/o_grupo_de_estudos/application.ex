@@ -5,6 +5,8 @@ defmodule OGrupoDeEstudos.Application do
 
   use Application
 
+  alias OGrupoDeEstudos.Admin.ErrorLogger
+
   @impl true
   def start(_type, _args) do
     children =
@@ -26,7 +28,7 @@ defmodule OGrupoDeEstudos.Application do
 
     # Install error logger after Repo is up
     if Application.get_env(:o_grupo_de_estudos, :persist_error_logs, true) do
-      OGrupoDeEstudos.Admin.ErrorLogger.install()
+      ErrorLogger.install()
     end
 
     result

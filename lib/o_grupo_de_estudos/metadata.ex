@@ -9,8 +9,8 @@ defmodule OGrupoDeEstudos.Metadata do
       Metadata.increment("password_reset_count", "user", user_id)
   """
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Metadata.EntityMetadata
+  alias OGrupoDeEstudos.Repo
 
   import Ecto.Query
 

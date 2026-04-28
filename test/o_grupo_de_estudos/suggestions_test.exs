@@ -12,8 +12,8 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
   """
   use OGrupoDeEstudos.DataCase, async: true
 
+  alias OGrupoDeEstudos.Encyclopedia.{Connection, ConnectionQuery, Step}
   alias OGrupoDeEstudos.Suggestions
-  alias OGrupoDeEstudos.Encyclopedia.{Connection, Step}
 
   setup do
     user = insert(:user)
@@ -140,7 +140,7 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
 
       # Connection should exist
       conn =
-        OGrupoDeEstudos.Encyclopedia.ConnectionQuery.get_by(
+        ConnectionQuery.get_by(
           source_step_id: source.id,
           target_step_id: target.id
         )

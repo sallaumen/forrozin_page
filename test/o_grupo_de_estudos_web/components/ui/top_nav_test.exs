@@ -3,8 +3,8 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
 
   import Phoenix.LiveViewTest
 
-  alias OGrupoDeEstudosWeb.UI.TopNav
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudosWeb.UI.TopNav
 
   defp user(attrs \\ %{}) do
     struct(User, Map.merge(%{username: "tavano", name: "Tavano Silva"}, attrs))

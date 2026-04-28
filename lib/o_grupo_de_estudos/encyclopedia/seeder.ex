@@ -7,7 +7,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Seeder do
   subsequentes retornam `:already_seeded` sem modificar o banco.
   """
 
-  alias OGrupoDeEstudos.Encyclopedia.{Category, TechnicalConcept, Step, Section, Subsection}
+  alias OGrupoDeEstudos.Encyclopedia.{Category, Section, Step, Subsection, TechnicalConcept}
   alias OGrupoDeEstudos.Repo
 
   # Códigos HF com imagem em images/

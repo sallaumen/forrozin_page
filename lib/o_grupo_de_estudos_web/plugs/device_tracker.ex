@@ -9,8 +9,8 @@ defmodule OGrupoDeEstudosWeb.Plugs.DeviceTracker do
 
   import Plug.Conn
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Engagement.DeviceSession
+  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudosWeb.Tracking.ClientInfo
 
   def init(opts), do: opts
@@ -20,20 +20,22 @@ defmodule OGrupoDeEstudosWeb.Plugs.DeviceTracker do
     tracked = get_session(conn, :device_tracked)
 
     if user && !tracked do
-      attrs =
-        conn
-        |> ClientInfo.from_conn()
-        |> Map.put(:user_id, user.id)
-
-      if Application.get_env(:o_grupo_de_estudos, :async_device_tracking, true) do
-        Task.start(fn -> insert_device_session(attrs) end)
-      else
-        insert_device_session(attrs)
-      end
+      conn
+      |> ClientInfo.from_conn()
+      |> Map.put(:user_id, user.id)
+      |> track_device()
 
       put_session(conn, :device_tracked, true)
     else
       conn
+    end
+  end
+
+  defp track_device(attrs) do
+    if Application.get_env(:o_grupo_de_estudos, :async_device_tracking, true) do
+      Task.start(fn -> insert_device_session(attrs) end)
+    else
+      insert_device_session(attrs)
     end
   end
 

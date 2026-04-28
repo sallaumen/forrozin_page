@@ -1,4 +1,5 @@
 defmodule OGrupoDeEstudosWeb.UI.GoalsBoard do
+  @moduledoc false
   use Phoenix.Component
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 

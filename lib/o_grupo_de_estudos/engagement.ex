@@ -14,10 +14,12 @@ defmodule OGrupoDeEstudos.Engagement do
   import Ecto.Query
 
   alias Ecto.Multi
-  alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Authorization.Policy
+  alias OGrupoDeEstudos.Encyclopedia.Step
 
   alias OGrupoDeEstudos.Engagement.{
+    Badges,
     Favorite,
     Follow,
     Like,
@@ -27,18 +29,15 @@ defmodule OGrupoDeEstudos.Engagement do
   }
 
   alias OGrupoDeEstudos.Engagement.Comments.{
-    StepComment,
-    StepCommentQuery,
     SequenceComment,
-    SequenceCommentQuery
+    SequenceCommentQuery,
+    StepComment,
+    StepCommentQuery
   }
 
   alias OGrupoDeEstudos.Engagement.Notifications.{Dispatcher, Notification, NotificationQuery}
-
-  alias OGrupoDeEstudos.Accounts.User
-  alias OGrupoDeEstudos.Encyclopedia.Step
+  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences.Sequence
-  alias OGrupoDeEstudos.Engagement.Badges
 
   # ══════════════════════════════════════════════════════════════════════
   # Likes (unchanged signatures)
@@ -617,39 +616,47 @@ defmodule OGrupoDeEstudos.Engagement do
            favoritable_id: favoritable_id
          ) do
       nil ->
-        result =
-          Multi.new()
-          |> Multi.insert(
-            :favorite,
-            Favorite.changeset(%Favorite{}, %{
-              user_id: user_id,
-              favoritable_type: favoritable_type,
-              favoritable_id: favoritable_id
-            })
-          )
-          |> Multi.run(:like, fn _repo, _changes ->
-            if LikeQuery.exists?(user_id, favoritable_type, favoritable_id) do
-              {:ok, :already_liked}
-            else
-              %Like{}
-              |> Like.changeset(%{
-                user_id: user_id,
-                likeable_type: favoritable_type,
-                likeable_id: favoritable_id
-              })
-              |> Repo.insert()
-            end
-          end)
-          |> Repo.transaction()
-
-        case result do
-          {:ok, _} -> {:ok, :favorited}
-          {:error, _, changeset, _} -> {:error, changeset}
-        end
+        create_favorite_with_like(user_id, favoritable_type, favoritable_id)
 
       favorite ->
         Repo.delete(favorite)
         {:ok, :unfavorited}
+    end
+  end
+
+  defp create_favorite_with_like(user_id, favoritable_type, favoritable_id) do
+    result =
+      Multi.new()
+      |> Multi.insert(
+        :favorite,
+        Favorite.changeset(%Favorite{}, %{
+          user_id: user_id,
+          favoritable_type: favoritable_type,
+          favoritable_id: favoritable_id
+        })
+      )
+      |> Multi.run(:like, fn _repo, _changes ->
+        ensure_like_exists(user_id, favoritable_type, favoritable_id)
+      end)
+      |> Repo.transaction()
+
+    case result do
+      {:ok, _} -> {:ok, :favorited}
+      {:error, _, changeset, _} -> {:error, changeset}
+    end
+  end
+
+  defp ensure_like_exists(user_id, likeable_type, likeable_id) do
+    if LikeQuery.exists?(user_id, likeable_type, likeable_id) do
+      {:ok, :already_liked}
+    else
+      %Like{}
+      |> Like.changeset(%{
+        user_id: user_id,
+        likeable_type: likeable_type,
+        likeable_id: likeable_id
+      })
+      |> Repo.insert()
     end
   end
 

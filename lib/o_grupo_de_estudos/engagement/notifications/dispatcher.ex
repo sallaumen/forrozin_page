@@ -10,9 +10,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
+  alias OGrupoDeEstudos.Repo
   alias Phoenix.PubSub
 
   @pubsub OGrupoDeEstudos.PubSub

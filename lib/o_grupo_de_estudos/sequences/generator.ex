@@ -190,40 +190,42 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         {:error, from, to}
 
       nil ->
-        total_min = Enum.sum(min_dists) + 1
-        extra = max(target_length - total_min, 0)
+        explore_zone_paths(segments, min_dists, target_length, zone, ctx)
+    end
+  end
 
-        # Split budget between pre-waypoint and post-waypoint based on zone
-        {pre_fraction, _post_fraction} = zone_budget_split(zone)
+  defp explore_zone_paths(segments, min_dists, target_length, zone, ctx) do
+    total_min = Enum.sum(min_dists) + 1
+    extra = max(target_length - total_min, 0)
+    {pre_fraction, _post_fraction} = zone_budget_split(zone)
 
-        result =
-          Enum.reduce_while(1..@max_attempts, nil, fn _, _ ->
-            # Add jitter (±20%) to the fraction for variety within each zone
-            jitter = (:rand.uniform() - 0.5) * 0.4
-            actual_pre = max(min(pre_fraction + jitter, 0.95), 0.05)
+    result =
+      Enum.reduce_while(1..@max_attempts, nil, fn _, _ ->
+        attempt_exploratory(segments, extra, pre_fraction, target_length, ctx)
+      end)
 
-            pre_budget = round(extra * actual_pre)
-            post_budget = extra - pre_budget
+    case result do
+      {:ok, path} -> {:ok, path}
+      nil -> connect_waypoints_shortest(segments, ctx.adjacency)
+    end
+  end
 
-            segment_budgets = distribute_budget(pre_budget, length(segments))
+  defp attempt_exploratory(segments, extra, pre_fraction, target_length, ctx) do
+    jitter = (:rand.uniform() - 0.5) * 0.4
+    actual_pre = max(min(pre_fraction + jitter, 0.95), 0.05)
+    pre_budget = round(extra * actual_pre)
+    post_budget = extra - pre_budget
+    segment_budgets = distribute_budget(pre_budget, length(segments))
 
-            case try_exploratory_path(segments, segment_budgets, ctx) do
-              {:ok, path} ->
-                with_post = pad_path(path, length(path) + post_budget, ctx)
-                final = pad_path(with_post, target_length, ctx)
-                # Trim excess to stay close to target_length
-                trimmed = trim_to_target(final, target_length, ctx.required_ids)
-                {:halt, {:ok, trimmed}}
+    case try_exploratory_path(segments, segment_budgets, ctx) do
+      {:ok, path} ->
+        with_post = pad_path(path, length(path) + post_budget, ctx)
+        final = pad_path(with_post, target_length, ctx)
+        trimmed = trim_to_target(final, target_length, ctx.required_ids)
+        {:halt, {:ok, trimmed}}
 
-              :retry ->
-                {:cont, nil}
-            end
-          end)
-
-        case result do
-          {:ok, path} -> {:ok, path}
-          nil -> connect_waypoints_shortest(segments, ctx.adjacency)
-        end
+      :retry ->
+        {:cont, nil}
     end
   end
 
@@ -255,24 +257,24 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   defp try_exploratory_path(segments, budgets, ctx) do
     Enum.zip(segments, budgets)
     |> Enum.reduce_while({:ok, [ctx.start_id]}, fn {[_from, to], budget}, {:ok, path} ->
-      current = List.last(path)
-
-      # Phase 1: Random walk for `budget` steps (free exploration)
-      explored = random_walk(current, budget, ctx)
-
-      # Phase 2: BFS course-correct from walk end to waypoint
-      walk_end = List.last(explored)
-
-      case bfs_path(walk_end, to, ctx.adjacency) do
-        {:ok, correction} ->
-          explore_tail = if length(explored) > 1, do: tl(explored), else: []
-          correct_tail = if length(correction) > 1, do: tl(correction), else: []
-          {:cont, {:ok, path ++ explore_tail ++ correct_tail}}
-
-        :no_path ->
-          {:halt, :retry}
-      end
+      explore_and_correct(path, to, budget, ctx)
     end)
+  end
+
+  defp explore_and_correct(path, to, budget, ctx) do
+    current = List.last(path)
+    explored = random_walk(current, budget, ctx)
+    walk_end = List.last(explored)
+
+    case bfs_path(walk_end, to, ctx.adjacency) do
+      {:ok, correction} ->
+        explore_tail = if length(explored) > 1, do: tl(explored), else: []
+        correct_tail = if length(correction) > 1, do: tl(correction), else: []
+        {:cont, {:ok, path ++ explore_tail ++ correct_tail}}
+
+      :no_path ->
+        {:halt, :retry}
+    end
   end
 
   defp random_walk(_current, 0, _ctx), do: []
@@ -317,17 +319,21 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   defp connect_waypoints_shortest(segments, adjacency) do
     Enum.reduce_while(segments, {:ok, []}, fn [from, to], {:ok, acc} ->
-      start_node = if acc == [], do: from, else: List.last(acc)
-
-      case bfs_path(start_node, to, adjacency) do
-        {:ok, path} ->
-          trimmed = if acc == [], do: path, else: tl(path)
-          {:cont, {:ok, acc ++ trimmed}}
-
-        :no_path ->
-          {:halt, {:error, from, to}}
-      end
+      connect_segment(acc, from, to, adjacency)
     end)
+  end
+
+  defp connect_segment(acc, from, to, adjacency) do
+    start_node = if acc == [], do: from, else: List.last(acc)
+
+    case bfs_path(start_node, to, adjacency) do
+      {:ok, path} ->
+        trimmed = if acc == [], do: path, else: tl(path)
+        {:cont, {:ok, acc ++ trimmed}}
+
+      :no_path ->
+        {:halt, {:error, from, to}}
+    end
   end
 
   # Extends path to target_length by random walk from the last node.
@@ -360,16 +366,9 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   defp bfs_path_loop(queue, visited, parents, target, adj) do
     {next_queue, new_visited, new_parents} =
-      Enum.reduce(queue, {[], visited, parents}, fn node, {nq, vis, par} ->
+      Enum.reduce(queue, {[], visited, parents}, fn node, acc ->
         neighbors = Map.get(adj, node, []) |> Enum.shuffle()
-
-        Enum.reduce(neighbors, {nq, vis, par}, fn n, {q, v, p} ->
-          if MapSet.member?(v, n) do
-            {q, v, p}
-          else
-            {[n | q], MapSet.put(v, n), Map.put(p, n, node)}
-          end
-        end)
+        expand_neighbors(neighbors, node, acc)
       end)
 
     if MapSet.member?(new_visited, target) and not MapSet.member?(visited, target) do
@@ -377,6 +376,16 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     else
       bfs_path_loop(Enum.uniq(next_queue), new_visited, new_parents, target, adj)
     end
+  end
+
+  defp expand_neighbors(neighbors, node, acc) do
+    Enum.reduce(neighbors, acc, fn n, {q, v, p} ->
+      if MapSet.member?(v, n) do
+        {q, v, p}
+      else
+        {[n | q], MapSet.put(v, n), Map.put(p, n, node)}
+      end
+    end)
   end
 
   defp trace_path(node, parents) do
@@ -432,21 +441,25 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     if remaining <= 0 do
       {sequences, []}
     else
-      used_edges = edges_from_sequences(sequences)
+      all_seqs = try_relaxation_level(ctx, level_params, sequences, remaining)
+      finalize_relaxation(all_seqs, warnings, rest, ctx, target_count)
+    end
+  end
 
-      new_seqs =
-        generate_batch(ctx, level_params, remaining, used_edges)
+  defp try_relaxation_level(ctx, level_params, sequences, remaining) do
+    used_edges = edges_from_sequences(sequences)
+    new_seqs = generate_batch(ctx, level_params, remaining, used_edges)
 
-      all_seqs =
-        (sequences ++ new_seqs)
-        |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+    (sequences ++ new_seqs)
+    |> Enum.uniq_by(fn seq -> Enum.map(seq, & &1.id) end)
+  end
 
-      if length(all_seqs) >= target_count do
-        final_warnings = if new_seqs != [] and warnings != [], do: warnings, else: []
-        {Enum.take(all_seqs, target_count), final_warnings}
-      else
-        do_relaxation(rest, ctx, all_seqs, target_count)
-      end
+  defp finalize_relaxation(all_seqs, warnings, rest, ctx, target_count) do
+    if length(all_seqs) >= target_count do
+      final_warnings = if all_seqs != [] and warnings != [], do: warnings, else: []
+      {Enum.take(all_seqs, target_count), final_warnings}
+    else
+      do_relaxation(rest, ctx, all_seqs, target_count)
     end
   end
 
@@ -599,28 +612,32 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   defp bonus_category_mix(nil, _state), do: 0.0
 
   defp bonus_category_mix(step, state) do
-    if step.category_id not in state.recent_categories,
-      do: @weight_category_mix,
-      else: 0.0
+    if step.category_id in state.recent_categories,
+      do: 0.0,
+      else: @weight_category_mix
   end
 
   defp bonus_cyclic(n, state, ctx, steps_remaining) do
     cond do
       state.cyclic and steps_remaining <= 3 ->
-        dist = Map.get(ctx.dist_to_start, n, :infinity)
+        cyclic_closing_bonus(n, ctx, steps_remaining)
 
-        cond do
-          n == ctx.start_id and steps_remaining == 1 -> @weight_cyclic_close * 2
-          dist == :infinity -> -3.0
-          dist <= steps_remaining -> @weight_cyclic_close / max(dist, 1)
-          true -> -1.0
-        end
-
-      not state.cyclic and steps_remaining == 1 and n == ctx.start_id ->
+      !state.cyclic and steps_remaining == 1 and n == ctx.start_id ->
         2.0
 
       true ->
         0.0
+    end
+  end
+
+  defp cyclic_closing_bonus(n, ctx, steps_remaining) do
+    dist = Map.get(ctx.dist_to_start, n, :infinity)
+
+    cond do
+      n == ctx.start_id and steps_remaining == 1 -> @weight_cyclic_close * 2
+      dist == :infinity -> -3.0
+      dist <= steps_remaining -> @weight_cyclic_close / max(dist, 1)
+      true -> -1.0
     end
   end
 

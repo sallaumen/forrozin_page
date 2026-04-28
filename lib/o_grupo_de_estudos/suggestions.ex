@@ -6,11 +6,11 @@ defmodule OGrupoDeEstudos.Suggestions do
   """
 
   alias Ecto.Multi
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Admin
   alias OGrupoDeEstudos.Encyclopedia.{Step, StepQuery}
-  alias OGrupoDeEstudos.Suggestions.{Suggestion, SuggestionQuery}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
+  alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Suggestions.{Suggestion, SuggestionQuery}
 
   import Ecto.Query, only: [where: 3]
 

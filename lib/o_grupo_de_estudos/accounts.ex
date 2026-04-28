@@ -8,6 +8,7 @@ defmodule OGrupoDeEstudos.Accounts do
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Metadata
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Workers.SendPasswordResetEmail
 
   @doc """
   Registers a new user and enqueues the confirmation email.
@@ -167,7 +168,7 @@ defmodule OGrupoDeEstudos.Accounts do
         reset_url = OGrupoDeEstudosWeb.Endpoint.url() <> "/reset-password/#{token}"
 
         %{user_id: user.id, reset_url: reset_url}
-        |> OGrupoDeEstudos.Workers.SendPasswordResetEmail.new()
+        |> SendPasswordResetEmail.new()
         |> Oban.insert()
 
         :ok

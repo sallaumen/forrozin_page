@@ -4,8 +4,8 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSessionTest do
   import Ecto.Query
   import OGrupoDeEstudos.Factory
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Engagement.DeviceSession
+  alias OGrupoDeEstudos.Repo
 
   describe "changeset/2 — valid data" do
     test "creates a valid mobile session" do

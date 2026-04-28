@@ -32,22 +32,22 @@ defmodule Mix.Tasks.OGrupoDeEstudos.BackfillFollowNotifications do
     follows = list_follows(limit)
 
     {created, skipped} =
-      Enum.reduce(follows, {0, 0}, fn follow, {created, skipped} ->
-        if notification_exists?(follow) do
-          {created, skipped + 1}
-        else
-          if dry_run? do
-            {created + 1, skipped}
-          else
-            create_notification!(follow)
-            {created + 1, skipped}
-          end
-        end
+      Enum.reduce(follows, {0, 0}, fn follow, acc ->
+        process_follow(follow, dry_run?, acc)
       end)
 
     verb = if dry_run?, do: "would create", else: "created"
     Mix.shell().info("Follow notifications #{verb}: #{created}")
     Mix.shell().info("Already present: #{skipped}")
+  end
+
+  defp process_follow(follow, dry_run?, {created, skipped}) do
+    if notification_exists?(follow) do
+      {created, skipped + 1}
+    else
+      unless dry_run?, do: create_notification!(follow)
+      {created + 1, skipped}
+    end
   end
 
   defp list_follows(nil) do

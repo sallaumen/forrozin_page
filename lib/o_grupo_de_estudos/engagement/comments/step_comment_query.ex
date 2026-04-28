@@ -1,4 +1,5 @@
 defmodule OGrupoDeEstudos.Engagement.Comments.StepCommentQuery do
+  @moduledoc false
   @behaviour OGrupoDeEstudos.Engagement.Comments.Commentable
   import Ecto.Query
   alias OGrupoDeEstudos.Engagement.Comments.StepComment

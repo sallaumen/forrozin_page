@@ -13,22 +13,20 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    unless Accounts.admin?(socket.assigns.current_user) do
-      {:ok, redirect(socket, to: ~p"/collection")}
-    else
+    if Accounts.admin?(socket.assigns.current_user) do
       {:ok,
        socket
        |> assign(:page_title, "Admin · Links")
        |> assign(:is_admin, true)
        |> load_links()}
+    else
+      {:ok, redirect(socket, to: ~p"/collection")}
     end
   end
 
   @impl true
   def handle_event("approve_link", %{"id" => id}, socket) do
-    if not Accounts.admin?(socket.assigns.current_user) do
-      {:noreply, socket}
-    else
+    if Accounts.admin?(socket.assigns.current_user) do
       link = StepLinkQuery.get_by(id: id, include_deleted: false)
 
       if link do
@@ -37,13 +35,13 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
       else
         {:noreply, put_flash(socket, :error, "Link não encontrado.")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   def handle_event("delete_link", %{"id" => id}, socket) do
-    if not Accounts.admin?(socket.assigns.current_user) do
-      {:noreply, socket}
-    else
+    if Accounts.admin?(socket.assigns.current_user) do
       link = StepLinkQuery.get_by(id: id, include_deleted: false)
 
       if link do
@@ -52,6 +50,8 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
       else
         {:noreply, put_flash(socket, :error, "Link não encontrado.")}
       end
+    else
+      {:noreply, socket}
     end
   end
 

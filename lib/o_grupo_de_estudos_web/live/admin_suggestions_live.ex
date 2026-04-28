@@ -21,67 +21,33 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    unless Accounts.admin?(socket.assigns.current_user) do
-      {:ok, redirect(socket, to: ~p"/collection")}
-    else
+    if Accounts.admin?(socket.assigns.current_user) do
       {:ok,
        socket
        |> assign(:page_title, "Admin · Sugestões")
        |> assign(:is_admin, true)
        |> assign(:filter, :pending)
        |> load_suggestions(:pending)}
+    else
+      {:ok, redirect(socket, to: ~p"/collection")}
     end
   end
 
   @impl true
   def handle_event("approve", %{"id" => id}, socket) do
-    unless Accounts.admin?(socket.assigns.current_user) do
-      {:noreply, socket}
+    if Accounts.admin?(socket.assigns.current_user) do
+      handle_approve(id, socket)
     else
-      case Suggestions.get(id) do
-        nil ->
-          {:noreply, put_flash(socket, :error, "Sugestão não encontrada.")}
-
-        suggestion ->
-          admin = socket.assigns.current_user
-
-          case Suggestions.approve(suggestion, admin) do
-            {:ok, _} ->
-              {:noreply,
-               socket
-               |> put_flash(:info, "Sugestão aprovada.")
-               |> load_suggestions(socket.assigns.filter)}
-
-            {:error, _reason} ->
-              {:noreply, put_flash(socket, :error, "Erro ao aprovar sugestão.")}
-          end
-      end
+      {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("reject", %{"id" => id}, socket) do
-    unless Accounts.admin?(socket.assigns.current_user) do
-      {:noreply, socket}
+    if Accounts.admin?(socket.assigns.current_user) do
+      handle_reject(id, socket)
     else
-      case Suggestions.get(id) do
-        nil ->
-          {:noreply, put_flash(socket, :error, "Sugestão não encontrada.")}
-
-        suggestion ->
-          admin = socket.assigns.current_user
-
-          case Suggestions.reject(suggestion, admin) do
-            {:ok, _} ->
-              {:noreply,
-               socket
-               |> put_flash(:info, "Sugestão rejeitada.")
-               |> load_suggestions(socket.assigns.filter)}
-
-            {:error, _reason} ->
-              {:noreply, put_flash(socket, :error, "Erro ao rejeitar sugestão.")}
-          end
-      end
+      {:noreply, socket}
     end
   end
 
@@ -89,6 +55,50 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
   def handle_event("filter", %{"tab" => tab}, socket) do
     filter = String.to_existing_atom(tab)
     {:noreply, socket |> assign(:filter, filter) |> load_suggestions(filter)}
+  end
+
+  # ── Admin action handlers ─────────────────────────────────
+
+  defp handle_approve(id, socket) do
+    case Suggestions.get(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Sugestão não encontrada.")}
+
+      suggestion ->
+        admin = socket.assigns.current_user
+
+        case Suggestions.approve(suggestion, admin) do
+          {:ok, _} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Sugestão aprovada.")
+             |> load_suggestions(socket.assigns.filter)}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, "Erro ao aprovar sugestão.")}
+        end
+    end
+  end
+
+  defp handle_reject(id, socket) do
+    case Suggestions.get(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Sugestão não encontrada.")}
+
+      suggestion ->
+        admin = socket.assigns.current_user
+
+        case Suggestions.reject(suggestion, admin) do
+          {:ok, _} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Sugestão rejeitada.")
+             |> load_suggestions(socket.assigns.filter)}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, "Erro ao rejeitar sugestão.")}
+        end
+    end
   end
 
   # ── Private helpers ───────────────────────────────────────

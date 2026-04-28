@@ -100,9 +100,9 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
 
       {:error, changeset} ->
         errors =
-          changeset.errors
-          |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end)
-          |> Enum.join(", ")
+          Enum.map_join(changeset.errors, ", ", fn {field, {msg, _}} ->
+            "#{field}: #{msg}"
+          end)
 
         {:noreply,
          socket

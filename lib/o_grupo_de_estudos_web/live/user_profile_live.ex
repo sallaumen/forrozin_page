@@ -54,7 +54,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         followers_count = Engagement.count_followers(user.id)
 
         is_following =
-          if !is_own_profile, do: Engagement.following?(current_user.id, user.id), else: false
+          if is_own_profile, do: false, else: Engagement.following?(current_user.id, user.id)
 
         # Badges
         badges = Badges.compute(user.id)
@@ -231,53 +231,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   def handle_event("request_study", params, socket) do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
-    role = params["role"]
 
-    result =
-      cond do
-        # Explicit role: "student" = I want to be their student (they become teacher)
-        role == "student" and profile.is_teacher ->
-          Study.request_teacher_link(current, profile.id)
-
-        # Explicit role: "teacher" = I want them as my student (I become teacher)
-        role == "teacher" and current.is_teacher ->
-          Study.invite_student_link(current, profile.id)
-
-        # Default: current user is student, profile is teacher → request
-        profile.is_teacher and not current.is_teacher ->
-          Study.request_teacher_link(current, profile.id)
-
-        # Default: current user is teacher → invite
-        current.is_teacher ->
-          Study.invite_student_link(current, profile.id)
-
-        # Both non-teachers viewing teacher → request
-        profile.is_teacher ->
-          Study.request_teacher_link(current, profile.id)
-
-        true ->
-          {:error, :invalid}
-      end
-
-    case result do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:study_link_status, :pending_sent)
-         |> put_flash(
-           :info,
-           "Pedido enviado! #{Accounts.first_name(profile)} será notificado(a)."
-         )}
-
-      {:error, :already_connected} ->
-        {:noreply, put_flash(socket, :info, "Vocês já estão conectados.")}
-
-      {:error, :already_pending} ->
-        {:noreply, put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta.")}
-
-      _ ->
-        {:noreply, socket}
-    end
+    result = resolve_study_request(current, profile, params["role"])
+    handle_study_result(result, socket, profile)
   end
 
   # Accept pending request directly from profile
@@ -354,6 +310,39 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   # --- helpers ---
 
+  defp resolve_study_request(current, %{is_teacher: true} = profile, "student"),
+    do: Study.request_teacher_link(current, profile.id)
+
+  defp resolve_study_request(%{is_teacher: true} = current, profile, "teacher"),
+    do: Study.invite_student_link(current, profile.id)
+
+  defp resolve_study_request(current, profile, _role) do
+    cond do
+      profile.is_teacher -> Study.request_teacher_link(current, profile.id)
+      current.is_teacher -> Study.invite_student_link(current, profile.id)
+      true -> {:error, :invalid}
+    end
+  end
+
+  defp handle_study_result({:ok, _}, socket, profile) do
+    {:noreply,
+     socket
+     |> assign(:study_link_status, :pending_sent)
+     |> put_flash(
+       :info,
+       "Pedido enviado! #{Accounts.first_name(profile)} será notificado(a)."
+     )}
+  end
+
+  defp handle_study_result({:error, :already_connected}, socket, _profile),
+    do: {:noreply, put_flash(socket, :info, "Vocês já estão conectados.")}
+
+  defp handle_study_result({:error, :already_pending}, socket, _profile),
+    do: {:noreply, put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta.")}
+
+  defp handle_study_result(_result, socket, _profile),
+    do: {:noreply, socket}
+
   defp reload_comments(socket, current_user) do
     profile_user = socket.assigns.profile_user
 
@@ -389,39 +378,42 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     if current_user.id == profile_user.id do
       nil
     else
-      import Ecto.Query
-      alias OGrupoDeEstudos.Study.TeacherStudentLink
-
-      # Check both directions: profile as teacher OR profile as student
-      link =
-        OGrupoDeEstudos.Repo.one(
-          from(l in TeacherStudentLink,
-            where:
-              (l.teacher_id == ^profile_user.id and l.student_id == ^current_user.id) or
-                (l.teacher_id == ^current_user.id and l.student_id == ^profile_user.id)
-          )
-        )
-
-      case link do
-        nil ->
-          cond do
-            # Both are teachers → show both options
-            profile_user.is_teacher and current_user.is_teacher -> :available_both
-            # One is teacher → single button
-            profile_user.is_teacher or current_user.is_teacher -> :available
-            # Neither → no button
-            true -> nil
-          end
-
-        %{active: true} ->
-          :connected
-
-        %{pending: true, initiated_by_id: initiated_id} ->
-          if initiated_id == current_user.id, do: :pending_sent, else: :pending_received
-
-        _ ->
-          :available
-      end
+      current_user
+      |> find_study_link(profile_user)
+      |> interpret_study_link(current_user, profile_user)
     end
   end
+
+  defp find_study_link(current_user, profile_user) do
+    import Ecto.Query
+    alias OGrupoDeEstudos.Study.TeacherStudentLink
+
+    OGrupoDeEstudos.Repo.one(
+      from(l in TeacherStudentLink,
+        where:
+          (l.teacher_id == ^profile_user.id and l.student_id == ^current_user.id) or
+            (l.teacher_id == ^current_user.id and l.student_id == ^profile_user.id)
+      )
+    )
+  end
+
+  defp interpret_study_link(nil, current_user, profile_user) do
+    cond do
+      profile_user.is_teacher and current_user.is_teacher -> :available_both
+      profile_user.is_teacher or current_user.is_teacher -> :available
+      true -> nil
+    end
+  end
+
+  defp interpret_study_link(%{active: true}, _current_user, _profile_user), do: :connected
+
+  defp interpret_study_link(
+         %{pending: true, initiated_by_id: initiated_id},
+         current_user,
+         _profile_user
+       ) do
+    if initiated_id == current_user.id, do: :pending_sent, else: :pending_received
+  end
+
+  defp interpret_study_link(_link, _current_user, _profile_user), do: :available
 end

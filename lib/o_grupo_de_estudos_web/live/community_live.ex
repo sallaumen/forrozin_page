@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
   alias OGrupoDeEstudos.{Accounts, Engagement, Sequences}
   alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
+  alias OGrupoDeEstudosWeb.Helpers.RateLimit
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -50,6 +51,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        seq_favorites: seq_favorites,
        seq_comment_counts: seq_comment_counts,
        seq_search: "",
+       active_seq_tab: "community",
+       my_sequences: [],
        expanded_seq: nil,
        expanded_seq_comments: [],
        expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
@@ -84,6 +87,21 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     {:noreply, assign(socket, seq_search: term, sequences: filtered)}
+  end
+
+  def handle_event("switch_seq_tab", %{"tab" => tab}, socket) do
+    socket =
+      case tab do
+        "mine" ->
+          user = socket.assigns.current_user
+          my_seqs = Sequences.list_public_user_sequences(user.id)
+          assign(socket, active_seq_tab: "mine", my_sequences: my_seqs)
+
+        _ ->
+          assign(socket, active_seq_tab: "community")
+      end
+
+    {:noreply, socket}
   end
 
   def handle_event("toggle_like", %{"type" => "sequence", "id" => id}, socket) do
@@ -124,7 +142,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
     user = socket.assigns.current_user
     result = Engagement.toggle_follow(user.id, target_id)
-    socket = OGrupoDeEstudosWeb.Helpers.RateLimit.maybe_flash_rate_limit(socket, result)
+    socket = RateLimit.maybe_flash_rate_limit(socket, result)
 
     {:noreply,
      assign(socket,

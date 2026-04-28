@@ -1,8 +1,8 @@
 defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
   use OGrupoDeEstudos.DataCase, async: true
 
-  alias OGrupoDeEstudos.Workers.NotificationCleanup
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Workers.NotificationCleanup
 
   describe "perform/1" do
     test "purges read notifications older than 90 days" do
