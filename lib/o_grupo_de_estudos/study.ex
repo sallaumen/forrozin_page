@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudos.Study do
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.PubSub
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
+  alias OGrupoDeEstudos.Study.{Goal, Note, NoteStep, TeacherStudentLink}
   alias Phoenix.PubSub, as: PhoenixPubSub
 
   # ── Teacher search & request ──────────────────────────────────────────
@@ -485,4 +485,71 @@ defmodule OGrupoDeEstudos.Study do
   defp normalize_step_ids(_), do: []
 
   defp blank_note?(content, step_ids), do: content == "" and step_ids == []
+
+  # ── Goals ─────────────────────────────────────────────────────────────
+
+  def list_personal_goals(user_id) do
+    from(g in Goal,
+      where: g.owner_user_id == ^user_id,
+      order_by: [asc: g.completed, asc: g.position, desc: g.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  def list_shared_goals(link_id) do
+    from(g in Goal,
+      where: g.teacher_student_link_id == ^link_id,
+      order_by: [asc: g.completed, asc: g.position, desc: g.inserted_at]
+    )
+    |> Repo.all()
+  end
+
+  def create_goal(attrs) do
+    %Goal{}
+    |> Goal.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def toggle_goal(goal_id) do
+    goal = Repo.get!(Goal, goal_id)
+
+    goal
+    |> Goal.changeset(%{completed: !goal.completed})
+    |> Repo.update()
+  end
+
+  def delete_goal(goal_id) do
+    goal = Repo.get!(Goal, goal_id)
+    Repo.delete(goal)
+  end
+
+  # ── Step frequency ranking ─────────────────────────────────────────────
+
+  def step_frequency_ranking(:personal, user_id) do
+    from(ns in NoteStep,
+      join: n in Note,
+      on: ns.study_note_id == n.id,
+      join: s in OGrupoDeEstudos.Encyclopedia.Step,
+      on: ns.step_id == s.id,
+      where: n.owner_user_id == ^user_id and n.kind == "personal",
+      group_by: [s.id, s.code, s.name],
+      select: %{step_id: s.id, code: s.code, name: s.name, count: count(ns.id)},
+      order_by: [desc: count(ns.id)]
+    )
+    |> Repo.all()
+  end
+
+  def step_frequency_ranking(:shared, link_id) do
+    from(ns in NoteStep,
+      join: n in Note,
+      on: ns.study_note_id == n.id,
+      join: s in OGrupoDeEstudos.Encyclopedia.Step,
+      on: ns.step_id == s.id,
+      where: n.teacher_student_link_id == ^link_id and n.kind == "shared",
+      group_by: [s.id, s.code, s.name],
+      select: %{step_id: s.id, code: s.code, name: s.name, count: count(ns.id)},
+      order_by: [desc: count(ns.id)]
+    )
+    |> Repo.all()
+  end
 end

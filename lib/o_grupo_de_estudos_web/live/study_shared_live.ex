@@ -8,6 +8,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.StepRanking
+  import OGrupoDeEstudosWeb.UI.GoalsBoard
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 
@@ -42,7 +44,10 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
                nil -> []
                note -> note.related_steps
              end,
-           shared_step_suggestions: []
+           shared_step_suggestions: [],
+           shared_goals: Study.list_shared_goals(link.id),
+           shared_step_ranking: Study.step_frequency_ranking(:shared, link.id),
+           goal_input: ""
          )}
     end
   end
@@ -109,6 +114,33 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
      )}
   end
 
+  # ── Goals ────────────────────────────────────────────────────────────
+
+  def handle_event("create_goal", %{"body" => body}, socket) do
+    link = socket.assigns.link
+
+    case Study.create_goal(%{body: body, teacher_student_link_id: link.id}) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:shared_goals, Study.list_shared_goals(link.id))
+         |> assign(:goal_input, "")}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_goal", %{"id" => id}, socket) do
+    Study.toggle_goal(id)
+    {:noreply, assign(socket, :shared_goals, Study.list_shared_goals(socket.assigns.link.id))}
+  end
+
+  def handle_event("delete_goal", %{"id" => id}, socket) do
+    Study.delete_goal(id)
+    {:noreply, assign(socket, :shared_goals, Study.list_shared_goals(socket.assigns.link.id))}
+  end
+
   @impl true
   def handle_info({:study_note_updated, link_id}, %{assigns: %{link: %{id: link_id}}} = socket) do
     note = Study.get_shared_note(link_id, socket.assigns.today)
@@ -130,14 +162,6 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
 
   defp note_content(nil), do: ""
   defp note_content(note), do: note.content
-
-  defp note_preview(content) when is_binary(content) do
-    content
-    |> String.trim()
-    |> String.slice(0, 120)
-  end
-
-  defp note_preview(_), do: ""
 
   defp prepend_unique_step(steps, nil), do: steps
 

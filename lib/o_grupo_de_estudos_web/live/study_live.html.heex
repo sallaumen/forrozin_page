@@ -263,6 +263,25 @@
               </div>
             <% end %>
           </section>
+          <%!-- Personal goals --%>
+          <section class="rounded-xl border border-ink-200 bg-white p-3 shadow-sm">
+            <h2 class="text-xs font-bold text-ink-900 m-0 mb-2 font-serif">Metas de estudo</h2>
+            <.goals_board goals={@personal_goals} goal_input={@goal_input} />
+          </section>
+
+          <%!-- Step ranking --%>
+          <%= if @personal_step_ranking != [] do %>
+            <section class="rounded-xl border border-ink-200 bg-white p-3 shadow-sm">
+              <h2 class="text-xs font-bold text-ink-900 m-0 mb-2 font-serif">
+                Passos mais estudados
+              </h2>
+              <.step_ranking
+                ranking={@personal_step_ranking}
+                total_notes={length(@personal_history)}
+              />
+            </section>
+          <% end %>
+
           <%!-- Encontrar professor (compact, in sidebar) --%>
           <section class="rounded-xl border border-ink-200 bg-white p-3 shadow-sm">
             <h2 class="text-xs font-bold text-ink-900 m-0 mb-2 font-serif">
