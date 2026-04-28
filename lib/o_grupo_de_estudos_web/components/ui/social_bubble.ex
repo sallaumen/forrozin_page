@@ -162,12 +162,6 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
         <% else %>
           <.icon name="hero-users" class="w-5 h-5 text-gold-500" />
         <% end %>
-        <% fcount = MapSet.size(@following_user_ids) %>
-        <%= if !@bubble_open && fcount > 0 do %>
-          <span class="absolute top-0 right-0 translate-x-1 -translate-y-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-accent-orange text-white text-[10px] font-bold rounded-full pointer-events-none font-sans">
-            {fcount}
-          </span>
-        <% end %>
       </button>
 
       <style>
