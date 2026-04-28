@@ -35,12 +35,14 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLive do
   end
 
   def handle_event("accept_invite", _, socket) do
-    case Study.accept_invite(socket.assigns.current_user, socket.assigns.teacher.invite_slug) do
+    teacher = socket.assigns.teacher
+
+    case Study.accept_invite(socket.assigns.current_user, teacher.invite_slug) do
       {:ok, _link} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Agora vocês já podem estudar juntos.")
-         |> push_navigate(to: ~p"/collection")}
+         |> put_flash(:info, "Pedido enviado! #{teacher.name || teacher.username} vai receber seu pedido.")
+         |> push_navigate(to: ~p"/users/#{teacher.username}")}
 
       {:error, :cannot_link_self} ->
         {:noreply, put_flash(socket, :error, "Você não pode se vincular a si mesmo.")}

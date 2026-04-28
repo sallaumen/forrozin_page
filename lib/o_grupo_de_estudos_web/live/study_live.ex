@@ -80,7 +80,11 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
     if user.invite_slug do
       invite_url = OGrupoDeEstudosWeb.Endpoint.url() <> "/study/invite/" <> user.invite_slug
-      {:noreply, push_event(socket, "clipboard:copy", %{text: invite_url})}
+
+      {:noreply,
+       socket
+       |> push_event("clipboard:copy", %{text: invite_url})
+       |> put_flash(:info, "Link copiado! Envie para seus alunos.")}
     else
       {:noreply, put_flash(socket, :error, "Link de convite não disponível.")}
     end
