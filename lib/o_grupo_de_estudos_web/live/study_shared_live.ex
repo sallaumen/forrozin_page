@@ -196,6 +196,17 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
     {:noreply, assign(socket, :shared_goals, Study.list_shared_goals(socket.assigns.link.id))}
   end
 
+  def handle_event("save_teacher_note", %{"link-id" => link_id, "note" => note}, socket) do
+    user = socket.assigns.current_user
+
+    if user.id == socket.assigns.link.teacher_id do
+      Study.update_teacher_note(link_id, note)
+      {:noreply, put_flash(socket, :info, "Anotacao salva.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_info({:study_note_updated, link_id}, %{assigns: %{link: %{id: link_id}}} = socket) do
     note = Study.get_shared_note(link_id, socket.assigns.today)

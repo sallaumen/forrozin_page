@@ -282,6 +282,18 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     end
   end
 
+  def handle_event("save_teacher_note", %{"link-id" => link_id, "note" => note}, socket) do
+    user = socket.assigns.current_user
+    link = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Study.TeacherStudentLink, link_id)
+
+    if user.id == link.teacher_id do
+      Study.update_teacher_note(link_id, note)
+      {:noreply, put_flash(socket, :info, "Anotacao salva.")}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("nudge_student", %{"link-id" => link_id}, socket) do
     user = socket.assigns.current_user
     link = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Study.TeacherStudentLink, link_id)

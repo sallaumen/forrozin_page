@@ -171,6 +171,18 @@ defmodule OGrupoDeEstudos.StudyTest do
     end
   end
 
+  describe "teacher_note" do
+    test "update_teacher_note/2 saves a private note" do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(link, teacher)
+
+      {:ok, updated} = Study.update_teacher_note(link.id, "Precisa focar em giros")
+      assert updated.teacher_note == "Precisa focar em giros"
+    end
+  end
+
   describe "suggest_teachers/2" do
     test "returns teachers not yet linked, excludes already-linked teacher" do
       student = insert(:user)
