@@ -45,7 +45,7 @@
       Este vínculo foi encerrado. O histórico continua visível, mas esta nota está somente leitura.
     </div>
 
-    <section class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+    <section class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_280px_240px]">
       <div class="flex flex-col gap-6">
         <%!-- Note editor --%>
         <section class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6">
@@ -265,6 +265,52 @@
             </h2>
             <.step_ranking ranking={@shared_step_ranking} total_notes={length(@history)} />
           </section>
+        <% end %>
+      </aside>
+
+      <%!-- Column 3: Context --%>
+      <aside class="hidden xl:flex flex-col gap-4">
+        <%!-- Counterpart card --%>
+        <div class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+          <div class="flex items-center gap-3 mb-3">
+            <.link navigate={~p"/users/#{@counterpart.username}"} class="no-underline">
+              <div class="w-10 h-10 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-sm font-bold">
+                {String.first(@counterpart.name || @counterpart.username) |> String.upcase()}
+              </div>
+            </.link>
+            <div>
+              <p class="text-sm font-bold text-ink-900 m-0">{@counterpart.name}</p>
+              <p class="text-[11px] text-ink-500 m-0">@{@counterpart.username}</p>
+            </div>
+          </div>
+
+          <%!-- Quick stats --%>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="text-center bg-ink-50 rounded-lg p-2 border border-ink-200">
+              <div class="text-lg font-bold text-ink-900">{length(@history)}</div>
+              <div class="text-[9px] text-ink-500">aulas</div>
+            </div>
+            <div class="text-center bg-ink-50 rounded-lg p-2 border border-ink-200">
+              <div class="text-lg font-bold text-ink-900">{length(@shared_step_ranking)}</div>
+              <div class="text-[9px] text-ink-500">passos</div>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Recently studied steps --%>
+        <%= if @shared_step_ranking != [] do %>
+          <div class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+            <h3 class="text-xs font-bold text-ink-900 m-0 mb-2 font-serif">
+              Estudados recentemente
+            </h3>
+            <div class="flex flex-wrap gap-1">
+              <%= for step <- Enum.take(@shared_step_ranking, 6) do %>
+                <span class="text-[10px] text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2 py-0.5">
+                  {step.code}
+                </span>
+              <% end %>
+            </div>
+          </div>
         <% end %>
       </aside>
     </section>

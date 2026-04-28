@@ -180,6 +180,22 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
     end
   end
 
+  describe "bidirectional connection suggestions" do
+    test "can set connection direction to 'from'", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "DIR-T", approved: true)
+
+      {:ok, lv, _html} = live(conn, ~p"/steps/#{step.code}")
+
+      render_click(lv, "start_suggest_connection", %{})
+      html = render_click(lv, "set_connection_direction", %{"direction" => "from"})
+
+      assert html =~ "Vem de"
+    end
+  end
+
   describe "pending suggestions visibility" do
     test "shows user's pending suggestions on the step page", %{conn: conn} do
       user = insert(:user)
