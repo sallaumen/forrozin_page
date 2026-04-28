@@ -24,7 +24,11 @@ defmodule OGrupoDeEstudosWeb.ResetPasswordLive do
   end
 
   @impl true
-  def handle_event("reset", %{"password" => password, "password_confirmation" => confirmation}, socket) do
+  def handle_event(
+        "reset",
+        %{"password" => password, "password_confirmation" => confirmation},
+        socket
+      ) do
     cond do
       String.length(password) < 8 ->
         {:noreply, assign(socket, error: "A senha precisa ter pelo menos 8 caracteres.")}

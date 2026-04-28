@@ -14,19 +14,19 @@
   <div class="sticky top-[48px] md:top-[52px] z-30 bg-ink-100 border-b border-ink-300/30 pb-2 pt-3 px-4">
     <div class="max-w-4xl mx-auto w-full">
       <div class="flex w-full p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
-      <%= for {sec_key, sec_label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"followers", "Seguidores"}] do %>
-        <button
-          phx-click="switch_section"
-          phx-value-section={sec_key}
-          class={[
-            "flex-1 py-2 px-4 rounded cursor-pointer font-serif text-sm font-semibold transition-all",
-            @active_section == sec_key && "bg-white text-accent-orange shadow-sm",
-            @active_section != sec_key && "bg-transparent text-ink-500 hover:text-ink-800"
-          ]}
-        >
-          {sec_label}
-        </button>
-      <% end %>
+        <%= for {sec_key, sec_label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"followers", "Seguidores"}] do %>
+          <button
+            phx-click="switch_section"
+            phx-value-section={sec_key}
+            class={[
+              "flex-1 py-2 px-4 rounded cursor-pointer font-serif text-sm font-semibold transition-all",
+              @active_section == sec_key && "bg-white text-accent-orange shadow-sm",
+              @active_section != sec_key && "bg-transparent text-ink-500 hover:text-ink-800"
+            ]}
+          >
+            {sec_label}
+          </button>
+        <% end %>
       </div>
     </div>
   </div>
@@ -300,7 +300,9 @@
         <div class="text-center py-16 px-5">
           <div class="text-4xl mb-3">🗺️</div>
           <p class="text-ink-600 font-semibold mb-1">Nenhuma sequência pública ainda</p>
-          <p class="text-sm text-ink-400 mb-4">Monte uma combinação de passos e compartilhe com todos!</p>
+          <p class="text-sm text-ink-400 mb-4">
+            Monte uma combinação de passos e compartilhe com todos!
+          </p>
           <.link
             navigate={~p"/graph/visual?mode=generator"}
             class="inline-flex items-center gap-1.5 rounded-full bg-accent-green px-5 py-2 text-sm font-bold text-white no-underline transition hover:bg-accent-green/90 cursor-pointer"
@@ -358,7 +360,9 @@
                         class="flex items-center gap-1 text-ink-400"
                       >
                         <.icon name="hero-chat-bubble-left" class="size-3" />
-                        <span class="font-medium tabular-nums">{Map.get(@seq_comment_counts, seq.id, 0)}</span>
+                        <span class="font-medium tabular-nums">
+                          {Map.get(@seq_comment_counts, seq.id, 0)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -475,7 +479,9 @@
                       <%= if is_expanded do %>
                         Fechar
                       <% else %>
-                        {if comment_count > 0, do: "#{comment_count} comentário(s)", else: "Comentar"}
+                        {if comment_count > 0,
+                          do: "#{comment_count} comentário(s)",
+                          else: "Comentar"}
                       <% end %>
                     </span>
                   </button>
@@ -679,14 +685,15 @@
           </button>
         <% end %>
       </div>
-
     </div>
 
     <%!-- User cards list --%>
     <div class="max-w-4xl mx-auto px-4 pt-1 pb-20 w-full box-border">
       <%= if @followers_list == [] do %>
         <div class="text-center py-16 px-5">
-          <div class="text-4xl mb-3">{if @followers_sub_tab == "following", do: "👥", else: "🌱"}</div>
+          <div class="text-4xl mb-3">
+            {if @followers_sub_tab == "following", do: "👥", else: "🌱"}
+          </div>
           <p class="text-ink-600 font-semibold mb-1">
             {if @followers_sub_tab == "following",
               do: "Você ainda não segue ninguém",
@@ -701,7 +708,12 @@
       <% else %>
         <div class="flex flex-col gap-3">
           <%= for person <- @followers_list do %>
-            <% stats = Map.get(@followers_stats, person.id, %{steps_count: 0, sequences_count: 0, badge: nil}) %>
+            <% stats =
+              Map.get(@followers_stats, person.id, %{
+                steps_count: 0,
+                sequences_count: 0,
+                badge: nil
+              }) %>
             <% badge = stats.badge %>
             <% steps_count = stats.steps_count %>
             <% seqs_count = stats.sequences_count %>

@@ -46,29 +46,25 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             navigate={~p"/collection"}
             class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
-            <.icon name="hero-rectangle-stack" class="size-4" />
-            Acervo
+            <.icon name="hero-rectangle-stack" class="size-4" /> Acervo
           </.link>
           <.link
             navigate={~p"/graph/visual"}
             class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
-            <.icon name="hero-map" class="size-4" />
-            Mapa
+            <.icon name="hero-map" class="size-4" /> Mapa
           </.link>
           <.link
             navigate={~p"/study"}
             class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
-            <.icon name="hero-book-open" class="size-4" />
-            Estudos
+            <.icon name="hero-book-open" class="size-4" /> Estudos
           </.link>
           <.link
             navigate={~p"/community"}
             class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
-            <.icon name="hero-users" class="size-4" />
-            Comunidade
+            <.icon name="hero-users" class="size-4" /> Comunidade
           </.link>
         </nav>
 

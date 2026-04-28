@@ -8,10 +8,37 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowserTest do
     category = insert(:category, name: "sacadas", label: "Sacadas", color: "#ef5b8d")
     section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
 
-    insert(:step, section: section, category: category, code: "SC-LOW", name: "Baixa", like_count: 1)
-    insert(:step, section: section, category: category, code: "SC-HIGH", name: "Alta", like_count: 5)
-    insert(:step, section: section, category: category, code: "SC-MID", name: "Media", like_count: 3)
-    insert(:step, section: section, category: category, code: "SC-EXTRA", name: "Extra", like_count: 2)
+    insert(:step,
+      section: section,
+      category: category,
+      code: "SC-LOW",
+      name: "Baixa",
+      like_count: 1
+    )
+
+    insert(:step,
+      section: section,
+      category: category,
+      code: "SC-HIGH",
+      name: "Alta",
+      like_count: 5
+    )
+
+    insert(:step,
+      section: section,
+      category: category,
+      code: "SC-MID",
+      name: "Media",
+      like_count: 3
+    )
+
+    insert(:step,
+      section: section,
+      category: category,
+      code: "SC-EXTRA",
+      name: "Extra",
+      like_count: 2
+    )
 
     [card] =
       Encyclopedia.list_sections_with_steps()
@@ -30,9 +57,31 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowserTest do
     section = insert(:section, title: "Giros", code: "G", position: 1, category: category)
     subsection = insert(:subsection, section: section, title: "Giros simples", position: 1)
 
-    insert(:step, section: section, subsection: subsection, category: category, code: "GS-1", name: "Primeiro", like_count: 4)
-    insert(:step, section: section, subsection: subsection, category: category, code: "GS-2", name: "Segundo", like_count: 1)
-    insert(:step, section: section, category: category, code: "GF-1", name: "Fora da subsecao", like_count: 2)
+    insert(:step,
+      section: section,
+      subsection: subsection,
+      category: category,
+      code: "GS-1",
+      name: "Primeiro",
+      like_count: 4
+    )
+
+    insert(:step,
+      section: section,
+      subsection: subsection,
+      category: category,
+      code: "GS-2",
+      name: "Segundo",
+      like_count: 1
+    )
+
+    insert(:step,
+      section: section,
+      category: category,
+      code: "GF-1",
+      name: "Fora da subsecao",
+      like_count: 2
+    )
 
     sections = Encyclopedia.list_sections_with_steps()
     details = CollectionBrowser.section_details(sections, section.id)
@@ -51,7 +100,13 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowserTest do
     category = insert(:category, name: "sacadas", label: "Sacadas", color: "#ef5b8d")
     section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
 
-    insert(:step, section: section, category: category, code: "SC-E", name: "Sacada de esquerda", like_count: 0)
+    insert(:step,
+      section: section,
+      category: category,
+      code: "SC-E",
+      name: "Sacada de esquerda",
+      like_count: 0
+    )
 
     sections = Encyclopedia.list_sections_with_steps()
     details = CollectionBrowser.section_details(sections, section.id)

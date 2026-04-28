@@ -12,7 +12,11 @@ defmodule OGrupoDeEstudos.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      dialyzer: [ignore_warnings: ".dialyzer_ignore.exs", list_unused_filters: true]
+      dialyzer: [
+        plt_add_apps: [:mix],
+        ignore_warnings: ".dialyzer_ignore.exs",
+        list_unused_filters: true
+      ]
     ]
   end
 
@@ -78,6 +82,7 @@ defmodule OGrupoDeEstudos.MixProject do
       # Qualidade de código
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:ex_check, "~> 0.16", only: [:dev], runtime: false},
       # Processamento de imagens (crop, resize)
       {:mogrify, "~> 0.9"},
       # Factories de teste

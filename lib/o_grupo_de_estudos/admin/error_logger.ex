@@ -12,6 +12,7 @@ defmodule OGrupoDeEstudos.Admin.ErrorLogger do
 
   @debounce_ms 5_000
 
+  @dialyzer {:nowarn_function, install: 0}
   def install do
     :logger.add_handler(:error_db_handler, __MODULE__, %{
       level: :error,

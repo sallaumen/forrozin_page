@@ -24,7 +24,7 @@
       />
       <div class="absolute inset-0 bg-gradient-to-t from-ink-100 via-ink-100/40 to-transparent" />
       <div class="absolute inset-x-0 bottom-0 px-6 pb-5 max-w-[760px] mx-auto w-full">
-        <code style={"font-family: monospace; font-size: 11px; font-weight: 700; color: white; background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 3px; letter-spacing: 1px;"}>
+        <code style="font-family: monospace; font-size: 11px; font-weight: 700; color: white; background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 3px; letter-spacing: 1px;">
           {@step.code}
         </code>
         <h1 class="mt-2 text-2xl md:text-3xl font-bold text-ink-900 m-0 leading-tight">
@@ -668,9 +668,13 @@
                     <span class="text-ink-400">→</span>
                     <span class="font-semibold text-accent-green">{sug.new_value}</span>
                   <% sug.action == "create_connection" -> %>
-                    Nova conexão: <span class="font-semibold text-accent-green">{sug.new_value}</span>
+                    Nova conexão:
+                    <span class="font-semibold text-accent-green">{sug.new_value}</span>
                   <% sug.action == "remove_connection" -> %>
-                    Remover conexão: <span class="font-semibold text-accent-red line-through">{sug.old_value}</span>
+                    Remover conexão:
+                    <span class="font-semibold text-accent-red line-through">
+                      {sug.old_value}
+                    </span>
                 <% end %>
               </div>
             </div>

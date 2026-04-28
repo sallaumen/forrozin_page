@@ -365,9 +365,19 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     seq_id = socket.assigns.expanded_seq
 
     case Engagement.create_sequence_comment(user, seq_id, %{body: body}) do
-      {:ok, _} -> {:noreply, reload_seq_expanded(socket)}
-      {:error, :rate_limited} -> {:noreply, put_flash(socket, :error, "Calma! Muitos comentários seguidos. Espere alguns segundinhos.")}
-      {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao postar comentário.")}
+      {:ok, _} ->
+        {:noreply, reload_seq_expanded(socket)}
+
+      {:error, :rate_limited} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "Calma! Muitos comentários seguidos. Espere alguns segundinhos."
+         )}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao postar comentário.")}
     end
   end
 

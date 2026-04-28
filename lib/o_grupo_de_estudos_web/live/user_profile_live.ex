@@ -114,7 +114,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         {:noreply, socket}
 
       {:error, :rate_limited} ->
-        {:noreply, put_flash(socket, :error, "Calma! Muitas ações seguidas. Espere alguns segundinhos.")}
+        {:noreply,
+         put_flash(socket, :error, "Calma! Muitas ações seguidas. Espere alguns segundinhos.")}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível registrar o like.")}
@@ -136,7 +137,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
          )}
 
       {:error, :rate_limited} ->
-        {:noreply, put_flash(socket, :error, "Calma! Muitas ações seguidas. Espere alguns segundinhos.")}
+        {:noreply,
+         put_flash(socket, :error, "Calma! Muitas ações seguidas. Espere alguns segundinhos.")}
 
       {:error, _} ->
         {:noreply, socket}

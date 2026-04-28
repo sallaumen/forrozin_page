@@ -458,7 +458,12 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         {:noreply, reload_step_comments(socket)}
 
       {:error, :rate_limited} ->
-        {:noreply, put_flash(socket, :error, "Calma! Muitos comentários seguidos. Espere alguns segundinhos.")}
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "Calma! Muitos comentários seguidos. Espere alguns segundinhos."
+         )}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Não foi possível postar o comentário.")}
@@ -553,8 +558,14 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         {:noreply,
          socket
          |> assign(suggesting_field: nil, suggestion_value: "")
-         |> assign(:my_pending_suggestions, Suggestions.list_user_pending_for_step(user.id, step.id))
-         |> put_flash(:info, "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis.")}
+         |> assign(
+           :my_pending_suggestions,
+           Suggestions.list_user_pending_for_step(user.id, step.id)
+         )
+         |> put_flash(
+           :info,
+           "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis."
+         )}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}
@@ -612,8 +623,14 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            connection_suggest_search: "",
            connection_suggest_results: []
          )
-         |> assign(:my_pending_suggestions, Suggestions.list_user_pending_for_step(user.id, step.id))
-         |> put_flash(:info, "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis.")}
+         |> assign(
+           :my_pending_suggestions,
+           Suggestions.list_user_pending_for_step(user.id, step.id)
+         )
+         |> put_flash(
+           :info,
+           "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis."
+         )}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao sugerir conexão")}
@@ -636,8 +653,14 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       {:ok, _} ->
         {:noreply,
          socket
-         |> assign(:my_pending_suggestions, Suggestions.list_user_pending_for_step(user.id, step.id))
-         |> put_flash(:info, "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis.")}
+         |> assign(
+           :my_pending_suggestions,
+           Suggestions.list_user_pending_for_step(user.id, step.id)
+         )
+         |> put_flash(
+           :info,
+           "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis."
+         )}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao sugerir remoção")}

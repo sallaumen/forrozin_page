@@ -21,7 +21,9 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
         |> render_change()
 
       assert html =~ "Treinamos sacadas hoje"
-      assert Study.get_shared_note(link.id, OGrupoDeEstudos.Brazil.today()).content == "Treinamos sacadas hoje"
+
+      assert Study.get_shared_note(link.id, OGrupoDeEstudos.Brazil.today()).content ==
+               "Treinamos sacadas hoje"
     end
 
     test "ended links remain visible but readonly", %{conn: conn} do

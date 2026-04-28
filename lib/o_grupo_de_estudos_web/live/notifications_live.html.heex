@@ -1,7 +1,7 @@
 <.top_nav
   current_user={@current_user}
   is_admin={@is_admin}
-    pending_suggestions_count={assigns[:pending_suggestions_count] || 0}
+  pending_suggestions_count={assigns[:pending_suggestions_count] || 0}
   nav_mode={@nav_mode}
   notification_count={@notification_count}
 />
@@ -53,7 +53,7 @@
             <span class="font-semibold text-ink-800">
               {primary_actor_name(notif)}
             </span>
-            <span :if={notif.count > 1} class="text-ink-500"> e mais  {notif.count - 1}</span>
+            <span :if={notif.count > 1} class="text-ink-500">{" e mais #{notif.count - 1}"}</span>
             <span class="text-ink-600">{action_text(notif)}</span>
             <span
               :if={target_name(notif)}

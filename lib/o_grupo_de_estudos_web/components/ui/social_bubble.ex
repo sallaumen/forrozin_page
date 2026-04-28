@@ -29,7 +29,11 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
 
   def social_bubble(assigns) do
     ~H"""
-    <div data-ui="social-bubble" phx-click-away="close_bubble" class="fixed inset-0 z-[39] pointer-events-none">
+    <div
+      data-ui="social-bubble"
+      phx-click-away="close_bubble"
+      class="fixed inset-0 z-[39] pointer-events-none"
+    >
       <%!-- Panel --%>
       <div
         :if={@bubble_open}
@@ -141,8 +145,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
             navigate={~p"/users/#{@current_user.username}"}
             class="flex items-center justify-center gap-1.5 text-xs text-accent-orange font-semibold no-underline hover:text-accent-orange/80 font-serif"
           >
-            <.icon name="hero-user-circle" class="w-3.5 h-3.5" />
-            Meu perfil
+            <.icon name="hero-user-circle" class="w-3.5 h-3.5" /> Meu perfil
           </.link>
         </div>
       </div>
