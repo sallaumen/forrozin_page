@@ -1982,6 +1982,24 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Clipboard copy handler (used by push_event from LiveView)
+window.addEventListener("phx:clipboard:copy", (event) => {
+  const text = event.detail.text
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+  } else {
+    // Fallback for older browsers
+    const ta = document.createElement("textarea")
+    ta.value = text
+    ta.style.position = "fixed"
+    ta.style.left = "-9999px"
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand("copy")
+    document.body.removeChild(ta)
+  }
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

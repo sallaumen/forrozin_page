@@ -11,11 +11,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
-  import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
-  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
   @graph_legend_hidden_categories ~w(convencoes footwork)
 

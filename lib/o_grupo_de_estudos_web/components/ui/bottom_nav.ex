@@ -21,6 +21,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
   attr :current_user, :map, required: true
   attr :current_path, :string, required: true
   attr :notification_count, :integer, default: 0
+  attr :pending_study_count, :integer, default: 0
 
   def bottom_nav(assigns) do
     tabs = [
@@ -78,6 +79,17 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
             ]}
           >
             {if @notification_count > 99, do: "99+", else: @notification_count}
+          </span>
+          <span
+            :if={tab.path == "/study" && @pending_study_count > 0}
+            class={[
+              "absolute top-1 right-1/4 min-w-[16px] h-4 px-0.5",
+              "flex items-center justify-center",
+              "bg-accent-red text-white text-[9px] font-bold rounded-full",
+              "animate-notification-pop pointer-events-none"
+            ]}
+          >
+            {@pending_study_count}
           </span>
         </li>
       </ul>

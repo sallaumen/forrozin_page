@@ -108,13 +108,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
     (core_sorted ++ footwork_sorted) |> Enum.take(3)
   end
 
-  defp illustrated_steps(steps) do
-    steps
-    |> Enum.filter(& &1.image_path)
-    |> Enum.sort_by(&{-(&1.like_count || 0), &1.name})
-    |> Enum.take(4)
-  end
-
   defp normalize_steps(steps) do
     Enum.map(steps, &normalize_step/1)
   end

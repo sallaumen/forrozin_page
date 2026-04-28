@@ -35,7 +35,9 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLiveTest do
              |> element("#study-invite-accept")
              |> render_click()
 
-      assert Enum.any?(Study.list_teachers_for_student(student.id), &(&1.id == teacher.id))
+      # accept_invite now creates a pending link; teacher must approve before it becomes active
+      pending = Study.list_pending_requests_for_teacher(teacher.id)
+      assert Enum.any?(pending, &(&1.student_id == student.id))
     end
   end
 end

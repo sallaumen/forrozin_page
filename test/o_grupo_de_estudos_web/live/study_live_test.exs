@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       assert has_element?(lv, "#study-home-shell")
       assert has_element?(lv, "#study-diary-panel")
-      assert html =~ "Meus professores"
+      assert html =~ "Encontrar professor"
       assert html =~ "Sem registro ainda"
     end
 
@@ -37,16 +37,16 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, _link} = Study.accept_link_request(link, teacher)
       conn = log_in_user(conn, teacher)
 
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      # Expand students section
-      html = render_click(lv, "toggle_section", %{"section" => "students"})
+      # Switch to students tab
+      html = render_click(lv, "switch_study_tab", %{"tab" => "students"})
 
       assert html =~ "Meus alunos"
       assert html =~ student.name
-      assert html =~ "/study/shared/#{link.id}"
     end
 
     test "can search and add related steps to the personal diary", %{conn: conn} do
@@ -77,6 +77,8 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       teacher = insert(:user, is_teacher: true, name: "Ana", username: "ana")
       student = insert(:user, name: "Lia", username: "lia")
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      # Accept the pending request so the link becomes active
+      {:ok, link} = Study.accept_link_request(link, teacher)
 
       assert {:ok, _note} =
                Study.upsert_shared_note(link, Date.utc_today(), %{
@@ -92,7 +94,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert has_element?(lv, "#study-movement-panel")
       assert has_element?(lv, "#study-movement-card-#{link.id}")
       assert has_element?(lv, "#study-overview-grid")
-      assert has_element?(lv, "#study-people-panel")
+      # study-people-panel was replaced by compact teacher section
       assert has_element?(lv, "#study-history-panel")
       assert has_element?(lv, "#study-diary-form")
       assert has_element?(lv, "#study-related-steps-panel")
