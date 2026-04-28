@@ -2,6 +2,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Engagement, Study}
+  alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -276,6 +277,18 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
         _ ->
           {:noreply, socket}
       end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("nudge_student", %{"link-id" => link_id}, socket) do
+    user = socket.assigns.current_user
+    link = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Study.TeacherStudentLink, link_id)
+
+    if user.id == link.teacher_id do
+      Dispatcher.notify_nudge(user, link.student_id, link.id)
+      {:noreply, put_flash(socket, :info, "Lembrete enviado!")}
     else
       {:noreply, socket}
     end
