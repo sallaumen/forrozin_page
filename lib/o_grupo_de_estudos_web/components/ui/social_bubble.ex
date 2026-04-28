@@ -33,7 +33,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
       <%!-- Panel --%>
       <div
         :if={@bubble_open}
-        class="absolute bottom-[88px] md:bottom-[72px] right-3 z-50 bg-ink-50 rounded-2xl shadow-2xl border border-ink-300/40 w-72 flex flex-col overflow-hidden pointer-events-auto"
+        class="absolute bottom-[136px] md:bottom-[72px] right-3 z-50 bg-ink-50 rounded-2xl shadow-2xl border border-ink-300/40 w-72 flex flex-col overflow-hidden pointer-events-auto"
         style="animation: fadeSlideUp 0.15s ease-out; max-height: min(65vh, 420px);"
       >
         <%!-- Header --%>
@@ -162,9 +162,10 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
         <% else %>
           <.icon name="hero-users" class="w-5 h-5 text-gold-500" />
         <% end %>
-        <%= if !@bubble_open && length(@suggested_users) > 0 do %>
+        <% fcount = MapSet.size(@following_user_ids) %>
+        <%= if !@bubble_open && fcount > 0 do %>
           <span class="absolute top-0 right-0 translate-x-1 -translate-y-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-accent-orange text-white text-[10px] font-bold rounded-full pointer-events-none font-sans">
-            {length(@suggested_users)}
+            {fcount}
           </span>
         <% end %>
       </button>
