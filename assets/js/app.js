@@ -1846,7 +1846,7 @@ const OnboardingTour = {
       {
         selector: isMobile
           ? '[data-ui="bottom-nav"] li:nth-child(3)'
-          : '#top-nav-desktop-primary-nav a:nth-child(3)',
+          : '#top-nav-desktop-primary-nav div:nth-child(3) a',
         title: 'Seu cantinho de treino.',
         text: 'Anota o que praticou, vincula os passos e vai acompanhando sua evolução.',
       },
@@ -1854,8 +1854,8 @@ const OnboardingTour = {
         selector: isMobile
           ? '[data-ui="bottom-nav"] li:nth-child(5)'
           : '#top-nav-desktop-primary-nav a:nth-child(4)',
-        title: 'Aqui a galera se encontra.',
-        text: 'Segue outros dançarinos, vê o que tão criando e compartilha suas sequências.',
+        title: 'Sequências da galera.',
+        text: 'Sequências que a galera criou. Você também pode criar as suas!',
       },
       {
         selector: '#collection-shell',

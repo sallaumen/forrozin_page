@@ -173,6 +173,8 @@
       <button
         phx-click="toggle_step_like"
         phx-value-id={@step.id}
+        aria-label={if @step_liked, do: "Remover curtida deste passo", else: "Curtir este passo"}
+        aria-pressed={to_string(@step_liked)}
         class="flex items-center gap-1.5 group"
       >
         <.icon
@@ -195,6 +197,10 @@
       <button
         phx-click="toggle_step_favorite"
         phx-value-id={@step.id}
+        aria-label={
+          if @step_favorited, do: "Remover dos favoritos", else: "Adicionar aos favoritos"
+        }
+        aria-pressed={to_string(@step_favorited)}
         class="flex items-center gap-1.5 group"
       >
         <.icon

@@ -54,6 +54,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        seq_favorites: seq_favorites,
        seq_comment_counts: seq_comment_counts,
        seq_search: "",
+       seq_sort: "popular",
        active_seq_tab: "community",
        my_sequences: [],
        expanded_seq: nil,
@@ -90,6 +91,21 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     {:noreply, assign(socket, seq_search: term, sequences: filtered)}
+  end
+
+  def handle_event("sort_sequences", %{"sort" => sort}, socket) do
+    sorted =
+      case sort do
+        "recent" ->
+          Enum.sort_by(socket.assigns.sequences_all, & &1.inserted_at, {:desc, NaiveDateTime})
+
+        _ ->
+          Enum.sort_by(socket.assigns.sequences_all, fn seq ->
+            {-seq.like_count, seq.inserted_at}
+          end)
+      end
+
+    {:noreply, assign(socket, sequences: sorted, seq_sort: sort)}
   end
 
   def handle_event("switch_seq_tab", %{"tab" => tab}, socket) do
