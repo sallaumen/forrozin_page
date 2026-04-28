@@ -413,11 +413,29 @@
                         />
                         <div class="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/25 to-transparent" />
                         <div class="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-                          <div class="text-[10px] uppercase tracking-[0.18em] text-white/80">
-                            {step.code}
-                          </div>
-                          <div class="mt-1 text-sm font-bold leading-tight text-white sm:text-base">
-                            {step.name}
+                          <div class="flex items-center justify-between">
+                            <div>
+                              <div class="text-[10px] uppercase tracking-[0.18em] text-white/80">
+                                {step.code}
+                              </div>
+                              <div class="mt-1 text-sm font-bold leading-tight text-white sm:text-base">
+                                {step.name}
+                              </div>
+                            </div>
+                            <div class="flex gap-1">
+                              <span
+                                :if={step.suggested_by_id}
+                                class="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white"
+                              >
+                                <.icon name="hero-user" class="w-2.5 h-2.5" />
+                              </span>
+                              <span
+                                :if={MapSet.member?(@steps_with_links, step.id)}
+                                class="flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white"
+                              >
+                                <.icon name="hero-play" class="w-2.5 h-2.5" />
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -438,9 +456,27 @@
                             {step.name}
                           </div>
                         </div>
-                        <span class="rounded-full bg-gold-500/15 px-2 py-1 text-[10px] font-semibold text-gold-700 sm:px-2.5 sm:text-xs">
-                          {step.like_count || 0} likes
-                        </span>
+                        <div class="flex flex-col items-end gap-1 shrink-0">
+                          <span class="rounded-full bg-gold-500/15 px-2 py-1 text-[10px] font-semibold text-gold-700 sm:px-2.5 sm:text-xs">
+                            {step.like_count || 0} likes
+                          </span>
+                          <div class="flex gap-1">
+                            <span
+                              :if={step.suggested_by_id}
+                              title="Contribuição da comunidade"
+                              class="flex items-center justify-center w-4 h-4 rounded-full bg-[#8e44ad]/10 text-[#8e44ad]"
+                            >
+                              <.icon name="hero-user" class="w-2.5 h-2.5" />
+                            </span>
+                            <span
+                              :if={MapSet.member?(@steps_with_links, step.id)}
+                              title="Tem vídeo/link"
+                              class="flex items-center justify-center w-4 h-4 rounded-full bg-accent-orange/10 text-accent-orange"
+                            >
+                              <.icon name="hero-play" class="w-2.5 h-2.5" />
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </button>
                   <% end %>
