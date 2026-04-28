@@ -1,8 +1,11 @@
 defmodule OGrupoDeEstudosWeb.StudyLiveTest do
   use OGrupoDeEstudosWeb.ConnCase, async: true
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
 
+  alias OGrupoDeEstudos.Engagement.Notifications.Notification
+  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Study
 
   describe "access" do
@@ -175,6 +178,45 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       updated = Study.list_personal_note_history(user.id) |> hd()
       refute Enum.any?(updated.related_steps, &(&1.id == step.id))
+    end
+
+    test "teacher can nudge a student who has not written today", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(link, teacher)
+
+      conn = log_in_user(conn, teacher)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      html = render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      assert html =~ "Cutucada"
+
+      render_click(lv, "nudge_student", %{"link-id" => link.id})
+
+      notifications =
+        Repo.all(
+          from n in Notification,
+            where: n.user_id == ^student.id and n.action == "study_nudge"
+        )
+
+      assert notifications != []
+    end
+
+    test "nudge button is not shown when student already wrote today", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(link, teacher)
+
+      # Student writes in the shared diary today
+      Study.upsert_shared_note(link, Date.utc_today(), %{content: "Estudei hoje", step_ids: []})
+
+      conn = log_in_user(conn, teacher)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      html = render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      refute html =~ "Cutucada"
     end
 
     test "shows weekly study summary in the hero area", %{conn: conn} do

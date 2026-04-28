@@ -158,6 +158,26 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     assert notif.target_id == link.id
   end
 
+  test "notify_nudge/3 creates a study_nudge notification for the student" do
+    teacher = insert(:user, is_teacher: true)
+    student = insert(:user)
+    {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+    {:ok, link} = Study.accept_link_request(link, teacher)
+
+    Dispatcher.notify_nudge(teacher, student.id, link.id)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^student.id and n.action == "study_nudge"
+      )
+
+    assert [notif] = notifications
+    assert notif.actor_id == teacher.id
+    assert notif.target_id == link.id
+    assert notif.target_type == "study_link"
+  end
+
   test "following a user creates a follow notification" do
     follower = insert(:user)
     followed = insert(:user)

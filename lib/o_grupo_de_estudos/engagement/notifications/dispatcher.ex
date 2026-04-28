@@ -136,6 +136,24 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end)
   end
 
+  @doc "Teacher sends a gentle reminder to an inactive student."
+  def notify_nudge(teacher, student_id, link_id) do
+    insert_and_broadcast([student_id], fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: teacher.id,
+        action: "study_nudge",
+        group_key: "nudge:#{link_id}:#{Date.utc_today()}",
+        target_type: "study_link",
+        target_id: link_id,
+        parent_type: "study_link",
+        parent_id: link_id,
+        inserted_at: now()
+      }
+    end)
+  end
+
   @doc "Notifies the student when their teacher writes in the shared diary."
   def notify_shared_note(teacher, student_id, link_id) do
     insert_and_broadcast([student_id], fn user_id ->

@@ -447,6 +447,14 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
     ~p"/study/shared/#{id}"
   end
 
+  defp notification_path(%{
+         action: "study_nudge",
+         target_type: "study_link",
+         target_id: id
+       }) do
+    ~p"/study/shared/#{id}"
+  end
+
   defp notification_path(%{parent_type: "study_link"}) do
     ~p"/study"
   end
@@ -492,6 +500,10 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   defp action_text(%{action: "study_request"}), do: " quer estudar com você"
   defp action_text(%{action: "study_accepted"}), do: " aceitou seu pedido de estudo"
   defp action_text(%{action: "shared_note_updated"}), do: " escreveu no diário compartilhado"
+
+  defp action_text(%{action: "study_nudge"}),
+    do: " mandou um lembrete: hora de escrever no diário!"
+
   defp action_text(_), do: " interagiu"
 
   defp time_ago(datetime) do

@@ -577,6 +577,15 @@
                     </p>
                   </div>
                 </.link>
+                <button
+                  :if={!wrote_today}
+                  type="button"
+                  phx-click="nudge_student"
+                  phx-value-link-id={link.id}
+                  class="text-[10px] font-semibold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2.5 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors shrink-0"
+                >
+                  Cutucada
+                </button>
                 <.link
                   navigate={~p"/study/shared/#{link.id}"}
                   class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-3 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
