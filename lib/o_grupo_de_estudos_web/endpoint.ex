@@ -8,7 +8,8 @@ defmodule OGrupoDeEstudosWeb.Endpoint do
     store: :cookie,
     key: "_o_grupo_de_estudos_key",
     signing_salt: "cBOx9GwA",
-    same_site: "Lax"
+    same_site: "Lax",
+    max_age: 30 * 24 * 60 * 60
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
