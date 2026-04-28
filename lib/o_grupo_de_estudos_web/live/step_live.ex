@@ -18,6 +18,9 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
+  use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
+
+  import OGrupoDeEstudosWeb.UI.ActivityToast
 
   @impl true
   def mount(%{"code" => code}, _session, socket) do

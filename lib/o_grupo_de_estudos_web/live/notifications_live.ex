@@ -24,6 +24,9 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
+  use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
+
+  import OGrupoDeEstudosWeb.UI.ActivityToast
 
   @page_size 20
 

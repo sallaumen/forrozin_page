@@ -28,6 +28,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
+  use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
+
+  import OGrupoDeEstudosWeb.UI.ActivityToast
 
   @dialyzer {:nowarn_function, mount: 3}
   @impl true

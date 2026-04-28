@@ -16,6 +16,7 @@ defmodule OGrupoDeEstudos.Application do
         {DNSCluster,
          query: Application.get_env(:o_grupo_de_estudos, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: OGrupoDeEstudos.PubSub},
+        OGrupoDeEstudosWeb.Presence,
         OGrupoDeEstudos.RateLimiter,
         {Oban, Application.fetch_env!(:o_grupo_de_estudos, Oban)},
         OGrupoDeEstudosWeb.Endpoint

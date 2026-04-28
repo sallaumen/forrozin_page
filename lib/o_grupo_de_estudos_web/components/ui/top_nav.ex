@@ -29,6 +29,8 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   attr :edit_action_enabled, :boolean, default: false
   attr :edit_action_event, :string, default: "toggle_edit_mode"
   attr :edit_mode, :boolean, default: false
+  attr :online_users, :list, default: []
+  attr :online_count, :integer, default: 0
 
   def top_nav(assigns) do
     ~H"""
@@ -167,6 +169,23 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             />
             <span>{if @edit_mode, do: "Sair edição", else: "Editar"}</span>
           </button>
+
+          <%= if @online_count > 1 do %>
+            <div class="flex items-center gap-2">
+              <div class="flex -space-x-1.5">
+                <%= for user <- Enum.take(@online_users, 3) do %>
+                  <div
+                    class="w-6 h-6 rounded-full bg-accent-green/20 border-2 border-ink-900 flex items-center justify-center text-[8px] font-bold text-accent-green"
+                    title={"@#{user.username}"}
+                  >
+                    {String.first(user.username) |> String.upcase()}
+                  </div>
+                <% end %>
+              </div>
+              <span class="text-[10px] text-accent-green font-medium">{@online_count} online</span>
+            </div>
+            <span class="h-5 w-px bg-ink-100/10"></span>
+          <% end %>
 
           <span class="h-5 w-px bg-ink-100/10" />
 

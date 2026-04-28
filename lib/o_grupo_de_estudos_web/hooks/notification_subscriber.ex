@@ -13,6 +13,37 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
     if Phoenix.LiveView.connected?(socket) && socket.assigns[:current_user] do
       user = socket.assigns.current_user
       Phoenix.PubSub.subscribe(OGrupoDeEstudos.PubSub, "notifications:#{user.id}")
+      Phoenix.PubSub.subscribe(OGrupoDeEstudos.PubSub, "activity:#{user.id}")
+
+      # Track online presence
+      OGrupoDeEstudosWeb.Presence.track(
+        self(),
+        "users:online",
+        user.id,
+        %{
+          username: user.username,
+          name: user.name,
+          joined_at: System.system_time(:second)
+        }
+      )
+
+      online_users =
+        OGrupoDeEstudosWeb.Presence.list("users:online")
+        |> Map.keys()
+        |> Enum.reject(&(&1 == user.id))
+        |> Enum.take(5)
+        |> Enum.map(fn uid ->
+          case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Accounts.User, uid) do
+            nil -> nil
+            u -> %{id: u.id, username: u.username, name: u.name}
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+
+      online_count =
+        OGrupoDeEstudosWeb.Presence.list("users:online")
+        |> map_size()
+
       unread = OGrupoDeEstudos.Engagement.unread_count(user.id)
 
       pending_suggestions =
@@ -38,14 +69,20 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
        assign(socket,
          notification_count: unread,
          pending_suggestions_count: pending_suggestions,
-         pending_study_count: pending_study
+         pending_study_count: pending_study,
+         online_users: online_users,
+         online_count: online_count,
+         activity_toast: nil
        )}
     else
       {:cont,
        assign(socket,
          notification_count: 0,
          pending_suggestions_count: 0,
-         pending_study_count: 0
+         pending_study_count: 0,
+         online_users: [],
+         online_count: 0,
+         activity_toast: nil
        )}
     end
   end

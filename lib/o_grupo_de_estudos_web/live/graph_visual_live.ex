@@ -14,6 +14,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
+  use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
+
+  import OGrupoDeEstudosWeb.UI.ActivityToast
 
   @graph_legend_hidden_categories ~w(convencoes footwork)
 

@@ -13,7 +13,10 @@
     edit_action_event="toggle_edit"
     edit_mode={@edit_mode}
     pending_study_count={assigns[:pending_study_count] || 0}
+    online_users={assigns[:online_users] || []}
+    online_count={assigns[:online_count] || 0}
   />
+  <.activity_toast toast={assigns[:activity_toast]} />
 
   <%!-- Cover image (Notion-style) --%>
   <%= if @step_image do %>
