@@ -99,6 +99,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            suggesting_field: nil,
            suggestion_value: "",
            suggesting_connection: false,
+           connection_suggest_direction: "to",
            connection_suggest_search: "",
            connection_suggest_results: [],
            my_pending_suggestions: Suggestions.list_user_pending_for_step(user_id, step.id),
@@ -126,9 +127,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("update_step", %{"step" => params}, socket) do
-    if not socket.assigns.can_edit do
-      {:noreply, socket}
-    else
+    if socket.assigns.can_edit do
       case Admin.update_step(socket.assigns.step, params) do
         {:ok, updated} ->
           updated =
@@ -150,13 +149,13 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao salvar")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   def handle_event("delete_step", _params, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       step = socket.assigns.step
 
       # Soft-delete all connections first (cascade)
@@ -172,13 +171,13 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao deletar passo")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   def handle_event("search_connection", %{"target_code" => term}, socket) do
-    if not socket.assigns.can_edit or String.length(term) < 1 do
-      {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
-    else
+    if socket.assigns.can_edit and String.length(term) >= 1 do
       suggestions =
         StepQuery.list_by(
           status: "published",
@@ -189,6 +188,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         )
 
       {:noreply, assign(socket, connection_search: term, connection_suggestions: suggestions)}
+    else
+      {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
     end
   end
 
@@ -197,21 +198,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("create_connection", %{"target_code" => target_code}, socket) do
-    if not socket.assigns.can_edit do
-      {:noreply, socket}
+    if socket.assigns.can_edit do
+      do_create_outgoing_connection(socket, target_code)
     else
-      target = StepQuery.get_by(code: target_code)
-
-      if is_nil(target) do
-        {:noreply, put_flash(socket, :error, "Passo não encontrado")}
-      else
-        step = socket.assigns.step
-
-        case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
-          {:ok, _} -> {:noreply, reload_step(socket, step.code)}
-          {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
-        end
-      end
+      {:noreply, socket}
     end
   end
 
@@ -220,9 +210,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         %{"source" => source_code, "target" => target_code},
         socket
       ) do
-    if not socket.assigns.can_edit do
-      {:noreply, socket}
-    else
+    if socket.assigns.can_edit do
       connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
 
       if connection do
@@ -231,15 +219,15 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       else
         {:noreply, put_flash(socket, :error, "Conexão não encontrada")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   # --- Incoming connections ---
 
   def handle_event("search_incoming_connection", %{"source_code" => term}, socket) do
-    if not socket.assigns.can_edit or String.length(term) < 1 do
-      {:noreply, assign(socket, incoming_search: term, incoming_suggestions: [])}
-    else
+    if socket.assigns.can_edit and String.length(term) >= 1 do
       suggestions =
         StepQuery.list_by(
           search: term,
@@ -249,6 +237,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         )
 
       {:noreply, assign(socket, incoming_search: term, incoming_suggestions: suggestions)}
+    else
+      {:noreply, assign(socket, incoming_search: term, incoming_suggestions: [])}
     end
   end
 
@@ -257,21 +247,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("create_incoming_connection", %{"source_code" => source_code}, socket) do
-    if not socket.assigns.can_edit do
-      {:noreply, socket}
+    if socket.assigns.can_edit do
+      do_create_incoming_connection(socket, source_code)
     else
-      source = StepQuery.get_by(code: source_code)
-
-      if is_nil(source) do
-        {:noreply, put_flash(socket, :error, "Passo não encontrado")}
-      else
-        step = socket.assigns.step
-
-        case Admin.create_connection(%{source_step_id: source.id, target_step_id: step.id}) do
-          {:ok, _} -> {:noreply, reload_step(socket, step.code)}
-          {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
-        end
-      end
+      {:noreply, socket}
     end
   end
 
@@ -344,9 +323,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   # --- Unapprove step ---
 
   def handle_event("unapprove_step", _params, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       case Admin.unapprove_step(socket.assigns.step) do
         {:ok, _} ->
           {:noreply,
@@ -357,6 +334,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao desaprovar")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
@@ -582,9 +561,15 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     {:noreply,
      assign(socket,
        suggesting_connection: false,
+       connection_suggest_direction: "to",
        connection_suggest_search: "",
        connection_suggest_results: []
      )}
+  end
+
+  def handle_event("set_connection_direction", %{"direction" => dir}, socket)
+      when dir in ["to", "from"] do
+    {:noreply, assign(socket, :connection_suggest_direction, dir)}
   end
 
   def handle_event("search_suggest_connection", params, socket) do
@@ -610,18 +595,27 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   def handle_event("submit_connection_suggestion", %{"target_code" => target_code}, socket) do
     user = socket.assigns.current_user
     step = socket.assigns.step
+    direction = socket.assigns.connection_suggest_direction
+
+    new_value =
+      if direction == "from" do
+        "#{target_code}\u2192#{step.code}"
+      else
+        "#{step.code}\u2192#{target_code}"
+      end
 
     case Suggestions.create(user, %{
            target_type: "connection",
            target_id: step.id,
            action: "create_connection",
-           new_value: "#{step.code}\u2192#{target_code}"
+           new_value: new_value
          }) do
       {:ok, _} ->
         {:noreply,
          socket
          |> assign(
            suggesting_connection: false,
+           connection_suggest_direction: "to",
            connection_suggest_search: "",
            connection_suggest_results: []
          )
@@ -666,6 +660,36 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao sugerir remoção")}
+    end
+  end
+
+  defp do_create_outgoing_connection(socket, target_code) do
+    target = StepQuery.get_by(code: target_code)
+
+    if is_nil(target) do
+      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+    else
+      step = socket.assigns.step
+
+      case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
+        {:ok, _} -> {:noreply, reload_step(socket, step.code)}
+        {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
+      end
+    end
+  end
+
+  defp do_create_incoming_connection(socket, source_code) do
+    source = StepQuery.get_by(code: source_code)
+
+    if is_nil(source) do
+      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+    else
+      step = socket.assigns.step
+
+      case Admin.create_connection(%{source_step_id: source.id, target_step_id: step.id}) do
+        {:ok, _} -> {:noreply, reload_step(socket, step.code)}
+        {:error, _} -> {:noreply, put_flash(socket, :error, "Conexão já existe")}
+      end
     end
   end
 
@@ -760,33 +784,31 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   - URLs with additional query parameters (only `v` is used)
   """
   def youtube_embed_url(url) when is_binary(url) do
-    uri = URI.parse(url)
+    url |> URI.parse() |> extract_youtube_id()
+  end
 
-    cond do
-      uri.host in ["www.youtube.com", "youtube.com"] and uri.path == "/watch" ->
-        case URI.decode_query(uri.query || "") do
-          %{"v" => video_id} when video_id != "" ->
-            {:youtube, "https://www.youtube.com/embed/#{video_id}"}
+  def youtube_embed_url(_), do: :external
 
-          _ ->
-            :external
-        end
+  defp extract_youtube_id(%URI{host: host, path: "/watch", query: query})
+       when host in ["www.youtube.com", "youtube.com"] do
+    case URI.decode_query(query || "") do
+      %{"v" => video_id} when video_id != "" ->
+        {:youtube, "https://www.youtube.com/embed/#{video_id}"}
 
-      uri.host == "youtu.be" and is_binary(uri.path) ->
-        video_id = String.trim_leading(uri.path, "/")
-
-        if video_id != "" do
-          {:youtube, "https://www.youtube.com/embed/#{video_id}"}
-        else
-          :external
-        end
-
-      true ->
+      _ ->
         :external
     end
   end
 
-  def youtube_embed_url(_), do: :external
+  defp extract_youtube_id(%URI{host: "youtu.be", path: path}) when is_binary(path) do
+    video_id = String.trim_leading(path, "/")
+
+    if video_id != "",
+      do: {:youtube, "https://www.youtube.com/embed/#{video_id}"},
+      else: :external
+  end
+
+  defp extract_youtube_id(_uri), do: :external
 
   @step_image_overrides %{
     "SC" => "/images/collection/sacada-simples.png",

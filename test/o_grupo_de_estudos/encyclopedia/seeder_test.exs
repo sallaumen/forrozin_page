@@ -5,11 +5,11 @@ defmodule OGrupoDeEstudos.Encyclopedia.SeederTest do
 
   alias OGrupoDeEstudos.Encyclopedia.{
     Category,
-    TechnicalConcept,
-    Step,
     Section,
     Seeder,
-    Subsection
+    Step,
+    Subsection,
+    TechnicalConcept
   }
 
   describe "seed!/0" do

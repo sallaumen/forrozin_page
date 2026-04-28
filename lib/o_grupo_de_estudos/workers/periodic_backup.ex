@@ -31,16 +31,16 @@ defmodule OGrupoDeEstudos.Workers.PeriodicBackup do
     cutoff = NaiveDateTime.add(NaiveDateTime.utc_now(), -@max_age_days * 86_400)
 
     Backup.list_backups(dir)
-    |> Enum.each(fn path ->
-      case Backup.backup_info(path) do
-        %{timestamp: ts} when not is_nil(ts) ->
-          if NaiveDateTime.compare(ts, cutoff) == :lt do
-            File.rm(path)
-          end
+    |> Enum.each(fn path -> maybe_delete_old_backup(path, cutoff) end)
+  end
 
-        _ ->
-          :skip
-      end
-    end)
+  defp maybe_delete_old_backup(path, cutoff) do
+    case Backup.backup_info(path) do
+      %{timestamp: ts} when not is_nil(ts) ->
+        if NaiveDateTime.compare(ts, cutoff) == :lt, do: File.rm(path)
+
+      _ ->
+        :skip
+    end
   end
 end

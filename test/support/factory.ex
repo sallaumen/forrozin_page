@@ -6,20 +6,20 @@ defmodule OGrupoDeEstudos.Factory do
 
   alias OGrupoDeEstudos.Encyclopedia.{
     Category,
-    TechnicalConcept,
     Connection,
-    Step,
     Section,
+    Step,
     StepLink,
-    Subsection
+    Subsection,
+    TechnicalConcept
   }
 
-  alias OGrupoDeEstudos.Suggestions.Suggestion
-  alias OGrupoDeEstudos.Engagement.{Like, ProfileComment, Favorite, Follow}
-  alias OGrupoDeEstudos.Engagement.Comments.{StepComment, SequenceComment}
+  alias OGrupoDeEstudos.Engagement.Comments.{SequenceComment, StepComment}
+  alias OGrupoDeEstudos.Engagement.{Favorite, Follow, Like, ProfileComment}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
   alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
+  alias OGrupoDeEstudos.Suggestions.Suggestion
 
   def user_factory do
     %User{

@@ -8,9 +8,9 @@ defmodule OGrupoDeEstudos.Sequences do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Encyclopedia.StepQuery
-  alias OGrupoDeEstudos.Sequences.{Generator, Sequence, SequenceStep, SequenceQuery}
+  alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Sequences.{Generator, Sequence, SequenceQuery, SequenceStep}
 
   @doc """
   Generates sequences by traversing the step connection graph.
@@ -36,18 +36,7 @@ defmodule OGrupoDeEstudos.Sequences do
 
       case Repo.insert(changeset) do
         {:ok, sequence} ->
-          step_ids
-          |> Enum.with_index(1)
-          |> Enum.each(fn {step_id, position} ->
-            %SequenceStep{}
-            |> SequenceStep.changeset(%{
-              sequence_id: sequence.id,
-              step_id: step_id,
-              position: position
-            })
-            |> Repo.insert!()
-          end)
-
+          insert_sequence_step_ids(sequence, step_ids)
           Repo.preload(sequence, sequence_steps: :step)
 
         {:error, changeset} ->
@@ -71,44 +60,53 @@ defmodule OGrupoDeEstudos.Sequences do
   def create_manual_sequence(user_id, attrs) do
     step_codes = Map.get(attrs, :step_codes, Map.get(attrs, "step_codes", []))
 
-    steps =
-      step_codes
-      |> Enum.map(&StepQuery.get_by(code: &1))
-      |> Enum.reject(&is_nil/1)
-
-    if length(steps) != length(step_codes) do
-      {:error, :invalid_codes}
-    else
+    with {:ok, steps} <- resolve_step_codes(step_codes) do
       Repo.transaction(fn ->
-        changeset =
-          Sequence.changeset(%Sequence{}, %{
-            name: Map.get(attrs, :name, Map.get(attrs, "name", "")),
-            user_id: user_id,
-            description: Map.get(attrs, :description, Map.get(attrs, "description")),
-            video_url: Map.get(attrs, :video_url, Map.get(attrs, "video_url")),
-            allow_repeats: true
-          })
-
-        case Repo.insert(changeset) do
-          {:ok, sequence} ->
-            steps
-            |> Enum.with_index(1)
-            |> Enum.each(fn {step, position} ->
-              %SequenceStep{}
-              |> SequenceStep.changeset(%{
-                sequence_id: sequence.id,
-                step_id: step.id,
-                position: position
-              })
-              |> Repo.insert!()
-            end)
-
-            Repo.preload(sequence, sequence_steps: :step)
-
-          {:error, changeset} ->
-            Repo.rollback(changeset)
-        end
+        insert_manual_sequence_txn(user_id, attrs, steps)
       end)
+    end
+  end
+
+  defp update_manual_sequence_txn(sequence, attrs, steps) do
+    update_attrs = %{
+      name: Map.get(attrs, :name, Map.get(attrs, "name", "")),
+      description: Map.get(attrs, :description, Map.get(attrs, "description")),
+      video_url: Map.get(attrs, :video_url, Map.get(attrs, "video_url")),
+      allow_repeats: true
+    }
+
+    case sequence |> Sequence.changeset(update_attrs) |> Repo.update() do
+      {:ok, updated} ->
+        from(ss in SequenceStep,
+          where: ss.sequence_id == ^sequence.id and is_nil(ss.deleted_at)
+        )
+        |> Repo.delete_all()
+
+        insert_sequence_steps(sequence, steps)
+        Repo.preload(updated, [sequence_steps: [step: :category]], force: true)
+
+      {:error, changeset} ->
+        Repo.rollback(changeset)
+    end
+  end
+
+  defp insert_manual_sequence_txn(user_id, attrs, steps) do
+    changeset =
+      Sequence.changeset(%Sequence{}, %{
+        name: Map.get(attrs, :name, Map.get(attrs, "name", "")),
+        user_id: user_id,
+        description: Map.get(attrs, :description, Map.get(attrs, "description")),
+        video_url: Map.get(attrs, :video_url, Map.get(attrs, "video_url")),
+        allow_repeats: true
+      })
+
+    case Repo.insert(changeset) do
+      {:ok, sequence} ->
+        insert_sequence_steps(sequence, steps)
+        Repo.preload(sequence, sequence_steps: :step)
+
+      {:error, changeset} ->
+        Repo.rollback(changeset)
     end
   end
 
@@ -121,46 +119,9 @@ defmodule OGrupoDeEstudos.Sequences do
   def update_manual_sequence(%Sequence{} = sequence, attrs) do
     step_codes = Map.get(attrs, :step_codes, Map.get(attrs, "step_codes", []))
 
-    steps =
-      step_codes
-      |> Enum.map(&StepQuery.get_by(code: &1))
-      |> Enum.reject(&is_nil/1)
-
-    if length(steps) != length(step_codes) do
-      {:error, :invalid_codes}
-    else
+    with {:ok, steps} <- resolve_step_codes(step_codes) do
       Repo.transaction(fn ->
-        update_attrs = %{
-          name: Map.get(attrs, :name, Map.get(attrs, "name", "")),
-          description: Map.get(attrs, :description, Map.get(attrs, "description")),
-          video_url: Map.get(attrs, :video_url, Map.get(attrs, "video_url")),
-          allow_repeats: true
-        }
-
-        case sequence |> Sequence.changeset(update_attrs) |> Repo.update() do
-          {:ok, updated} ->
-            from(ss in SequenceStep,
-              where: ss.sequence_id == ^sequence.id and is_nil(ss.deleted_at)
-            )
-            |> Repo.delete_all()
-
-            steps
-            |> Enum.with_index(1)
-            |> Enum.each(fn {step, position} ->
-              %SequenceStep{}
-              |> SequenceStep.changeset(%{
-                sequence_id: sequence.id,
-                step_id: step.id,
-                position: position
-              })
-              |> Repo.insert!()
-            end)
-
-            Repo.preload(updated, [sequence_steps: [step: :category]], force: true)
-
-          {:error, changeset} ->
-            Repo.rollback(changeset)
-        end
+        update_manual_sequence_txn(sequence, attrs, steps)
       end)
     end
   end
@@ -201,5 +162,44 @@ defmodule OGrupoDeEstudos.Sequences do
     sequence
     |> Sequence.changeset(attrs)
     |> Repo.update()
+  end
+
+  # ── Private helpers ─────────────────────────────────────────
+
+  defp resolve_step_codes(step_codes) do
+    steps =
+      step_codes
+      |> Enum.map(&StepQuery.get_by(code: &1))
+      |> Enum.reject(&is_nil/1)
+
+    if length(steps) == length(step_codes), do: {:ok, steps}, else: {:error, :invalid_codes}
+  end
+
+  defp insert_sequence_step_ids(sequence, step_ids) do
+    step_ids
+    |> Enum.with_index(1)
+    |> Enum.each(fn {step_id, position} ->
+      %SequenceStep{}
+      |> SequenceStep.changeset(%{
+        sequence_id: sequence.id,
+        step_id: step_id,
+        position: position
+      })
+      |> Repo.insert!()
+    end)
+  end
+
+  defp insert_sequence_steps(sequence, steps) do
+    steps
+    |> Enum.with_index(1)
+    |> Enum.each(fn {step, position} ->
+      %SequenceStep{}
+      |> SequenceStep.changeset(%{
+        sequence_id: sequence.id,
+        step_id: step.id,
+        position: position
+      })
+      |> Repo.insert!()
+    end)
   end
 end

@@ -617,6 +617,36 @@
       </button>
       <%= if @suggesting_connection do %>
         <div class="mt-2 p-2 bg-ink-50 rounded border border-ink-200">
+          <div class="flex gap-1 mb-2">
+            <button
+              type="button"
+              phx-click="set_connection_direction"
+              phx-value-direction="to"
+              class={[
+                "text-[10px] font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
+                @connection_suggest_direction == "to" &&
+                  "bg-accent-orange border-accent-orange text-white",
+                @connection_suggest_direction != "to" &&
+                  "bg-transparent border-ink-300 text-ink-500"
+              ]}
+            >
+              Vai para →
+            </button>
+            <button
+              type="button"
+              phx-click="set_connection_direction"
+              phx-value-direction="from"
+              class={[
+                "text-[10px] font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
+                @connection_suggest_direction == "from" &&
+                  "bg-accent-orange border-accent-orange text-white",
+                @connection_suggest_direction != "from" &&
+                  "bg-transparent border-ink-300 text-ink-500"
+              ]}
+            >
+              ← Vem de
+            </button>
+          </div>
           <input
             type="text"
             phx-keyup="search_suggest_connection"

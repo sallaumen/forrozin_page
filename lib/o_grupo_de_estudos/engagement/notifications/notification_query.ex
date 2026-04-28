@@ -8,8 +8,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
+  alias OGrupoDeEstudos.Repo
 
   @doc """
   Returns notifications for the given user, ordered unread-first then by newest.

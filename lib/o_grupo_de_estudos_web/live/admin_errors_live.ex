@@ -1,8 +1,8 @@
 defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.Admin.ErrorLog
   alias OGrupoDeEstudos.{Accounts, Repo}
+  alias OGrupoDeEstudos.Admin.ErrorLog
 
   import Ecto.Query
 
@@ -17,9 +17,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
 
-    unless Accounts.admin?(user) do
-      {:ok, socket |> put_flash(:error, "Acesso restrito") |> redirect(to: ~p"/collection")}
-    else
+    if Accounts.admin?(user) do
       errors = load_errors(0)
 
       {:ok,
@@ -32,6 +30,8 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
          has_more: length(errors) == @page_size,
          expanded: nil
        )}
+    else
+      {:ok, socket |> put_flash(:error, "Acesso restrito") |> redirect(to: ~p"/collection")}
     end
   end
 
@@ -101,8 +101,8 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
     cond do
       diff < 60 -> "agora"
       diff < 3600 -> "#{div(diff, 60)}min"
-      diff < 86400 -> "#{div(diff, 3600)}h"
-      true -> "#{div(diff, 86400)}d"
+      diff < 86_400 -> "#{div(diff, 3600)}h"
+      true -> "#{div(diff, 86_400)}d"
     end
   end
 end

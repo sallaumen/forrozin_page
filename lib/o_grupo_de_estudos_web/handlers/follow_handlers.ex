@@ -10,18 +10,21 @@ defmodule OGrupoDeEstudosWeb.Handlers.FollowHandlers do
 
   defmacro __using__(_opts) do
     quote do
+      alias OGrupoDeEstudos.Engagement
+      alias OGrupoDeEstudosWeb.Helpers.RateLimit
+
       def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
         user = socket.assigns.current_user
-        result = OGrupoDeEstudos.Engagement.toggle_follow(user.id, target_id)
-        socket = OGrupoDeEstudosWeb.Helpers.RateLimit.maybe_flash_rate_limit(socket, result)
-        following = OGrupoDeEstudos.Engagement.following_ids(user.id)
+        result = Engagement.toggle_follow(user.id, target_id)
+        socket = RateLimit.maybe_flash_rate_limit(socket, result)
+        following = Engagement.following_ids(user.id)
 
         socket = assign(socket, following_user_ids: following)
 
         # Refresh bubble suggestions if bubble is present
         socket =
           if Map.has_key?(socket.assigns, :suggested_users) do
-            users = OGrupoDeEstudos.Engagement.suggest_users(user, limit: 3)
+            users = Engagement.suggest_users(user, limit: 3)
             assign(socket, suggested_users: users)
           else
             socket

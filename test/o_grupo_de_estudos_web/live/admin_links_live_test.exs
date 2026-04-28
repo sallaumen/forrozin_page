@@ -98,7 +98,7 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
       assert html_before =~ "Link GP"
 
       lv
-      |> element("[phx-click=\"delete_link\"][phx-value-id=\"#{pending.id}\"]")
+      |> element(~s([phx-click="delete_link"][phx-value-id="#{pending.id}"]))
       |> render_click()
 
       html_after = render(lv)
@@ -118,7 +118,7 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
       assert html_before =~ "Link IV"
 
       lv
-      |> element("[phx-click=\"delete_link\"][phx-value-id=\"#{approved.id}\"]")
+      |> element(~s([phx-click="delete_link"][phx-value-id="#{approved.id}"]))
       |> render_click()
 
       html_after = render(lv)

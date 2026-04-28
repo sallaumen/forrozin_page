@@ -8,8 +8,8 @@ defmodule OGrupoDeEstudos.Media do
   """
 
   import Ecto.Query
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Media.{CategoryPoseDefault, StepAnimation}
+  alias OGrupoDeEstudos.Repo
 
   # ── Step Animations ──────────────────────────────────────────────────
 

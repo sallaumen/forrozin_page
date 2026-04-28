@@ -8,8 +8,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.SectionQuery do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Encyclopedia.Section
+  alias OGrupoDeEstudos.Repo
 
   @doc "Returns the first section matching `opts`, or `nil`."
   def get_by(opts) do

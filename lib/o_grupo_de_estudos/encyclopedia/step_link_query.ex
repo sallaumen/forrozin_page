@@ -8,8 +8,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQuery do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Encyclopedia.StepLink
+  alias OGrupoDeEstudos.Repo
 
   @doc "Returns the first step link matching `opts`, or `nil`."
   def get_by(opts) do

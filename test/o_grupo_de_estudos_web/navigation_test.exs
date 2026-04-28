@@ -1,8 +1,8 @@
 defmodule OGrupoDeEstudosWeb.NavigationTest do
   use ExUnit.Case, async: true
 
-  alias Phoenix.LiveView.Socket
   alias OGrupoDeEstudosWeb.Navigation
+  alias Phoenix.LiveView.Socket
 
   describe "on_mount/4" do
     test ":primary sets nav_mode to :primary" do

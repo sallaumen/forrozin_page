@@ -18,11 +18,7 @@ defmodule OGrupoDeEstudosWeb.BackupController do
   def download(conn, %{"filename" => filename}) do
     user = conn.assigns[:current_user]
 
-    unless Accounts.admin?(user) do
-      conn
-      |> put_flash(:error, "Acesso negado.")
-      |> redirect(to: ~p"/collection")
-    else
+    if Accounts.admin?(user) do
       path = backup_path(filename)
 
       if valid_download?(path, filename) do
@@ -32,6 +28,10 @@ defmodule OGrupoDeEstudosWeb.BackupController do
         |> put_flash(:error, "Backup não encontrado.")
         |> redirect(to: ~p"/admin/backups")
       end
+    else
+      conn
+      |> put_flash(:error, "Acesso negado.")
+      |> redirect(to: ~p"/collection")
     end
   end
 

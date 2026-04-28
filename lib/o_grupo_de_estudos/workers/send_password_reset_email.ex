@@ -1,4 +1,5 @@
 defmodule OGrupoDeEstudos.Workers.SendPasswordResetEmail do
+  @moduledoc false
   use Oban.Worker, queue: :email, max_attempts: 3
 
   require Logger

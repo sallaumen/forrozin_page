@@ -2,6 +2,8 @@ defmodule OGrupoDeEstudos.AdminTest do
   use OGrupoDeEstudos.DataCase, async: true
 
   alias OGrupoDeEstudos.Admin
+  alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, Step, StepQuery}
+  alias OGrupoDeEstudos.Repo
 
   # ---------------------------------------------------------------------------
   # create_connection/1
@@ -127,7 +129,7 @@ defmodule OGrupoDeEstudos.AdminTest do
       {:ok, _} = Admin.delete_connection(connection.id)
 
       assert is_nil(
-               OGrupoDeEstudos.Encyclopedia.ConnectionQuery.get_by(
+               ConnectionQuery.get_by(
                  source_step_id: source.id,
                  target_step_id: target.id
                )
@@ -155,7 +157,7 @@ defmodule OGrupoDeEstudos.AdminTest do
       assert deleted.deleted_at != nil
 
       # Row still exists in the database
-      row = OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, step.id)
+      row = Repo.get(Step, step.id)
       assert row != nil
       assert row.deleted_at != nil
     end
@@ -165,7 +167,7 @@ defmodule OGrupoDeEstudos.AdminTest do
 
       {:ok, _} = Admin.delete_step(step)
 
-      assert is_nil(OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: "BF"))
+      assert is_nil(StepQuery.get_by(code: "BF"))
     end
 
     test "visible with include_deleted: true after soft delete" do
@@ -173,7 +175,7 @@ defmodule OGrupoDeEstudos.AdminTest do
 
       {:ok, _} = Admin.delete_step(step)
 
-      assert OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: "BF", include_deleted: true) !=
+      assert StepQuery.get_by(code: "BF", include_deleted: true) !=
                nil
     end
   end

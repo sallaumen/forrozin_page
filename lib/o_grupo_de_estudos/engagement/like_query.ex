@@ -8,8 +8,8 @@ defmodule OGrupoDeEstudos.Engagement.LikeQuery do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Engagement.Like
+  alias OGrupoDeEstudos.Repo
 
   @doc "Returns `true` if the user has liked the given entity."
   def exists?(user_id, likeable_type, likeable_id) do

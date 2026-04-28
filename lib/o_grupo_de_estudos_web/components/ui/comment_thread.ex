@@ -17,6 +17,8 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
 
   use Phoenix.Component
 
+  alias OGrupoDeEstudos.Engagement.Badges
+
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
   # ---------------------------------------------------------------------------
@@ -145,7 +147,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
     badge =
       if user do
         try do
-          OGrupoDeEstudos.Engagement.Badges.primary(get_user_id(assigns.comment))
+          Badges.primary(get_user_id(assigns.comment))
         rescue
           _ -> nil
         end

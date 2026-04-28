@@ -18,8 +18,8 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Engagement.ProfileComment
+  alias OGrupoDeEstudos.Repo
 
   @doc """
   Returns all profile comments matching the given filters.

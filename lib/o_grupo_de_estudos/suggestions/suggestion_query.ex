@@ -1,4 +1,5 @@
 defmodule OGrupoDeEstudos.Suggestions.SuggestionQuery do
+  @moduledoc false
   import Ecto.Query
 
   alias OGrupoDeEstudos.Repo

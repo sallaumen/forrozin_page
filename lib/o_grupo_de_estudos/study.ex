@@ -419,27 +419,28 @@ defmodule OGrupoDeEstudos.Study do
     if blank_note?(content, step_ids) do
       delete_note_if_present(existing_note)
     else
-      note =
-        existing_note ||
-          struct!(Note, Map.merge(base_attrs, %{content: content}))
+      persist_note(base_attrs, content, step_ids, existing_note)
+    end
+  end
 
-      Repo.transaction(fn ->
-        case note
-             |> Note.changeset(Map.merge(base_attrs, %{content: content}))
-             |> Repo.insert_or_update() do
-          {:ok, saved_note} ->
-            replace_note_steps(saved_note, step_ids)
+  defp persist_note(base_attrs, content, step_ids, existing_note) do
+    note = existing_note || struct!(Note, Map.merge(base_attrs, %{content: content}))
 
-            saved_note
+    Repo.transaction(fn ->
+      case note
+           |> Note.changeset(Map.merge(base_attrs, %{content: content}))
+           |> Repo.insert_or_update() do
+        {:ok, saved_note} ->
+          replace_note_steps(saved_note, step_ids)
+          saved_note
 
-          {:error, changeset} ->
-            Repo.rollback(changeset)
-        end
-      end)
-      |> case do
-        {:ok, note} -> {:ok, preload_note(note)}
-        {:error, reason} -> {:error, reason}
+        {:error, changeset} ->
+          Repo.rollback(changeset)
       end
+    end)
+    |> case do
+      {:ok, note} -> {:ok, preload_note(note)}
+      {:error, reason} -> {:error, reason}
     end
   end
 

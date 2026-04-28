@@ -1,6 +1,7 @@
 defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   use OGrupoDeEstudos.DataCase, async: true
 
+  alias OGrupoDeEstudos.Encyclopedia.ConnectionQuery
   alias OGrupoDeEstudos.Sequences.Generator
 
   # ---------------------------------------------------------------------------
@@ -267,7 +268,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
     test "waypoint sequences follow valid directed edges" do
       build_linear_chain(6)
-      connections = OGrupoDeEstudos.Encyclopedia.ConnectionQuery.list_by(preload: [])
+      connections = ConnectionQuery.list_by(preload: [])
 
       edge_set =
         MapSet.new(connections, fn c -> {c.source_step_id, c.target_step_id} end)
@@ -526,7 +527,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   describe "reachable_from/2" do
     test "finds all reachable nodes" do
       {steps, _} = build_linear_chain(4)
-      connections = OGrupoDeEstudos.Encyclopedia.ConnectionQuery.list_by(preload: [])
+      connections = ConnectionQuery.list_by(preload: [])
 
       adjacency =
         Enum.reduce(connections, %{}, fn c, acc ->
@@ -541,7 +542,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   describe "bfs_distances/2" do
     test "computes shortest distances" do
       {steps, _} = build_linear_chain(4)
-      connections = OGrupoDeEstudos.Encyclopedia.ConnectionQuery.list_by(preload: [])
+      connections = ConnectionQuery.list_by(preload: [])
 
       adjacency =
         Enum.reduce(connections, %{}, fn c, acc ->

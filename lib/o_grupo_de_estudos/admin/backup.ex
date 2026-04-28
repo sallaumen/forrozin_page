@@ -22,17 +22,17 @@ defmodule OGrupoDeEstudos.Admin.Backup do
 
   alias OGrupoDeEstudos.Encyclopedia.{
     Category,
-    TechnicalConcept,
     Connection,
-    Step,
     Section,
+    Step,
+    StepLink,
     Subsection,
-    StepLink
+    TechnicalConcept
   }
 
   alias OGrupoDeEstudos.Engagement.Like
-  alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
 
   @max_backups 10
 

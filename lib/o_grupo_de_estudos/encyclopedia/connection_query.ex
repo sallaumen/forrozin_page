@@ -8,8 +8,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Encyclopedia.{Connection, Step}
+  alias OGrupoDeEstudos.Repo
 
   @doc "Returns the first connection matching `opts`, or `nil`."
   def get_by(opts) do

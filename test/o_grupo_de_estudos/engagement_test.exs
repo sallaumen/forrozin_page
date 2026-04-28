@@ -4,10 +4,10 @@ defmodule OGrupoDeEstudos.EngagementTest do
   import OGrupoDeEstudos.Factory
 
   alias OGrupoDeEstudos.Engagement
-  alias OGrupoDeEstudos.Engagement.Comments.{StepComment, StepCommentQuery}
   alias OGrupoDeEstudos.Engagement.Comments.{SequenceComment, SequenceCommentQuery}
-  alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
+  alias OGrupoDeEstudos.Engagement.Comments.{StepComment, StepCommentQuery}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
+  alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
   alias OGrupoDeEstudos.Repo
 
   setup do

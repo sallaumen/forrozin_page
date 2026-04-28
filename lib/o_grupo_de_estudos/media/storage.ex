@@ -61,17 +61,15 @@ defmodule OGrupoDeEstudos.Media.Storage do
   # ── Image Processing ───────────────────────────────────────────────────
 
   defp crop_square_and_resize(source, dest) do
-    try do
-      source
-      |> Mogrify.open()
-      |> Mogrify.resize_to_fill("#{@avatar_size}x#{@avatar_size}")
-      |> Mogrify.gravity("Center")
-      |> Mogrify.save(path: dest)
+    source
+    |> Mogrify.open()
+    |> Mogrify.resize_to_fill("#{@avatar_size}x#{@avatar_size}")
+    |> Mogrify.gravity("Center")
+    |> Mogrify.save(path: dest)
 
-      :ok
-    rescue
-      e -> {:error, Exception.message(e)}
-    end
+    :ok
+  rescue
+    e -> {:error, Exception.message(e)}
   end
 
   # ── Path Resolution ────────────────────────────────────────────────────

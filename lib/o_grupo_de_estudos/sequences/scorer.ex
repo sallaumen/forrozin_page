@@ -106,31 +106,30 @@ defmodule OGrupoDeEstudos.Sequences.Scorer do
 
   def score_required_spread(seq, required_ids) do
     len = length(seq)
+    if len <= 1, do: 0.0, else: compute_spread(seq, required_ids, len)
+  end
 
-    if len <= 1 do
-      0.0
-    else
-      positions =
-        seq
-        |> Enum.with_index()
-        |> Enum.filter(fn {step, _idx} -> MapSet.member?(required_ids, step.id) end)
-        |> Enum.map(fn {_step, idx} -> idx end)
-        |> Enum.sort()
+  defp compute_spread(seq, required_ids, len) do
+    positions =
+      seq
+      |> Enum.with_index()
+      |> Enum.filter(fn {step, _idx} -> MapSet.member?(required_ids, step.id) end)
+      |> Enum.map(fn {_step, idx} -> idx end)
+      |> Enum.sort()
 
-      case positions do
-        [_ | [_ | _]] ->
-          gaps =
-            positions
-            |> Enum.chunk_every(2, 1, :discard)
-            |> Enum.map(fn [a, b] -> b - a end)
+    case positions do
+      [_ | [_ | _]] ->
+        gaps =
+          positions
+          |> Enum.chunk_every(2, 1, :discard)
+          |> Enum.map(fn [a, b] -> b - a end)
 
-          avg_gap = Enum.sum(gaps) / length(gaps)
-          ideal_gap = len / (length(positions) + 1)
-          min(avg_gap / ideal_gap, 1.0)
+        avg_gap = Enum.sum(gaps) / length(gaps)
+        ideal_gap = len / (length(positions) + 1)
+        min(avg_gap / ideal_gap, 1.0)
 
-        _ ->
-          0.0
-      end
+      _ ->
+        0.0
     end
   end
 

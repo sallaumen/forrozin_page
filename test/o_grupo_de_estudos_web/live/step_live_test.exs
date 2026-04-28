@@ -3,9 +3,9 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
   import Phoenix.LiveViewTest
 
-  alias OGrupoDeEstudosWeb.StepLive
   alias OGrupoDeEstudos.Engagement
   alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
+  alias OGrupoDeEstudosWeb.StepLive
 
   defp logged_in_conn(conn) do
     user = insert(:user)

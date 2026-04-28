@@ -228,9 +228,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("update_step", %{"step" => params}, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       step = socket.assigns.drawer_item
 
       case Admin.update_step(step, params) do
@@ -255,13 +253,13 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         {:error, _changeset} ->
           {:noreply, put_flash(socket, :error, "Erro ao salvar passo")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   def handle_event("update_section", %{"section" => params}, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       section = socket.assigns.drawer_item
 
       case Admin.update_section(section, params) do
@@ -277,13 +275,13 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         {:error, _changeset} ->
           {:noreply, put_flash(socket, :error, "Erro ao salvar seção")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   def handle_event("search_connection", %{"target_code" => term}, socket) do
-    if not socket.assigns.is_admin or String.length(term) < 1 do
-      {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
-    else
+    if socket.assigns.is_admin and String.length(term) >= 1 do
       suggestions =
         StepQuery.list_by(
           status: "published",
@@ -294,6 +292,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         )
 
       {:noreply, assign(socket, connection_search: term, connection_suggestions: suggestions)}
+    else
+      {:noreply, assign(socket, connection_search: term, connection_suggestions: [])}
     end
   end
 
@@ -302,24 +302,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("create_step_connection", %{"target_code" => target_code}, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
+    if socket.assigns.is_admin do
+      do_create_step_connection(socket, target_code)
     else
-      step = socket.assigns.drawer_item
-      target = StepQuery.get_by(code: target_code)
-
-      if is_nil(target) do
-        {:noreply, put_flash(socket, :error, "Passo não encontrado")}
-      else
-        case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
-          {:ok, _} ->
-            {:noreply,
-             socket |> reopen_step_drawer(step.code) |> put_flash(:info, "Conexão criada")}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Conexão já existe")}
-        end
-      end
+      {:noreply, socket}
     end
   end
 
@@ -328,9 +314,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         %{"source" => source_code, "target" => target_code},
         socket
       ) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
 
       if is_nil(connection) do
@@ -341,26 +325,26 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         {:noreply,
          socket |> reopen_step_drawer(socket.assigns.drawer_item.code) |> reload_sections()}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   def handle_event("create_section", %{"section" => params}, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       max_pos = socket.assigns.sections |> Enum.map(& &1.position) |> Enum.max(fn -> 0 end)
 
       case Admin.create_section(Map.put(params, "position", max_pos + 1)) do
         {:ok, _} -> {:noreply, socket |> reload_sections() |> put_flash(:info, "Seção criada")}
         {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao criar seção")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
   def handle_event("create_category", %{"category" => params}, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       case Admin.create_category(params) do
         {:ok, _} ->
           categories = Encyclopedia.list_categories()
@@ -373,6 +357,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao criar categoria")}
       end
+    else
+      {:noreply, socket}
     end
   end
 
@@ -415,9 +401,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("approve_step", %{"code" => code}, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       step = StepQuery.get_by(code: code)
 
       if step do
@@ -433,6 +417,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       else
         {:noreply, socket}
       end
+    else
+      {:noreply, socket}
     end
   end
 
@@ -659,19 +645,36 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
+  defp do_create_step_connection(socket, target_code) do
+    step = socket.assigns.drawer_item
+    target = StepQuery.get_by(code: target_code)
+
+    if is_nil(target) do
+      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+    else
+      case Admin.create_connection(%{source_step_id: step.id, target_step_id: target.id}) do
+        {:ok, _} ->
+          {:noreply,
+           socket |> reopen_step_drawer(step.code) |> put_flash(:info, "Conexão criada")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Conexão já existe")}
+      end
+    end
+  end
+
   defp format_changeset_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
       Enum.reduce(opts, msg, fn {key, value}, acc ->
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)
-    |> Enum.map(fn
+    |> Enum.map_join(" · ", fn
       {:code, ["has already been taken"]} -> "Esse código já existe. Escolha outro."
       {:code, msgs} -> "Código: #{Enum.join(msgs, ", ")}"
       {:name, msgs} -> "Nome: #{Enum.join(msgs, ", ")}"
       {field, msgs} -> "#{field}: #{Enum.join(msgs, ", ")}"
     end)
-    |> Enum.join(" · ")
   end
 
   defp reload_sections(socket) do

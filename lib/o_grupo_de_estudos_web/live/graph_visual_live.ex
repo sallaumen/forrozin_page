@@ -146,9 +146,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> maybe_refresh_sequence_library(new_open)
 
     socket =
-      if not new_open,
-        do: push_event(socket, "set_manual_mode", %{active: false}),
-        else: socket
+      if new_open,
+        do: socket,
+        else: push_event(socket, "set_manual_mode", %{active: false})
 
     {:noreply, socket}
   end
@@ -298,34 +298,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         socket
       ) do
     if socket.assigns.is_admin do
-      alias OGrupoDeEstudos.Encyclopedia.StepQuery
-      source = StepQuery.get_by(code: src_code)
-      target = StepQuery.get_by(code: tgt_code)
-
-      if source && target do
-        OGrupoDeEstudos.Admin.create_connection(%{
-          source_step_id: source.id,
-          target_step_id: target.id
-        })
-
-        # Reload graph edges + recalculate missing
-        graph = Encyclopedia.build_graph()
-
-        step_codes =
-          if socket.assigns.seq_active,
-            do: Enum.map(socket.assigns.seq_active, & &1.code),
-            else: []
-
-        missing = if step_codes != [], do: find_missing_edges(step_codes, graph.edges), else: []
-
-        {:noreply,
-         socket
-         |> assign(:edges, graph.edges)
-         |> assign(:seq_missing_edges, missing)
-         |> put_flash(:info, "Conexão #{src_code} → #{tgt_code} criada!")}
-      else
-        {:noreply, put_flash(socket, :error, "Passos não encontrados")}
-      end
+      do_create_missing_connection(socket, src_code, tgt_code)
     else
       {:noreply, socket}
     end
@@ -623,60 +596,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         {:noreply, assign(socket, :seq_manual_error, "Adicione ao menos um passo.")}
 
       true ->
-        step_codes = Enum.map(manual_steps, & &1.code)
-
-        attrs = %{
-          name: name,
-          step_codes: step_codes,
-          description: if(description == "", do: nil, else: description),
-          video_url: if(video_url == "", do: nil, else: video_url)
-        }
-
-        result =
-          case socket.assigns.seq_editing_id do
-            nil ->
-              Sequences.create_manual_sequence(user_id, attrs)
-
-            sequence_id ->
-              sequence = Sequences.get_sequence(sequence_id)
-
-              if can_manage_sequence?(socket, sequence) do
-                Sequences.update_manual_sequence(sequence, attrs)
-              else
-                {:error, :unauthorized}
-              end
-          end
-
-        case result do
-          {:ok, _saved} ->
-            {:noreply,
-             socket
-             |> assign(:seq_manual_steps, [])
-             |> assign(:seq_manual_error, nil)
-             |> assign(:seq_manual_search, "")
-             |> assign(:seq_manual_suggestions, [])
-             |> assign(:seq_editing_id, nil)
-             |> assign(:seq_manual_name, "")
-             |> assign(:seq_manual_description, "")
-             |> assign(:seq_manual_video_url, "")
-             |> assign(:seq_view, :library)
-             |> assign_sequence_library()
-             |> push_event("set_manual_mode", %{active: false})}
-
-          {:error, :invalid_codes} ->
-            {:noreply, assign(socket, :seq_manual_error, "Código de passo inválido.")}
-
-          {:error, :unauthorized} ->
-            {:noreply, assign(socket, :seq_manual_error, "Você não pode editar esta sequência.")}
-
-          {:error, changeset} ->
-            msg =
-              changeset.errors
-              |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end)
-              |> Enum.join(", ")
-
-            {:noreply, assign(socket, :seq_manual_error, msg)}
-        end
+        do_save_manual_sequence(socket, name, description, video_url, manual_steps, user_id)
     end
   end
 
@@ -796,9 +716,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   def handle_event("toggle_edit_mode", _params, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       new_mode = not socket.assigns.edit_mode
       graph = Encyclopedia.build_graph()
 
@@ -813,6 +731,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
          edit_mode: new_mode,
          orphans: if(new_mode, do: build_orphans_json(graph), else: "[]")
        })}
+    else
+      {:noreply, socket}
     end
   end
 
@@ -821,9 +741,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         %{"source" => source_code, "target" => target_code},
         socket
       ) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       with source when not is_nil(source) <- StepQuery.get_by(code: source_code),
            target when not is_nil(target) <- StepQuery.get_by(code: target_code),
            {:ok, _conn} <-
@@ -848,6 +766,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         nil ->
           {:noreply, push_event(socket, "graph_error", %{message: "Passo não encontrado"})}
       end
+    else
+      {:noreply, socket}
     end
   end
 
@@ -856,9 +776,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         %{"source" => source_code, "target" => target_code},
         socket
       ) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
+    if socket.assigns.is_admin do
       connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
 
       case connection do
@@ -881,6 +799,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
              orphans: if(edit_mode, do: build_orphans_json(graph), else: "[]")
            })}
       end
+    else
+      {:noreply, socket}
     end
   end
 
@@ -888,7 +808,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   def handle_event("toggle_step_like_graph", %{"code" => code}, socket) do
     user = socket.assigns.current_user
-    step = OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: code)
+    step = StepQuery.get_by(code: code)
 
     if step do
       Engagement.toggle_like(user.id, "step", step.id)
@@ -905,7 +825,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   def handle_event("toggle_step_favorite_graph", %{"code" => code}, socket) do
     user = socket.assigns.current_user
-    step = OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: code)
+    step = StepQuery.get_by(code: code)
 
     if step do
       Engagement.toggle_favorite(user.id, "step", step.id)
@@ -1011,6 +931,92 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   defp can_manage_sequence?(socket, sequence) do
     socket.assigns.is_admin or sequence.user_id == socket.assigns.current_user.id
+  end
+
+  defp do_create_missing_connection(socket, src_code, tgt_code) do
+    source = StepQuery.get_by(code: src_code)
+    target = StepQuery.get_by(code: tgt_code)
+
+    if source && target do
+      Admin.create_connection(%{source_step_id: source.id, target_step_id: target.id})
+
+      graph = Encyclopedia.build_graph()
+
+      step_codes =
+        if socket.assigns.seq_active,
+          do: Enum.map(socket.assigns.seq_active, & &1.code),
+          else: []
+
+      missing = if step_codes != [], do: find_missing_edges(step_codes, graph.edges), else: []
+
+      {:noreply,
+       socket
+       |> assign(:edges, graph.edges)
+       |> assign(:seq_missing_edges, missing)
+       |> put_flash(:info, "Conexão #{src_code} → #{tgt_code} criada!")}
+    else
+      {:noreply, put_flash(socket, :error, "Passos não encontrados")}
+    end
+  end
+
+  defp do_save_manual_sequence(socket, name, description, video_url, manual_steps, user_id) do
+    step_codes = Enum.map(manual_steps, & &1.code)
+
+    attrs = %{
+      name: name,
+      step_codes: step_codes,
+      description: if(description == "", do: nil, else: description),
+      video_url: if(video_url == "", do: nil, else: video_url)
+    }
+
+    result = persist_manual_sequence(socket, user_id, attrs)
+
+    case result do
+      {:ok, _saved} ->
+        {:noreply,
+         socket
+         |> assign(:seq_manual_steps, [])
+         |> assign(:seq_manual_error, nil)
+         |> assign(:seq_manual_search, "")
+         |> assign(:seq_manual_suggestions, [])
+         |> assign(:seq_editing_id, nil)
+         |> assign(:seq_manual_name, "")
+         |> assign(:seq_manual_description, "")
+         |> assign(:seq_manual_video_url, "")
+         |> assign(:seq_view, :library)
+         |> assign_sequence_library()
+         |> push_event("set_manual_mode", %{active: false})}
+
+      {:error, :invalid_codes} ->
+        {:noreply, assign(socket, :seq_manual_error, "Código de passo inválido.")}
+
+      {:error, :unauthorized} ->
+        {:noreply, assign(socket, :seq_manual_error, "Você não pode editar esta sequência.")}
+
+      {:error, changeset} ->
+        msg =
+          Enum.map_join(changeset.errors, ", ", fn {field, {msg, _}} ->
+            "#{field}: #{msg}"
+          end)
+
+        {:noreply, assign(socket, :seq_manual_error, msg)}
+    end
+  end
+
+  defp persist_manual_sequence(socket, user_id, attrs) do
+    case socket.assigns.seq_editing_id do
+      nil ->
+        Sequences.create_manual_sequence(user_id, attrs)
+
+      sequence_id ->
+        sequence = Sequences.get_sequence(sequence_id)
+
+        if can_manage_sequence?(socket, sequence) do
+          Sequences.update_manual_sequence(sequence, attrs)
+        else
+          {:error, :unauthorized}
+        end
+    end
   end
 
   defp append_manual_step(socket, %{code: code, name: name}) do
@@ -1272,15 +1278,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
        ) do
     search = normalize_search_text(search)
 
-    sequences
-    |> Enum.filter(fn sequence ->
-      sequence_matches_origin_filter?(sequence, origin_filter, owned_ids, favorite_ids)
-    end)
-    |> Enum.filter(fn sequence ->
-      search == "" or sequence_matches_search?(sequence, search)
-    end)
-    |> Enum.filter(fn sequence ->
-      category_filter == "all" or sequence_has_category?(sequence, category_filter)
+    Enum.filter(sequences, fn sequence ->
+      sequence_matches_origin_filter?(sequence, origin_filter, owned_ids, favorite_ids) and
+        (search == "" or sequence_matches_search?(sequence, search)) and
+        (category_filter == "all" or sequence_has_category?(sequence, category_filter))
     end)
   end
 
@@ -1494,20 +1495,22 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     edges
     |> Enum.group_by(& &1.source_step.code)
     |> Enum.flat_map(fn {_source, group} ->
-      count = length(group)
+      spread_group(group, length(group))
+    end)
+  end
 
-      group
-      |> Enum.with_index()
-      |> Enum.map(fn {edge, idx} ->
-        spread = if count > 2, do: round((idx - (count - 1) / 2) * 20), else: 0
+  defp spread_group(group, count) do
+    group
+    |> Enum.with_index()
+    |> Enum.map(fn {edge, idx} ->
+      spread = if count > 2, do: round((idx - (count - 1) / 2) * 20), else: 0
 
-        %{
-          from: edge.source_step.code,
-          to: edge.target_step.code,
-          label: edge.label,
-          spread: spread
-        }
-      end)
+      %{
+        from: edge.source_step.code,
+        to: edge.target_step.code,
+        label: edge.label,
+        spread: spread
+      }
     end)
   end
 
