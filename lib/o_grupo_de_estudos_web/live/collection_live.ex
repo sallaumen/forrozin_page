@@ -79,8 +79,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         step_likes: step_likes,
         following_user_ids: following_user_ids,
         bubble_open: false,
+        bubble_tab: "following",
         suggested_users: [],
         bubble_following_list: [],
+        bubble_followers_list: [],
         bubble_search: "",
         bubble_search_results: [],
         expanded_step: nil,
@@ -912,7 +914,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
               >
                 <span
                   class={[
-                    "text-[9px] py-px px-1.5 rounded-full italic border",
+                    "text-[10px] py-px px-1.5 rounded-full italic border",
                     @step.approved && "border-accent-green/30 bg-accent-green/10 text-accent-green",
                     !@step.approved && "border-[#8e44ad4d] bg-[#8e44ad1a]"
                   ]}
@@ -935,10 +937,20 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         </div>
         <div class="flex flex-col items-center gap-1 flex-shrink-0">
           <%= if @step.suggested_by_id do %>
-            <span title="Passo da comunidade" class="text-xs opacity-60">👤</span>
+            <span
+              title="Contribuição da comunidade"
+              class="flex items-center justify-center w-5 h-5 rounded-full bg-[#8e44ad]/10 text-[#8e44ad]"
+            >
+              <.icon name="hero-user" class="w-3 h-3" />
+            </span>
           <% end %>
           <%= if @has_links do %>
-            <span title="Tem vídeo" class="text-xs opacity-60">🎬</span>
+            <span
+              title="Tem vídeo/link"
+              class="flex items-center justify-center w-5 h-5 rounded-full bg-accent-orange/10 text-accent-orange"
+            >
+              <.icon name="hero-play" class="w-3 h-3" />
+            </span>
           <% end %>
           <button
             phx-click="toggle_step_like"

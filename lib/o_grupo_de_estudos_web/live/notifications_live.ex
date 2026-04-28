@@ -59,8 +59,10 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        is_admin: Accounts.admin?(user),
        notification_count: notification_count,
        bubble_open: false,
+       bubble_tab: "following",
        suggested_users: [],
        bubble_following_list: [],
+       bubble_followers_list: [],
        bubble_search: "",
        bubble_search_results: [],
        following_user_ids: Engagement.following_ids(user.id)
@@ -134,6 +136,14 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   end
 
   defp notification_path(%{parent_type: "sequence"}), do: "/community"
+
+  defp notification_path(%{
+         action: "shared_note_updated",
+         target_type: "study_link",
+         target_id: id
+       }),
+       do: "/study/shared/#{id}"
+
   defp notification_path(%{parent_type: "study_link"}), do: "/study"
 
   defp notification_path(%{parent_type: "profile", parent_id: id}) do
@@ -162,6 +172,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   defp target_name(%{action: "followed_user"}), do: nil
   defp target_name(%{action: "study_request"}), do: "Ver pedido →"
   defp target_name(%{action: "study_accepted"}), do: "Ir para estudos →"
+  defp target_name(%{action: "shared_note_updated"}), do: "Ver diário →"
   defp target_name(_), do: nil
 
   defp action_text(%{action: "liked_comment"}), do: " curtiu seu comentário"
@@ -173,6 +184,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
   defp action_text(%{action: "study_request"}), do: " quer estudar com você"
   defp action_text(%{action: "study_accepted"}), do: " aceitou seu pedido de estudo"
+  defp action_text(%{action: "shared_note_updated"}), do: " escreveu no diário compartilhado"
   defp action_text(_), do: " interagiu"
 
   defp time_ago(datetime) do

@@ -2,6 +2,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Study}
+  alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
@@ -63,11 +64,18 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
           step_ids: Enum.map(socket.assigns.shared_related_steps, & &1.id)
         })
 
+      link = socket.assigns.link
+      current_user = socket.assigns.current_user
+
+      if current_user.id == link.teacher_id do
+        Dispatcher.notify_shared_note(current_user, link.student_id, link.id)
+      end
+
       {:noreply,
        assign(socket,
          today_note: note,
          today_note_content: content,
-         history: Study.list_shared_note_history(socket.assigns.link.id)
+         history: Study.list_shared_note_history(link.id)
        )}
     else
       {:noreply, socket}

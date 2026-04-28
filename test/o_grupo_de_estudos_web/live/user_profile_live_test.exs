@@ -230,7 +230,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
           preload: [:author]
         )
 
-      assert length(remaining) == 0
+      assert remaining == []
     end
   end
 end

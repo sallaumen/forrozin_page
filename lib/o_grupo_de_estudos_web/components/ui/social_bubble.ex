@@ -26,6 +26,8 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
   attr :bubble_search_results, :list, default: []
   attr :following_count, :integer, default: 0
   attr :followers_count, :integer, default: 0
+  attr :bubble_tab, :string, default: "following"
+  attr :bubble_followers_list, :list, default: []
 
   def social_bubble(assigns) do
     ~H"""
@@ -90,12 +92,39 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
               <% end %>
             </div>
           <% else %>
+            <%!-- Tab switcher --%>
+            <div class="px-3 pt-2 flex gap-1 mb-1">
+              <button
+                type="button"
+                phx-click="bubble_switch_tab"
+                phx-value-tab="following"
+                class={[
+                  "text-[10px] font-bold py-1 px-2.5 rounded-full border cursor-pointer transition-colors",
+                  @bubble_tab == "following" && "bg-accent-orange border-accent-orange text-white",
+                  @bubble_tab != "following" &&
+                    "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange"
+                ]}
+              >
+                Seguindo
+              </button>
+              <button
+                type="button"
+                phx-click="bubble_switch_tab"
+                phx-value-tab="followers"
+                class={[
+                  "text-[10px] font-bold py-1 px-2.5 rounded-full border cursor-pointer transition-colors",
+                  @bubble_tab == "followers" && "bg-accent-orange border-accent-orange text-white",
+                  @bubble_tab != "followers" &&
+                    "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange"
+                ]}
+              >
+                Seguidores
+              </button>
+            </div>
+
             <%!-- Following list --%>
-            <%= if @bubble_following_list != [] do %>
-              <div class="px-3 pt-2.5 pb-1">
-                <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-1.5 font-sans">
-                  Seguindo
-                </p>
+            <%= if @bubble_tab == "following" && @bubble_following_list != [] do %>
+              <div class="px-3 pt-1 pb-1">
                 <div class="space-y-0">
                   <%= for person <- @bubble_following_list do %>
                     <.person_row
@@ -109,8 +138,24 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
               </div>
             <% end %>
 
-            <%!-- Suggestions --%>
-            <%= if @suggested_users != [] do %>
+            <%!-- Followers list --%>
+            <%= if @bubble_tab == "followers" && @bubble_followers_list != [] do %>
+              <div class="px-3 pt-1 pb-1">
+                <div class="space-y-0">
+                  <%= for person <- @bubble_followers_list do %>
+                    <.person_row
+                      person={person}
+                      current_user={@current_user}
+                      following_user_ids={@following_user_ids}
+                      compact={true}
+                    />
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <%!-- Suggestions (following tab only) --%>
+            <%= if @bubble_tab == "following" && @suggested_users != [] do %>
               <div class="px-3 pt-2 pb-2.5 border-t border-ink-300/25">
                 <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-1.5 font-sans">
                   Sugestoes para voce
@@ -127,12 +172,22 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
               </div>
             <% end %>
 
-            <%!-- Empty state --%>
-            <%= if @bubble_following_list == [] && @suggested_users == [] do %>
+            <%!-- Empty state (following tab) --%>
+            <%= if @bubble_tab == "following" && @bubble_following_list == [] && @suggested_users == [] do %>
               <div class="text-center py-8 px-4">
                 <.icon name="hero-user-plus" class="w-6 h-6 text-ink-300 mx-auto mb-2" />
                 <p class="text-xs text-ink-500 font-serif">
                   Comece seguindo alguem!
+                </p>
+              </div>
+            <% end %>
+
+            <%!-- Empty state (followers tab) --%>
+            <%= if @bubble_tab == "followers" && @bubble_followers_list == [] do %>
+              <div class="text-center py-8 px-4">
+                <.icon name="hero-user-group" class="w-6 h-6 text-ink-300 mx-auto mb-2" />
+                <p class="text-xs text-ink-500 font-serif">
+                  Ninguem te segue ainda.
                 </p>
               </div>
             <% end %>

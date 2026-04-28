@@ -29,6 +29,9 @@ defmodule OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers do
             following_list =
               OGrupoDeEstudos.Engagement.list_following(user.id)
 
+            followers_list =
+              OGrupoDeEstudos.Engagement.list_followers(user.id)
+
             following_count =
               OGrupoDeEstudos.Engagement.count_following(user.id)
 
@@ -39,6 +42,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers do
               bubble_open: true,
               suggested_users: suggested,
               bubble_following_list: following_list,
+              bubble_followers_list: followers_list,
+              bubble_tab: "following",
               following_count: following_count,
               followers_count: followers_count,
               bubble_search: "",
@@ -77,6 +82,26 @@ defmodule OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers do
            bubble_search: term,
            bubble_search_results: results
          )}
+      end
+
+      def handle_event("bubble_switch_tab", %{"tab" => tab}, socket) do
+        user = socket.assigns.current_user
+
+        socket =
+          case tab do
+            "following" ->
+              list = OGrupoDeEstudos.Engagement.list_following(user.id)
+              assign(socket, bubble_tab: "following", bubble_following_list: list)
+
+            "followers" ->
+              list = OGrupoDeEstudos.Engagement.list_followers(user.id)
+              assign(socket, bubble_tab: "followers", bubble_followers_list: list)
+
+            _ ->
+              socket
+          end
+
+        {:noreply, socket}
       end
     end
   end
