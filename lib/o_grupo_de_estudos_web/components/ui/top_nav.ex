@@ -25,6 +25,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   attr :notification_dropdown_open, :boolean, default: false
   attr :notification_preview_groups, :list, default: []
   attr :pending_suggestions_count, :integer, default: 0
+  attr :pending_study_count, :integer, default: 0
   attr :edit_action_enabled, :boolean, default: false
   attr :edit_action_event, :string, default: "toggle_edit_mode"
   attr :edit_mode, :boolean, default: false
@@ -54,12 +55,20 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           >
             <.icon name="hero-map" class="size-4" /> Mapa
           </.link>
-          <.link
-            navigate={~p"/study"}
-            class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
-          >
-            <.icon name="hero-book-open" class="size-4" /> Estudos
-          </.link>
+          <div class="relative">
+            <.link
+              navigate={~p"/study"}
+              class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
+            >
+              <.icon name="hero-book-open" class="size-4" /> Estudos
+            </.link>
+            <span
+              :if={@pending_study_count > 0}
+              class="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center bg-accent-red text-white text-[9px] font-bold rounded-full pointer-events-none"
+            >
+              {@pending_study_count}
+            </span>
+          </div>
           <.link
             navigate={~p"/community"}
             class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"

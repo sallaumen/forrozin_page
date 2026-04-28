@@ -305,11 +305,19 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            |> assign(:study_link_status, :connected)
            |> put_flash(:info, "Conexão aceita!")}
 
+        {:error, :invalid} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "Não foi possível aceitar: você não pode aceitar um pedido que você mesmo iniciou."
+           )}
+
         _ ->
-          {:noreply, socket}
+          {:noreply, put_flash(socket, :error, "Não foi possível aceitar o pedido.")}
       end
     else
-      {:noreply, socket}
+      {:noreply, put_flash(socket, :error, "Pedido não encontrado.")}
     end
   end
 
