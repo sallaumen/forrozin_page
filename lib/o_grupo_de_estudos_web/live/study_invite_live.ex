@@ -41,14 +41,23 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLive do
       {:ok, _link} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Pedido enviado! #{teacher.name || teacher.username} vai receber seu pedido.")
+         |> put_flash(:info, "Pedido enviado! #{teacher.name || teacher.username} vai receber e aprovar seu pedido.")
          |> push_navigate(to: ~p"/users/#{teacher.username}")}
 
       {:error, :cannot_link_self} ->
-        {:noreply, put_flash(socket, :error, "Você não pode se vincular a si mesmo.")}
+        {:noreply, put_flash(socket, :error, "Você não pode ser aluno de si mesmo.")}
+
+      {:error, :already_pending} ->
+        {:noreply, put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta do professor.")}
+
+      {:error, :already_connected} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Vocês já estudam juntos!")
+         |> push_navigate(to: ~p"/users/#{teacher.username}")}
 
       _ ->
-        {:noreply, put_flash(socket, :error, "Não foi possível concluir esse convite agora.")}
+        {:noreply, put_flash(socket, :error, "Não foi possível enviar o pedido agora. Tente novamente.")}
     end
   end
 end

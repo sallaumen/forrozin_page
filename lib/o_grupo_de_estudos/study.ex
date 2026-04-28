@@ -227,14 +227,22 @@ defmodule OGrupoDeEstudos.Study do
             |> TeacherStudentLink.changeset(%{
               teacher_id: teacher.id,
               student_id: student_id,
-              active: true,
+              initiated_by_id: student_id,
+              active: false,
+              pending: true,
               ended_at: nil
             })
             |> Repo.insert()
 
+          %TeacherStudentLink{pending: true} ->
+            {:error, :already_pending}
+
+          %TeacherStudentLink{active: true} ->
+            {:error, :already_connected}
+
           link ->
             link
-            |> TeacherStudentLink.changeset(%{active: true, ended_at: nil})
+            |> TeacherStudentLink.changeset(%{active: false, pending: true})
             |> Repo.update()
         end
     end
