@@ -527,8 +527,10 @@ defmodule OGrupoDeEstudos.Study do
 
   def step_frequency_ranking(:personal, user_id) do
     from(ns in NoteStep,
-      join: n in Note, on: ns.study_note_id == n.id,
-      join: s in OGrupoDeEstudos.Encyclopedia.Step, on: ns.step_id == s.id,
+      join: n in Note,
+      on: ns.study_note_id == n.id,
+      join: s in OGrupoDeEstudos.Encyclopedia.Step,
+      on: ns.step_id == s.id,
       where: n.owner_user_id == ^user_id and n.kind == "personal",
       group_by: [s.id, s.code, s.name],
       select: %{step_id: s.id, code: s.code, name: s.name, count: count(ns.id)},
@@ -539,8 +541,10 @@ defmodule OGrupoDeEstudos.Study do
 
   def step_frequency_ranking(:shared, link_id) do
     from(ns in NoteStep,
-      join: n in Note, on: ns.study_note_id == n.id,
-      join: s in OGrupoDeEstudos.Encyclopedia.Step, on: ns.step_id == s.id,
+      join: n in Note,
+      on: ns.study_note_id == n.id,
+      join: s in OGrupoDeEstudos.Encyclopedia.Step,
+      on: ns.step_id == s.id,
       where: n.teacher_student_link_id == ^link_id and n.kind == "shared",
       group_by: [s.id, s.code, s.name],
       select: %{step_id: s.id, code: s.code, name: s.name, count: count(ns.id)},

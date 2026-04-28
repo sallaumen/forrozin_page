@@ -10,6 +10,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.SocialBubble
+  import OGrupoDeEstudosWeb.UI.StepRanking
+  import OGrupoDeEstudosWeb.UI.GoalsBoard
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
@@ -40,6 +42,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:suggested_users, [])
      |> assign(:following_user_ids, Engagement.following_ids(user.id))
      |> assign(:suggested_teachers, Study.suggest_teachers(user, limit: 5))
+     |> assign(:personal_goals, Study.list_personal_goals(user.id))
+     |> assign(:personal_step_ranking, Study.step_frequency_ranking(:personal, user.id))
+     |> assign(:goal_input, "")
      |> assign_dashboard(dashboard)}
   end
 
@@ -136,6 +141,37 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
 
     {:noreply, assign_dashboard(socket, dashboard)}
+  end
+
+  # ── Goals ────────────────────────────────────────────────────────────
+
+  def handle_event("create_goal", %{"body" => body}, socket) do
+    user = socket.assigns.current_user
+
+    case Study.create_goal(%{body: body, owner_user_id: user.id}) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:personal_goals, Study.list_personal_goals(user.id))
+         |> assign(:goal_input, "")}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_goal", %{"id" => id}, socket) do
+    Study.toggle_goal(id)
+
+    {:noreply,
+     assign(socket, :personal_goals, Study.list_personal_goals(socket.assigns.current_user.id))}
+  end
+
+  def handle_event("delete_goal", %{"id" => id}, socket) do
+    Study.delete_goal(id)
+
+    {:noreply,
+     assign(socket, :personal_goals, Study.list_personal_goals(socket.assigns.current_user.id))}
   end
 
   # ── Teacher search & request ──────────────────────────────────────────
