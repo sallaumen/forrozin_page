@@ -149,400 +149,189 @@
       </section>
 
       <aside id="study-movement-panel" class="flex flex-col gap-4">
-        <section class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
-          <h2 class="text-sm font-bold text-ink-900 m-0 mb-3">Diários conjuntos</h2>
+        <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+          <h2 class="text-sm font-bold text-ink-900 m-0 mb-2 font-serif">Diarios conjuntos</h2>
 
-          <div class="space-y-3">
-            <%= if @movement_cards == [] do %>
-              <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
-                <p class="text-sm leading-7 text-ink-500 m-0">
-                  Seus diários compartilhados vão aparecer aqui assim que algum professor ou aluno movimentar a nota.
-                </p>
-              </div>
-            <% else %>
+          <%= if @movement_cards == [] do %>
+            <p class="text-xs text-ink-400 italic m-0">
+              Aparecem aqui quando voce tiver vinculo com um professor ou aluno.
+            </p>
+          <% else %>
+            <div class="space-y-1.5">
               <%= for movement <- @movement_cards do %>
-                <article
+                <div
                   id={"study-movement-card-#{movement.link_id}"}
-                  class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3"
+                  class="flex items-center gap-2.5 rounded-lg bg-ink-50 border border-ink-200 px-3 py-2"
                 >
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class={[
-                      "rounded-full px-2.5 py-1 text-[10px] font-semibold border",
-                      movement.has_today_note? &&
-                        "border-accent-green/25 bg-accent-green/10 text-accent-green",
-                      !movement.has_today_note? &&
-                        "border-ink-200 bg-white text-ink-500"
-                    ]}>
-                      {if movement.has_today_note?,
-                        do: "Diário conjunto hoje",
-                        else: "Último movimento"}
-                    </span>
-
-                    <span
-                      :if={!movement.active}
-                      class="rounded-full border border-ink-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-ink-500"
-                    >
-                      vínculo encerrado
-                    </span>
-                  </div>
-
                   <.link
                     id={"study-profile-link-#{movement.counterpart.username}"}
                     navigate={~p"/users/#{movement.counterpart.username}"}
-                    class="mt-3 block text-base font-bold text-ink-900 no-underline hover:text-accent-orange transition-colors"
+                    class="no-underline flex items-center gap-2 flex-1 min-w-0"
                   >
-                    {movement.counterpart.name}
+                    <div class="w-7 h-7 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[10px] font-bold shrink-0">
+                      {String.first(movement.counterpart.name || movement.counterpart.username) |> String.upcase()}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[11px] font-bold text-ink-900 m-0 truncate">{movement.counterpart.name}</p>
+                      <p class={[
+                        "text-[9px] m-0 font-semibold",
+                        movement.has_today_note? && "text-accent-green",
+                        !movement.has_today_note? && "text-ink-400"
+                      ]}>
+                        {if movement.has_today_note?, do: "Escreveu hoje", else: "Ultimo movimento"}
+                      </p>
+                    </div>
                   </.link>
-                  <p class="mt-1 text-xs text-ink-500 m-0">@{movement.counterpart.username}</p>
-
-                  <p
-                    :if={movement.last_note_preview}
-                    class="mt-3 text-sm leading-6 text-ink-600 m-0"
-                  >
-                    {movement.last_note_preview}
-                  </p>
-
                   <.link
                     id={"study-open-shared-note-#{movement.link_id}"}
                     navigate={~p"/study/shared/#{movement.link_id}"}
-                    class="mt-3 inline-flex rounded-full bg-accent-orange px-4 py-2 text-xs font-bold text-white no-underline hover:bg-accent-orange/90 transition-colors"
+                    class="text-[9px] font-bold text-white bg-accent-orange rounded-full px-2.5 py-1 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
                   >
-                    Abrir diário
+                    Abrir
                   </.link>
-                </article>
+                </div>
               <% end %>
-            <% end %>
-          </div>
+            </div>
+          <% end %>
         </section>
       </aside>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-      <section
-        id="study-people-panel"
-        class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
-      >
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-orange m-0">
-              Pessoas de estudo
-            </p>
-            <h2 class="mt-2 text-lg font-bold text-ink-900 m-0">Professores e alunos</h2>
-            <p class="mt-2 text-xs leading-6 text-ink-500 m-0">
-              Busque, conecte e acesse os diários compartilhados.
-            </p>
-          </div>
-        </div>
+    <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
+      <%!-- Compact teacher section --%>
+      <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+        <h2 class="text-sm font-bold text-ink-900 m-0 mb-3 font-serif">Encontrar professor</h2>
 
-        <div class="mt-5">
-          <button
-            type="button"
-            phx-click="toggle_section"
-            phx-value-section="teachers"
-            class="flex w-full items-center justify-between rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 cursor-pointer transition-colors hover:bg-ink-100/60"
-          >
-            <div class="flex items-center gap-2">
-              <h3 class="text-sm font-bold text-ink-900 m-0">Meus professores</h3>
-              <span :if={@teacher_links != []} class="text-[10px] text-ink-400 font-medium">
-                {length(@teacher_links)}
-              </span>
-            </div>
-            <.icon
-              name={if @section_teachers_open, do: "hero-chevron-up", else: "hero-chevron-down"}
-              class="w-4 h-4 text-ink-400"
-            />
-          </button>
-
-          <div :if={@section_teachers_open} class="mt-3 space-y-3">
-            <%!-- Teacher suggestions --%>
-            <%= if @suggested_teachers != [] do %>
-              <div class="mb-4">
-                <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-2 font-sans">
-                  Professores sugeridos
-                </p>
-                <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                  <%= for teacher <- @suggested_teachers do %>
-                    <div class="flex-shrink-0 w-28 text-center bg-ink-50 rounded-xl border border-ink-200 p-3">
-                      <div class="w-9 h-9 rounded-full bg-gold-500/20 mx-auto mb-2 flex items-center justify-center text-gold-700 text-xs font-bold">
-                        {String.first(teacher.name || teacher.username) |> String.upcase()}
-                      </div>
-                      <p class="text-[11px] font-semibold text-ink-900 m-0 truncate">@{teacher.username}</p>
-                      <p class="text-[9px] text-ink-400 m-0 mt-0.5">{Map.get(teacher, :student_count, 0)} alunos</p>
-                      <button
-                        type="button"
-                        phx-click="request_teacher"
-                        phx-value-id={teacher.id}
-                        class="mt-2 w-full text-[10px] font-bold text-white bg-accent-orange rounded-full py-1.5 cursor-pointer border-0 hover:bg-accent-orange/90 transition-colors"
-                      >
-                        Estudar
-                      </button>
+        <%!-- My current teachers (compact list) --%>
+        <%= if @teacher_links != [] do %>
+          <div class="mb-3">
+            <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-1.5 font-sans">
+              Meus professores
+            </p>
+            <div class="space-y-1.5">
+              <%= for link <- @teacher_links do %>
+                <div class="flex items-center gap-2.5 rounded-lg bg-ink-50 border border-ink-200 px-3 py-2">
+                  <.link
+                    navigate={~p"/users/#{link.teacher.username}"}
+                    class="no-underline flex items-center gap-2 flex-1 min-w-0"
+                  >
+                    <div class="w-7 h-7 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[10px] font-bold shrink-0">
+                      {String.first(link.teacher.name || link.teacher.username) |> String.upcase()}
                     </div>
-                  <% end %>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-[11px] font-bold text-ink-900 m-0 truncate">{link.teacher.name}</p>
+                      <p class="text-[9px] text-ink-400 m-0">@{link.teacher.username}</p>
+                    </div>
+                  </.link>
+                  <.link
+                    navigate={~p"/study/shared/#{link.id}"}
+                    class="text-[9px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2.5 py-1 no-underline hover:bg-accent-orange/20 transition-colors shrink-0"
+                  >
+                    Diario
+                  </.link>
                 </div>
-              </div>
-            <% end %>
-            <form phx-change="search_teacher" class="relative">
-              <input
-                id="study-teacher-search"
-                name="term"
-                type="text"
-                value={@teacher_search}
-                autocomplete="off"
-                placeholder="Buscar professor por nome ou @usuario..."
-                class="w-full rounded-xl border border-ink-200 bg-ink-50/80 px-3 py-2.5 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
-              />
-            </form>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
 
-            <div
-              :if={@teacher_search_results != []}
-              class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm"
-            >
-              <%= for teacher <- @teacher_search_results do %>
-                <div class="flex items-center justify-between gap-3 px-3 py-3 border-b border-ink-100 last:border-b-0">
-                  <div class="flex items-center gap-2 min-w-0">
-                    <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                      {String.first(teacher.name || teacher.username) |> String.upcase()}
-                    </div>
-                    <div class="min-w-0">
-                      <p class="text-xs font-semibold text-ink-900 m-0 truncate">
-                        {teacher.name}
-                      </p>
-                      <p class="text-[10px] text-ink-500 m-0">
-                        @{teacher.username}
-                        <%= if teacher.city do %>
-                          <span class="text-ink-400"> ·    {teacher.city}</span>
-                        <% end %>
-                      </p>
-                    </div>
+        <%!-- Teacher suggestions (top 3, compact) --%>
+        <%= if @suggested_teachers != [] do %>
+          <div class="mb-3">
+            <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-1.5 font-sans">
+              Sugeridos
+            </p>
+            <div class="space-y-1.5">
+              <%= for teacher <- Enum.take(@suggested_teachers, 3) do %>
+                <div class="flex items-center gap-2.5 rounded-lg bg-ink-50 border border-ink-200 px-3 py-2">
+                  <div class="w-7 h-7 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
+                    {String.first(teacher.name || teacher.username) |> String.upcase()}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-bold text-ink-900 m-0 truncate">@{teacher.username}</p>
+                    <p class="text-[9px] text-ink-400 m-0">{Map.get(teacher, :student_count, 0)} alunos</p>
                   </div>
                   <button
                     type="button"
                     phx-click="request_teacher"
                     phx-value-id={teacher.id}
-                    class="text-[10px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-3 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors shrink-0"
+                    class="text-[9px] font-bold text-white bg-accent-orange rounded-full px-2.5 py-1 cursor-pointer border-0 hover:bg-accent-orange/90 transition-colors shrink-0"
                   >
                     Estudar
                   </button>
                 </div>
               <% end %>
             </div>
-
-            <%= if @teacher_links == [] and @teacher_search_results == [] do %>
-              <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
-                <p class="text-xs leading-6 text-ink-500 m-0">
-                  Busque por um professor acima ou peça o link de convite dele.
-                </p>
-              </div>
-            <% else %>
-              <div class="space-y-3">
-                <%= for link <- @teacher_links do %>
-                  <article class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3">
-                    <div class="flex items-start gap-3">
-                      <.link
-                        navigate={~p"/users/#{link.teacher.username}"}
-                        class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
-                      >
-                        <div class="w-10 h-10 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
-                          {String.first(link.teacher.name || link.teacher.username)
-                          |> String.upcase()}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-bold text-ink-900 m-0 truncate">
-                            {link.teacher.name}
-                          </p>
-                          <p class="text-[11px] text-ink-500 m-0">
-                            @{link.teacher.username}
-                            <%= if link.teacher.city do %>
-                              <span class="text-ink-400"> ·    {link.teacher.city}</span>
-                            <% end %>
-                          </p>
-                        </div>
-                      </.link>
-                    </div>
-                    <div class="mt-3 flex items-center justify-between gap-3">
-                      <span class="text-[10px] text-ink-400">
-                        Desde {OGrupoDeEstudos.Brazil.format_date(link.inserted_at)}
-                      </span>
-                      <.link
-                        navigate={~p"/study/shared/#{link.id}"}
-                        class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-4 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shadow-sm"
-                      >
-                        Abrir diário
-                      </.link>
-                    </div>
-                  </article>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        </div>
-
-        <%= if @current_user.is_teacher do %>
-          <div class="mt-5">
-            <button
-              type="button"
-              phx-click="toggle_section"
-              phx-value-section="students"
-              class="flex w-full items-center justify-between rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 cursor-pointer transition-colors hover:bg-ink-100/60"
-            >
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm font-bold text-ink-900 m-0">Meus alunos</h3>
-                <span :if={@student_links != []} class="text-[10px] text-ink-400 font-medium">
-                  {length(@student_links)}
-                </span>
-                <span
-                  :if={@pending_requests != []}
-                  class="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-accent-red text-white text-[10px] font-bold px-1.5"
-                >
-                  {length(@pending_requests)}
-                </span>
-              </div>
-              <.icon
-                name={if @section_students_open, do: "hero-chevron-up", else: "hero-chevron-down"}
-                class="w-4 h-4 text-ink-400"
-              />
-            </button>
-
-            <div :if={@section_students_open} class="mt-3 space-y-3">
-              <%= if @pending_requests != [] do %>
-                <div class="space-y-2">
-                  <p class="text-[10px] font-bold text-gold-600 uppercase tracking-wider m-0">
-                    Pedidos pendentes
-                  </p>
-                  <%= for req <- @pending_requests do %>
-                    <div class="flex items-center gap-3 rounded-xl border border-gold-500/20 bg-gold-500/[0.05] px-3 py-3">
-                      <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                        {String.first(req.student.name || req.student.username) |> String.upcase()}
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <p class="text-xs font-semibold text-ink-900 m-0 truncate">
-                          {req.student.name}
-                        </p>
-                        <p class="text-[10px] text-ink-500 m-0">@{req.student.username}</p>
-                      </div>
-                      <div class="flex gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          phx-click="accept_request"
-                          phx-value-id={req.id}
-                          class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
-                        >
-                          Aceitar
-                        </button>
-                        <button
-                          type="button"
-                          phx-click="reject_request"
-                          phx-value-id={req.id}
-                          class="text-[10px] font-bold text-ink-500 bg-ink-100 rounded-full px-3 py-1 cursor-pointer border-0 hover:bg-ink-200 transition-colors"
-                        >
-                          Recusar
-                        </button>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
-
-              <%= if @student_links == [] and @pending_requests == [] do %>
-                <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
-                  <p class="text-xs leading-6 text-ink-500 m-0">
-                    Nenhum aluno conectado. Compartilhe seu link de convite nas configurações.
-                  </p>
-                </div>
-              <% else %>
-                <div class="space-y-3">
-                  <%= for link <- @student_links do %>
-                    <article class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3">
-                      <div class="flex items-start gap-3">
-                        <.link
-                          navigate={~p"/users/#{link.student.username}"}
-                          class="flex items-center gap-3 flex-1 min-w-0 no-underline hover:opacity-80 transition-opacity"
-                        >
-                          <div class="w-10 h-10 rounded-full bg-ink-800 flex items-center justify-center text-ink-100 text-xs font-bold shrink-0">
-                            {String.first(link.student.name || link.student.username)
-                            |> String.upcase()}
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-ink-900 m-0 truncate">
-                              {link.student.name}
-                            </p>
-                            <p class="text-[11px] text-ink-500 m-0">
-                              @{link.student.username}
-                              <%= if link.student.city do %>
-                                <span class="text-ink-400"> ·    {link.student.city}</span>
-                              <% end %>
-                            </p>
-                          </div>
-                        </.link>
-                      </div>
-                      <div class="mt-3 flex items-center justify-between gap-3">
-                        <span class="text-[10px] text-ink-400">
-                          Desde {OGrupoDeEstudos.Brazil.format_date(link.inserted_at)}
-                        </span>
-                        <.link
-                          navigate={~p"/study/shared/#{link.id}"}
-                          class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-4 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shadow-sm"
-                        >
-                          Abrir diário
-                        </.link>
-                      </div>
-                    </article>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
           </div>
         <% end %>
+
+        <%!-- Search --%>
+        <form phx-change="search_teacher" class="relative">
+          <input
+            id="study-teacher-search"
+            name="term"
+            type="text"
+            value={@teacher_search}
+            autocomplete="off"
+            placeholder="Buscar professor..."
+            class="w-full rounded-lg border border-ink-200 bg-ink-50/80 px-3 py-2 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
+          />
+        </form>
+
+        <div
+          :if={@teacher_search_results != []}
+          class="mt-2 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm"
+        >
+          <%= for teacher <- @teacher_search_results do %>
+            <div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-ink-100 last:border-b-0">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-6 h-6 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[9px] font-bold shrink-0">
+                  {String.first(teacher.name || teacher.username) |> String.upcase()}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[11px] font-semibold text-ink-900 m-0 truncate">{teacher.name}</p>
+                  <p class="text-[9px] text-ink-500 m-0">@{teacher.username}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                phx-click="request_teacher"
+                phx-value-id={teacher.id}
+                class="text-[9px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2.5 py-1 cursor-pointer hover:bg-accent-orange/20 transition-colors shrink-0"
+              >
+                Estudar
+              </button>
+            </div>
+          <% end %>
+        </div>
       </section>
 
       <section
         id="study-history-panel"
-        class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
+        class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm"
       >
-        <button
-          type="button"
-          phx-click="toggle_section"
-          phx-value-section="history"
-          class="flex w-full items-center justify-between bg-transparent border-0 px-0 py-0 cursor-pointer"
-        >
-          <div class="text-left">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-orange m-0">
-              Histórico
-            </p>
-            <h2 class="mt-2 text-lg font-bold text-ink-900 m-0">Suas notas anteriores</h2>
-            <p class="mt-2 text-xs leading-6 text-ink-500 m-0">
-              Notas e passos registrados nos dias anteriores.
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-ink-900 m-0 font-serif">Notas anteriores</h2>
+          <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
+            {length(@personal_history)} {if length(@personal_history) == 1, do: "dia", else: "dias"}
+          </span>
+        </div>
+
+        <%= if @personal_history == [] do %>
+          <div class="rounded-lg border border-dashed border-ink-200 bg-ink-50 px-4 py-4 text-center">
+            <p class="text-xs text-ink-500 m-0">
+              Suas notas vao aparecer aqui conforme voce registrar seus estudos.
             </p>
           </div>
-
-          <div class="flex items-center gap-2 shrink-0">
-            <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
-              {length(@personal_history)} {if length(@personal_history) == 1,
-                do: "dia",
-                else: "dias"}
-            </span>
-            <.icon
-              name={if @section_history_open, do: "hero-chevron-up", else: "hero-chevron-down"}
-              class="w-4 h-4 text-ink-400"
-            />
-          </div>
-        </button>
-
-        <div :if={@section_history_open} class="mt-4 space-y-3">
-          <%= if @personal_history == [] do %>
-            <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-4">
-              <p class="text-sm leading-7 text-ink-500 m-0">
-                Suas notas anteriores vão aparecer aqui conforme você for registrando seus estudos.
-              </p>
-            </div>
-          <% else %>
+        <% else %>
+          <div class="space-y-2">
             <%= for note <- @personal_history do %>
-              <article class="rounded-xl border border-ink-200 bg-ink-50 px-4 py-3">
+              <article class="rounded-lg border border-ink-200 bg-ink-50 px-3 py-2.5">
                 <span class="text-[11px] font-bold text-ink-700">
                   {OGrupoDeEstudos.Brazil.format_date(note.note_date)}
                 </span>
 
-                <div :if={note.related_steps != []} class="mt-1.5 flex flex-wrap gap-1">
+                <div :if={note.related_steps != []} class="mt-1 flex flex-wrap gap-1">
                   <%= for step <- note.related_steps do %>
                     <code class="rounded-full bg-accent-orange/10 border border-accent-orange/20 px-2 py-0.5 text-[10px] text-accent-orange">
                       {step.code} · {step.name}
@@ -550,16 +339,24 @@
                   <% end %>
                 </div>
 
-                <p
-                  :if={note.content && note.content != ""}
-                  class="mt-2 text-sm leading-6 text-ink-600 m-0 line-clamp-2"
-                >
-                  {note.content}
-                </p>
+                <%= if note.content && note.content != "" do %>
+                  <% long? = String.length(note.content) > 150 %>
+                  <%= if long? do %>
+                    <details class="mt-1.5">
+                      <summary class="text-xs leading-6 text-ink-600 cursor-pointer list-none">
+                        <span class="line-clamp-2">{note.content}</span>
+                        <span class="text-[10px] text-accent-orange font-semibold mt-0.5 inline-block">ver mais</span>
+                      </summary>
+                      <p class="text-xs leading-6 text-ink-600 m-0 mt-1 whitespace-pre-line">{note.content}</p>
+                    </details>
+                  <% else %>
+                    <p class="mt-1.5 text-xs leading-6 text-ink-600 m-0">{note.content}</p>
+                  <% end %>
+                <% end %>
               </article>
             <% end %>
-          <% end %>
-        </div>
+          </div>
+        <% end %>
       </section>
     </section>
   </main>

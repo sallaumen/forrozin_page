@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       assert has_element?(lv, "#study-home-shell")
       assert has_element?(lv, "#study-diary-panel")
-      assert html =~ "Meus professores"
+      assert html =~ "Encontrar professor"
       assert html =~ "Sem registro ainda"
     end
 
@@ -92,7 +92,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert has_element?(lv, "#study-movement-panel")
       assert has_element?(lv, "#study-movement-card-#{link.id}")
       assert has_element?(lv, "#study-overview-grid")
-      assert has_element?(lv, "#study-people-panel")
+      # study-people-panel was replaced by compact teacher section
       assert has_element?(lv, "#study-history-panel")
       assert has_element?(lv, "#study-diary-form")
       assert has_element?(lv, "#study-related-steps-panel")
