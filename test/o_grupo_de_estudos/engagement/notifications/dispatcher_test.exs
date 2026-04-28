@@ -3,8 +3,10 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
   import Ecto.Query
   import OGrupoDeEstudos.Factory
   alias OGrupoDeEstudos.Engagement
+  alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Study
 
   test "replying to a comment notifies the parent comment author" do
     step = insert(:step)
@@ -134,6 +136,26 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
       )
 
     assert author_notifications == []
+  end
+
+  test "notify_shared_note/3 creates notification for student" do
+    teacher = insert(:user, is_teacher: true)
+    student = insert(:user)
+    {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+    {:ok, link} = Study.accept_link_request(link, teacher)
+
+    Dispatcher.notify_shared_note(teacher, student.id, link.id)
+
+    notifications =
+      Repo.all(
+        from n in Notification,
+          where: n.user_id == ^student.id and n.action == "shared_note_updated"
+      )
+
+    assert notifications != []
+    [notif] = notifications
+    assert notif.actor_id == teacher.id
+    assert notif.target_id == link.id
   end
 
   test "following a user creates a follow notification" do

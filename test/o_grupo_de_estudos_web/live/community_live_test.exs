@@ -86,6 +86,25 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
   end
 
+  describe "sequence tabs" do
+    test "shows Comunidade and Minhas tabs", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      {:ok, _lv, html} = live(conn, ~p"/community")
+
+      assert html =~ "Comunidade"
+      assert html =~ "Minhas"
+    end
+
+    test "switching to Minhas tab shows user's sequences", %{conn: conn} do
+      conn = logged_in_conn(conn)
+      {:ok, lv, _html} = live(conn, ~p"/community")
+      html = render_click(lv, "switch_seq_tab", %{"tab" => "mine"})
+
+      # Should not crash and should show the tab content
+      assert html =~ "Minhas"
+    end
+  end
+
   describe "follow interactions on sequence authors" do
     test "toggle_follow on sequence author creates a follow", %{conn: conn} do
       user = insert(:user)
