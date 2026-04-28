@@ -1,17 +1,14 @@
 defmodule OGrupoDeEstudosWeb.CommunityLive do
   @moduledoc """
-  Community page — shows suggested steps and public sequences.
+  Sequences page — shows all public sequences sorted by like count,
+  with inline comment expansion (lazy-loaded) and YouTube embeds.
 
-  Steps: single "Todas" tab for regular users; admins also see "Pendentes".
-  Search by name/code and filter by category (steps); search by name (sequences).
-  Sequences tab: all public sequences sorted by like count, with inline
-  comment expansion (lazy-loaded) and YouTube embeds.
   Accessible to all authenticated users.
   """
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences}
+  alias OGrupoDeEstudos.{Accounts, Engagement, Sequences}
   alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
@@ -30,75 +27,23 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   @impl true
   def mount(_params, _session, socket) do
     admin = Accounts.admin?(socket.assigns.current_user)
-    steps = Encyclopedia.list_suggested_steps_filtered(filter: "all")
-    step_ids = Enum.map(steps, & &1.id)
-    step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", step_ids)
-    step_favorites = Engagement.favorites_map(socket.assigns.current_user.id, "step", step_ids)
-    categories = Encyclopedia.list_categories()
-
-    {:ok,
-     assign(socket,
-       page_title: "Comunidade",
-       is_admin: admin,
-       active_section: "steps",
-       active_tab: "all",
-       steps: steps,
-       steps_all: steps,
-       step_likes: step_likes,
-       step_favorites: step_favorites,
-       step_search: "",
-       step_category_filter: "all",
-       categories: categories,
-       sequences: [],
-       sequences_all: [],
-       sequence_likes: %{liked_ids: MapSet.new(), counts: %{}},
-       seq_favorites: MapSet.new(),
-       seq_comment_counts: %{},
-       seq_search: "",
-       expanded_seq: nil,
-       expanded_seq_comments: [],
-       expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
-       expanded_seq_replies_map: %{},
-       expanded_seq_replying_to: nil,
-       followers_sub_tab: "following",
-       followers_search: "",
-       followers_list: [],
-       following_count: 0,
-       followers_count: 0,
-       followers_following_map: MapSet.new(),
-       followers_stats: %{},
-       following_user_ids: Engagement.following_ids(socket.assigns.current_user.id),
-       people_search: "",
-       people_results: [],
-       suggested_users: [],
-       bubble_open: false,
-       bubble_following_list: [],
-       bubble_search: "",
-       bubble_search_results: []
-     )}
-  end
-
-  @impl true
-  def handle_event("switch_section", %{"section" => "sequences"}, socket) do
-    sequences = Sequences.list_all_public_sequences()
-
-    sequence_ids = Enum.map(sequences, & &1.id)
     current_user = socket.assigns.current_user
+
+    sequences = Sequences.list_all_public_sequences()
+    sequence_ids = Enum.map(sequences, & &1.id)
     sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
     seq_favorites = Engagement.favorites_map(current_user.id, "sequence", sequence_ids)
     seq_comment_counts = Engagement.comment_counts_for("sequence", sequence_ids)
 
     sorted =
-      Enum.sort_by(
-        sequences,
-        fn seq ->
-          {-seq.like_count, seq.inserted_at}
-        end
-      )
+      Enum.sort_by(sequences, fn seq ->
+        {-seq.like_count, seq.inserted_at}
+      end)
 
-    {:noreply,
+    {:ok,
      assign(socket,
-       active_section: "sequences",
+       page_title: "Sequências",
+       is_admin: admin,
        sequences: sorted,
        sequences_all: sorted,
        sequence_likes: sequence_likes,
@@ -109,118 +54,19 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        expanded_seq_comments: [],
        expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
        expanded_seq_replies_map: %{},
-       expanded_seq_replying_to: nil
+       expanded_seq_replying_to: nil,
+       following_user_ids: Engagement.following_ids(current_user.id),
+       bubble_open: false,
+       bubble_following_list: [],
+       bubble_search: "",
+       bubble_search_results: [],
+       suggested_users: [],
+       following_count: 0,
+       followers_count: 0
      )}
   end
 
-  def handle_event("switch_section", %{"section" => "steps"}, socket) do
-    {:noreply, assign(socket, active_section: "steps")}
-  end
-
-  def handle_event("switch_section", %{"section" => "followers"}, socket) do
-    user = socket.assigns.current_user
-    following = Engagement.list_following(user.id)
-    following_count = Engagement.count_following(user.id)
-    followers_count = Engagement.count_followers(user.id)
-    user_ids = Enum.map(following, & &1.id)
-    following_map = Engagement.following_ids_for(user.id, user_ids)
-    followers_stats = Engagement.user_stats_batch(user_ids)
-    suggested_users = Engagement.suggest_users(user, limit: 5)
-
-    {:noreply,
-     assign(socket,
-       active_section: "followers",
-       followers_sub_tab: "following",
-       followers_list: following,
-       following_count: following_count,
-       followers_count: followers_count,
-       followers_following_map: following_map,
-       followers_stats: followers_stats,
-       followers_search: "",
-       suggested_users: suggested_users
-     )}
-  end
-
-  def handle_event("switch_followers_tab", %{"tab" => tab}, socket) do
-    user = socket.assigns.current_user
-
-    list =
-      case tab do
-        "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
-        "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
-      end
-
-    user_ids = Enum.map(list, & &1.id)
-    followers_stats = Engagement.user_stats_batch(user_ids)
-
-    {:noreply,
-     assign(socket,
-       followers_sub_tab: tab,
-       followers_list: list,
-       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
-       followers_stats: followers_stats
-     )}
-  end
-
-  def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
-    user = socket.assigns.current_user
-    result = Engagement.toggle_follow(user.id, target_id)
-    socket = OGrupoDeEstudosWeb.Helpers.RateLimit.maybe_flash_rate_limit(socket, result)
-
-    list =
-      case socket.assigns.followers_sub_tab do
-        "following" -> Engagement.list_following(user.id, search: socket.assigns.followers_search)
-        "followers" -> Engagement.list_followers(user.id, search: socket.assigns.followers_search)
-      end
-
-    user_ids = Enum.map(list, & &1.id)
-    followers_stats = Engagement.user_stats_batch(user_ids)
-    suggested_users = Engagement.suggest_users(user, limit: 5)
-
-    {:noreply,
-     assign(socket,
-       followers_list: list,
-       following_count: Engagement.count_following(user.id),
-       followers_count: Engagement.count_followers(user.id),
-       followers_following_map: Engagement.following_ids_for(user.id, user_ids),
-       followers_stats: followers_stats,
-       following_user_ids: Engagement.following_ids(user.id),
-       suggested_users: suggested_users
-     )}
-  end
-
-  def handle_event("switch_tab", %{"tab" => tab}, socket) do
-    # Non-admins cannot access the pending tab
-    tab = if tab == "pending" and not socket.assigns.is_admin, do: "all", else: tab
-    steps = Encyclopedia.list_suggested_steps_filtered(filter: tab)
-    step_ids = Enum.map(steps, & &1.id)
-    user = socket.assigns.current_user
-    step_likes = Engagement.likes_map(user.id, "step", step_ids)
-    step_favorites = Engagement.favorites_map(user.id, "step", step_ids)
-
-    {:noreply,
-     assign(socket,
-       active_tab: tab,
-       steps: steps,
-       steps_all: steps,
-       step_likes: step_likes,
-       step_favorites: step_favorites,
-       step_search: "",
-       step_category_filter: "all"
-     )}
-  end
-
-  def handle_event("search_steps", params, socket) do
-    term = params["value"] || params["term"] || ""
-    filtered = filter_steps(socket.assigns.steps_all, term, socket.assigns.step_category_filter)
-    {:noreply, assign(socket, step_search: term, steps: filtered)}
-  end
-
-  def handle_event("filter_step_category", %{"category" => cat}, socket) do
-    filtered = filter_steps(socket.assigns.steps_all, socket.assigns.step_search, cat)
-    {:noreply, assign(socket, step_category_filter: cat, steps: filtered)}
-  end
-
+  @impl true
   def handle_event("search_sequences", params, socket) do
     term = params["value"] || params["term"] || ""
 
@@ -248,72 +94,14 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
         sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
 
         sorted =
-          Enum.sort_by(
-            sequences,
-            fn seq ->
-              {-seq.like_count, seq.inserted_at}
-            end
-          )
+          Enum.sort_by(sequences, fn seq ->
+            {-seq.like_count, seq.inserted_at}
+          end)
 
         {:noreply, assign(socket, sequences: sorted, sequence_likes: sequence_likes)}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível registrar o like.")}
-    end
-  end
-
-  def handle_event("approve_step", %{"code" => code}, socket) do
-    if not socket.assigns.is_admin do
-      {:noreply, socket}
-    else
-      step = OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(code: code)
-
-      if step do
-        OGrupoDeEstudos.Admin.update_step(step, %{approved: true})
-
-        steps =
-          OGrupoDeEstudos.Encyclopedia.list_suggested_steps_filtered(
-            filter: socket.assigns.active_tab
-          )
-
-        {:noreply,
-         socket
-         |> assign(:steps, steps)
-         |> assign(:steps_all, steps)
-         |> put_flash(:info, "Passo '#{step.name}' aprovado!")}
-      else
-        {:noreply, socket}
-      end
-    end
-  end
-
-  def handle_event("toggle_step_like", %{"id" => step_id}, socket) do
-    user = socket.assigns.current_user
-
-    case Engagement.toggle_like(user.id, "step", step_id) do
-      {:ok, _} ->
-        step_ids = Enum.map(socket.assigns.steps, & &1.id)
-        step_likes = Engagement.likes_map(user.id, "step", step_ids)
-        step_favorites = Engagement.favorites_map(user.id, "step", step_ids)
-        {:noreply, assign(socket, step_likes: step_likes, step_favorites: step_favorites)}
-
-      {:error, _} ->
-        {:noreply, socket}
-    end
-  end
-
-  def handle_event("toggle_step_favorite", %{"id" => step_id}, socket) do
-    user = socket.assigns.current_user
-
-    case Engagement.toggle_favorite(user.id, "step", step_id) do
-      {:ok, _} ->
-        step_ids = Enum.map(socket.assigns.steps, & &1.id)
-        step_likes = Engagement.likes_map(user.id, "step", step_ids)
-        step_favorites = Engagement.favorites_map(user.id, "step", step_ids)
-        {:noreply, assign(socket, step_likes: step_likes, step_favorites: step_favorites)}
-
-      {:error, _} ->
-        {:noreply, socket}
     end
   end
 
@@ -329,6 +117,17 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       {:error, _} ->
         {:noreply, socket}
     end
+  end
+
+  def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
+    user = socket.assigns.current_user
+    result = Engagement.toggle_follow(user.id, target_id)
+    socket = OGrupoDeEstudosWeb.Helpers.RateLimit.maybe_flash_rate_limit(socket, result)
+
+    {:noreply,
+     assign(socket,
+       following_user_ids: Engagement.following_ids(user.id)
+     )}
   end
 
   # ── Inline expansion: sequence comments ────────────────────────────────
@@ -423,35 +222,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     end
   end
 
-  def handle_event("search_people", params, socket) do
-    term = params["value"] || params["term"] || ""
-    results = Accounts.search_users(term, exclude_id: socket.assigns.current_user.id)
-
-    socket = assign(socket, people_search: term, people_results: results)
-
-    if socket.assigns.active_section == "followers" do
-      user = socket.assigns.current_user
-
-      list =
-        case socket.assigns.followers_sub_tab do
-          "following" -> Engagement.list_following(user.id, search: term)
-          "followers" -> Engagement.list_followers(user.id, search: term)
-        end
-
-      user_ids = Enum.map(list, & &1.id)
-
-      {:noreply,
-       assign(socket,
-         followers_search: term,
-         followers_list: list,
-         followers_following_map: Engagement.following_ids_for(user.id, user_ids),
-         followers_stats: Engagement.user_stats_batch(user_ids)
-       )}
-    else
-      {:noreply, socket}
-    end
-  end
-
   def handle_event("delete_comment", %{"id" => id, "type" => "sequence_comment"}, socket) do
     user = socket.assigns.current_user
     alias OGrupoDeEstudos.Engagement.Comments.SequenceComment
@@ -464,29 +234,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   end
 
   # ── Private helpers ─────────────────────────────────────────────────────
-
-  defp filter_steps(all_steps, search, category) do
-    all_steps
-    |> then(fn steps ->
-      if search == "" do
-        steps
-      else
-        term = String.downcase(search)
-
-        Enum.filter(steps, fn s ->
-          String.contains?(String.downcase(s.name), term) ||
-            String.contains?(String.downcase(s.code), term)
-        end)
-      end
-    end)
-    |> then(fn steps ->
-      if category == "all" do
-        steps
-      else
-        Enum.filter(steps, fn s -> s.category && s.category.name == category end)
-      end
-    end)
-  end
 
   defp reload_seq_expanded(socket) do
     seq_id = socket.assigns.expanded_seq
@@ -532,18 +279,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   end
 
   # ── View helpers ────────────────────────────────────────────────────────
-
-  def category_color(%{category: %{color: color}}), do: color
-  def category_color(_), do: "#7f8c8d"
-
-  def category_label(%{category: %{label: label}}), do: label
-  def category_label(_), do: ""
-
-  def connection_count(%{connections_as_source: conns_out, connections_as_target: conns_in}) do
-    length(conns_out) + length(conns_in)
-  end
-
-  def connection_count(_), do: 0
 
   def youtube_embed_url(url) when is_binary(url) do
     cond do

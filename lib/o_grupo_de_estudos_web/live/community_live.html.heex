@@ -11,768 +11,283 @@
     pending_study_count={assigns[:pending_study_count] || 0}
   />
 
-  <%!-- Section switcher: segmented control (Passos | Sequências) --%>
-  <div class="sticky top-[48px] md:top-[52px] z-30 bg-ink-100 border-b border-ink-300/30 pb-2 pt-3 px-4">
-    <div class="max-w-4xl mx-auto w-full">
-      <div class="flex w-full p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
-        <%= for {sec_key, sec_label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"followers", "Seguidores"}] do %>
-          <button
-            phx-click="switch_section"
-            phx-value-section={sec_key}
-            class={[
-              "flex-1 py-2 px-4 rounded cursor-pointer font-serif text-sm font-semibold transition-all",
-              @active_section == sec_key && "bg-white text-accent-orange shadow-sm",
-              @active_section != sec_key && "bg-transparent text-ink-500 hover:text-ink-800"
-            ]}
-          >
-            {sec_label}
-          </button>
-        <% end %>
+  <%!-- Sequences header: title + search + create button --%>
+  <div class="max-w-4xl mx-auto px-4 w-full box-border mt-4">
+    <div class="flex items-center gap-2 mb-3">
+      <div class="flex-1 relative">
+        <.icon
+          name="hero-magnifying-glass"
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
+        />
+        <input
+          type="text"
+          phx-keyup="search_sequences"
+          phx-debounce="300"
+          name="term"
+          value={@seq_search}
+          placeholder="Buscar sequência..."
+          class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+        />
       </div>
+      <.link
+        navigate={~p"/graph/visual?mode=generator"}
+        class="inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-full bg-accent-green px-4 py-1.5 text-xs font-bold text-white no-underline transition hover:bg-accent-green/90 cursor-pointer font-serif"
+      >
+        + Criar sequência
+      </.link>
     </div>
   </div>
 
-  <%!-- ===== PASSOS SECTION ===== --%>
-  <%= if @active_section == "steps" do %>
-    <%!-- Admin-only tab: Pendentes --%>
-    <%= if @is_admin do %>
-      <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
-        <div class="flex gap-0 border-b border-ink-300/30">
-          <%= for {tab_key, tab_label} <- [{"all", "Todas"}, {"pending", "Pendentes"}] do %>
-            <button
-              phx-click="switch_tab"
-              phx-value-tab={tab_key}
-              class={[
-                "py-2 px-5 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-px border-b-2 transition-colors",
-                @active_tab == tab_key &&
-                  "text-accent-orange border-accent-orange font-bold",
-                @active_tab != tab_key &&
-                  "text-ink-500 border-transparent font-normal hover:text-ink-800"
-              ]}
-            >
-              {tab_label}
-            </button>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
-
-    <%!-- Search bar + suggest button --%>
-    <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
-      <div class="flex items-center gap-2 mb-3">
-        <div class="flex-1 relative">
-          <.icon
-            name="hero-magnifying-glass"
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
-          />
-          <input
-            type="text"
-            phx-keyup="search_steps"
-            phx-debounce="300"
-            name="term"
-            value={@step_search}
-            placeholder="Buscar passo..."
-            class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-          />
-        </div>
-        <.link
-          navigate={~p"/collection?suggest=1"}
-          class="inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-full border-2 px-4 py-1.5 text-xs font-bold tracking-wide no-underline transition-all cursor-pointer font-serif"
-          style="border-color: #8e44ad; background: #8e44ad; color: white;"
-        >
-          + Sugerir passo
-        </.link>
-      </div>
-
-      <%!-- Category filter chips --%>
-      <div class="flex flex-wrap gap-1.5 mb-3">
-        <button
-          phx-click="filter_step_category"
-          phx-value-category="all"
-          class={[
-            "py-1 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer",
-            @step_category_filter == "all" && "bg-ink-800 text-white border-ink-800",
-            @step_category_filter != "all" &&
-              "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
-          ]}
-        >
-          Todas
-        </button>
-        <%= for cat <- @categories do %>
-          <button
-            phx-click="filter_step_category"
-            phx-value-category={cat.name}
-            class={[
-              "py-1 px-3 rounded-full text-xs font-medium border transition-colors cursor-pointer",
-              @step_category_filter == cat.name && "bg-ink-800 text-white border-ink-800",
-              @step_category_filter != cat.name &&
-                "bg-ink-50 text-ink-500 border-ink-200 hover:border-ink-400"
-            ]}
-          >
-            {cat.label}
-          </button>
-        <% end %>
-      </div>
-    </div>
-
-    <%!-- Steps content --%>
-    <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
-      <%= if @steps == [] do %>
-        <div class="text-center py-16 px-5">
-          <div class="text-4xl mb-3">🎵</div>
-          <p class="text-ink-600 font-semibold mb-1">Nenhuma sugestão encontrada</p>
-          <p class="text-sm text-ink-400 mb-4">Seja o primeiro a contribuir com a comunidade!</p>
-          <.link
-            navigate={~p"/collection?suggest=1"}
-            class="inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-bold text-white no-underline transition cursor-pointer"
-            style="background: #8e44ad;"
-          >
-            + Sugerir passo
-          </.link>
-        </div>
-      <% else %>
-        <p class="text-xs text-accent-orange mb-4 font-semibold">
-          {length(@steps)} sugestão(ões)
+  <%!-- Sequences content --%>
+  <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
+    <%= if @sequences == [] do %>
+      <div class="text-center py-16 px-5">
+        <div class="text-4xl mb-3">🗺️</div>
+        <p class="text-ink-600 font-semibold mb-1">Nenhuma sequência pública ainda</p>
+        <p class="text-sm text-ink-400 mb-4">
+          Monte uma combinação de passos e compartilhe com todos!
         </p>
-        <div class="flex flex-col gap-3">
-          <%= for step <- @steps do %>
-            <% author = step.suggested_by %>
-            <% author_username = if author, do: author.username, else: "?" %>
-            <% author_initial = author_username |> String.upcase() |> String.first() %>
-            <div class="bg-ink-50 rounded-lg border border-accent-green/25 shadow-sm overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
-              <%!-- Colored top accent bar --%>
-              <div class="h-0.5 w-full" style={"background: #{category_color(step)};"} />
-              <div class="px-4 py-4">
-                <%!-- Header row --%>
-                <div class="flex items-center gap-2 flex-wrap mb-2.5">
-                  <code class="font-mono text-xs font-bold text-ink-700 bg-gold-500/10 py-0.5 px-1.5 rounded-sm tracking-wide border border-gold-500/20">
-                    {step.code}
-                  </code>
-                  <.link
-                    navigate={~p"/steps/#{step.code}"}
-                    class="text-base text-ink-900 font-bold font-serif no-underline leading-snug"
-                  >
-                    {step.name}
-                  </.link>
-                  <%= if step.category do %>
-                    <span
-                      class="text-[10px] py-0.5 px-2.5 rounded-full italic font-semibold border"
-                      style={"background: #{category_color(step)}12; color: #{category_color(step)}; border-color: #{category_color(step)}30;"}
-                    >
-                      {category_label(step)}
-                    </span>
-                  <% end %>
-                </div>
-
-                <%!-- Footer: author + link + like --%>
-                <div class="flex items-center gap-3 flex-wrap mt-1">
-                  <.link
-                    navigate={~p"/users/#{author_username}"}
-                    class="no-underline flex items-center gap-1.5"
-                  >
-                    <span
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] font-bold flex-shrink-0"
-                      style={"background: #{category_color(step)};"}
-                    >
-                      {author_initial}
-                    </span>
-                    <span class="text-xs font-semibold" style={"color: #{category_color(step)};"}>
-                      @{author_username}
-                    </span>
-                  </.link>
-                  <%= if step.suggested_by_id && step.suggested_by_id != @current_user.id do %>
-                    <% is_following = MapSet.member?(@following_user_ids, step.suggested_by_id) %>
-                    <button
-                      phx-click="toggle_follow"
-                      phx-value-user-id={step.suggested_by_id}
-                      class={[
-                        "text-xs py-1 px-3 rounded-full border transition-colors cursor-pointer",
-                        is_following &&
-                          "border-accent-orange bg-accent-orange/10 text-accent-orange",
-                        !is_following &&
-                          "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
-                      ]}
-                    >
-                      {if is_following, do: "Seguindo ✓", else: "Seguir"}
-                    </button>
-                  <% end %>
-                  <div class="flex items-center gap-2">
-                    <button
-                      phx-click="toggle_step_like"
-                      phx-value-id={step.id}
-                      class="flex items-center gap-1"
-                    >
-                      <.icon
-                        name={
-                          if MapSet.member?(@step_likes.liked_ids, step.id),
-                            do: "hero-heart-solid",
-                            else: "hero-heart"
-                        }
-                        class={[
-                          "w-4 h-4",
-                          MapSet.member?(@step_likes.liked_ids, step.id) && "text-accent-red",
-                          !MapSet.member?(@step_likes.liked_ids, step.id) && "text-ink-400"
-                        ]}
-                      />
-                      <span class="text-xs tabular-nums text-ink-500">
-                        {Map.get(@step_likes.counts, step.id, 0)}
-                      </span>
-                    </button>
-                    <button
-                      phx-click="toggle_step_favorite"
-                      phx-value-id={step.id}
-                      class="flex items-center gap-0.5"
-                      title={
-                        if MapSet.member?(@step_favorites, step.id),
-                          do: "Remover favorito",
-                          else: "Favoritar"
-                      }
-                    >
-                      <.icon
-                        name={
-                          if MapSet.member?(@step_favorites, step.id),
-                            do: "hero-star-solid",
-                            else: "hero-star"
-                        }
-                        class={[
-                          "w-4 h-4",
-                          MapSet.member?(@step_favorites, step.id) && "text-gold-500",
-                          !MapSet.member?(@step_favorites, step.id) && "text-ink-400"
-                        ]}
-                      />
-                    </button>
-                  </div>
-                  <%= if @is_admin && !step.approved do %>
-                    <button
-                      phx-click="approve_step"
-                      phx-value-code={step.code}
-                      data-confirm="Aprovar este passo como oficial?"
-                      class="text-xs py-1 px-3 rounded-full bg-accent-green text-white border-0 cursor-pointer font-medium hover:bg-accent-green/80 transition-colors"
-                    >
-                      Aprovar
-                    </button>
-                  <% end %>
-                  <.link
-                    navigate={~p"/steps/#{step.code}"}
-                    class="text-xs text-ink-400 no-underline italic ml-auto hover:text-ink-700"
-                  >
-                    ver detalhes →
-                  </.link>
-                </div>
-              </div>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-  <% end %>
-
-  <%!-- ===== SEQUÊNCIAS SECTION ===== --%>
-  <%= if @active_section == "sequences" do %>
-    <%!-- Sequences search bar --%>
-    <div class="max-w-4xl mx-auto px-4 w-full box-border mt-3">
-      <div class="flex items-center gap-2 mb-3">
-        <div class="flex-1 relative">
-          <.icon
-            name="hero-magnifying-glass"
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
-          />
-          <input
-            type="text"
-            phx-keyup="search_sequences"
-            phx-debounce="300"
-            name="term"
-            value={@seq_search}
-            placeholder="Buscar sequência..."
-            class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-          />
-        </div>
         <.link
           navigate={~p"/graph/visual?mode=generator"}
-          class="inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-full bg-accent-green px-4 py-1.5 text-xs font-bold text-white no-underline transition hover:bg-accent-green/90 cursor-pointer font-serif"
+          class="inline-flex items-center gap-1.5 rounded-full bg-accent-green px-5 py-2 text-sm font-bold text-white no-underline transition hover:bg-accent-green/90 cursor-pointer"
         >
-          + Criar sequência
+          + Criar a primeira sequência
         </.link>
       </div>
-    </div>
+    <% else %>
+      <p class="text-xs text-accent-orange mb-4 font-semibold">
+        {length(@sequences)} sequência(s) · ordenadas por likes
+      </p>
+      <div class="flex flex-col gap-3">
+        <%= for seq <- @sequences do %>
+          <% author = seq.user %>
+          <% author_username = if author, do: author.username, else: "?" %>
+          <% author_initial = author_username |> String.upcase() |> String.first() %>
+          <% step_count = length(seq.sequence_steps) %>
+          <% like_count = Map.get(@sequence_likes.counts, seq.id, 0) %>
+          <% liked = MapSet.member?(@sequence_likes.liked_ids, seq.id) %>
+          <% is_favorited = MapSet.member?(@seq_favorites, seq.id) %>
+          <% is_expanded = @expanded_seq == seq.id %>
+          <div class={[
+            "bg-ink-50 rounded-lg border shadow-sm overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5",
+            is_expanded && "border-accent-orange/40 shadow-md",
+            !is_expanded && "border-accent-orange/20"
+          ]}>
+            <%!-- Orange top accent bar --%>
+            <div class="h-0.5 w-full bg-accent-orange/60" />
 
-    <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
-      <%= if @sequences == [] do %>
-        <div class="text-center py-16 px-5">
-          <div class="text-4xl mb-3">🗺️</div>
-          <p class="text-ink-600 font-semibold mb-1">Nenhuma sequência pública ainda</p>
-          <p class="text-sm text-ink-400 mb-4">
-            Monte uma combinação de passos e compartilhe com todos!
-          </p>
-          <.link
-            navigate={~p"/graph/visual?mode=generator"}
-            class="inline-flex items-center gap-1.5 rounded-full bg-accent-green px-5 py-2 text-sm font-bold text-white no-underline transition hover:bg-accent-green/90 cursor-pointer"
-          >
-            + Criar a primeira sequência
-          </.link>
-        </div>
-      <% else %>
-        <p class="text-xs text-accent-orange mb-4 font-semibold">
-          {length(@sequences)} sequência(s) · ordenadas por likes
-        </p>
-        <div class="flex flex-col gap-3">
-          <%= for seq <- @sequences do %>
-            <% author = seq.user %>
-            <% author_username = if author, do: author.username, else: "?" %>
-            <% author_initial = author_username |> String.upcase() |> String.first() %>
-            <% step_count = length(seq.sequence_steps) %>
-            <% like_count = Map.get(@sequence_likes.counts, seq.id, 0) %>
-            <% liked = MapSet.member?(@sequence_likes.liked_ids, seq.id) %>
-            <% is_favorited = MapSet.member?(@seq_favorites, seq.id) %>
-            <% is_expanded = @expanded_seq == seq.id %>
-            <div class={[
-              "bg-ink-50 rounded-lg border shadow-sm overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5",
-              is_expanded && "border-accent-orange/40 shadow-md",
-              !is_expanded && "border-accent-orange/20"
-            ]}>
-              <%!-- Orange top accent bar --%>
-              <div class="h-0.5 w-full bg-accent-orange/60" />
-
-              <div class="px-4 py-4">
-                <%!-- Header: name + video icon + like button --%>
-                <div class="flex items-start justify-between gap-3 mb-2">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap mb-1">
-                      <span class="text-base font-bold text-ink-900 font-serif leading-snug">
-                        {seq.name}
+            <div class="px-4 py-4">
+              <%!-- Header: name + video icon + like button --%>
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <span class="text-base font-bold text-ink-900 font-serif leading-snug">
+                      {seq.name}
+                    </span>
+                    <%= if seq.video_url do %>
+                      <span class="text-[10px] bg-accent-orange/10 text-accent-orange border border-accent-orange/25 rounded-full px-2 py-0.5 font-semibold">
+                        vídeo
                       </span>
-                      <%= if seq.video_url do %>
-                        <span class="text-[10px] bg-accent-orange/10 text-accent-orange border border-accent-orange/25 rounded-full px-2 py-0.5 font-semibold">
-                          vídeo
-                        </span>
-                      <% end %>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs text-ink-500 mb-2">
-                      <span>{step_count} passo(s)</span>
-                      <div
-                        :if={seq.like_count > 0}
-                        class="flex items-center gap-1 text-accent-red/80"
-                      >
-                        <.icon name="hero-heart-solid" class="size-3 text-accent-red/70" />
-                        <span class="font-medium tabular-nums">{seq.like_count}</span>
-                      </div>
-                      <div
-                        :if={Map.get(@seq_comment_counts, seq.id, 0) > 0}
-                        class="flex items-center gap-1 text-ink-400"
-                      >
-                        <.icon name="hero-chat-bubble-left" class="size-3" />
-                        <span class="font-medium tabular-nums">
-                          {Map.get(@seq_comment_counts, seq.id, 0)}
-                        </span>
-                      </div>
-                    </div>
+                    <% end %>
                   </div>
-
-                  <%!-- Like + Favorite buttons --%>
-                  <div class="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      phx-click="toggle_like"
-                      phx-value-type="sequence"
-                      phx-value-id={seq.id}
-                      class={[
-                        "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
-                        liked && "border-accent-red/30 bg-accent-red/5 text-accent-red",
-                        !liked &&
-                          "border-ink-300/50 bg-transparent text-ink-400 hover:border-accent-red/30 hover:text-accent-red"
-                      ]}
-                      title={if liked, do: "Remover like", else: "Curtir"}
+                  <div class="flex items-center gap-2 text-xs text-ink-500 mb-2">
+                    <span>{step_count} passo(s)</span>
+                    <div
+                      :if={seq.like_count > 0}
+                      class="flex items-center gap-1 text-accent-red/80"
                     >
-                      <.icon
-                        name={if liked, do: "hero-heart-solid", else: "hero-heart"}
-                        class="size-5"
-                      />
-                      <span class="text-xs font-medium tabular-nums">{like_count}</span>
-                    </button>
-                    <button
-                      phx-click="toggle_seq_favorite"
-                      phx-value-id={seq.id}
-                      class={[
-                        "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
-                        is_favorited && "border-gold-500/40 bg-gold-500/5 text-gold-500",
-                        !is_favorited &&
-                          "border-ink-300/50 bg-transparent text-ink-400 hover:border-gold-500/40 hover:text-gold-500"
-                      ]}
-                      title={if is_favorited, do: "Remover favorito", else: "Favoritar"}
+                      <.icon name="hero-heart-solid" class="size-3 text-accent-red/70" />
+                      <span class="font-medium tabular-nums">{seq.like_count}</span>
+                    </div>
+                    <div
+                      :if={Map.get(@seq_comment_counts, seq.id, 0) > 0}
+                      class="flex items-center gap-1 text-ink-400"
                     >
-                      <.icon
-                        name={if is_favorited, do: "hero-star-solid", else: "hero-star"}
-                        class="size-5"
-                      />
-                      <span class="text-xs font-medium">
-                        {if is_favorited, do: "Salvo", else: "Salvar"}
+                      <.icon name="hero-chat-bubble-left" class="size-3" />
+                      <span class="font-medium tabular-nums">
+                        {Map.get(@seq_comment_counts, seq.id, 0)}
                       </span>
-                    </button>
+                    </div>
                   </div>
                 </div>
 
-                <%!-- Step codes as inline pills --%>
-                <%= if seq.sequence_steps != [] do %>
-                  <div class="flex flex-wrap gap-1 mb-3">
-                    <%= for ss <- seq.sequence_steps do %>
-                      <code class="font-mono text-[10px] font-bold text-ink-700 bg-gold-500/10 py-px px-1.5 rounded-sm border border-gold-500/15">
-                        {ss.step.code}
-                      </code>
-                    <% end %>
-                  </div>
-                <% end %>
-
-                <%!-- Footer: author + ver no mapa + expand button --%>
-                <div class="flex items-center gap-3 flex-wrap">
-                  <.link
-                    navigate={~p"/users/#{author_username}"}
-                    class="no-underline flex items-center gap-1.5"
-                  >
-                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent-orange text-white text-[10px] font-bold flex-shrink-0">
-                      {author_initial}
-                    </span>
-                    <span class="text-xs text-accent-orange font-semibold">
-                      @{author_username}
-                    </span>
-                  </.link>
-                  <%= if seq.user_id && seq.user_id != @current_user.id do %>
-                    <% is_following = MapSet.member?(@following_user_ids, seq.user_id) %>
-                    <button
-                      phx-click="toggle_follow"
-                      phx-value-user-id={seq.user_id}
-                      class={[
-                        "text-xs py-1 px-3 rounded-full border transition-colors cursor-pointer",
-                        is_following &&
-                          "border-accent-orange bg-accent-orange/10 text-accent-orange",
-                        !is_following &&
-                          "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
-                      ]}
-                    >
-                      {if is_following, do: "Seguindo ✓", else: "Seguir"}
-                    </button>
-                  <% end %>
-                  <.link
-                    navigate={~p"/graph/visual?seq=#{seq.id}"}
-                    class="inline-flex items-center gap-1.5 text-xs font-medium text-accent-orange bg-accent-orange/10 border border-accent-orange/30 rounded-full py-1 px-3 no-underline hover:bg-accent-orange/20 transition-colors"
-                  >
-                    <.icon name="hero-map" class="w-3.5 h-3.5" /> Ver no mapa
-                  </.link>
-                  <%!-- Expand/collapse button for comments + video --%>
+                <%!-- Like + Favorite buttons --%>
+                <div class="flex items-center gap-2 flex-shrink-0">
                   <button
-                    phx-click="toggle_seq_expand"
-                    phx-value-seq-id={seq.id}
+                    phx-click="toggle_like"
+                    phx-value-type="sequence"
+                    phx-value-id={seq.id}
                     class={[
-                      "ml-auto flex items-center gap-1 text-xs rounded-full px-2.5 py-1 border transition-colors cursor-pointer",
-                      is_expanded &&
-                        "bg-accent-orange/10 text-accent-orange border-accent-orange/30",
-                      !is_expanded &&
-                        "bg-transparent text-ink-400 border-ink-300/40 hover:text-ink-700 hover:border-ink-400/50"
+                      "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
+                      liked && "border-accent-red/30 bg-accent-red/5 text-accent-red",
+                      !liked &&
+                        "border-ink-300/50 bg-transparent text-ink-400 hover:border-accent-red/30 hover:text-accent-red"
                     ]}
-                    title={if is_expanded, do: "Fechar", else: "Ver comentários e vídeo"}
+                    title={if liked, do: "Remover like", else: "Curtir"}
                   >
                     <.icon
-                      name={
-                        if is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"
-                      }
-                      class="size-3.5"
+                      name={if liked, do: "hero-heart-solid", else: "hero-heart"}
+                      class="size-5"
                     />
-                    <% comment_count = Map.get(@seq_comment_counts, seq.id, 0) %>
-                    <span>
-                      <%= if is_expanded do %>
-                        Fechar
-                      <% else %>
-                        {if comment_count > 0,
-                          do: "#{comment_count} comentário(s)",
-                          else: "Comentar"}
-                      <% end %>
+                    <span class="text-xs font-medium tabular-nums">{like_count}</span>
+                  </button>
+                  <button
+                    phx-click="toggle_seq_favorite"
+                    phx-value-id={seq.id}
+                    class={[
+                      "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
+                      is_favorited && "border-gold-500/40 bg-gold-500/5 text-gold-500",
+                      !is_favorited &&
+                        "border-ink-300/50 bg-transparent text-ink-400 hover:border-gold-500/40 hover:text-gold-500"
+                    ]}
+                    title={if is_favorited, do: "Remover favorito", else: "Favoritar"}
+                  >
+                    <.icon
+                      name={if is_favorited, do: "hero-star-solid", else: "hero-star"}
+                      class="size-5"
+                    />
+                    <span class="text-xs font-medium">
+                      {if is_favorited, do: "Salvo", else: "Salvar"}
                     </span>
                   </button>
                 </div>
-
-                <%!-- YouTube embed (collapsible via details — preserved) --%>
-                <%= if seq.video_url do %>
-                  <% embed = youtube_embed_url(seq.video_url) %>
-                  <%= if embed != :external do %>
-                    <% {:embed, embed_url} = embed %>
-                    <details class="mt-3">
-                      <summary class="text-xs text-accent-orange cursor-pointer italic select-none">
-                        ▶ Ver vídeo
-                      </summary>
-                      <div class="mt-2 relative pb-[56.25%] h-0 overflow-hidden rounded-md">
-                        <iframe
-                          src={embed_url}
-                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 6px;"
-                          allowfullscreen
-                          loading="lazy"
-                        >
-                        </iframe>
-                      </div>
-                    </details>
-                  <% else %>
-                    <div class="mt-2">
-                      <a
-                        href={seq.video_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        class="text-xs text-accent-orange no-underline"
-                      >
-                        Ver vídeo externo →
-                      </a>
-                    </div>
-                  <% end %>
-                <% end %>
               </div>
 
-              <%!-- Expanded: sequence comments --%>
-              <%= if is_expanded do %>
-                <div class="border-t border-ink-200/60 px-4 py-4 bg-ink-50/60">
-                  <h4 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-3">
-                    Comentários
-                  </h4>
-                  <.comment_thread
-                    comments={@expanded_seq_comments}
-                    current_user={@current_user}
-                    likes_map={@expanded_seq_comment_likes}
-                    comment_type="sequence_comment"
-                    parent_id={seq.id}
-                    replying_to={@expanded_seq_replying_to}
-                    replies_map={@expanded_seq_replies_map}
-                    is_admin={@is_admin}
-                  />
+              <%!-- Step codes as inline pills --%>
+              <%= if seq.sequence_steps != [] do %>
+                <div class="flex flex-wrap gap-1 mb-3">
+                  <%= for ss <- seq.sequence_steps do %>
+                    <code class="font-mono text-[10px] font-bold text-ink-700 bg-gold-500/10 py-px px-1.5 rounded-sm border border-gold-500/15">
+                      {ss.step.code}
+                    </code>
+                  <% end %>
                 </div>
               <% end %>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-  <% end %>
 
-  <%!-- ===== SEGUIDORES SECTION ===== --%>
-  <%= if @active_section == "followers" do %>
-    <div class="max-w-4xl mx-auto px-4 w-full box-border mt-4">
-      <%!-- Counters line --%>
-      <div class="flex items-center gap-4 mb-4 text-sm text-ink-600">
-        <button
-          phx-click="switch_followers_tab"
-          phx-value-tab="following"
-          class={[
-            "cursor-pointer hover:text-ink-900 transition-colors",
-            @followers_sub_tab == "following" && "font-bold text-ink-900"
-          ]}
-        >
-          <span class="text-ink-900 font-bold">{@following_count}</span> seguindo
-        </button>
-        <span class="text-ink-300">·</span>
-        <button
-          phx-click="switch_followers_tab"
-          phx-value-tab="followers"
-          class={[
-            "cursor-pointer hover:text-ink-900 transition-colors",
-            @followers_sub_tab == "followers" && "font-bold text-ink-900"
-          ]}
-        >
-          <span class="text-ink-900 font-bold">{@followers_count}</span> seguidores
-        </button>
-      </div>
-
-      <%!-- Global people search --%>
-      <div class="mb-4">
-        <div class="relative">
-          <.icon
-            name="hero-magnifying-glass"
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400"
-          />
-          <input
-            type="text"
-            phx-keyup="search_people"
-            phx-debounce="300"
-            name="term"
-            value={@people_search}
-            placeholder="Buscar pessoas..."
-            class="w-full pl-9 pr-3 py-2.5 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-          />
-        </div>
-
-        <%!-- Search results --%>
-        <div :if={@people_results != []} class="mt-2 space-y-1.5">
-          <%= for person <- @people_results do %>
-            <% is_following = MapSet.member?(@following_user_ids, person.id) %>
-            <div class="flex items-center gap-3 p-2.5 bg-ink-50 rounded-lg border border-ink-100">
-              <.link
-                navigate={~p"/users/#{person.username}"}
-                class="no-underline flex items-center gap-2 flex-1 min-w-0"
-              >
-                <div class="w-8 h-8 rounded-full bg-ink-800 flex items-center justify-center text-ink-200 text-xs font-bold flex-shrink-0">
-                  {String.first(person.name || person.username) |> String.upcase()}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-ink-800 truncate">@{person.username}</p>
-                  <p :if={person.city} class="text-xs text-ink-400">{person.city}</p>
-                </div>
-              </.link>
-              <button
-                phx-click="toggle_follow"
-                phx-value-user-id={person.id}
-                class={[
-                  "text-xs py-1 px-3 rounded-full border font-medium transition-colors cursor-pointer flex-shrink-0",
-                  is_following && "border-accent-orange bg-transparent text-accent-orange",
-                  !is_following && "border-accent-orange bg-accent-orange text-white"
-                ]}
-              >
-                {if is_following, do: "Seguindo ✓", else: "Seguir"}
-              </button>
-            </div>
-          <% end %>
-        </div>
-
-        <p
-          :if={@people_search != "" && @people_results == []}
-          class="text-xs text-ink-400 italic mt-2 text-center"
-        >
-          Nenhum resultado para "{@people_search}"
-        </p>
-      </div>
-
-      <%!-- People suggestions --%>
-      <%= if @suggested_users != [] do %>
-        <div class="mb-5">
-          <h3 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-2">
-            Pessoas para seguir
-          </h3>
-          <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-            <%= for person <- @suggested_users do %>
-              <div class="flex-shrink-0 w-36 bg-ink-50 rounded-lg border border-ink-100 p-3 flex flex-col items-center gap-2 text-center">
-                <.link navigate={~p"/users/#{person.username}"} class="no-underline">
-                  <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-ink-800 text-ink-200 text-base font-bold">
-                    {person.username |> String.upcase() |> String.first()}
+              <%!-- Footer: author + ver no mapa + expand button --%>
+              <div class="flex items-center gap-3 flex-wrap">
+                <.link
+                  navigate={~p"/users/#{author_username}"}
+                  class="no-underline flex items-center gap-1.5"
+                >
+                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent-orange text-white text-[10px] font-bold flex-shrink-0">
+                    {author_initial}
+                  </span>
+                  <span class="text-xs text-accent-orange font-semibold">
+                    @{author_username}
                   </span>
                 </.link>
+                <%= if seq.user_id && seq.user_id != @current_user.id do %>
+                  <% is_following = MapSet.member?(@following_user_ids, seq.user_id) %>
+                  <button
+                    phx-click="toggle_follow"
+                    phx-value-user-id={seq.user_id}
+                    class={[
+                      "text-xs py-1 px-3 rounded-full border transition-colors cursor-pointer",
+                      is_following &&
+                        "border-accent-orange bg-accent-orange/10 text-accent-orange",
+                      !is_following &&
+                        "border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+                    ]}
+                  >
+                    {if is_following, do: "Seguindo ✓", else: "Seguir"}
+                  </button>
+                <% end %>
                 <.link
-                  navigate={~p"/users/#{person.username}"}
-                  class="text-xs font-semibold text-ink-800 no-underline truncate w-full"
+                  navigate={~p"/graph/visual?seq=#{seq.id}"}
+                  class="inline-flex items-center gap-1.5 text-xs font-medium text-accent-orange bg-accent-orange/10 border border-accent-orange/30 rounded-full py-1 px-3 no-underline hover:bg-accent-orange/20 transition-colors"
                 >
-                  @{person.username}
+                  <.icon name="hero-map" class="w-3.5 h-3.5" /> Ver no mapa
                 </.link>
-                <p :if={person.city} class="text-[10px] text-ink-400 -mt-1 truncate w-full">
-                  {person.city}
-                </p>
+                <%!-- Expand/collapse button for comments + video --%>
                 <button
-                  phx-click="toggle_follow"
-                  phx-value-user-id={person.id}
-                  class="w-full py-1.5 rounded-full text-xs font-medium border border-accent-orange bg-accent-orange text-white cursor-pointer transition-colors hover:bg-accent-orange/90"
+                  phx-click="toggle_seq_expand"
+                  phx-value-seq-id={seq.id}
+                  class={[
+                    "ml-auto flex items-center gap-1 text-xs rounded-full px-2.5 py-1 border transition-colors cursor-pointer",
+                    is_expanded &&
+                      "bg-accent-orange/10 text-accent-orange border-accent-orange/30",
+                    !is_expanded &&
+                      "bg-transparent text-ink-400 border-ink-300/40 hover:text-ink-700 hover:border-ink-400/50"
+                  ]}
+                  title={if is_expanded, do: "Fechar", else: "Ver comentários e vídeo"}
                 >
-                  Seguir
+                  <.icon
+                    name={
+                      if is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"
+                    }
+                    class="size-3.5"
+                  />
+                  <% comment_count = Map.get(@seq_comment_counts, seq.id, 0) %>
+                  <span>
+                    <%= if is_expanded do %>
+                      Fechar
+                    <% else %>
+                      {if comment_count > 0,
+                        do: "#{comment_count} comentário(s)",
+                        else: "Comentar"}
+                    <% end %>
+                  </span>
                 </button>
+              </div>
+
+              <%!-- YouTube embed (collapsible via details) --%>
+              <%= if seq.video_url do %>
+                <% embed = youtube_embed_url(seq.video_url) %>
+                <%= if embed != :external do %>
+                  <% {:embed, embed_url} = embed %>
+                  <details class="mt-3">
+                    <summary class="text-xs text-accent-orange cursor-pointer italic select-none">
+                      ▶ Ver vídeo
+                    </summary>
+                    <div class="mt-2 relative pb-[56.25%] h-0 overflow-hidden rounded-md">
+                      <iframe
+                        src={embed_url}
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 6px;"
+                        allowfullscreen
+                        loading="lazy"
+                      >
+                      </iframe>
+                    </div>
+                  </details>
+                <% else %>
+                  <div class="mt-2">
+                    <a
+                      href={seq.video_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      class="text-xs text-accent-orange no-underline"
+                    >
+                      Ver vídeo externo →
+                    </a>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+
+            <%!-- Expanded: sequence comments --%>
+            <%= if is_expanded do %>
+              <div class="border-t border-ink-200/60 px-4 py-4 bg-ink-50/60">
+                <h4 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-3">
+                  Comentários
+                </h4>
+                <.comment_thread
+                  comments={@expanded_seq_comments}
+                  current_user={@current_user}
+                  likes_map={@expanded_seq_comment_likes}
+                  comment_type="sequence_comment"
+                  parent_id={seq.id}
+                  replying_to={@expanded_seq_replying_to}
+                  replies_map={@expanded_seq_replies_map}
+                  is_admin={@is_admin}
+                />
               </div>
             <% end %>
           </div>
-        </div>
-      <% end %>
-
-      <%!-- Sub-tab pills --%>
-      <div class="flex gap-2 mb-4">
-        <%= for {tab_key, tab_label} <- [{"following", "Seguindo"}, {"followers", "Seguidores"}] do %>
-          <button
-            phx-click="switch_followers_tab"
-            phx-value-tab={tab_key}
-            class={[
-              "py-1.5 px-4 rounded-full text-xs font-semibold border transition-colors cursor-pointer",
-              @followers_sub_tab == tab_key && "bg-accent-orange border-accent-orange text-white",
-              @followers_sub_tab != tab_key &&
-                "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
-            ]}
-          >
-            {tab_label}
-          </button>
         <% end %>
       </div>
-    </div>
-
-    <%!-- User cards list --%>
-    <div class="max-w-4xl mx-auto px-4 pt-1 pb-20 w-full box-border">
-      <%= if @followers_list == [] do %>
-        <div class="text-center py-16 px-5">
-          <div class="text-4xl mb-3">
-            {if @followers_sub_tab == "following", do: "👥", else: "🌱"}
-          </div>
-          <p class="text-ink-600 font-semibold mb-1">
-            {if @followers_sub_tab == "following",
-              do: "Você ainda não segue ninguém",
-              else: "Ninguém te segue ainda"}
-          </p>
-          <p class="text-sm text-ink-400">
-            {if @followers_sub_tab == "following",
-              do: "Use a busca acima para encontrar pessoas da comunidade!",
-              else: "Contribua com passos e sequências para atrair seguidores!"}
-          </p>
-        </div>
-      <% else %>
-        <div class="flex flex-col gap-3">
-          <%= for person <- @followers_list do %>
-            <% stats =
-              Map.get(@followers_stats, person.id, %{
-                steps_count: 0,
-                sequences_count: 0,
-                badge: nil
-              }) %>
-            <% badge = stats.badge %>
-            <% steps_count = stats.steps_count %>
-            <% seqs_count = stats.sequences_count %>
-            <% person_initial = person.username |> String.upcase() |> String.first() %>
-            <% is_following = MapSet.member?(@followers_following_map, person.id) %>
-            <div class="p-3 bg-ink-50 rounded-lg border border-ink-100 flex items-center gap-3">
-              <%!-- Avatar --%>
-              <.link navigate={~p"/users/#{person.username}"} class="no-underline flex-shrink-0">
-                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink-800 text-ink-200 text-sm font-bold">
-                  {person_initial}
-                </span>
-              </.link>
-
-              <%!-- Info --%>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <.link
-                    navigate={~p"/users/#{person.username}"}
-                    class="text-sm font-semibold text-ink-800 hover:underline no-underline"
-                  >
-                    @{person.username}
-                  </.link>
-                  <%= if badge do %>
-                    <span class="text-xs">{badge.icon}</span>
-                  <% end %>
-                </div>
-                <%= if person.city || person.state do %>
-                  <p class="text-xs text-ink-500">
-                    {[person.city, person.state] |> Enum.filter(& &1) |> Enum.join(", ")}
-                  </p>
-                <% end %>
-                <p class="text-xs text-ink-400">
-                  {steps_count} passos · {seqs_count} sequências
-                </p>
-              </div>
-
-              <%!-- Follow / Following button --%>
-              <%= if person.id != @current_user.id do %>
-                <button
-                  phx-click="toggle_follow"
-                  phx-value-user-id={person.id}
-                  class={[
-                    "rounded-full py-1.5 px-4 text-xs font-medium border transition-colors cursor-pointer flex-shrink-0",
-                    is_following &&
-                      "bg-transparent border-accent-orange text-accent-orange hover:bg-accent-orange/5",
-                    !is_following &&
-                      "bg-accent-orange border-accent-orange text-white hover:bg-accent-orange/90"
-                  ]}
-                >
-                  {if is_following, do: "Seguindo", else: "Seguir"}
-                </button>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-  <% end %>
+    <% end %>
+  </div>
 
   <%!-- Footer --%>
   <footer class="border-t border-ink-300/25 py-6 px-6 text-center bg-ink-200 mt-auto">

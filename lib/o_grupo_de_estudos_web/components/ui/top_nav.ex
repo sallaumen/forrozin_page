@@ -73,7 +73,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             navigate={~p"/community"}
             class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
-            <.icon name="hero-users" class="size-4" /> Comunidade
+            <.icon name="hero-queue-list" class="size-4" /> Sequências
           </.link>
         </nav>
 
