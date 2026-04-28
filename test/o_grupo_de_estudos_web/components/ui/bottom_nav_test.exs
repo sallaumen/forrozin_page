@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
       assert html =~ "Mapa"
       assert html =~ "Estudos"
       assert html =~ "Gerador"
-      assert html =~ "Comunidade"
+      assert html =~ "Sequências"
       assert html =~ "Alertas"
       assert html =~ "Perfil"
     end

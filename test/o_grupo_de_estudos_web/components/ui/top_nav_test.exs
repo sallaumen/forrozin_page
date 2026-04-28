@@ -35,7 +35,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
       assert html =~ ~s(data-mode="primary")
     end
 
-    test "desktop nav includes Acervo, Mapa, Comunidade links" do
+    test "desktop nav includes Acervo, Mapa, Sequências links" do
       html =
         render_component(&TopNav.top_nav/1, %{
           current_user: user(),
@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
 
       assert html =~ "Acervo"
       assert html =~ "Mapa"
-      assert html =~ "Comunidade"
+      assert html =~ "Sequências"
     end
 
     test "desktop nav exposes separate public-nav and centered brand regions" do
