@@ -56,7 +56,7 @@ defmodule OGrupoDeEstudosWeb.CoreComponents do
       id={@id}
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       phx-hook="AutoDismiss"
-      data-dismiss-after="6000"
+      data-dismiss-after="3000"
       role="alert"
       data-kind={@kind}
       class={[
