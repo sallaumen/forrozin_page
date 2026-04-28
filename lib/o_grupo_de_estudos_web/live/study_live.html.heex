@@ -18,8 +18,15 @@
   <%= if @current_user.is_teacher do %>
     <div class="sticky top-[48px] md:top-[52px] z-30 bg-ink-100 border-b border-ink-300/30 pb-2 pt-3 px-4">
       <div class="max-w-[1500px] mx-auto w-full">
-        <div class="flex w-full max-w-xs p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
+        <div
+          role="tablist"
+          aria-label="Abas de estudo"
+          class="flex w-full max-w-xs p-0.5 bg-ink-200 rounded-md border border-ink-300/40"
+        >
           <button
+            role="tab"
+            aria-selected={to_string(@active_study_tab == "personal")}
+            aria-label="Meu estudo pessoal"
             phx-click="switch_study_tab"
             phx-value-tab="personal"
             class={[
@@ -31,6 +38,9 @@
             Meu estudo
           </button>
           <button
+            role="tab"
+            aria-selected={to_string(@active_study_tab == "students")}
+            aria-label="Meus alunos"
             phx-click="switch_study_tab"
             phx-value-tab="students"
             class={[

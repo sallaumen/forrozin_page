@@ -27,9 +27,14 @@
       </p>
     </div>
   <% else %>
-    <div class="divide-y divide-ink-100 rounded-lg border border-ink-100 overflow-hidden">
+    <div
+      role="list"
+      aria-label="Lista de notificações"
+      class="divide-y divide-ink-100 rounded-lg border border-ink-100 overflow-hidden"
+    >
       <.link
         :for={notif <- @notifications}
+        role="listitem"
         navigate={notification_path(notif)}
         class={[
           "flex items-start gap-3 px-4 py-3 transition-colors no-underline cursor-pointer hover:bg-ink-50",

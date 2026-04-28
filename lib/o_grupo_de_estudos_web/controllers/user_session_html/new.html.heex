@@ -42,7 +42,10 @@
         </p>
 
         <%= if @error do %>
-          <p class="text-sm text-accent-red bg-[rgba(192,57,43,0.08)] border border-[rgba(192,57,43,0.2)] px-4 py-3 rounded mb-6">
+          <p
+            role="alert"
+            class="text-sm text-accent-red bg-[rgba(192,57,43,0.08)] border border-[rgba(192,57,43,0.2)] px-4 py-3 rounded mb-6"
+          >
             {@error}
           </p>
         <% end %>
@@ -71,6 +74,7 @@
                 autocomplete="username"
                 placeholder="seuusuario"
                 required
+                aria-label="Usuário"
                 class="w-full py-[13px] pl-9 pr-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
               />
             </div>
@@ -85,12 +89,14 @@
               name="session[password]"
               autocomplete="current-password"
               required
+              aria-label="Senha"
               class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
             />
           </div>
 
           <button
             type="submit"
+            aria-label="Entrar"
             class="w-full py-[14px] bg-ink-900 text-ink-200 border-0 rounded font-serif text-base font-bold tracking-wider cursor-pointer"
           >
             Entrar

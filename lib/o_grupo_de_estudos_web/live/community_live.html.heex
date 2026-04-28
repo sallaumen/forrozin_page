@@ -16,8 +16,15 @@
 
   <%!-- Segmented control: Comunidade / Minhas --%>
   <div class="max-w-4xl mx-auto px-4 w-full mt-4 mb-2">
-    <div class="flex w-full max-w-xs p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
+    <div
+      role="tablist"
+      aria-label="Abas de sequências"
+      class="flex w-full max-w-xs p-0.5 bg-ink-200 rounded-md border border-ink-300/40"
+    >
       <button
+        role="tab"
+        aria-selected={to_string(@active_seq_tab == "community")}
+        aria-label="Sequências da comunidade"
         phx-click="switch_seq_tab"
         phx-value-tab="community"
         class={[
@@ -29,6 +36,9 @@
         Comunidade
       </button>
       <button
+        role="tab"
+        aria-selected={to_string(@active_seq_tab == "mine")}
+        aria-label="Minhas sequências"
         phx-click="switch_seq_tab"
         phx-value-tab="mine"
         class={[
@@ -60,6 +70,15 @@
           class="w-full pl-9 pr-3 py-2 bg-ink-50 border border-ink-200 rounded-lg text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
         />
       </div>
+      <select
+        phx-change="sort_sequences"
+        name="sort"
+        aria-label="Ordenar sequências"
+        class="rounded-lg border border-ink-200 bg-ink-50 px-2.5 py-2 font-serif text-xs text-ink-700 outline-none cursor-pointer"
+      >
+        <option value="popular" selected={@seq_sort == "popular"}>Mais curtidas</option>
+        <option value="recent" selected={@seq_sort == "recent"}>Mais recentes</option>
+      </select>
       <.link
         navigate={~p"/graph/visual?mode=generator"}
         class="inline-flex min-h-[38px] shrink-0 items-center gap-1.5 rounded-full bg-accent-green px-4 py-1.5 text-xs font-bold text-white no-underline transition hover:bg-accent-green/90 cursor-pointer font-serif"
@@ -150,6 +169,12 @@
                       phx-click="toggle_like"
                       phx-value-type="sequence"
                       phx-value-id={seq.id}
+                      aria-label={
+                        if liked,
+                          do: "Remover curtida desta sequência",
+                          else: "Curtir esta sequência"
+                      }
+                      aria-pressed={to_string(liked)}
                       class={[
                         "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
                         liked && "border-accent-red/30 bg-accent-red/5 text-accent-red",
@@ -167,6 +192,12 @@
                     <button
                       phx-click="toggle_seq_favorite"
                       phx-value-id={seq.id}
+                      aria-label={
+                        if is_favorited,
+                          do: "Remover sequência dos salvos",
+                          else: "Salvar sequência"
+                      }
+                      aria-pressed={to_string(is_favorited)}
                       class={[
                         "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
                         is_favorited && "border-gold-500/40 bg-gold-500/5 text-gold-500",
@@ -399,6 +430,12 @@
                       phx-click="toggle_like"
                       phx-value-type="sequence"
                       phx-value-id={seq.id}
+                      aria-label={
+                        if liked,
+                          do: "Remover curtida desta sequência",
+                          else: "Curtir esta sequência"
+                      }
+                      aria-pressed={to_string(liked)}
                       class={[
                         "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
                         liked && "border-accent-red/30 bg-accent-red/5 text-accent-red",
@@ -416,6 +453,12 @@
                     <button
                       phx-click="toggle_seq_favorite"
                       phx-value-id={seq.id}
+                      aria-label={
+                        if is_favorited,
+                          do: "Remover sequência dos salvos",
+                          else: "Salvar sequência"
+                      }
+                      aria-pressed={to_string(is_favorited)}
                       class={[
                         "flex flex-col items-center gap-0.5 rounded-lg border px-3 py-2 cursor-pointer transition-colors",
                         is_favorited && "border-gold-500/40 bg-gold-500/5 text-gold-500",

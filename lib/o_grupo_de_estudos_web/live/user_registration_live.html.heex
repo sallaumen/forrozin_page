@@ -72,6 +72,7 @@
               type="text"
               autocomplete="name"
               placeholder="Nome e sobrenome"
+              aria-label="Nome completo"
               class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             />
           </div>
@@ -89,6 +90,7 @@
                 type="text"
                 autocomplete="username"
                 placeholder="seuusuario"
+                aria-label="Usuário"
                 class="w-full py-[13px] pl-9 pr-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
               />
             </div>
@@ -102,6 +104,7 @@
               field={@form[:email]}
               type="email"
               autocomplete="email"
+              aria-label="Email"
               class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             />
           </div>
@@ -114,6 +117,7 @@
               field={@form[:password]}
               type="password"
               autocomplete="new-password"
+              aria-label="Senha"
               class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             />
             <p class="text-xs text-ink-500 italic mt-1 mb-0 leading-normal">
@@ -139,6 +143,7 @@
               id="country-select"
               name="user[country]"
               phx-hook="CityAutocomplete"
+              aria-label="País"
               class="w-full py-[13px] px-2 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
             >
               <option value="BR" selected>Brasil</option>
@@ -340,6 +345,7 @@
               <select
                 id="state-select"
                 name="user[state]"
+                aria-label="Estado"
                 class="w-full py-[13px] px-2 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
               >
                 <option value="">UF</option>
@@ -364,6 +370,7 @@
                 name="user[city]"
                 autocomplete="off"
                 placeholder="Selecione o estado primeiro"
+                aria-label="Cidade"
                 class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border"
               />
               <div
@@ -379,6 +386,7 @@
 
           <button
             type="submit"
+            aria-label="Criar conta"
             class="w-full py-3.5 bg-ink-900 text-ink-200 border-0 rounded font-serif text-base font-bold tracking-wider cursor-pointer mt-2"
           >
             Criar conta
