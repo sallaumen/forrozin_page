@@ -11,6 +11,43 @@
     notification_preview_groups={assigns[:notification_preview_groups] || []}
   />
 
+  <%= if @current_user.is_teacher do %>
+    <div class="sticky top-[48px] md:top-[52px] z-30 bg-ink-100 border-b border-ink-300/30 pb-2 pt-3 px-4">
+      <div class="max-w-[1500px] mx-auto w-full">
+        <div class="flex w-full max-w-xs p-0.5 bg-ink-200 rounded-md border border-ink-300/40">
+          <button
+            phx-click="switch_study_tab"
+            phx-value-tab="personal"
+            class={[
+              "flex-1 py-2 px-4 rounded cursor-pointer font-serif text-sm font-semibold transition-all",
+              @active_study_tab == "personal" && "bg-white text-accent-orange shadow-sm",
+              @active_study_tab != "personal" && "bg-transparent text-ink-500 hover:text-ink-800"
+            ]}
+          >
+            Meu estudo
+          </button>
+          <button
+            phx-click="switch_study_tab"
+            phx-value-tab="students"
+            class={[
+              "flex-1 py-2 px-4 rounded cursor-pointer font-serif text-sm font-semibold transition-all relative",
+              @active_study_tab == "students" && "bg-white text-accent-orange shadow-sm",
+              @active_study_tab != "students" && "bg-transparent text-ink-500 hover:text-ink-800"
+            ]}
+          >
+            Meus alunos
+            <%= if @pending_requests != [] do %>
+              <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-accent-red text-white text-[9px] font-bold rounded-full">
+                {length(@pending_requests)}
+              </span>
+            <% end %>
+          </button>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%= if @active_study_tab == "personal" or !@current_user.is_teacher do %>
   <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-6 px-4 py-6 pb-24 md:pb-8 xl:px-8">
     <section id="study-overview-grid" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
       <section
@@ -499,6 +536,138 @@
       </section>
     </section>
   </main>
+  <% end %>
+
+  <%= if @active_study_tab == "students" and @current_user.is_teacher do %>
+    <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-4 px-4 py-6 pb-24 md:pb-8 xl:px-8">
+      <%!-- Stats bar --%>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="rounded-xl border border-ink-200 bg-white p-4 text-center shadow-sm">
+          <div class="text-2xl font-bold text-ink-900">{length(@student_links)}</div>
+          <div class="text-[10px] text-ink-500 mt-1">alunos</div>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-4 text-center shadow-sm">
+          <div class="text-2xl font-bold text-accent-green">{@students_wrote_today}</div>
+          <div class="text-[10px] text-ink-500 mt-1">escreveram hoje</div>
+        </div>
+        <div class={[
+          "rounded-xl border p-4 text-center shadow-sm",
+          @pending_requests != [] && "border-gold-500/40 bg-gold-500/[0.05]",
+          @pending_requests == [] && "border-ink-200 bg-white"
+        ]}>
+          <div class={[
+            "text-2xl font-bold",
+            @pending_requests != [] && "text-accent-orange",
+            @pending_requests == [] && "text-ink-400"
+          ]}>{length(@pending_requests)}</div>
+          <div class="text-[10px] text-ink-500 mt-1">pedidos</div>
+        </div>
+      </div>
+
+      <%!-- Pending requests --%>
+      <%= if @pending_requests != [] do %>
+        <section class="rounded-xl border-2 border-gold-500/30 bg-gradient-to-b from-gold-500/[0.04] to-transparent p-4 shadow-sm">
+          <h3 class="text-[10px] font-bold text-gold-600 uppercase tracking-widest mb-3">
+            Pedidos pendentes
+          </h3>
+          <div class="space-y-2">
+            <%= for req <- @pending_requests do %>
+              <div class="flex items-center gap-3 rounded-xl bg-white border border-ink-200 px-3 py-3">
+                <div class="w-9 h-9 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-xs font-bold shrink-0">
+                  {String.first(req.student.name || req.student.username) |> String.upcase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-ink-900 m-0 truncate">{req.student.name}</p>
+                  <p class="text-[10px] text-ink-500 m-0">
+                    @{req.student.username}
+                    <%= if req.student.city do %>
+                      <span class="text-ink-400"> · {req.student.city}</span>
+                    <% end %>
+                  </p>
+                </div>
+                <div class="flex gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    phx-click="accept_request"
+                    phx-value-id={req.id}
+                    class="text-[10px] font-bold text-white bg-accent-green rounded-full px-3 py-1.5 cursor-pointer border-0 hover:bg-accent-green/90 transition-colors"
+                  >
+                    Aceitar
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="reject_request"
+                    phx-value-id={req.id}
+                    class="text-[10px] font-bold text-ink-500 bg-ink-100 rounded-full px-3 py-1.5 cursor-pointer border-0 hover:bg-ink-200 transition-colors"
+                  >
+                    Recusar
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+
+      <%!-- Student list --%>
+      <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-ink-900 m-0 font-serif">Alunos</h3>
+          <button
+            type="button"
+            phx-click="copy_invite_link"
+            class="text-[10px] font-semibold text-accent-orange hover:text-accent-orange/80 cursor-pointer bg-transparent border-0 transition-colors"
+          >
+            Copiar link de convite
+          </button>
+        </div>
+
+        <%= if @student_links == [] do %>
+          <div class="rounded-xl border border-dashed border-ink-200 bg-ink-50 px-4 py-6 text-center">
+            <p class="text-xs text-ink-500 m-0">
+              Nenhum aluno conectado. Compartilhe seu link de convite!
+            </p>
+          </div>
+        <% else %>
+          <div class="space-y-2">
+            <%= for link <- @student_links do %>
+              <% wrote_today = Study.shared_note_exists?(link.id, @today) %>
+              <div class="flex items-center gap-3 rounded-xl bg-ink-50 border border-ink-200 px-3 py-3">
+                <.link
+                  navigate={~p"/users/#{link.student.username}"}
+                  class="no-underline flex items-center gap-3 flex-1 min-w-0"
+                >
+                  <div class={[
+                    "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                    wrote_today && "bg-ink-900 text-ink-100",
+                    !wrote_today && "bg-ink-300 text-ink-500"
+                  ]}>
+                    {String.first(link.student.name || link.student.username) |> String.upcase()}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-ink-900 m-0 truncate">{link.student.name}</p>
+                    <p class={[
+                      "text-[10px] m-0 font-semibold",
+                      wrote_today && "text-accent-green",
+                      !wrote_today && "text-ink-400"
+                    ]}>
+                      {if wrote_today, do: "Escreveu hoje ✓", else: "Sem registro hoje"}
+                    </p>
+                  </div>
+                </.link>
+                <.link
+                  navigate={~p"/study/shared/#{link.id}"}
+                  class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-3 py-1.5 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
+                >
+                  Abrir
+                </.link>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </section>
+    </main>
+  <% end %>
 
   <.social_bubble
     current_user={@current_user}

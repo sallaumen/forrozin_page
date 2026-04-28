@@ -29,6 +29,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:section_history_open, true)
      |> assign(:section_teachers_open, true)
      |> assign(:section_students_open, false)
+     |> assign(:active_study_tab, "personal")
+     |> assign(:students_wrote_today, 0)
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
      |> assign(:bubble_open, false)
@@ -41,6 +43,44 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   @impl true
+  def handle_event("switch_study_tab", %{"tab" => tab}, socket) do
+    socket = assign(socket, :active_study_tab, tab)
+
+    socket =
+      if tab == "students" and socket.assigns.current_user.is_teacher do
+        user = socket.assigns.current_user
+        today = socket.assigns.today
+        student_links = Study.list_student_links_for_teacher(user.id)
+        pending = Study.list_pending_requests_for_teacher(user.id)
+
+        wrote_today =
+          Enum.count(student_links, fn link ->
+            Study.shared_note_exists?(link.id, today)
+          end)
+
+        assign(socket,
+          student_links: student_links,
+          pending_requests: pending,
+          students_wrote_today: wrote_today
+        )
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  def handle_event("copy_invite_link", _params, socket) do
+    user = socket.assigns.current_user
+
+    if user.invite_slug do
+      invite_url = OGrupoDeEstudosWeb.Endpoint.url() <> "/study/invite/" <> user.invite_slug
+      {:noreply, push_event(socket, "clipboard:copy", %{text: invite_url})}
+    else
+      {:noreply, put_flash(socket, :error, "Link de convite não disponível.")}
+    end
+  end
+
   def handle_event("save_personal_note", %{"personal_note" => %{"content" => content}}, socket) do
     {:ok, _today_note} =
       Study.upsert_personal_note(socket.assigns.current_user, socket.assigns.today, %{

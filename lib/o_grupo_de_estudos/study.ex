@@ -210,6 +210,14 @@ defmodule OGrupoDeEstudos.Study do
     |> preload_note()
   end
 
+  @doc "Returns true if a shared note exists for the given link and date."
+  def shared_note_exists?(link_id, date) do
+    from(n in Note,
+      where: n.teacher_student_link_id == ^link_id and n.note_date == ^date and n.kind == "shared"
+    )
+    |> Repo.exists?()
+  end
+
   def search_related_steps(term) when is_binary(term) do
     if String.trim(term) == "" do
       []
