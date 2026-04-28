@@ -50,8 +50,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
   end
 
   # ── Like notifications ──────────────────────────────────────────────
+  # Likes/favorites intentionally do NOT generate notifications (safe_dispatch_like is a no-op).
 
-  test "liking a step comment notifies the comment author" do
+  test "liking a step comment does NOT create a notification" do
     step = insert(:step)
     author = insert(:user)
     liker = insert(:user)
@@ -65,45 +66,10 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
           where: n.user_id == ^author.id and n.action == "liked_comment"
       )
 
-    assert length(notifications) >= 1
-    [notif] = notifications
-    assert notif.actor_id == liker.id
-    assert notif.target_type == "step_comment"
-    assert notif.target_id == comment.id
+    assert notifications == []
   end
 
-  test "liking own step comment does NOT create a notification for the liker" do
-    step = insert(:step)
-    user = insert(:user)
-
-    {:ok, comment} = Engagement.create_step_comment(user, step.id, %{body: "Mine"})
-    Engagement.toggle_like(user.id, "step_comment", comment.id)
-
-    self_notifications =
-      Repo.all(
-        from n in Notification,
-          where: n.user_id == ^user.id and n.action == "liked_comment"
-      )
-
-    assert self_notifications == []
-  end
-
-  test "admin receives a copy of like notifications" do
-    admin = insert(:admin)
-    step = insert(:step)
-    author = insert(:user)
-    liker = insert(:user)
-
-    {:ok, comment} = Engagement.create_step_comment(author, step.id, %{body: "Comment"})
-    Engagement.toggle_like(liker.id, "step_comment", comment.id)
-
-    admin_notifications =
-      Repo.all(from n in Notification, where: n.user_id == ^admin.id)
-
-    assert length(admin_notifications) >= 1
-  end
-
-  test "liking a sequence comment notifies the sequence comment author" do
+  test "liking a sequence comment does NOT create a notification" do
     author = insert(:user)
     liker = insert(:user)
     sequence = insert(:sequence, user: author)
@@ -119,10 +85,10 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
           where: n.user_id == ^author.id and n.action == "liked_comment"
       )
 
-    assert length(notifications) >= 1
+    assert notifications == []
   end
 
-  test "liking a community step notifies the step suggester" do
+  test "liking a community step does NOT create a notification" do
     section = insert(:section)
     suggester = insert(:user)
     liker = insert(:user)
@@ -143,7 +109,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
           where: n.user_id == ^suggester.id and n.action == "liked_step"
       )
 
-    assert length(notifications) >= 1
+    assert notifications == []
   end
 
   test "liking does not notify the author if the comment is deleted" do
