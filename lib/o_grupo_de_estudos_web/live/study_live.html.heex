@@ -254,6 +254,33 @@
           </button>
 
           <div :if={@section_teachers_open} class="mt-3 space-y-3">
+            <%!-- Teacher suggestions --%>
+            <%= if @suggested_teachers != [] do %>
+              <div class="mb-4">
+                <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-2 font-sans">
+                  Professores sugeridos
+                </p>
+                <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  <%= for teacher <- @suggested_teachers do %>
+                    <div class="flex-shrink-0 w-28 text-center bg-ink-50 rounded-xl border border-ink-200 p-3">
+                      <div class="w-9 h-9 rounded-full bg-gold-500/20 mx-auto mb-2 flex items-center justify-center text-gold-700 text-xs font-bold">
+                        {String.first(teacher.name || teacher.username) |> String.upcase()}
+                      </div>
+                      <p class="text-[11px] font-semibold text-ink-900 m-0 truncate">@{teacher.username}</p>
+                      <p class="text-[9px] text-ink-400 m-0 mt-0.5">{Map.get(teacher, :student_count, 0)} alunos</p>
+                      <button
+                        type="button"
+                        phx-click="request_teacher"
+                        phx-value-id={teacher.id}
+                        class="mt-2 w-full text-[10px] font-bold text-white bg-accent-orange rounded-full py-1.5 cursor-pointer border-0 hover:bg-accent-orange/90 transition-colors"
+                      >
+                        Estudar
+                      </button>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
             <form phx-change="search_teacher" class="relative">
               <input
                 id="study-teacher-search"
@@ -684,5 +711,6 @@
     current_user={@current_user}
     current_path={~p"/study"}
     notification_count={assigns[:notification_count] || 0}
+    pending_study_count={assigns[:pending_study_count] || 0}
   />
 </div>

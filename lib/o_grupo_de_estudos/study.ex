@@ -42,6 +42,46 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
+  @doc """
+  Returns a list of suggested teachers for a student.
+  Excludes teachers the student already has a link with (active or pending).
+  Ordered by number of students (desc), then same city, then recent activity.
+  """
+  def suggest_teachers(user, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 5)
+
+    existing_teacher_ids =
+      from(l in TeacherStudentLink,
+        where: l.student_id == ^user.id,
+        select: l.teacher_id
+      )
+
+    from(u in User,
+      where: u.is_teacher == true,
+      where: u.id != ^user.id,
+      where: u.id not in subquery(existing_teacher_ids),
+      left_join: links in TeacherStudentLink,
+      on: links.teacher_id == u.id and links.active == true and links.pending == false,
+      group_by: u.id,
+      order_by: [
+        desc: count(links.id),
+        desc: fragment("CASE WHEN ? = ? THEN 1 ELSE 0 END", u.city, ^(user.city || "")),
+        desc: u.last_seen_at
+      ],
+      limit: ^limit
+    )
+    |> Repo.all()
+    |> Enum.map(fn teacher ->
+      student_count =
+        from(l in TeacherStudentLink,
+          where: l.teacher_id == ^teacher.id and l.active == true and l.pending == false
+        )
+        |> Repo.aggregate(:count)
+
+      Map.put(teacher, :student_count, student_count)
+    end)
+  end
+
   @doc "Student sends a request to study with a teacher. Creates a pending link."
   def request_teacher_link(%User{id: student_id}, teacher_id) when student_id != teacher_id do
     case Repo.get_by(TeacherStudentLink, teacher_id: teacher_id, student_id: student_id) do
