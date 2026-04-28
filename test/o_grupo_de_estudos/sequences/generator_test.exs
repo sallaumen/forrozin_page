@@ -424,7 +424,13 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       {_steps, by_code} = build_linear_chain(4)
 
       wip_step =
-        insert(:step, code: "WIP1", name: "WIP Step", wip: true, status: "published", approved: true)
+        insert(:step,
+          code: "WIP1",
+          name: "WIP Step",
+          wip: true,
+          status: "published",
+          approved: true
+        )
 
       insert(:connection, source_step: by_code["C2"], target_step: wip_step)
 

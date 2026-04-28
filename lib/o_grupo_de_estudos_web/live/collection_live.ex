@@ -29,6 +29,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
 
+  @dialyzer {:nowarn_function, mount: 3}
   @impl true
   def mount(_params, _session, socket) do
     admin = Accounts.admin?(socket.assigns.current_user)

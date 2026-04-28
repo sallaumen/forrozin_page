@@ -415,7 +415,8 @@ defmodule OGrupoDeEstudos.Engagement do
   or `{:error, changeset}` when validation fails (e.g. self-follow).
   """
   def toggle_follow(follower_id, followed_id) do
-    with :ok <- OGrupoDeEstudos.RateLimiter.check("follow", follower_id, limit: 5, window_seconds: 10) do
+    with :ok <-
+           OGrupoDeEstudos.RateLimiter.check("follow", follower_id, limit: 5, window_seconds: 10) do
       do_toggle_follow(follower_id, followed_id)
     end
   end
@@ -512,7 +513,7 @@ defmodule OGrupoDeEstudos.Engagement do
 
   defp sort_by_fof_rank(users, fof_results) do
     rank_map = Map.new(fof_results, fn {id, count} -> {id, count} end)
-    Enum.sort_by(users, fn u -> -(Map.get(rank_map, u.id, 0)) end)
+    Enum.sort_by(users, fn u -> -Map.get(rank_map, u.id, 0) end)
   end
 
   @doc "Returns `true` if follower_id is currently following followed_id."

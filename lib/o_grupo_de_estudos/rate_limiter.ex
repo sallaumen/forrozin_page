@@ -30,7 +30,9 @@ defmodule OGrupoDeEstudos.RateLimiter do
   """
   def check(action, user_id, opts \\ []) do
     # Disabled in test environment
-    if Application.get_env(:o_grupo_de_estudos, :env) == :test, do: :ok, else: do_check(action, user_id, opts)
+    if Application.get_env(:o_grupo_de_estudos, :env) == :test,
+      do: :ok,
+      else: do_check(action, user_id, opts)
   end
 
   defp do_check(action, user_id, opts) do
@@ -59,7 +61,14 @@ defmodule OGrupoDeEstudos.RateLimiter do
 
   @impl true
   def init(_) do
-    :ets.new(@table, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
+    :ets.new(@table, [
+      :set,
+      :public,
+      :named_table,
+      read_concurrency: true,
+      write_concurrency: true
+    ])
+
     schedule_cleanup()
     {:ok, %{}}
   end

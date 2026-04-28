@@ -48,301 +48,325 @@
   <% end %>
 
   <%= if @active_study_tab == "personal" or !@current_user.is_teacher do %>
-  <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-6 px-4 py-6 pb-24 md:pb-8 xl:px-8">
-    <section id="study-overview-grid" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
-      <div class="flex flex-col gap-6">
-      <section
-        id="study-diary-panel"
-        class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h1 class="text-lg font-bold text-ink-900 m-0">Diário de hoje</h1>
+    <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-6 px-4 py-6 pb-24 md:pb-8 xl:px-8">
+      <section id="study-overview-grid" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+        <div class="flex flex-col gap-6">
+          <section
+            id="study-diary-panel"
+            class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h1 class="text-lg font-bold text-ink-900 m-0">Diário de hoje</h1>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-[11px] text-ink-500">
-              {OGrupoDeEstudos.Brazil.format_today()}
-            </span>
-            <span class="text-[11px] text-ink-400">·</span>
-            <span
-              id="study-weekly-summary"
-              class="text-[11px] font-semibold text-ink-600"
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[11px] text-ink-500">
+                  {OGrupoDeEstudos.Brazil.format_today()}
+                </span>
+                <span class="text-[11px] text-ink-400">·</span>
+                <span
+                  id="study-weekly-summary"
+                  class="text-[11px] font-semibold text-ink-600"
+                >
+                  {@weekly_note_count} {if @weekly_note_count == 1,
+                    do: "registro",
+                    else: "registros"} esta semana
+                </span>
+                <span class="text-[11px] text-ink-400">·</span>
+                <span class={[
+                  "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
+                  @today_status.tone == :success &&
+                    "border-accent-green/25 bg-accent-green/10 text-accent-green",
+                  @today_status.tone == :warning &&
+                    "border-accent-orange/25 bg-accent-orange/10 text-accent-orange"
+                ]}>
+                  {@today_status.label}
+                </span>
+              </div>
+            </div>
+
+            <.form
+              for={to_form(%{"content" => @today_note_content}, as: :personal_note)}
+              id="study-diary-form"
+              phx-change="save_personal_note"
+              class="mt-5"
             >
-              {@weekly_note_count} {if @weekly_note_count == 1, do: "registro", else: "registros"} esta semana
-            </span>
-            <span class="text-[11px] text-ink-400">·</span>
-            <span class={[
-              "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
-              @today_status.tone == :success &&
-                "border-accent-green/25 bg-accent-green/10 text-accent-green",
-              @today_status.tone == :warning &&
-                "border-accent-orange/25 bg-accent-orange/10 text-accent-orange"
-            ]}>
-              {@today_status.label}
-            </span>
-          </div>
+              <textarea
+                id="study-personal-note-content"
+                name="personal_note[content]"
+                rows="3"
+                placeholder="O que você praticou hoje? O que ficou gostoso? O que quer revisitar na próxima aula?"
+                class="w-full rounded-xl border border-ink-200 bg-ink-50 px-4 py-4 font-serif text-sm leading-7 text-ink-900 box-border resize-y outline-none transition-colors focus:border-accent-orange/40 focus:ring-1 focus:ring-accent-orange/20"
+              >{@today_note_content}</textarea>
+            </.form>
+
+            <div id="study-related-steps-panel" class="mt-3">
+              <div :if={@personal_related_steps != []} class="mb-2 flex flex-wrap gap-1.5">
+                <%= for step <- @personal_related_steps do %>
+                  <button
+                    id={"personal-related-step-#{step.id}"}
+                    type="button"
+                    phx-click="remove_personal_step"
+                    phx-value-id={step.id}
+                    class="inline-flex items-center gap-1.5 rounded-full border border-accent-orange/25 bg-accent-orange/[0.07] px-2.5 py-1 text-[11px] font-semibold text-accent-orange cursor-pointer hover:bg-accent-orange/15 transition-colors"
+                  >
+                    <code class="font-bold">{step.code}</code>
+                    <span class="text-ink-600">{step.name}</span>
+                    <span class="text-accent-orange/50 ml-0.5">&times;</span>
+                  </button>
+                <% end %>
+              </div>
+
+              <div class="relative">
+                <form phx-change="search_personal_step">
+                  <input
+                    id="personal-step-search"
+                    name="term"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="+ Vincular passo ao estudo de hoje"
+                    class="w-full rounded-xl border border-ink-200 bg-ink-50/80 px-3 py-2.5 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
+                  />
+                </form>
+
+                <div
+                  :if={@personal_step_suggestions != []}
+                  class="mt-2 overflow-hidden rounded-xl border border-ink-200 bg-white shadow-md"
+                >
+                  <%= for step <- @personal_step_suggestions do %>
+                    <button
+                      id={"add-personal-step-#{step.id}"}
+                      type="button"
+                      phx-click="add_personal_step"
+                      phx-value-id={step.id}
+                      class="flex w-full items-center justify-between px-3 py-2.5 text-left border-b border-ink-100 last:border-b-0 cursor-pointer hover:bg-ink-50 transition-colors bg-transparent border-x-0 border-t-0"
+                    >
+                      <span class="text-xs text-ink-800">
+                        <code class="text-accent-orange font-bold mr-1">{step.code}</code>{step.name}
+                      </span>
+                      <span class="text-[10px] font-semibold text-accent-orange">Adicionar</span>
+                    </button>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <%!-- History below diary --%>
+          <section
+            id="study-history-panel"
+            class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-bold text-ink-900 m-0 font-serif">Notas anteriores</h2>
+              <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
+                {length(@personal_history)} {if length(@personal_history) == 1,
+                  do: "dia",
+                  else: "dias"}
+              </span>
+            </div>
+
+            <%= if @personal_history == [] do %>
+              <div class="rounded-lg border border-dashed border-ink-200 bg-ink-50 px-4 py-4 text-center">
+                <p class="text-xs text-ink-500 m-0">
+                  Suas notas vao aparecer aqui conforme voce registrar seus estudos.
+                </p>
+              </div>
+            <% else %>
+              <div class="space-y-2">
+                <%= for note <- @personal_history do %>
+                  <article class="rounded-lg border border-ink-200 bg-ink-50 px-3 py-2.5">
+                    <span class="text-[11px] font-bold text-ink-700">
+                      {OGrupoDeEstudos.Brazil.format_date(note.note_date)}
+                    </span>
+
+                    <div :if={note.related_steps != []} class="mt-1 flex flex-wrap gap-1">
+                      <%= for step <- note.related_steps do %>
+                        <code class="rounded-full bg-accent-orange/10 border border-accent-orange/20 px-2 py-0.5 text-[10px] text-accent-orange">
+                          {step.code} · {step.name}
+                        </code>
+                      <% end %>
+                    </div>
+
+                    <%= if note.content && note.content != "" do %>
+                      <% long? = String.length(note.content) > 150 %>
+                      <%= if long? do %>
+                        <details class="mt-1.5">
+                          <summary class="text-xs leading-6 text-ink-600 cursor-pointer list-none">
+                            <span class="line-clamp-2">{note.content}</span>
+                            <span class="text-[10px] text-accent-orange font-semibold mt-0.5 inline-block">
+                              ver mais
+                            </span>
+                          </summary>
+                          <p class="text-xs leading-6 text-ink-600 m-0 mt-1 whitespace-pre-line">
+                            {note.content}
+                          </p>
+                        </details>
+                      <% else %>
+                        <p class="mt-1.5 text-xs leading-6 text-ink-600 m-0">{note.content}</p>
+                      <% end %>
+                    <% end %>
+                  </article>
+                <% end %>
+              </div>
+            <% end %>
+          </section>
         </div>
 
-        <.form
-          for={to_form(%{"content" => @today_note_content}, as: :personal_note)}
-          id="study-diary-form"
-          phx-change="save_personal_note"
-          class="mt-5"
-        >
-          <textarea
-            id="study-personal-note-content"
-            name="personal_note[content]"
-            rows="3"
-            placeholder="O que você praticou hoje? O que ficou gostoso? O que quer revisitar na próxima aula?"
-            class="w-full rounded-xl border border-ink-200 bg-ink-50 px-4 py-4 font-serif text-sm leading-7 text-ink-900 box-border resize-y outline-none transition-colors focus:border-accent-orange/40 focus:ring-1 focus:ring-accent-orange/20"
-          >{@today_note_content}</textarea>
-        </.form>
+        <aside id="study-movement-panel" class="flex flex-col gap-4">
+          <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+            <h2 class="text-sm font-bold text-ink-900 m-0 mb-2 font-serif">Diarios conjuntos</h2>
 
-        <div id="study-related-steps-panel" class="mt-3">
-          <div :if={@personal_related_steps != []} class="mb-2 flex flex-wrap gap-1.5">
-            <%= for step <- @personal_related_steps do %>
-              <button
-                id={"personal-related-step-#{step.id}"}
-                type="button"
-                phx-click="remove_personal_step"
-                phx-value-id={step.id}
-                class="inline-flex items-center gap-1.5 rounded-full border border-accent-orange/25 bg-accent-orange/[0.07] px-2.5 py-1 text-[11px] font-semibold text-accent-orange cursor-pointer hover:bg-accent-orange/15 transition-colors"
-              >
-                <code class="font-bold">{step.code}</code>
-                <span class="text-ink-600">{step.name}</span>
-                <span class="text-accent-orange/50 ml-0.5">&times;</span>
-              </button>
+            <%= if @movement_cards == [] do %>
+              <p class="text-xs text-ink-400 italic m-0">
+                Aparecem aqui quando voce tiver vinculo com um professor ou aluno.
+              </p>
+            <% else %>
+              <div class="space-y-1.5">
+                <%= for movement <- @movement_cards do %>
+                  <div
+                    id={"study-movement-card-#{movement.link_id}"}
+                    class="flex items-center gap-2.5 rounded-lg bg-ink-50 border border-ink-200 px-3 py-2"
+                  >
+                    <.link
+                      id={"study-profile-link-#{movement.counterpart.username}"}
+                      navigate={~p"/users/#{movement.counterpart.username}"}
+                      class="no-underline flex items-center gap-2 flex-1 min-w-0"
+                    >
+                      <div class="w-7 h-7 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[10px] font-bold shrink-0">
+                        {String.first(movement.counterpart.name || movement.counterpart.username)
+                        |> String.upcase()}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-[11px] font-bold text-ink-900 m-0 truncate">
+                          {movement.counterpart.name}
+                        </p>
+                        <p class={[
+                          "text-[9px] m-0 font-semibold",
+                          movement.has_today_note? && "text-accent-green",
+                          !movement.has_today_note? && "text-ink-400"
+                        ]}>
+                          {if movement.has_today_note?,
+                            do: "Escreveu hoje",
+                            else: "Ultimo movimento"}
+                        </p>
+                      </div>
+                    </.link>
+                    <.link
+                      id={"study-open-shared-note-#{movement.link_id}"}
+                      navigate={~p"/study/shared/#{movement.link_id}"}
+                      class="text-[9px] font-bold text-white bg-accent-orange rounded-full px-2.5 py-1 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
+                    >
+                      Abrir
+                    </.link>
+                  </div>
+                <% end %>
+              </div>
             <% end %>
-          </div>
+          </section>
+          <%!-- Encontrar professor (compact, in sidebar) --%>
+          <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+            <h2 class="text-[11px] font-bold text-ink-900 m-0 mb-2 font-serif">
+              Encontrar professor
+            </h2>
 
-          <div class="relative">
-            <form phx-change="search_personal_step">
+            <%= if @teacher_links != [] do %>
+              <div class="mb-2">
+                <div class="space-y-1">
+                  <%= for link <- @teacher_links do %>
+                    <div class="flex items-center gap-2 rounded-lg bg-ink-50 border border-ink-200 px-2.5 py-1.5">
+                      <.link
+                        navigate={~p"/users/#{link.teacher.username}"}
+                        class="no-underline flex items-center gap-1.5 flex-1 min-w-0"
+                      >
+                        <div class="w-6 h-6 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[9px] font-bold shrink-0">
+                          {String.first(link.teacher.name || link.teacher.username)
+                          |> String.upcase()}
+                        </div>
+                        <p class="text-[10px] font-bold text-ink-900 m-0 truncate">
+                          {link.teacher.name}
+                        </p>
+                      </.link>
+                      <.link
+                        navigate={~p"/study/shared/#{link.id}"}
+                        class="text-[8px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2 py-0.5 no-underline shrink-0"
+                      >
+                        Diario
+                      </.link>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <%= if @suggested_teachers != [] do %>
+              <div class="mb-2">
+                <p class="text-[9px] font-bold text-ink-400 uppercase tracking-widest mb-1 font-sans">
+                  Sugeridos
+                </p>
+                <div class="space-y-1">
+                  <%= for teacher <- Enum.take(@suggested_teachers, 3) do %>
+                    <div class="flex items-center gap-2 rounded-lg bg-ink-50 border border-ink-200 px-2.5 py-1.5">
+                      <div class="w-6 h-6 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[9px] font-bold shrink-0">
+                        {String.first(teacher.name || teacher.username) |> String.upcase()}
+                      </div>
+                      <p class="text-[10px] font-bold text-ink-900 m-0 truncate flex-1">
+                        @{teacher.username}
+                      </p>
+                      <button
+                        type="button"
+                        phx-click="request_teacher"
+                        phx-value-id={teacher.id}
+                        class="text-[8px] font-bold text-white bg-accent-orange rounded-full px-2 py-0.5 cursor-pointer border-0 shrink-0"
+                      >
+                        Estudar
+                      </button>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <form phx-change="search_teacher" class="relative">
               <input
-                id="personal-step-search"
+                id="study-teacher-search"
                 name="term"
                 type="text"
+                value={@teacher_search}
                 autocomplete="off"
-                placeholder="+ Vincular passo ao estudo de hoje"
-                class="w-full rounded-xl border border-ink-200 bg-ink-50/80 px-3 py-2.5 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
+                placeholder="Buscar professor..."
+                class="w-full rounded-lg border border-ink-200 bg-ink-50/80 px-2.5 py-1.5 font-serif text-[10px] text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
               />
             </form>
 
             <div
-              :if={@personal_step_suggestions != []}
-              class="mt-2 overflow-hidden rounded-xl border border-ink-200 bg-white shadow-md"
+              :if={@teacher_search_results != []}
+              class="mt-1.5 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm"
             >
-              <%= for step <- @personal_step_suggestions do %>
-                <button
-                  id={"add-personal-step-#{step.id}"}
-                  type="button"
-                  phx-click="add_personal_step"
-                  phx-value-id={step.id}
-                  class="flex w-full items-center justify-between px-3 py-2.5 text-left border-b border-ink-100 last:border-b-0 cursor-pointer hover:bg-ink-50 transition-colors bg-transparent border-x-0 border-t-0"
-                >
-                  <span class="text-xs text-ink-800">
-                    <code class="text-accent-orange font-bold mr-1">{step.code}</code>{step.name}
-                  </span>
-                  <span class="text-[10px] font-semibold text-accent-orange">Adicionar</span>
-                </button>
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <%!-- History below diary --%>
-      <section
-        id="study-history-panel"
-        class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm"
-      >
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-bold text-ink-900 m-0 font-serif">Notas anteriores</h2>
-          <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
-            {length(@personal_history)} {if length(@personal_history) == 1, do: "dia", else: "dias"}
-          </span>
-        </div>
-
-        <%= if @personal_history == [] do %>
-          <div class="rounded-lg border border-dashed border-ink-200 bg-ink-50 px-4 py-4 text-center">
-            <p class="text-xs text-ink-500 m-0">
-              Suas notas vao aparecer aqui conforme voce registrar seus estudos.
-            </p>
-          </div>
-        <% else %>
-          <div class="space-y-2">
-            <%= for note <- @personal_history do %>
-              <article class="rounded-lg border border-ink-200 bg-ink-50 px-3 py-2.5">
-                <span class="text-[11px] font-bold text-ink-700">
-                  {OGrupoDeEstudos.Brazil.format_date(note.note_date)}
-                </span>
-
-                <div :if={note.related_steps != []} class="mt-1 flex flex-wrap gap-1">
-                  <%= for step <- note.related_steps do %>
-                    <code class="rounded-full bg-accent-orange/10 border border-accent-orange/20 px-2 py-0.5 text-[10px] text-accent-orange">
-                      {step.code} · {step.name}
-                    </code>
-                  <% end %>
-                </div>
-
-                <%= if note.content && note.content != "" do %>
-                  <% long? = String.length(note.content) > 150 %>
-                  <%= if long? do %>
-                    <details class="mt-1.5">
-                      <summary class="text-xs leading-6 text-ink-600 cursor-pointer list-none">
-                        <span class="line-clamp-2">{note.content}</span>
-                        <span class="text-[10px] text-accent-orange font-semibold mt-0.5 inline-block">ver mais</span>
-                      </summary>
-                      <p class="text-xs leading-6 text-ink-600 m-0 mt-1 whitespace-pre-line">{note.content}</p>
-                    </details>
-                  <% else %>
-                    <p class="mt-1.5 text-xs leading-6 text-ink-600 m-0">{note.content}</p>
-                  <% end %>
-                <% end %>
-              </article>
-            <% end %>
-          </div>
-        <% end %>
-      </section>
-    </div>
-
-      <aside id="study-movement-panel" class="flex flex-col gap-4">
-        <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
-          <h2 class="text-sm font-bold text-ink-900 m-0 mb-2 font-serif">Diarios conjuntos</h2>
-
-          <%= if @movement_cards == [] do %>
-            <p class="text-xs text-ink-400 italic m-0">
-              Aparecem aqui quando voce tiver vinculo com um professor ou aluno.
-            </p>
-          <% else %>
-            <div class="space-y-1.5">
-              <%= for movement <- @movement_cards do %>
-                <div
-                  id={"study-movement-card-#{movement.link_id}"}
-                  class="flex items-center gap-2.5 rounded-lg bg-ink-50 border border-ink-200 px-3 py-2"
-                >
-                  <.link
-                    id={"study-profile-link-#{movement.counterpart.username}"}
-                    navigate={~p"/users/#{movement.counterpart.username}"}
-                    class="no-underline flex items-center gap-2 flex-1 min-w-0"
-                  >
-                    <div class="w-7 h-7 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[10px] font-bold shrink-0">
-                      {String.first(movement.counterpart.name || movement.counterpart.username) |> String.upcase()}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-[11px] font-bold text-ink-900 m-0 truncate">{movement.counterpart.name}</p>
-                      <p class={[
-                        "text-[9px] m-0 font-semibold",
-                        movement.has_today_note? && "text-accent-green",
-                        !movement.has_today_note? && "text-ink-400"
-                      ]}>
-                        {if movement.has_today_note?, do: "Escreveu hoje", else: "Ultimo movimento"}
-                      </p>
-                    </div>
-                  </.link>
-                  <.link
-                    id={"study-open-shared-note-#{movement.link_id}"}
-                    navigate={~p"/study/shared/#{movement.link_id}"}
-                    class="text-[9px] font-bold text-white bg-accent-orange rounded-full px-2.5 py-1 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
-                  >
-                    Abrir
-                  </.link>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-        </section>
-        <%!-- Encontrar professor (compact, in sidebar) --%>
-        <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
-          <h2 class="text-[11px] font-bold text-ink-900 m-0 mb-2 font-serif">Encontrar professor</h2>
-
-          <%= if @teacher_links != [] do %>
-            <div class="mb-2">
-              <div class="space-y-1">
-                <%= for link <- @teacher_links do %>
-                  <div class="flex items-center gap-2 rounded-lg bg-ink-50 border border-ink-200 px-2.5 py-1.5">
-                    <.link
-                      navigate={~p"/users/#{link.teacher.username}"}
-                      class="no-underline flex items-center gap-1.5 flex-1 min-w-0"
-                    >
-                      <div class="w-6 h-6 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[9px] font-bold shrink-0">
-                        {String.first(link.teacher.name || link.teacher.username) |> String.upcase()}
-                      </div>
-                      <p class="text-[10px] font-bold text-ink-900 m-0 truncate">{link.teacher.name}</p>
-                    </.link>
-                    <.link
-                      navigate={~p"/study/shared/#{link.id}"}
-                      class="text-[8px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2 py-0.5 no-underline shrink-0"
-                    >
-                      Diario
-                    </.link>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-          <% end %>
-
-          <%= if @suggested_teachers != [] do %>
-            <div class="mb-2">
-              <p class="text-[9px] font-bold text-ink-400 uppercase tracking-widest mb-1 font-sans">Sugeridos</p>
-              <div class="space-y-1">
-                <%= for teacher <- Enum.take(@suggested_teachers, 3) do %>
-                  <div class="flex items-center gap-2 rounded-lg bg-ink-50 border border-ink-200 px-2.5 py-1.5">
-                    <div class="w-6 h-6 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[9px] font-bold shrink-0">
+              <%= for teacher <- @teacher_search_results do %>
+                <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-ink-100 last:border-b-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <div class="w-5 h-5 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[8px] font-bold shrink-0">
                       {String.first(teacher.name || teacher.username) |> String.upcase()}
                     </div>
-                    <p class="text-[10px] font-bold text-ink-900 m-0 truncate flex-1">@{teacher.username}</p>
-                    <button
-                      type="button"
-                      phx-click="request_teacher"
-                      phx-value-id={teacher.id}
-                      class="text-[8px] font-bold text-white bg-accent-orange rounded-full px-2 py-0.5 cursor-pointer border-0 shrink-0"
-                    >
-                      Estudar
-                    </button>
+                    <p class="text-[10px] font-semibold text-ink-900 m-0 truncate">
+                      {teacher.name}
+                    </p>
                   </div>
-                <% end %>
-              </div>
-            </div>
-          <% end %>
-
-          <form phx-change="search_teacher" class="relative">
-            <input
-              id="study-teacher-search"
-              name="term"
-              type="text"
-              value={@teacher_search}
-              autocomplete="off"
-              placeholder="Buscar professor..."
-              class="w-full rounded-lg border border-ink-200 bg-ink-50/80 px-2.5 py-1.5 font-serif text-[10px] text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
-            />
-          </form>
-
-          <div
-            :if={@teacher_search_results != []}
-            class="mt-1.5 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm"
-          >
-            <%= for teacher <- @teacher_search_results do %>
-              <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-ink-100 last:border-b-0">
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <div class="w-5 h-5 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[8px] font-bold shrink-0">
-                    {String.first(teacher.name || teacher.username) |> String.upcase()}
-                  </div>
-                  <p class="text-[10px] font-semibold text-ink-900 m-0 truncate">{teacher.name}</p>
+                  <button
+                    type="button"
+                    phx-click="request_teacher"
+                    phx-value-id={teacher.id}
+                    class="text-[8px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2 py-0.5 cursor-pointer shrink-0"
+                  >
+                    Estudar
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  phx-click="request_teacher"
-                  phx-value-id={teacher.id}
-                  class="text-[8px] font-bold text-accent-orange bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2 py-0.5 cursor-pointer shrink-0"
-                >
-                  Estudar
-                </button>
-              </div>
-            <% end %>
-          </div>
-        </section>
-      </aside>
-    </section>
-  </main>
+              <% end %>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
   <% end %>
 
   <%= if @active_study_tab == "students" and @current_user.is_teacher do %>
@@ -367,7 +391,9 @@
               "text-xl font-bold",
               @pending_requests != [] && "text-accent-orange",
               @pending_requests == [] && "text-ink-400"
-            ]}>{length(@pending_requests)}</div>
+            ]}>
+              {length(@pending_requests)}
+            </div>
             <div class="text-[10px] text-ink-500">pedidos</div>
           </div>
         </div>
@@ -398,7 +424,7 @@
                   <p class="text-[10px] text-ink-500 m-0">
                     @{req.student.username}
                     <%= if req.student.city do %>
-                      <span class="text-ink-400"> · {req.student.city}</span>
+                      <span class="text-ink-400">{" · #{req.student.city}"}</span>
                     <% end %>
                   </p>
                 </div>

@@ -147,92 +147,92 @@
         "max-w-[1600px] mx-auto mt-3 p-4 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md",
         !@suggest_mode && "hidden"
       ]}>
-      <div class="flex items-center justify-between mb-3">
-        <div class="text-xs font-bold uppercase tracking-widest" style="color: #8e44ad;">
-          Sugerir novo passo
-        </div>
-        <button
-          phx-click="toggle_suggest"
-          class="text-xs font-bold text-[#c0392b] bg-transparent border-0 cursor-pointer font-serif"
-        >
-          ✕ Fechar
-        </button>
-      </div>
-      <div id="suggest-form-wrapper">
-        <form
-          phx-submit="create_suggested_step"
-          id="collection-suggest-form"
-          class="flex flex-wrap gap-2.5 items-end"
-        >
-          <div class="flex-1 min-w-[150px]">
-            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-              Nome
-            </label>
-            <input
-              type="text"
-              name="step[name]"
-              placeholder="Ex: Base lateral"
-              class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
-            />
-          </div>
-          <div class="w-[100px]">
-            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-              Código
-            </label>
-            <input
-              type="text"
-              name="step[code]"
-              placeholder="Ex: BL"
-              class="w-full py-2 px-2.5 border border-ink-300 rounded font-mono text-sm text-ink-900 box-border"
-            />
-          </div>
-          <div class="flex-[2] min-w-[200px]">
-            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-              Nota (opcional)
-            </label>
-            <input
-              type="text"
-              name="step[note]"
-              placeholder="Descrição opcional"
-              class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
-            />
-          </div>
-          <div class="w-[180px]">
-            <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
-              Seção
-            </label>
-            <select
-              id="collection-suggest-section"
-              name="step[section_id]"
-              value={@suggest_section_id || ""}
-              class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
-            >
-              <option value="">Sem seção</option>
-              <%= for section <- @sections do %>
-                <option value={section.id} selected={section.id == @suggest_section_id}>
-                  {section.title}
-                </option>
-              <% end %>
-            </select>
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-xs font-bold uppercase tracking-widest" style="color: #8e44ad;">
+            Sugerir novo passo
           </div>
           <button
-            type="submit"
-            phx-disable-with="Enviando..."
-            class="py-2 px-4 text-white border-0 rounded cursor-pointer font-serif text-xs tracking-wide"
-            style="background: #8e44ad;"
+            phx-click="toggle_suggest"
+            class="text-xs font-bold text-[#c0392b] bg-transparent border-0 cursor-pointer font-serif"
           >
-            Sugerir
+            ✕ Fechar
           </button>
-        </form>
+        </div>
+        <div id="suggest-form-wrapper">
+          <form
+            phx-submit="create_suggested_step"
+            id="collection-suggest-form"
+            class="flex flex-wrap gap-2.5 items-end"
+          >
+            <div class="flex-1 min-w-[150px]">
+              <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+                Nome
+              </label>
+              <input
+                type="text"
+                name="step[name]"
+                placeholder="Ex: Base lateral"
+                class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
+              />
+            </div>
+            <div class="w-[100px]">
+              <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+                Código
+              </label>
+              <input
+                type="text"
+                name="step[code]"
+                placeholder="Ex: BL"
+                class="w-full py-2 px-2.5 border border-ink-300 rounded font-mono text-sm text-ink-900 box-border"
+              />
+            </div>
+            <div class="flex-[2] min-w-[200px]">
+              <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+                Nota (opcional)
+              </label>
+              <input
+                type="text"
+                name="step[note]"
+                placeholder="Descrição opcional"
+                class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border"
+              />
+            </div>
+            <div class="w-[180px]">
+              <label class="text-[10px] text-ink-700 uppercase tracking-widest font-semibold block mb-1">
+                Seção
+              </label>
+              <select
+                id="collection-suggest-section"
+                name="step[section_id]"
+                value={@suggest_section_id || ""}
+                class="w-full py-2 px-2.5 border border-ink-300 rounded font-serif text-sm text-ink-900"
+              >
+                <option value="">Sem seção</option>
+                <%= for section <- @sections do %>
+                  <option value={section.id} selected={section.id == @suggest_section_id}>
+                    {section.title}
+                  </option>
+                <% end %>
+              </select>
+            </div>
+            <button
+              type="submit"
+              phx-disable-with="Enviando..."
+              class="py-2 px-4 text-white border-0 rounded cursor-pointer font-serif text-xs tracking-wide"
+              style="background: #8e44ad;"
+            >
+              Sugerir
+            </button>
+          </form>
+        </div>
+        <%!-- Inline error message --%>
+        <div
+          :if={@suggest_error}
+          class="mt-2 py-2 px-3 bg-accent-red/10 border border-accent-red/30 rounded text-sm text-accent-red font-sans"
+        >
+          {@suggest_error}
+        </div>
       </div>
-      <%!-- Inline error message --%>
-      <div
-        :if={@suggest_error}
-        class="mt-2 py-2 px-3 bg-accent-red/10 border border-accent-red/30 rounded text-sm text-accent-red font-sans"
-      >
-        {@suggest_error}
-      </div>
-    </div>
     </div>
     <%!-- /collection-controls --%>
 
@@ -363,7 +363,6 @@
                   </div>
                 </button>
               <% end %>
-
             </div>
           <% else %>
             <div id="collection-drilldown-shell" class="space-y-6">

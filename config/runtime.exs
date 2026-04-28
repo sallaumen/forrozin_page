@@ -32,6 +32,7 @@ if config_env() == :prod do
     password: System.get_env("SMTP_PASSWORD"),
     tls: :if_available,
     ssl: false
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

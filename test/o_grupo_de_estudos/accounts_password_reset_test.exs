@@ -14,7 +14,8 @@ defmodule OGrupoDeEstudos.AccountsPasswordResetTest do
     end
 
     test "returns :ok even when email does not exist" do
-      assert :ok == Accounts.request_password_reset("nope@nowhere.com", OGrupoDeEstudosWeb.Endpoint)
+      assert :ok ==
+               Accounts.request_password_reset("nope@nowhere.com", OGrupoDeEstudosWeb.Endpoint)
     end
 
     test "completes without error for existing user" do
@@ -36,11 +37,13 @@ defmodule OGrupoDeEstudos.AccountsPasswordResetTest do
       user = insert(:user)
       token = Phoenix.Token.sign(OGrupoDeEstudosWeb.Endpoint, "wrong_salt", user.id)
 
-      assert {:error, :invalid_token} = Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, token)
+      assert {:error, :invalid_token} =
+               Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, token)
     end
 
     test "returns error for garbage token" do
-      assert {:error, :invalid_token} = Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, "garbage123")
+      assert {:error, :invalid_token} =
+               Accounts.verify_reset_token(OGrupoDeEstudosWeb.Endpoint, "garbage123")
     end
   end
 

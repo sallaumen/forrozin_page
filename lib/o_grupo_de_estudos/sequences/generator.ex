@@ -293,7 +293,9 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     candidates = if unvisited != [], do: unvisited, else: neighbors
 
     case candidates do
-      [] -> path
+      [] ->
+        path
+
       _ ->
         next = Enum.random(candidates)
         do_random_walk([next | path], remaining - 1, MapSet.put(visited, next), ctx)

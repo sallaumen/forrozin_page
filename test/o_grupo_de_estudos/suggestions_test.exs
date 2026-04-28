@@ -278,7 +278,11 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
   # ── Admin notifications on create ───────────────────────
 
   describe "admin notification on create" do
-    test "notifies admins when a user creates a suggestion", %{user: user, admin: admin, step: step} do
+    test "notifies admins when a user creates a suggestion", %{
+      user: user,
+      admin: admin,
+      step: step
+    } do
       alias OGrupoDeEstudos.Engagement.Notifications.Notification
 
       {:ok, _} =
@@ -327,7 +331,11 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
   # ── list_user_pending_for_step/2 ────────────────────────
 
   describe "list_user_pending_for_step/2" do
-    test "returns only user's pending suggestions for the step", %{user: user, admin: admin, step: step} do
+    test "returns only user's pending suggestions for the step", %{
+      user: user,
+      admin: admin,
+      step: step
+    } do
       {:ok, _} =
         Suggestions.create(user, %{
           target_type: "step",
