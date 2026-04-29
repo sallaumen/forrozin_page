@@ -1386,39 +1386,8 @@ const CityAutocomplete = {
       setTimeout(() => { suggestions.style.display = "none" }, 200)
     })
 
-    // Form validation: prevent submit if city is invalid
-    if (form) {
-      form.addEventListener("submit", (e) => {
-        const city = cityInput.value.trim()
-
-        if (!city) {
-          e.preventDefault()
-          cityInput.style.borderColor = "#c0392b"
-          cityInput.placeholder = "Informe sua cidade"
-          return
-        }
-
-        // Only validate against IBGE list for Brazil
-        if (this._isBrazil) {
-          const state = stateSelect.value
-          if (!state) {
-            e.preventDefault()
-            stateSelect.style.borderColor = "#c0392b"
-            return
-          }
-
-          const validCities = (this._citiesData || {})[state] || []
-          if (!validCities.includes(city)) {
-            e.preventDefault()
-            cityInput.style.borderColor = "#c0392b"
-            cityInput.value = ""
-            cityInput.placeholder = "Selecione uma cidade válida da lista"
-            cityInput.focus()
-            showSuggestions()
-          }
-        }
-      })
-    }
+    // City is free text — no validation against IBGE list.
+    // Autocomplete is a suggestion, not a requirement.
   },
 
   async _loadCities() {
