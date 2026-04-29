@@ -30,7 +30,7 @@ defmodule OGrupoDeEstudos.AccountsTest do
     test "sends confirmation email after registration" do
       assert {:ok, _user} = Accounts.register_user(@valid_attrs)
 
-      assert_email_sent(subject: "Bem-vindo ao Grupo de Estudos! Confirme seu email")
+      assert_email_sent(subject: "Salve! Confirma o email, pff?")
     end
 
     test "returns error with duplicate username" do
