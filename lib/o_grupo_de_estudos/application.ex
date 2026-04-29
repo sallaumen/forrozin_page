@@ -20,7 +20,18 @@ defmodule OGrupoDeEstudos.Application do
         OGrupoDeEstudos.RateLimiter,
         {Oban, Application.fetch_env!(:o_grupo_de_estudos, Oban)},
         OGrupoDeEstudosWeb.Endpoint
-      ]
+      ] ++
+        if Application.get_env(:o_grupo_de_estudos, :env) == :test do
+          []
+        else
+          [
+            {Task,
+             fn ->
+               Process.sleep(5_000)
+               OGrupoDeEstudos.DataMigrations.Runner.run_all()
+             end}
+          ]
+        end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
