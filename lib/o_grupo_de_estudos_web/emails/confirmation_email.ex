@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
 
   use OGrupoDeEstudosWeb, :verified_routes
 
-  @sender {"O Grupo de Estudos", "noreply@o_grupo_de_estudos.com.br"}
+  @sender {"O Grupo de Estudos", "noreply@ogrupodeestudos.com.br"}
 
   @doc "Builds the welcome + confirmation email for the given user."
   def new(user) do
