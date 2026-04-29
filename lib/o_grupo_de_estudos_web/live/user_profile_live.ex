@@ -15,6 +15,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
 
   import OGrupoDeEstudosWeb.UI.ActivityToast
+  import OGrupoDeEstudosWeb.UI.InlineFollowButton
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do
@@ -104,7 +105,12 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            bubble_followers_list: [],
            bubble_search: "",
            bubble_search_results: [],
-           following_user_ids: Engagement.following_ids(current_user.id)
+           following_user_ids: Engagement.following_ids(current_user.id),
+           followers_list_open: false,
+           followers_list_tab: "following",
+           profile_following_list: [],
+           profile_followers_list: [],
+           profile_list_following_ids: MapSet.new()
          )}
     end
   end
@@ -128,6 +134,31 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   end
 
   @impl true
+  def handle_event("toggle_follow", %{"user-id" => target_id}, socket) do
+    current = socket.assigns.current_user
+
+    case Engagement.toggle_follow(current.id, target_id) do
+      {:ok, _} ->
+        {:noreply,
+         assign(socket,
+           following_user_ids: Engagement.following_ids(current.id),
+           profile_list_following_ids:
+             Engagement.following_ids_for(
+               current.id,
+               MapSet.to_list(socket.assigns.profile_list_following_ids)
+             )
+         )}
+
+      {:error, :rate_limited} ->
+        {:noreply,
+         put_flash(socket, :error, "Calma! Muitas ações seguidas. Espere alguns segundinhos.")}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("toggle_follow", _params, socket) do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
@@ -147,6 +178,53 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
       {:error, _} ->
         {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_followers_list", %{"tab" => tab}, socket) do
+    profile = socket.assigns.profile_user
+    current_tab = socket.assigns.followers_list_tab
+    is_open = socket.assigns.followers_list_open
+
+    if is_open and tab == current_tab do
+      {:noreply, assign(socket, followers_list_open: false)}
+    else
+      {list, following_ids} =
+        case tab do
+          "following" ->
+            list = Engagement.list_following(profile.id)
+
+            ids =
+              Engagement.following_ids_for(
+                socket.assigns.current_user.id,
+                Enum.map(list, & &1.id)
+              )
+
+            {list, ids}
+
+          "followers" ->
+            list = Engagement.list_followers(profile.id)
+
+            ids =
+              Engagement.following_ids_for(
+                socket.assigns.current_user.id,
+                Enum.map(list, & &1.id)
+              )
+
+            {list, ids}
+        end
+
+      {:noreply,
+       assign(socket,
+         followers_list_open: true,
+         followers_list_tab: tab,
+         profile_following_list:
+           if(tab == "following", do: list, else: socket.assigns.profile_following_list),
+         profile_followers_list:
+           if(tab == "followers", do: list, else: socket.assigns.profile_followers_list),
+         profile_list_following_ids: following_ids
+       )}
     end
   end
 

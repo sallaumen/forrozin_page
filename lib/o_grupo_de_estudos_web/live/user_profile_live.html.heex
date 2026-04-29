@@ -214,36 +214,133 @@
         <p class="text-2xl font-bold text-ink-800">{@total_sequences}</p>
         <p class="text-xs text-ink-500">sequências</p>
       </button>
-      <div class="flex-1 text-center p-3 rounded-lg bg-ink-50 min-w-[60px]">
+      <button
+        type="button"
+        phx-click="toggle_followers_list"
+        phx-value-tab="following"
+        class={[
+          "flex-1 text-center p-3 rounded-lg bg-ink-50 min-w-[60px] cursor-pointer border-0 transition-colors",
+          @followers_list_open && @followers_list_tab == "following" &&
+            "bg-accent-orange/10 ring-1 ring-accent-orange/30",
+          !(@followers_list_open && @followers_list_tab == "following") && "hover:bg-ink-100"
+        ]}
+      >
         <p class="text-2xl font-bold text-ink-800">{@following_count}</p>
         <p class="text-xs text-ink-500">seguindo</p>
-      </div>
-      <div class="flex-1 text-center p-3 rounded-lg bg-ink-50 min-w-[60px]">
+      </button>
+      <button
+        type="button"
+        phx-click="toggle_followers_list"
+        phx-value-tab="followers"
+        class={[
+          "flex-1 text-center p-3 rounded-lg bg-ink-50 min-w-[60px] cursor-pointer border-0 transition-colors",
+          @followers_list_open && @followers_list_tab == "followers" &&
+            "bg-accent-orange/10 ring-1 ring-accent-orange/30",
+          !(@followers_list_open && @followers_list_tab == "followers") && "hover:bg-ink-100"
+        ]}
+      >
         <p class="text-2xl font-bold text-ink-800">{@followers_count}</p>
         <p class="text-xs text-ink-500">seguidores</p>
-      </div>
+      </button>
     </div>
+
+    <%!-- Expandable followers/following list --%>
+    <%= if @followers_list_open do %>
+      <div class="mt-3 mx-4 rounded-xl border border-ink-200 bg-white p-3 shadow-sm">
+        <div class="flex gap-2 mb-3">
+          <button
+            type="button"
+            phx-click="toggle_followers_list"
+            phx-value-tab="following"
+            class={[
+              "text-xs font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
+              @followers_list_tab == "following" &&
+                "bg-accent-orange border-accent-orange text-white",
+              @followers_list_tab != "following" &&
+                "bg-transparent border-ink-300 text-ink-500 hover:border-ink-400"
+            ]}
+          >
+            Seguindo
+          </button>
+          <button
+            type="button"
+            phx-click="toggle_followers_list"
+            phx-value-tab="followers"
+            class={[
+              "text-xs font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
+              @followers_list_tab == "followers" &&
+                "bg-accent-orange border-accent-orange text-white",
+              @followers_list_tab != "followers" &&
+                "bg-transparent border-ink-300 text-ink-500 hover:border-ink-400"
+            ]}
+          >
+            Seguidores
+          </button>
+        </div>
+
+        <% list =
+          if @followers_list_tab == "following",
+            do: @profile_following_list,
+            else: @profile_followers_list %>
+        <%= if list == [] do %>
+          <p class="text-xs text-ink-400 italic text-center py-3 m-0">
+            {if @followers_list_tab == "following",
+              do: "Não segue ninguém ainda",
+              else: "Sem seguidores ainda"}
+          </p>
+        <% else %>
+          <div class="space-y-1.5 max-h-60 overflow-y-auto">
+            <%= for person <- list do %>
+              <div class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-ink-50 transition-colors">
+                <.link
+                  navigate={~p"/users/#{person.username}"}
+                  class="no-underline flex items-center gap-2 flex-1 min-w-0"
+                >
+                  <div class="w-7 h-7 rounded-full bg-ink-800 flex items-center justify-center text-ink-200 text-[10px] font-bold shrink-0">
+                    {String.first(person.username) |> String.upcase()}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-ink-800 m-0 truncate">
+                      @{person.username}
+                    </p>
+                    <p :if={person.city} class="text-[10px] text-ink-400 m-0">{person.city}</p>
+                  </div>
+                </.link>
+                <.inline_follow_button
+                  target_user_id={person.id}
+                  current_user_id={@current_user.id}
+                  following_user_ids={@profile_list_following_ids}
+                />
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
 
     <%!-- Conquistas --%>
     <div class="px-4 mb-4">
-      <h3 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-2">Conquistas</h3>
+      <h3 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-3">Conquistas</h3>
       <div class="flex flex-wrap gap-2">
         <%= for badge <- @badges do %>
-          <div
-            class={[
-              "flex items-center gap-1 py-1 px-2.5 rounded-full text-xs border",
-              badge.earned && "bg-ink-50 border-ink-200 text-ink-700",
-              !badge.earned && "bg-ink-50/50 border-ink-100 text-ink-400 opacity-40"
-            ]}
-            title={
-              if badge.earned,
-                do: badge.name,
-                else: "#{badge.name}: #{round(badge.progress * 100)}%"
-            }
-          >
-            <span>{badge.icon}</span>
-            <span class="font-medium">{badge.name}</span>
-          </div>
+          <%= if badge.earned do %>
+            <div
+              class="flex items-center gap-1.5 py-1.5 px-3 rounded-full text-sm border border-accent-orange/30 bg-accent-orange/10 text-ink-800 shadow-sm"
+              style="box-shadow: 0 0 8px rgba(210,120,40,0.18);"
+              title={badge.name}
+            >
+              <span class="text-base leading-none">{badge.icon}</span>
+              <span class="font-semibold">{badge.name}</span>
+            </div>
+          <% else %>
+            <div
+              class="flex items-center gap-1 py-1 px-2 rounded-full text-xs border border-ink-100 bg-ink-50/50 text-ink-400 opacity-40"
+              title={"#{badge.name}: #{round(badge.progress * 100)}%"}
+            >
+              <span class="text-xs leading-none">{badge.icon}</span>
+              <span class="font-medium">{badge.name}</span>
+            </div>
+          <% end %>
         <% end %>
       </div>
 
