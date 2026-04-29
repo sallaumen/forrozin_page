@@ -127,6 +127,12 @@ defmodule OGrupoDeEstudos.Accounts do
     end
   end
 
+  @doc "Returns a list of all usernames (for sitemap generation)."
+  def list_all_usernames do
+    from(u in User, select: u.username, order_by: u.username)
+    |> Repo.all()
+  end
+
   @doc "Finds a user by email. Returns nil if not found."
   def get_user_by_email(email) when is_binary(email) do
     Repo.get_by(User, email: String.downcase(String.trim(email)))
