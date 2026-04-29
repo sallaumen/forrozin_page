@@ -28,7 +28,7 @@ defmodule OGrupoDeEstudos.Application do
             {Task,
              fn ->
                Process.sleep(5_000)
-               OGrupoDeEstudos.DataMigrations.Runner.run_all()
+               OGrupoDeEstudos.StartupScripts.Runner.run_all()
              end}
           ]
         end

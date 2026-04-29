@@ -1,4 +1,4 @@
-defmodule OGrupoDeEstudos.DataMigrations.SendConfirmationToExistingUsers do
+defmodule OGrupoDeEstudos.StartupScripts.SendConfirmationToExistingUsers do
   @moduledoc """
   One-time script: generates confirmation tokens and sends confirmation
   emails to all existing users who don't have confirmed_at set.
@@ -6,7 +6,7 @@ defmodule OGrupoDeEstudos.DataMigrations.SendConfirmationToExistingUsers do
   Users who already have confirmed_at are skipped.
   """
 
-  @behaviour OGrupoDeEstudos.DataMigrations.DataMigrationScript
+  @behaviour OGrupoDeEstudos.StartupScripts.ScriptBehaviour
 
   import Ecto.Query
 
@@ -39,7 +39,7 @@ defmodule OGrupoDeEstudos.DataMigrations.SendConfirmationToExistingUsers do
         |> OGrupoDeEstudos.Workers.SendConfirmationEmail.new()
         |> Oban.insert!()
 
-        Logger.info("[SendConfirmation] Enqueued for #{user.email}")
+        Logger.info("[StartupScripts] Enqueued for #{user.email}")
         acc + 1
       end)
 

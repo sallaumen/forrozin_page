@@ -1,4 +1,4 @@
-defmodule OGrupoDeEstudos.DataMigration do
+defmodule OGrupoDeEstudos.StartupScriptRecord do
   @moduledoc false
   use Ecto.Schema
 

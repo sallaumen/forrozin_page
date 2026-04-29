@@ -1,14 +1,14 @@
-defmodule OGrupoDeEstudos.DataMigrations.Runner do
+defmodule OGrupoDeEstudos.StartupScripts.Runner do
   @moduledoc """
-  Runs data migration scripts on application startup.
+  Runs startup scripts on application startup.
 
-  Each migration module must implement the `DataMigrationScript` behaviour:
+  Each script module must implement the `ScriptBehaviour` behaviour:
   - `name/0` — unique string identifier
   - `run_once?/0` — if true, skips if already completed
-  - `run/0` — the actual migration logic
+  - `run/0` — the actual script logic
 
-  Migrations are registered in `@migrations` and run sequentially.
-  Already-completed one-time migrations are skipped.
+  Scripts are registered in `@migrations` and run sequentially.
+  Already-completed one-time scripts are skipped.
   Results are recorded in the `data_migrations` table.
   """
 
@@ -16,10 +16,10 @@ defmodule OGrupoDeEstudos.DataMigrations.Runner do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.{DataMigration, Repo}
+  alias OGrupoDeEstudos.{StartupScriptRecord, Repo}
 
   @migrations [
-    OGrupoDeEstudos.DataMigrations.SendConfirmationToExistingUsers
+    OGrupoDeEstudos.StartupScripts.SendConfirmationToExistingUsers
   ]
 
   def run_all do
@@ -27,30 +27,32 @@ defmodule OGrupoDeEstudos.DataMigrations.Runner do
       name = module.name()
 
       if module.run_once?() and already_completed?(name) do
-        Logger.info("[DataMigrations] Skipping #{name} (already completed)")
+        Logger.info("[StartupScripts] Skipping #{name} (already completed)")
       else
-        Logger.info("[DataMigrations] Running #{name}...")
+        Logger.info("[StartupScripts] Running #{name}...")
         record = record_start(name)
 
         try do
           result = module.run()
           record_complete(record, "ok: #{inspect(result)}")
-          Logger.info("[DataMigrations] #{name} completed: #{inspect(result)}")
+          Logger.info("[StartupScripts] #{name} completed: #{inspect(result)}")
         rescue
           error ->
             record_complete(record, "error: #{Exception.message(error)}")
-            Logger.error("[DataMigrations] #{name} failed: #{Exception.message(error)}")
+            Logger.error("[StartupScripts] #{name} failed: #{Exception.message(error)}")
         end
       end
     end
   end
 
   defp already_completed?(name) do
-    Repo.exists?(from(dm in DataMigration, where: dm.name == ^name and dm.result != "pending"))
+    Repo.exists?(
+      from(dm in StartupScriptRecord, where: dm.name == ^name and dm.result != "pending")
+    )
   end
 
   defp record_start(name) do
-    %DataMigration{
+    %StartupScriptRecord{
       name: name,
       started_at: DateTime.utc_now(),
       result: "running"
