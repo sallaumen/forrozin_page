@@ -1274,19 +1274,18 @@ const CityAutocomplete = {
 
     const updateCountry = () => {
       this._isBrazil = countrySelect.value === "BR"
-      cityInput.value = ""
       suggestions.style.display = "none"
       this._currentCities = []
 
       if (this._isBrazil) {
         stateWrapper.style.display = "block"
         stateSelect.required = true
-        cityInput.placeholder = stateSelect.value ? "Digite o nome da cidade..." : "Selecione o estado primeiro"
+        cityInput.placeholder = "Digite sua cidade"
       } else {
         stateWrapper.style.display = "none"
         stateSelect.value = ""
         stateSelect.required = false
-        cityInput.placeholder = "Digite o nome da sua cidade"
+        cityInput.placeholder = "Digite sua cidade"
       }
     }
 
@@ -1294,8 +1293,8 @@ const CityAutocomplete = {
     updateCountry()
 
     stateSelect.addEventListener("change", () => {
-      cityInput.value = ""
-      cityInput.placeholder = stateSelect.value ? "Digite o nome da cidade..." : "Selecione o estado primeiro"
+      // Don't clear cityInput.value — user may have typed something valid
+      cityInput.placeholder = "Digite sua cidade"
       suggestions.style.display = "none"
       this._currentCities = []
     })
