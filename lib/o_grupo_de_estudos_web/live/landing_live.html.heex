@@ -36,51 +36,31 @@
           aria-label="Criar uma conta"
           class="font-serif text-xs text-ink-200 no-underline tracking-wider"
         >
-          Cadastrar-se
+          Criar conta
         </a>
       <% end %>
     </nav>
   </header>
 
-  <%!-- Hero --%>
   <main role="main">
-    <div class="bg-ink-900 px-6 pt-20 pb-[72px]">
+    <%!-- Hero --%>
+    <div class="bg-ink-900 px-6 pt-16 pb-10">
       <div class="max-w-[760px] mx-auto">
-        <p class="text-xs font-bold tracking-widest text-ink-600 uppercase mb-5">
-          O grupo de estudos
-        </p>
-        <h1 class="text-[56px] font-bold text-ink-200 leading-[1.05] tracking-[-2px] mb-7">
-          Forró roots,<br />na veia.
+        <h1 class="text-3xl md:text-[44px] font-bold text-ink-200 leading-[1.15] tracking-[-1px] mb-5">
+          Uma wiki de forró construída pela comunidade.
         </h1>
         <p class="text-base leading-[1.9] text-ink-400 max-w-[540px] mb-3">
-          {@total_steps} passos de forró catalogados com carinho.
-          Mapa de conexões entre passos, sequências geradas por algoritmo
-          e uma comunidade que cresce junto.
+          Mais de {@total_steps} passos documentados, conexões entre eles, sequências e diário de treino.
+          Tudo aberto e gratuito.
         </p>
-        <p class="text-sm text-ink-600 italic mb-6">
-          Feito por dançarinos, pra dançarinos.
+        <p class="text-sm text-ink-600 mb-8">
+          Criado por um grupo de estudos de Curitiba, feito pra todo mundo.
         </p>
-        <button
-          id="landing-install-pwa"
-          aria-label="Instalar O Grupo de Estudos como aplicativo"
-          onclick="if(window._deferredPWAPrompt){window._deferredPWAPrompt.prompt()}else if(typeof showInstallInstructions==='function'){showInstallInstructions()}else{alert('Use o menu do navegador para instalar como app')}"
-          class="flex items-center gap-3 bg-ink-800/80 border border-gold-500/20 rounded-lg py-2.5 px-4 mb-11 max-w-[320px] cursor-pointer hover:bg-ink-800 hover:border-gold-500/40 transition-colors w-auto"
-        >
-          <img
-            src="/icons/icon-192.png"
-            alt="OGE"
-            class="w-9 h-9 rounded-lg flex-shrink-0 shadow-sm"
-          />
-          <div class="flex-1 text-left">
-            <p class="text-xs font-bold text-gold-500 font-serif">Disponível como app</p>
-            <p class="text-[10px] text-ink-400 font-sans mt-0.5">Toque para instalar</p>
-          </div>
-          <span class="text-gold-500 text-lg">→</span>
-        </button>
+
         <%= if @current_user do %>
           <a
             href={~p"/collection"}
-            class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded font-serif text-base font-bold tracking-wide"
+            class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded-lg font-serif text-base font-bold tracking-wide"
           >
             Ir para o acervo →
           </a>
@@ -88,55 +68,129 @@
           <div class="flex gap-3 flex-wrap">
             <a
               href={~p"/signup"}
-              class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded font-serif text-base font-bold tracking-wide"
+              class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded-lg font-serif text-base font-bold tracking-wide"
             >
-              Quero estudar
+              Criar conta
             </a>
             <a
               href={~p"/login"}
-              class="inline-block py-3.5 px-7 bg-transparent text-ink-400 no-underline rounded font-serif text-base border border-white/15"
+              class="inline-block py-3.5 px-7 bg-transparent text-ink-400 no-underline rounded-lg font-serif text-base border border-white/15"
             >
-              Já tenho conta
+              Entrar
             </a>
           </div>
         <% end %>
       </div>
     </div>
 
-    <%!-- O que é --%>
-    <div class="border-b border-[rgba(60,40,20,0.12)] px-6 py-[72px]">
-      <div class="max-w-[760px] mx-auto flex gap-16 items-start flex-wrap">
-        <div class="flex-1 min-w-[260px]">
-          <p class="text-xs tracking-widest text-ink-500 uppercase mb-5">
-            O que é isso
-          </p>
-          <h2 class="text-2xl font-bold text-ink-900 tracking-tight mb-5 leading-tight">
-            Um acervo colaborativo de passos de forró
-          </h2>
-          <p class="text-base leading-[1.9] text-ink-700">
-            Seções, subseções, conexões entre passos, imagens e descrições mecânicas.
-            Tudo organizado pra você navegar, estudar e tirar dúvidas na hora da aula.
-          </p>
+    <%!-- Stats row --%>
+    <div class="bg-ink-900 px-6 pb-12">
+      <div class="max-w-[760px] mx-auto flex gap-3">
+        <div class="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-xl p-4 text-center">
+          <p class="text-2xl font-bold text-gold-500 m-0">{@total_steps}+</p>
+          <p class="text-[10px] text-ink-500 m-0 mt-1">passos</p>
         </div>
-        <div class="flex-1 min-w-[260px] flex flex-col gap-5">
-          <div class="p-5 bg-ink-50 border border-[rgba(60,40,20,0.12)] rounded">
-            <p class="text-xs tracking-widest text-ink-500 uppercase mb-1.5">
-              Passos catalogados
-            </p>
-            <p class="text-4xl font-bold text-ink-900 m-0">
-              {@total_steps}
-            </p>
-          </div>
-          <div class="p-5 bg-ink-50 border border-[rgba(60,40,20,0.12)] rounded">
-            <p class="text-xs tracking-widest text-ink-500 uppercase mb-1.5">
-              Usado em
-            </p>
-            <p class="text-base text-ink-800 m-0 italic">
-              Aulas de forró roots em Curitiba
-            </p>
-          </div>
+        <div class="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-xl p-4 text-center">
+          <p class="text-2xl font-bold text-gold-500 m-0">19</p>
+          <p class="text-[10px] text-ink-500 m-0 mt-1">categorias</p>
+        </div>
+        <div class="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-xl p-4 text-center">
+          <p class="text-2xl font-bold text-gold-500 m-0">100%</p>
+          <p class="text-[10px] text-ink-500 m-0 mt-1">gratuito</p>
         </div>
       </div>
+    </div>
+
+    <%!-- Feature: Mapa de conexões --%>
+    <div class="px-6 py-14 bg-ink-50">
+      <div class="max-w-[760px] mx-auto">
+        <p class="text-[10px] font-bold tracking-widest text-accent-orange uppercase mb-2">
+          Mapa de conexões
+        </p>
+        <h2 class="text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
+          Entenda como os passos se conectam
+        </h2>
+        <p class="text-sm leading-[1.8] text-ink-600 mb-5 max-w-[520px]">
+          Cada passo tem entradas e saídas. O mapa mostra visualmente essas conexões, ajudando você a montar combinações e entender o fluxo da dança.
+        </p>
+        <div class="bg-white border border-ink-200 rounded-xl p-5 text-center">
+          <div class="flex items-center justify-center gap-2 flex-wrap">
+            <span class="bg-accent-green text-white text-[10px] font-bold py-1 px-3 rounded-full">
+              Sacada
+            </span>
+            <span class="text-ink-300 text-xs">→</span>
+            <span class="bg-accent-orange text-white text-[10px] font-bold py-1 px-3 rounded-full">
+              Giro
+            </span>
+            <span class="text-ink-300 text-xs">→</span>
+            <span class="bg-[#8e44ad] text-white text-[10px] font-bold py-1 px-3 rounded-full">
+              Trava
+            </span>
+            <span class="text-ink-300 text-xs">→</span>
+            <span class="bg-accent-green/80 text-white text-[10px] font-bold py-1 px-3 rounded-full">
+              Caminhada
+            </span>
+          </div>
+          <p class="text-[10px] text-ink-400 m-0 mt-3">
+            Exemplo simplificado de conexões entre passos
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Feature: Diário de treino --%>
+    <div class="px-6 py-14 bg-ink-100 border-t border-ink-200/60">
+      <div class="max-w-[760px] mx-auto">
+        <p class="text-[10px] font-bold tracking-widest text-accent-orange uppercase mb-2">
+          Diário de treino
+        </p>
+        <h2 class="text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
+          Registre o que praticou, acompanhe sua evolução
+        </h2>
+        <p class="text-sm leading-[1.8] text-ink-600 max-w-[520px]">
+          Anote seus treinos, vincule os passos estudados e veja quais são os que você mais pratica. Professores podem criar diários compartilhados com alunos.
+        </p>
+      </div>
+    </div>
+
+    <%!-- Feature: Comunidade --%>
+    <div class="px-6 py-14 bg-ink-50 border-t border-ink-200/60">
+      <div class="max-w-[760px] mx-auto">
+        <p class="text-[10px] font-bold tracking-widest text-accent-orange uppercase mb-2">
+          Comunidade
+        </p>
+        <h2 class="text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
+          Construído por quem dança
+        </h2>
+        <p class="text-sm leading-[1.8] text-ink-600 max-w-[520px]">
+          Sugira novos passos, crie sequências, siga outros dançarinos. O acervo cresce com a contribuição de todo mundo.
+        </p>
+      </div>
+    </div>
+
+    <%!-- CTA final --%>
+    <div class="px-6 py-16 bg-ink-900 text-center">
+      <h2 class="text-xl font-bold text-ink-200 mb-2">
+        Comece a estudar agora
+      </h2>
+      <p class="text-sm text-ink-500 mb-6">
+        Crie sua conta em segundos.
+      </p>
+      <%= if @current_user do %>
+        <a
+          href={~p"/collection"}
+          class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded-lg font-serif text-base font-bold tracking-wide"
+        >
+          Ir para o acervo →
+        </a>
+      <% else %>
+        <a
+          href={~p"/signup"}
+          class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded-lg font-serif text-base font-bold tracking-wide"
+        >
+          Criar conta
+        </a>
+      <% end %>
     </div>
   </main>
 
