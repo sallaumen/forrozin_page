@@ -88,7 +88,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
                 Confirme seu email para garantir acesso a recuperacao de senha:
               </p>
               <a href="#{link}"
-                 style="display:inline-block;padding:14px 36px;background:#1a0e05;color:#d4a574;text-decoration:none;font-family:Georgia,serif;font-size:15px;font-weight:700;letter-spacing:0.5px;border-radius:8px;">
+                 style="display:inline-block;padding:14px 40px;background:#b47828;color:#ffffff;text-decoration:none;font-family:Georgia,serif;font-size:15px;font-weight:700;letter-spacing:0.5px;border-radius:8px;">
                 Confirmar email
               </a>
             </td></tr>
