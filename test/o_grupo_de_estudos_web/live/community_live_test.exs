@@ -21,6 +21,47 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
   end
 
+  describe "community shell" do
+    test "renders the editorial shell ids for the community tab", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+
+      assert has_element?(lv, "#community-sequences-hero")
+      assert has_element?(lv, "#community-sequences-search")
+      assert has_element?(lv, "#community-sequences-create")
+      assert has_element?(lv, "#community-sequences-discovery")
+      assert has_element?(lv, "#community-sequences-stream")
+    end
+
+    test "search filters visible community sequences while discovery stays sourced from all community sequences",
+         %{conn: conn} do
+      author = insert(:user)
+
+      bases = insert(:category, name: "bases", label: "Bases")
+      giros = insert(:category, name: "giros", label: "Giros")
+
+      alpha =
+        insert(:sequence, user: author, public: true, name: "Alpha Flow")
+
+      beta =
+        insert(:sequence, user: author, public: true, name: "Beta Spin")
+
+      alpha_step = insert(:step, code: "AF", name: "Alpha Step", category: bases)
+      beta_step = insert(:step, code: "BS", name: "Beta Step", category: giros)
+
+      insert(:sequence_step, sequence: alpha, step: alpha_step, position: 1)
+      insert(:sequence_step, sequence: beta, step: beta_step, position: 1)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+
+      html = render_keyup(lv, "search_sequences", %{"term" => "Alpha"})
+
+      assert html =~ "Alpha Flow"
+      refute html =~ "Beta Spin"
+      assert has_element?(lv, "#community-sequences-discovery", "Bases")
+      assert has_element?(lv, "#community-sequences-discovery", "Giros")
+    end
+  end
+
   describe "sequences" do
     setup do
       author = insert(:user)

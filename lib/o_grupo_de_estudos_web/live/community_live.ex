@@ -33,30 +33,26 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     admin = Accounts.admin?(socket.assigns.current_user)
     current_user = socket.assigns.current_user
 
-    sequences = Sequences.list_all_public_sequences()
-    sequence_ids = Enum.map(sequences, & &1.id)
-    sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
-    seq_favorites = Engagement.favorites_map(current_user.id, "sequence", sequence_ids)
-    seq_comment_counts = Engagement.comment_counts_for("sequence", sequence_ids)
+    community_sequences_all =
+      current_user.id
+      |> list_community_sequences()
+      |> sort_sequences("popular")
 
-    sorted =
-      Enum.sort_by(sequences, fn seq ->
-        {-seq.like_count, seq.inserted_at}
-      end)
+    community_sequences = filter_sequences(community_sequences_all, "")
+    my_sequences = []
 
     {:ok,
-     assign(socket,
+     socket
+     |> assign(
        page_title: "Sequências",
        is_admin: admin,
-       sequences: sorted,
-       sequences_all: sorted,
-       sequence_likes: sequence_likes,
-       seq_favorites: seq_favorites,
-       seq_comment_counts: seq_comment_counts,
+       community_sequences_all: community_sequences_all,
+       community_sequences: community_sequences,
+       discovery_sections: build_discovery_sections(community_sequences_all),
        seq_search: "",
        seq_sort: "popular",
        active_seq_tab: "community",
-       my_sequences: [],
+       my_sequences: my_sequences,
        expanded_seq: nil,
        expanded_seq_comments: [],
        expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
@@ -72,52 +68,66 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        suggested_users: [],
        following_count: 0,
        followers_count: 0
-     )}
+     )
+     |> assign_sequence_social_metadata(current_user.id, community_sequences_all, my_sequences)}
   end
 
   @impl true
   def handle_event("search_sequences", params, socket) do
     term = params["value"] || params["term"] || ""
+    community_sequences = filter_sequences(socket.assigns.community_sequences_all, term)
 
-    filtered =
-      if term == "" do
-        socket.assigns.sequences_all
-      else
-        lower = String.downcase(term)
-
-        Enum.filter(socket.assigns.sequences_all, fn seq ->
-          String.contains?(String.downcase(seq.name), lower)
-        end)
-      end
-
-    {:noreply, assign(socket, seq_search: term, sequences: filtered)}
+    {:noreply, assign(socket, seq_search: term, community_sequences: community_sequences)}
   end
 
   def handle_event("sort_sequences", %{"sort" => sort}, socket) do
-    sorted =
-      case sort do
-        "recent" ->
-          Enum.sort_by(socket.assigns.sequences_all, & &1.inserted_at, {:desc, NaiveDateTime})
+    current_user = socket.assigns.current_user
 
-        _ ->
-          Enum.sort_by(socket.assigns.sequences_all, fn seq ->
-            {-seq.like_count, seq.inserted_at}
-          end)
-      end
+    community_sequences_all =
+      current_user.id |> list_community_sequences() |> sort_sequences(sort)
 
-    {:noreply, assign(socket, sequences: sorted, seq_sort: sort)}
+    community_sequences = filter_sequences(community_sequences_all, socket.assigns.seq_search)
+
+    {:noreply,
+     socket
+     |> assign(
+       seq_sort: sort,
+       community_sequences_all: community_sequences_all,
+       community_sequences: community_sequences,
+       discovery_sections: build_discovery_sections(community_sequences_all)
+     )
+     |> assign_sequence_social_metadata(
+       current_user.id,
+       community_sequences_all,
+       socket.assigns.my_sequences
+     )}
   end
 
   def handle_event("switch_seq_tab", %{"tab" => tab}, socket) do
+    current_user = socket.assigns.current_user
+
     socket =
       case tab do
         "mine" ->
-          user = socket.assigns.current_user
-          my_seqs = Sequences.list_public_user_sequences(user.id)
-          assign(socket, active_seq_tab: "mine", my_sequences: my_seqs)
+          my_sequences =
+            current_user.id |> Sequences.list_public_user_sequences() |> sort_sequences("recent")
+
+          socket
+          |> assign(active_seq_tab: "mine", my_sequences: my_sequences)
+          |> assign_sequence_social_metadata(
+            current_user.id,
+            socket.assigns.community_sequences_all,
+            my_sequences
+          )
 
         _ ->
-          assign(socket, active_seq_tab: "community")
+          socket
+          |> assign(active_seq_tab: "community")
+          |> assign_sequence_social_metadata(
+            current_user.id,
+            socket.assigns.community_sequences_all,
+            socket.assigns.my_sequences
+          )
       end
 
     {:noreply, socket}
@@ -128,16 +138,27 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
     case Engagement.toggle_like(current_user.id, "sequence", id) do
       {:ok, _action} ->
-        sequences = socket.assigns.sequences
-        sequence_ids = Enum.map(sequences, & &1.id)
-        sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
+        community_sequences_all =
+          current_user.id
+          |> list_community_sequences()
+          |> sort_sequences(socket.assigns.seq_sort)
 
-        sorted =
-          Enum.sort_by(sequences, fn seq ->
-            {-seq.like_count, seq.inserted_at}
-          end)
+        community_sequences = filter_sequences(community_sequences_all, socket.assigns.seq_search)
+        my_sequences = maybe_refresh_my_sequences(socket)
 
-        {:noreply, assign(socket, sequences: sorted, sequence_likes: sequence_likes)}
+        {:noreply,
+         socket
+         |> assign(
+           community_sequences_all: community_sequences_all,
+           community_sequences: community_sequences,
+           discovery_sections: build_discovery_sections(community_sequences_all),
+           my_sequences: my_sequences
+         )
+         |> assign_sequence_social_metadata(
+           current_user.id,
+           community_sequences_all,
+           my_sequences
+         )}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível registrar o like.")}
@@ -149,9 +170,13 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
     case Engagement.toggle_favorite(user.id, "sequence", seq_id) do
       {:ok, _} ->
-        sequence_ids = Enum.map(socket.assigns.sequences, & &1.id)
-        seq_favorites = Engagement.favorites_map(user.id, "sequence", sequence_ids)
-        {:noreply, assign(socket, seq_favorites: seq_favorites)}
+        {:noreply,
+         assign_sequence_social_metadata(
+           socket,
+           user.id,
+           socket.assigns.community_sequences_all,
+           socket.assigns.my_sequences
+         )}
 
       {:error, _} ->
         {:noreply, socket}
@@ -239,7 +264,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     user = socket.assigns.current_user
 
     case Engagement.toggle_like(user.id, type, id) do
-      {:ok, _} -> {:noreply, reload_seq_expanded(socket)}
+      {:ok, _} -> {:noreply, reload_seq_expanded_likes(socket)}
       {:error, _} -> {:noreply, socket}
     end
   end
@@ -295,11 +320,13 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     all_ids = comment_ids ++ reply_ids
     comment_likes = Engagement.likes_map(user.id, "sequence_comment", all_ids)
 
-    assign(socket,
+    socket
+    |> assign(
       expanded_seq_comments: comments,
       expanded_seq_comment_likes: comment_likes,
       expanded_seq_replies_map: replies_map
     )
+    |> assign_seq_comment_count(seq_id)
   end
 
   defp reload_seq_expanded_likes(socket) do
@@ -339,4 +366,80 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   end
 
   def youtube_embed_url(_), do: :external
+
+  defp list_community_sequences(_user_id), do: Sequences.list_all_public_sequences()
+
+  defp sort_sequences(sequences, "recent") do
+    Enum.sort_by(sequences, & &1.inserted_at, {:desc, NaiveDateTime})
+  end
+
+  defp sort_sequences(sequences, _sort) do
+    Enum.sort_by(sequences, fn seq ->
+      {-seq.like_count, seq.inserted_at}
+    end)
+  end
+
+  defp filter_sequences(sequences, ""), do: sequences
+
+  defp filter_sequences(sequences, term) do
+    lower = String.downcase(term)
+
+    Enum.filter(sequences, fn seq ->
+      String.contains?(String.downcase(seq.name), lower)
+    end)
+  end
+
+  defp build_discovery_sections(sequences) do
+    sequences
+    |> Enum.flat_map(fn seq ->
+      seq.sequence_steps
+      |> Enum.map(fn sequence_step ->
+        category = sequence_step.step.category
+
+        if category do
+          {category.id, category.label}
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+    end)
+    |> Enum.frequencies()
+    |> Enum.map(fn {{id, title}, sequence_count} ->
+      %{id: id, title: title, sequence_count: sequence_count}
+    end)
+    |> Enum.sort_by(fn section -> {-section.sequence_count, section.title} end)
+  end
+
+  defp assign_sequence_social_metadata(socket, user_id, community_sequences_all, my_sequences) do
+    sequence_ids =
+      community_sequences_all
+      |> Kernel.++(my_sequences)
+      |> Enum.map(& &1.id)
+      |> Enum.uniq()
+
+    assign(socket,
+      sequence_likes: Engagement.likes_map(user_id, "sequence", sequence_ids),
+      seq_favorites: Engagement.favorites_map(user_id, "sequence", sequence_ids),
+      seq_comment_counts: Engagement.comment_counts_for("sequence", sequence_ids)
+    )
+  end
+
+  defp assign_seq_comment_count(socket, seq_id) do
+    updated_count =
+      seq_id
+      |> then(&Engagement.comment_counts_for("sequence", [&1]))
+      |> Map.get(seq_id, 0)
+
+    assign(socket, :seq_comment_counts, Map.put(socket.assigns.seq_comment_counts, seq_id, updated_count))
+  end
+
+  defp maybe_refresh_my_sequences(socket) do
+    if socket.assigns.active_seq_tab == "mine" do
+      socket.assigns.current_user.id
+      |> Sequences.list_public_user_sequences()
+      |> sort_sequences("recent")
+    else
+      socket.assigns.my_sequences
+    end
+  end
 end
