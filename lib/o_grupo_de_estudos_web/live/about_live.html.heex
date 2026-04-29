@@ -16,109 +16,103 @@
 
   <div class="max-w-[720px] mx-auto px-6 py-12 w-full box-border">
     <%!-- Hero --%>
-    <h1 class="text-4xl font-bold text-ink-900 mb-3 tracking-tight">
-      Uma wiki de forró roots.
+    <h1 class="text-3xl font-bold text-ink-900 mb-3 tracking-tight">
+      Uma wiki de forró construída pela comunidade.
     </h1>
-    <p class="text-lg text-ink-600 leading-relaxed mb-10">
-      Construída pela comunidade, pra comunidade. Cada passo, cada conexão, cada correção conta.
+    <p class="text-base text-ink-600 leading-relaxed mb-10">
+      Criado por um grupo de estudos de Curitiba, feito pra todo mundo.
+      Cada passo, cada conexão, cada contribuição conta.
     </p>
 
-    <%!-- Culture section --%>
+    <%!-- O que é --%>
     <section class="mb-12">
       <h2 class="text-sm font-bold text-accent-orange uppercase tracking-widest mb-4">
-        Nossa cultura
+        O projeto
       </h2>
-      <div class="space-y-4 text-base text-ink-700 leading-relaxed">
+      <div class="space-y-4 text-sm text-ink-700 leading-relaxed">
         <p>
-          O Grupo de Estudos nasceu de uma pessoa catalogando passos de forró roots. Mas a ideia nunca foi ficar centralizado.
-          É um projeto <strong>de dançarinos, pra dançarinos</strong>.
+          O Grupo de Estudos nasceu de um dançarino catalogando passos de forró roots.
+          A ideia é simples: documentar os passos, mostrar como eles se conectam,
+          e criar um espaço aberto pra todo mundo estudar e contribuir.
         </p>
         <p>
-          Aqui, todo mundo pode contribuir. Sugerir passos novos, corrigir conexões erradas, adicionar vídeos.
-          Cada contribuição aprovada fica com o <strong>nome de quem ajudou</strong>, porque reconhecimento importa.
+          Todo mundo pode sugerir passos, corrigir descrições, adicionar vídeos e criar sequências.
+          Cada contribuição aprovada fica com o <strong>nome de quem ajudou</strong>.
         </p>
-        <p class="text-ink-500 italic">
-          Obrigado por usar e por ajudar a construir. Vocês fazem o Grupo de Estudos existir.
+        <p>
+          É <strong>100% gratuito</strong> e sempre vai ser.
         </p>
       </div>
     </section>
 
-    <%!-- Guide cards --%>
+    <%!-- Features --%>
     <section class="mb-12">
       <h2 class="text-sm font-bold text-accent-orange uppercase tracking-widest mb-6">
-        Como funciona
+        O que você encontra aqui
       </h2>
 
-      <div class="space-y-6">
-        <%!-- Card 1: Acervo --%>
-        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
-          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
-            <span class="text-ink-200 text-lg">📚</span>
+      <div class="space-y-4">
+        <div class="flex gap-4 items-start p-4 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-9 h-9 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <.icon name="hero-rectangle-stack" class="w-4 h-4 text-ink-200" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-ink-900 mb-1">O Acervo</h3>
-            <p class="text-sm text-ink-600 leading-relaxed">
-              Todos os passos organizados por seção e categoria. Cada passo tem código, nome, nota técnica
-              e conexões com outros passos. Clique num passo pra ver detalhes, links e comentários.
+            <h3 class="text-sm font-bold text-ink-900 mb-1">Acervo de passos</h3>
+            <p class="text-xs text-ink-600 leading-relaxed m-0">
+              Mais de {@total_steps} passos organizados por categoria, com código, nome e descrição mecânica.
+              Cada passo tem conexões, comentários e links de vídeo.
             </p>
           </div>
         </div>
 
-        <%!-- Card 2: Mapa --%>
-        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
-          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
-            <span class="text-ink-200 text-lg">🗺</span>
+        <div class="flex gap-4 items-start p-4 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-9 h-9 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <.icon name="hero-map" class="w-4 h-4 text-ink-200" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-ink-900 mb-1">O Mapa de Conexões</h3>
-            <p class="text-sm text-ink-600 leading-relaxed">
-              Um grafo visual onde cada passo é um nó e cada seta mostra "de A você pode ir pra B".
-              Navegue pelo mapa pra descobrir caminhos entre passos que você já conhece.
+            <h3 class="text-sm font-bold text-ink-900 mb-1">Mapa de conexões</h3>
+            <p class="text-xs text-ink-600 leading-relaxed m-0">
+              Um grafo visual mostrando como os passos se conectam. De A você pode ir pra B.
+              Use o gerador pra criar sequências que respeitam essas conexões.
             </p>
           </div>
         </div>
 
-        <%!-- Card 3: Sequências --%>
-        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
-          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
-            <span class="text-ink-200 text-lg">🎲</span>
+        <div class="flex gap-4 items-start p-4 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-9 h-9 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <.icon name="hero-book-open" class="w-4 h-4 text-ink-200" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-ink-900 mb-1">Gerador de Sequências</h3>
-            <p class="text-sm text-ink-600 leading-relaxed">
-              No Mapa, use o gerador pra criar combinações de passos que respeitam as conexões.
-              Escolha o passo inicial, o tamanho, e deixe o algoritmo te surpreender.
-              Salve suas favoritas e compartilhe com a comunidade.
+            <h3 class="text-sm font-bold text-ink-900 mb-1">Diário de treino</h3>
+            <p class="text-xs text-ink-600 leading-relaxed m-0">
+              Registre o que praticou, vincule os passos estudados e acompanhe sua evolução.
+              Veja quais passos você mais pratica com o ranking automático.
             </p>
           </div>
         </div>
 
-        <%!-- Card 4: Contribuir --%>
-        <div class="flex gap-4 items-start p-5 bg-accent-orange/5 rounded-lg border border-accent-orange/20">
-          <div class="w-10 h-10 rounded-lg bg-accent-orange flex items-center justify-center flex-shrink-0">
-            <span class="text-white text-lg">✏</span>
+        <div class="flex gap-4 items-start p-4 bg-ink-50 rounded-lg border border-ink-200">
+          <div class="w-9 h-9 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
+            <.icon name="hero-academic-cap" class="w-4 h-4 text-ink-200" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-ink-900 mb-1">Contribua com a wiki</h3>
-            <p class="text-sm text-ink-600 leading-relaxed">
-              Viu algo errado? Falta um passo? Clique no lápis (🖊) ao lado de qualquer campo
-              pra sugerir uma edição. Um admin revisa e, se aprovada, sua contribuição fica
-              com seu nome. Você também pode sugerir novas conexões no grafo.
+            <h3 class="text-sm font-bold text-ink-900 mb-1">Professor e aluno</h3>
+            <p class="text-xs text-ink-600 leading-relaxed m-0">
+              Professores podem criar diários compartilhados com alunos, definir metas de estudo
+              e acompanhar o progresso. Alunos recebem notificações quando o professor escreve.
             </p>
           </div>
         </div>
 
-        <%!-- Card 5: Comunidade --%>
-        <div class="flex gap-4 items-start p-5 bg-ink-50 rounded-lg border border-ink-200">
-          <div class="w-10 h-10 rounded-lg bg-ink-800 flex items-center justify-center flex-shrink-0">
-            <span class="text-ink-200 text-lg">👥</span>
+        <div class="flex gap-4 items-start p-4 bg-accent-orange/5 rounded-lg border border-accent-orange/20">
+          <div class="w-9 h-9 rounded-lg bg-accent-orange flex items-center justify-center flex-shrink-0">
+            <.icon name="hero-pencil" class="w-4 h-4 text-white" />
           </div>
           <div>
-            <h3 class="text-base font-bold text-ink-900 mb-1">Comunidade</h3>
-            <p class="text-sm text-ink-600 leading-relaxed">
-              Siga outros dançarinos, comente nos passos, dê likes, compartilhe sequências.
-              Suas contribuições aprovadas geram reconhecimento, e o app fica cada vez mais
-              completo pra todo mundo.
+            <h3 class="text-sm font-bold text-ink-900 mb-1">Contribua</h3>
+            <p class="text-xs text-ink-600 leading-relaxed m-0">
+              Sugira passos, corrija descrições, adicione vídeos, crie sequências.
+              Siga outros dançarinos, comente, dê likes. O acervo cresce com todo mundo.
             </p>
           </div>
         </div>
@@ -130,7 +124,7 @@
       <p class="text-sm text-ink-500 mb-4">Pronto pra começar?</p>
       <a
         href={~p"/collection"}
-        class="inline-block py-3 px-8 bg-ink-900 text-ink-100 no-underline rounded font-serif text-base font-bold tracking-wide"
+        class="inline-block py-3 px-8 bg-ink-900 text-ink-100 no-underline rounded-lg font-serif text-sm font-bold tracking-wide"
       >
         Explorar o Acervo →
       </a>
