@@ -74,6 +74,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
     |> unique_constraint(:email, message: "email já cadastrado")
     |> unique_constraint(:invite_slug, message: "link de convite já existe")
     |> hash_password()
+    |> put_confirmation_token()
   end
 
   @doc "Changeset for updating profile fields."
@@ -178,6 +179,18 @@ defmodule OGrupoDeEstudos.Accounts.User do
     case get_change(changeset, :password) do
       nil -> changeset
       password -> put_change(changeset, :password_hash, Argon2.hash_pwd_salt(password))
+    end
+  end
+
+  defp put_confirmation_token(changeset) do
+    if get_change(changeset, :email) do
+      put_change(
+        changeset,
+        :confirmation_token,
+        :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+      )
+    else
+      changeset
     end
   end
 end

@@ -20,6 +20,13 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
       assert get_change(changeset, :password_hash) != nil
     end
 
+    test "generates confirmation_token when email is present" do
+      changeset = User.registration_changeset(%User{}, @valid_attrs)
+      token = get_change(changeset, :confirmation_token)
+      assert is_binary(token)
+      assert String.length(token) > 20
+    end
+
     test "invalid without username" do
       attrs = Map.delete(@valid_attrs, :username)
       changeset = User.registration_changeset(%User{}, attrs)
