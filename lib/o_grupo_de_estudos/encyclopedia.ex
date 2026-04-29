@@ -262,6 +262,16 @@ defmodule OGrupoDeEstudos.Encyclopedia do
     StepQuery.list_by(base ++ extra)
   end
 
+  @doc "Returns a list of all step codes (for sitemap generation)."
+  def list_all_step_codes do
+    from(s in OGrupoDeEstudos.Encyclopedia.Step,
+      where: is_nil(s.deleted_at),
+      select: s.code,
+      order_by: s.code
+    )
+    |> Repo.all()
+  end
+
   @doc "Lists steps suggested by a specific user."
   def list_user_steps(user_id) do
     StepQuery.list_by(

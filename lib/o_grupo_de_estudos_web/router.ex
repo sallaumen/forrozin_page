@@ -23,6 +23,11 @@ defmodule OGrupoDeEstudosWeb.Router do
     get "/", OGrupoDeEstudosWeb.HealthController, :check
   end
 
+  # Sitemap — public, no auth
+  scope "/" do
+    get "/sitemap.xml", OGrupoDeEstudosWeb.SitemapController, :index
+  end
+
   pipeline :redirect_if_authenticated do
     plug OGrupoDeEstudosWeb.UserAuth, :redirect_if_authenticated
   end

@@ -67,6 +67,13 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         {:ok,
          assign(socket,
            page_title: user.name || user.username,
+           meta_title: "#{user.name || user.username} (@#{user.username}) — O Grupo de Estudos",
+           meta_description:
+             if(user.bio,
+               do: String.slice(user.bio, 0, 160),
+               else:
+                 "Perfil de @#{user.username} no O Grupo de Estudos. Veja passos, sequências e contribuições."
+             ),
            profile_user: user,
            user_steps: steps,
            user_sequences: sequences,

@@ -6,23 +6,44 @@
     <meta name="csrf-token" content={get_csrf_token()} />
     <meta
       name="description"
-      content="Acervo colaborativo de passos de forró roots com mais de 150 passos catalogados, conexões entre eles e sequências criadas pela comunidade."
+      content={
+        assigns[:meta_description] ||
+          "Uma wiki de forró construída pela comunidade. Mais de 150 passos documentados, conexões entre eles, sequências e diário de treino. Tudo aberto e gratuito."
+      }
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="O Grupo de Estudos" />
-    <meta property="og:title" content="O Grupo de Estudos | Wiki de Forró Roots" />
+    <meta
+      property="og:title"
+      content={assigns[:meta_title] || "O Grupo de Estudos | Wiki de Forró"}
+    />
     <meta
       property="og:description"
-      content="Acervo colaborativo com mais de 100 passos de forró catalogados, mapa de conexões entre passos e sequências criadas pela comunidade. Feito por dançarinos, pra dançarinos."
+      content={
+        assigns[:meta_description] ||
+          "Uma wiki de forró construída pela comunidade. Mais de 150 passos documentados, conexões, sequências e diário de treino. Tudo gratuito."
+      }
     />
-    <meta property="og:image" content="https://ogrupodeestudos.com.br/icons/icon-512.png" />
+    <meta
+      property="og:image"
+      content={assigns[:meta_image] || "https://ogrupodeestudos.com.br/icons/icon-512.png"}
+    />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta property="og:url" content="https://ogrupodeestudos.com.br" />
     <meta property="og:locale" content="pt_BR" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="O Grupo de Estudos" />
-    <meta name="twitter:description" content="Wiki de forró roots construída pela comunidade." />
+    <meta
+      name="twitter:title"
+      content={assigns[:meta_title] || "O Grupo de Estudos"}
+    />
+    <meta
+      name="twitter:description"
+      content={
+        assigns[:meta_description] ||
+          "Wiki de forró construída pela comunidade. Tudo aberto e gratuito."
+      }
+    />
     <.live_title default="O Grupo de Estudos" suffix=" · O Grupo de Estudos">
       {assigns[:page_title]}
     </.live_title>

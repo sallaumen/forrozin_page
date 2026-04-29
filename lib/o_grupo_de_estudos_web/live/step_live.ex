@@ -73,6 +73,13 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            step: step,
            step_image: step_image,
            page_title: step.name,
+           meta_title: "#{step.code} · #{step.name} — O Grupo de Estudos",
+           meta_description:
+             if(step.note,
+               do: String.slice(step.note, 0, 160),
+               else:
+                 "Passo de forró: #{step.name} (#{step.code}). Veja conexões, mecânica e vídeos."
+             ),
            is_admin: admin,
            can_edit: can_edit,
            edit_mode: false,
