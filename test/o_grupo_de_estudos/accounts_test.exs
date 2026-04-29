@@ -1,6 +1,8 @@
 defmodule OGrupoDeEstudos.AccountsTest do
   use OGrupoDeEstudos.DataCase, async: true
 
+  import Swoosh.TestAssertions
+
   alias OGrupoDeEstudos.Accounts
 
   @valid_attrs %{
@@ -14,14 +16,21 @@ defmodule OGrupoDeEstudos.AccountsTest do
   }
 
   describe "register_user/1" do
-    test "creates user with valid data and auto-confirms" do
+    test "creates user with valid data — unconfirmed, with confirmation token" do
       assert {:ok, user} = Accounts.register_user(@valid_attrs)
 
       assert user.username == "novousuario"
       assert user.email == "novo@example.com"
       assert user.role == "user"
       assert user.password_hash != nil
-      assert user.confirmed_at != nil
+      assert is_nil(user.confirmed_at), "user must NOT be auto-confirmed"
+      assert is_binary(user.confirmation_token), "must generate a confirmation token"
+    end
+
+    test "sends confirmation email after registration" do
+      assert {:ok, _user} = Accounts.register_user(@valid_attrs)
+
+      assert_email_sent(subject: "Bem-vindo ao Grupo de Estudos! Confirme seu email")
     end
 
     test "returns error with duplicate username" do
@@ -70,9 +79,14 @@ defmodule OGrupoDeEstudos.AccountsTest do
   end
 
   describe "email_confirmed?/1" do
-    test "returns true for auto-confirmed user" do
-      {:ok, user} = Accounts.register_user(@valid_attrs)
+    test "returns true for user with confirmed_at set" do
+      user = insert(:user, confirmed_at: NaiveDateTime.utc_now())
       assert Accounts.email_confirmed?(user)
+    end
+
+    test "returns false for newly registered user (unconfirmed)" do
+      {:ok, user} = Accounts.register_user(@valid_attrs)
+      refute Accounts.email_confirmed?(user)
     end
 
     test "returns false for user with nil confirmed_at" do

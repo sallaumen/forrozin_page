@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudos.Workers.SendConfirmationEmailTest do
 
       assert :ok = perform_job(SendConfirmationEmail, %{user_id: user.id})
 
-      assert_email_sent(subject: "Confirme seu email | O Grupo de Estudos")
+      assert_email_sent(subject: "Bem-vindo ao Grupo de Estudos! Confirme seu email")
     end
 
     test "silently ignores when user has been removed" do

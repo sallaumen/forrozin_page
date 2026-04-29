@@ -8,23 +8,33 @@ defmodule OGrupoDeEstudos.Accounts do
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Metadata
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Workers.SendPasswordResetEmail
+  alias OGrupoDeEstudos.Workers.{SendConfirmationEmail, SendPasswordResetEmail}
 
   @doc """
-  Registers a new user and enqueues the confirmation email.
+  Registers a new user and enqueues the welcome + confirmation email.
+
+  The user is created *without* `confirmed_at` — they can use the app
+  immediately, but a gentle banner reminds them to confirm. Confirmation
+  only gates password-recovery; it is never blocking.
 
   Returns `{:ok, user}` or `{:error, changeset}`.
   """
   def register_user(attrs) do
-    utc_now = NaiveDateTime.utc_now()
-    now = NaiveDateTime.truncate(utc_now, :second)
-
     changeset =
       %User{}
       |> User.registration_changeset(attrs)
-      |> Ecto.Changeset.put_change(:confirmed_at, now)
 
-    Repo.insert(changeset)
+    case Repo.insert(changeset) do
+      {:ok, user} ->
+        %{user_id: user.id}
+        |> SendConfirmationEmail.new()
+        |> Oban.insert()
+
+        {:ok, user}
+
+      error ->
+        error
+    end
   end
 
   @doc """
@@ -38,22 +48,8 @@ defmodule OGrupoDeEstudos.Accounts do
         {:error, :invalid_token}
 
       user ->
-        case user |> User.confirmation_changeset() |> Repo.update() do
-          {:ok, confirmed_user} ->
-            send_welcome_email(confirmed_user)
-            {:ok, confirmed_user}
-
-          error ->
-            error
-        end
+        user |> User.confirmation_changeset() |> Repo.update()
     end
-  end
-
-  defp send_welcome_email(user) do
-    OGrupoDeEstudosWeb.Emails.WelcomeEmail.new(user)
-    |> OGrupoDeEstudos.Mailer.deliver()
-  rescue
-    _error -> :ok
   end
 
   @doc "Returns `true` if the user has confirmed their email."

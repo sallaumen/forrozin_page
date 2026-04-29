@@ -30,7 +30,7 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
         {:noreply,
          socket
          |> push_event("form_persisted_clear", %{id: "registration-form"})
-         |> put_flash(:info, "Bem-vindo ao Grupo de Estudos, #{user.username}!")
+         |> put_flash(:info, "Conta criada! Verifique seu email para confirmar.")
          |> redirect(to: ~p"/auto-login/#{token}")}
 
       {:error, changeset} ->

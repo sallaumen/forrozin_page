@@ -437,6 +437,15 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
         <% end %>
       </div>
     </header>
+    <div
+      :if={@current_user && is_nil(@current_user.confirmed_at)}
+      class="bg-gold-500/10 border-b border-gold-500/20 px-4 py-1.5 text-center"
+    >
+      <p class="text-[11px] text-ink-700 m-0 font-serif">
+        Confirme seu email para garantir recuperacao de senha.
+        <span class="text-accent-orange font-semibold ml-1">Verifique sua caixa de entrada.</span>
+      </p>
+    </div>
     """
   end
 
