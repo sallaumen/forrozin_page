@@ -1833,38 +1833,33 @@ const OnboardingTour = {
           ? '[data-ui="bottom-nav"] li:nth-child(1)'
           : '#top-nav-desktop-primary-nav a:nth-child(1)',
         title: 'Aqui fica todo o acervo.',
-        text: 'Uma wiki de forró roots que a gente constrói junto. Tem muita coisa aberta ainda, então se achar algo pra melhorar, manda ver!',
+        text: 'Uma wiki de forró roots construída pela comunidade. Explore os passos, sugira melhorias e contribua!',
       },
       {
         selector: isMobile
           ? '[data-ui="bottom-nav"] li:nth-child(2)'
           : '#top-nav-desktop-primary-nav a:nth-child(2)',
         title: 'O mapa mostra como os passos se conectam.',
-        text: 'Ele tá em construção, então pode ter conexão faltando ou errada. Você pode sugerir novas ou pedir remoção das incorretas.',
+        text: 'Veja as entradas e saídas de cada passo. Você pode sugerir novas conexões ou criar sequências.',
       },
       {
         selector: isMobile
           ? '[data-ui="bottom-nav"] li:nth-child(3)'
           : '#top-nav-desktop-primary-nav div:nth-child(3) a',
-        title: 'Seu cantinho de treino.',
-        text: 'Anota o que praticou, vincula os passos e vai acompanhando sua evolução.',
+        title: 'Seu diário de treino.',
+        text: 'Anote o que praticou, vincule passos e acompanhe sua evolução. Professores podem criar diários compartilhados com alunos.',
       },
       {
         selector: isMobile
           ? '[data-ui="bottom-nav"] li:nth-child(5)'
           : '#top-nav-desktop-primary-nav a:nth-child(4)',
-        title: 'Sequências da galera.',
-        text: 'Sequências que a galera criou. Você também pode criar as suas!',
+        title: 'Sequências da comunidade.',
+        text: 'Combinações de passos criadas pela galera. Você também pode criar e compartilhar as suas!',
       },
       {
         selector: '#collection-shell',
-        title: 'Tudo aqui pode ser editado por você.',
-        text: 'Toca no lápis pra sugerir melhorias nos textos, links ou conexões. Eu reviso e aprovo o mais rápido que der.',
-      },
-      {
-        selector: null,
         title: 'Esse projeto é de todo mundo.',
-        text: 'Quanto mais gente contribui, melhor fica. Bom treino! 🎶',
+        text: 'Tudo pode ser editado por você. Sugira passos, conexões e melhorias. Quanto mais gente contribui, melhor fica. Bom treino!',
       },
     ]
     this.currentStep = 0
