@@ -34,9 +34,26 @@ defmodule OGrupoDeEstudos.Accounts do
   """
   def validate_confirmation_token(token) do
     case Repo.get_by(User, confirmation_token: token) do
-      nil -> {:error, :invalid_token}
-      user -> user |> User.confirmation_changeset() |> Repo.update()
+      nil ->
+        {:error, :invalid_token}
+
+      user ->
+        case user |> User.confirmation_changeset() |> Repo.update() do
+          {:ok, confirmed_user} ->
+            send_welcome_email(confirmed_user)
+            {:ok, confirmed_user}
+
+          error ->
+            error
+        end
     end
+  end
+
+  defp send_welcome_email(user) do
+    OGrupoDeEstudosWeb.Emails.WelcomeEmail.new(user)
+    |> OGrupoDeEstudos.Mailer.deliver()
+  rescue
+    _error -> :ok
   end
 
   @doc "Returns `true` if the user has confirmed their email."
