@@ -88,7 +88,12 @@ defmodule OGrupoDeEstudos.Media.Storage do
 
     :ok
   rescue
-    e -> {:error, Exception.message(e)}
+    _e ->
+      # Mogrify/ImageMagick failed — fallback to raw copy (no resize)
+      case File.cp(source, dest) do
+        :ok -> :ok
+        error -> error
+      end
   end
 
   # ── Path Resolution ────────────────────────────────────────────────────

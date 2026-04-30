@@ -86,6 +86,7 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
         {:noreply,
          socket
          |> push_event("form_persisted_clear", %{id: "settings-form"})
+         |> put_flash(:info, "Perfil salvo!")
          |> assign(
            current_user: updated_user,
            country: updated_user.country || "BR",
