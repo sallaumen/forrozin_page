@@ -34,8 +34,7 @@
           <a
             href="#"
             phx-click="toggle_suggest"
-            style="color: #8e44ad;"
-            class="font-semibold no-underline"
+            class="font-semibold no-underline text-accent-purple"
           >
             Sugere aí
           </a>
@@ -96,8 +95,10 @@
               phx-click="toggle_suggest"
               style={
                 if @suggest_mode,
-                  do: "border-color: #c0392b; background: #c0392b10; color: #c0392b;",
-                  else: "border-color: #8e44ad; background: #8e44ad; color: white;"
+                  do:
+                    "border-color: var(--color-accent-red); background: color-mix(in srgb, var(--color-accent-red) 6%, transparent); color: var(--color-accent-red);",
+                  else:
+                    "border-color: var(--color-accent-purple); background: var(--color-accent-purple); color: white;"
               }
               class="text-xs py-2 px-4 rounded-full cursor-pointer font-serif font-bold tracking-wide border-2 transition-all"
             >
@@ -148,16 +149,16 @@
 
       <%!-- Suggestion form — inside sticky controls, never scrolls away --%>
       <div class={[
-        "max-w-[1600px] mx-auto mt-3 p-4 bg-[#8e44ad]/5 border border-[#8e44ad]/20 rounded-md",
+        "max-w-[1600px] mx-auto mt-3 p-4 bg-accent-purple/5 border border-accent-purple/20 rounded-md",
         !@suggest_mode && "hidden"
       ]}>
         <div class="flex items-center justify-between mb-3">
-          <div class="text-xs font-bold uppercase tracking-widest" style="color: #8e44ad;">
+          <div class="text-xs font-bold uppercase tracking-widest text-accent-purple">
             Sugerir novo passo
           </div>
           <button
             phx-click="toggle_suggest"
-            class="text-xs font-bold text-[#c0392b] bg-transparent border-0 cursor-pointer font-serif"
+            class="text-xs font-bold text-accent-red bg-transparent border-0 cursor-pointer font-serif"
           >
             ✕ Fechar
           </button>
@@ -223,7 +224,7 @@
               type="submit"
               phx-disable-with="Enviando..."
               class="py-2 px-4 text-white border-0 rounded cursor-pointer font-serif text-xs tracking-wide"
-              style="background: #8e44ad;"
+              style="background: var(--color-accent-purple);"
             >
               Sugerir
             </button>
@@ -257,7 +258,10 @@
         <button
           phx-click="switch_tab"
           phx-value-tab="meus_passos"
-          style={if @active_tab == "meus_passos", do: "color: #8e44ad; border-color: #8e44ad;"}
+          style={
+            if @active_tab == "meus_passos",
+              do: "color: var(--color-accent-purple); border-color: var(--color-accent-purple);"
+          }
           class={[
             "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
             @active_tab == "meus_passos" && "font-bold",
@@ -278,7 +282,7 @@
             Você ainda não sugeriu nenhum passo. Use o botão "+ Sugerir passo" acima!
           </div>
         <% else %>
-          <p class="text-xs mb-4 font-semibold" style="color: #8e44ad;">
+          <p class="text-xs mb-4 font-semibold text-accent-purple">
             {length(@my_steps)} passo(s) sugerido(s) por você
           </p>
           <%= for step <- @my_steps do %>
@@ -469,7 +473,7 @@
                             <span
                               :if={step.suggested_by_id}
                               title="Contribuição da comunidade"
-                              class="flex items-center justify-center w-4 h-4 rounded-full bg-[#8e44ad]/10 text-[#8e44ad]"
+                              class="flex items-center justify-center w-4 h-4 rounded-full bg-accent-purple/10 text-accent-purple"
                             >
                               <.icon name="hero-user" class="w-2.5 h-2.5" />
                             </span>
@@ -601,13 +605,21 @@
             >
               <.user_avatar user={author} size={:sm} />
               <span
-                style={if @drawer_item.approved, do: "color: #27ae60;", else: "color: #8e44ad;"}
+                style={
+                  if @drawer_item.approved,
+                    do: "color: var(--color-accent-green);",
+                    else: "color: var(--color-accent-purple);"
+                }
                 class="text-xs font-semibold"
               >
                 @{author_username}
               </span>
               <span
-                style={if @drawer_item.approved, do: "color: #27ae60;", else: "color: #8e44ad;"}
+                style={
+                  if @drawer_item.approved,
+                    do: "color: var(--color-accent-green);",
+                    else: "color: var(--color-accent-purple);"
+                }
                 class="text-[11px] italic opacity-80"
               >
                 {if @drawer_item.approved,

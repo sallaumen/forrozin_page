@@ -57,6 +57,15 @@
     />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1a0e05" />
+    <script>
+      // Apply dark mode ASAP to prevent flash of light theme
+      (function() {
+        var stored = localStorage.getItem("dark_mode");
+        if (stored === "true" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Grupo de Estudos" />

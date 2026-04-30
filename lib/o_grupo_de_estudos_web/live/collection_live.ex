@@ -887,7 +887,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     <% is_mine = @step.suggested_by_id != nil and @step.suggested_by_id == @current_user_id %>
     <div class={[
       "border-b border-ink-200/40 rounded-md mb-0.5",
-      is_mine && "bg-[#fce4ec]",
+      is_mine && "bg-accent-pink-bg",
       !is_mine && "bg-transparent"
     ]}>
       <div
@@ -906,7 +906,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         <% end %>
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline gap-2.5 flex-wrap">
-            <code class="font-mono text-xs font-bold text-ink-700 bg-[#b4782819] py-0.5 px-1.5 rounded-sm tracking-wide border border-[#b4782833]">
+            <code class="font-mono text-xs font-bold text-ink-700 bg-gold-600/10 py-0.5 px-1.5 rounded-sm tracking-wide border border-gold-600/20">
               {@step.code}
             </code>
             <span class="text-sm text-ink-800 font-serif leading-normal">
@@ -919,14 +919,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
                 }
                 class="no-underline"
               >
-                <span
-                  class={[
-                    "text-[10px] py-px px-1.5 rounded-full italic border",
-                    @step.approved && "border-accent-green/30 bg-accent-green/10 text-accent-green",
-                    !@step.approved && "border-[#8e44ad4d] bg-[#8e44ad1a]"
-                  ]}
-                  style={if !@step.approved, do: "color: #8e44ad;"}
-                >
+                <span class={[
+                  "text-[10px] py-px px-1.5 rounded-full italic border",
+                  @step.approved && "border-accent-green/30 bg-accent-green/10 text-accent-green",
+                  !@step.approved && "border-accent-purple/30 bg-accent-purple/10 text-accent-purple"
+                ]}>
                   <%= if @step.approved do %>
                     ✓ @{if @step.suggested_by, do: @step.suggested_by.username, else: "?"}
                   <% else %>
@@ -946,7 +943,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
           <%= if @step.suggested_by_id do %>
             <span
               title="Contribuição da comunidade"
-              class="flex items-center justify-center w-5 h-5 rounded-full bg-[#8e44ad]/10 text-[#8e44ad]"
+              class="flex items-center justify-center w-5 h-5 rounded-full bg-accent-purple/10 text-accent-purple"
             >
               <.icon name="hero-user" class="w-3 h-3" />
             </span>
