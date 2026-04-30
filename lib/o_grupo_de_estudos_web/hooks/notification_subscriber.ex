@@ -87,7 +87,9 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
 
   defp batch_user_summaries(ids) do
     Repo.all(
-      from u in User, where: u.id in ^ids, select: %{id: u.id, username: u.username, name: u.name}
+      from u in User,
+        where: u.id in ^ids,
+        select: %{id: u.id, username: u.username, name: u.name, avatar_path: u.avatar_path}
     )
   end
 
