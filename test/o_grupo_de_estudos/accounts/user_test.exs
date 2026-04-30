@@ -123,6 +123,60 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
     end
   end
 
+  describe "profile_changeset/2 — dark_mode" do
+    test "accepts dark_mode true" do
+      user = %User{
+        name: "Tatá Tavano",
+        username: "tata",
+        country: "BR",
+        state: "PR",
+        city: "Curitiba"
+      }
+
+      changeset =
+        User.profile_changeset(user, %{
+          name: "Tatá Tavano",
+          username: "tata",
+          country: "BR",
+          state: "PR",
+          city: "Curitiba",
+          dark_mode: true
+        })
+
+      assert changeset.valid?
+      assert get_field(changeset, :dark_mode) == true
+    end
+
+    test "accepts dark_mode false" do
+      user = %User{
+        name: "Tatá Tavano",
+        username: "tata",
+        country: "BR",
+        state: "PR",
+        city: "Curitiba",
+        dark_mode: true
+      }
+
+      changeset =
+        User.profile_changeset(user, %{
+          name: "Tatá Tavano",
+          username: "tata",
+          country: "BR",
+          state: "PR",
+          city: "Curitiba",
+          dark_mode: false
+        })
+
+      assert changeset.valid?
+      assert get_field(changeset, :dark_mode) == false
+    end
+
+    test "defaults dark_mode to false on new user" do
+      changeset = User.registration_changeset(%User{}, @valid_attrs)
+      assert get_field(changeset, :dark_mode) == false
+    end
+  end
+
   describe "confirmation_changeset/1" do
     test "sets confirmed_at and clears the token" do
       user = %User{confirmation_token: "algum_token", confirmed_at: nil}

@@ -37,6 +37,16 @@ defmodule OGrupoDeEstudosWeb.NotificationHandlers do
         {:noreply, close_notifications_dropdown(socket)}
       end
 
+      def handle_event("toggle_dark_mode", _params, socket) do
+        user = socket.assigns.current_user
+        {:ok, updated} = OGrupoDeEstudos.Accounts.toggle_dark_mode(user)
+
+        {:noreply,
+         socket
+         |> assign(:current_user, updated)
+         |> push_event("set-dark-mode", %{dark: updated.dark_mode})}
+      end
+
       defp open_notifications_dropdown(socket) do
         user = socket.assigns.current_user
 

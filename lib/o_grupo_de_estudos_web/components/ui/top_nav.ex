@@ -173,7 +173,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
 
           <button
             type="button"
-            phx-click={Phoenix.LiveView.JS.dispatch("toggle-dark-mode")}
+            phx-click="toggle_dark_mode"
             class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 cursor-pointer bg-transparent border-0"
             aria-label="Alternar modo escuro"
             title="Modo escuro"
@@ -429,7 +429,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             <% end %>
             <button
               type="button"
-              phx-click={Phoenix.LiveView.JS.dispatch("toggle-dark-mode")}
+              phx-click="toggle_dark_mode"
               class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 cursor-pointer bg-transparent border-0"
               aria-label="Alternar modo escuro"
             >

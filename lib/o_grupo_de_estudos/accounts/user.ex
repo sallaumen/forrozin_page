@@ -38,6 +38,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :invite_slug, :string
     field :last_seen_at, :naive_datetime
     field :last_login_at, :naive_datetime
+    field :dark_mode, :boolean, default: false
 
     timestamps()
   end
@@ -89,7 +90,8 @@ defmodule OGrupoDeEstudos.Accounts.User do
       :country,
       :state,
       :city,
-      :is_teacher
+      :is_teacher,
+      :dark_mode
     ])
     |> sanitize_username()
     |> validate_length(:bio, max: 2000)
