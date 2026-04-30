@@ -29,10 +29,29 @@ defmodule OGrupoDeEstudos.Media.Storage do
   def save_avatar(user_id, tmp_path, ext) do
     dest_dir = dir("avatars")
     File.mkdir_p!(dest_dir)
-    dest = Path.join(dest_dir, "#{user_id}#{ext}")
+    # Include timestamp to bust browser cache when avatar changes
+    ts = System.system_time(:second)
+    filename = "#{user_id}_#{ts}#{ext}"
+    dest = Path.join(dest_dir, filename)
 
     with :ok <- crop_square_and_resize(tmp_path, dest) do
-      {:ok, "/uploads/avatars/#{user_id}#{ext}"}
+      # Clean up old avatars for this user (different timestamps)
+      cleanup_old_avatars(dest_dir, user_id, filename)
+      {:ok, "/uploads/avatars/#{filename}"}
+    end
+  end
+
+  defp cleanup_old_avatars(dir, user_id, current_filename) do
+    case File.ls(dir) do
+      {:ok, files} ->
+        prefix = "#{user_id}_"
+
+        files
+        |> Enum.filter(&(String.starts_with?(&1, prefix) and &1 != current_filename))
+        |> Enum.each(&File.rm(Path.join(dir, &1)))
+
+      _ ->
+        :ok
     end
   end
 
