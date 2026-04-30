@@ -80,7 +80,7 @@
       data-manual-mode={to_string(@seq_view == :manual)}
       data-user-id={@current_user.id}
       data-initial-sequence-steps={@seq_initial_steps_json}
-      style="width: 100%; height: calc(100vh - 86px); background: #f7f3ec;"
+      style="width: 100%; height: calc(100vh - 86px); background: var(--color-ink-100);"
     >
     </div>
 
@@ -225,7 +225,7 @@
     <div
       id="seq-panel"
       class={[
-        "bg-[#fffef9] shadow-[2px_0_12px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden font-serif z-40",
+        "bg-ink-50 shadow-[2px_0_12px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden font-serif z-40",
         "max-md:fixed max-md:inset-x-0 max-md:bottom-16 max-md:h-[70vh] max-md:max-h-[70vh] max-md:rounded-t-lg max-md:border-t-2 max-md:border-accent-orange/30",
         "md:absolute md:top-0 md:left-0 md:w-[280px] md:h-full md:border-r md:border-accent-orange/25",
         !@seq_panel && "md:-translate-x-full",
@@ -560,9 +560,9 @@
           <div class="p-4">
             <%!-- Warnings --%>
             <%= if @seq_warnings != [] do %>
-              <div class="mb-3 py-2 px-2.5 bg-[#fff3cd] border border-[#ffc107]/20 rounded">
+              <div class="mb-3 py-2 px-2.5 bg-accent-warning-bg border border-gold-400/20 rounded">
                 <%= for w <- @seq_warnings do %>
-                  <div class="text-[10px] text-[#856404] leading-normal">{w}</div>
+                  <div class="text-[10px] text-accent-warning leading-normal">{w}</div>
                 <% end %>
               </div>
             <% end %>
@@ -1329,7 +1329,7 @@
 
             <%!-- Error --%>
             <%= if @seq_manual_error do %>
-              <div class="mb-2.5 py-1.5 px-2.5 bg-[#fdecea] border border-accent-red/20 rounded text-[11px] text-accent-red">
+              <div class="mb-2.5 py-1.5 px-2.5 bg-accent-error-bg border border-accent-red/20 rounded text-[11px] text-accent-red">
                 {@seq_manual_error}
               </div>
             <% end %>

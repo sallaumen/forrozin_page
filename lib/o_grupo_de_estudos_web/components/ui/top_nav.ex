@@ -171,6 +171,17 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             <span>{if @edit_mode, do: "Sair edição", else: "Editar"}</span>
           </button>
 
+          <button
+            type="button"
+            phx-click={Phoenix.LiveView.JS.dispatch("toggle-dark-mode")}
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 cursor-pointer bg-transparent border-0"
+            aria-label="Alternar modo escuro"
+            title="Modo escuro"
+          >
+            <.icon name="hero-moon-solid" class="size-4 hidden dark:block" />
+            <.icon name="hero-sun-solid" class="size-4 block dark:hidden" />
+          </button>
+
           <%= if @online_count > 1 do %>
             <div class="flex items-center gap-2">
               <div class="flex -space-x-1.5">
@@ -416,6 +427,15 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 </div>
               </details>
             <% end %>
+            <button
+              type="button"
+              phx-click={Phoenix.LiveView.JS.dispatch("toggle-dark-mode")}
+              class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 cursor-pointer bg-transparent border-0"
+              aria-label="Alternar modo escuro"
+            >
+              <.icon name="hero-moon-solid" class="size-4 hidden dark:block" />
+              <.icon name="hero-sun-solid" class="size-4 block dark:hidden" />
+            </button>
             <.link
               navigate={~p"/settings"}
               class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 no-underline"

@@ -2004,6 +2004,22 @@ window.addEventListener("phx:clipboard:copy", (event) => {
   }
 })
 
+// ---------------------------------------------------------------------------
+// Dark mode — persist preference in localStorage, respect OS default
+// ---------------------------------------------------------------------------
+function initDarkMode() {
+  const stored = localStorage.getItem("dark_mode")
+  if (stored === "true" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.classList.add("dark")
+  }
+}
+initDarkMode()
+
+window.addEventListener("toggle-dark-mode", () => {
+  const isDark = document.documentElement.classList.toggle("dark")
+  localStorage.setItem("dark_mode", isDark.toString())
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

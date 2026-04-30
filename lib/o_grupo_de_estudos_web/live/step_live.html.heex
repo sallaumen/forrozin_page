@@ -149,7 +149,7 @@
             }
             class="no-underline"
           >
-            <span style={"font-size: 11px; padding: 3px 10px; border-radius: 10px; background: #{if @step.approved, do: "#27ae6015", else: "#8e44ad15"}; color: #{if @step.approved, do: "#27ae60", else: "#8e44ad"}; border: 1px solid #{if @step.approved, do: "#27ae6030", else: "#8e44ad30"};"}>
+            <span style={"font-size: 11px; padding: 3px 10px; border-radius: 10px; background: color-mix(in srgb, #{if @step.approved, do: "var(--color-accent-green)", else: "var(--color-accent-purple)"} 8%, transparent); color: #{if @step.approved, do: "var(--color-accent-green)", else: "var(--color-accent-purple)"}; border: 1px solid color-mix(in srgb, #{if @step.approved, do: "var(--color-accent-green)", else: "var(--color-accent-purple)"} 19%, transparent);"}>
               <%= if @step.approved do %>
                 ✓ Contribuição de @{if @step.suggested_by,
                   do: @step.suggested_by.username,
@@ -307,7 +307,7 @@
                   type="button"
                   phx-click="unapprove_step"
                   data-confirm={"Desaprovar o passo \"#{@step.name}\"? Ele vai sair do acervo público."}
-                  class="py-2.5 px-5 bg-transparent border-2 border-[#e67e22] text-[#e67e22] rounded-md cursor-pointer font-serif text-sm font-semibold tracking-wide"
+                  class="py-2.5 px-5 bg-transparent border-2 border-accent-orange text-accent-orange rounded-md cursor-pointer font-serif text-sm font-semibold tracking-wide"
                 >
                   Desaprovar
                 </button>
