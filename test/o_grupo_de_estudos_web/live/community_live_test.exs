@@ -26,6 +26,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
 
       assert has_element?(lv, "#community-sequences-hero")
+      assert has_element?(lv, "#community-sequences-hero #community-sequences-search")
+      assert has_element?(lv, "#community-sequences-hero #community-sequences-create")
       assert has_element?(lv, "#community-sequences-search")
       assert has_element?(lv, "#community-sequences-create")
       assert has_element?(lv, "#community-sequences-discovery")
@@ -76,6 +78,28 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     test "shows public sequences on mount", %{conn: conn, sequence: seq} do
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
       assert html =~ seq.name
+    end
+
+    test "renders editorial sequence card ids and actions", %{
+      conn: conn,
+      sequence: seq,
+      author: author
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+
+      assert has_element?(lv, "#sequence-card-#{seq.id}")
+
+      assert has_element?(
+               lv,
+               ~s|#sequence-author-#{seq.id}[href="/users/#{author.username}"]|
+             )
+
+      assert has_element?(
+               lv,
+               ~s|#sequence-map-link-#{seq.id}[href="/graph/visual?seq=#{seq.id}"]|
+             )
+
+      assert has_element?(lv, "#sequence-details-toggle-#{seq.id}")
     end
 
     test "shows step codes inline", %{conn: conn} do
@@ -137,11 +161,18 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
 
     test "switching to Minhas tab shows user's sequences", %{conn: conn} do
-      conn = logged_in_conn(conn)
+      user = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "MN-1", name: "Minha Sequência")
+      sequence = insert(:sequence, user: user, public: true, name: "Minha Curadoria")
+      insert(:sequence_step, sequence: sequence, step: step, position: 1)
+
+      conn = log_in_user(conn, user)
       {:ok, lv, _html} = live(conn, ~p"/community")
       html = render_click(lv, "switch_seq_tab", %{"tab" => "mine"})
 
-      # Should not crash and should show the tab content
+      assert has_element?(lv, "#my-sequences-stream")
+      assert has_element?(lv, "#my-sequences-stream #sequence-card-#{sequence.id}")
       assert html =~ "Minhas"
     end
   end
