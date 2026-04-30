@@ -6,8 +6,8 @@ defmodule OGrupoDeEstudosWeb.SitemapController do
 
   use OGrupoDeEstudosWeb, :controller
 
-  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Accounts
+  alias OGrupoDeEstudos.Encyclopedia
 
   def index(conn, _params) do
     steps = Encyclopedia.list_all_step_codes()

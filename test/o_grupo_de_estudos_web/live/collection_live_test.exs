@@ -242,7 +242,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       insert(:step, section: section, name: "Base frontal")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       render_click(lv, "enter_section", %{"section_id" => section.id})
-      html = render_click(lv, "back_to_overview", %{})
+      render_click(lv, "back_to_overview", %{})
       assert has_element?(lv, "#collection-overview-grid")
     end
   end

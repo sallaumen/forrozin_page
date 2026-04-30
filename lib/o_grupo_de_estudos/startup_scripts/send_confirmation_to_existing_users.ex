@@ -12,6 +12,7 @@ defmodule OGrupoDeEstudos.StartupScripts.SendConfirmationToExistingUsers do
 
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Workers.SendConfirmationEmail
 
   require Logger
 
@@ -36,7 +37,7 @@ defmodule OGrupoDeEstudos.StartupScripts.SendConfirmationToExistingUsers do
         |> Repo.update!()
 
         %{user_id: user.id}
-        |> OGrupoDeEstudos.Workers.SendConfirmationEmail.new()
+        |> SendConfirmationEmail.new()
         |> Oban.insert!()
 
         Logger.info("[StartupScripts] Enqueued for #{user.email}")

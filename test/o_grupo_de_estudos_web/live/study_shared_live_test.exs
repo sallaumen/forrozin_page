@@ -20,6 +20,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
         |> form("#shared-note-form", %{"shared_note" => %{"content" => "Treinamos sacadas hoje"}})
         |> render_change()
 
+      _ = :sys.get_state(lv.pid)
+
       assert html =~ "Treinamos sacadas hoje"
 
       assert Study.get_shared_note(link.id, OGrupoDeEstudos.Brazil.today()).content ==

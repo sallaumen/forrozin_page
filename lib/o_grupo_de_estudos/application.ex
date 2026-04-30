@@ -6,6 +6,7 @@ defmodule OGrupoDeEstudos.Application do
   use Application
 
   alias OGrupoDeEstudos.Admin.ErrorLogger
+  alias OGrupoDeEstudos.StartupScripts.Runner
 
   @impl true
   def start(_type, _args) do
@@ -28,7 +29,7 @@ defmodule OGrupoDeEstudos.Application do
             {Task,
              fn ->
                Process.sleep(5_000)
-               OGrupoDeEstudos.StartupScripts.Runner.run_all()
+               Runner.run_all()
              end}
           ]
         end
