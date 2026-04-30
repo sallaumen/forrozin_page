@@ -68,16 +68,11 @@ defmodule OGrupoDeEstudos.Study do
         desc: fragment("CASE WHEN ? = ? THEN 1 ELSE 0 END", u.city, ^(user.city || "")),
         desc: u.last_seen_at
       ],
-      limit: ^limit
+      limit: ^limit,
+      select: %{user: u, student_count: count(links.id)}
     )
     |> Repo.all()
-    |> Enum.map(fn teacher ->
-      student_count =
-        from(l in TeacherStudentLink,
-          where: l.teacher_id == ^teacher.id and l.active == true and l.pending == false
-        )
-        |> Repo.aggregate(:count)
-
+    |> Enum.map(fn %{user: teacher, student_count: student_count} ->
       Map.put(teacher, :student_count, student_count)
     end)
   end
@@ -264,6 +259,22 @@ defmodule OGrupoDeEstudos.Study do
       where: n.teacher_student_link_id == ^link_id and n.note_date == ^date and n.kind == "shared"
     )
     |> Repo.exists?()
+  end
+
+  @doc """
+  Batch version of `shared_note_exists?/2`.
+
+  Returns a MapSet of link IDs that have a shared note on the given date.
+  Use this when rendering a list of student links to avoid N+1 queries.
+  """
+  def shared_note_link_ids(link_ids, date) when is_list(link_ids) do
+    from(n in Note,
+      where:
+        n.teacher_student_link_id in ^link_ids and n.note_date == ^date and n.kind == "shared",
+      select: n.teacher_student_link_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   def search_related_steps(term) when is_binary(term) do

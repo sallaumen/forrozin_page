@@ -80,8 +80,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
     test "shows comment form", %{conn: conn, viewer: viewer, profile: profile} do
       conn = logged_in_conn(conn, viewer)
       {:ok, _lv, html} = live(conn, ~p"/users/#{profile.username}")
-      assert html =~ "Escreva um comentário"
-      assert html =~ "Comentar"
+      assert html =~ "Escrever comentário"
+      assert html =~ "Enviar"
     end
 
     test "can post a comment", %{conn: conn, viewer: viewer, profile: profile} do
@@ -90,7 +90,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
 
       html =
         lv
-        |> form("form[phx-submit='post_comment']", %{body: "Ótimo dançarino!"})
+        |> form("form[phx-submit='create_comment']", %{body: "Ótimo dançarino!"})
         |> render_submit()
 
       assert html =~ "Ótimo dançarino!"
@@ -128,7 +128,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
 
       # Verify it renders
       assert render(lv) =~ "Meu comentário deletável"
-      assert render(lv) =~ "remover"
+      assert render(lv) =~ "delete_comment"
     end
 
     test "shows like button for comments", %{

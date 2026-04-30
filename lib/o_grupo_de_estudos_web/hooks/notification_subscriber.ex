@@ -73,20 +73,22 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
   end
 
   defp online_users(user) do
-    "users:online"
-    |> Presence.list()
-    |> Map.keys()
-    |> Enum.reject(&(&1 == user.id))
-    |> Enum.take(5)
-    |> Enum.map(&user_summary/1)
-    |> Enum.reject(&is_nil/1)
+    ids =
+      "users:online"
+      |> Presence.list()
+      |> Map.keys()
+      |> Enum.reject(&(&1 == user.id))
+      |> Enum.take(5)
+
+    batch_user_summaries(ids)
   end
 
-  defp user_summary(user_id) do
-    case Repo.get(User, user_id) do
-      nil -> nil
-      user -> %{id: user.id, username: user.username, name: user.name}
-    end
+  defp batch_user_summaries([]), do: []
+
+  defp batch_user_summaries(ids) do
+    Repo.all(
+      from u in User, where: u.id in ^ids, select: %{id: u.id, username: u.username, name: u.name}
+    )
   end
 
   defp online_count do

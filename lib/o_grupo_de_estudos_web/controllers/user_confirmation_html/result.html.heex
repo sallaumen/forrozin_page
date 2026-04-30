@@ -1,56 +1,69 @@
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
-  <%!-- Header --%>
-  <header class="bg-ink-900 px-6 py-3.5 flex items-center justify-between">
+  <header class="bg-ink-900 px-6 py-3.5 flex items-center justify-between flex-shrink-0">
     <a
       href={~p"/"}
-      class="font-serif text-[13px] font-bold tracking-[2px] text-ink-50 uppercase no-underline"
+      class="font-serif text-[13px] font-bold tracking-widest text-ink-200 uppercase no-underline"
     >
       O Grupo de Estudos
     </a>
+    <a href={~p"/collection"} class="font-serif text-xs text-ink-400 no-underline tracking-wider">
+      Ir para o acervo →
+    </a>
   </header>
 
-  <div class="flex-1 flex items-center justify-center px-6 py-[60px]">
-    <div class="max-w-[480px] w-full text-center">
-      <%= if @ok do %>
-        <p class="text-4xl mb-5">✓</p>
-        <h1 class="text-[28px] font-bold text-ink-900 mt-0 mb-4 tracking-[-0.5px]">
-          Email confirmado
-        </h1>
-        <p class="text-base leading-[1.8] text-ink-700 mb-9">
-          Conta ativa. Você já pode acessar o acervo.
-        </p>
-        <a
-          href={~p"/login"}
-          class="inline-block py-3.5 px-9 bg-ink-900 text-ink-50 no-underline font-serif text-sm font-bold tracking-[1px] rounded"
-        >
-          Entrar
-        </a>
-      <% else %>
-        <p class="text-4xl mb-5">✗</p>
-        <h1 class="text-[28px] font-bold text-ink-900 mt-0 mb-4 tracking-[-0.5px]">
-          Link inválido
-        </h1>
-        <p class="text-base leading-[1.8] text-ink-700 mb-3">
-          Esse link de confirmação já foi utilizado ou não existe.
-        </p>
-        <p class="text-sm text-ink-500 mb-9">
-          Se sua conta ainda não foi confirmada, entre em contato.
-        </p>
-        <a
-          href={~p"/login"}
-          class="inline-block py-3.5 px-9 bg-ink-900 text-ink-50 no-underline font-serif text-sm font-bold tracking-[1px] rounded"
-        >
-          Ir para o login
-        </a>
-      <% end %>
+  <div class="flex-1 flex flex-col md:flex-row">
+    <div class="hidden md:flex w-[42%] bg-ink-900 px-14 py-16 flex-col justify-center">
+      <p class="text-[11px] font-bold tracking-[3px] uppercase text-ink-700 mb-7">
+        O grupo de estudos
+      </p>
+      <h1 class="text-[36px] font-bold text-ink-200 leading-tight tracking-[-1px] m-0 mb-6">
+        Uma wiki de forró construída pela comunidade.
+      </h1>
+      <p class="text-base leading-[1.9] text-ink-400 mb-0">
+        Mais de 150 passos documentados, conexões entre eles, sequências e diário de treino.
+        Tudo aberto e gratuito.
+      </p>
+    </div>
+
+    <div class="flex-1 flex items-center justify-center px-7 py-12 md:px-[72px] md:py-16">
+      <div class="w-full max-w-[420px] text-center">
+        <%= if @ok do %>
+          <div class="w-16 h-16 rounded-full bg-accent-green/10 border-2 border-accent-green flex items-center justify-center mx-auto mb-6">
+            <span class="text-accent-green text-2xl font-bold">✓</span>
+          </div>
+          <h2 class="text-[28px] font-bold text-ink-900 tracking-[-0.5px] m-0 mb-2">
+            Email confirmado!
+          </h2>
+          <p class="text-sm text-ink-500 mb-8">
+            Tudo certo. Sua conta esta completa.
+          </p>
+          <a
+            href={~p"/collection"}
+            class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded-lg font-serif text-base font-bold tracking-wide"
+          >
+            Explorar o acervo →
+          </a>
+        <% else %>
+          <div class="w-16 h-16 rounded-full bg-accent-red/10 border-2 border-accent-red flex items-center justify-center mx-auto mb-6">
+            <span class="text-accent-red text-2xl font-bold">✗</span>
+          </div>
+          <h2 class="text-[28px] font-bold text-ink-900 tracking-[-0.5px] m-0 mb-2">
+            Link invalido
+          </h2>
+          <p class="text-sm text-ink-500 mb-3">
+            Esse link de confirmacao ja foi usado ou expirou.
+          </p>
+          <p class="text-xs text-ink-400 mb-8">
+            Se sua conta ainda nao foi confirmada, tente fazer login e solicitar um novo email.
+          </p>
+          <a
+            href={~p"/login"}
+            class="inline-block py-3.5 px-8 bg-ink-900 text-ink-100 no-underline rounded-lg font-serif text-sm font-bold tracking-wide"
+          >
+            Ir para o login
+          </a>
+        <% end %>
+      </div>
     </div>
   </div>
-
-  <%!-- Footer --%>
-  <footer class="border-t border-ink-200/60 py-6 px-6 text-center bg-ink-200 mt-auto">
-    <p class="text-xs text-ink-600">
-      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
-      <span class="text-ink-400 mx-2">·</span> O Grupo de Estudos
-    </p>
-  </footer>
 </div>

@@ -554,7 +554,7 @@
         <% else %>
           <div class="space-y-2">
             <%= for link <- @student_links do %>
-              <% wrote_today = Study.shared_note_exists?(link.id, @today) %>
+              <% wrote_today = MapSet.member?(@wrote_today_ids, link.id) %>
               <div class="rounded-xl bg-ink-50 border border-ink-200 px-3 py-3">
                 <div class="flex items-center gap-3">
                   <.link
