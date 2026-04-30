@@ -20,6 +20,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   alias OGrupoDeEstudos.Engagement.Badges
 
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.UserAvatar
 
   # ---------------------------------------------------------------------------
   # Attrs
@@ -135,7 +136,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   defp comment_row(%{comment: %{deleted_at: deleted_at}} = assigns) when not is_nil(deleted_at) do
     ~H"""
     <div class="flex items-start gap-2">
-      <.avatar size={@size} initial={nil} />
+      <.user_avatar user={%{}} size={if @size == :root, do: :md, else: :sm} />
       <p class="text-xs text-ink-400 italic pt-1">Comentário removido</p>
     </div>
     """
@@ -163,12 +164,11 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
         :can_delete?,
         can_delete?(assigns.comment, assigns.current_user, assigns.is_admin)
       )
-      |> assign(:initial, if(user, do: String.upcase(String.first(user.username)), else: "?"))
       |> assign(:badge, badge)
 
     ~H"""
     <div class="flex items-start gap-2">
-      <.avatar size={@size} initial={@initial} />
+      <.user_avatar user={@user} size={if @size == :root, do: :md, else: :sm} />
 
       <div class="flex-1 min-w-0">
         <div class="flex items-baseline gap-1.5">
@@ -231,25 +231,6 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
           </button>
         </div>
       </div>
-    </div>
-    """
-  end
-
-  attr :size, :atom, required: true
-  attr :initial, :any, default: nil
-
-  defp avatar(%{size: :root} = assigns) do
-    ~H"""
-    <div class="w-8 h-8 rounded-full bg-ink-200 flex items-center justify-center text-xs font-bold text-ink-500 shrink-0">
-      {if @initial, do: @initial, else: "?"}
-    </div>
-    """
-  end
-
-  defp avatar(%{size: :reply} = assigns) do
-    ~H"""
-    <div class="w-6 h-6 rounded-full bg-ink-200 flex items-center justify-center text-xs font-bold text-ink-500 shrink-0">
-      {if @initial, do: @initial, else: "?"}
     </div>
     """
   end

@@ -594,22 +594,12 @@
         <%= if @drawer_item.suggested_by_id do %>
           <% author = @drawer_item.suggested_by %>
           <% author_username = if author, do: author.username, else: "?" %>
-          <% author_initial = author_username |> String.upcase() |> String.first() %>
           <div class="mt-2.5 flex items-center gap-2">
             <.link
               navigate={~p"/users/#{author_username}"}
               class="no-underline flex items-center gap-2"
             >
-              <span
-                style={
-                  if @drawer_item.approved,
-                    do: "background: #27ae60;",
-                    else: "background: #8e44ad;"
-                }
-                class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold font-serif flex-shrink-0"
-              >
-                {author_initial}
-              </span>
+              <.user_avatar user={author} size={:sm} />
               <span
                 style={if @drawer_item.approved, do: "color: #27ae60;", else: "color: #8e44ad;"}
                 class="text-xs font-semibold"
