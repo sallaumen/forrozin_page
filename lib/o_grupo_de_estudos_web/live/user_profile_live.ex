@@ -16,6 +16,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   import OGrupoDeEstudosWeb.UI.ActivityToast
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
+  import OGrupoDeEstudosWeb.UI.UserAvatar
 
   @impl true
   def mount(%{"username" => username}, _session, socket) do

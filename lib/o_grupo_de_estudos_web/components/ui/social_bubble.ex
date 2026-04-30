@@ -16,6 +16,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
 
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
+  import OGrupoDeEstudosWeb.UI.UserAvatar
 
   attr :current_user, :map, required: true
   attr :suggested_users, :list, default: []
@@ -252,13 +253,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
         navigate={~p"/users/#{@person.username}"}
         class="no-underline flex items-center gap-2 flex-1 min-w-0"
       >
-        <span class={[
-          "inline-flex items-center justify-center rounded-full bg-ink-800 text-ink-200 font-bold flex-shrink-0 font-serif",
-          @compact && "w-6 h-6 text-[9px]",
-          !@compact && "w-7 h-7 text-[10px]"
-        ]}>
-          {String.first(@person.username) |> String.upcase()}
-        </span>
+        <.user_avatar user={@person} size={:sm} />
         <div class="flex-1 min-w-0">
           <p class={[
             "font-semibold text-ink-800 truncate font-serif",

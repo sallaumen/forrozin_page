@@ -309,10 +309,7 @@
                       navigate={~p"/users/#{movement.counterpart.username}"}
                       class="no-underline flex items-center gap-2 flex-1 min-w-0"
                     >
-                      <div class="w-7 h-7 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[10px] font-bold shrink-0">
-                        {String.first(movement.counterpart.name || movement.counterpart.username)
-                        |> String.upcase()}
-                      </div>
+                      <.user_avatar user={movement.counterpart} size={:sm} />
                       <div class="flex-1 min-w-0">
                         <p class="text-[11px] font-bold text-ink-900 m-0 truncate">
                           {movement.counterpart.name}
@@ -374,10 +371,7 @@
                         navigate={~p"/users/#{link.teacher.username}"}
                         class="no-underline flex items-center gap-1.5 flex-1 min-w-0"
                       >
-                        <div class="w-5 h-5 rounded-full bg-ink-900 flex items-center justify-center text-ink-100 text-[10px] font-bold shrink-0">
-                          {String.first(link.teacher.name || link.teacher.username)
-                          |> String.upcase()}
-                        </div>
+                        <.user_avatar user={link.teacher} size={:xs} />
                         <p class="text-[10px] font-bold text-ink-900 m-0 truncate">
                           {link.teacher.name}
                         </p>
@@ -402,9 +396,7 @@
                 <div class="space-y-1">
                   <%= for teacher <- Enum.take(@suggested_teachers, 3) do %>
                     <div class="flex items-center gap-2 rounded-lg bg-ink-50 border border-ink-200 px-2.5 py-1.5">
-                      <div class="w-5 h-5 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                        {String.first(teacher.name || teacher.username) |> String.upcase()}
-                      </div>
+                      <.user_avatar user={teacher} size={:xs} />
                       <p class="text-[10px] font-bold text-ink-900 m-0 truncate flex-1">
                         @{teacher.username}
                       </p>
@@ -441,9 +433,7 @@
               <%= for teacher <- @teacher_search_results do %>
                 <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-ink-100 last:border-b-0">
                   <div class="flex items-center gap-1.5 min-w-0">
-                    <div class="w-5 h-5 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                      {String.first(teacher.name || teacher.username) |> String.upcase()}
-                    </div>
+                    <.user_avatar user={teacher} size={:xs} />
                     <p class="text-[10px] font-semibold text-ink-900 m-0 truncate">
                       {teacher.name}
                     </p>
@@ -516,9 +506,7 @@
                   navigate={~p"/users/#{req.student.username}"}
                   class="flex items-center gap-3 flex-1 min-w-0 no-underline"
                 >
-                  <div class="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center text-gold-700 text-[10px] font-bold shrink-0">
-                    {String.first(req.student.name || req.student.username) |> String.upcase()}
-                  </div>
+                  <.user_avatar user={req.student} size={:md} />
                   <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-ink-900 m-0 truncate">{req.student.name}</p>
                     <p class="text-[10px] text-ink-500 m-0">

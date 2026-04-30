@@ -19,17 +19,7 @@
   <div class="max-w-[680px] mx-auto px-6 pt-12 pb-6 w-full box-border">
     <%!-- Avatar + Name --%>
     <div class="flex items-center gap-5 mb-6">
-      <%= if @profile_user.avatar_path do %>
-        <img
-          src={@profile_user.avatar_path}
-          alt="Avatar"
-          class="w-[72px] h-[72px] rounded-full object-cover border border-[rgba(60,40,20,0.15)] shrink-0"
-        />
-      <% else %>
-        <div class="w-[72px] h-[72px] rounded-full bg-ink-900 flex items-center justify-center text-ink-200 text-[28px] font-bold shrink-0">
-          {String.first(@profile_user.name || @profile_user.username) |> String.upcase()}
-        </div>
-      <% end %>
+      <.user_avatar user={@profile_user} size={:xl} />
       <div class="flex-1">
         <div class="flex items-baseline gap-3 flex-wrap">
           <h1 class="text-[28px] font-bold text-ink-900 m-0 mb-1 leading-tight">
@@ -296,9 +286,7 @@
                   navigate={~p"/users/#{person.username}"}
                   class="no-underline flex items-center gap-2 flex-1 min-w-0"
                 >
-                  <div class="w-7 h-7 rounded-full bg-ink-800 flex items-center justify-center text-ink-200 text-[10px] font-bold shrink-0">
-                    {String.first(person.username) |> String.upcase()}
-                  </div>
+                  <.user_avatar user={person} size={:sm} />
                   <div class="flex-1 min-w-0">
                     <p class="text-xs font-semibold text-ink-800 m-0 truncate">
                       @{person.username}
@@ -651,9 +639,7 @@
         <%= for comment <- @comments do %>
           <div class="flex gap-3 mb-4 pb-4 border-b border-[rgba(60,40,20,0.08)]">
             <%!-- Author avatar --%>
-            <div class="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center text-ink-200 text-sm font-bold shrink-0">
-              {String.first(comment.author.name || comment.author.username) |> String.upcase()}
-            </div>
+            <.user_avatar user={comment.author} size={:md} />
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1 flex-wrap">
                 <.link

@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
+  import OGrupoDeEstudosWeb.UI.UserAvatar
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 

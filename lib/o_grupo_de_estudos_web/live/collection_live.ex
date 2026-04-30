@@ -24,6 +24,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
   import OGrupoDeEstudosWeb.UI.SocialBubble
+  import OGrupoDeEstudosWeb.UI.UserAvatar
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers

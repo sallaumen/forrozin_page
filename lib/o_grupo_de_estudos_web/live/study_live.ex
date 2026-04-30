@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.SocialBubble
+  import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
 
