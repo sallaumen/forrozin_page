@@ -1,4 +1,4 @@
-defmodule OGrupoDeEstudosWeb.CommunityLive do
+defmodule OGrupoDeEstudosWeb.SequenceLive do
   @moduledoc """
   Sequences page — shows all public sequences sorted by like count,
   with inline comment expansion (lazy-loaded) and YouTube embeds.
@@ -38,7 +38,11 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       |> list_community_sequences()
       |> sort_sequences("popular")
 
-    community_sequences = filter_sequences(community_sequences_all, "")
+    selected_discovery_section_id = nil
+
+    community_sequences =
+      filter_sequences(community_sequences_all, "", selected_discovery_section_id)
+
     my_sequences = []
 
     {:ok,
@@ -49,6 +53,8 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
        community_sequences_all: community_sequences_all,
        community_sequences: community_sequences,
        discovery_sections: build_discovery_sections(community_sequences_all),
+       selected_discovery_section_id: selected_discovery_section_id,
+       create_menu_open: false,
        seq_search: "",
        seq_sort: "popular",
        active_seq_tab: "community",
@@ -75,7 +81,13 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
   @impl true
   def handle_event("search_sequences", params, socket) do
     term = params["value"] || params["term"] || ""
-    community_sequences = filter_sequences(socket.assigns.community_sequences_all, term)
+
+    community_sequences =
+      filter_sequences(
+        socket.assigns.community_sequences_all,
+        term,
+        socket.assigns.selected_discovery_section_id
+      )
 
     {:noreply, assign(socket, seq_search: term, community_sequences: community_sequences)}
   end
@@ -86,7 +98,12 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     community_sequences_all =
       current_user.id |> list_community_sequences() |> sort_sequences(sort)
 
-    community_sequences = filter_sequences(community_sequences_all, socket.assigns.seq_search)
+    community_sequences =
+      filter_sequences(
+        community_sequences_all,
+        socket.assigns.seq_search,
+        socket.assigns.selected_discovery_section_id
+      )
 
     {:noreply,
      socket
@@ -112,7 +129,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
           my_sequences = list_my_sequences(current_user)
 
           socket
-          |> assign(active_seq_tab: "mine", my_sequences: my_sequences)
+          |> assign(active_seq_tab: "mine", my_sequences: my_sequences, create_menu_open: false)
           |> assign_sequence_social_metadata(
             current_user.id,
             socket.assigns.community_sequences_all,
@@ -121,7 +138,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
 
         _ ->
           socket
-          |> assign(active_seq_tab: "community")
+          |> assign(active_seq_tab: "community", create_menu_open: false)
           |> assign_sequence_social_metadata(
             current_user.id,
             socket.assigns.community_sequences_all,
@@ -130,6 +147,22 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       end
 
     {:noreply, socket}
+  end
+
+  def handle_event("toggle_create_menu", _params, socket) do
+    {:noreply, update(socket, :create_menu_open, &(!&1))}
+  end
+
+  def handle_event("close_create_menu", _params, socket) do
+    {:noreply, assign(socket, :create_menu_open, false)}
+  end
+
+  def handle_event("select_discovery_section", %{"section-id" => section_id}, socket) do
+    apply_discovery_filter(section_id, socket)
+  end
+
+  def handle_event("select_discovery_section", %{"section_id" => section_id}, socket) do
+    apply_discovery_filter(section_id, socket)
   end
 
   def handle_event("toggle_like", %{"type" => "sequence", "id" => id}, socket) do
@@ -142,7 +175,13 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
           |> list_community_sequences()
           |> sort_sequences(socket.assigns.seq_sort)
 
-        community_sequences = filter_sequences(community_sequences_all, socket.assigns.seq_search)
+        community_sequences =
+          filter_sequences(
+            community_sequences_all,
+            socket.assigns.seq_search,
+            socket.assigns.selected_discovery_section_id
+          )
+
         my_sequences = maybe_refresh_my_sequences(socket)
 
         {:noreply,
@@ -296,6 +335,35 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     end
   end
 
+  defp apply_discovery_filter(section_id, socket) do
+    selected_discovery_section_id =
+      if section_id in [nil, ""] do
+        nil
+      else
+        section_id
+      end
+
+    selected_discovery_section_id =
+      if socket.assigns.selected_discovery_section_id == selected_discovery_section_id do
+        nil
+      else
+        selected_discovery_section_id
+      end
+
+    community_sequences =
+      filter_sequences(
+        socket.assigns.community_sequences_all,
+        socket.assigns.seq_search,
+        selected_discovery_section_id
+      )
+
+    {:noreply,
+     assign(socket,
+       selected_discovery_section_id: selected_discovery_section_id,
+       community_sequences: community_sequences
+     )}
+  end
+
   # ── Private helpers ─────────────────────────────────────────────────────
 
   defp reload_seq_expanded(socket) do
@@ -385,13 +453,18 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
     end)
   end
 
-  defp filter_sequences(sequences, ""), do: sequences
-
-  defp filter_sequences(sequences, term) do
+  defp filter_sequences(sequences, term, selected_discovery_section_id) do
     lower = String.downcase(term)
 
     Enum.filter(sequences, fn seq ->
-      String.contains?(String.downcase(seq.name), lower)
+      matches_term? =
+        term == "" || String.contains?(String.downcase(seq.name), lower)
+
+      matches_discovery_section? =
+        is_nil(selected_discovery_section_id) ||
+          sequence_has_category?(seq, selected_discovery_section_id)
+
+      matches_term? && matches_discovery_section?
     end)
   end
 
@@ -414,6 +487,12 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
       %{id: id, title: title, sequence_count: sequence_count}
     end)
     |> Enum.sort_by(fn section -> {-section.sequence_count, section.title} end)
+  end
+
+  defp sequence_has_category?(seq, category_id) do
+    Enum.any?(seq.sequence_steps, fn sequence_step ->
+      sequence_step.step.category && sequence_step.step.category.id == category_id
+    end)
   end
 
   defp assign_sequence_social_metadata(socket, user_id, community_sequences_all, my_sequences) do
@@ -568,9 +647,6 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div class="min-w-0 flex-1">
             <div class="mb-3 flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center rounded-full bg-accent-orange/10 px-2.5 py-1 text-[11px] font-semibold uppercase text-accent-orange">
-                Sequência pública
-              </span>
               <span
                 :if={@seq.video_url}
                 class="inline-flex items-center rounded-full bg-gold-500/12 px-2.5 py-1 text-[11px] font-semibold text-gold-700"

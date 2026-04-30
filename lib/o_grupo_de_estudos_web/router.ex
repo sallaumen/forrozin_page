@@ -56,7 +56,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     pipe_through :browser
 
     live "/collection", CollectionLive
-    live "/community", CommunityLive
+    live "/sequence", SequenceLive
     live "/notifications", NotificationsLive
     live "/graph", GraphLive
     live "/graph/visual", GraphVisualLive

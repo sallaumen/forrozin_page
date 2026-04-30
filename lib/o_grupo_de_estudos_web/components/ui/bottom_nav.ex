@@ -34,7 +34,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
         icon: "hero-sparkles",
         accent: true
       },
-      %{label: "Sequências", path: "/community", icon: "hero-queue-list"},
+      %{label: "Sequências", path: "/sequence", icon: "hero-queue-list"},
       %{label: "Alertas", path: "/notifications", icon: "hero-bell"},
       %{
         label: "Perfil",

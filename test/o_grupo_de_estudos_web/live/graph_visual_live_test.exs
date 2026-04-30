@@ -416,6 +416,13 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
   describe "manual sequence mode" do
     setup :setup_graph
 
+    test "mode=manual opens the manual sequence flow directly", %{conn: conn} do
+      {:ok, lv, html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=manual")
+
+      assert html =~ "Modo manual ativo"
+      assert has_element?(lv, "#seq-manual-form")
+    end
+
     test "show_seq_manual switches to manual view", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
       render_click(lv, "toggle_seq_panel", %{})

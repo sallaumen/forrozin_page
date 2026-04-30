@@ -1,4 +1,4 @@
-defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
+defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
   use OGrupoDeEstudosWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest
@@ -12,29 +12,57 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
 
   describe "access" do
     test "redirects to /login when not authenticated", %{conn: conn} do
-      {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/community")
+      {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/sequence")
     end
 
     test "renders page for authenticated user", %{conn: conn} do
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ "Sequências" or html =~ "sequência"
     end
   end
 
   describe "community shell" do
     test "renders the editorial shell ids for the community tab", %{conn: conn} do
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
 
       assert has_element?(lv, "#community-sequences-hero")
       assert has_element?(lv, "#community-sequences-hero #community-sequences-search")
-      assert has_element?(lv, "#community-sequences-hero #community-sequences-create")
+      assert has_element?(lv, "#community-sequences-hero #community-sequences-filter")
+      assert has_element?(lv, "#community-sequences-hero #community-sequences-tabbar")
+
+      assert has_element?(
+               lv,
+               "#community-sequences-hero #community-sequences-tabbar #community-sequences-create"
+             )
+
       assert has_element?(lv, "#community-sequences-search")
-      assert has_element?(lv, "#community-sequences-create")
-      assert has_element?(lv, "#community-sequences-discovery")
+      assert has_element?(lv, "#community-sequences-filter")
       assert has_element?(lv, "#community-sequences-stream")
     end
 
-    test "search filters visible community sequences while discovery stays sourced from all community sequences",
+    test "generator button opens mode chooser with automatic and manual options", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
+
+      refute has_element?(lv, "#community-sequences-create-menu")
+
+      render_click(lv, "toggle_create_menu", %{})
+
+      assert has_element?(lv, "#community-sequences-create-menu")
+
+      assert has_element?(
+               lv,
+               ~s|#community-sequences-create-menu a[href="/graph/visual?mode=generator"]|,
+               "Gerador automático"
+             )
+
+      assert has_element?(
+               lv,
+               ~s|#community-sequences-create-menu a[href="/graph/visual?mode=manual"]|,
+               "Anotar manualmente"
+             )
+    end
+
+    test "search filters visible community sequences while filter options remain available",
          %{conn: conn} do
       author = insert(:user)
 
@@ -53,14 +81,48 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       insert(:sequence_step, sequence: alpha, step: alpha_step, position: 1)
       insert(:sequence_step, sequence: beta, step: beta_step, position: 1)
 
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
 
       html = render_keyup(lv, "search_sequences", %{"term" => "Alpha"})
 
       assert html =~ "Alpha Flow"
       refute html =~ "Beta Spin"
-      assert has_element?(lv, "#community-sequences-discovery", "Bases")
-      assert has_element?(lv, "#community-sequences-discovery", "Giros")
+      assert has_element?(lv, "#community-sequences-filter option", "Bases")
+      assert has_element?(lv, "#community-sequences-filter option", "Giros")
+    end
+
+    test "selecting a category filter narrows community sequences by category", %{conn: conn} do
+      author = insert(:user)
+
+      bases = insert(:category, name: "bases", label: "Bases")
+      giros = insert(:category, name: "giros", label: "Giros")
+
+      base_sequence =
+        insert(:sequence, user: author, public: true, name: "Base da Casa")
+
+      giro_sequence =
+        insert(:sequence, user: author, public: true, name: "Giro da Casa")
+
+      insert(:sequence_step,
+        sequence: base_sequence,
+        step: insert(:step, code: "BF", name: "Base Frontal", category: bases),
+        position: 1
+      )
+
+      insert(:sequence_step,
+        sequence: giro_sequence,
+        step: insert(:step, code: "GP", name: "Giro Paulista", category: giros),
+        position: 1
+      )
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
+
+      html =
+        render_change(lv, "select_discovery_section", %{"section_id" => bases.id})
+
+      assert has_element?(lv, "#community-sequences-filter option[selected]", "Bases")
+      assert html =~ "Base da Casa"
+      refute html =~ "Giro da Casa"
     end
   end
 
@@ -76,7 +138,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
 
     test "shows public sequences on mount", %{conn: conn, sequence: seq} do
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ seq.name
     end
 
@@ -85,7 +147,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       sequence: seq,
       author: author
     } do
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
 
       assert has_element?(lv, "#sequence-card-#{seq.id}")
 
@@ -122,7 +184,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       {:ok, _comment} =
         Engagement.create_sequence_comment(author, seq.id, %{body: "Primeiro comentário"})
 
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
 
       render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
 
@@ -132,17 +194,17 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
     end
 
     test "shows step codes inline", %{conn: conn} do
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ "BF"
     end
 
     test "view on map link carries the selected sequence id", %{conn: conn, sequence: seq} do
-      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
       assert has_element?(lv, ~s|a[href="/graph/visual?seq=#{seq.id}"]|)
     end
 
     test "shows author username", %{conn: conn, author: author} do
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ "@#{author.username}"
     end
 
@@ -155,35 +217,35 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
           video_url: "https://youtu.be/abc123"
         )
 
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ "vídeo"
     end
 
     test "toggle_like on sequence updates like count", %{conn: conn, sequence: seq} do
       conn = logged_in_conn(conn)
-      {:ok, lv, _html} = live(conn, ~p"/community")
+      {:ok, lv, _html} = live(conn, ~p"/sequence")
       html = render_click(lv, "toggle_like", %{"type" => "sequence", "id" => seq.id})
       assert html =~ "hero-heart-solid"
     end
 
     test "empty state when no public sequences", %{conn: conn} do
       # The setup block inserted one sequence; we just confirm the page renders
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ "Sequências" or html =~ "sequência"
     end
 
     test "empty state shows CTA to create", %{conn: conn} do
       # Use a fresh user/conn with no setup sequences
       conn = logged_in_conn(conn)
-      {:ok, _lv, html} = live(conn, ~p"/community")
-      assert html =~ "Criar" or html =~ "Criar a primeira"
+      {:ok, _lv, html} = live(conn, ~p"/sequence")
+      assert html =~ "Gerar sequência" or html =~ "Criar a primeira sequência"
     end
   end
 
   describe "sequence tabs" do
     test "shows Comunidade and Minhas tabs", %{conn: conn} do
       conn = logged_in_conn(conn)
-      {:ok, _lv, html} = live(conn, ~p"/community")
+      {:ok, _lv, html} = live(conn, ~p"/sequence")
 
       assert html =~ "Comunidade"
       assert html =~ "Minhas"
@@ -197,7 +259,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       insert(:sequence_step, sequence: sequence, step: step, position: 1)
 
       conn = log_in_user(conn, user)
-      {:ok, lv, _html} = live(conn, ~p"/community")
+      {:ok, lv, _html} = live(conn, ~p"/sequence")
       html = render_click(lv, "switch_seq_tab", %{"tab" => "mine"})
 
       assert has_element?(lv, "#my-sequences-stream")
@@ -215,7 +277,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       {:ok, lv, _html} =
         conn
         |> log_in_user(user)
-        |> live(~p"/community")
+        |> live(~p"/sequence")
 
       render_click(lv, "switch_seq_tab", %{"tab" => "mine"})
 
@@ -239,7 +301,7 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       insert(:sequence_step, sequence: sequence, step: step, position: 1)
 
       conn = log_in_user(conn, user)
-      {:ok, view, _html} = live(conn, ~p"/community")
+      {:ok, view, _html} = live(conn, ~p"/sequence")
 
       render_click(view, "toggle_follow", %{"user-id" => target.id})
 
