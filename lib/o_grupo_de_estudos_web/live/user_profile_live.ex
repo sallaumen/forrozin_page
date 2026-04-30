@@ -15,6 +15,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
 
   import OGrupoDeEstudosWeb.UI.ActivityToast
+  import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
   import OGrupoDeEstudosWeb.UI.UserAvatar
 
@@ -86,6 +87,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            comments: comments,
            comment_likes: comment_likes,
            comment_body: "",
+           replying_to: nil,
+           replies_map: %{},
            total_likes: total_likes,
            total_favorites: total_favorites,
            total_sequences: total_sequences,
@@ -242,20 +245,13 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   end
 
   @impl true
-  def handle_event("post_comment", %{"body" => body}, socket) do
+  def handle_event("create_comment", %{"body" => body}, socket) do
     current_user = socket.assigns.current_user
     profile_user = socket.assigns.profile_user
 
-    attrs = %{
-      body: body,
-      author_id: current_user.id,
-      profile_id: profile_user.id
-    }
-
-    case Engagement.create_profile_comment(attrs) do
+    case Engagement.create_profile_comment(current_user, profile_user.id, %{body: body}) do
       {:ok, _comment} ->
-        socket = reload_comments(socket, current_user)
-        {:noreply, assign(socket, comment_body: "")}
+        {:noreply, reload_comments(socket, current_user)}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Não foi possível postar o comentário.")}
@@ -263,25 +259,78 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   end
 
   @impl true
+  def handle_event("create_reply", %{"body" => body, "parent-id" => parent_id}, socket) do
+    current_user = socket.assigns.current_user
+    profile_user = socket.assigns.profile_user
+
+    case Engagement.create_profile_comment(current_user, profile_user.id, %{
+           body: body,
+           parent_profile_comment_id: parent_id
+         }) do
+      {:ok, _reply} ->
+        socket =
+          socket
+          |> reload_comments(current_user)
+          |> assign(:replying_to, nil)
+
+        {:noreply, socket}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível postar a resposta.")}
+    end
+  end
+
+  @impl true
+  def handle_event("start_reply", %{"id" => comment_id}, socket) do
+    {:noreply, assign(socket, :replying_to, comment_id)}
+  end
+
+  @impl true
+  def handle_event("toggle_replies", %{"id" => comment_id}, socket) do
+    alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
+    replies_map = socket.assigns.replies_map
+
+    if Map.has_key?(replies_map, comment_id) do
+      {:noreply, assign(socket, :replies_map, Map.delete(replies_map, comment_id))}
+    else
+      replies = Engagement.list_replies(ProfileCommentQuery, comment_id)
+      {:noreply, assign(socket, :replies_map, Map.put(replies_map, comment_id, replies))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_comment_like", %{"type" => type, "id" => id}, socket) do
+    current_user = socket.assigns.current_user
+
+    case Engagement.toggle_like(current_user.id, type, id) do
+      {:ok, _} -> {:noreply, reload_comments(socket, current_user)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("delete_comment", %{"id" => comment_id}, socket) do
     current_user = socket.assigns.current_user
-    comment = Enum.find(socket.assigns.comments, &(&1.id == comment_id))
 
-    can_delete =
-      comment &&
-        (current_user.id == comment.author_id || Accounts.admin?(current_user))
+    all_comments =
+      socket.assigns.comments ++
+        (socket.assigns.replies_map |> Map.values() |> List.flatten())
 
-    if can_delete do
-      case Engagement.delete_profile_comment(comment) do
+    comment = Enum.find(all_comments, &(&1.id == comment_id))
+
+    if comment do
+      case Engagement.delete_profile_comment(current_user, comment) do
         {:ok, _} ->
-          socket = reload_comments(socket, current_user)
-          {:noreply, socket}
+          {:noreply, reload_comments(socket, current_user)}
+
+        {:error, :unauthorized} ->
+          {:noreply, put_flash(socket, :error, "Sem permissão para remover este comentário.")}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Não foi possível remover o comentário.")}
       end
     else
-      {:noreply, put_flash(socket, :error, "Sem permissão para remover este comentário.")}
+      {:noreply, socket}
     end
   end
 
@@ -433,6 +482,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     do: {:noreply, socket}
 
   defp reload_comments(socket, current_user) do
+    alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
     profile_user = socket.assigns.profile_user
 
     comments =
@@ -441,10 +491,21 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         preload: [:author]
       )
 
-    comment_ids = Enum.map(comments, & &1.id)
-    comment_likes = Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
+    replies_map =
+      socket.assigns.replies_map
+      |> Map.keys()
+      |> Enum.reduce(%{}, fn parent_id, acc ->
+        replies = Engagement.list_replies(ProfileCommentQuery, parent_id)
+        Map.put(acc, parent_id, replies)
+      end)
 
-    assign(socket, comments: comments, comment_likes: comment_likes)
+    all_ids =
+      Enum.map(comments, & &1.id) ++
+        (replies_map |> Map.values() |> List.flatten() |> Enum.map(& &1.id))
+
+    comment_likes = Engagement.likes_map(current_user.id, "profile_comment", all_ids)
+
+    assign(socket, comments: comments, comment_likes: comment_likes, replies_map: replies_map)
   end
 
   defp reload_all_likes(socket, current_user) do

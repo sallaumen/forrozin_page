@@ -790,7 +790,7 @@ defmodule OGrupoDeEstudos.Engagement do
       |> Repo.all()
       |> Map.new()
 
-    badges = Map.new(user_ids, fn uid -> {uid, Badges.primary(uid)} end)
+    badges = Badges.primary_batch(user_ids)
 
     Map.new(user_ids, fn uid ->
       {uid,
@@ -903,5 +903,104 @@ defmodule OGrupoDeEstudos.Engagement do
       |> Kernel.||(0)
 
     step_likes + sequence_likes + profile_likes
+  end
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Batch metric helpers (used by Badges.primary_batch/1)
+  # ══════════════════════════════════════════════════════════════════════
+
+  @doc "Returns `%{user_id => count}` of likes given for the given type, for a list of users."
+  def count_likes_given_batch(user_ids, likeable_type) do
+    from(l in Like,
+      where: l.user_id in ^user_ids and l.likeable_type == ^likeable_type,
+      group_by: l.user_id,
+      select: {l.user_id, count(l.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc "Returns `%{user_id => count}` of comments authored across all types, for a list of users."
+  def count_comments_authored_batch(user_ids) do
+    step_counts =
+      from(c in StepComment,
+        where: c.user_id in ^user_ids and is_nil(c.deleted_at),
+        group_by: c.user_id,
+        select: {c.user_id, count(c.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    sequence_counts =
+      from(c in SequenceComment,
+        where: c.user_id in ^user_ids and is_nil(c.deleted_at),
+        group_by: c.user_id,
+        select: {c.user_id, count(c.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    profile_counts =
+      from(c in ProfileComment,
+        where: c.author_id in ^user_ids and is_nil(c.deleted_at),
+        group_by: c.author_id,
+        select: {c.author_id, count(c.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    Map.new(user_ids, fn uid ->
+      total =
+        Map.get(step_counts, uid, 0) +
+          Map.get(sequence_counts, uid, 0) +
+          Map.get(profile_counts, uid, 0)
+
+      {uid, total}
+    end)
+  end
+
+  @doc "Returns `%{user_id => count}` of likes received on all authored comments, for a list of users."
+  def total_likes_received_batch(user_ids) do
+    step_likes =
+      from(l in Like,
+        join: c in StepComment,
+        on: l.likeable_id == c.id and l.likeable_type == "step_comment",
+        where: c.user_id in ^user_ids,
+        group_by: c.user_id,
+        select: {c.user_id, count(l.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    sequence_likes =
+      from(l in Like,
+        join: c in SequenceComment,
+        on: l.likeable_id == c.id and l.likeable_type == "sequence_comment",
+        where: c.user_id in ^user_ids,
+        group_by: c.user_id,
+        select: {c.user_id, count(l.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    profile_likes =
+      from(l in Like,
+        join: c in ProfileComment,
+        on: l.likeable_id == c.id and l.likeable_type == "profile_comment",
+        where: c.author_id in ^user_ids,
+        group_by: c.author_id,
+        select: {c.author_id, count(l.id)}
+      )
+      |> Repo.all()
+      |> Map.new()
+
+    Map.new(user_ids, fn uid ->
+      total =
+        Map.get(step_likes, uid, 0) +
+          Map.get(sequence_likes, uid, 0) +
+          Map.get(profile_likes, uid, 0)
+
+      {uid, total}
+    end)
   end
 end

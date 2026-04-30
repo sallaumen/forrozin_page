@@ -40,6 +40,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:section_students_open, false)
      |> assign(:active_study_tab, "personal")
      |> assign(:students_wrote_today, 0)
+     |> assign(:wrote_today_ids, MapSet.new())
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
      |> assign(:bubble_open, false)
@@ -68,15 +69,14 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
         student_links = Study.list_student_links_for_teacher(user.id)
         pending = Study.list_pending_requests_for_teacher(user.id)
 
-        wrote_today =
-          Enum.count(student_links, fn link ->
-            Study.shared_note_exists?(link.id, today)
-          end)
+        link_ids = Enum.map(student_links, & &1.id)
+        wrote_today_ids = Study.shared_note_link_ids(link_ids, today)
 
         assign(socket,
           student_links: student_links,
           pending_requests: pending,
-          students_wrote_today: wrote_today
+          students_wrote_today: MapSet.size(wrote_today_ids),
+          wrote_today_ids: wrote_today_ids
         )
       else
         socket
