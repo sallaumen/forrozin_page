@@ -154,6 +154,10 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
         Logger.error("[Settings] Avatar save failed: #{inspect(reason)}")
         {nil, put_flash(socket, :error, "Erro ao salvar foto: #{inspect(reason)}")}
 
+      [path] when is_binary(path) ->
+        Logger.info("[Settings] Avatar saved to: #{path}")
+        {path, socket}
+
       [] ->
         {nil, socket}
 
