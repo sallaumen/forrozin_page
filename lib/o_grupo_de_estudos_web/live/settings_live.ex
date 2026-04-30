@@ -66,7 +66,15 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
   def handle_event("save", %{"user" => params}, socket) do
     user = socket.assigns.current_user
 
-    {avatar_path, socket} = consume_avatar_upload(socket, user)
+    {avatar_path, socket} =
+      try do
+        consume_avatar_upload(socket, user)
+      rescue
+        e ->
+          require Logger
+          Logger.error("[Settings] Avatar upload failed: #{Exception.message(e)}")
+          {nil, put_flash(socket, :error, "Erro ao processar a foto. Tente novamente.")}
+      end
 
     attrs =
       %{
@@ -107,6 +115,7 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
 
         {:noreply,
          socket
+         |> put_flash(:error, "Erro ao salvar: #{errors}")
          |> assign(:error, errors)
          |> assign(:saved, false)
          |> assign(:country, params["country"] || socket.assigns.country)
@@ -123,16 +132,34 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
   # --- helpers ---
 
   defp consume_avatar_upload(socket, user) do
+    require Logger
+
     uploaded =
       consume_uploaded_entries(socket, :avatar, fn %{path: tmp_path}, entry ->
         ext = ext_from_entry(entry)
-        Storage.save_avatar(user.id, tmp_path, ext)
+        Logger.info("[Settings] Saving avatar for #{user.id}: #{tmp_path} (ext: #{ext})")
+        result = Storage.save_avatar(user.id, tmp_path, ext)
+        Logger.info("[Settings] Avatar save result: #{inspect(result)}")
+        result
       end)
 
+    Logger.info("[Settings] Upload entries consumed: #{inspect(uploaded)}")
+
     case uploaded do
-      [{:ok, path}] -> {path, socket}
-      [{:error, reason}] -> {nil, put_flash(socket, :error, "Erro ao salvar foto: #{reason}")}
-      [] -> {nil, socket}
+      [{:ok, path}] ->
+        Logger.info("[Settings] Avatar saved to: #{path}")
+        {path, socket}
+
+      [{:error, reason}] ->
+        Logger.error("[Settings] Avatar save failed: #{inspect(reason)}")
+        {nil, put_flash(socket, :error, "Erro ao salvar foto: #{inspect(reason)}")}
+
+      [] ->
+        {nil, socket}
+
+      other ->
+        Logger.error("[Settings] Unexpected upload result: #{inspect(other)}")
+        {nil, put_flash(socket, :error, "Erro inesperado no upload.")}
     end
   end
 
