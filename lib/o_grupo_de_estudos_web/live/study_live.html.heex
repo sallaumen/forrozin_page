@@ -595,6 +595,7 @@
                   </.link>
                   <button
                     :if={!wrote_today}
+                    id={"study-nudge-student-#{link.id}"}
                     type="button"
                     phx-click="nudge_student"
                     phx-value-link-id={link.id}

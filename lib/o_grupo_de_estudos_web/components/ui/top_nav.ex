@@ -72,7 +72,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             </span>
           </div>
           <.link
-            navigate={~p"/community"}
+            navigate={~p"/sequence"}
             class="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-300 transition hover:bg-ink-100/5 hover:text-ink-50 no-underline"
           >
             <.icon name="hero-queue-list" class="size-4" /> Sequências
@@ -498,7 +498,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
     profile_path(id)
   end
 
-  defp notification_path(%{parent_type: "sequence"}), do: ~p"/community"
+  defp notification_path(%{parent_type: "sequence"}), do: ~p"/sequence"
   defp notification_path(_), do: ~p"/collection"
 
   defp profile_path(id) do

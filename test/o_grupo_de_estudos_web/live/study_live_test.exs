@@ -189,8 +189,8 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       conn = log_in_user(conn, teacher)
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      html = render_click(lv, "switch_study_tab", %{"tab" => "students"})
-      assert html =~ "Cutucada"
+      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      assert has_element?(lv, "#study-nudge-student-#{link.id}")
 
       render_click(lv, "nudge_student", %{"link-id" => link.id})
 
@@ -210,20 +210,23 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       {:ok, link} = Study.accept_link_request(link, teacher)
 
       # Student writes in the shared diary today
-      Study.upsert_shared_note(link, Date.utc_today(), %{content: "Estudei hoje", step_ids: []})
+      Study.upsert_shared_note(link, OGrupoDeEstudos.Brazil.today(), %{
+        content: "Estudei hoje",
+        step_ids: []
+      })
 
       conn = log_in_user(conn, teacher)
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      html = render_click(lv, "switch_study_tab", %{"tab" => "students"})
-      refute html =~ "Cutucada"
+      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      refute has_element?(lv, "#study-nudge-student-#{link.id}")
     end
 
     test "shows weekly study summary in the hero area", %{conn: conn} do
       user = insert(:user)
 
       assert {:ok, _note} =
-               Study.upsert_personal_note(user, Date.utc_today(), %{
+               Study.upsert_personal_note(user, OGrupoDeEstudos.Brazil.today(), %{
                  content: "Treino",
                  step_ids: []
                })

@@ -1,0 +1,348 @@
+<div class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    pending_suggestions_count={assigns[:pending_suggestions_count] || 0}
+    nav_mode={@nav_mode}
+    notification_count={assigns[:notification_count] || 0}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={assigns[:notification_dropdown_open] || false}
+    notification_preview_groups={assigns[:notification_preview_groups] || []}
+    pending_study_count={assigns[:pending_study_count] || 0}
+    online_users={assigns[:online_users] || []}
+    online_count={assigns[:online_count] || 0}
+  />
+  <.activity_toast toast={assigns[:activity_toast]} />
+
+  <%!-- Editorial hero: context + segmented control + search/sort/create --%>
+  <div id="community-sequences-hero" class="max-w-4xl mx-auto px-4 w-full mt-4 mb-2">
+    <section class="overflow-hidden rounded-lg border border-ink-300/60 bg-white/85 shadow-sm">
+      <div class="border-b border-ink-200/70 px-4 py-5 sm:px-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div class="max-w-2xl">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-orange">
+              Sequências editoriais
+            </p>
+            <h1 class="mt-3 text-3xl font-semibold leading-tight text-ink-900 sm:text-[2.15rem]">
+              Mapas vivos da comunidade
+            </h1>
+            <p class="mt-3 max-w-xl text-sm leading-6 text-ink-600 sm:text-base">
+              Explore curadorias publicadas, reencontre trilhas que merecem voltar ao corpo e
+              abra espaço para montar a sua próxima sequência.
+            </p>
+          </div>
+
+          <div
+            id="community-sequences-tabbar"
+            class="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[18rem] sm:items-end"
+          >
+            <div
+              role="tablist"
+              aria-label="Abas de sequências"
+              class="flex w-full p-0.5 bg-ink-200 rounded-md border border-ink-300/40 sm:max-w-xs"
+            >
+              <button
+                role="tab"
+                aria-selected={to_string(@active_seq_tab == "community")}
+                aria-label="Sequências da comunidade"
+                phx-click="switch_seq_tab"
+                phx-value-tab="community"
+                class={[
+                  "flex-1 py-2 px-4 rounded cursor-pointer font-serif text-sm font-semibold transition-all",
+                  @active_seq_tab == "community" && "bg-white text-accent-orange shadow-sm",
+                  @active_seq_tab != "community" &&
+                    "bg-transparent text-ink-500 hover:text-ink-800"
+                ]}
+              >
+                Comunidade
+              </button>
+              <button
+                role="tab"
+                aria-selected={to_string(@active_seq_tab == "mine")}
+                aria-label="Minhas sequências"
+                phx-click="switch_seq_tab"
+                phx-value-tab="mine"
+                class={[
+                  "flex-1 py-2 px-4 rounded cursor-pointer font-serif text-sm font-semibold transition-all",
+                  @active_seq_tab == "mine" && "bg-white text-accent-orange shadow-sm",
+                  @active_seq_tab != "mine" && "bg-transparent text-ink-500 hover:text-ink-800"
+                ]}
+              >
+                Minhas
+              </button>
+            </div>
+
+            <div
+              id="community-sequences-create-wrap"
+              class="relative self-start sm:self-end"
+              phx-click-away="close_create_menu"
+            >
+              <button
+                id="community-sequences-create"
+                type="button"
+                phx-click="toggle_create_menu"
+                aria-expanded={to_string(@create_menu_open)}
+                class="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-md bg-accent-orange px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-accent-orange/90"
+              >
+                <.icon name="hero-sparkles" class="size-4" /> Gerar sequência
+                <.icon
+                  name="hero-chevron-down"
+                  class={[
+                    "size-4 transition-transform",
+                    @create_menu_open && "rotate-180"
+                  ]}
+                />
+              </button>
+
+              <div
+                :if={@create_menu_open}
+                id="community-sequences-create-menu"
+                class="absolute left-0 top-[calc(100%+0.5rem)] z-20 min-w-[15rem] overflow-hidden rounded-lg border border-ink-200 bg-white shadow-xl sm:right-0 sm:left-auto"
+              >
+                <.link
+                  navigate={~p"/graph/visual?mode=generator"}
+                  class="flex items-start gap-3 border-b border-ink-100 px-4 py-3 text-left no-underline transition hover:bg-ink-50"
+                >
+                  <span class="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-orange/10 text-accent-orange">
+                    <.icon name="hero-sparkles" class="size-4" />
+                  </span>
+                  <span class="flex flex-col">
+                    <span class="text-sm font-semibold text-ink-900">Gerador automático</span>
+                    <span class="text-xs leading-5 text-ink-500">
+                      Explora caminhos e monta opções para você comparar.
+                    </span>
+                  </span>
+                </.link>
+
+                <.link
+                  navigate={~p"/graph/visual?mode=manual"}
+                  class="flex items-start gap-3 px-4 py-3 text-left no-underline transition hover:bg-ink-50"
+                >
+                  <span class="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-orange/10 text-accent-orange">
+                    <.icon name="hero-pencil-square" class="size-4" />
+                  </span>
+                  <span class="flex flex-col">
+                    <span class="text-sm font-semibold text-ink-900">Anotar manualmente</span>
+                    <span class="text-xs leading-5 text-ink-500">
+                      Escolhe passo a passo no mapa e desenha a sua própria trilha.
+                    </span>
+                  </span>
+                </.link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-ink-50/80 px-4 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
+          <div id="community-sequences-search" class="relative flex-1">
+            <label
+              for="community-sequences-search-input"
+              class="mb-2 block text-xs font-semibold text-ink-500"
+            >
+              Buscar no acervo
+            </label>
+            <.icon
+              name="hero-magnifying-glass"
+              class="absolute left-3 top-[calc(50%+0.65rem)] -translate-y-1/2 w-4 h-4 text-ink-400"
+            />
+            <input
+              id="community-sequences-search-input"
+              type="text"
+              phx-keyup="search_sequences"
+              phx-debounce="300"
+              name="term"
+              value={@seq_search}
+              placeholder="Buscar sequência..."
+              class="w-full rounded-lg border border-ink-200 bg-white pl-9 pr-3 py-2.5 text-sm text-ink-700 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+            />
+          </div>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <.form
+              for={
+                to_form(%{"section_id" => @selected_discovery_section_id || ""}, as: :discovery)
+              }
+              id="community-sequences-filter"
+              phx-change="select_discovery_section"
+              class="block"
+            >
+              <label
+                for="community-sequences-filter-select"
+                class="block text-xs font-semibold text-ink-500"
+              >
+                Contém categoria
+              </label>
+              <select
+                id="community-sequences-filter-select"
+                name="section_id"
+                aria-label="Filtrar sequências por categoria"
+                class="mt-2 block min-h-[42px] min-w-[13rem] rounded-lg border border-ink-200 bg-white px-3 py-2.5 font-serif text-sm text-ink-700 outline-none cursor-pointer shadow-sm transition focus:ring-2 focus:ring-accent-orange/20"
+              >
+                <option value="">Todas</option>
+                <option
+                  :for={section <- @discovery_sections}
+                  value={section.id}
+                  selected={@selected_discovery_section_id == section.id}
+                >
+                  {section.title}
+                </option>
+              </select>
+            </.form>
+            <label class="block text-xs font-semibold text-ink-500">
+              Ordenar por
+              <select
+                phx-change="sort_sequences"
+                name="sort"
+                aria-label="Ordenar sequências"
+                class="mt-2 block min-h-[42px] rounded-lg border border-ink-200 bg-white px-3 py-2.5 font-serif text-sm text-ink-700 outline-none cursor-pointer shadow-sm transition focus:ring-2 focus:ring-accent-orange/20"
+              >
+                <option value="popular" selected={@seq_sort == "popular"}>Mais curtidas</option>
+                <option value="recent" selected={@seq_sort == "recent"}>Mais recentes</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <%!-- Sequences content --%>
+  <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
+    <%= if @active_seq_tab == "community" do %>
+      <div id="community-sequences-stream">
+        <%= if @community_sequences == [] do %>
+          <div class="text-center py-16 px-5">
+            <div class="text-4xl mb-3">🗺️</div>
+            <p class="text-ink-600 font-semibold mb-1">Nenhuma sequência pública ainda</p>
+            <p class="text-sm text-ink-400 mb-4">
+              Monte uma combinação de passos e compartilhe com todos!
+            </p>
+            <.link
+              navigate={~p"/graph/visual?mode=generator"}
+              class="inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2 text-sm font-bold text-white no-underline transition hover:bg-accent-orange/90 cursor-pointer"
+            >
+              + Criar a primeira sequência
+            </.link>
+          </div>
+        <% else %>
+          <div class="mb-4 flex flex-wrap items-center gap-2 text-xs font-semibold">
+            <span class="text-accent-orange">
+              {length(@community_sequences)} sequência(s) · ordenadas por likes
+            </span>
+            <span
+              :if={@selected_discovery_section_id}
+              class="inline-flex items-center gap-1 rounded-full bg-accent-orange/10 px-2.5 py-1 text-accent-orange"
+            >
+              <.icon name="hero-funnel" class="size-3.5" /> filtro por categoria ativo
+            </span>
+          </div>
+          <div class="flex flex-col gap-4">
+            <%= for seq <- @community_sequences do %>
+              <.sequence_card
+                seq={seq}
+                current_user={@current_user}
+                following_user_ids={@following_user_ids}
+                sequence_likes={@sequence_likes}
+                seq_favorites={@seq_favorites}
+                seq_comment_counts={@seq_comment_counts}
+                expanded_seq={@expanded_seq}
+                expanded_seq_comments={@expanded_seq_comments}
+                expanded_seq_comment_likes={@expanded_seq_comment_likes}
+                expanded_seq_replies_map={@expanded_seq_replies_map}
+                expanded_seq_replying_to={@expanded_seq_replying_to}
+                following_enabled={true}
+                is_admin={@is_admin}
+              />
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <%!-- Mine tab: current user's sequences --%>
+      <%= if @my_sequences == [] do %>
+        <div class="text-center py-16 px-5">
+          <div class="text-4xl mb-3">🗺️</div>
+          <p class="text-ink-600 font-semibold mb-1">Você ainda não criou sequências</p>
+          <p class="text-sm text-ink-400 mb-4">
+            Monte uma combinação de passos e compartilhe com todos!
+          </p>
+          <.link
+            navigate={~p"/graph/visual?mode=generator"}
+            class="inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2 text-sm font-bold text-white no-underline transition hover:bg-accent-orange/90 cursor-pointer"
+          >
+            + Criar sequência
+          </.link>
+        </div>
+      <% else %>
+        <section class="overflow-hidden rounded-lg border border-accent-green/25 bg-accent-green/5 shadow-sm">
+          <div class="border-b border-accent-green/15 px-4 py-4 sm:px-5">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-green">
+              Estante pessoal
+            </p>
+            <div class="mt-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-ink-900">Minhas sequências públicas</h2>
+                <p class="text-sm leading-6 text-ink-600">
+                  Curadorias que já têm a sua assinatura e seguem prontas para voltar ao mapa.
+                </p>
+              </div>
+              <p class="text-xs font-semibold text-accent-green">
+                {length(@my_sequences)} sequência(s) sua(s)
+              </p>
+            </div>
+          </div>
+
+          <div class="px-4 py-4 sm:px-5">
+            <div id="my-sequences-stream" class="flex flex-col gap-4">
+              <%= for seq <- @my_sequences do %>
+                <.sequence_card
+                  seq={seq}
+                  current_user={@current_user}
+                  following_user_ids={@following_user_ids}
+                  sequence_likes={@sequence_likes}
+                  seq_favorites={@seq_favorites}
+                  seq_comment_counts={@seq_comment_counts}
+                  expanded_seq={@expanded_seq}
+                  expanded_seq_comments={@expanded_seq_comments}
+                  expanded_seq_comment_likes={@expanded_seq_comment_likes}
+                  expanded_seq_replies_map={@expanded_seq_replies_map}
+                  expanded_seq_replying_to={@expanded_seq_replying_to}
+                  following_enabled={false}
+                  is_admin={@is_admin}
+                />
+              <% end %>
+            </div>
+          </div>
+        </section>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%!-- Footer --%>
+  <footer class="border-t border-ink-300/25 py-6 px-6 text-center bg-ink-200 mt-auto">
+    <p class="text-xs text-ink-600">
+      <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
+      <span class="text-ink-400 mx-2">·</span> O Grupo de Estudos
+    </p>
+  </footer>
+  <.social_bubble
+    current_user={@current_user}
+    suggested_users={@suggested_users}
+    following_user_ids={@following_user_ids}
+    bubble_open={@bubble_open}
+    bubble_tab={@bubble_tab}
+    bubble_following_list={@bubble_following_list}
+    bubble_followers_list={@bubble_followers_list}
+    bubble_search={@bubble_search}
+    bubble_search_results={@bubble_search_results}
+    following_count={assigns[:following_count] || 0}
+    followers_count={assigns[:followers_count] || 0}
+  />
+  <.bottom_nav
+    current_user={@current_user}
+    current_path="/sequence"
+    notification_count={assigns[:notification_count] || 0}
+    pending_study_count={assigns[:pending_study_count] || 0}
+  />
+</div>

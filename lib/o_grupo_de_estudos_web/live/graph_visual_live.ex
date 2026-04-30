@@ -108,6 +108,27 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> deactivate_manual_mode()}
   end
 
+  def handle_params(%{"mode" => "manual"}, _uri, socket) do
+    {:noreply,
+     socket
+     |> assign(:seq_panel, true)
+     |> assign(:seq_mobile_visible, true)
+     |> assign(:seq_view, :manual)
+     |> assign(:seq_manual_steps, [])
+     |> assign(:seq_manual_error, nil)
+     |> assign(:seq_manual_search, "")
+     |> assign(:seq_manual_suggestions, [])
+     |> assign(:editing_sequence_id, nil)
+     |> assign(:seq_manual_name, "")
+     |> assign(:seq_manual_description, "")
+     |> assign(:seq_manual_video_url, "")
+     |> assign(:seq_results, [])
+     |> assign(:seq_warnings, [])
+     |> assign(:seq_saving, nil)
+     |> assign_manual_favorite_steps()
+     |> push_event("set_manual_mode", %{active: true})}
+  end
+
   def handle_params(%{"seq" => seq_id}, _uri, socket) do
     case Sequences.get_sequence(seq_id) do
       nil ->

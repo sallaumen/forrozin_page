@@ -29,7 +29,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
       assert html =~ ~s(href="/graph/visual")
       assert html =~ ~s(href="/study")
       assert html =~ ~s(href="/graph/visual?mode=generator")
-      assert html =~ ~s(href="/community")
+      assert html =~ ~s(href="/sequence")
       assert html =~ ~s(href="/notifications")
       assert html =~ ~s(href="/users/tavano")
     end

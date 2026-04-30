@@ -138,7 +138,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
     end
   end
 
-  defp notification_path(%{parent_type: "sequence"}), do: "/community"
+  defp notification_path(%{parent_type: "sequence"}), do: "/sequence"
 
   defp notification_path(%{
          action: "shared_note_updated",

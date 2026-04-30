@@ -28,8 +28,8 @@ defmodule OGrupoDeEstudosWeb.UI.BackButtonTest do
     end
 
     test "fallback URL via :fallback attr renders as data-fallback" do
-      html = render_component(&BackButton.back_button/1, %{fallback: "/community"})
-      assert html =~ ~s(data-fallback="/community")
+      html = render_component(&BackButton.back_button/1, %{fallback: "/sequence"})
+      assert html =~ ~s(data-fallback="/sequence")
     end
 
     test "default fallback is /collection" do
