@@ -15,6 +15,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
 
   import OGrupoDeEstudosWeb.UI.BackButton, only: [back_button: 1]
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.UserAvatar
 
   attr :current_user, :map, required: true
   attr :is_admin, :boolean, default: false
@@ -175,10 +176,10 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               <div class="flex -space-x-1.5">
                 <%= for user <- Enum.take(@online_users, 3) do %>
                   <div
-                    class="w-6 h-6 rounded-full bg-accent-green/20 border-2 border-ink-900 flex items-center justify-center text-[8px] font-bold text-accent-green"
+                    class="rounded-full border-2 border-ink-900 shrink-0"
                     title={"@#{user.username}"}
                   >
-                    {String.first(user.username) |> String.upcase()}
+                    <.user_avatar user={user} size={:xs} />
                   </div>
                 <% end %>
               </div>
