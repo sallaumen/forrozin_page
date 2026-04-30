@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudos.Workers.SendConfirmationEmail do
     user = Accounts.get_user_by_id(user_id)
 
     if is_nil(user) do
-      Logger.warning("[ConfirmationEmail] user not found: #{user_id}")
+      Logger.debug("[ConfirmationEmail] user not found: #{user_id}")
       :ok
     else
       Logger.info("[ConfirmationEmail] sending to #{user.email}")

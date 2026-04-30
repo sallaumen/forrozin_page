@@ -470,24 +470,23 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
 
   defp build_discovery_sections(sequences) do
     sequences
-    |> Enum.flat_map(fn seq ->
-      seq.sequence_steps
-      |> Enum.map(fn sequence_step ->
-        category = sequence_step.step.category
-
-        if category do
-          {category.id, category.label}
-        end
-      end)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.uniq()
-    end)
+    |> Enum.flat_map(&sequence_categories/1)
     |> Enum.frequencies()
     |> Enum.map(fn {{id, title}, sequence_count} ->
       %{id: id, title: title, sequence_count: sequence_count}
     end)
     |> Enum.sort_by(fn section -> {-section.sequence_count, section.title} end)
   end
+
+  defp sequence_categories(seq) do
+    seq.sequence_steps
+    |> Enum.map(&category_tuple/1)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+
+  defp category_tuple(%{step: %{category: nil}}), do: nil
+  defp category_tuple(%{step: %{category: category}}), do: {category.id, category.label}
 
   defp sequence_has_category?(seq, category_id) do
     Enum.any?(seq.sequence_steps, fn sequence_step ->

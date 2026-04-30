@@ -19,6 +19,7 @@ defmodule OGrupoDeEstudos.Engagement do
   alias OGrupoDeEstudos.Encyclopedia.Step
 
   alias OGrupoDeEstudos.Engagement.{
+    ActivityBroadcaster,
     Badges,
     Favorite,
     Follow,
@@ -393,9 +394,9 @@ defmodule OGrupoDeEstudos.Engagement do
         :ok
 
       step ->
-        user = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Accounts.User, user_id)
+        user = Repo.get!(User, user_id)
 
-        OGrupoDeEstudos.Engagement.ActivityBroadcaster.broadcast_activity(
+        ActivityBroadcaster.broadcast_activity(
           user,
           :liked_step,
           %{step_name: step.name}
@@ -417,10 +418,10 @@ defmodule OGrupoDeEstudos.Engagement do
   end
 
   defp safe_broadcast_follow_activity(follower_id, followed_id) do
-    followed_user = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Accounts.User, followed_id)
-    follower_user = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Accounts.User, follower_id)
+    followed_user = Repo.get!(User, followed_id)
+    follower_user = Repo.get!(User, follower_id)
 
-    OGrupoDeEstudos.Engagement.ActivityBroadcaster.broadcast_activity(
+    ActivityBroadcaster.broadcast_activity(
       follower_user,
       :followed_user,
       %{target_username: followed_user.username}

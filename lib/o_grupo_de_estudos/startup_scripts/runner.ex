@@ -16,7 +16,7 @@ defmodule OGrupoDeEstudos.StartupScripts.Runner do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.{StartupScriptRecord, Repo}
+  alias OGrupoDeEstudos.{Repo, StartupScriptRecord}
 
   @migrations [
     OGrupoDeEstudos.StartupScripts.SendConfirmationToExistingUsers
