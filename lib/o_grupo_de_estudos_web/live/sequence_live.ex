@@ -18,6 +18,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.SocialBubble
@@ -758,9 +759,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
               navigate={~p"/users/#{@author_username}"}
               class="inline-flex items-center gap-2 text-sm font-medium text-ink-700 no-underline transition hover:text-accent-orange"
             >
-              <span class="inline-flex size-8 items-center justify-center rounded-full bg-accent-orange text-xs font-semibold text-white">
-                {@author_initial}
-              </span>
+              <.user_avatar user={@author} size={:md} />
               <span>@{@author_username}</span>
             </.link>
 
