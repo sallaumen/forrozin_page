@@ -2005,19 +2005,19 @@ window.addEventListener("phx:clipboard:copy", (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Dark mode — persist preference in localStorage, respect OS default
+// Dark mode — server is the source of truth; localStorage is a FOUC cache
 // ---------------------------------------------------------------------------
-function initDarkMode() {
-  const stored = localStorage.getItem("dark_mode")
-  if (stored === "true" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-    document.documentElement.classList.add("dark")
-  }
-}
-initDarkMode()
-
-window.addEventListener("toggle-dark-mode", () => {
-  const isDark = document.documentElement.classList.toggle("dark")
+// On every server push, apply the class and keep localStorage in sync so
+// that root.html.heex's inline script can prevent flash on next page load.
+window.addEventListener("phx:set-dark-mode", (e) => {
+  const isDark = e.detail.dark
   localStorage.setItem("dark_mode", isDark.toString())
+
+  if (isDark) {
+    document.documentElement.classList.add("dark")
+  } else {
+    document.documentElement.classList.remove("dark")
+  }
 })
 
 // connect if there are any LiveViews on the page

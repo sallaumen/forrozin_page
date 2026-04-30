@@ -1,6 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
   @moduledoc "on_mount hook: subscribes to notification PubSub + loads unread count."
   import Phoenix.Component, only: [assign: 2]
+  import Phoenix.LiveView, only: [push_event: 3]
   import Ecto.Query
 
   alias OGrupoDeEstudos.Accounts
@@ -20,8 +21,16 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
       )
 
     case connected_user(socket) do
-      nil -> {:cont, assign(socket, disconnected_assigns())}
-      user -> {:cont, assign(socket, connected_assigns(user))}
+      nil ->
+        {:cont, assign(socket, disconnected_assigns())}
+
+      user ->
+        socket =
+          socket
+          |> assign(connected_assigns(user))
+          |> push_event("set-dark-mode", %{dark: user.dark_mode})
+
+        {:cont, socket}
     end
   end
 

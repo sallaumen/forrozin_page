@@ -195,6 +195,17 @@ defmodule OGrupoDeEstudos.Accounts do
   end
 
   @doc """
+  Toggles the user's dark mode preference.
+
+  Returns `{:ok, updated_user}` or `{:error, changeset}`.
+  """
+  def toggle_dark_mode(%User{} = user) do
+    user
+    |> Ecto.Changeset.change(%{dark_mode: !user.dark_mode})
+    |> Repo.update()
+  end
+
+  @doc """
   Verifies a password reset token. Returns `{:ok, user}` or `{:error, :invalid_token}`.
   Token expires after 30 minutes (1800 seconds).
   """

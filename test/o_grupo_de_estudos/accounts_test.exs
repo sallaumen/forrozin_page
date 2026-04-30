@@ -178,4 +178,25 @@ defmodule OGrupoDeEstudos.AccountsTest do
       assert length(results) <= 5
     end
   end
+
+  describe "toggle_dark_mode/1" do
+    test "flips dark_mode from false to true" do
+      user = insert(:user, dark_mode: false)
+      assert {:ok, updated} = Accounts.toggle_dark_mode(user)
+      assert updated.dark_mode == true
+    end
+
+    test "flips dark_mode from true to false" do
+      user = insert(:user, dark_mode: true)
+      assert {:ok, updated} = Accounts.toggle_dark_mode(user)
+      assert updated.dark_mode == false
+    end
+
+    test "persists the new preference to the database" do
+      user = insert(:user, dark_mode: false)
+      {:ok, _} = Accounts.toggle_dark_mode(user)
+      reloaded = Accounts.get_user_by_id(user.id)
+      assert reloaded.dark_mode == true
+    end
+  end
 end
