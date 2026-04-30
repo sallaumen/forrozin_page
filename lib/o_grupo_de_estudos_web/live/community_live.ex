@@ -733,52 +733,64 @@ defmodule OGrupoDeEstudosWeb.CommunityLive do
             </span>
           </button>
         </div>
-
-        <div :if={@seq.video_url} class="rounded-md border border-ink-200/70 bg-ink-50/70 p-3">
-          <% embed = youtube_embed_url(@seq.video_url) %>
-          <%= if embed != :external do %>
-            <% {:embed, embed_url} = embed %>
-            <details>
-              <summary class="cursor-pointer text-sm font-medium text-accent-orange select-none">
-                Ver vídeo
-              </summary>
-              <div class="relative mt-3 h-0 overflow-hidden rounded-md pb-[56.25%]">
-                <iframe
-                  src={embed_url}
-                  style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 6px;"
-                  allowfullscreen
-                  loading="lazy"
-                >
-                </iframe>
-              </div>
-            </details>
-          <% else %>
-            <a
-              href={@seq.video_url}
-              target="_blank"
-              rel="noreferrer"
-              class="text-sm font-medium text-accent-orange no-underline"
-            >
-              Ver vídeo externo
-            </a>
-          <% end %>
-        </div>
       </div>
 
-      <section :if={@is_expanded} class="border-t border-ink-200/80 bg-ink-50/70 px-4 py-4 sm:px-5">
-        <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
-          Comentários
-        </h4>
-        <.comment_thread
-          comments={@expanded_seq_comments}
-          current_user={@current_user}
-          likes_map={@expanded_seq_comment_likes}
-          comment_type="sequence_comment"
-          parent_id={@seq.id}
-          replying_to={@expanded_seq_replying_to}
-          replies_map={@expanded_seq_replies_map}
-          is_admin={@is_admin}
-        />
+      <section
+        :if={@is_expanded}
+        id={"sequence-expanded-#{@seq.id}"}
+        class="border-t border-ink-200/80 bg-ink-50/70 px-4 py-4 sm:px-5"
+      >
+        <div class="flex flex-col gap-4">
+          <div
+            :if={@seq.video_url}
+            id={"sequence-embed-#{@seq.id}"}
+            class="rounded-md border border-ink-200/70 bg-white/80 p-3"
+          >
+            <% embed = youtube_embed_url(@seq.video_url) %>
+            <%= if embed != :external do %>
+              <% {:embed, embed_url} = embed %>
+              <details>
+                <summary class="cursor-pointer text-sm font-medium text-accent-orange select-none">
+                  Ver vídeo
+                </summary>
+                <div class="relative mt-3 h-0 overflow-hidden rounded-md pb-[56.25%]">
+                  <iframe
+                    src={embed_url}
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 6px;"
+                    allowfullscreen
+                    loading="lazy"
+                  >
+                  </iframe>
+                </div>
+              </details>
+            <% else %>
+              <a
+                href={@seq.video_url}
+                target="_blank"
+                rel="noreferrer"
+                class="text-sm font-medium text-accent-orange no-underline"
+              >
+                Ver vídeo externo
+              </a>
+            <% end %>
+          </div>
+
+          <div id={"sequence-comments-#{@seq.id}"}>
+            <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
+              Comentários
+            </h4>
+            <.comment_thread
+              comments={@expanded_seq_comments}
+              current_user={@current_user}
+              likes_map={@expanded_seq_comment_likes}
+              comment_type="sequence_comment"
+              parent_id={@seq.id}
+              replying_to={@expanded_seq_replying_to}
+              replies_map={@expanded_seq_replies_map}
+              is_admin={@is_admin}
+            />
+          </div>
+        </div>
       </section>
     </article>
     """

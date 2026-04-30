@@ -102,6 +102,35 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       assert has_element?(lv, "#sequence-details-toggle-#{seq.id}")
     end
 
+    test "expanded details reveal stable wrappers for embeds and comments", %{
+      conn: conn,
+      author: author
+    } do
+      section = insert(:section)
+      step = insert(:step, section: section, code: "VD-1", name: "Video Step")
+
+      seq =
+        insert(:sequence,
+          user: author,
+          public: true,
+          name: "Sequência Expandida",
+          video_url: "https://youtu.be/abc123"
+        )
+
+      insert(:sequence_step, sequence: seq, step: step, position: 1)
+
+      {:ok, _comment} =
+        Engagement.create_sequence_comment(author, seq.id, %{body: "Primeiro comentário"})
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/community")
+
+      render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
+
+      assert has_element?(lv, "#sequence-expanded-#{seq.id}")
+      assert has_element?(lv, "#sequence-comments-#{seq.id}")
+      assert has_element?(lv, "#sequence-embed-#{seq.id}")
+    end
+
     test "shows step codes inline", %{conn: conn} do
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/community")
       assert html =~ "BF"
@@ -174,6 +203,29 @@ defmodule OGrupoDeEstudosWeb.CommunityLiveTest do
       assert has_element?(lv, "#my-sequences-stream")
       assert has_element?(lv, "#my-sequences-stream #sequence-card-#{sequence.id}")
       assert html =~ "Minhas"
+    end
+
+    test "Minhas stream renders a real owned sequence setup", %{conn: conn} do
+      user = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "MN-2", name: "Minha Trilha")
+      owned_sequence = insert(:sequence, user: user, public: true, name: "Coleção da Casa")
+      insert(:sequence_step, sequence: owned_sequence, step: step, position: 1)
+
+      {:ok, lv, _html} =
+        conn
+        |> log_in_user(user)
+        |> live(~p"/community")
+
+      render_click(lv, "switch_seq_tab", %{"tab" => "mine"})
+
+      assert has_element?(lv, "#my-sequences-stream")
+      assert has_element?(lv, "#my-sequences-stream #sequence-card-#{owned_sequence.id}")
+
+      assert has_element?(
+               lv,
+               "#my-sequences-stream #sequence-details-toggle-#{owned_sequence.id}"
+             )
     end
   end
 

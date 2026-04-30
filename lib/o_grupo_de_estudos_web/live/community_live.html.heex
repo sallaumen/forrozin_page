@@ -215,28 +215,46 @@
           </.link>
         </div>
       <% else %>
-        <p class="text-xs text-accent-orange mb-4 font-semibold">
-          {length(@my_sequences)} sequência(s) sua(s)
-        </p>
-        <div id="my-sequences-stream" class="flex flex-col gap-4">
-          <%= for seq <- @my_sequences do %>
-            <.sequence_card
-              seq={seq}
-              current_user={@current_user}
-              following_user_ids={@following_user_ids}
-              sequence_likes={@sequence_likes}
-              seq_favorites={@seq_favorites}
-              seq_comment_counts={@seq_comment_counts}
-              expanded_seq={@expanded_seq}
-              expanded_seq_comments={@expanded_seq_comments}
-              expanded_seq_comment_likes={@expanded_seq_comment_likes}
-              expanded_seq_replies_map={@expanded_seq_replies_map}
-              expanded_seq_replying_to={@expanded_seq_replying_to}
-              following_enabled={false}
-              is_admin={@is_admin}
-            />
-          <% end %>
-        </div>
+        <section class="overflow-hidden rounded-lg border border-accent-green/25 bg-accent-green/5 shadow-sm">
+          <div class="border-b border-accent-green/15 px-4 py-4 sm:px-5">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-green">
+              Estante pessoal
+            </p>
+            <div class="mt-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-ink-900">Minhas sequências públicas</h2>
+                <p class="text-sm leading-6 text-ink-600">
+                  Curadorias que já têm a sua assinatura e seguem prontas para voltar ao mapa.
+                </p>
+              </div>
+              <p class="text-xs font-semibold text-accent-green">
+                {length(@my_sequences)} sequência(s) sua(s)
+              </p>
+            </div>
+          </div>
+
+          <div class="px-4 py-4 sm:px-5">
+            <div id="my-sequences-stream" class="flex flex-col gap-4">
+              <%= for seq <- @my_sequences do %>
+                <.sequence_card
+                  seq={seq}
+                  current_user={@current_user}
+                  following_user_ids={@following_user_ids}
+                  sequence_likes={@sequence_likes}
+                  seq_favorites={@seq_favorites}
+                  seq_comment_counts={@seq_comment_counts}
+                  expanded_seq={@expanded_seq}
+                  expanded_seq_comments={@expanded_seq_comments}
+                  expanded_seq_comment_likes={@expanded_seq_comment_likes}
+                  expanded_seq_replies_map={@expanded_seq_replies_map}
+                  expanded_seq_replying_to={@expanded_seq_replying_to}
+                  following_enabled={false}
+                  is_admin={@is_admin}
+                />
+              <% end %>
+            </div>
+          </div>
+        </section>
       <% end %>
     <% end %>
   </div>
