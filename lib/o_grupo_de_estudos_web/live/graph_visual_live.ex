@@ -69,6 +69,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_manual_description, "")
      |> assign(:seq_manual_video_url, "")
      |> assign(:seq_missing_edges, [])
+     |> assign(:seq_suggested_edges, MapSet.new())
      |> assign(:seq_favorites_list, [])
      |> assign(:can_3d, can_3d)
      |> assign(:three_d_mode, false)
@@ -344,14 +345,21 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
              new_value: "#{src_code}\u2192#{tgt_code}"
            }) do
         {:ok, _} ->
+          suggested = MapSet.put(socket.assigns.seq_suggested_edges, {src_code, tgt_code})
+
           {:noreply,
-           put_flash(socket, :info, "Sugestão de conexão #{src_code} → #{tgt_code} enviada!")}
+           socket
+           |> assign(:seq_suggested_edges, suggested)
+           |> put_flash(
+             :info,
+             "Sugestao enviada! A conexao #{src_code} -> #{tgt_code} sera revisada em 1-2 dias. Obrigado pelo feedback!"
+           )}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}
+          {:noreply, put_flash(socket, :error, "Erro ao enviar sugestao")}
       end
     else
-      {:noreply, put_flash(socket, :error, "Passo não encontrado")}
+      {:noreply, put_flash(socket, :error, "Passo nao encontrado")}
     end
   end
 
@@ -1427,6 +1435,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     |> assign(:graph_json, graph_json)
     |> assign(:graph_search_nodes, graph_search_nodes)
     |> assign(:categories, categories)
+    |> assign(:edges, graph.edges)
   end
 
   defp search_graph_nodes(nodes, term) do

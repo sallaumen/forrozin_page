@@ -1311,15 +1311,21 @@
                           Criar
                         </button>
                       <% else %>
-                        <button
-                          type="button"
-                          phx-click="suggest_missing_connection"
-                          phx-value-source={missing.from}
-                          phx-value-target={missing.to}
-                          class="ml-auto text-[9px] py-0.5 px-2 bg-accent-orange text-white rounded border-0 cursor-pointer font-medium"
-                        >
-                          Sugerir
-                        </button>
+                        <%= if MapSet.member?(@seq_suggested_edges, {missing.from, missing.to}) do %>
+                          <span class="ml-auto text-[9px] py-0.5 px-2 bg-ink-200 text-ink-400 rounded font-medium">
+                            Enviado
+                          </span>
+                        <% else %>
+                          <button
+                            type="button"
+                            phx-click="suggest_missing_connection"
+                            phx-value-source={missing.from}
+                            phx-value-target={missing.to}
+                            class="ml-auto text-[9px] py-0.5 px-2 bg-accent-orange text-white rounded border-0 cursor-pointer font-medium"
+                          >
+                            Sugerir
+                          </button>
+                        <% end %>
                       <% end %>
                     </div>
                   <% end %>
