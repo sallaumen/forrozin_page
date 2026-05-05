@@ -21,6 +21,16 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
   end
 
   @impl true
+  def handle_event("validate", %{"user" => params}, socket) do
+    changeset =
+      %Accounts.User{}
+      |> Accounts.User.registration_changeset(params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, form: to_form(changeset, as: :user))}
+  end
+
+  @impl true
   def handle_event("register", %{"user" => params}, socket) do
     case Accounts.register_user(params) do
       {:ok, user} ->
@@ -34,7 +44,10 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
          |> redirect(to: ~p"/auto-login/#{token}")}
 
       {:error, changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset, as: :user))}
+        {:noreply,
+         socket
+         |> put_flash(:error, "Corrija os erros abaixo para criar sua conta.")
+         |> assign(form: to_form(Map.put(changeset, :action, :validate), as: :user))}
     end
   end
 
