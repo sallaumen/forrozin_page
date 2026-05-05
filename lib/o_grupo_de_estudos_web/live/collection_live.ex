@@ -20,7 +20,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.CommentThread
-  import OGrupoDeEstudosWeb.UI.PWAInstallBanner
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
   import OGrupoDeEstudosWeb.UI.SocialBubble

@@ -3,8 +3,6 @@ defmodule OGrupoDeEstudosWeb.LandingLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  import OGrupoDeEstudosWeb.UI.PWAInstallBanner
-
   alias OGrupoDeEstudos.Encyclopedia
 
   on_mount {OGrupoDeEstudosWeb.UserAuth, :mount_current_user}

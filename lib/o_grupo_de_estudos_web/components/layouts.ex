@@ -5,6 +5,8 @@ defmodule OGrupoDeEstudosWeb.Layouts do
   """
   use OGrupoDeEstudosWeb, :html
 
+  import OGrupoDeEstudosWeb.UI.PWAInstallBanner
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers
