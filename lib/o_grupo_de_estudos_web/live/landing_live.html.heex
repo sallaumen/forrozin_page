@@ -65,7 +65,7 @@
             Ir para o acervo →
           </a>
         <% else %>
-          <div class="flex gap-3 flex-wrap">
+          <div class="flex gap-3 flex-wrap items-center">
             <a
               href={~p"/signup"}
               class="inline-block py-3.5 px-8 bg-gold-500 text-ink-900 no-underline rounded-lg font-serif text-base font-bold tracking-wide"
@@ -78,6 +78,13 @@
             >
               Entrar
             </a>
+            <button
+              id="landing-install-btn"
+              phx-hook="PWAInstallSettings"
+              class="py-3.5 px-7 bg-transparent text-gold-400 rounded-lg font-serif text-sm border border-gold-500/30 cursor-pointer tracking-wide hover:bg-gold-500/10 transition-colors"
+            >
+              Instalar app
+            </button>
           </div>
         <% end %>
       </div>
@@ -205,4 +212,5 @@
     </p>
   </footer>
 
+  <.pwa_install_banner />
 </div>
