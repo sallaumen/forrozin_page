@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudosWeb.UI.PWAInstallBanner do
     <div
       id="pwa-install-banner"
       phx-hook="PWAInstall"
-      class="hidden fixed bottom-14 left-0 right-0 z-30 md:bottom-0"
+      class="hidden fixed bottom-14 left-0 right-0 z-50 md:bottom-0"
     >
       <div class="bg-gold-500 px-4 py-2 flex items-center gap-3 shadow-lg">
         <img

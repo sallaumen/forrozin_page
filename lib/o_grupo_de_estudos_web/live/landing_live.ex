@@ -18,4 +18,9 @@ defmodule OGrupoDeEstudosWeb.LandingLive do
       {:ok, assign(socket, page_title: "O grupo de estudos", total_steps: total)}
     end
   end
+
+  @impl true
+  def handle_event("pwa_already_installed", %{"message" => message}, socket) do
+    {:noreply, put_flash(socket, :info, message)}
+  end
 end

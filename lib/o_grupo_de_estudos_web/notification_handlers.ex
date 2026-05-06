@@ -37,6 +37,10 @@ defmodule OGrupoDeEstudosWeb.NotificationHandlers do
         {:noreply, close_notifications_dropdown(socket)}
       end
 
+      def handle_event("pwa_already_installed", %{"message" => message}, socket) do
+        {:noreply, put_flash(socket, :info, message)}
+      end
+
       def handle_event("toggle_dark_mode", _params, socket) do
         user = socket.assigns.current_user
         {:ok, updated} = OGrupoDeEstudos.Accounts.toggle_dark_mode(user)

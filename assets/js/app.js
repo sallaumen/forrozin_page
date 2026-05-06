@@ -1974,11 +1974,56 @@ const AutoDismiss = {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Hook: PWANavIcon — persistent install icon in top nav, changes per state
+// ---------------------------------------------------------------------------
+const PWA_HAPPY_MESSAGES = [
+  "Relaxa, voce ja ta no app! Tudo certo por aqui.",
+  "Ei, voce ja instalou! Pode dancar tranquilo.",
+  "App instalado com sucesso! Agora so falta a sacada.",
+  "Voce ja esta usando o app. Nota 10 pra voce!",
+  "Ja ta no app, pode comemorar com um xote.",
+  "Olha voce, todo moderno no app. Bonito demais!",
+  "Instalou e ta usando. Isso sim e compromisso com o forro.",
+  "App na mao, forro no coracao. Ta tudo certo!",
+]
+
+const PWANavIcon = {
+  mounted() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true
+
+    const icon = this.el.querySelector('svg')
+    if (icon && isStandalone) {
+      icon.style.color = 'var(--color-accent-green)'
+      this.el.title = 'App instalado!'
+    }
+
+    this.el.addEventListener('click', () => {
+      if (isStandalone) {
+        const msg = PWA_HAPPY_MESSAGES[Math.floor(Math.random() * PWA_HAPPY_MESSAGES.length)]
+        this.pushEvent("pwa_already_installed", {message: msg})
+      } else if (window._deferredPWAPrompt) {
+        window._deferredPWAPrompt.prompt()
+        window._deferredPWAPrompt.userChoice.then(({ outcome }) => {
+          if (outcome === 'accepted') {
+            icon.style.color = 'var(--color-accent-green)'
+            localStorage.setItem('pwa_banner_dismissed_at', Date.now().toString())
+          }
+          window._deferredPWAPrompt = null
+        })
+      } else {
+        showInstallInstructions()
+      }
+    })
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, ThreeCanvas, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, OnboardingTour, AutoDismiss},
+  hooks: {...colocatedHooks, GraphVisual, ThreeCanvas, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, PWANavIcon, OnboardingTour, AutoDismiss},
 })
 
 // Show progress bar on live navigation and form submits
