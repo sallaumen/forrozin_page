@@ -59,6 +59,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
        seq_search: "",
        seq_sort: "popular",
        active_seq_tab: "community",
+       deep_linked_sequence_id: nil,
        my_sequences: my_sequences,
        expanded_seq: nil,
        expanded_seq_comments: [],
@@ -77,6 +78,32 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
        followers_count: 0
      )
      |> assign_sequence_social_metadata(current_user.id, community_sequences_all, my_sequences)}
+  end
+
+  @impl true
+  def handle_params(%{"sequence" => sequence_id}, _uri, socket)
+      when is_binary(sequence_id) and sequence_id != "" do
+    socket =
+      socket
+      |> assign(:active_seq_tab, "community")
+      |> expand_sequence(sequence_id)
+      |> assign(:deep_linked_sequence_id, sequence_id)
+      |> push_event("scroll-to-element", %{id: "sequence-card-#{sequence_id}", block: "center"})
+
+    {:noreply, socket}
+  end
+
+  def handle_params(_params, _uri, socket) do
+    previous_deep_link = socket.assigns[:deep_linked_sequence_id]
+
+    socket =
+      if previous_deep_link && socket.assigns.expanded_seq == previous_deep_link do
+        clear_expanded_sequence(socket)
+      else
+        socket
+      end
+
+    {:noreply, assign(socket, :deep_linked_sequence_id, nil)}
   end
 
   @impl true
@@ -236,30 +263,39 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
   # ── Inline expansion: sequence comments ────────────────────────────────
 
   def handle_event("toggle_seq_expand", %{"seq-id" => seq_id}, socket) do
-    if socket.assigns.expanded_seq == seq_id do
-      {:noreply,
-       assign(socket,
-         expanded_seq: nil,
-         expanded_seq_comments: [],
-         expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
-         expanded_seq_replies_map: %{},
-         expanded_seq_replying_to: nil
-       )}
-    else
-      user = socket.assigns.current_user
-      comments = Engagement.list_sequence_comments(seq_id, limit: 5)
-      comment_ids = Enum.map(comments, & &1.id)
-      comment_likes = Engagement.likes_map(user.id, "sequence_comment", comment_ids)
+    current_deep_link = socket.assigns.deep_linked_sequence_id
 
-      {:noreply,
-       assign(socket,
-         expanded_seq: seq_id,
-         expanded_seq_comments: comments,
-         expanded_seq_comment_likes: comment_likes,
-         expanded_seq_replies_map: %{},
-         expanded_seq_replying_to: nil
-       )}
+    if socket.assigns.expanded_seq == seq_id do
+      if current_deep_link == seq_id do
+        {:noreply,
+         socket
+         |> assign(:deep_linked_sequence_id, nil)
+         |> push_patch(to: ~p"/sequence", replace: true)}
+      else
+        {:noreply, clear_expanded_sequence(socket)}
+      end
+    else
+      socket =
+        socket
+        |> assign(:deep_linked_sequence_id, nil)
+        |> expand_sequence(seq_id)
+
+      socket =
+        if current_deep_link do
+          push_patch(socket, to: ~p"/sequence", replace: true)
+        else
+          socket
+        end
+
+      {:noreply, socket}
     end
+  end
+
+  def handle_event("copy_sequence_link", %{"seq-id" => seq_id}, socket) do
+    {:noreply,
+     socket
+     |> push_event("clipboard:copy", %{text: url(~p"/sequence?sequence=#{seq_id}")})
+     |> put_flash(:info, "Link copiado")}
   end
 
   def handle_event("create_comment", %{"body" => body}, socket) do
@@ -434,6 +470,31 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
   end
 
   def youtube_embed_url(_), do: :external
+
+  defp clear_expanded_sequence(socket) do
+    assign(socket,
+      expanded_seq: nil,
+      expanded_seq_comments: [],
+      expanded_seq_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
+      expanded_seq_replies_map: %{},
+      expanded_seq_replying_to: nil
+    )
+  end
+
+  defp expand_sequence(socket, seq_id) do
+    user = socket.assigns.current_user
+    comments = Engagement.list_sequence_comments(seq_id, limit: 5)
+    comment_ids = Enum.map(comments, & &1.id)
+    comment_likes = Engagement.likes_map(user.id, "sequence_comment", comment_ids)
+
+    assign(socket,
+      expanded_seq: seq_id,
+      expanded_seq_comments: comments,
+      expanded_seq_comment_likes: comment_likes,
+      expanded_seq_replies_map: %{},
+      expanded_seq_replying_to: nil
+    )
+  end
 
   defp list_community_sequences(_user_id), do: Sequences.list_all_public_sequences()
 
@@ -611,6 +672,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
   attr :expanded_seq_replying_to, :any, required: true
   attr :following_enabled, :boolean, default: true
   attr :is_admin, :boolean, required: true
+  attr :deep_linked_sequence_id, :any, default: nil
 
   defp sequence_card(assigns) do
     seq = assigns.seq
@@ -630,14 +692,17 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
         comment_count: Map.get(assigns.seq_comment_counts, seq.id, 0),
         liked: MapSet.member?(assigns.sequence_likes.liked_ids, seq.id),
         is_favorited: MapSet.member?(assigns.seq_favorites, seq.id),
-        is_expanded: assigns.expanded_seq == seq.id
+        is_expanded: assigns.expanded_seq == seq.id,
+        is_deep_linked: assigns.deep_linked_sequence_id == seq.id
       )
 
     ~H"""
     <article
       id={"sequence-card-#{@seq.id}"}
+      data-deep-linked={to_string(@is_deep_linked)}
       class={[
         "group overflow-hidden rounded-lg border bg-white/90 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+        @is_deep_linked && "ring-2 ring-accent-orange/50 ring-offset-2 ring-offset-ink-100",
         @is_expanded && "border-accent-orange/45 shadow-md",
         !@is_expanded && "border-ink-300/50"
       ]}
@@ -664,16 +729,16 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
 
             <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-ink-500">
               <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 font-medium">
-                <.icon name="hero-queue-list" class="size-3.5 text-ink-500" /> {@step_count} passo(s)
+                <.icon name="hero-queue-list" class="size-3 text-ink-500" /> {@step_count} passo(s)
               </span>
               <span
                 :if={@like_count > 0}
                 class="inline-flex items-center gap-1 rounded-full bg-accent-red/8 px-2.5 py-1 font-medium text-accent-red"
               >
-                <.icon name="hero-heart-solid" class="size-3.5" /> {@like_count}
+                <.icon name="hero-heart-solid" class="size-3" /> {@like_count}
               </span>
               <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 font-medium">
-                <.icon name="hero-chat-bubble-left" class="size-3.5 text-ink-500" /> {@comment_count}
+                <.icon name="hero-chat-bubble-left" class="size-3 text-ink-500" /> {@comment_count}
               </span>
             </div>
           </div>
@@ -682,12 +747,23 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             <.link
               id={"sequence-map-link-#{@seq.id}"}
               navigate={~p"/graph/visual?seq=#{@seq.id}"}
-              class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-accent-orange px-4 py-3 text-sm font-semibold text-white no-underline shadow-sm transition hover:bg-accent-orange/90"
+              class="inline-flex h-8.5 min-w-0 items-center justify-center gap-1 rounded-md bg-accent-orange px-3 py-2 text-[13px] font-semibold text-white no-underline shadow-sm transition hover:bg-accent-orange/90"
             >
-              <.icon name="hero-map" class="size-4" /> Ver no mapa
+              <.icon name="hero-map" class="size-3" /> Ver no mapa
             </.link>
 
-            <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+            <div class="flex flex-wrap items-center gap-1.5 sm:justify-end">
+              <button
+                id={"sequence-share-#{@seq.id}"}
+                phx-click="copy_sequence_link"
+                phx-value-seq-id={@seq.id}
+                aria-label="Copiar link desta sequência"
+                class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-300/60 bg-white text-ink-600 transition hover:border-accent-orange/40 hover:text-accent-orange"
+                title="Copiar link desta sequência"
+              >
+                <.icon name="hero-link" class="size-3" />
+              </button>
+
               <button
                 phx-click="toggle_like"
                 phx-value-type="sequence"
@@ -699,15 +775,18 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 }
                 aria-pressed={to_string(@liked)}
                 class={[
-                  "inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm transition cursor-pointer",
+                  "inline-flex h-8.5 min-w-[3.15rem] items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-[13px] transition cursor-pointer",
                   @liked && "border-accent-red/30 bg-accent-red/8 text-accent-red",
                   !@liked &&
                     "border-ink-300/60 bg-white text-ink-500 hover:border-accent-red/30 hover:text-accent-red"
                 ]}
                 title={if @liked, do: "Remover like", else: "Curtir"}
               >
-                <.icon name={if @liked, do: "hero-heart-solid", else: "hero-heart"} class="size-4" />
-                <span class="tabular-nums">{@like_count}</span>
+                <.icon
+                  name={if @liked, do: "hero-heart-solid", else: "hero-heart"}
+                  class="size-3"
+                />
+                <span class="tabular-nums text-[12px]">{@like_count}</span>
               </button>
 
               <button
@@ -720,7 +799,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 }
                 aria-pressed={to_string(@is_favorited)}
                 class={[
-                  "inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm transition cursor-pointer",
+                  "inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border px-0 py-0 text-[13px] transition cursor-pointer",
                   @is_favorited && "border-gold-500/40 bg-gold-500/8 text-gold-700",
                   !@is_favorited &&
                     "border-ink-300/60 bg-white text-ink-500 hover:border-gold-500/40 hover:text-gold-700"
@@ -729,9 +808,8 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
               >
                 <.icon
                   name={if @is_favorited, do: "hero-star-solid", else: "hero-star"}
-                  class="size-4"
+                  class="size-3"
                 />
-                <span>{if @is_favorited, do: "Salva", else: "Salvar"}</span>
               </button>
             </div>
           </div>
@@ -794,7 +872,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
           >
             <.icon
               name={if @is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
-              class="size-4"
+              class="size-3.5"
             />
             <span>
               {if @is_expanded,
@@ -815,6 +893,10 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
         class="border-t border-ink-200/80 bg-ink-50/70 px-4 py-4 sm:px-5"
       >
         <div class="flex flex-col gap-4">
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">
+            Detalhes e conversa
+          </div>
+
           <div
             :if={@seq.video_url}
             id={"sequence-embed-#{@seq.id}"}

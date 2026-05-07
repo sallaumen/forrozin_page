@@ -203,6 +203,32 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
       assert has_element?(lv, ~s|a[href="/graph/visual?seq=#{seq.id}"]|)
     end
 
+    test "deep-linked sequence opens expanded and highlighted", %{conn: conn, sequence: seq} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence?sequence=#{seq.id}")
+
+      assert has_element?(lv, "#sequence-card-#{seq.id}[data-deep-linked='true']")
+      assert has_element?(lv, "#sequence-expanded-#{seq.id}")
+      assert has_element?(lv, "#sequence-share-#{seq.id}")
+    end
+
+    test "closing a deep-linked sequence clears the url", %{conn: conn, sequence: seq} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence?sequence=#{seq.id}")
+
+      render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
+
+      assert_patch(lv, ~p"/sequence")
+    end
+
+    test "expanded sequence can copy a deep link", %{conn: conn, sequence: seq} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
+
+      render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
+      render_click(lv, "copy_sequence_link", %{"seq-id" => seq.id})
+      expected_link = OGrupoDeEstudosWeb.Endpoint.url() <> "/sequence?sequence=#{seq.id}"
+
+      assert_push_event(lv, "clipboard:copy", %{text: ^expected_link})
+    end
+
     test "shows author username", %{conn: conn, author: author} do
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ "@#{author.username}"
