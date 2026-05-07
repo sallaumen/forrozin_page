@@ -99,6 +99,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         step_comment_counts: %{},
         drawer_liked: false,
         drawer_favorited: false,
+        deep_linked_step_code: nil,
         active_section_id: nil,
         active_section_card: nil,
         filters_open?: false,
@@ -106,6 +107,50 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       )
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(%{"step" => step_code}, _uri, socket)
+      when is_binary(step_code) and step_code != "" do
+    case find_step_context(socket.assigns.sections, step_code) do
+      {:ok, section_id} ->
+        details = CollectionBrowser.section_details(socket.assigns.sections, section_id)
+
+        {:noreply,
+         socket
+         |> assign(
+           active_tab: "acervo",
+           search: "",
+           search_results: [],
+           active_section_id: section_id,
+           active_section_card: details,
+           deep_linked_step_code: step_code,
+           drawer_open: false,
+           drawer_type: nil,
+           drawer_item: nil
+         )
+         |> push_event("scroll-to-element", %{id: "collection-step-#{step_code}", block: "center"})}
+
+      :error ->
+        {:noreply, assign(socket, :deep_linked_step_code, nil)}
+    end
+  end
+
+  def handle_params(_params, _uri, socket) do
+    previous_deep_link = socket.assigns[:deep_linked_step_code]
+
+    socket =
+      if previous_deep_link do
+        assign(socket,
+          deep_linked_step_code: nil,
+          active_section_id: nil,
+          active_section_card: nil
+        )
+      else
+        assign(socket, :deep_linked_step_code, nil)
+      end
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -135,11 +180,22 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("back_to_overview", _params, socket) do
-    {:noreply,
-     assign(socket,
-       active_section_id: nil,
-       active_section_card: nil
-     )}
+    socket =
+      assign(socket,
+        active_section_id: nil,
+        active_section_card: nil
+      )
+
+    socket =
+      if socket.assigns.deep_linked_step_code do
+        socket
+        |> assign(:deep_linked_step_code, nil)
+        |> push_patch(to: ~p"/collection", replace: true)
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   def handle_event("toggle_section", %{"section_id" => id}, socket) do
@@ -178,6 +234,15 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("open_step", %{"code" => code}, socket) do
+    socket =
+      if socket.assigns.deep_linked_step_code && socket.assigns.deep_linked_step_code != code do
+        socket
+        |> assign(:deep_linked_step_code, nil)
+        |> push_patch(to: ~p"/collection", replace: true)
+      else
+        socket
+      end
+
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
         step =
@@ -208,6 +273,13 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       {:error, :not_found} ->
         {:noreply, socket}
     end
+  end
+
+  def handle_event("copy_step_link", %{"code" => code}, socket) do
+    {:noreply,
+     socket
+     |> push_event("clipboard:copy", %{text: url(~p"/collection?step=#{code}")})
+     |> put_flash(:info, "Link copiado")}
   end
 
   def handle_event("open_section", %{"id" => id}, socket) do
@@ -722,6 +794,16 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
+  defp find_step_context(sections, step_code) do
+    Enum.find_value(sections, :error, fn section ->
+      visible_steps = section.steps ++ Enum.flat_map(section.subsections, & &1.steps)
+
+      if Enum.any?(visible_steps, &(&1.code == step_code)) do
+        {:ok, section.id}
+      end
+    end)
+  end
+
   attr :section, :map, required: true
   attr :open, :boolean, required: true
   attr :edit_mode, :boolean, default: false
@@ -737,6 +819,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   attr :expanded_video, :string, default: nil
   attr :is_admin, :boolean, default: false
   attr :current_user, :map, default: nil
+  attr :deep_linked_step_code, :string, default: nil
 
   def section_card(assigns) do
     ~H"""
@@ -881,16 +964,24 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     can_expand = cat_name not in @non_expandable_categories
 
     assigns =
-      assign(assigns, has_links: has_links, is_expanded: is_expanded, can_expand: can_expand)
+      assign(assigns,
+        has_links: has_links,
+        is_expanded: is_expanded,
+        can_expand: can_expand,
+        is_deep_linked: assigns[:deep_linked_step_code] == assigns.step.code
+      )
 
     ~H"""
     <% is_mine = @step.suggested_by_id != nil and @step.suggested_by_id == @current_user_id %>
     <div class={[
       "border-b border-ink-200/40 rounded-md mb-0.5",
+      @is_deep_linked && "ring-2 ring-accent-orange/50 ring-offset-2 ring-offset-ink-50",
       is_mine && "bg-accent-pink-bg",
       !is_mine && "bg-transparent"
     ]}>
       <div
+        id={"collection-step-list-#{@step.code}"}
+        data-deep-linked={to_string(@is_deep_linked)}
         phx-click="open_step"
         phx-value-code={@step.code}
         class="flex gap-3.5 p-3 cursor-pointer"

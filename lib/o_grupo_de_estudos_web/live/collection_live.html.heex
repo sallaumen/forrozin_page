@@ -409,9 +409,15 @@
                   <%= if step.image_path do %>
                     <button
                       id={"collection-step-#{step.code}"}
+                      data-deep-linked={to_string(@deep_linked_step_code == step.code)}
                       phx-click="open_step"
                       phx-value-code={step.code}
-                      class="group flex h-[180px] sm:h-[200px] flex-col overflow-hidden rounded-[18px] border border-ink-300/60 bg-ink-50 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                      class={[
+                        "group flex h-[180px] sm:h-[200px] flex-col overflow-hidden rounded-[18px] border bg-ink-50 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg",
+                        @deep_linked_step_code == step.code &&
+                          "border-accent-orange/60 ring-2 ring-accent-orange/45 ring-offset-2 ring-offset-ink-100",
+                        @deep_linked_step_code != step.code && "border-ink-300/60"
+                      ]}
                     >
                       <div class="relative h-full w-full overflow-hidden">
                         <img
@@ -452,9 +458,15 @@
                   <% else %>
                     <button
                       id={"collection-step-#{step.code}"}
+                      data-deep-linked={to_string(@deep_linked_step_code == step.code)}
                       phx-click="open_step"
                       phx-value-code={step.code}
-                      class="group flex min-h-[120px] flex-col justify-between rounded-[18px] border border-ink-300/60 bg-ink-50 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:p-4"
+                      class={[
+                        "group flex min-h-[120px] flex-col justify-between rounded-[18px] border bg-ink-50 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:p-4",
+                        @deep_linked_step_code == step.code &&
+                          "border-accent-orange/60 ring-2 ring-accent-orange/45 ring-offset-2 ring-offset-ink-100",
+                        @deep_linked_step_code != step.code && "border-ink-300/60"
+                      ]}
                     >
                       <div class="flex items-start justify-between gap-2 sm:gap-3">
                         <div>
@@ -546,14 +558,23 @@
           </div>
           <div class="flex shrink-0 items-center gap-1.5">
             <button
+              id="collection-drawer-share"
+              phx-click="copy_step_link"
+              phx-value-code={@drawer_item.code}
+              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-200 text-ink-500 transition-colors hover:border-accent-orange/40 hover:text-accent-orange"
+              title="Copiar link deste passo"
+            >
+              <.icon name="hero-link" class="size-3" />
+            </button>
+            <button
               phx-click="toggle_drawer_like"
-              class="p-1.5 rounded-lg border border-ink-200 hover:border-accent-red/40 transition-colors"
+              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-200 text-ink-500 transition-colors hover:border-accent-red/40 hover:text-accent-red"
               title={if @drawer_liked, do: "Remover curtida", else: "Curtir"}
             >
               <.icon
                 name={if @drawer_liked, do: "hero-heart-solid", else: "hero-heart"}
                 class={[
-                  "w-5 h-5",
+                  "size-3",
                   @drawer_liked && "text-accent-red",
                   !@drawer_liked && "text-ink-400"
                 ]}
@@ -561,13 +582,13 @@
             </button>
             <button
               phx-click="toggle_drawer_favorite"
-              class="p-1.5 rounded-lg border border-ink-200 hover:border-gold-500/40 transition-colors"
+              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-200 text-ink-500 transition-colors hover:border-gold-500/40 hover:text-gold-500"
               title={if @drawer_favorited, do: "Remover favorito", else: "Favoritar"}
             >
               <.icon
                 name={if @drawer_favorited, do: "hero-star-solid", else: "hero-star"}
                 class={[
-                  "w-5 h-5",
+                  "size-3",
                   @drawer_favorited && "text-gold-500",
                   !@drawer_favorited && "text-ink-400"
                 ]}

@@ -157,6 +157,43 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert has_element?(lv, "#collection-step-SC-E")
       assert html =~ "/images/collection/sacada-esquerda.png"
     end
+
+    test "deep-linked step opens the right section and highlights the step", %{conn: conn} do
+      category = insert(:category, name: "bases", label: "Bases", color: "#2e9f6b")
+      section = insert(:section, title: "Bases", code: "B", position: 1, category: category)
+
+      insert(:step,
+        section: section,
+        category: category,
+        code: "BF",
+        name: "Base frontal",
+        like_count: 2
+      )
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection?step=BF")
+
+      assert has_element?(lv, "#collection-drilldown-shell")
+      assert has_element?(lv, "#collection-step-BF[data-deep-linked='true']")
+    end
+
+    test "returning from a deep-linked step clears the url", %{conn: conn} do
+      category = insert(:category, name: "bases", label: "Bases", color: "#2e9f6b")
+      section = insert(:section, title: "Bases", code: "B", position: 1, category: category)
+
+      insert(:step,
+        section: section,
+        category: category,
+        code: "BF",
+        name: "Base frontal",
+        like_count: 2
+      )
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection?step=BF")
+
+      render_click(lv, "back_to_overview", %{})
+
+      assert_patch(lv, ~p"/collection")
+    end
   end
 
   describe "search" do
@@ -269,6 +306,18 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ ~s(id="collection-drawer-body")
       assert html =~ "flex flex-col overflow-hidden"
       assert html =~ "min-h-0 flex-1 overflow-y-auto p-6"
+    end
+
+    test "step drawer can copy a deep link", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      insert(:step, section: section, code: "BF", name: "Base frontal", note: "Mechanical note")
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+
+      render_click(lv, "open_step", %{"code" => "BF"})
+      render_click(lv, "copy_step_link", %{"code" => "BF"})
+      expected_link = OGrupoDeEstudosWeb.Endpoint.url() <> "/collection?step=BF"
+
+      assert_push_event(lv, "clipboard:copy", %{text: ^expected_link})
     end
 
     test "close_drawer hides the panel", %{conn: conn} do

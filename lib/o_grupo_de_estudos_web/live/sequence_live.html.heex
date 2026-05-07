@@ -84,11 +84,11 @@
                 aria-expanded={to_string(@create_menu_open)}
                 class="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-md bg-accent-orange px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-accent-orange/90"
               >
-                <.icon name="hero-sparkles" class="size-4" /> Gerar sequência
+                <.icon name="hero-sparkles" class="size-3.5" /> Gerar sequência
                 <.icon
                   name="hero-chevron-down"
                   class={[
-                    "size-4 transition-transform",
+                    "size-3.5 transition-transform",
                     @create_menu_open && "rotate-180"
                   ]}
                 />
@@ -103,8 +103,8 @@
                   navigate={~p"/graph/visual?mode=generator"}
                   class="flex items-start gap-3 border-b border-ink-100 px-4 py-3 text-left no-underline transition hover:bg-ink-50"
                 >
-                  <span class="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-orange/10 text-accent-orange">
-                    <.icon name="hero-sparkles" class="size-4" />
+                  <span class="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-accent-orange/10 text-accent-orange">
+                    <.icon name="hero-sparkles" class="size-3.5" />
                   </span>
                   <span class="flex flex-col">
                     <span class="text-sm font-semibold text-ink-900">Gerador automático</span>
@@ -118,8 +118,8 @@
                   navigate={~p"/graph/visual?mode=manual"}
                   class="flex items-start gap-3 px-4 py-3 text-left no-underline transition hover:bg-ink-50"
                 >
-                  <span class="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-orange/10 text-accent-orange">
-                    <.icon name="hero-pencil-square" class="size-4" />
+                  <span class="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-accent-orange/10 text-accent-orange">
+                    <.icon name="hero-pencil-square" class="size-3.5" />
                   </span>
                   <span class="flex flex-col">
                     <span class="text-sm font-semibold text-ink-900">Anotar manualmente</span>
@@ -145,7 +145,7 @@
             </label>
             <.icon
               name="hero-magnifying-glass"
-              class="absolute left-3 top-[calc(50%+0.65rem)] -translate-y-1/2 w-4 h-4 text-ink-400"
+              class="absolute left-3 top-[calc(50%+0.65rem)] -translate-y-1/2 size-3.5 text-ink-400"
             />
             <input
               id="community-sequences-search-input"
@@ -234,7 +234,7 @@
               :if={@selected_discovery_section_id}
               class="inline-flex items-center gap-1 rounded-full bg-accent-orange/10 px-2.5 py-1 text-accent-orange"
             >
-              <.icon name="hero-funnel" class="size-3.5" /> filtro por categoria ativo
+              <.icon name="hero-funnel" class="size-3" /> filtro por categoria ativo
             </span>
           </div>
           <div class="flex flex-col gap-4">
@@ -253,6 +253,7 @@
                 expanded_seq_replying_to={@expanded_seq_replying_to}
                 following_enabled={true}
                 is_admin={@is_admin}
+                deep_linked_sequence_id={@deep_linked_sequence_id}
               />
             <% end %>
           </div>
@@ -310,6 +311,7 @@
                   expanded_seq_replying_to={@expanded_seq_replying_to}
                   following_enabled={false}
                   is_admin={@is_admin}
+                  deep_linked_sequence_id={@deep_linked_sequence_id}
                 />
               <% end %>
             </div>

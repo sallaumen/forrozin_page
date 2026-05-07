@@ -2049,6 +2049,18 @@ window.addEventListener("phx:clipboard:copy", (event) => {
   }
 })
 
+window.addEventListener("phx:scroll-to-element", (event) => {
+  const { id, behavior = "smooth", block = "center" } = event.detail
+
+  window.requestAnimationFrame(() => {
+    const el = document.getElementById(id)
+
+    if (el) {
+      el.scrollIntoView({ behavior, block, inline: "nearest" })
+    }
+  })
+})
+
 // ---------------------------------------------------------------------------
 // Dark mode — server is the source of truth; localStorage is a FOUC cache
 // ---------------------------------------------------------------------------
