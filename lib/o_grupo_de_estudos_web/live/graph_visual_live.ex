@@ -1525,12 +1525,25 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp truncate_note(text, max), do: String.slice(text, 0, max) <> "…"
 
   defp compute_edge_spread(edges) do
+    all_pairs = MapSet.new(edges, fn e -> {e.source_step.code, e.target_step.code} end)
+
     edges
     |> Enum.group_by(& &1.source_step.code)
     |> Enum.flat_map(fn {_source, group} ->
       spread_group(group, length(group))
     end)
+    |> Enum.map(&apply_bidirectional_spread(&1, all_pairs))
   end
+
+  defp apply_bidirectional_spread(%{spread: 0, from: from, to: to} = edge, pairs) do
+    if MapSet.member?(pairs, {to, from}) do
+      %{edge | spread: if(from <= to, do: 20, else: -20)}
+    else
+      edge
+    end
+  end
+
+  defp apply_bidirectional_spread(edge, _pairs), do: edge
 
   defp spread_group(group, count) do
     group

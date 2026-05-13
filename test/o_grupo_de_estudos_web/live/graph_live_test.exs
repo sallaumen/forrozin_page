@@ -230,4 +230,38 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
       assert html =~ "SC"
     end
   end
+
+  describe "edge spread" do
+    test "bidirectional pair gets opposite non-zero spreads", %{conn: conn} do
+      step_a = insert(:step, code: "BF", name: "Base frontal")
+      step_b = insert(:step, code: "SC", name: "Sacada simples")
+      insert(:connection, source_step: step_a, target_step: step_b)
+      insert(:connection, source_step: step_b, target_step: step_a)
+
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      [_, json] = Regex.run(~r/data-graph="([^"]*)"/, html)
+      %{"edges" => edges} = json |> String.replace("&quot;", "\"") |> Jason.decode!()
+
+      bf_to_sc = Enum.find(edges, fn e -> e["from"] == "BF" && e["to"] == "SC" end)
+      sc_to_bf = Enum.find(edges, fn e -> e["from"] == "SC" && e["to"] == "BF" end)
+
+      assert bf_to_sc["spread"] != 0
+      assert sc_to_bf["spread"] != 0
+      assert bf_to_sc["spread"] == -sc_to_bf["spread"]
+    end
+
+    test "unidirectional edge keeps spread zero", %{conn: conn} do
+      step_a = insert(:step, code: "BF", name: "Base frontal")
+      step_b = insert(:step, code: "SC", name: "Sacada simples")
+      insert(:connection, source_step: step_a, target_step: step_b)
+
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      [_, json] = Regex.run(~r/data-graph="([^"]*)"/, html)
+      %{"edges" => edges} = json |> String.replace("&quot;", "\"") |> Jason.decode!()
+
+      bf_to_sc = Enum.find(edges, fn e -> e["from"] == "BF" && e["to"] == "SC" end)
+
+      assert bf_to_sc["spread"] == 0
+    end
+  end
 end
