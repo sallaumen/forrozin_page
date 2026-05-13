@@ -237,7 +237,159 @@ function buildDrawerActionHTML(d) {
   ].join("")
 }
 
-function buildDrawerHeaderHTML(d) {
+// ---------------------------------------------------------------------------
+// Theme helpers for Cytoscape and drawer (D1: CSS vars = single source of truth)
+// ---------------------------------------------------------------------------
+function cyTheme() {
+  const s = getComputedStyle(document.documentElement)
+  const get = v => s.getPropertyValue(v).trim()
+  const dark = document.documentElement.classList.contains("dark")
+  return {
+    nodeFillNormal:      dark ? get("--color-ink-100") : "#fffef9",
+    nodeFillSuggested:   get("--color-accent-pink-bg"),
+    nodeFillHighlighted: dark ? "#322216" : "#fff8f0",
+    nodeLabel:           get("--color-ink-900"),
+    nodeBorderOpacity:   dark ? 0.95 : 0.85,
+    nodeSelectedOpacity: dark ? 0.22 : 0.15,
+    likeBorderColor:     dark ? get("--color-accent-red") : "#c0392b",
+    edgeOpacity:         dark ? 0.75 : 0.70,
+    edgeHighlightColor:  dark ? get("--color-accent-orange") : "#c4621e",
+    edgeLabelText:       dark ? get("--color-ink-800") : "#3a2510",
+    edgeLabelBg:         dark ? get("--color-ink-100") : "#fffdf8",
+  }
+}
+
+function drawerColors() {
+  const s = getComputedStyle(document.documentElement)
+  const get = v => s.getPropertyValue(v).trim()
+  const dark = document.documentElement.classList.contains("dark")
+  if (!dark) return {
+    code: "#9a7a5a", name: "#1a0e05",
+    nota: { text: "#5c3a1a", bg: "rgba(212,160,84,0.08)", border: "#d4a054" },
+    stats: "#7a5c3a", sectionHeader: "#9a7a5a", link: "#2c1a0e",
+    rowBorder: "rgba(60,40,20,0.06)", btnBorder: "rgba(60,40,20,0.12)",
+    ctaBg: "#1a0e05", ctaText: "#f2ede4",
+  }
+  return {
+    code: get("--color-ink-500"),
+    name: get("--color-ink-900"),
+    nota: { text: get("--color-ink-600"), bg: "rgba(230,179,71,0.08)", border: get("--color-gold-500") },
+    stats: get("--color-ink-600"),
+    sectionHeader: get("--color-ink-500"),
+    link: get("--color-ink-800"),
+    rowBorder: "rgba(255,255,255,0.10)",
+    btnBorder: "rgba(255,255,255,0.12)",
+    ctaBg: get("--color-ink-900"), ctaText: get("--color-ink-50"),
+  }
+}
+
+function buildCyStyle(currentUserId) {
+  const t = cyTheme()
+  return [
+    {
+      selector: "node",
+      style: {
+        "shape": "roundrectangle",
+        "width": function(e) {
+          if (e.data("highlighted")) return 132
+          return e.degree() >= 10 ? 104 : 88
+        },
+        "height": function(e) {
+          if (e.data("highlighted")) return 76
+          return e.degree() >= 10 ? 58 : 48
+        },
+        "padding": function(e) {
+          if (e.data("highlighted")) return "20px 30px"
+          return e.degree() >= 10 ? "12px 18px" : "8px 14px"
+        },
+        "background-color": function(e) {
+          const suggested = e.data("suggestedById") && e.data("suggestedById") === currentUserId
+          return suggested ? t.nodeFillSuggested : (e.data("highlighted") ? t.nodeFillHighlighted : t.nodeFillNormal)
+        },
+        "border-width": function(e) {
+          if (e.data("highlighted")) return 5
+          return e.degree() >= 10 ? 3 : 2
+        },
+        "border-color": "data(cor)", "border-opacity": t.nodeBorderOpacity,
+        "border-style": function(e) { return e.data("suggested") ? "dashed" : "solid" },
+        "label": function(e) { return e.id() + "\n" + e.data("label") },
+        "text-wrap": "wrap", "text-halign": "center", "text-valign": "center",
+        "font-family": "Georgia, serif",
+        "font-size": function(e) {
+          if (e.data("highlighted")) return 19
+          const d = e.degree()
+          return d >= 12 ? 15 : d >= 6 ? 14 : 13
+        },
+        "color": t.nodeLabel, "text-max-width": "180px",
+        "min-width": "80px"
+      }
+    },
+    {
+      selector: "node:selected",
+      style: {
+        "background-color": "data(cor)",
+        "background-opacity": t.nodeSelectedOpacity,
+        "border-width": 3, "border-opacity": 1.0
+      }
+    },
+    {
+      selector: "node.like-active",
+      style: {
+        "border-color": t.likeBorderColor,
+        "border-width": 2.5
+      }
+    },
+    {
+      selector: "edge",
+      style: {
+        "width": 2.5,
+        "line-color": "data(cor)",
+        "line-opacity": function(e) {
+          const dense = e.source().degree() >= 10 || e.target().degree() >= 10
+          return dense ? t.edgeOpacity * 0.85 : t.edgeOpacity
+        },
+        "target-arrow-color": "data(cor)",
+        "target-arrow-shape": "triangle",
+        "source-arrow-shape": "none",
+        "arrow-scale": 1.5,
+        "curve-style": "unbundled-bezier",
+        "control-point-distances": function(e) { return e.data("spread") || 0 },
+        "control-point-weights": 0.5
+      }
+    },
+    {
+      selector: "edge[label]",
+      style: {
+        "label": "data(label)", "font-size": "10px", "font-family": "Georgia, serif",
+        "font-style": "italic", "text-rotation": "autorotate", "text-margin-y": -10,
+        "color": t.edgeLabelText, "text-background-color": t.edgeLabelBg,
+        "text-background-opacity": 0.92, "text-background-padding": "3px",
+        "text-background-shape": "roundrectangle",
+        "text-border-width": 0.8, "text-border-color": "data(cor)", "text-border-opacity": 0.6
+      }
+    },
+    {
+      selector: "edge.sequence-highlight",
+      style: {
+        "width": 4.0,
+        "line-color": t.edgeHighlightColor,
+        "line-opacity": 1.0,
+        "target-arrow-color": t.edgeHighlightColor,
+        "arrow-scale": 1.8
+      }
+    },
+    {
+      selector: "edge.spotlight-out",
+      style: {
+        "line-color": "#2f8f5b",
+        "line-opacity": 1.0,
+        "arrow-scale": 1.8
+      }
+    }
+  ]
+}
+
+function buildDrawerHeaderHTML(d, colors) {
   const category = d.categoria
     ? `<span style="display:inline-block;font-size:10px;padding:2px 10px;border-radius:10px;background:${escapeHTML(d.cor)}18;color:${escapeHTML(d.cor)};border:1px solid ${escapeHTML(d.cor)}40;font-style:italic;">${escapeHTML(d.categoria)}</span>`
     : ""
@@ -245,8 +397,8 @@ function buildDrawerHeaderHTML(d) {
   return [
     `<div style="display:flex;align-items:flex-start;gap:12px;">`,
     `<div style="min-width:0;flex:1;">`,
-    `<div style="font-size:11px;color:#9a7a5a;letter-spacing:1px;margin-bottom:4px;">${escapeHTML(d.id)}</div>`,
-    `<div style="font-size:20px;font-weight:700;color:#1a0e05;line-height:1.3;margin-bottom:8px;">${escapeHTML(d.label)}</div>`,
+    `<div style="font-size:11px;color:${colors.code};letter-spacing:1px;margin-bottom:4px;">${escapeHTML(d.id)}</div>`,
+    `<div style="font-size:20px;font-weight:700;color:${colors.name};line-height:1.3;margin-bottom:8px;">${escapeHTML(d.label)}</div>`,
     category,
     `</div>`,
     `<div style="display:flex;flex-shrink:0;align-items:center;gap:6px;">${buildDrawerActionHTML(d)}</div>`,
@@ -254,40 +406,40 @@ function buildDrawerHeaderHTML(d) {
   ].join("")
 }
 
-function buildDrawerBodyHTML(d, outEdges, inEdges, degree, editMode) {
+function buildDrawerBodyHTML(d, outEdges, inEdges, degree, editMode, colors) {
   const parts = []
 
   if (d.nota) {
-    parts.push(`<div style="font-size: 12px; color: #5c3a1a; font-style: italic; line-height: 1.7; margin-bottom: 16px; padding: 10px 14px; background: rgba(212,160,84,0.08); border-left: 3px solid #d4a054; border-radius: 0 4px 4px 0;">${escapeHTML(d.nota)}</div>`)
+    parts.push(`<div style="font-size: 12px; color: ${colors.nota.text}; font-style: italic; line-height: 1.7; margin-bottom: 16px; padding: 10px 14px; background: ${colors.nota.bg}; border-left: 3px solid ${colors.nota.border}; border-radius: 0 4px 4px 0;">${escapeHTML(d.nota)}</div>`)
   }
 
-  parts.push(`<div style="font-size: 11px; color: #7a5c3a; margin-bottom: 16px;">${outEdges.length} saídas · ${inEdges.length} entradas · ${degree} conexões</div>`)
+  parts.push(`<div style="font-size: 11px; color: ${colors.stats}; margin-bottom: 16px;">${outEdges.length} saidas - ${inEdges.length} entradas - ${degree} conexoes</div>`)
 
   if (outEdges.length > 0) {
-    parts.push(`<div style="font-size: 10px; font-weight: 700; color: #9a7a5a; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Saídas →</div>`)
+    parts.push(`<div style="font-size: 10px; font-weight: 700; color: ${colors.sectionHeader}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Saidas</div>`)
     outEdges.forEach(e => {
       const t = e.target()
-      const lb = e.data("label") ? ` <span style="color: #9a7a5a; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
-      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(d.id)}" data-target="${escapeHTML(t.id())}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">×</button>` : ""
-      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">`)
-      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(t.id())}" style="font-size: 12px; color: #2c1a0e; cursor: pointer; flex:1;">`)
+      const lb = e.data("label") ? ` <span style="color: ${colors.sectionHeader}; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
+      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(d.id)}" data-target="${escapeHTML(t.id())}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">x</button>` : ""
+      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid ${colors.rowBorder};">`)
+      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(t.id())}" style="font-size: 12px; color: ${colors.link}; cursor: pointer; flex:1;">`)
       parts.push(`<code style="font-size: 10px; color: ${escapeHTML(t.data("cor"))}; margin-right: 6px;">${escapeHTML(t.id())}</code>${escapeHTML(t.data("label"))}${lb}</div>${deleteBtn}</div>`)
     })
   }
 
   if (inEdges.length > 0) {
-    parts.push(`<div style="font-size: 10px; font-weight: 700; color: #9a7a5a; text-transform: uppercase; letter-spacing: 2px; margin: 16px 0 8px;">← Entradas</div>`)
+    parts.push(`<div style="font-size: 10px; font-weight: 700; color: ${colors.sectionHeader}; text-transform: uppercase; letter-spacing: 2px; margin: 16px 0 8px;">Entradas</div>`)
     inEdges.forEach(e => {
       const s = e.source()
-      const lb = e.data("label") ? ` <span style="color: #9a7a5a; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
-      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(s.id())}" data-target="${escapeHTML(d.id)}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">×</button>` : ""
-      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid rgba(60,40,20,0.06);">`)
-      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(s.id())}" style="font-size: 12px; color: #2c1a0e; cursor: pointer; flex:1;">`)
+      const lb = e.data("label") ? ` <span style="color: ${colors.sectionHeader}; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
+      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(s.id())}" data-target="${escapeHTML(d.id)}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">x</button>` : ""
+      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid ${colors.rowBorder};">`)
+      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(s.id())}" style="font-size: 12px; color: ${colors.link}; cursor: pointer; flex:1;">`)
       parts.push(`<code style="font-size: 10px; color: ${escapeHTML(s.data("cor"))}; margin-right: 6px;">${escapeHTML(s.id())}</code>${escapeHTML(s.data("label"))}${lb}</div>${deleteBtn}</div>`)
     })
   }
 
-  parts.push(`<a href="/steps/${encodeURIComponent(d.id)}" style="display: block; margin-top: 16px; padding: 12px 16px; text-align: center; background: #1a0e05; color: #f2ede4; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.3px;">Ver passo completo</a>`)
+  parts.push(`<a href="/steps/${encodeURIComponent(d.id)}" style="display: block; margin-top: 16px; padding: 12px 16px; text-align: center; background: ${colors.ctaBg}; color: ${colors.ctaText}; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.3px;">Ver passo completo</a>`)
 
   return parts.join("")
 }
@@ -304,8 +456,9 @@ function openDrawer(node, cy, editMode, hook) {
   }
 
   const d = node.data()
-  header.innerHTML = buildDrawerHeaderHTML(d)
-  content.innerHTML = buildDrawerBodyHTML(d, node.outgoers("edge"), node.incomers("edge"), node.degree(), editMode)
+  const colors = drawerColors()
+  header.innerHTML = buildDrawerHeaderHTML(d, colors)
+  content.innerHTML = buildDrawerBodyHTML(d, node.outgoers("edge"), node.incomers("edge"), node.degree(), editMode, colors)
   el.style.transform = "translateX(0)"
   el.dataset.open = "true"
   el.removeAttribute("inert")
@@ -430,19 +583,18 @@ function applyLikedStepStyling() {
   const cy = window._cyInstance
   if (!cy) return
 
+  const likeColor = cyTheme().likeBorderColor
   cy.nodes().forEach(node => {
     if (window._likedStepCodes.has(node.id())) {
+      node.addClass("like-active")
       node.style({
         'border-width': node.data('highlighted') ? 5 : (node.degree() >= 10 ? 3 : 2.5),
-        'border-color': '#c0392b'
+        'border-color': likeColor
       })
     } else {
-      // Only reset the border-color if the node isn't actively selected/spotlighted
-      // and sequence highlight isn't active (sequence takes full precedence)
+      node.removeClass("like-active")
       if (!window._seqHighlightActive) {
-        node.style({
-          'border-color': node.data('cor') || '#9a7a5a'
-        })
+        node.style({ 'border-color': node.data('cor') || '#9a7a5a' })
       }
     }
   })
@@ -546,6 +698,8 @@ const GraphVisual = {
       document.removeEventListener("click", this._graphLegendClickHandler)
       this._graphLegendClickHandler = null
     }
+    this._themeObserver?.disconnect()
+    this._themeObserver = null
   },
 
   _graphSignature() {
@@ -653,73 +807,7 @@ const GraphVisual = {
     const cy = window._cytoscape({
       container: el,
       elements,
-      style: [
-        {
-          selector: "node",
-          style: {
-            "shape": "roundrectangle",
-            "width": function(e) {
-              if (e.data("highlighted")) return 132
-              return e.degree() >= 10 ? 104 : 88
-            },
-            "height": function(e) {
-              if (e.data("highlighted")) return 76
-              return e.degree() >= 10 ? 58 : 48
-            },
-            "padding": function(e) {
-              if (e.data("highlighted")) return "20px 30px"
-              return e.degree() >= 10 ? "12px 18px" : "8px 14px"
-            },
-            "background-color": function(e) {
-              return (e.data("suggestedById") && e.data("suggestedById") === currentUserId) ? "#fce4ec" : "#fffef9"
-            },
-            "border-width": function(e) {
-              if (e.data("highlighted")) return 5
-              return e.degree() >= 10 ? 3 : 2
-            },
-            "border-color": "data(cor)", "border-opacity": 0.85,
-            "border-style": function(e) { return e.data("suggested") ? "dashed" : "solid" },
-            "label": function(e) { return e.id() + "\n" + e.data("label") },
-            "text-wrap": "wrap", "text-halign": "center", "text-valign": "center",
-            "font-family": "Georgia, serif",
-            "font-size": function(e) {
-              if (e.data("highlighted")) return 19
-              const d = e.degree()
-              return d >= 12 ? 15 : d >= 6 ? 14 : 13
-            },
-            "color": "#1a0e05", "text-max-width": "180px",
-            "min-width": "80px"
-          }
-        },
-        {
-          selector: "node:selected",
-          style: {
-            "background-color": "data(cor)", "background-opacity": 0.15,
-            "border-width": 3, "border-opacity": 1
-          }
-        },
-        {
-          selector: "edge",
-          style: {
-            "width": 1.5, "line-color": "data(cor)", "line-opacity": 0.45,
-            "target-arrow-color": "data(cor)", "target-arrow-shape": "triangle", "arrow-scale": 0.9,
-            "curve-style": "unbundled-bezier",
-            "control-point-distances": function(e) { return e.data("spread") || 0 },
-            "control-point-weights": 0.5
-          }
-        },
-        {
-          selector: "edge[label]",
-          style: {
-            "label": "data(label)", "font-size": "10px", "font-family": "Georgia, serif",
-            "font-style": "italic", "text-rotation": "autorotate", "text-margin-y": -10,
-            "color": "#3a2510", "text-background-color": "#fffdf8",
-            "text-background-opacity": 0.92, "text-background-padding": "3px",
-            "text-background-shape": "roundrectangle",
-            "text-border-width": 0.8, "text-border-color": "data(cor)", "text-border-opacity": 0.6
-          }
-        }
-      ],
+      style: buildCyStyle(currentUserId),
       minZoom: 0.06, maxZoom: 5,
       autoungrabifyNodes: true
     })
@@ -887,6 +975,47 @@ const GraphVisual = {
         hook._resetLegend()
       }
     })
+
+    // Theme toggle observer — re-apply Cytoscape colors when .dark changes
+    if (this._themeObserver) this._themeObserver.disconnect()
+    const themeObserver = new MutationObserver(mutations => {
+      for (const m of mutations) {
+        if (m.attributeName !== "class") continue
+        const t = cyTheme()
+        cy.batch(() => {
+          cy.nodes().forEach(n => {
+            const suggested = n.data("suggestedById") === currentUserId
+            const highlighted = n.data("highlighted")
+            n.style({
+              "background-color": suggested ? t.nodeFillSuggested : (highlighted ? t.nodeFillHighlighted : t.nodeFillNormal),
+              "color": t.nodeLabel,
+              "border-opacity": t.nodeBorderOpacity,
+            })
+          })
+          cy.edges().forEach(e => {
+            const dense = e.source().degree() >= 10 || e.target().degree() >= 10
+            e.style({ "line-opacity": dense ? t.edgeOpacity * 0.85 : t.edgeOpacity })
+          })
+          cy.edges("[label]").forEach(e => {
+            e.style({ "color": t.edgeLabelText, "text-background-color": t.edgeLabelBg })
+          })
+          cy.edges(".sequence-highlight").forEach(e => {
+            e.style({ "line-color": t.edgeHighlightColor, "target-arrow-color": t.edgeHighlightColor })
+          })
+          cy.nodes(".like-active").forEach(n => {
+            n.style({ "border-color": t.likeBorderColor })
+          })
+        })
+        const drawerEl = document.getElementById("graph-drawer")
+        if (drawerEl?.dataset.open === "true") {
+          const openNode = cy.$("node:selected").first()
+          if (openNode.length > 0) openDrawer(openNode, cy, isEditMode && isAdmin, hook)
+        }
+        break
+      }
+    })
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    this._themeObserver = themeObserver
   },
 
   _bindGraphLegendInteractions() {
