@@ -233,4 +233,84 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       assert remaining == []
     end
   end
+
+  describe "conquistas" do
+    test "visitante: nao ve secao de progresso (CA-2.3)", %{conn: conn, viewer: viewer} do
+      profile = insert(:user)
+
+      for _ <- 1..5 do
+        step = insert(:step)
+        OGrupoDeEstudos.Engagement.toggle_like(profile.id, "step", step.id)
+      end
+
+      conn = logged_in_conn(conn, viewer)
+      {:ok, _lv, html} = live(conn, ~p"/users/#{profile.username}")
+      assert html =~ "Explorador"
+      refute html =~ "ver progresso"
+    end
+
+    test "proprio perfil: ve summary de progresso quando ha badges nao conquistados", %{
+      conn: conn,
+      viewer: viewer
+    } do
+      conn = logged_in_conn(conn, viewer)
+      {:ok, _lv, html} = live(conn, ~p"/users/#{viewer.username}")
+      assert html =~ "ver progresso"
+    end
+
+    test "zero badges conquistados: ghost pills + texto motivacional (CA-EC-1)", %{
+      conn: conn,
+      viewer: viewer
+    } do
+      conn = logged_in_conn(conn, viewer)
+      {:ok, _lv, html} = live(conn, ~p"/users/#{viewer.username}")
+      assert html =~ "Participe para conquistar!"
+      refute html =~ "bg-accent-orange/10"
+
+      for icon <- ["🌟", "❤️", "🎤", "💬", "⭐", "🧭"] do
+        assert html =~ icon
+      end
+    end
+
+    test "todas conquistadas: secao de progresso ausente (CA-EC-2)", %{
+      conn: conn,
+      viewer: viewer
+    } do
+      # Curador + Explorador: 15 likes given on steps
+      for _ <- 1..15 do
+        OGrupoDeEstudos.Engagement.toggle_like(viewer.id, "step", insert(:step).id)
+      end
+
+      # Voz Ativa + Comentarista: 15 comments authored
+      anchor = insert(:step)
+
+      for i <- 1..15 do
+        OGrupoDeEstudos.Engagement.create_step_comment(viewer, anchor.id, %{body: "Comentario #{i}"})
+      end
+
+      # Estrela + Popular: 25 likes received on a comment
+      {:ok, comment} =
+        OGrupoDeEstudos.Engagement.create_step_comment(viewer, anchor.id, %{body: "Destaque"})
+
+      for _ <- 1..25 do
+        liker = insert(:user)
+        OGrupoDeEstudos.Engagement.toggle_like(liker.id, "step_comment", comment.id)
+      end
+
+      conn = logged_in_conn(conn, viewer)
+      {:ok, _lv, html} = live(conn, ~p"/users/#{viewer.username}")
+      assert html =~ "Conquistas"
+      refute html =~ "ver progresso"
+      refute html =~ "ocultar"
+    end
+
+    test "renderiza nome do badge no markup (CA-3.4)", %{conn: conn, viewer: viewer} do
+      conn = logged_in_conn(conn, viewer)
+      {:ok, _lv, html} = live(conn, ~p"/users/#{viewer.username}")
+
+      for name <- ["Estrela", "Popular", "Voz Ativa", "Comentarista", "Curador", "Explorador"] do
+        assert html =~ name
+      end
+    end
+  end
 end
