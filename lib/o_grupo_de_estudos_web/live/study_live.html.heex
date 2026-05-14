@@ -62,54 +62,45 @@
   <% end %>
 
   <%= if @active_study_tab == "personal" or !@current_user.is_teacher do %>
-    <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-6 px-4 py-6 pb-24 md:pb-8 xl:px-8">
-      <section id="study-overview-grid" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
-        <div class="flex flex-col gap-6">
+    <%!-- Consistency strip: monthly counter + 7-dot weekly bar --%>
+    <div class="bg-gold-500/[0.07] border-b border-gold-500/25">
+      <.study_consistency
+        weekly_note_count={@weekly_note_count}
+        monthly_note_count={@monthly_note_count}
+        today_status={@today_status}
+        month_name={OGrupoDeEstudos.Brazil.strftime(@today, "%B")}
+      />
+    </div>
+
+    <main class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-4 px-4 py-4 pb-24 md:pb-8 xl:px-8">
+      <section id="study-overview-grid" class="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_340px]">
+
+        <%!-- LEFT: main content column --%>
+        <div class="flex flex-col gap-3">
+
+          <%!-- HERO: today diary -- dominant element via left-border accent + shadow-md --%>
           <section
             id="study-diary-panel"
-            class="rounded-xl border border-ink-200 bg-white p-5 shadow-sm md:p-6"
+            class="rounded-xl border border-ink-200 border-l-[3px] border-l-accent-orange/70 bg-white p-4 shadow-md"
           >
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h1 class="text-lg font-bold text-ink-900 m-0">Diário de hoje</h1>
-
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-[11px] text-ink-500">
-                  {OGrupoDeEstudos.Brazil.format_today()}
-                </span>
-                <span class="text-[11px] text-ink-400">·</span>
-                <span
-                  id="study-weekly-summary"
-                  class="text-[11px] font-semibold text-ink-600"
-                >
-                  {@weekly_note_count} {if @weekly_note_count == 1,
-                    do: "registro",
-                    else: "registros"} esta semana
-                </span>
-                <span class="text-[11px] text-ink-400">·</span>
-                <span class={[
-                  "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold",
-                  @today_status.tone == :success &&
-                    "border-accent-green/25 bg-accent-green/10 text-accent-green",
-                  @today_status.tone == :warning &&
-                    "border-accent-orange/25 bg-accent-orange/10 text-accent-orange"
-                ]}>
-                  {@today_status.label}
-                </span>
-              </div>
+            <div class="flex flex-wrap items-center justify-between gap-1.5 mb-3">
+              <h1 class="text-base font-bold text-ink-900 m-0 font-serif">Diario de hoje</h1>
+              <span class="text-[11px] text-ink-400 font-sans">
+                {OGrupoDeEstudos.Brazil.format_today()}
+              </span>
             </div>
 
             <.form
               for={to_form(%{"content" => @today_note_content}, as: :personal_note)}
               id="study-diary-form"
               phx-change="save_personal_note"
-              class="mt-5"
             >
               <textarea
                 id="study-personal-note-content"
                 name="personal_note[content]"
-                rows="3"
-                placeholder="O que você praticou hoje? O que ficou gostoso? O que quer revisitar na próxima aula?"
-                class="w-full rounded-xl border border-ink-200 bg-ink-50 px-4 py-4 font-serif text-sm leading-7 text-ink-900 box-border resize-y outline-none transition-colors focus:border-accent-orange/40 focus:ring-1 focus:ring-accent-orange/20"
+                rows="4"
+                placeholder="O que voce praticou hoje? O que ficou gostoso? O que quer revisitar na proxima aula?"
+                class="w-full rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 font-serif text-sm leading-7 text-ink-900 box-border resize-y outline-none transition-colors focus:border-accent-orange/40 focus:ring-1 focus:ring-accent-orange/20"
               >{@today_note_content}</textarea>
             </.form>
 
@@ -138,7 +129,7 @@
                     type="text"
                     autocomplete="off"
                     placeholder="+ Vincular passo ao estudo de hoje"
-                    class="w-full rounded-xl border border-ink-200 bg-ink-50/80 px-3 py-2.5 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
+                    class="w-full rounded-xl border border-ink-200 bg-ink-50/80 px-3 py-2 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
                   />
                 </form>
 
@@ -165,14 +156,82 @@
             </div>
           </section>
 
-          <%!-- History below diary --%>
+          <%!-- Empty state motivante: shown when user has no entry for today --%>
+          <section
+            :if={@today_note == nil}
+            id="study-empty-state"
+            class="rounded-xl border border-dashed border-gold-500/30 bg-gold-500/[0.04] px-4 py-5 text-center"
+          >
+            <p class="text-sm font-bold text-ink-900 m-0 mb-1">Hoje e um bom dia pra praticar</p>
+            <p class="text-xs text-ink-500 m-0 mb-3 leading-relaxed">
+              A consistencia e o que transforma pratica em memoria. Cada dia conta.
+            </p>
+            <.link
+              navigate={~p"/collection"}
+              class="text-sm font-bold text-accent-orange no-underline hover:text-accent-orange/80 transition-colors"
+            >
+              Ver enciclopedia de passos
+            </.link>
+            <p class="m-0 mt-2">
+              <a
+                href="#study-mobile-teacher"
+                class="text-sm text-ink-400 no-underline hover:text-ink-600 transition-colors"
+              >
+                Encontrar professor
+              </a>
+            </p>
+          </section>
+
+          <%!-- Joint diaries: horizontal strip, social signal now visible on mobile --%>
+          <%= if @movement_cards != [] do %>
+            <div id="study-movement-panel">
+              <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-1.5 font-sans m-0">
+                Diarios conjuntos
+              </p>
+              <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <%= for movement <- @movement_cards do %>
+                  <div
+                    id={"study-movement-card-#{movement.link_id}"}
+                    class="flex-none w-[138px] rounded-xl border border-ink-200 bg-white p-2.5 shadow-sm flex flex-col gap-1.5"
+                  >
+                    <.link
+                      id={"study-profile-link-#{movement.counterpart.username}"}
+                      navigate={~p"/users/#{movement.counterpart.username}"}
+                      class="no-underline flex items-center gap-1.5 min-w-0"
+                    >
+                      <.user_avatar user={movement.counterpart} size={:xs} />
+                      <p class="text-[11px] font-bold text-ink-900 m-0 truncate leading-tight">
+                        {movement.counterpart.name}
+                      </p>
+                    </.link>
+                    <p class={[
+                      "text-[9px] m-0 font-semibold",
+                      movement.has_today_note? && "text-accent-green",
+                      !movement.has_today_note? && "text-ink-400"
+                    ]}>
+                      {if movement.has_today_note?, do: "Escreveu hoje", else: "Sem registro"}
+                    </p>
+                    <.link
+                      id={"study-open-shared-note-#{movement.link_id}"}
+                      navigate={~p"/study/shared/#{movement.link_id}"}
+                      class="text-[10px] font-bold text-white bg-accent-orange rounded-full px-2 py-1 text-center no-underline hover:bg-accent-orange/90 transition-colors"
+                    >
+                      Abrir
+                    </.link>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- History panel --%>
           <section
             id="study-history-panel"
             class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm"
           >
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between mb-2.5">
               <h2 class="text-sm font-bold text-ink-900 m-0 font-serif">Notas anteriores</h2>
-              <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium">
+              <span :if={@personal_history != []} class="text-[10px] text-ink-400 font-medium font-sans">
                 {length(@personal_history)} {if length(@personal_history) == 1,
                   do: "dia",
                   else: "dias"}
@@ -180,13 +239,19 @@
             </div>
 
             <%= if @personal_history == [] do %>
-              <div class="rounded-lg border border-dashed border-ink-200 bg-ink-50 px-4 py-4 text-center">
-                <p class="text-xs text-ink-500 m-0">
-                  Suas notas vao aparecer aqui conforme voce registrar seus estudos.
+              <div class="rounded-lg border border-dashed border-gold-500/30 bg-gold-500/[0.04] px-4 py-5 text-center">
+                <p class="text-xs font-semibold text-ink-700 m-0 mb-1">
+                  Seu historico comeca com o primeiro registro
                 </p>
+                <p class="text-[11px] text-ink-500 m-0 leading-relaxed mb-2">
+                  O diario registra o que voce praticou a cada dia -- passos, descobertas, o que quer revisitar. Com o tempo vira seu mapa de aprendizado.
+                </p>
+                <span class="text-[10px] font-semibold text-accent-orange">
+                  Escreva algo acima para comecar ↑
+                </span>
               </div>
             <% else %>
-              <div class="space-y-2">
+              <div class="space-y-1.5">
                 <%= for note <- @personal_history do %>
                   <article class="rounded-lg border border-ink-200 bg-ink-50 px-3 py-2.5">
                     <span class="text-[11px] font-bold text-ink-700">
@@ -203,18 +268,21 @@
 
                     <%= if note.content && note.content != "" do %>
                       <% long? = String.length(note.content) > 150 %>
+                      <% expanded? = MapSet.member?(@expanded_note_ids, note.id) %>
                       <%= if long? do %>
-                        <details class="mt-1.5">
-                          <summary class="text-xs leading-6 text-ink-600 cursor-pointer list-none">
-                            <span class="line-clamp-2">{note.content}</span>
-                            <span class="text-[10px] text-accent-orange font-semibold mt-0.5 inline-block">
-                              ver mais
-                            </span>
-                          </summary>
-                          <p class="text-xs leading-6 text-ink-600 m-0 mt-1 whitespace-pre-line">
+                        <div class="mt-1.5 transition-all duration-200">
+                          <p class={["text-xs leading-6 text-ink-600 m-0", !expanded? && "line-clamp-2"]}>
                             {note.content}
                           </p>
-                        </details>
+                          <button
+                            type="button"
+                            phx-click="toggle_note_expansion"
+                            phx-value-id={note.id}
+                            class="text-xs text-ink-400 underline underline-offset-2 cursor-pointer bg-transparent border-0 p-0 mt-0.5 block hover:text-ink-600 transition-colors"
+                          >
+                            {if expanded?, do: "ver menos", else: "ver mais"}
+                          </button>
+                        </div>
                       <% else %>
                         <p class="mt-1.5 text-xs leading-6 text-ink-600 m-0">{note.content}</p>
                       <% end %>
@@ -233,7 +301,6 @@
                     <%!-- Inline step editor --%>
                     <%= if @editing_history_note_id == note.id do %>
                       <div class="mt-2 p-2 rounded-lg bg-ink-100/50 border border-ink-200/60">
-                        <%!-- Current steps as removable chips --%>
                         <div :if={note.related_steps != []} class="flex flex-wrap gap-1 mb-2">
                           <%= for step <- note.related_steps do %>
                             <button
@@ -249,7 +316,6 @@
                           <% end %>
                         </div>
 
-                        <%!-- Search input --%>
                         <form phx-change="search_history_step">
                           <input
                             type="text"
@@ -260,7 +326,6 @@
                           />
                         </form>
 
-                        <%!-- Search results --%>
                         <div
                           :if={@history_step_suggestions != []}
                           class="mt-1 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm"
@@ -287,57 +352,102 @@
               </div>
             <% end %>
           </section>
-        </div>
 
-        <aside id="study-movement-panel" class="flex flex-col gap-4">
-          <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
-            <h2 class="text-sm font-bold text-ink-900 m-0 mb-2 font-serif">Diarios conjuntos</h2>
+          <%!-- Find teacher: accessible on mobile (max 2 taps), hidden on xl (sidebar has it) --%>
+          <section id="study-mobile-teacher" class="rounded-xl border border-ink-200 bg-white p-4 shadow-sm xl:hidden">
+            <h2 class="text-sm font-bold text-ink-900 m-0 mb-3 font-serif">Encontrar professor</h2>
 
-            <%= if @movement_cards == [] do %>
-              <p class="text-xs text-ink-400 italic m-0">
-                Aparecem aqui quando voce tiver vinculo com um professor ou aluno.
-              </p>
-            <% else %>
-              <div class="space-y-1.5">
-                <%= for movement <- @movement_cards do %>
-                  <div
-                    id={"study-movement-card-#{movement.link_id}"}
-                    class="flex items-center gap-2.5 rounded-lg bg-ink-50 border border-ink-200 px-3 py-2"
-                  >
+            <%= if @teacher_links != [] do %>
+              <div class="mb-3 space-y-1.5">
+                <%= for link <- @teacher_links do %>
+                  <div class="flex items-center gap-2 rounded-lg bg-ink-50 border border-ink-200 px-2.5 py-2">
                     <.link
-                      id={"study-profile-link-#{movement.counterpart.username}"}
-                      navigate={~p"/users/#{movement.counterpart.username}"}
-                      class="no-underline flex items-center gap-2 flex-1 min-w-0"
+                      navigate={~p"/users/#{link.teacher.username}"}
+                      class="no-underline flex items-center gap-1.5 flex-1 min-w-0"
                     >
-                      <.user_avatar user={movement.counterpart} size={:sm} />
-                      <div class="flex-1 min-w-0">
-                        <p class="text-[11px] font-bold text-ink-900 m-0 truncate">
-                          {movement.counterpart.name}
-                        </p>
-                        <p class={[
-                          "text-[9px] m-0 font-semibold",
-                          movement.has_today_note? && "text-accent-green",
-                          !movement.has_today_note? && "text-ink-400"
-                        ]}>
-                          {if movement.has_today_note?,
-                            do: "Escreveu hoje",
-                            else: "Ultimo movimento"}
-                        </p>
-                      </div>
+                      <.user_avatar user={link.teacher} size={:xs} />
+                      <p class="text-[11px] font-bold text-ink-900 m-0 truncate">
+                        {link.teacher.name}
+                      </p>
                     </.link>
                     <.link
-                      id={"study-open-shared-note-#{movement.link_id}"}
-                      navigate={~p"/study/shared/#{movement.link_id}"}
-                      class="text-[9px] font-bold text-white bg-accent-orange rounded-full px-2.5 py-1 no-underline hover:bg-accent-orange/90 transition-colors shrink-0"
+                      navigate={~p"/study/shared/#{link.id}"}
+                      class="text-[10px] font-bold text-accent-orange no-underline shrink-0"
                     >
-                      Abrir
+                      Diario →
                     </.link>
                   </div>
                 <% end %>
               </div>
             <% end %>
+
+            <%= if @suggested_teachers != [] do %>
+              <div class="mb-3">
+                <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest mb-1.5 font-sans m-0">
+                  Sugeridos
+                </p>
+                <div class="space-y-1">
+                  <%= for teacher <- Enum.take(@suggested_teachers, 3) do %>
+                    <div class="flex items-center gap-2 rounded-lg bg-ink-50 border border-ink-200 px-2.5 py-1.5">
+                      <.user_avatar user={teacher} size={:xs} />
+                      <p class="text-[11px] font-bold text-ink-900 m-0 truncate flex-1">
+                        @{teacher.username}
+                      </p>
+                      <button
+                        type="button"
+                        phx-click="request_teacher"
+                        phx-value-id={teacher.id}
+                        class="text-[10px] font-bold text-accent-orange cursor-pointer border-0 bg-transparent shrink-0 p-0"
+                      >
+                        Estudar →
+                      </button>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <form phx-change="search_teacher" class="relative">
+              <input
+                id="study-teacher-search-mobile"
+                name="term"
+                type="text"
+                value={@teacher_search}
+                autocomplete="off"
+                placeholder="Buscar professor por nome..."
+                class="w-full rounded-lg border border-ink-200 bg-ink-50/80 px-3 py-2 font-serif text-xs text-ink-700 box-border outline-none transition-colors focus:border-accent-orange/40"
+              />
+            </form>
+
+            <div
+              :if={@teacher_search_results != []}
+              class="mt-1.5 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm"
+            >
+              <%= for teacher <- @teacher_search_results do %>
+                <div class="flex items-center justify-between gap-2 px-2.5 py-2 border-b border-ink-100 last:border-b-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <.user_avatar user={teacher} size={:xs} />
+                    <p class="text-[11px] font-semibold text-ink-900 m-0 truncate">
+                      {teacher.name}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="request_teacher"
+                    phx-value-id={teacher.id}
+                    class="text-[10px] font-bold text-accent-orange bg-transparent border-0 cursor-pointer shrink-0 p-0"
+                  >
+                    Estudar
+                  </button>
+                </div>
+              <% end %>
+            </div>
           </section>
-          <%!-- Personal goals --%>
+        </div>
+
+        <%!-- RIGHT: sidebar (desktop xl+) --%>
+        <aside id="study-sidebar" class="flex flex-col gap-3">
+          <%!-- Goals --%>
           <section class="rounded-xl border border-ink-200 bg-white p-3 shadow-sm">
             <h2 class="text-xs font-bold text-ink-900 m-0 mb-2 font-serif">Metas de estudo</h2>
             <.goals_board goals={@personal_goals} goal_input={@goal_input} />
@@ -356,7 +466,7 @@
             </section>
           <% end %>
 
-          <%!-- Encontrar professor (compact, in sidebar) --%>
+          <%!-- Find teacher (sidebar, desktop) --%>
           <section class="rounded-xl border border-ink-200 bg-white p-3 shadow-sm">
             <h2 class="text-xs font-bold text-ink-900 m-0 mb-2 font-serif">
               Encontrar professor

@@ -163,18 +163,21 @@
 
                   <%= if note.content && note.content != "" do %>
                     <% long? = String.length(note.content) > 150 %>
+                    <% expanded? = MapSet.member?(@expanded_note_ids, note.id) %>
                     <%= if long? do %>
-                      <details class="mt-1.5">
-                        <summary class="text-xs leading-6 text-ink-600 cursor-pointer list-none">
-                          <span class="line-clamp-2">{note.content}</span>
-                          <span class="text-[10px] text-accent-orange font-semibold mt-0.5 inline-block">
-                            ver mais
-                          </span>
-                        </summary>
-                        <p class="text-xs leading-6 text-ink-600 m-0 mt-1 whitespace-pre-line">
+                      <div class="mt-1.5">
+                        <p class={["text-xs leading-6 text-ink-600 m-0", !expanded? && "line-clamp-2"]}>
                           {note.content}
                         </p>
-                      </details>
+                        <button
+                          type="button"
+                          phx-click="toggle_note_expansion"
+                          phx-value-id={note.id}
+                          class="text-[10px] text-accent-orange font-semibold block mt-0.5 bg-transparent border-0 p-0 cursor-pointer hover:text-accent-orange/80 transition-colors"
+                        >
+                          {if expanded?, do: "ver menos", else: "ver mais"}
+                        </button>
+                      </div>
                     <% else %>
                       <p class="mt-1.5 text-xs leading-6 text-ink-600 m-0">{note.content}</p>
                     <% end %>

@@ -237,4 +237,67 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert has_element?(lv, "#study-weekly-summary")
     end
   end
+
+  describe "expansao de notas longas no historico pessoal" do
+    test "nota longa usa phx-click toggle, nao <details>", %{conn: conn} do
+      user = insert(:user)
+      past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
+      long_content = String.duplicate("a", 151)
+
+      {:ok, _note} =
+        Study.upsert_personal_note(user, past_date, %{content: long_content, step_ids: []})
+
+      conn = log_in_user(conn, user)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']")
+      refute has_element?(lv, "article details")
+    end
+
+    test "toggle_note_expansion expande e colapsa nota longa", %{conn: conn} do
+      user = insert(:user)
+      past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
+      long_content = String.duplicate("a", 151)
+
+      {:ok, note} =
+        Study.upsert_personal_note(user, past_date, %{content: long_content, step_ids: []})
+
+      conn = log_in_user(conn, user)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver mais")
+
+      render_click(lv, "toggle_note_expansion", %{"id" => note.id})
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver menos")
+
+      render_click(lv, "toggle_note_expansion", %{"id" => note.id})
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver mais")
+    end
+  end
+
+  describe "estado vazio motivante" do
+    test "exibe headline motivante quando nao ha registro hoje", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      {:ok, _lv, html} = live(conn, ~p"/study")
+
+      assert html =~ "Hoje e um bom dia pra praticar"
+    end
+
+    test "oculta estado vazio quando usuario ja registrou hoje", %{conn: conn} do
+      user = insert(:user)
+
+      Study.upsert_personal_note(user, OGrupoDeEstudos.Brazil.today(), %{
+        content: "Estudei hoje",
+        step_ids: []
+      })
+
+      conn = log_in_user(conn, user)
+      {:ok, _lv, html} = live(conn, ~p"/study")
+
+      refute html =~ "Hoje e um bom dia pra praticar"
+    end
+  end
 end

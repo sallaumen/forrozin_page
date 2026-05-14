@@ -14,6 +14,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
+  import OGrupoDeEstudosWeb.UI.StudyConsistency
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
@@ -34,6 +35,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:today, today)
      |> assign(:personal_step_suggestions, [])
      |> assign(:editing_history_note_id, nil)
+     |> assign(:expanded_note_ids, MapSet.new())
      |> assign(:history_step_suggestions, [])
      |> assign(:section_history_open, true)
      |> assign(:section_teachers_open, true)
@@ -117,6 +119,17 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   def handle_event("toggle_section", %{"section" => section}, socket) do
     key = String.to_existing_atom("section_#{section}_open")
     {:noreply, assign(socket, key, not socket.assigns[key])}
+  end
+
+  def handle_event("toggle_note_expansion", %{"id" => note_id}, socket) do
+    current = socket.assigns.expanded_note_ids
+
+    updated =
+      if MapSet.member?(current, note_id),
+        do: MapSet.delete(current, note_id),
+        else: MapSet.put(current, note_id)
+
+    {:noreply, assign(socket, :expanded_note_ids, updated)}
   end
 
   def handle_event("search_personal_step", %{"term" => term}, socket) do
@@ -331,6 +344,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     |> assign(:personal_related_steps, dashboard.personal_related_steps)
     |> assign(:personal_history, dashboard.personal_history)
     |> assign(:weekly_note_count, dashboard.weekly_note_count)
+    |> assign(:monthly_note_count, dashboard.monthly_note_count)
     |> assign(:today_status, dashboard.today_status)
     |> assign(:movement_cards, dashboard.movement_cards)
     |> assign(:teacher_links, dashboard.teacher_links)
@@ -340,13 +354,16 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   defp build_dashboard(user, today) do
     today_note = Study.get_personal_note(user.id, today)
+    personal_history = Study.list_personal_note_history(user.id)
+    month_start = Date.new!(today.year, today.month, 1)
 
     %{
       today_note: today_note,
       today_note_content: if(today_note, do: today_note.content, else: ""),
       personal_related_steps: if(today_note, do: today_note.related_steps, else: []),
-      personal_history: Study.list_personal_note_history(user.id),
+      personal_history: personal_history,
       weekly_note_count: Study.personal_note_week_count(user.id, today),
+      monthly_note_count: Enum.count(personal_history, &(Date.compare(&1.note_date, month_start) != :lt)),
       today_status: personal_today_status(today_note),
       movement_cards: Study.list_shared_activity_for_user(user.id, today),
       teacher_links: Study.list_teacher_links_for_student(user.id),

@@ -49,6 +49,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
            shared_step_suggestions: [],
            editing_history_note_id: nil,
            history_step_suggestions: [],
+           expanded_note_ids: MapSet.new(),
            shared_goals: Study.list_shared_goals(link.id),
            shared_step_ranking: Study.step_frequency_ranking(:shared, link.id),
            goal_input: ""
@@ -131,6 +132,17 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
     current = socket.assigns.editing_history_note_id
     new_id = if current == note_id, do: nil, else: note_id
     {:noreply, assign(socket, editing_history_note_id: new_id, history_step_suggestions: [])}
+  end
+
+  def handle_event("toggle_note_expansion", %{"id" => note_id}, socket) do
+    current = socket.assigns.expanded_note_ids
+
+    updated =
+      if MapSet.member?(current, note_id),
+        do: MapSet.delete(current, note_id),
+        else: MapSet.put(current, note_id)
+
+    {:noreply, assign(socket, :expanded_note_ids, updated)}
   end
 
   def handle_event("search_history_step", %{"term" => term}, socket) do

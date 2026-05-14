@@ -144,4 +144,51 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert has_element?(lv, "#shared-related-step-#{step.id}")
     end
   end
+
+  describe "expansao de notas longas no historico compartilhado" do
+    test "nota longa usa phx-click toggle, nao <details>", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, pending_link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(pending_link, teacher)
+
+      past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
+      long_content = String.duplicate("a", 151)
+
+      {:ok, _note} =
+        Study.upsert_shared_note(link, past_date, %{content: long_content, step_ids: []})
+
+      conn = log_in_user(conn, teacher)
+      {:ok, lv, _html} = live(conn, ~p"/study/shared/#{link.id}")
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']")
+      refute has_element?(lv, "article details")
+    end
+
+    test "toggle_note_expansion expande e colapsa nota longa", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, pending_link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(pending_link, teacher)
+
+      past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
+      long_content = String.duplicate("a", 151)
+
+      {:ok, note} =
+        Study.upsert_shared_note(link, past_date, %{content: long_content, step_ids: []})
+
+      conn = log_in_user(conn, teacher)
+      {:ok, lv, _html} = live(conn, ~p"/study/shared/#{link.id}")
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver mais")
+
+      render_click(lv, "toggle_note_expansion", %{"id" => note.id})
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver menos")
+
+      render_click(lv, "toggle_note_expansion", %{"id" => note.id})
+
+      assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver mais")
+    end
+  end
 end
