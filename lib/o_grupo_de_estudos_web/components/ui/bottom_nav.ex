@@ -54,8 +54,8 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
         "pb-[env(safe-area-inset-bottom)]"
       ]}
     >
-      <ul class="flex items-stretch h-14">
-        <li :for={tab <- @tabs} class="flex-1 relative">
+      <ul class="flex w-full items-stretch h-14">
+        <li :for={tab <- @tabs} class="flex-1 min-w-0 relative">
           <.link
             navigate={tab.path}
             data-active={active?(@current_path, tab.path)}
