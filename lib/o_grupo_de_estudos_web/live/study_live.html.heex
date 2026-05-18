@@ -63,7 +63,7 @@
 
   <%= if @active_study_tab == "personal" or !@current_user.is_teacher do %>
     <%!-- Consistency strip: monthly counter + 7-dot weekly bar --%>
-    <div class="bg-gold-500/[0.07] border-b border-gold-500/25">
+    <div class="bg-gold-500/[0.07] border-b border-gold-500/25 overflow-hidden">
       <.study_consistency
         weekly_note_count={@weekly_note_count}
         monthly_note_count={@monthly_note_count}
@@ -76,7 +76,7 @@
       <section id="study-overview-grid" class="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_340px]">
 
         <%!-- LEFT: main content column --%>
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3 min-w-0">
 
           <%!-- HERO: today diary -- dominant element via left-border accent + shadow-md --%>
           <section
@@ -446,7 +446,7 @@
         </div>
 
         <%!-- RIGHT: sidebar (desktop xl+) --%>
-        <aside id="study-sidebar" class="flex flex-col gap-3">
+        <aside id="study-sidebar" class="flex flex-col gap-3 min-w-0">
           <%!-- Goals --%>
           <section class="rounded-xl border border-ink-200 bg-white p-3 shadow-sm">
             <h2 class="text-xs font-bold text-ink-900 m-0 mb-2 font-serif">Metas de estudo</h2>
