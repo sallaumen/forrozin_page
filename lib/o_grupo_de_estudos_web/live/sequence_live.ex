@@ -749,7 +749,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 "inline-flex h-8.5 min-w-[3.15rem] items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-[13px] transition cursor-pointer",
                 @liked && "border-accent-red/30 bg-accent-red/8 text-accent-red",
                 !@liked &&
-                  "border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-500 hover:border-accent-red/30 hover:text-accent-red"
+                  "border-ink-300/60 bg-white text-ink-500 hover:border-accent-red/30 hover:text-accent-red"
               ]}
               title={if @liked, do: "Remover like", else: "Curtir"}
             >
@@ -762,7 +762,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
               phx-click="copy_sequence_link"
               phx-value-seq-id={@seq.id}
               aria-label="Copiar link desta sequência"
-              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-600 dark:text-ink-400 transition hover:border-accent-orange/40 hover:text-accent-orange"
+              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-300/60 bg-white text-ink-600 transition hover:border-accent-orange/40 hover:text-accent-orange"
               title="Copiar link desta sequência"
             >
               <.icon name="hero-link" class="size-3" />
@@ -779,7 +779,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 "inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border px-0 py-0 text-[13px] transition cursor-pointer",
                 @is_favorited && "border-gold-500/40 bg-gold-500/8 text-gold-700",
                 !@is_favorited &&
-                  "border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-500 hover:border-gold-500/40 hover:text-gold-700"
+                  "border-ink-300/60 bg-white text-ink-500 hover:border-gold-500/40 hover:text-gold-700"
               ]}
               title={if @is_favorited, do: "Remover favorito", else: "Favoritar"}
             >
@@ -794,18 +794,18 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
         <div :if={@category_labels != []} class="flex flex-wrap gap-2">
           <span
             :for={label <- Enum.take(@category_labels, 3)}
-            class="inline-flex items-center rounded-full border border-accent-orange/20 bg-accent-orange/6 px-2.5 py-1 text-[11px] font-semibold text-ink-600 dark:text-ink-400"
+            class="inline-flex items-center rounded-full border border-accent-orange/20 bg-accent-orange/6 px-2.5 py-1 text-[11px] font-semibold text-ink-600"
           >
             {label}
           </span>
         </div>
 
-        <div class="flex flex-col gap-3 border-t border-ink-200/70 dark:border-ink-700/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-3 border-t border-ink-200/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-wrap items-center gap-3">
             <.link
               id={"sequence-author-#{@seq.id}"}
               navigate={~p"/users/#{@author_username}"}
-              class="inline-flex items-center gap-2 text-sm font-medium text-ink-700 dark:text-ink-300 no-underline transition hover:text-accent-orange"
+              class="inline-flex items-center gap-2 text-sm font-medium text-ink-700 no-underline transition hover:text-accent-orange"
             >
               <.user_avatar user={@author} size={:md} />
               <span>@{@author_username}</span>
@@ -820,7 +820,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 MapSet.member?(@following_user_ids, @seq.user_id) &&
                   "border-accent-orange bg-accent-orange/10 text-accent-orange",
                 !MapSet.member?(@following_user_ids, @seq.user_id) &&
-                  "border-ink-300/70 dark:border-ink-600 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+                  "border-ink-300/70 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
               ]}
             >
               {if MapSet.member?(@following_user_ids, @seq.user_id), do: "Seguindo", else: "Seguir"}
@@ -835,7 +835,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
               "inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm transition cursor-pointer",
               @is_expanded && "border-accent-orange/30 bg-accent-orange/10 text-accent-orange",
               !@is_expanded &&
-                "border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-500 hover:border-ink-500/60 hover:text-ink-700"
+                "border-ink-300/60 bg-white text-ink-500 hover:border-ink-500/60 hover:text-ink-700"
             ]}
             title={if @is_expanded, do: "Fechar", else: "Ver passos e detalhes"}
           >
@@ -859,10 +859,10 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
       <section
         :if={@is_expanded}
         id={"sequence-expanded-#{@seq.id}"}
-        class="border-t border-ink-200/80 dark:border-ink-700/80 bg-ink-50/70 dark:bg-ink-900/80 px-4 py-4 sm:px-5"
+        class="border-t border-ink-200/80 bg-ink-50/70 px-4 py-4 sm:px-5"
       >
         <div class="flex flex-col gap-4">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">
             Detalhes e conversa
           </div>
 
@@ -874,22 +874,22 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             <.icon name="hero-map" class="size-4" /> Ver no mapa
           </.link>
 
-          <div class="rounded-md border border-ink-200/70 dark:border-ink-700/70 bg-white/80 dark:bg-ink-800/80 p-3">
-            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
+          <div class="rounded-md border border-ink-200/70 bg-white/80 p-3">
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
               Passos ({@step_count})
             </h4>
             <%= if @seq.sequence_steps == [] do %>
-              <p class="text-sm italic text-ink-400 dark:text-ink-500">Nenhum passo cadastrado</p>
+              <p class="text-sm italic text-ink-400">Nenhum passo cadastrado</p>
             <% else %>
               <ol class="flex flex-col gap-1">
                 <%= for {sequence_step, index} <- Enum.with_index(Enum.take(@seq.sequence_steps, 8), 1) do %>
-                  <li class="flex items-baseline gap-2 text-sm text-ink-700 dark:text-ink-300">
-                    <span class="w-5 shrink-0 text-right font-mono text-[11px] text-ink-400 dark:text-ink-500">
+                  <li class="flex items-baseline gap-2 text-sm text-ink-700">
+                    <span class="w-5 shrink-0 text-right font-mono text-[11px] text-ink-400">
                       {index}.
                     </span>
                     <span class="flex items-baseline gap-1.5">
                       <span>{sequence_step.step.name}</span>
-                      <code class="rounded bg-ink-100 dark:bg-ink-700 px-1 py-0.5 font-mono text-[10px] text-ink-500 dark:text-ink-400">
+                      <code class="rounded bg-ink-100 px-1 py-0.5 font-mono text-[10px] text-ink-500">
                         ({sequence_step.step.code})
                       </code>
                     </span>
@@ -910,7 +910,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
           <div
             :if={@seq.video_url}
             id={"sequence-embed-#{@seq.id}"}
-            class="rounded-md border border-ink-200/70 dark:border-ink-700/70 bg-white/80 dark:bg-ink-800/80 p-3"
+            class="rounded-md border border-ink-200/70 bg-white/80 p-3"
           >
             <% embed = youtube_embed_url(@seq.video_url) %>
             <%= if embed != :external do %>
@@ -942,7 +942,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
           </div>
 
           <div id={"sequence-comments-#{@seq.id}"}>
-            <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
+            <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
               Comentários
             </h4>
             <.comment_thread
