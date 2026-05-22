@@ -702,10 +702,10 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
       data-deep-linked={to_string(@is_deep_linked)}
       class={[
         "group overflow-hidden rounded-lg border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg",
-        "bg-white/90",
+        "bg-white dark:bg-ink-800",
         @is_deep_linked && "ring-2 ring-accent-orange/50 ring-offset-2 ring-offset-ink-100",
         @is_expanded && "border-accent-orange/45 shadow-md",
-        !@is_expanded && "border-ink-300/50"
+        !@is_expanded && "border-ink-300/50 dark:border-ink-700"
       ]}
     >
       <div class="h-1 w-full bg-gradient-to-r from-accent-orange via-gold-500 to-accent-green" />
