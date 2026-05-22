@@ -255,6 +255,7 @@ function cyTheme() {
     nodeFillNormal:      dark ? get("--color-ink-100") : "#fffef9",
     nodeFillSuggested:   get("--color-accent-pink-bg"),
     nodeFillHighlighted: dark ? "#322216" : "#fff8f0",
+    nodeFillOutgoing:    dark ? "#0d2016" : "#f3fbf5",
     nodeLabel:           get("--color-ink-900"),
     nodeBorderOpacity:   dark ? 0.95 : 0.85,
     nodeSelectedOpacity: dark ? 0.22 : 0.15,
@@ -1127,6 +1128,7 @@ const GraphVisual = {
   _applySequenceHighlight(stepCodes) {
     if (!this._cy) return
     const cy = this._cy
+    const t = cyTheme()
 
     // Clear previous highlight styling without moving the camera. The camera
     // should animate only once, directly to the newly selected sequence.
@@ -1160,7 +1162,7 @@ const GraphVisual = {
           opacity: 1,
           "border-color": "#e67e22",
           "border-width": 5,
-          "background-color": "#fff8f0",
+          "background-color": t.nodeFillHighlighted,
         })
       })
 
@@ -1197,6 +1199,7 @@ const GraphVisual = {
   _applyManualStepGuide(node) {
     const cy = this._cy
     if (!cy || !node || node.length === 0) return
+    const t = cyTheme()
 
     this._clearManualStepGuide({ applyLiked: false })
 
@@ -1212,7 +1215,7 @@ const GraphVisual = {
         "border-color": "#e67e22",
         "border-width": 5,
         "border-style": "solid",
-        "background-color": "#fff8f0"
+        "background-color": t.nodeFillHighlighted
       })
 
       outgoingEdges.forEach(edge => {
@@ -1231,7 +1234,7 @@ const GraphVisual = {
           "border-color": "#2f8f5b",
           "border-width": 4,
           "border-style": "solid",
-          "background-color": "#f3fbf5"
+          "background-color": t.nodeFillOutgoing
         })
       })
     })
@@ -1250,6 +1253,7 @@ const GraphVisual = {
     const { applyLiked = true } = options
     const cy = this._cy
     if (!cy) return
+    const t = cyTheme()
 
     cy.batch(() => {
       cy.nodes().forEach(node => {
@@ -1261,7 +1265,7 @@ const GraphVisual = {
           "border-color": node.data("cor") || "#9a7a5a",
           "border-width": node.data("highlighted") ? 5 : (node.degree() >= 10 ? 3 : 2),
           "border-style": node.data("suggested") ? "dashed" : "solid",
-          "background-color": suggestedByCurrentUser ? "#fce4ec" : "#fffef9"
+          "background-color": suggestedByCurrentUser ? t.nodeFillSuggested : t.nodeFillNormal
         })
       })
 
@@ -1313,6 +1317,7 @@ const GraphVisual = {
     const { refit = true } = options
     const cy = this._cy
     if (!cy || !this._seqHighlightActive) return
+    const t = cyTheme()
 
     cy.batch(() => {
       // Restore node labels and styles
@@ -1326,7 +1331,7 @@ const GraphVisual = {
           opacity: 1,
           "border-color": node.data("cor"),
           "border-width": node.degree() >= 10 ? 3 : 2,
-          "background-color": "#fffef9"
+          "background-color": t.nodeFillNormal
         })
       })
 
