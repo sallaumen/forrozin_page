@@ -254,7 +254,7 @@
             phx-click="show_seq_library"
             class={[
               "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
-              @seq_view == :library && "bg-white text-accent-orange shadow-sm",
+              @seq_view == :library && "bg-white dark:bg-ink-300 text-accent-orange shadow-sm dark:shadow-none",
               @seq_view != :library && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
@@ -264,7 +264,7 @@
             phx-click="show_seq_config"
             class={[
               "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
-              @seq_view == :config && "bg-white text-accent-orange shadow-sm",
+              @seq_view == :config && "bg-white dark:bg-ink-300 text-accent-orange shadow-sm dark:shadow-none",
               @seq_view != :config && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
@@ -274,7 +274,7 @@
             phx-click="show_seq_manual"
             class={[
               "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
-              @seq_view == :manual && "bg-white text-accent-green shadow-sm",
+              @seq_view == :manual && "bg-white dark:bg-ink-300 text-accent-green shadow-sm dark:shadow-none",
               @seq_view != :manual && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
@@ -579,7 +579,7 @@
             <%!-- Sequence cards --%>
             <%= for {seq, idx} <- Enum.with_index(@seq_results) do %>
               <div class="mb-3 border border-accent-orange/20 rounded-md overflow-hidden bg-white">
-                <div class="border-b border-ink-900/[0.06] bg-accent-orange/[0.04] px-2.5 py-2">
+                <div class="border-b border-ink-900/[0.06] dark:border-ink-400/20 bg-accent-orange/[0.04] px-2.5 py-2">
                   <div class="mb-1.5 flex items-center justify-between gap-2">
                     <div class="text-xs font-bold text-ink-900">
                       Opção {idx + 1}
@@ -606,7 +606,7 @@
                 <div class="p-2.5">
                   <%= for {step, pos} <- Enum.with_index(seq, 1) do %>
                     <div
-                      class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05]"
+                      class="flex items-center gap-1.5 py-0.5 border-b border-ink-900/[0.05] dark:border-ink-400/20"
                       aria-label={step_display_label(step)}
                     >
                       <span class="text-[10px] font-bold text-accent-orange min-w-[16px]">
@@ -621,7 +621,7 @@
                   <% end %>
                 </div>
                 <%!-- Actions --%>
-                <div class="py-2 px-2.5 border-t border-ink-900/[0.06] flex gap-1.5 bg-accent-orange/[0.04]">
+                <div class="py-2 px-2.5 border-t border-ink-900/[0.06] dark:border-ink-400/20 flex gap-1.5 bg-accent-orange/[0.04]">
                   <button
                     type="button"
                     phx-click="highlight_sequence"

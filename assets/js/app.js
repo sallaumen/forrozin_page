@@ -223,6 +223,13 @@ function buildDrawerActionHTML(d) {
   const isFavorited = window._favoritedStepCodes && window._favoritedStepCodes.has(d.id)
   const likeCount = d.like_count || 0
 
+  const dark = document.documentElement.classList.contains("dark")
+  const s = getComputedStyle(document.documentElement)
+  const iconColor = s.getPropertyValue("--color-ink-500").trim()
+  const borderColor = dark ? "rgba(245,237,228,0.14)" : "rgba(60,40,20,0.12)"
+  const accentRed = s.getPropertyValue("--color-accent-red").trim()
+  const goldColor = s.getPropertyValue("--color-gold-500").trim()
+
   const heartSolidPath = `m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z`
   const heartOutlinePath = `M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z`
   const starSolidPath = `M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z`
@@ -232,8 +239,8 @@ function buildDrawerActionHTML(d) {
   const starIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ${isFavorited ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="1.5"'} style="width:18px;height:18px;flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="${isFavorited ? starSolidPath : starOutlinePath}"/></svg>`
 
   return [
-    `<button class="drawer-like-btn" data-code="${escapeHTML(d.id)}" aria-label="Curtir" title="${isLiked ? "Remover curtida" : "Curtir"}" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:36px;height:36px;background:transparent;border:1px solid ${isLiked ? "#c0392b40" : "rgba(60,40,20,0.12)"};border-radius:8px;cursor:pointer;color:${isLiked ? "#c0392b" : "#9a7a5a"};font-family:Georgia,serif;transition:all 0.15s;">${heartIcon}<span style="font-size:11px;font-weight:700;">${likeCount}</span></button>`,
-    `<button class="drawer-fav-btn" data-code="${escapeHTML(d.id)}" aria-label="Favoritar" title="${isFavorited ? "Remover favorito" : "Favoritar"}" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;background:transparent;border:1px solid ${isFavorited ? "#b4782840" : "rgba(60,40,20,0.12)"};border-radius:8px;cursor:pointer;color:${isFavorited ? "#b47828" : "#9a7a5a"};font-family:Georgia,serif;transition:all 0.15s;">${starIcon}</button>`
+    `<button class="drawer-like-btn" data-code="${escapeHTML(d.id)}" aria-label="Curtir" title="${isLiked ? "Remover curtida" : "Curtir"}" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:36px;height:36px;background:transparent;border:1px solid ${isLiked ? accentRed + "40" : borderColor};border-radius:8px;cursor:pointer;color:${isLiked ? accentRed : iconColor};font-family:Georgia,serif;transition:all 0.15s;">${heartIcon}<span style="font-size:11px;font-weight:700;">${likeCount}</span></button>`,
+    `<button class="drawer-fav-btn" data-code="${escapeHTML(d.id)}" aria-label="Favoritar" title="${isFavorited ? "Remover favorito" : "Favoritar"}" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;background:transparent;border:1px solid ${isFavorited ? goldColor + "40" : borderColor};border-radius:8px;cursor:pointer;color:${isFavorited ? goldColor : iconColor};font-family:Georgia,serif;transition:all 0.15s;">${starIcon}</button>`
   ].join("")
 }
 
