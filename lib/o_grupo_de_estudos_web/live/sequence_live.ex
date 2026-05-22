@@ -702,10 +702,10 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
       data-deep-linked={to_string(@is_deep_linked)}
       class={[
         "group overflow-hidden rounded-lg border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg",
-        "bg-white dark:bg-ink-800",
+        "bg-white/90",
         @is_deep_linked && "ring-2 ring-accent-orange/50 ring-offset-2 ring-offset-ink-100",
         @is_expanded && "border-accent-orange/45 shadow-md",
-        !@is_expanded && "border-ink-300/50 dark:border-ink-700"
+        !@is_expanded && "border-ink-300/50"
       ]}
     >
       <div class="h-1 w-full bg-gradient-to-r from-accent-orange via-gold-500 to-accent-green" />
@@ -721,16 +721,16 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
               </span>
             </div>
 
-            <h3 class="max-w-2xl text-lg font-semibold leading-tight text-ink-900 dark:text-ink-100">
+            <h3 class="max-w-2xl text-lg font-semibold leading-tight text-ink-900">
               {@seq.name}
             </h3>
-            <p class="mt-1.5 max-w-2xl text-sm leading-6 text-ink-600 dark:text-ink-400">
+            <p class="mt-1.5 max-w-2xl text-sm leading-6 text-ink-600">
               {@preview_text}
             </p>
 
             <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-500">
-              <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 dark:bg-ink-700 px-2.5 py-1 font-medium dark:text-ink-300">
-                <.icon name="hero-queue-list" class="size-3 text-ink-500 dark:text-ink-400" />
+              <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 font-medium">
+                <.icon name="hero-queue-list" class="size-3 text-ink-500" />
                 {@step_count} passo(s)
               </span>
             </div>
@@ -867,6 +867,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
           </div>
 
           <.link
+            id={"sequence-map-link-#{@seq.id}"}
             navigate={~p"/graph/visual?seq=#{@seq.id}"}
             class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-orange px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-sm transition hover:bg-accent-orange/90 sm:w-auto sm:self-start"
           >
@@ -886,7 +887,12 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                     <span class="w-5 shrink-0 text-right font-mono text-[11px] text-ink-400 dark:text-ink-500">
                       {index}.
                     </span>
-                    <span>{sequence_step.step.name}</span>
+                    <span class="flex items-baseline gap-1.5">
+                      <span>{sequence_step.step.name}</span>
+                      <code class="rounded bg-ink-100 dark:bg-ink-700 px-1 py-0.5 font-mono text-[10px] text-ink-500 dark:text-ink-400">
+                        ({sequence_step.step.code})
+                      </code>
+                    </span>
                   </li>
                 <% end %>
               </ol>

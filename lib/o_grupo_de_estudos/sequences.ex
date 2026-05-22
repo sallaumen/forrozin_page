@@ -22,7 +22,7 @@ defmodule OGrupoDeEstudos.Sequences do
   @doc """
   Creates a new sequence with its ordered steps inside a single transaction.
 
-  Returns `{:ok, sequence}` with `sequence_steps: :step` preloaded,
+  Returns `{:ok, sequence}` with steps preloaded and ordered by position,
   or `{:error, changeset}` if validation fails.
   """
   def create_sequence(user_id, name, step_ids, allow_repeats \\ false) do
@@ -37,7 +37,7 @@ defmodule OGrupoDeEstudos.Sequences do
       case Repo.insert(changeset) do
         {:ok, sequence} ->
           insert_sequence_step_ids(sequence, step_ids)
-          Repo.preload(sequence, sequence_steps: :step)
+          Repo.preload(sequence, steps_preload())
 
         {:error, changeset} ->
           Repo.rollback(changeset)
@@ -83,7 +83,7 @@ defmodule OGrupoDeEstudos.Sequences do
         |> Repo.delete_all()
 
         insert_sequence_steps(sequence, steps)
-        Repo.preload(updated, [sequence_steps: [step: :category]], force: true)
+        Repo.preload(updated, steps_preload(), force: true)
 
       {:error, changeset} ->
         Repo.rollback(changeset)
@@ -103,7 +103,7 @@ defmodule OGrupoDeEstudos.Sequences do
     case Repo.insert(changeset) do
       {:ok, sequence} ->
         insert_sequence_steps(sequence, steps)
-        Repo.preload(sequence, sequence_steps: :step)
+        Repo.preload(sequence, steps_preload())
 
       {:error, changeset} ->
         Repo.rollback(changeset)
@@ -128,26 +128,22 @@ defmodule OGrupoDeEstudos.Sequences do
 
   @doc "Lists all sequences belonging to a user, with steps preloaded."
   def list_user_sequences(user_id) do
-    SequenceQuery.list_by(user_id: user_id, preload: [sequence_steps: [step: :category]])
+    SequenceQuery.list_by(user_id: user_id, preload: steps_preload())
   end
 
   @doc "Lists all public sequences belonging to a user, with steps preloaded."
   def list_public_user_sequences(user_id) do
-    SequenceQuery.list_by(
-      user_id: user_id,
-      public: true,
-      preload: [sequence_steps: [step: :category]]
-    )
+    SequenceQuery.list_by(user_id: user_id, public: true, preload: steps_preload())
   end
 
   @doc "Lists all public sequences, with steps and user preloaded."
   def list_all_public_sequences do
-    SequenceQuery.list_by(public: true, preload: [:user, sequence_steps: [step: :category]])
+    SequenceQuery.list_by(public: true, preload: [:user | steps_preload()])
   end
 
   @doc "Fetches a single sequence by id, with steps preloaded. Returns `nil` if not found."
   def get_sequence(id) do
-    SequenceQuery.get_by(id: id, preload: [sequence_steps: [step: :category]])
+    SequenceQuery.get_by(id: id, preload: steps_preload())
   end
 
   @doc "Soft-deletes a sequence by setting deleted_at. The sequence is excluded from all default queries."
@@ -165,6 +161,11 @@ defmodule OGrupoDeEstudos.Sequences do
   end
 
   # ── Private helpers ─────────────────────────────────────────
+
+  defp steps_preload do
+    ordered = from(ss in SequenceStep, order_by: [asc: ss.position])
+    [sequence_steps: {ordered, [step: :category]}]
+  end
 
   defp resolve_step_codes(step_codes) do
     steps =

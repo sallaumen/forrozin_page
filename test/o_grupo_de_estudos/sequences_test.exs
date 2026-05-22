@@ -124,6 +124,20 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert [seq_step] = result.sequence_steps
       assert seq_step.step.code == "BF"
     end
+
+    test "returns sequence_steps ordered by position ascending" do
+      user = insert(:user)
+      step_a = insert(:step, code: "TR", name: "Trava")
+      step_b = insert(:step, code: "BF", name: "Base Frontal")
+      sequence = insert(:sequence, user: user)
+      insert(:sequence_step, sequence: sequence, step: step_a, position: 2)
+      insert(:sequence_step, sequence: sequence, step: step_b, position: 1)
+
+      [result] = Sequences.list_user_sequences(user.id)
+
+      codes = Enum.map(result.sequence_steps, & &1.step.code)
+      assert codes == ["BF", "TR"]
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -147,6 +161,20 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "returns nil when sequence does not exist" do
       assert is_nil(Sequences.get_sequence(Ecto.UUID.generate()))
+    end
+
+    test "returns sequence_steps ordered by position ascending" do
+      user = insert(:user)
+      step_a = insert(:step, code: "TR", name: "Trava")
+      step_b = insert(:step, code: "BF", name: "Base Frontal")
+      sequence = insert(:sequence, user: user)
+      insert(:sequence_step, sequence: sequence, step: step_a, position: 2)
+      insert(:sequence_step, sequence: sequence, step: step_b, position: 1)
+
+      result = Sequences.get_sequence(sequence.id)
+
+      codes = Enum.map(result.sequence_steps, & &1.step.code)
+      assert codes == ["BF", "TR"]
     end
   end
 
@@ -398,6 +426,20 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert result.user.id == user.id
       assert [ss] = result.sequence_steps
       assert ss.step.code == "BF"
+    end
+
+    test "returns sequence_steps ordered by position ascending" do
+      user = insert(:user)
+      step_a = insert(:step, code: "TR", name: "Trava")
+      step_b = insert(:step, code: "BF", name: "Base Frontal")
+      sequence = insert(:sequence, user: user, public: true)
+      insert(:sequence_step, sequence: sequence, step: step_a, position: 2)
+      insert(:sequence_step, sequence: sequence, step: step_b, position: 1)
+
+      [result] = Sequences.list_all_public_sequences()
+
+      codes = Enum.map(result.sequence_steps, & &1.step.code)
+      assert codes == ["BF", "TR"]
     end
 
     test "excludes soft-deleted sequences" do

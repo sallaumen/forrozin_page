@@ -156,12 +156,14 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
                ~s|#sequence-author-#{seq.id}[href="/users/#{author.username}"]|
              )
 
+      assert has_element?(lv, "#sequence-details-toggle-#{seq.id}")
+
+      render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
+
       assert has_element?(
                lv,
                ~s|#sequence-map-link-#{seq.id}[href="/graph/visual?seq=#{seq.id}"]|
              )
-
-      assert has_element?(lv, "#sequence-details-toggle-#{seq.id}")
     end
 
     test "expanded details reveal stable wrappers for embeds and comments", %{
@@ -200,6 +202,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
 
     test "view on map link carries the selected sequence id", %{conn: conn, sequence: seq} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
+      render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
       assert has_element?(lv, ~s|a[href="/graph/visual?seq=#{seq.id}"]|)
     end
 
