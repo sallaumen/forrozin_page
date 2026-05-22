@@ -701,17 +701,18 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
       id={"sequence-card-#{@seq.id}"}
       data-deep-linked={to_string(@is_deep_linked)}
       class={[
-        "group overflow-hidden rounded-lg border bg-white/90 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+        "group overflow-hidden rounded-lg border shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+        "bg-white dark:bg-ink-800",
         @is_deep_linked && "ring-2 ring-accent-orange/50 ring-offset-2 ring-offset-ink-100",
         @is_expanded && "border-accent-orange/45 shadow-md",
-        !@is_expanded && "border-ink-300/50"
+        !@is_expanded && "border-ink-300/50 dark:border-ink-700"
       ]}
     >
       <div class="h-1 w-full bg-gradient-to-r from-accent-orange via-gold-500 to-accent-green" />
-      <div class="flex flex-col gap-5 px-4 py-4 sm:px-5 sm:py-5">
+      <div class="flex flex-col gap-4 px-4 py-4 sm:px-5 sm:py-5">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div class="min-w-0 flex-1">
-            <div class="mb-3 flex flex-wrap items-center gap-2">
+            <div class="mb-2 flex flex-wrap items-center gap-2">
               <span
                 :if={@seq.video_url}
                 class="inline-flex items-center rounded-full bg-gold-500/12 px-2.5 py-1 text-[11px] font-semibold text-gold-700"
@@ -720,122 +721,91 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
               </span>
             </div>
 
-            <h3 class="max-w-2xl text-2xl font-semibold leading-tight text-ink-900">
+            <h3 class="max-w-2xl text-lg font-semibold leading-tight text-ink-900 dark:text-ink-100">
               {@seq.name}
             </h3>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-ink-600">
+            <p class="mt-1.5 max-w-2xl text-sm leading-6 text-ink-600 dark:text-ink-400">
               {@preview_text}
             </p>
 
-            <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-ink-500">
-              <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 font-medium">
-                <.icon name="hero-queue-list" class="size-3 text-ink-500" /> {@step_count} passo(s)
-              </span>
-              <span
-                :if={@like_count > 0}
-                class="inline-flex items-center gap-1 rounded-full bg-accent-red/8 px-2.5 py-1 font-medium text-accent-red"
-              >
-                <.icon name="hero-heart-solid" class="size-3" /> {@like_count}
-              </span>
-              <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 font-medium">
-                <.icon name="hero-chat-bubble-left" class="size-3 text-ink-500" /> {@comment_count}
+            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-500">
+              <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 dark:bg-ink-700 px-2.5 py-1 font-medium dark:text-ink-300">
+                <.icon name="hero-queue-list" class="size-3 text-ink-500 dark:text-ink-400" />
+                {@step_count} passo(s)
               </span>
             </div>
           </div>
 
-          <div class="flex flex-col gap-2 sm:items-end">
-            <.link
-              id={"sequence-map-link-#{@seq.id}"}
-              navigate={~p"/graph/visual?seq=#{@seq.id}"}
-              class="inline-flex h-8.5 min-w-0 items-center justify-center gap-1 rounded-md bg-accent-orange px-3 py-2 text-[13px] font-semibold text-white no-underline shadow-sm transition hover:bg-accent-orange/90"
+          <div class="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:justify-end">
+            <button
+              phx-click="toggle_like"
+              phx-value-type="sequence"
+              phx-value-id={@seq.id}
+              aria-label={
+                if @liked, do: "Remover curtida desta sequência", else: "Curtir esta sequência"
+              }
+              aria-pressed={to_string(@liked)}
+              class={[
+                "inline-flex h-8.5 min-w-[3.15rem] items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-[13px] transition cursor-pointer",
+                @liked && "border-accent-red/30 bg-accent-red/8 text-accent-red",
+                !@liked &&
+                  "border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-500 hover:border-accent-red/30 hover:text-accent-red"
+              ]}
+              title={if @liked, do: "Remover like", else: "Curtir"}
             >
-              <.icon name="hero-map" class="size-3" /> Ver no mapa
-            </.link>
+              <.icon name={if @liked, do: "hero-heart-solid", else: "hero-heart"} class="size-3" />
+              <span class="tabular-nums text-[12px]">{@like_count}</span>
+            </button>
 
-            <div class="flex flex-wrap items-center gap-1.5 sm:justify-end">
-              <button
-                id={"sequence-share-#{@seq.id}"}
-                phx-click="copy_sequence_link"
-                phx-value-seq-id={@seq.id}
-                aria-label="Copiar link desta sequência"
-                class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-300/60 bg-white text-ink-600 transition hover:border-accent-orange/40 hover:text-accent-orange"
-                title="Copiar link desta sequência"
-              >
-                <.icon name="hero-link" class="size-3" />
-              </button>
+            <button
+              id={"sequence-share-#{@seq.id}"}
+              phx-click="copy_sequence_link"
+              phx-value-seq-id={@seq.id}
+              aria-label="Copiar link desta sequência"
+              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-600 dark:text-ink-400 transition hover:border-accent-orange/40 hover:text-accent-orange"
+              title="Copiar link desta sequência"
+            >
+              <.icon name="hero-link" class="size-3" />
+            </button>
 
-              <button
-                phx-click="toggle_like"
-                phx-value-type="sequence"
-                phx-value-id={@seq.id}
-                aria-label={
-                  if @liked,
-                    do: "Remover curtida desta sequência",
-                    else: "Curtir esta sequência"
-                }
-                aria-pressed={to_string(@liked)}
-                class={[
-                  "inline-flex h-8.5 min-w-[3.15rem] items-center justify-center gap-1 rounded-md border px-2 py-1.5 text-[13px] transition cursor-pointer",
-                  @liked && "border-accent-red/30 bg-accent-red/8 text-accent-red",
-                  !@liked &&
-                    "border-ink-300/60 bg-white text-ink-500 hover:border-accent-red/30 hover:text-accent-red"
-                ]}
-                title={if @liked, do: "Remover like", else: "Curtir"}
-              >
-                <.icon
-                  name={if @liked, do: "hero-heart-solid", else: "hero-heart"}
-                  class="size-3"
-                />
-                <span class="tabular-nums text-[12px]">{@like_count}</span>
-              </button>
-
-              <button
-                phx-click="toggle_seq_favorite"
-                phx-value-id={@seq.id}
-                aria-label={
-                  if @is_favorited,
-                    do: "Remover sequência dos salvos",
-                    else: "Salvar sequência"
-                }
-                aria-pressed={to_string(@is_favorited)}
-                class={[
-                  "inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border px-0 py-0 text-[13px] transition cursor-pointer",
-                  @is_favorited && "border-gold-500/40 bg-gold-500/8 text-gold-700",
-                  !@is_favorited &&
-                    "border-ink-300/60 bg-white text-ink-500 hover:border-gold-500/40 hover:text-gold-700"
-                ]}
-                title={if @is_favorited, do: "Remover favorito", else: "Favoritar"}
-              >
-                <.icon
-                  name={if @is_favorited, do: "hero-star-solid", else: "hero-star"}
-                  class="size-3"
-                />
-              </button>
-            </div>
+            <button
+              phx-click="toggle_seq_favorite"
+              phx-value-id={@seq.id}
+              aria-label={
+                if @is_favorited, do: "Remover sequência dos salvos", else: "Salvar sequência"
+              }
+              aria-pressed={to_string(@is_favorited)}
+              class={[
+                "inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border px-0 py-0 text-[13px] transition cursor-pointer",
+                @is_favorited && "border-gold-500/40 bg-gold-500/8 text-gold-700",
+                !@is_favorited &&
+                  "border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-500 hover:border-gold-500/40 hover:text-gold-700"
+              ]}
+              title={if @is_favorited, do: "Remover favorito", else: "Favoritar"}
+            >
+              <.icon
+                name={if @is_favorited, do: "hero-star-solid", else: "hero-star"}
+                class="size-3"
+              />
+            </button>
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div :if={@category_labels != []} class="flex flex-wrap gap-2">
           <span
             :for={label <- Enum.take(@category_labels, 3)}
-            class="inline-flex items-center rounded-full border border-accent-orange/20 bg-accent-orange/6 px-2.5 py-1 text-[11px] font-semibold text-ink-600"
+            class="inline-flex items-center rounded-full border border-accent-orange/20 bg-accent-orange/6 px-2.5 py-1 text-[11px] font-semibold text-ink-600 dark:text-ink-400"
           >
             {label}
           </span>
-          <code
-            :for={sequence_step <- Enum.take(@seq.sequence_steps, 5)}
-            class="rounded-sm border border-gold-500/20 bg-gold-500/10 px-2 py-1 font-mono text-[11px] font-semibold text-ink-700"
-          >
-            {sequence_step.step.code}
-          </code>
         </div>
 
-        <div class="flex flex-col gap-3 border-t border-ink-200/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-3 border-t border-ink-200/70 dark:border-ink-700/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-wrap items-center gap-3">
             <.link
               id={"sequence-author-#{@seq.id}"}
               navigate={~p"/users/#{@author_username}"}
-              class="inline-flex items-center gap-2 text-sm font-medium text-ink-700 no-underline transition hover:text-accent-orange"
+              class="inline-flex items-center gap-2 text-sm font-medium text-ink-700 dark:text-ink-300 no-underline transition hover:text-accent-orange"
             >
               <.user_avatar user={@author} size={:md} />
               <span>@{@author_username}</span>
@@ -850,7 +820,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 MapSet.member?(@following_user_ids, @seq.user_id) &&
                   "border-accent-orange bg-accent-orange/10 text-accent-orange",
                 !MapSet.member?(@following_user_ids, @seq.user_id) &&
-                  "border-ink-300/70 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
+                  "border-ink-300/70 dark:border-ink-600 text-ink-500 hover:border-accent-orange hover:text-accent-orange"
               ]}
             >
               {if MapSet.member?(@following_user_ids, @seq.user_id), do: "Seguindo", else: "Seguir"}
@@ -863,12 +833,11 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             phx-value-seq-id={@seq.id}
             class={[
               "inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm transition cursor-pointer",
-              @is_expanded &&
-                "border-accent-orange/30 bg-accent-orange/10 text-accent-orange",
+              @is_expanded && "border-accent-orange/30 bg-accent-orange/10 text-accent-orange",
               !@is_expanded &&
-                "border-ink-300/60 bg-white text-ink-500 hover:border-ink-500/60 hover:text-ink-700"
+                "border-ink-300/60 dark:border-ink-600 bg-white dark:bg-ink-800 text-ink-500 hover:border-ink-500/60 hover:text-ink-700"
             ]}
-            title={if @is_expanded, do: "Fechar", else: "Ver comentários e vídeo"}
+            title={if @is_expanded, do: "Fechar", else: "Ver passos e detalhes"}
           >
             <.icon
               name={if @is_expanded, do: "hero-chevron-up-mini", else: "hero-chevron-down-mini"}
@@ -876,11 +845,11 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             />
             <span>
               {if @is_expanded,
-                do: "Fechar detalhes",
+                do: "Fechar",
                 else:
                   if(@comment_count > 0,
-                    do: "#{@comment_count} comentário(s)",
-                    else: "Abrir detalhes"
+                    do: "#{@comment_count} comentário(s) · passos",
+                    else: "Ver passos e detalhes"
                   )}
             </span>
           </button>
@@ -890,23 +859,58 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
       <section
         :if={@is_expanded}
         id={"sequence-expanded-#{@seq.id}"}
-        class="border-t border-ink-200/80 bg-ink-50/70 px-4 py-4 sm:px-5"
+        class="border-t border-ink-200/80 dark:border-ink-700/80 bg-ink-50/70 dark:bg-ink-900/80 px-4 py-4 sm:px-5"
       >
         <div class="flex flex-col gap-4">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
             Detalhes e conversa
+          </div>
+
+          <.link
+            navigate={~p"/graph/visual?seq=#{@seq.id}"}
+            class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-orange px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-sm transition hover:bg-accent-orange/90 sm:w-auto sm:self-start"
+          >
+            <.icon name="hero-map" class="size-4" /> Ver no mapa
+          </.link>
+
+          <div class="rounded-md border border-ink-200/70 dark:border-ink-700/70 bg-white/80 dark:bg-ink-800/80 p-3">
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
+              Passos ({@step_count})
+            </h4>
+            <%= if @seq.sequence_steps == [] do %>
+              <p class="text-sm italic text-ink-400 dark:text-ink-500">Nenhum passo cadastrado</p>
+            <% else %>
+              <ol class="flex flex-col gap-1">
+                <%= for {sequence_step, index} <- Enum.with_index(Enum.take(@seq.sequence_steps, 8), 1) do %>
+                  <li class="flex items-baseline gap-2 text-sm text-ink-700 dark:text-ink-300">
+                    <span class="w-5 shrink-0 text-right font-mono text-[11px] text-ink-400 dark:text-ink-500">
+                      {index}.
+                    </span>
+                    <span>{sequence_step.step.name}</span>
+                  </li>
+                <% end %>
+              </ol>
+              <.link
+                :if={@step_count > 8}
+                navigate={~p"/graph/visual?seq=#{@seq.id}"}
+                class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent-orange no-underline hover:underline"
+              >
+                Ver todos {@step_count} passos
+                <.icon name="hero-arrow-right" class="size-3" />
+              </.link>
+            <% end %>
           </div>
 
           <div
             :if={@seq.video_url}
             id={"sequence-embed-#{@seq.id}"}
-            class="rounded-md border border-ink-200/70 bg-white/80 p-3"
+            class="rounded-md border border-ink-200/70 dark:border-ink-700/70 bg-white/80 dark:bg-ink-800/80 p-3"
           >
             <% embed = youtube_embed_url(@seq.video_url) %>
             <%= if embed != :external do %>
               <% {:embed, embed_url} = embed %>
               <details>
-                <summary class="cursor-pointer text-sm font-medium text-accent-orange select-none">
+                <summary class="cursor-pointer select-none text-sm font-medium text-accent-orange">
                   Ver vídeo
                 </summary>
                 <div class="relative mt-3 h-0 overflow-hidden rounded-md pb-[56.25%]">
@@ -932,7 +936,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
           </div>
 
           <div id={"sequence-comments-#{@seq.id}"}>
-            <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <h4 class="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
               Comentários
             </h4>
             <.comment_thread

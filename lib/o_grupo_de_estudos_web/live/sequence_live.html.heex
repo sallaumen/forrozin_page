@@ -15,7 +15,7 @@
   <.activity_toast toast={assigns[:activity_toast]} />
 
   <%!-- Editorial hero: context + segmented control + search/sort/create --%>
-  <div id="community-sequences-hero" class="max-w-4xl mx-auto px-4 w-full mt-4 mb-2">
+  <div id="community-sequences-hero" class="max-w-4xl mx-auto px-4 w-full mt-4 mb-0">
     <section class="overflow-hidden rounded-lg border border-ink-300/60 bg-white/85 shadow-sm">
       <div class="border-b border-ink-200/70 px-4 py-5 sm:px-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -207,8 +207,13 @@
     </section>
   </div>
 
+  <%!-- Separador hero / lista --%>
+  <div class="max-w-4xl mx-auto w-full px-4 mt-4">
+    <div class="border-t border-ink-300/40 dark:border-ink-700/40"></div>
+  </div>
+
   <%!-- Sequences content --%>
-  <div class="max-w-4xl mx-auto px-4 pt-2 pb-20 w-full box-border">
+  <div class="max-w-4xl mx-auto px-4 pt-4 pb-20 w-full box-border">
     <%= if @active_seq_tab == "community" do %>
       <div id="community-sequences-stream">
         <%= if @community_sequences == [] do %>
