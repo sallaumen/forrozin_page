@@ -12,7 +12,6 @@ defmodule OGrupoDeEstudos.Engagement do
   """
 
   import Ecto.Query
-  require Logger
 
   alias Ecto.Multi
   alias OGrupoDeEstudos.Accounts.User
@@ -28,7 +27,8 @@ defmodule OGrupoDeEstudos.Engagement do
     LikeQuery,
     Metrics,
     ProfileComment,
-    ProfileCommentQuery
+    ProfileCommentQuery,
+    SafeDispatch
   }
 
   alias OGrupoDeEstudos.Engagement.Comments.{
@@ -385,35 +385,26 @@ defmodule OGrupoDeEstudos.Engagement do
     |> String.to_existing_atom()
   end
 
-  # Best-effort dispatches must never break the main CRUD; we log the failure
-  # instead of swallowing it silently, so notification bugs stay visible.
-  defp log_dispatch_error(error) do
-    Logger.warning("Engagement dispatch failed: #{Exception.message(error)}")
-    :ok
-  end
-
   defp safe_dispatch(action, comment, actor, query_mod) do
-    Dispatcher.notify(action, comment, actor, query_mod)
-  rescue
-    error -> log_dispatch_error(error)
+    SafeDispatch.run(fn -> Dispatcher.notify(action, comment, actor, query_mod) end)
   end
 
   defp safe_dispatch_like(user_id, "step", likeable_id) do
-    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, likeable_id) do
-      nil ->
-        :ok
+    SafeDispatch.run(fn ->
+      case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, likeable_id) do
+        nil ->
+          :ok
 
-      step ->
-        user = Repo.get!(User, user_id)
+        step ->
+          user = Repo.get!(User, user_id)
 
-        ActivityBroadcaster.broadcast_activity(
-          user,
-          :liked_step,
-          %{step_name: step.name}
-        )
-    end
-  rescue
-    error -> log_dispatch_error(error)
+          ActivityBroadcaster.broadcast_activity(
+            user,
+            :liked_step,
+            %{step_name: step.name}
+          )
+      end
+    end)
   end
 
   defp safe_dispatch_like(_user_id, _likeable_type, _likeable_id) do
@@ -424,28 +415,24 @@ defmodule OGrupoDeEstudos.Engagement do
   # Persists a notification for the like recipient (step/sequence/comment owner).
   # Separate from safe_dispatch_like, which only emits the ephemeral activity toast.
   defp safe_notify_like(user_id, likeable_type, likeable_id) do
-    Dispatcher.notify_like(user_id, likeable_type, likeable_id)
-  rescue
-    error -> log_dispatch_error(error)
+    SafeDispatch.run(fn -> Dispatcher.notify_like(user_id, likeable_type, likeable_id) end)
   end
 
   defp safe_dispatch_follow(follower_id, followed_id) do
-    Dispatcher.notify_follow(follower_id, followed_id)
-  rescue
-    error -> log_dispatch_error(error)
+    SafeDispatch.run(fn -> Dispatcher.notify_follow(follower_id, followed_id) end)
   end
 
   defp safe_broadcast_follow_activity(follower_id, followed_id) do
-    followed_user = Repo.get!(User, followed_id)
-    follower_user = Repo.get!(User, follower_id)
+    SafeDispatch.run(fn ->
+      followed_user = Repo.get!(User, followed_id)
+      follower_user = Repo.get!(User, follower_id)
 
-    ActivityBroadcaster.broadcast_activity(
-      follower_user,
-      :followed_user,
-      %{target_username: followed_user.username}
-    )
-  rescue
-    error -> log_dispatch_error(error)
+      ActivityBroadcaster.broadcast_activity(
+        follower_user,
+        :followed_user,
+        %{target_username: followed_user.username}
+      )
+    end)
   end
 
   defp schema_and_field_for("step"), do: {StepComment, :step_id}
