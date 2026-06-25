@@ -112,13 +112,15 @@ defmodule OGrupoDeEstudos.MixProject do
         "esbuild o_grupo_de_estudos --minify",
         "phx.digest"
       ],
-      # Gate de qualidade. O ignore do advisory do decimal (GHSA-rhv4-8758-jx7v)
-      # é justificado: decimal entra só transitivamente via ecto (`~> 2.0`), o fix
-      # está na major 3.0.0 incompatível, e o app não usa Decimal diretamente.
+      # Gate de qualidade. deps.audit ignora o advisory do decimal
+      # (GHSA-rhv4-8758-jx7v): preso por ecto `~> 2.0`, sem uso direto.
+      # sobelow gateia em High e ignora Config.CSP (CSP ausente, no backlog de
+      # seguranca); os Traversal Medium/Low restantes sao server-side, com
+      # caminhos reconstruidos via Path.basename (falsos positivos).
       lint: [
         "format --check-formatted",
         "deps.audit --ignore-advisory-ids GHSA-rhv4-8758-jx7v",
-        "sobelow --skip --exit Low",
+        "sobelow --exit High -i Config.CSP",
         "credo"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]

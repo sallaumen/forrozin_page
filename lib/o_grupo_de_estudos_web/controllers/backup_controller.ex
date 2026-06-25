@@ -2,8 +2,10 @@ defmodule OGrupoDeEstudosWeb.BackupController do
   @moduledoc """
   Controller for serving backup file downloads.
 
-  Security: only `.json` files from the configured backup directory are served.
-  Admin-only access is enforced by the router pipeline (`:ensure_admin` plug).
+  Security: admin-only access is enforced inside `download/2` via
+  `Accounts.admin?/1`; only `.json` files from the configured backup directory
+  are served, and the path is rebuilt with `Path.basename/1` to neutralize
+  path traversal.
   """
 
   use OGrupoDeEstudosWeb, :controller

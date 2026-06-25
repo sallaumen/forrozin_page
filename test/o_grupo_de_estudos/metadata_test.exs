@@ -36,6 +36,11 @@ defmodule OGrupoDeEstudos.MetadataTest do
       {:ok, _} = Metadata.set("counter", "user", "id-1", "42")
       assert Metadata.get_integer("counter", "user", "id-1") == 42
     end
+
+    test "returns 0 for a corrupted (non-numeric) stored value" do
+      {:ok, _} = Metadata.set("counter", "user", "bad", "not-a-number")
+      assert Metadata.get_integer("counter", "user", "bad") == 0
+    end
   end
 
   describe "increment/3" do

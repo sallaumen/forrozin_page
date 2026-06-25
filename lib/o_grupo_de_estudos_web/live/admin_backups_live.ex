@@ -29,25 +29,26 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
   end
 
   def handle_event("restore_backup", %{"path" => path}, socket) do
-    filename = Path.basename(path)
+    case safe_backup_path(path) do
+      {:ok, safe} ->
+        Backup.restore_backup!(safe)
 
-    if valid_backup_path?(path) do
-      Backup.restore_backup!(path)
+        {:noreply,
+         put_flash(socket, :info, "Backup \"#{Path.basename(safe)}\" restaurado com sucesso.")}
 
-      {:noreply,
-       socket
-       |> put_flash(:info, "Backup \"#{filename}\" restaurado com sucesso.")}
-    else
-      {:noreply, put_flash(socket, :error, "Backup não encontrado ou caminho inválido.")}
+      :error ->
+        {:noreply, put_flash(socket, :error, "Backup não encontrado ou caminho inválido.")}
     end
   end
 
   def handle_event("delete_backup", %{"path" => path}, socket) do
-    if valid_backup_path?(path) do
-      File.rm(path)
-      {:noreply, socket |> load_backups() |> put_flash(:info, "Backup deletado.")}
-    else
-      {:noreply, put_flash(socket, :error, "Arquivo não encontrado.")}
+    case safe_backup_path(path) do
+      {:ok, safe} ->
+        File.rm(safe)
+        {:noreply, socket |> load_backups() |> put_flash(:info, "Backup deletado.")}
+
+      :error ->
+        {:noreply, put_flash(socket, :error, "Arquivo não encontrado.")}
     end
   end
 
@@ -60,9 +61,16 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
     assign(socket, :backups, backups)
   end
 
-  defp valid_backup_path?(path) do
-    filename = Path.basename(path)
-    String.ends_with?(filename, ".json") and File.exists?(path)
+  # Reconstroi o caminho dentro do diretorio de backups a partir do basename,
+  # neutralizando path traversal: nunca confia no caminho enviado pelo cliente.
+  defp safe_backup_path(path) do
+    safe = Path.join(Backup.default_dir(), Path.basename(path))
+
+    if String.ends_with?(safe, ".json") and File.exists?(safe) do
+      {:ok, safe}
+    else
+      :error
+    end
   end
 
   @min_safe_backup_size 5_000
