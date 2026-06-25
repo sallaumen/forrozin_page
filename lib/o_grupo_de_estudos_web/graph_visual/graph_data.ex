@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   `truncate_note/2` uses a byte-size guard with a grapheme slice (so a multibyte
   note can exceed the byte cap yet keep all graphemes) and a single U+2026 `…`;
   `search_graph_nodes/2` is accent-sensitive (`String.downcase`, never the
-  accent-stripping `normalize_search_text`); `compute_edge_spread/1` output order
+  accent-stripping `TextSearch.normalize/1`); `compute_edge_spread/1` output order
   follows `Enum.group_by` (not input order).
   """
 
