@@ -20,7 +20,9 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
         })
 
       assert html =~ ~s(href="/collection")
-      assert html =~ "O Grupo de Estudos"
+      # O "O" do nome agora é o símbolo da marca (svg com aria-label="O").
+      assert html =~ "Grupo de Estudos"
+      assert html =~ ~s(aria-label="O")
     end
 
     test "has data-ui attribute with data-mode" do
