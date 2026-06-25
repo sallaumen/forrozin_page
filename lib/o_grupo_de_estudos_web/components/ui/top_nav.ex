@@ -84,9 +84,25 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
         <div id="top-nav-desktop-brand" class="justify-self-center">
           <.link
             navigate={~p"/collection"}
-            class="text-sm font-bold tracking-[2.8px] uppercase text-ink-50 hover:text-ink-100 no-underline"
+            class="text-sm font-bold tracking-[2.8px] uppercase text-ink-50 hover:text-ink-100 no-underline inline-flex items-center gap-[0.2em]"
           >
-            O Grupo de Estudos
+            <svg
+              class="h-[1.6em] w-auto shrink-0"
+              viewBox="96 76 320 384"
+              role="img"
+              aria-label="O"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g fill="#EE3F22">
+                <circle cx="200" cy="110" r="34" />
+                <circle cx="312" cy="110" r="34" />
+              </g>
+              <g fill="none" stroke="#EE3F22" stroke-width="40" stroke-linecap="round">
+                <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
+                <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
+              </g>
+            </svg>
+            <span>Grupo de Estudos</span>
           </.link>
         </div>
 
@@ -379,9 +395,25 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           <%!-- Primary: logo + settings/logout menu --%>
           <.link
             navigate={~p"/collection"}
-            class="text-sm font-bold tracking-[2px] uppercase text-ink-100 no-underline"
+            class="text-sm font-bold tracking-[2px] uppercase text-ink-100 no-underline inline-flex items-center gap-[0.2em]"
           >
-            O Grupo de Estudos
+            <svg
+              class="h-[1.6em] w-auto shrink-0"
+              viewBox="96 76 320 384"
+              role="img"
+              aria-label="O"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g fill="#EE3F22">
+                <circle cx="200" cy="110" r="34" />
+                <circle cx="312" cy="110" r="34" />
+              </g>
+              <g fill="none" stroke="#EE3F22" stroke-width="40" stroke-linecap="round">
+                <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
+                <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
+              </g>
+            </svg>
+            <span>Grupo de Estudos</span>
           </.link>
           <div class="flex items-center gap-2">
             <%= if @is_admin do %>
