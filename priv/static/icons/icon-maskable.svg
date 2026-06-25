@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Variante maskable: símbolo dentro da safe zone central (~80%) para PWA. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#F6EAD6"/>
+  <g transform="translate(256,253) scale(0.78) translate(-256,-264.5)">
+    <g fill="#EE3F22">
+      <circle cx="200" cy="110" r="34"/>
+      <circle cx="312" cy="110" r="34"/>
+    </g>
+    <g fill="none" stroke="#EE3F22" stroke-width="40" stroke-linecap="round">
+      <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1"/>
+      <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1"/>
+    </g>
+  </g>
+</svg>

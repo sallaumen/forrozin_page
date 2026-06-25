@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Símbolo do O Grupo de Estudos: duas pessoas formando um círculo aberto. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#1a0e05"/>
-  <text x="256" y="320" font-family="Georgia, serif" font-size="280" font-weight="700"
-        text-anchor="middle" fill="#f7f3ec">OG</text>
+  <rect width="512" height="512" fill="#F6EAD6"/>
+  <g fill="#EE3F22">
+    <circle cx="200" cy="110" r="34"/>
+    <circle cx="312" cy="110" r="34"/>
+  </g>
+  <g fill="none" stroke="#EE3F22" stroke-width="40" stroke-linecap="round">
+    <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1"/>
+    <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1"/>
+  </g>
 </svg>
