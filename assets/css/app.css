@@ -23,6 +23,17 @@
   src: url("/fonts/Inter-Variable.woff2") format("woff2-variations");
 }
 
+/* Fraunces Variable (Roman) — fonte de DISPLAY da marca.
+   Eixos: opsz 9-144, wght 100-900, SOFT 0-100, WONK 0-1.
+   SOFT arredonda as serifas para rimar com os arcos da logo. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/Fraunces-Variable.woff2") format("woff2-variations");
+}
+
 /* ============================================================
    Design Tokens — Phase 0b
    Paleta sepia/earth-tones preservada, codificada para reuso.
@@ -68,6 +79,7 @@
   /* Tipografia */
   --font-serif: Georgia, "Iowan Old Style", serif;
   --font-sans:  "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Fraunces", Georgia, "Iowan Old Style", serif;
 
   /* Raios */
   --radius-sm: 4px;
@@ -84,6 +96,19 @@
   --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
   --ease-spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* ============================================================
+   Tipografia da marca — Fraunces (display).
+   Calibragem dos eixos num lugar so: opsz (tamanho optico),
+   wght (peso), SOFT (arredonda serifas p/ rimar com a logo).
+   ============================================================ */
+.brand-display { font-family: var(--font-display); }
+.brand-display.is-hero { font-variation-settings: "opsz" 120, "wght" 545, "SOFT" 55, "WONK" 0; }
+.brand-display.is-wordmark { font-variation-settings: "opsz" 18, "wght" 640, "SOFT" 0, "WONK" 0; }
+/* O simbolo-O alinha com o corpo das letras (sobe um tico do centro da
+   caixa, que os descenders puxam pra baixo), pra ler como parte da palavra. */
+.brand-display.is-hero svg { transform: translateY(-0.06em); }
+.brand-display.is-wordmark svg { transform: translateY(-0.04em); }
 
 /* Tokens não-namespace — consumidos via var() (não geram utilities) */
 :root {
