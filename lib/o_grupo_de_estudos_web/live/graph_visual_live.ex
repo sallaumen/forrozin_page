@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
+  import OGrupoDeEstudosWeb.GraphVisual.SequenceSummary
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
@@ -1174,43 +1175,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp max_same_pair_loops("light"), do: 2
   defp max_same_pair_loops(_mode), do: 1
 
-  defp sequence_summary_badges(sequence) do
-    [
-      "#{length(sequence)} passos",
-      if(sequence_closes_at_start?(sequence), do: "fecha no início", else: nil),
-      if(sequence_has_inner_loop?(sequence), do: "tem loop curto", else: "sem loops")
-    ]
-    |> Enum.reject(&is_nil/1)
-  end
-
-  defp sequence_closes_at_start?([first | _] = sequence) do
-    List.last(sequence).code == first.code
-  end
-
-  defp sequence_closes_at_start?(_sequence), do: false
-
-  defp sequence_has_inner_loop?(sequence) do
-    codes = Enum.map(sequence, & &1.code)
-
-    codes =
-      if length(codes) > 1 and List.first(codes) == List.last(codes) do
-        Enum.drop(codes, -1)
-      else
-        codes
-      end
-
-    length(codes) != length(Enum.uniq(codes))
-  end
-
-  defp step_display_label(%{code: code, name: name}), do: "#{code} · #{name}"
-
-  defp step_display_label(code, steps) do
-    case Enum.find(steps, &(&1.code == code)) do
-      nil -> code
-      step -> step_display_label(step)
-    end
-  end
-
   defp maybe_clear_deleted_sequence(socket, sequence_id) do
     active? = socket.assigns.seq_active_id == sequence_id
     editing? = socket.assigns.seq_editing_id == sequence_id
@@ -1284,31 +1248,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     assign(socket, :seq_library, filtered)
   end
 
-  defp sequence_category_labels(sequence) do
-    sequence.sequence_steps
-    |> Enum.map(fn sequence_step ->
-      step = sequence_step.step
-
-      if Ecto.assoc_loaded?(step.category) && step.category do
-        {step.category.name, step.category.label, step.category.color}
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.uniq_by(fn {name, _label, _color} -> name end)
-    |> Enum.take(3)
-  end
-
   defp graph_legend_categories(categories) do
     Enum.reject(categories, &(&1.name in @graph_legend_hidden_categories))
-  end
-
-  defp sequence_category_filter_label("all", _categories), do: "Todas"
-
-  defp sequence_category_filter_label(category_name, categories) do
-    case Enum.find(categories, &(&1.name == category_name)) do
-      nil -> "Categoria"
-      category -> category.label
-    end
   end
 
   defp assign_graph_data(socket, graph, include_orphans) do
