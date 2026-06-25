@@ -4,8 +4,27 @@
     role="banner"
     class="bg-ink-900 px-6 py-3.5 flex items-center justify-between sticky top-0 z-50"
   >
-    <span class="font-serif text-sm font-bold tracking-widest text-ink-200 uppercase">
-      O Grupo de Estudos
+    <span
+      class="brand-display is-wordmark text-sm font-bold tracking-widest text-ink-200 uppercase inline-flex items-center"
+      style="gap: 0.28em"
+    >
+      <svg
+        class="w-auto shrink-0 brand-sym"
+        viewBox="96 76 320 384"
+        role="img"
+        aria-label="O"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <g fill="currentColor">
+          <circle cx="200" cy="110" r="34" />
+          <circle cx="312" cy="110" r="34" />
+        </g>
+        <g fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round">
+          <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
+          <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
+        </g>
+      </svg>
+      <span>Grupo de Estudos</span>
     </span>
     <nav aria-label="Navegação principal" class="flex gap-5 items-center">
       <%= if @current_user do %>
@@ -67,7 +86,7 @@
     <%!-- Hero --%>
     <div class="bg-ink-900 px-6 pt-16 pb-10">
       <div class="max-w-[760px] mx-auto">
-        <h1 class="text-3xl md:text-[44px] font-bold text-ink-200 leading-[1.15] tracking-[-1px] mb-5">
+        <h1 class="brand-display is-hero text-3xl md:text-[44px] font-bold text-ink-200 leading-[1.15] tracking-[-1px] mb-5">
           Uma wiki de forró construída pela comunidade.
         </h1>
         <p class="text-base leading-[1.9] text-ink-400 max-w-[540px] mb-3">
@@ -128,7 +147,7 @@
         <p class="text-[10px] font-bold tracking-widest text-accent-orange uppercase mb-2">
           Mapa de conexões
         </p>
-        <h2 class="text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
+        <h2 class="brand-display is-title text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
           Entenda como os passos se conectam
         </h2>
         <p class="text-sm leading-[1.8] text-ink-600 mb-5 max-w-[520px]">
@@ -165,7 +184,7 @@
         <p class="text-[10px] font-bold tracking-widest text-accent-orange uppercase mb-2">
           Diário de treino
         </p>
-        <h2 class="text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
+        <h2 class="brand-display is-title text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
           Registre o que praticou, acompanhe sua evolução
         </h2>
         <p class="text-sm leading-[1.8] text-ink-600 max-w-[520px]">
@@ -180,7 +199,7 @@
         <p class="text-[10px] font-bold tracking-widest text-accent-orange uppercase mb-2">
           Comunidade
         </p>
-        <h2 class="text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
+        <h2 class="brand-display is-title text-xl font-bold text-ink-900 tracking-tight mb-3 leading-tight">
           Construído por quem dança
         </h2>
         <p class="text-sm leading-[1.8] text-ink-600 max-w-[520px]">
@@ -191,7 +210,7 @@
 
     <%!-- CTA final --%>
     <div class="px-6 py-16 bg-ink-900 text-center">
-      <h2 class="text-xl font-bold text-ink-200 mb-2">
+      <h2 class="brand-display is-title text-xl font-bold text-ink-200 mb-2">
         Comece a estudar agora
       </h2>
       <p class="text-sm text-ink-500 mb-6">
