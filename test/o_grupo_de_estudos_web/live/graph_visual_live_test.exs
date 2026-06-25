@@ -439,14 +439,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
 
     test "graph taps send the node label as the manual step name" do
-      js = File.read!("assets/js/app.js")
+      js = File.read!("assets/js/graph_visual.js")
 
       assert js =~ ~S/name: node.data("label") || node.id()/
       refute js =~ ~S/name: node.data("nome") || node.id()/
     end
 
     test "manual graph taps highlight outgoing options without refocusing the camera" do
-      js = File.read!("assets/js/app.js")
+      js = File.read!("assets/js/graph_visual.js")
 
       assert js =~ "_applyManualStepGuide(node)"
       assert js =~ ~S/node.outgoers("edge")/
@@ -456,7 +456,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
 
     test "graph hook avoids rebuilding the graph on unrelated LiveView updates" do
-      js = File.read!("assets/js/app.js")
+      js = File.read!("assets/js/graph_visual.js")
 
       refute js =~ "updated() { this._initGraph() }"
       assert js =~ "this._graphSignatureValue !== this._graphSignature()"
@@ -784,7 +784,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
 
     test "applying a new sequence highlight does not refit before focusing the sequence" do
-      js = File.read!("assets/js/app.js")
+      js = File.read!("assets/js/graph_visual.js")
 
       assert js =~ "_clearSequenceHighlight({ refit: false })"
       assert js =~ "if (refit) {"

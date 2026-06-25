@@ -26,14 +26,14 @@ defmodule OGrupoDeEstudosWeb.GraphDarkModeTest do
 
   # FOR-39 fix 3: buildDrawerActionHTML usa CSS vars para dark mode
   test "buildDrawerActionHTML nao usa cores hardcoded light-mode para icones" do
-    js = File.read!("assets/js/app.js")
+    js = File.read!("assets/js/graph_visual.js")
 
     assert js =~ ~r/function buildDrawerActionHTML[\s\S]{0,800}--color-ink-500/,
            "buildDrawerActionHTML deve usar --color-ink-500 via getComputedStyle ao invés de #9a7a5a hardcoded"
   end
 
   test "buildDrawerActionHTML usa getComputedStyle para adaptar ao tema" do
-    js = File.read!("assets/js/app.js")
+    js = File.read!("assets/js/graph_visual.js")
 
     assert js =~ ~r/function buildDrawerActionHTML[\s\S]{0,400}classList\.contains\("dark"\)/,
            "buildDrawerActionHTML precisa detectar dark mode via classList.contains(\"dark\")"
