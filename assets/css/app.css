@@ -110,10 +110,12 @@
    caixa, que os descenders puxam pra baixo), pra ler como parte da palavra. */
 .brand-display.is-hero svg { transform: translateY(-0.06em); }
 .brand-display.is-wordmark svg { transform: translateY(-0.04em); }
-/* Wordmark da landing usa 1 SVG so (sem blocos desktop/mobile separados):
-   no celular o simbolo cresce pra virar capitular das 2 linhas, como o app. */
-.brand-sym { height: 1.6em; }
-@media (max-width: 767px) { .brand-sym { height: 2.5em; } }
+/* Wordmark da landing usa 1 SVG so (sem blocos desktop/mobile separados).
+   A base (1.6em) vem do style inline no proprio SVG (imune a cache do CSS:
+   se o CSS antigo ficar em cache, o simbolo NAO estoura pro tamanho intrinseco).
+   Aqui so o override mobile, que cresce pra capitular das 2 linhas e precisa
+   de !important pra vencer o style inline. */
+@media (max-width: 767px) { .brand-sym { height: 2.5em !important; } }
 
 /* Tokens não-namespace — consumidos via var() (não geram utilities) */
 :root {
