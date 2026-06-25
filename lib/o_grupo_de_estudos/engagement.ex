@@ -637,7 +637,7 @@ defmodule OGrupoDeEstudos.Engagement do
   defp maybe_search_users(query, nil), do: query
 
   defp maybe_search_users(query, search) do
-    term = "%#{String.downcase(search)}%"
+    term = "%#{OGrupoDeEstudos.Search.escape_like(String.downcase(search))}%"
     where(query, [u], ilike(u.username, ^term) or ilike(u.name, ^term))
   end
 

@@ -786,6 +786,16 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert {:error, _} = Engagement.toggle_follow(user.id, user.id)
     end
 
+    test "list_following/2 treats LIKE wildcards in search as literal", %{user: user} do
+      alice = insert(:user, username: "alice", name: "Alice Silva")
+      {:ok, :followed} = Engagement.toggle_follow(user.id, alice.id)
+
+      # "a%" must match a literal "a%", not expand into a wildcard matching alice
+      assert Engagement.list_following(user.id, search: "a%") == []
+      # sanity: a real search still matches
+      assert [%{username: "alice"}] = Engagement.list_following(user.id, search: "alice")
+    end
+
     test "following?/2 returns false when not following", %{user: user} do
       other = insert(:user)
       refute Engagement.following?(user.id, other.id)
