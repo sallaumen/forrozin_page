@@ -22,8 +22,24 @@
     <%!-- Hero --%>
     <div id="collection-hero" class="border-b border-ink-300/50 px-6 pt-12 pb-9 bg-ink-200">
       <div class="max-w-[1600px] mx-auto">
-        <h1 class="text-4xl md:text-5xl font-bold text-ink-900 tracking-tight leading-tight mb-4">
-          O grupo de estudos.
+        <h1 class="text-4xl md:text-5xl font-bold text-ink-900 tracking-tight leading-tight mb-4 flex items-center gap-[0.12em]">
+          <svg
+            class="h-[1.05em] w-auto shrink-0"
+            viewBox="96 76 320 384"
+            role="img"
+            aria-label="O"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <g fill="#EE3F22">
+              <circle cx="200" cy="110" r="34" />
+              <circle cx="312" cy="110" r="34" />
+            </g>
+            <g fill="none" stroke="#EE3F22" stroke-width="40" stroke-linecap="round">
+              <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
+              <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
+            </g>
+          </svg>
+          <span>grupo de estudos</span>
         </h1>
         <p class="text-base text-ink-700 leading-relaxed max-w-2xl mb-2.5">
           {total_steps(@sections)} passos de forró catalogados aqui.
