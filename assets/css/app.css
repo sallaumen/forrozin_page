@@ -104,11 +104,16 @@
    ============================================================ */
 .brand-display { font-family: var(--font-display); }
 .brand-display.is-hero { font-variation-settings: "opsz" 120, "wght" 545, "SOFT" 55, "WONK" 0; }
+.brand-display.is-title { font-variation-settings: "opsz" 32, "wght" 600, "SOFT" 30, "WONK" 0; }
 .brand-display.is-wordmark { font-variation-settings: "opsz" 18, "wght" 640, "SOFT" 0, "WONK" 0; }
 /* O simbolo-O alinha com o corpo das letras (sobe um tico do centro da
    caixa, que os descenders puxam pra baixo), pra ler como parte da palavra. */
 .brand-display.is-hero svg { transform: translateY(-0.06em); }
 .brand-display.is-wordmark svg { transform: translateY(-0.04em); }
+/* Wordmark da landing usa 1 SVG so (sem blocos desktop/mobile separados):
+   no celular o simbolo cresce pra virar capitular das 2 linhas, como o app. */
+.brand-sym { height: 1.6em; }
+@media (max-width: 767px) { .brand-sym { height: 2.5em; } }
 
 /* Tokens não-namespace — consumidos via var() (não geram utilities) */
 :root {
