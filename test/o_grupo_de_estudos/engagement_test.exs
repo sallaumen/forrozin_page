@@ -7,6 +7,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
   alias OGrupoDeEstudos.Engagement.Comments.{SequenceComment, SequenceCommentQuery}
   alias OGrupoDeEstudos.Engagement.Comments.{StepComment, StepCommentQuery}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
+  alias OGrupoDeEstudos.Engagement.Notifications.NotificationQuery
   alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
   alias OGrupoDeEstudos.Repo
 
@@ -42,6 +43,49 @@ defmodule OGrupoDeEstudos.EngagementTest do
     test "works for sequence likeable_type", %{user: user, sequence: sequence} do
       assert {:ok, :liked} = Engagement.toggle_like(user.id, "sequence", sequence.id)
       assert Engagement.liked?(user.id, "sequence", sequence.id)
+    end
+  end
+
+  describe "like notifications" do
+    test "liking a community step notifies its author", %{user: liker} do
+      author = insert(:user)
+      step = insert(:step, suggested_by: author)
+
+      assert {:ok, :liked} = Engagement.toggle_like(liker.id, "step", step.id)
+
+      liker_id = liker.id
+
+      assert [%Notification{action: "liked_step", actor_id: ^liker_id}] =
+               NotificationQuery.list_for_user(author.id)
+    end
+
+    test "liking your own step does not notify", %{user: user} do
+      step = insert(:step, suggested_by: user)
+
+      assert {:ok, :liked} = Engagement.toggle_like(user.id, "step", step.id)
+
+      assert [] = NotificationQuery.list_for_user(user.id)
+    end
+
+    test "liking another user's sequence notifies the owner", %{user: owner, sequence: sequence} do
+      liker = insert(:user)
+
+      assert {:ok, :liked} = Engagement.toggle_like(liker.id, "sequence", sequence.id)
+
+      liker_id = liker.id
+
+      assert [%Notification{action: "liked_sequence", actor_id: ^liker_id}] =
+               NotificationQuery.list_for_user(owner.id)
+    end
+
+    test "unliking does not create a notification", %{user: liker} do
+      author = insert(:user)
+      step = insert(:step, suggested_by: author)
+
+      {:ok, :liked} = Engagement.toggle_like(liker.id, "step", step.id)
+      {:ok, :unliked} = Engagement.toggle_like(liker.id, "step", step.id)
+
+      assert [%Notification{action: "liked_step"}] = NotificationQuery.list_for_user(author.id)
     end
   end
 

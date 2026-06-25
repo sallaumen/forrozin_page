@@ -16,6 +16,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   import OGrupoDeEstudosWeb.UI.BackButton, only: [back_button: 1]
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.UserAvatar
+  import OGrupoDeEstudosWeb.Helpers.NotificationPresenter
 
   attr :current_user, :map, required: true
   attr :is_admin, :boolean, default: false
@@ -289,7 +290,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                       </div>
                       <div class="min-w-0 flex-1">
                         <p class="m-0 text-sm leading-snug text-ink-700">
-                          <span class="font-bold text-ink-900">{primary_actor_name(notif)}</span>
+                          <span class="font-bold text-ink-900">{actors_label(notif)}</span>
                           <span>{action_text(notif)}</span>
                           <span
                             :if={target_name(notif)}
@@ -490,20 +491,6 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
     """
   end
 
-  defp notification_initial(%{actors_data: [actor | _]}) do
-    (actor.name || actor.username || "?")
-    |> String.first()
-    |> String.upcase()
-  end
-
-  defp notification_initial(_), do: "?"
-
-  defp primary_actor_name(%{actors_data: [actor | _]}) do
-    actor.name || actor.username || "Alguém"
-  end
-
-  defp primary_actor_name(_), do: "Alguém"
-
   defp notification_path(%{action: "followed_user", parent_type: "profile", parent_id: id}) do
     profile_path(id)
   end
@@ -557,33 +544,4 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   end
 
   defp target_name(_), do: nil
-
-  defp action_text(%{action: "followed_user"}), do: " começou a te seguir"
-  defp action_text(%{action: "liked_comment"}), do: " curtiu seu comentário"
-  defp action_text(%{action: "replied_comment"}), do: " respondeu ao seu comentário"
-  defp action_text(%{action: "liked_step"}), do: " curtiu o passo "
-  defp action_text(%{action: "liked_sequence"}), do: " curtiu a sequência"
-  defp action_text(%{action: "suggestion_created"}), do: " enviou uma sugestão"
-  defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão"
-  defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
-  defp action_text(%{action: "study_request"}), do: " quer estudar com você"
-  defp action_text(%{action: "study_accepted"}), do: " aceitou seu pedido de estudo"
-  defp action_text(%{action: "shared_note_updated"}), do: " escreveu no diário compartilhado"
-
-  defp action_text(%{action: "study_nudge"}),
-    do: " mandou um lembrete: hora de escrever no diário!"
-
-  defp action_text(_), do: " interagiu"
-
-  defp time_ago(datetime) do
-    diff = NaiveDateTime.diff(NaiveDateTime.utc_now(), datetime, :second)
-
-    cond do
-      diff < 60 -> "agora"
-      diff < 3_600 -> "#{div(diff, 60)}min"
-      diff < 86_400 -> "#{div(diff, 3_600)}h"
-      diff < 604_800 -> "#{div(diff, 86_400)}d"
-      true -> "#{div(diff, 604_800)}sem"
-    end
-  end
 end

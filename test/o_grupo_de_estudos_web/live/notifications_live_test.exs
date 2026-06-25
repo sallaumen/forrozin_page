@@ -40,6 +40,45 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
       assert html =~ "respondeu"
     end
 
+    test "groups same-target likes into one row with plural verb and 'e mais N'", %{conn: conn} do
+      {conn, user} = logged_in_conn(conn)
+      step = insert(:step)
+      actor1 = insert(:user, name: "Maria Souza")
+      actor2 = insert(:user, name: "Joao Lima")
+      key = "like:step:#{step.id}"
+
+      insert(:notification,
+        user: user,
+        actor: actor1,
+        action: "liked_step",
+        target_type: "step",
+        target_id: step.id,
+        parent_type: "step",
+        parent_id: step.id,
+        group_key: key,
+        inserted_at: ~N[2026-01-01 10:00:00]
+      )
+
+      insert(:notification,
+        user: user,
+        actor: actor2,
+        action: "liked_step",
+        target_type: "step",
+        target_id: step.id,
+        parent_type: "step",
+        parent_id: step.id,
+        group_key: key,
+        inserted_at: ~N[2026-01-01 11:00:00]
+      )
+
+      {:ok, _view, html} = live(conn, ~p"/notifications")
+
+      # Most recent actor is primary, plus the others, with a plural verb
+      assert html =~ "Joao Lima"
+      assert html =~ "e mais 1"
+      assert html =~ "curtiram"
+    end
+
     test "marks unread notifications as read when opened while keeping new marker", %{conn: conn} do
       {conn, user} = logged_in_conn(conn)
       actor = insert(:user)

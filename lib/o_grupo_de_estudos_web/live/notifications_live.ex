@@ -15,7 +15,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   alias OGrupoDeEstudos.{Accounts, Engagement}
   alias OGrupoDeEstudos.Engagement.Notifications.Grouper
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
@@ -27,6 +26,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
 
   import OGrupoDeEstudosWeb.UI.ActivityToast
+  import OGrupoDeEstudosWeb.Helpers.NotificationPresenter
 
   @page_size 20
 
@@ -165,12 +165,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
 
   defp notification_path(_), do: "/collection"
 
-  defp primary_actor_name(%{actors_data: [actor | _]}) do
-    actor.name || actor.username
-  end
-
-  defp primary_actor_name(_), do: "Alguém"
-
   defp target_name(%{parent_type: "step", parent_id: id}) when not is_nil(id) do
     case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
       nil -> nil
@@ -185,32 +179,4 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   defp target_name(%{action: "shared_note_updated"}), do: "Ver diário →"
   defp target_name(%{action: "study_nudge"}), do: "Abrir diário →"
   defp target_name(_), do: nil
-
-  defp action_text(%{action: "liked_comment"}), do: " curtiu seu comentário"
-  defp action_text(%{action: "replied_comment"}), do: " respondeu ao seu comentário"
-  defp action_text(%{action: "liked_step"}), do: " curtiu o passo"
-  defp action_text(%{action: "liked_sequence"}), do: " curtiu a sequência"
-  defp action_text(%{action: "followed_user"}), do: " começou a te seguir"
-  defp action_text(%{action: "suggestion_approved"}), do: " aprovou sua sugestão ✓"
-  defp action_text(%{action: "suggestion_rejected"}), do: " rejeitou sua sugestão"
-  defp action_text(%{action: "study_request"}), do: " quer estudar com você"
-  defp action_text(%{action: "study_accepted"}), do: " aceitou seu pedido de estudo"
-  defp action_text(%{action: "shared_note_updated"}), do: " escreveu no diário compartilhado"
-
-  defp action_text(%{action: "study_nudge"}),
-    do: " mandou um lembrete: hora de escrever no diário!"
-
-  defp action_text(_), do: " interagiu"
-
-  defp time_ago(datetime) do
-    diff = NaiveDateTime.diff(NaiveDateTime.utc_now(), datetime, :second)
-
-    cond do
-      diff < 60 -> "agora"
-      diff < 3_600 -> "#{div(diff, 60)}min"
-      diff < 86_400 -> "#{div(diff, 3_600)}h"
-      diff < 604_800 -> "#{div(diff, 86_400)}d"
-      true -> "#{div(diff, 604_800)}sem"
-    end
-  end
 end

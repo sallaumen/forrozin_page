@@ -420,8 +420,9 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       refute Enum.any?(warnings, &(&1 =~ "não encontrado"))
     end
 
-    test "includes wip steps that have connections" do
-      # WIP step connected to the chain — should be usable as required
+    test "excludes wip steps even when requested as required" do
+      # Decisão do board (2026-06-25): o gerador nunca inclui passos wip.
+      # Footwork HF-* e outros wip são restritos e ficam fora das sequências.
       {_steps, by_code} = build_linear_chain(4)
 
       wip_step =
@@ -435,10 +436,59 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
       insert(:connection, source_step: by_code["C2"], target_step: wip_step)
 
-      {:ok, [seq], _warnings} =
+      {:ok, seqs, warnings} =
         Generator.generate(base_params("C0", length: 4, count: 1, required_codes: ["WIP1"]))
 
-      assert "WIP1" in Enum.map(seq, & &1.code)
+      refute Enum.any?(seqs, fn seq -> "WIP1" in Enum.map(seq, & &1.code) end)
+      assert Enum.any?(warnings, &(&1 =~ "WIP1"))
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # WIP visibility (board decision 2026-06-25: generator is public-only)
+  # ---------------------------------------------------------------------------
+
+  describe "wip visibility" do
+    test "never includes wip steps in free generation" do
+      {_steps, by_code} = build_linear_chain(4)
+
+      wip_step =
+        insert(:step,
+          code: "WIPX",
+          name: "WIP X",
+          wip: true,
+          status: "published",
+          approved: true
+        )
+
+      # WIP sits on a path between public steps; must still never be chosen.
+      insert(:connection, source_step: by_code["C1"], target_step: wip_step)
+      insert(:connection, source_step: wip_step, target_step: by_code["C3"])
+
+      {:ok, seqs, _warnings} =
+        Generator.generate(base_params("C0", length: 4, count: 10, allow_repeats: true))
+
+      refute Enum.any?(seqs, fn seq -> "WIPX" in Enum.map(seq, & &1.code) end)
+    end
+
+    test "excludes draft (non-published) steps from generation" do
+      {_steps, by_code} = build_linear_chain(4)
+
+      draft_step =
+        insert(:step,
+          code: "DRAFT1",
+          name: "Draft Step",
+          wip: false,
+          status: "draft",
+          approved: true
+        )
+
+      insert(:connection, source_step: by_code["C2"], target_step: draft_step)
+
+      {:ok, seqs, _warnings} =
+        Generator.generate(base_params("C0", length: 4, count: 10, allow_repeats: true))
+
+      refute Enum.any?(seqs, fn seq -> "DRAFT1" in Enum.map(seq, & &1.code) end)
     end
   end
 
