@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   """
 
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
+  alias OGrupoDeEstudos.Sequences.Generator.GraphTraversal
   alias OGrupoDeEstudos.Sequences.Scorer
 
   @type step_info :: %{id: String.t(), code: String.t(), name: String.t()}
@@ -47,7 +48,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
     step_map = Map.new(steps, &{&1.id, &1})
     code_to_id = Map.new(steps, &{&1.code, &1.id})
-    adjacency = build_adjacency(connections)
+    adjacency = GraphTraversal.build_adjacency(connections)
 
     start_id = Map.get(code_to_id, params.start_code)
 
@@ -57,7 +58,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     if is_nil(start_id) do
       {:ok, [], ["Passo inicial '#{params.start_code}' não encontrado"]}
     else
-      reachable = reachable_from(start_id, adjacency)
+      reachable = GraphTraversal.reachable_from(start_id, adjacency)
 
       {reachable_required_ids, unreachable_ids} =
         Enum.split_with(required_ids, &MapSet.member?(reachable, &1))
@@ -67,8 +68,8 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
         |> Enum.map(fn id -> step_map[id] && step_map[id].code end)
         |> Enum.reject(&is_nil/1)
 
-      reverse_adj = build_reverse_adjacency(connections)
-      dist_to_start = bfs_distances(start_id, reverse_adj)
+      reverse_adj = GraphTraversal.build_reverse_adjacency(connections)
+      dist_to_start = GraphTraversal.bfs_distances(start_id, reverse_adj)
 
       ctx = %{
         start_id: start_id,
@@ -177,7 +178,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
     min_dists =
       Enum.map(segments, fn [from, to] ->
-        case bfs_path(from, to, ctx.adjacency) do
+        case GraphTraversal.bfs_path(from, to, ctx.adjacency) do
           {:ok, path} -> length(path) - 1
           :no_path -> :no_path
         end
@@ -268,7 +269,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     explored = random_walk(current, budget, ctx)
     walk_end = List.last(explored)
 
-    case bfs_path(walk_end, to, ctx.adjacency) do
+    case GraphTraversal.bfs_path(walk_end, to, ctx.adjacency) do
       {:ok, correction} ->
         explore_tail = if length(explored) > 1, do: tl(explored), else: []
         correct_tail = if length(correction) > 1, do: tl(correction), else: []
@@ -328,7 +329,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   defp connect_segment(acc, from, to, adjacency) do
     start_node = if acc == [], do: from, else: List.last(acc)
 
-    case bfs_path(start_node, to, adjacency) do
+    case GraphTraversal.bfs_path(start_node, to, adjacency) do
       {:ok, path} ->
         trimmed = if acc == [], do: path, else: tl(path)
         {:cont, {:ok, acc ++ trimmed}}
@@ -353,47 +354,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
     case Map.get(step_map, id) do
       nil -> "?"
       step -> step.code
-    end
-  end
-
-  # ── BFS path finder (randomized for variety) ─────────────────────────
-
-  defp bfs_path(source, target, _adj) when source == target, do: {:ok, [source]}
-
-  defp bfs_path(source, target, adjacency) do
-    bfs_path_loop([source], MapSet.new([source]), %{}, target, adjacency)
-  end
-
-  defp bfs_path_loop([], _visited, _parents, _target, _adj), do: :no_path
-
-  defp bfs_path_loop(queue, visited, parents, target, adj) do
-    {next_queue, new_visited, new_parents} =
-      Enum.reduce(queue, {[], visited, parents}, fn node, acc ->
-        neighbors = Map.get(adj, node, []) |> Enum.shuffle()
-        expand_neighbors(neighbors, node, acc)
-      end)
-
-    if MapSet.member?(new_visited, target) and not MapSet.member?(visited, target) do
-      {:ok, trace_path(target, new_parents)}
-    else
-      bfs_path_loop(Enum.uniq(next_queue), new_visited, new_parents, target, adj)
-    end
-  end
-
-  defp expand_neighbors(neighbors, node, acc) do
-    Enum.reduce(neighbors, acc, fn n, {q, v, p} ->
-      if MapSet.member?(v, n) do
-        {q, v, p}
-      else
-        {[n | q], MapSet.put(v, n), Map.put(p, n, node)}
-      end
-    end)
-  end
-
-  defp trace_path(node, parents) do
-    case Map.get(parents, node) do
-      nil -> [node]
-      parent -> trace_path(parent, parents) ++ [node]
     end
   end
 
@@ -675,61 +635,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
       reachable and repeat_ok and bf_ok
     end)
-  end
-
-  # ── Graph helpers ──────────────────────────────────────────────────
-
-  defp build_adjacency(connections) do
-    Enum.reduce(connections, %{}, fn conn, acc ->
-      Map.update(acc, conn.source_step_id, [conn.target_step_id], &[conn.target_step_id | &1])
-    end)
-  end
-
-  defp build_reverse_adjacency(connections) do
-    Enum.reduce(connections, %{}, fn conn, acc ->
-      Map.update(acc, conn.target_step_id, [conn.source_step_id], &[conn.source_step_id | &1])
-    end)
-  end
-
-  @doc false
-  def reachable_from(start_id, adjacency) do
-    do_bfs(MapSet.new([start_id]), [start_id], adjacency)
-  end
-
-  defp do_bfs(visited, [], _adjacency), do: visited
-
-  defp do_bfs(visited, queue, adjacency) do
-    next_queue =
-      Enum.flat_map(queue, fn node ->
-        Map.get(adjacency, node, [])
-        |> Enum.reject(&MapSet.member?(visited, &1))
-      end)
-
-    new_visited = Enum.reduce(next_queue, visited, &MapSet.put(&2, &1))
-    do_bfs(new_visited, Enum.uniq(next_queue), adjacency)
-  end
-
-  @doc false
-  def bfs_distances(start_id, adjacency) do
-    do_bfs_dist(%{start_id => 0}, [start_id], adjacency, 0)
-  end
-
-  defp do_bfs_dist(dists, [], _adj, _depth), do: dists
-
-  defp do_bfs_dist(dists, queue, adj, depth) do
-    next_queue =
-      Enum.flat_map(queue, fn node ->
-        Map.get(adj, node, [])
-        |> Enum.reject(&Map.has_key?(dists, &1))
-      end)
-      |> Enum.uniq()
-
-    new_dists =
-      Enum.reduce(next_queue, dists, fn node, acc ->
-        Map.put(acc, node, depth + 1)
-      end)
-
-    do_bfs_dist(new_dists, next_queue, adj, depth + 1)
   end
 
   # ── Required code resolution ───────────────────────────────────────

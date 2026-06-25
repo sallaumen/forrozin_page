@@ -569,40 +569,4 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       assert codes == ["A", "D", "E", "F"]
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Graph helpers
-  # ---------------------------------------------------------------------------
-
-  describe "reachable_from/2" do
-    test "finds all reachable nodes" do
-      {steps, _} = build_linear_chain(4)
-      connections = ConnectionQuery.list_by(preload: [])
-
-      adjacency =
-        Enum.reduce(connections, %{}, fn c, acc ->
-          Map.update(acc, c.source_step_id, [c.target_step_id], &[c.target_step_id | &1])
-        end)
-
-      assert MapSet.size(Generator.reachable_from(hd(steps).id, adjacency)) == 4
-      assert MapSet.size(Generator.reachable_from(Enum.at(steps, 2).id, adjacency)) == 2
-    end
-  end
-
-  describe "bfs_distances/2" do
-    test "computes shortest distances" do
-      {steps, _} = build_linear_chain(4)
-      connections = ConnectionQuery.list_by(preload: [])
-
-      adjacency =
-        Enum.reduce(connections, %{}, fn c, acc ->
-          Map.update(acc, c.source_step_id, [c.target_step_id], &[c.target_step_id | &1])
-        end)
-
-      dists = Generator.bfs_distances(hd(steps).id, adjacency)
-      assert Map.get(dists, hd(steps).id) == 0
-      assert Map.get(dists, Enum.at(steps, 1).id) == 1
-      assert Map.get(dists, Enum.at(steps, 3).id) == 3
-    end
-  end
 end
