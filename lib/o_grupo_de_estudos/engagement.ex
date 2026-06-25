@@ -12,6 +12,7 @@ defmodule OGrupoDeEstudos.Engagement do
   """
 
   import Ecto.Query
+  require Logger
 
   alias Ecto.Multi
   alias OGrupoDeEstudos.Accounts.User
@@ -383,10 +384,17 @@ defmodule OGrupoDeEstudos.Engagement do
     |> String.to_existing_atom()
   end
 
+  # Best-effort dispatches must never break the main CRUD; we log the failure
+  # instead of swallowing it silently, so notification bugs stay visible.
+  defp log_dispatch_error(error) do
+    Logger.warning("Engagement dispatch failed: #{Exception.message(error)}")
+    :ok
+  end
+
   defp safe_dispatch(action, comment, actor, query_mod) do
     Dispatcher.notify(action, comment, actor, query_mod)
   rescue
-    _error -> :ok
+    error -> log_dispatch_error(error)
   end
 
   defp safe_dispatch_like(user_id, "step", likeable_id) do
@@ -404,7 +412,7 @@ defmodule OGrupoDeEstudos.Engagement do
         )
     end
   rescue
-    _error -> :ok
+    error -> log_dispatch_error(error)
   end
 
   defp safe_dispatch_like(_user_id, _likeable_type, _likeable_id) do
@@ -417,13 +425,13 @@ defmodule OGrupoDeEstudos.Engagement do
   defp safe_notify_like(user_id, likeable_type, likeable_id) do
     Dispatcher.notify_like(user_id, likeable_type, likeable_id)
   rescue
-    _error -> :ok
+    error -> log_dispatch_error(error)
   end
 
   defp safe_dispatch_follow(follower_id, followed_id) do
     Dispatcher.notify_follow(follower_id, followed_id)
   rescue
-    _error -> :ok
+    error -> log_dispatch_error(error)
   end
 
   defp safe_broadcast_follow_activity(follower_id, followed_id) do
@@ -436,7 +444,7 @@ defmodule OGrupoDeEstudos.Engagement do
       %{target_username: followed_user.username}
     )
   rescue
-    _error -> :ok
+    error -> log_dispatch_error(error)
   end
 
   defp schema_and_field_for("step"), do: {StepComment, :step_id}
@@ -658,6 +666,13 @@ defmodule OGrupoDeEstudos.Engagement do
   Returns `{:ok, :favorited}` or `{:ok, :unfavorited}`.
   """
   def toggle_favorite(user_id, favoritable_type, favoritable_id) do
+    with :ok <-
+           OGrupoDeEstudos.RateLimiter.check("favorite", user_id, limit: 20, window_seconds: 10) do
+      do_toggle_favorite(user_id, favoritable_type, favoritable_id)
+    end
+  end
+
+  defp do_toggle_favorite(user_id, favoritable_type, favoritable_id) do
     case Repo.get_by(Favorite,
            user_id: user_id,
            favoritable_type: favoritable_type,
