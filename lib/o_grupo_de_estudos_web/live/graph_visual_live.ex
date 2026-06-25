@@ -3,7 +3,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Media, Sequences}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
-  alias OGrupoDeEstudosWeb.GraphVisual.GraphData
+  alias OGrupoDeEstudosWeb.GraphVisual.{GraphData, SequenceLibrary, TextSearch}
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -1074,12 +1074,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp find_manual_step(_socket, ""), do: nil
 
   defp find_manual_step(socket, term) do
-    normalized_term = normalize_search_text(term)
+    normalized_term = TextSearch.normalize(term)
 
     exact =
       Enum.find(socket.assigns.graph_search_nodes, fn step ->
-        normalize_search_text(step.code) == normalized_term or
-          normalize_search_text(step.name) == normalized_term
+        TextSearch.normalize(step.code) == normalized_term or
+          TextSearch.normalize(step.name) == normalized_term
       end)
 
     step = exact || List.first(manual_step_suggestions(socket, term))
@@ -1148,7 +1148,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     query = String.trim(to_string(query || ""))
     fallback = String.trim(to_string(fallback || ""))
     prefix = query |> String.split("·", parts: 2) |> List.first() |> String.trim()
-    normalized_query = normalize_search_text(query)
+    normalized_query = TextSearch.normalize(query)
 
     cond do
       query == "" ->
@@ -1157,10 +1157,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       step_code?(steps, prefix) ->
         prefix
 
-      match = Enum.find(steps, &(normalize_search_text(&1.code) == normalized_query)) ->
+      match = Enum.find(steps, &(TextSearch.normalize(&1.code) == normalized_query)) ->
         match.code
 
-      match = Enum.find(steps, &(normalize_search_text(&1.name) == normalized_query)) ->
+      match = Enum.find(steps, &(TextSearch.normalize(&1.name) == normalized_query)) ->
         match.code
 
       true ->
@@ -1254,10 +1254,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     all =
       Enum.sort_by(all, fn sequence ->
         {
-          sequence_library_rank(sequence, owned_ids, favorite_ids),
+          SequenceLibrary.sequence_library_rank(sequence, owned_ids, favorite_ids),
           -Map.get(sequence, :like_count, 0),
-          normalize_sequence_date(sequence.inserted_at),
-          normalize_search_text(sequence.name)
+          SequenceLibrary.normalize_sequence_date(sequence.inserted_at),
+          TextSearch.normalize(sequence.name)
         }
       end)
 
@@ -1272,7 +1272,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   defp assign_filtered_sequence_library(socket) do
     filtered =
-      filter_sequence_library(
+      SequenceLibrary.filter_sequence_library(
         socket.assigns.seq_library_all,
         socket.assigns.seq_library_search,
         socket.assigns.seq_library_origin_filter,
@@ -1282,91 +1282,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       )
 
     assign(socket, :seq_library, filtered)
-  end
-
-  defp sequence_library_rank(sequence, owned_ids, favorite_ids) do
-    owned? = MapSet.member?(owned_ids, sequence.id)
-    favorite? = MapSet.member?(favorite_ids, sequence.id)
-
-    cond do
-      owned? and favorite? -> 0
-      owned? -> 1
-      favorite? -> 2
-      true -> 3
-    end
-  end
-
-  defp normalize_sequence_date(nil), do: 0
-
-  defp normalize_sequence_date(%NaiveDateTime{} = date),
-    do: -NaiveDateTime.diff(date, ~N[1970-01-01 00:00:00])
-
-  defp filter_sequence_library(
-         sequences,
-         search,
-         origin_filter,
-         category_filter,
-         owned_ids,
-         favorite_ids
-       ) do
-    search = normalize_search_text(search)
-
-    Enum.filter(sequences, fn sequence ->
-      sequence_matches_origin_filter?(sequence, origin_filter, owned_ids, favorite_ids) and
-        (search == "" or sequence_matches_search?(sequence, search)) and
-        (category_filter == "all" or sequence_has_category?(sequence, category_filter))
-    end)
-  end
-
-  defp sequence_matches_origin_filter?(sequence, "favorites", _owned_ids, favorite_ids),
-    do: MapSet.member?(favorite_ids, sequence.id)
-
-  defp sequence_matches_origin_filter?(sequence, "community", owned_ids, _favorite_ids),
-    do: not MapSet.member?(owned_ids, sequence.id) and sequence.public
-
-  defp sequence_matches_origin_filter?(_sequence, _origin_filter, _owned_ids, _favorite_ids),
-    do: true
-
-  defp sequence_matches_search?(sequence, search) do
-    sequence_text =
-      [
-        sequence.name,
-        sequence.description,
-        if(Ecto.assoc_loaded?(sequence.user) && sequence.user,
-          do: sequence.user.username,
-          else: nil
-        )
-      ]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.join(" ")
-      |> normalize_search_text()
-
-    steps_text =
-      sequence.sequence_steps
-      |> Enum.map(fn sequence_step ->
-        step = sequence_step.step
-        category = if Ecto.assoc_loaded?(step.category), do: step.category, else: nil
-
-        [
-          step.code,
-          step.name,
-          if(category, do: category.name, else: nil),
-          if(category, do: category.label, else: nil)
-        ]
-      end)
-      |> List.flatten()
-      |> Enum.reject(&is_nil/1)
-      |> Enum.join(" ")
-      |> normalize_search_text()
-
-    String.contains?(sequence_text, search) or String.contains?(steps_text, search)
-  end
-
-  defp sequence_has_category?(sequence, category_filter) do
-    Enum.any?(sequence.sequence_steps, fn sequence_step ->
-      step = sequence_step.step
-      Ecto.assoc_loaded?(step.category) && step.category && step.category.name == category_filter
-    end)
   end
 
   defp sequence_category_labels(sequence) do
@@ -1394,16 +1309,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       nil -> "Categoria"
       category -> category.label
     end
-  end
-
-  defp normalize_search_text(nil), do: ""
-
-  defp normalize_search_text(text) do
-    text
-    |> to_string()
-    |> :unicode.characters_to_nfd_binary()
-    |> String.replace(~r/\p{Mn}/u, "")
-    |> String.downcase()
   end
 
   defp assign_graph_data(socket, graph, include_orphans) do
