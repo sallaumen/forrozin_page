@@ -4,7 +4,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   alias OGrupoDeEstudos.{Accounts, Engagement, Study}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
@@ -363,7 +362,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
       personal_related_steps: if(today_note, do: today_note.related_steps, else: []),
       personal_history: personal_history,
       weekly_note_count: Study.personal_note_week_count(user.id, today),
-      monthly_note_count: Enum.count(personal_history, &(Date.compare(&1.note_date, month_start) != :lt)),
+      monthly_note_count:
+        Enum.count(personal_history, &(Date.compare(&1.note_date, month_start) != :lt)),
       today_status: personal_today_status(today_note),
       movement_cards: Study.list_shared_activity_for_user(user.id, today),
       teacher_links: Study.list_teacher_links_for_student(user.id),

@@ -254,7 +254,8 @@
             phx-click="show_seq_library"
             class={[
               "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
-              @seq_view == :library && "bg-white dark:bg-ink-300 text-accent-orange shadow-sm dark:shadow-none",
+              @seq_view == :library &&
+                "bg-white dark:bg-ink-300 text-accent-orange shadow-sm dark:shadow-none",
               @seq_view != :library && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
@@ -264,7 +265,8 @@
             phx-click="show_seq_config"
             class={[
               "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
-              @seq_view == :config && "bg-white dark:bg-ink-300 text-accent-orange shadow-sm dark:shadow-none",
+              @seq_view == :config &&
+                "bg-white dark:bg-ink-300 text-accent-orange shadow-sm dark:shadow-none",
               @seq_view != :config && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
@@ -274,7 +276,8 @@
             phx-click="show_seq_manual"
             class={[
               "flex-1 py-1.5 px-1 rounded cursor-pointer font-serif text-[10px] font-semibold transition-all",
-              @seq_view == :manual && "bg-white dark:bg-ink-300 text-accent-green shadow-sm dark:shadow-none",
+              @seq_view == :manual &&
+                "bg-white dark:bg-ink-300 text-accent-green shadow-sm dark:shadow-none",
               @seq_view != :manual && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >

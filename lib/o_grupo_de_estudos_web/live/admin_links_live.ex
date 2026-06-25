@@ -6,7 +6,6 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
   alias OGrupoDeEstudos.{Accounts, Admin}
   alias OGrupoDeEstudos.Encyclopedia.StepLinkQuery
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
 
   import OGrupoDeEstudosWeb.UI.TopNav

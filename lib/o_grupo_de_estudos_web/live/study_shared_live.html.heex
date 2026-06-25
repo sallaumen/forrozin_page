@@ -166,7 +166,10 @@
                     <% expanded? = MapSet.member?(@expanded_note_ids, note.id) %>
                     <%= if long? do %>
                       <div class="mt-1.5">
-                        <p class={["text-xs leading-6 text-ink-600 m-0", !expanded? && "line-clamp-2"]}>
+                        <p class={[
+                          "text-xs leading-6 text-ink-600 m-0",
+                          !expanded? && "line-clamp-2"
+                        ]}>
                           {note.content}
                         </p>
                         <button

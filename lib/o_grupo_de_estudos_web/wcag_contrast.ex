@@ -12,6 +12,7 @@ defmodule OGrupoDeEstudosWeb.WcagContrast do
   end
 
   defp parse("#" <> rest), do: parse(rest)
+
   defp parse(<<r::binary-2, g::binary-2, b::binary-2>>),
     do: {hex_to_int(r) / 255, hex_to_int(g) / 255, hex_to_int(b) / 255}
 

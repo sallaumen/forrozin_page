@@ -177,6 +177,22 @@ defmodule OGrupoDeEstudos.AccountsTest do
       results = Accounts.search_users("Test", exclude_id: me.id)
       assert length(results) <= 5
     end
+
+    test "treats LIKE wildcards in the term as literal characters" do
+      alice = insert(:user, username: "alice", name: "Alice Silva")
+
+      # "a%" must not expand into a wildcard matching alice; only a literal "a%".
+      assert Accounts.search_users("a%") == []
+      # sanity: a real prefix still matches
+      assert [%{id: id}] = Accounts.search_users("alice")
+      assert id == alice.id
+    end
+
+    test "works with nil exclude_id (no opts)" do
+      user = insert(:user, username: "carlosx", name: "Carlos Souza")
+      assert [%{id: id}] = Accounts.search_users("carlosx")
+      assert id == user.id
+    end
   end
 
   describe "toggle_dark_mode/1" do

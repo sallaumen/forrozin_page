@@ -73,6 +73,7 @@ defmodule OGrupoDeEstudos.Engagement do
         |> case do
           {:ok, _} ->
             safe_dispatch_like(user_id, likeable_type, likeable_id)
+            safe_notify_like(user_id, likeable_type, likeable_id)
             {:ok, :liked}
 
           error ->
@@ -409,6 +410,14 @@ defmodule OGrupoDeEstudos.Engagement do
   defp safe_dispatch_like(_user_id, _likeable_type, _likeable_id) do
     # Non-step likes do not broadcast activity toasts
     :ok
+  end
+
+  # Persists a notification for the like recipient (step/sequence/comment owner).
+  # Separate from safe_dispatch_like, which only emits the ephemeral activity toast.
+  defp safe_notify_like(user_id, likeable_type, likeable_id) do
+    Dispatcher.notify_like(user_id, likeable_type, likeable_id)
+  rescue
+    _error -> :ok
   end
 
   defp safe_dispatch_follow(follower_id, followed_id) do

@@ -11,7 +11,6 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Media.Storage
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 

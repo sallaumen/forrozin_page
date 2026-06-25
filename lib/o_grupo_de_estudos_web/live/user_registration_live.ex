@@ -6,8 +6,6 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Study
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :redirect_if_authenticated}
-
   @impl true
   def mount(params, _session, socket) do
     teacher_invite_slug = params["teacher_invite"]

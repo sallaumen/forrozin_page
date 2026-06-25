@@ -86,7 +86,10 @@ defmodule OGrupoDeEstudos.MixProject do
       # Processamento de imagens (crop, resize)
       {:mogrify, "~> 0.9"},
       # Factories de teste
-      {:ex_machina, "~> 2.7", only: :test}
+      {:ex_machina, "~> 2.7", only: :test},
+      # Seguranca estatica (Sobelow) e auditoria de CVEs em dependencias
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -108,6 +111,15 @@ defmodule OGrupoDeEstudos.MixProject do
         "tailwind o_grupo_de_estudos --minify",
         "esbuild o_grupo_de_estudos --minify",
         "phx.digest"
+      ],
+      # Gate de qualidade. O ignore do advisory do decimal (GHSA-rhv4-8758-jx7v)
+      # é justificado: decimal entra só transitivamente via ecto (`~> 2.0`), o fix
+      # está na major 3.0.0 incompatível, e o app não usa Decimal diretamente.
+      lint: [
+        "format --check-formatted",
+        "deps.audit --ignore-advisory-ids GHSA-rhv4-8758-jx7v",
+        "sobelow --skip --exit Low",
+        "credo"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]

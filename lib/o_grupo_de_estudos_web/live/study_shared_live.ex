@@ -4,7 +4,6 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   alias OGrupoDeEstudos.{Accounts, Study}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 

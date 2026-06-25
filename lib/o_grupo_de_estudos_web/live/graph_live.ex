@@ -4,7 +4,6 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
   alias OGrupoDeEstudos.{Accounts, Admin, Admin.Backup, Encyclopedia}
   alias OGrupoDeEstudos.Encyclopedia.StepQuery
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_admin}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
 
   import OGrupoDeEstudosWeb.UI.TopNav

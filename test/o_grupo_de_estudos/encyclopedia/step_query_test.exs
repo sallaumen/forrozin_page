@@ -158,6 +158,15 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
 
       assert StepQuery.list_by(search: "xyzzyqwerty") == []
     end
+
+    test "treats LIKE wildcards in the term as literal characters" do
+      insert(:step, code: "BF", name: "Base frontal")
+
+      # "b%" must not expand to match every name containing "b"; only a literal "b%".
+      assert StepQuery.list_by(search: "b%") == []
+      # sanity: a real prefix still matches
+      assert [%{code: "BF"}] = StepQuery.list_by(search: "base")
+    end
   end
 
   describe "list_by/1 with :suggested_by_id" do

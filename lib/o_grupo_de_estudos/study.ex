@@ -22,7 +22,7 @@ defmodule OGrupoDeEstudos.Study do
     if String.length(term) < 2 do
       []
     else
-      pattern = "%#{term}%"
+      pattern = "%#{OGrupoDeEstudos.Search.escape_like(term)}%"
 
       query =
         from(u in User,

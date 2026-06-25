@@ -75,7 +75,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
     do: where(q, [step: s], s.id in ^ids)
 
   defp shared_reducer({:search, term}, q) do
-    term_lower = String.downcase(term)
+    term_like = "%#{OGrupoDeEstudos.Search.escape_like(String.downcase(term))}%"
 
     where(
       q,
@@ -83,9 +83,9 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
       fragment(
         "lower(?) LIKE ? OR lower(?) LIKE ?",
         s.code,
-        ^"%#{term_lower}%",
+        ^term_like,
         s.name,
-        ^"%#{term_lower}%"
+        ^term_like
       )
     )
   end

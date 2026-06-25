@@ -185,4 +185,28 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
       assert get_change(changeset, :confirmation_token) == nil
     end
   end
+
+  describe "Inspect redaction" do
+    test "does not leak sensitive fields when inspected" do
+      user = %User{
+        password: "senha_em_claro",
+        password_hash: "hash_secreto",
+        confirmation_token: "token_secreto"
+      }
+
+      inspected = inspect(user)
+
+      refute inspected =~ "senha_em_claro"
+      refute inspected =~ "hash_secreto"
+      refute inspected =~ "token_secreto"
+    end
+
+    test "still shows non-sensitive fields when inspected" do
+      user = %User{username: "tata", email: "tata@example.com"}
+      inspected = inspect(user)
+
+      assert inspected =~ "tata"
+      assert inspected =~ "tata@example.com"
+    end
+  end
 end

@@ -39,8 +39,10 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       |> Map.put_new(:max_bf_visits, 3)
       |> Map.put_new(:max_same_pair_loops, @max_same_pair_loops)
 
-    # Load all steps with connections (no public_only filter)
-    steps = StepQuery.list_by(preload: [:category])
+    # Load only public steps (board decision 2026-06-25): wip/draft steps are
+    # restricted and must never appear in generated sequences. Visibility is
+    # owned by StepQuery, so we reuse :public_only instead of re-checking here.
+    steps = StepQuery.list_by(public_only: true, preload: [:category])
     connections = ConnectionQuery.list_by(preload: [])
 
     step_map = Map.new(steps, &{&1.id, &1})
