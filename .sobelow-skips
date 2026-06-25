@@ -13,3 +13,6 @@ Config.CSP: Missing Content-Security-Policy,lib/o_grupo_de_estudos_web/router.ex
 Traversal.FileModule: Directory Traversal in `File.rm`,lib/o_grupo_de_estudos/media/storage.ex:51,79650F0
 Traversal.FileModule: Directory Traversal in `File.read!`,lib/o_grupo_de_estudos/admin/backup.ex:87,7E86577
 Traversal.FileModule: Directory Traversal in `File.rm`,lib/o_grupo_de_estudos/workers/periodic_backup.ex:40,B3F277
+Traversal.FileModule: Directory Traversal in `File.read`,lib/o_grupo_de_estudos_web/live/admin_backups_live.ex:81,247266
+Traversal.SendDownload: Directory Traversal in `send_download`,lib/o_grupo_de_estudos_web/controllers/backup_controller.ex:27,371AF5E
+Traversal.FileModule: Directory Traversal in `File.rm`,lib/o_grupo_de_estudos_web/live/admin_backups_live.ex:47,787A535

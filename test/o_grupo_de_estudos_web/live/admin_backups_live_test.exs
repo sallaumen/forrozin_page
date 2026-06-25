@@ -40,6 +40,23 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
   end
 
   # ---------------------------------------------------------------------------
+  # Path traversal protection
+  # ---------------------------------------------------------------------------
+
+  describe "path traversal protection" do
+    test "delete_backup ignores paths outside the backup dir", %{conn: conn} do
+      evil = Path.join(System.tmp_dir!(), "evil_#{System.unique_integer([:positive])}.json")
+      File.write!(evil, "{}")
+      on_exit(fn -> File.rm(evil) end)
+
+      {:ok, lv, _} = live(admin_conn(conn), ~p"/admin/backups")
+      render_click(lv, "delete_backup", %{"path" => evil})
+
+      assert File.exists?(evil), "arquivo fora de priv/backups nao deve ser deletado"
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Page rendering
   # ---------------------------------------------------------------------------
 

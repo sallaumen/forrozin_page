@@ -34,11 +34,20 @@ defmodule OGrupoDeEstudos.Metadata do
     end
   end
 
-  @doc "Returns the value as integer, defaulting to 0 if not found."
+  @doc """
+  Returns the value as integer, defaulting to 0 when not found or when the
+  stored value is not a valid integer (corrupted data).
+  """
   def get_integer(entity_name, entity_key_type, entity_key) do
     case get(entity_name, entity_key_type, entity_key) do
-      nil -> 0
-      value -> String.to_integer(value)
+      nil ->
+        0
+
+      value ->
+        case Integer.parse(value) do
+          {int, _rest} -> int
+          :error -> 0
+        end
     end
   end
 
