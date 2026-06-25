@@ -85,7 +85,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           <.link
             navigate={~p"/collection"}
             class="text-sm font-bold tracking-[2.8px] uppercase text-ink-50 hover:text-ink-100 no-underline inline-flex items-center"
-            style="gap: 0.2em"
+            style="gap: 0.28em"
           >
             <svg
               class="w-auto shrink-0"
@@ -95,11 +95,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               aria-label="O"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <g fill="#EE3F22">
+              <g fill="currentColor">
                 <circle cx="200" cy="110" r="34" />
                 <circle cx="312" cy="110" r="34" />
               </g>
-              <g fill="none" stroke="#EE3F22" stroke-width="40" stroke-linecap="round">
+              <g fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round">
                 <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
                 <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
               </g>
@@ -398,7 +398,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           <.link
             navigate={~p"/collection"}
             class="text-sm font-bold tracking-[2px] uppercase text-ink-100 no-underline inline-flex items-center"
-            style="gap: 0.2em"
+            style="gap: 0.28em"
           >
             <svg
               class="w-auto shrink-0"
@@ -408,11 +408,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               aria-label="O"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <g fill="#EE3F22">
+              <g fill="currentColor">
                 <circle cx="200" cy="110" r="34" />
                 <circle cx="312" cy="110" r="34" />
               </g>
-              <g fill="none" stroke="#EE3F22" stroke-width="40" stroke-linecap="round">
+              <g fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round">
                 <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
                 <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
               </g>
