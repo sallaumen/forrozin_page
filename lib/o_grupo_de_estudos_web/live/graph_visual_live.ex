@@ -3,6 +3,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Media, Sequences}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
+  alias OGrupoDeEstudosWeb.GraphVisual.GraphData
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -713,7 +714,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
     results =
       if String.length(term) >= 1 do
-        search_graph_nodes(socket.assigns.graph_search_nodes, term)
+        GraphData.search_graph_nodes(socket.assigns.graph_search_nodes, term)
       else
         []
       end
@@ -760,7 +761,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
        push_event(socket, "graph_updated", %{
          graph_json: socket.assigns.graph_json,
          edit_mode: new_mode,
-         orphans: if(new_mode, do: build_orphans_json(graph), else: "[]")
+         orphans: if(new_mode, do: GraphData.build_orphans_json(graph), else: "[]")
        })}
     else
       {:noreply, socket}
@@ -788,7 +789,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
          push_event(socket, "graph_updated", %{
            graph_json: socket.assigns.graph_json,
            edit_mode: edit_mode,
-           orphans: if(edit_mode, do: build_orphans_json(graph), else: "[]")
+           orphans: if(edit_mode, do: GraphData.build_orphans_json(graph), else: "[]")
          })}
       else
         {:error, _changeset} ->
@@ -827,7 +828,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
            push_event(socket, "graph_updated", %{
              graph_json: socket.assigns.graph_json,
              edit_mode: edit_mode,
-             orphans: if(edit_mode, do: build_orphans_json(graph), else: "[]")
+             orphans: if(edit_mode, do: GraphData.build_orphans_json(graph), else: "[]")
            })}
       end
     else
@@ -978,7 +979,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
           do: Enum.map(socket.assigns.seq_active, & &1.code),
           else: []
 
-      missing = if step_codes != [], do: find_missing_edges(step_codes, graph.edges), else: []
+      missing =
+        if step_codes != [], do: GraphData.find_missing_edges(step_codes, graph.edges), else: []
 
       {:noreply,
        socket
@@ -1065,7 +1067,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   defp manual_step_suggestions(socket, term) do
     socket.assigns.graph_search_nodes
-    |> search_graph_nodes(term)
+    |> GraphData.search_graph_nodes(term)
     |> Enum.take(6)
   end
 
@@ -1405,7 +1407,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   defp assign_graph_data(socket, graph, include_orphans) do
-    graph_json = build_json(graph, include_orphans)
+    graph_json = GraphData.build_json(graph, include_orphans)
 
     connected_codes =
       graph.edges
@@ -1437,145 +1439,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     |> assign(:edges, graph.edges)
   end
 
-  defp search_graph_nodes(nodes, term) do
-    term = String.downcase(term)
-
-    nodes
-    |> Enum.filter(fn node ->
-      String.contains?(String.downcase(node.code), term) or
-        String.contains?(String.downcase(node.name), term) or
-        String.contains?(String.downcase(node.category), term)
-    end)
-    |> Enum.sort_by(fn node ->
-      code = String.downcase(node.code)
-      name = String.downcase(node.name)
-
-      cond do
-        code == term -> {0, node.name}
-        String.starts_with?(code, term) -> {1, node.name}
-        String.starts_with?(name, term) -> {2, node.name}
-        true -> {3, node.name}
-      end
-    end)
-    |> Enum.take(8)
-  end
-
-  defp build_json(%{nodes: nodes, edges: edges}, include_orphans) do
-    connected_codes =
-      edges
-      |> Enum.flat_map(fn c -> [c.source_step.code, c.target_step.code] end)
-      |> MapSet.new()
-
-    visible_nodes =
-      if include_orphans do
-        nodes
-      else
-        Enum.filter(nodes, &MapSet.member?(connected_codes, &1.code))
-      end
-
-    Jason.encode!(%{
-      nodes:
-        Enum.map(visible_nodes, fn p ->
-          cat = p.category
-
-          %{
-            id: p.code,
-            nome: p.name,
-            categoria: if(cat, do: cat.label, else: "Outros"),
-            categoriaName: if(cat, do: cat.name, else: "outros"),
-            cor: if(cat, do: cat.color, else: "#9a7a5a"),
-            nota: truncate_note(p.note, 300),
-            highlighted: p.highlighted || false,
-            suggested: p.suggested_by_id != nil,
-            suggested_by_id: p.suggested_by_id,
-            orphan: not MapSet.member?(connected_codes, p.code),
-            like_count: p.like_count || 0
-          }
-        end),
-      edges: compute_edge_spread(edges)
-    })
-  end
-
-  defp build_orphans_json(%{nodes: nodes, edges: edges}) do
-    connected_codes =
-      edges
-      |> Enum.flat_map(fn c -> [c.source_step.code, c.target_step.code] end)
-      |> MapSet.new()
-
-    orphans =
-      nodes
-      |> Enum.reject(&MapSet.member?(connected_codes, &1.code))
-      |> Enum.map(fn p ->
-        cat = p.category
-
-        %{
-          id: p.code,
-          nome: p.name,
-          categoria: if(cat, do: cat.label, else: "Outros"),
-          cor: if(cat, do: cat.color, else: "#9a7a5a")
-        }
-      end)
-
-    Jason.encode!(orphans)
-  end
-
-  defp truncate_note(nil, _max), do: nil
-  defp truncate_note(text, max) when byte_size(text) <= max, do: text
-  defp truncate_note(text, max), do: String.slice(text, 0, max) <> "…"
-
-  defp compute_edge_spread(edges) do
-    all_pairs = MapSet.new(edges, fn e -> {e.source_step.code, e.target_step.code} end)
-
-    edges
-    |> Enum.group_by(& &1.source_step.code)
-    |> Enum.flat_map(fn {_source, group} ->
-      spread_group(group, length(group))
-    end)
-    |> Enum.map(&apply_bidirectional_spread(&1, all_pairs))
-  end
-
-  defp apply_bidirectional_spread(%{spread: 0, from: from, to: to} = edge, pairs) do
-    if MapSet.member?(pairs, {to, from}) do
-      %{edge | spread: if(from <= to, do: 20, else: -20)}
-    else
-      edge
-    end
-  end
-
-  defp apply_bidirectional_spread(edge, _pairs), do: edge
-
-  defp spread_group(group, count) do
-    group
-    |> Enum.with_index()
-    |> Enum.map(fn {edge, idx} ->
-      spread = if count > 2, do: round((idx - (count - 1) / 2) * 20), else: 0
-
-      %{
-        from: edge.source_step.code,
-        to: edge.target_step.code,
-        label: edge.label,
-        spread: spread
-      }
-    end)
-  end
-
   defp recompute_manual_missing_edges(socket, manual_steps) do
     step_codes = Enum.map(manual_steps, & &1.code)
     edges = Map.get(socket.assigns, :edges, [])
-    assign(socket, :seq_missing_edges, find_missing_edges(step_codes, edges))
-  end
-
-  defp find_missing_edges(step_codes, edges) do
-    edge_set =
-      edges
-      |> Enum.map(fn e -> {e.source_step.code, e.target_step.code} end)
-      |> MapSet.new()
-
-    step_codes
-    |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.with_index()
-    |> Enum.reject(fn {[src, tgt], _i} -> MapSet.member?(edge_set, {src, tgt}) end)
-    |> Enum.map(fn {[src, tgt], i} -> %{from: src, to: tgt, position: i + 1} end)
+    assign(socket, :seq_missing_edges, GraphData.find_missing_edges(step_codes, edges))
   end
 
   defp parse_int(val, default) when is_binary(val) do
