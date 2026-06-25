@@ -84,10 +84,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
         <div id="top-nav-desktop-brand" class="justify-self-center">
           <.link
             navigate={~p"/collection"}
-            class="text-sm font-bold tracking-[2.8px] uppercase text-ink-50 hover:text-ink-100 no-underline inline-flex items-center gap-[0.2em]"
+            class="text-sm font-bold tracking-[2.8px] uppercase text-ink-50 hover:text-ink-100 no-underline inline-flex items-center"
+            style="gap: 0.2em"
           >
             <svg
-              class="h-[1.6em] w-auto shrink-0"
+              class="w-auto shrink-0"
+              style="height: 1.6em"
               viewBox="96 76 320 384"
               role="img"
               aria-label="O"
@@ -395,10 +397,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           <%!-- Primary: logo + settings/logout menu --%>
           <.link
             navigate={~p"/collection"}
-            class="text-sm font-bold tracking-[2px] uppercase text-ink-100 no-underline inline-flex items-center gap-[0.2em]"
+            class="text-sm font-bold tracking-[2px] uppercase text-ink-100 no-underline inline-flex items-center"
+            style="gap: 0.2em"
           >
             <svg
-              class="h-[1.6em] w-auto shrink-0"
+              class="w-auto shrink-0"
+              style="height: 1.6em"
               viewBox="96 76 320 384"
               role="img"
               aria-label="O"
