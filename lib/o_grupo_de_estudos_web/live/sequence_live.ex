@@ -12,7 +12,6 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
   alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
   alias OGrupoDeEstudosWeb.Helpers.RateLimit
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
@@ -901,8 +900,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 navigate={~p"/graph/visual?seq=#{@seq.id}"}
                 class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent-orange no-underline hover:underline"
               >
-                Ver todos {@step_count} passos
-                <.icon name="hero-arrow-right" class="size-3" />
+                Ver todos {@step_count} passos <.icon name="hero-arrow-right" class="size-3" />
               </.link>
             <% end %>
           </div>

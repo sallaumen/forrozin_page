@@ -285,7 +285,9 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       anchor = insert(:step)
 
       for i <- 1..15 do
-        OGrupoDeEstudos.Engagement.create_step_comment(viewer, anchor.id, %{body: "Comentario #{i}"})
+        OGrupoDeEstudos.Engagement.create_step_comment(viewer, anchor.id, %{
+          body: "Comentario #{i}"
+        })
       end
 
       # Estrela + Popular: 25 likes received on a comment

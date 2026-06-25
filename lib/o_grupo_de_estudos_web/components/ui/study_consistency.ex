@@ -20,7 +20,8 @@ defmodule OGrupoDeEstudosWeb.UI.StudyConsistency do
               "w-2 h-2 rounded-full",
               i <= @weekly_note_count && "bg-gold-500",
               i > @weekly_note_count && "bg-ink-200"
-            ]}></div>
+            ]}>
+            </div>
           <% end %>
         </div>
         <span class={[

@@ -4,7 +4,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Media, Sequences}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 

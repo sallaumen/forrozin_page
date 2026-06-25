@@ -4,8 +4,6 @@ defmodule OGrupoDeEstudosWeb.AboutLive do
 
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :mount_current_user}
-
   @impl true
   def mount(_params, _session, socket) do
     total = OGrupoDeEstudos.Encyclopedia.count_public_steps()

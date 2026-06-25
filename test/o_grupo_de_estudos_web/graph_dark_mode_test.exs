@@ -19,6 +19,7 @@ defmodule OGrupoDeEstudosWeb.GraphDarkModeTest do
   # FOR-39 fix 2: aba ativa do segmented control visível em dark
   test "segmented control aba ativa usa dark:bg-ink-300 para visibilidade" do
     heex = File.read!("lib/o_grupo_de_estudos_web/live/graph_visual_live.html.heex")
+
     assert heex =~ "dark:bg-ink-300",
            "aba ativa do segmented control precisa de dark:bg-ink-300"
   end
@@ -26,12 +27,14 @@ defmodule OGrupoDeEstudosWeb.GraphDarkModeTest do
   # FOR-39 fix 3: buildDrawerActionHTML usa CSS vars para dark mode
   test "buildDrawerActionHTML nao usa cores hardcoded light-mode para icones" do
     js = File.read!("assets/js/app.js")
+
     assert js =~ ~r/function buildDrawerActionHTML[\s\S]{0,800}--color-ink-500/,
            "buildDrawerActionHTML deve usar --color-ink-500 via getComputedStyle ao invés de #9a7a5a hardcoded"
   end
 
   test "buildDrawerActionHTML usa getComputedStyle para adaptar ao tema" do
     js = File.read!("assets/js/app.js")
+
     assert js =~ ~r/function buildDrawerActionHTML[\s\S]{0,400}classList\.contains\("dark"\)/,
            "buildDrawerActionHTML precisa detectar dark mode via classList.contains(\"dark\")"
   end
@@ -39,6 +42,7 @@ defmodule OGrupoDeEstudosWeb.GraphDarkModeTest do
   # FOR-39 fix 4: separadores de linha visíveis em dark mode
   test "cards de sequencia usam dark:border-ink-400/20 nos separadores" do
     heex = File.read!("lib/o_grupo_de_estudos_web/live/graph_visual_live.html.heex")
+
     assert heex =~ "dark:border-ink-400/20",
            "separadores de linha nos cards precisam de dark:border-ink-400/20"
   end

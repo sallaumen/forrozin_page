@@ -6,7 +6,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Suggestions}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 

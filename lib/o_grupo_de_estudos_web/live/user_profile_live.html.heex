@@ -360,11 +360,13 @@
       </p>
 
       <%!-- Progresso colapsavel: proprio perfil com ao menos 1 badge nao conquistado --%>
-      <details :if={@is_own_profile and Enum.any?(@badges, & !&1.earned)} class="mt-2 group">
+      <details :if={@is_own_profile and Enum.any?(@badges, &(!&1.earned))} class="mt-2 group">
         <summary class="text-[10px] text-ink-400 cursor-pointer list-none
                         hover:text-ink-600 dark:hover:text-ink-500
                         flex items-center gap-1 select-none w-fit">
-          <span class="transition-transform group-open:rotate-90 inline-block leading-none">›</span>
+          <span class="transition-transform group-open:rotate-90 inline-block leading-none">
+            ›
+          </span>
           <span class="group-open:hidden">ver progresso</span>
           <span class="hidden group-open:inline">ocultar</span>
         </summary>

@@ -13,7 +13,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 

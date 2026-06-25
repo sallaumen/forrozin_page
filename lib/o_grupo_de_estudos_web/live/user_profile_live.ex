@@ -4,7 +4,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences, Study, Suggestions}
   alias OGrupoDeEstudos.Engagement.{Badges, ProfileCommentQuery}
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav

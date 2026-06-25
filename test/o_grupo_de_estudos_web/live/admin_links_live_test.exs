@@ -14,8 +14,8 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
   end
 
   describe "access control" do
-    test "redirects non-admin user to /collection", %{conn: conn} do
-      {:error, {:redirect, %{to: "/collection"}}} =
+    test "redirects non-admin user to /graph/visual", %{conn: conn} do
+      {:error, {:redirect, %{to: "/graph/visual"}}} =
         live(user_conn(conn), ~p"/admin/links")
     end
 

@@ -6,8 +6,6 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
 
   import Ecto.Query
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
-
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
 

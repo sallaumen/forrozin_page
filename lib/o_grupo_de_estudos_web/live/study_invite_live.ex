@@ -5,8 +5,6 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLive do
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Study
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :mount_current_user}
-
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
     case Accounts.get_user_by_invite_slug(slug) do

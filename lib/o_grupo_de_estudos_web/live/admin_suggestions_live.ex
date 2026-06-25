@@ -14,7 +14,6 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
 
   alias OGrupoDeEstudos.{Accounts, Suggestions}
 
-  on_mount {OGrupoDeEstudosWeb.UserAuth, :ensure_authenticated}
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
 
   import OGrupoDeEstudosWeb.UI.TopNav

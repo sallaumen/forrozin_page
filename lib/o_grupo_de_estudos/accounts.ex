@@ -128,15 +128,18 @@ defmodule OGrupoDeEstudos.Accounts do
     if String.length(term) < 2 do
       []
     else
-      term_like = "%#{String.downcase(term)}%"
+      term_like = "%#{OGrupoDeEstudos.Search.escape_like(String.downcase(term))}%"
 
-      from(u in User,
-        where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
-        where: u.id != ^exclude_id,
-        order_by: [asc: u.username],
-        limit: 5
-      )
-      |> Repo.all()
+      query =
+        from(u in User,
+          where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
+          order_by: [asc: u.username],
+          limit: 5
+        )
+
+      query = if exclude_id, do: where(query, [u], u.id != ^exclude_id), else: query
+
+      Repo.all(query)
     end
   end
 
