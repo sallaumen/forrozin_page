@@ -11,7 +11,21 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
   alias OGrupoDeEstudos.Encyclopedia.{Connection, Step}
   alias OGrupoDeEstudos.Repo
 
+  @type list_opt ::
+          {:include_deleted, boolean()}
+          | {:source_step_id, Ecto.UUID.t()}
+          | {:target_step_id, Ecto.UUID.t()}
+          | {:step_ids, [Ecto.UUID.t()]}
+          | {:either_step_id, Ecto.UUID.t()}
+          | {:source_code, String.t()}
+          | {:target_code, String.t()}
+          | {:preload, term()}
+          | {:order_by, Keyword.t()}
+
+  @type opts :: [list_opt()]
+
   @doc "Returns the first connection matching `opts`, or `nil`."
+  @spec get_by(opts()) :: Connection.t() | nil
   def get_by(opts) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -20,6 +34,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
   end
 
   @doc "Returns all connections matching `opts`."
+  @spec list_by(opts()) :: [Connection.t()]
   def list_by(opts \\ []) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -28,6 +43,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
   end
 
   @doc "Deletes all connections matching `opts`. Returns `{count, nil}`."
+  @spec delete_all_by(opts()) :: {non_neg_integer(), nil | [term()]}
   def delete_all_by(opts) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -36,6 +52,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
   end
 
   @doc "Soft-deletes all connections matching `opts` by setting deleted_at. Returns `{count, nil}`."
+  @spec soft_delete_by(opts()) :: {non_neg_integer(), nil | [term()]}
   def soft_delete_by(opts) do
     utc_now = NaiveDateTime.utc_now()
     now = NaiveDateTime.truncate(utc_now, :second)

@@ -11,7 +11,20 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQuery do
   alias OGrupoDeEstudos.Encyclopedia.StepLink
   alias OGrupoDeEstudos.Repo
 
+  @type list_opt ::
+          {:include_deleted, boolean()}
+          | {:id, Ecto.UUID.t()}
+          | {:step_id, Ecto.UUID.t()}
+          | {:submitted_by_id, Ecto.UUID.t()}
+          | {:approved, boolean()}
+          | {:pending, boolean()}
+          | {:preload, term()}
+          | {:order_by, Keyword.t()}
+
+  @type opts :: [list_opt()]
+
   @doc "Returns the first step link matching `opts`, or `nil`."
+  @spec get_by(opts()) :: StepLink.t() | nil
   def get_by(opts) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -20,6 +33,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQuery do
   end
 
   @doc "Returns all step links matching `opts`, ordered by inserted_at desc by default."
+  @spec list_by(opts()) :: [StepLink.t()]
   def list_by(opts \\ []) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -29,6 +43,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQuery do
   end
 
   @doc "Counts step links matching `opts`."
+  @spec count_by(opts()) :: non_neg_integer()
   def count_by(opts \\ []) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -68,6 +83,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQuery do
 
   Used to efficiently render indicators in list views without N+1 queries.
   """
+  @spec step_ids_with_links() :: MapSet.t(Ecto.UUID.t())
   def step_ids_with_links do
     from(l in StepLink,
       where: l.approved == true and is_nil(l.deleted_at),
