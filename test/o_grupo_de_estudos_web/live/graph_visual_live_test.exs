@@ -844,4 +844,25 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute html =~ ~s(id="three-canvas")
     end
   end
+
+  describe "like/favorite on graph" do
+    setup :setup_graph
+
+    test "toggling a step like pushes the updated liked codes", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "toggle_step_like_graph", %{"code" => "BF"})
+
+      # Match the toggle push specifically (mount also pushes set_liked_steps with []).
+      assert_push_event(lv, "set_liked_steps", %{codes: ["BF"]})
+    end
+
+    test "toggling a step favorite pushes liked and favorited codes", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "toggle_step_favorite_graph", %{"code" => "BF"})
+
+      assert_push_event(lv, "set_favorited_steps", %{codes: ["BF"]})
+    end
+  end
 end
