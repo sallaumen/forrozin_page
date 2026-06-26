@@ -31,6 +31,17 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ ~s(id="collection-controls")
     end
 
+    test "dead render defers heavy queries and shows a loading state", %{conn: conn} do
+      insert(:section, title: "Bases Reservadas", position: 1)
+
+      # Disconnected HTTP render: the acervo loads on the connected mount, so the
+      # heavy section content must not appear yet — only the loading skeleton.
+      html = logged_in_conn(conn) |> get(~p"/collection") |> html_response(200)
+
+      assert html =~ ~s(id="collection-loading")
+      refute html =~ "Bases Reservadas"
+    end
+
     test "does not display wip steps in drilldown", %{conn: conn} do
       section = insert(:section, code: "TEST")
       insert(:step, section: section, name: "Base frontal", wip: false)

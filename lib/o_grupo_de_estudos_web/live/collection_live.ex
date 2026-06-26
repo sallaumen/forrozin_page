@@ -32,80 +32,90 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   import OGrupoDeEstudosWeb.UI.ActivityToast
 
-  @dialyzer {:nowarn_function, mount: 3}
   @impl true
   def mount(_params, _session, socket) do
-    admin = Accounts.admin?(socket.assigns.current_user)
-    sections = Encyclopedia.list_sections_with_steps(admin: admin)
-    categories = Encyclopedia.list_categories()
-    open_sections = Map.new(sections, fn s -> {s.id, false} end)
-
-    steps_with_links = StepLinkQuery.step_ids_with_links()
-
-    all_step_ids =
-      sections
-      |> Enum.flat_map(fn s ->
-        Enum.map(s.steps, & &1.id) ++
-          Enum.flat_map(s.subsections, fn sub -> Enum.map(sub.steps, & &1.id) end)
-      end)
-
-    step_likes = Engagement.likes_map(socket.assigns.current_user.id, "step", all_step_ids)
-    following_user_ids = Engagement.following_ids(socket.assigns.current_user.id)
-
     socket =
-      assign(socket,
-        sections: sections,
-        collection_cards: Encyclopedia.list_collection_browser(admin: admin),
-        categories: categories,
-        open_sections: open_sections,
-        search: "",
-        search_results: [],
-        category_filter: "all",
-        is_admin: admin,
-        edit_mode: false,
-        page_title: "Acervo",
-        drawer_open: false,
-        drawer_type: nil,
-        drawer_item: nil,
-        drawer_connections_out: [],
-        drawer_connections_in: [],
-        drawer_link_count: 0,
-        connection_search: "",
-        connection_suggestions: [],
-        suggest_mode: false,
-        suggest_form: %{},
-        suggest_error: nil,
-        can_edit_drawer: false,
-        active_tab: "acervo",
-        my_steps: [],
-        steps_with_links: steps_with_links,
-        step_likes: step_likes,
-        following_user_ids: following_user_ids,
-        bubble_open: false,
-        bubble_tab: "following",
-        suggested_users: [],
-        bubble_following_list: [],
-        bubble_followers_list: [],
-        bubble_search: "",
-        bubble_search_results: [],
-        expanded_step: nil,
-        expanded_comments: [],
-        expanded_links: [],
-        expanded_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
-        expanded_replies_map: %{},
-        expanded_replying_to: nil,
-        expanded_video: nil,
-        step_comment_counts: %{},
-        drawer_liked: false,
-        drawer_favorited: false,
-        deep_linked_step_code: nil,
-        active_section_id: nil,
-        active_section_card: nil,
-        filters_open?: false,
-        suggest_section_id: nil
-      )
+      socket
+      |> assign(initial_assigns(Accounts.admin?(socket.assigns.current_user)))
+      |> load_collection_data()
 
     {:ok, socket}
+  end
+
+  # Iron Law: the heavy acervo queries run only on the connected render. The
+  # dead/HTTP render returns instantly with placeholders + a loading skeleton,
+  # then the WebSocket mount fills the data in.
+  defp load_collection_data(socket) do
+    if connected?(socket) do
+      sections = Encyclopedia.list_sections_with_steps(admin: socket.assigns.is_admin)
+
+      assign(socket,
+        loaded?: true,
+        sections: sections,
+        collection_cards: CollectionBrowser.build_sections(sections),
+        categories: Encyclopedia.list_categories(),
+        open_sections: Map.new(sections, fn s -> {s.id, false} end),
+        steps_with_links: StepLinkQuery.step_ids_with_links(),
+        following_user_ids: Engagement.following_ids(socket.assigns.current_user.id)
+      )
+    else
+      socket
+    end
+  end
+
+  defp initial_assigns(admin) do
+    [
+      is_admin: admin,
+      loaded?: false,
+      sections: [],
+      collection_cards: [],
+      categories: [],
+      open_sections: %{},
+      steps_with_links: MapSet.new(),
+      step_likes: %{liked_ids: MapSet.new(), counts: %{}},
+      following_user_ids: [],
+      search: "",
+      search_results: [],
+      category_filter: "all",
+      edit_mode: false,
+      page_title: "Acervo",
+      drawer_open: false,
+      drawer_type: nil,
+      drawer_item: nil,
+      drawer_connections_out: [],
+      drawer_connections_in: [],
+      drawer_link_count: 0,
+      connection_search: "",
+      connection_suggestions: [],
+      suggest_mode: false,
+      suggest_form: %{},
+      suggest_error: nil,
+      can_edit_drawer: false,
+      active_tab: "acervo",
+      my_steps: [],
+      bubble_open: false,
+      bubble_tab: "following",
+      suggested_users: [],
+      bubble_following_list: [],
+      bubble_followers_list: [],
+      bubble_search: "",
+      bubble_search_results: [],
+      expanded_step: nil,
+      expanded_comments: [],
+      expanded_links: [],
+      expanded_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
+      expanded_replies_map: %{},
+      expanded_replying_to: nil,
+      expanded_video: nil,
+      step_comment_counts: %{},
+      drawer_liked: false,
+      drawer_favorited: false,
+      deep_linked_step_code: nil,
+      active_section_id: nil,
+      active_section_card: nil,
+      filters_open?: false,
+      suggest_section_id: nil
+    ]
   end
 
   @impl true
