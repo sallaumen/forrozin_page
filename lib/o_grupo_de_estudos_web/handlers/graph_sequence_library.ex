@@ -119,12 +119,15 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphSequenceLibrary do
       def handle_event("toggle_sequence_favorite_graph", %{"id" => seq_id}, socket) do
         user_id = socket.assigns.current_user.id
 
-        case Engagement.toggle_favorite(user_id, "sequence", seq_id) do
-          {:ok, _} ->
-            {:noreply, assign_sequence_library(socket)}
-
-          {:error, _changeset} ->
-            {:noreply, socket}
+        # Só permite favoritar uma sequência visível (pública, própria ou admin);
+        # senão favoritar um id arbitrário vazaria sequência privada na biblioteca.
+        if Sequences.get_sequence_for_viewer(seq_id, user_id, socket.assigns.is_admin) do
+          case Engagement.toggle_favorite(user_id, "sequence", seq_id) do
+            {:ok, _} -> {:noreply, assign_sequence_library(socket)}
+            {:error, _changeset} -> {:noreply, socket}
+          end
+        else
+          {:noreply, socket}
         end
       end
     end

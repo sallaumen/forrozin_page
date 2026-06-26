@@ -155,7 +155,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   def handle_params(%{"seq" => seq_id}, _uri, socket) do
-    case Sequences.get_sequence(seq_id) do
+    viewer_id = socket.assigns.current_user.id
+
+    case Sequences.get_sequence_for_viewer(seq_id, viewer_id, socket.assigns.is_admin) do
       nil ->
         {:noreply, socket}
 
@@ -402,7 +404,13 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp assign_sequence_library(socket) do
     user_id = socket.assigns.current_user.id
     saved = Sequences.list_user_sequences(user_id)
-    favorites = Engagement.list_user_favorites(user_id, "sequence")
+    # Só favoritos visíveis: público ou próprio (uma sequência favoritada que
+    # depois virou privada de outro dono não pode vazar aqui).
+    favorites =
+      user_id
+      |> Engagement.list_user_favorites("sequence")
+      |> Enum.filter(&(&1.public or &1.user_id == user_id))
+
     public = Sequences.list_all_public_sequences()
 
     all =
