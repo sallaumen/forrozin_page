@@ -199,23 +199,20 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   end
 
   def handle_event("toggle_goal", %{"id" => id}, socket) do
-    Study.toggle_goal(id)
+    Study.toggle_goal(socket.assigns.current_user, id)
     {:noreply, assign(socket, :shared_goals, Study.list_shared_goals(socket.assigns.link.id))}
   end
 
   def handle_event("delete_goal", %{"id" => id}, socket) do
-    Study.delete_goal(id)
+    Study.delete_goal(socket.assigns.current_user, id)
     {:noreply, assign(socket, :shared_goals, Study.list_shared_goals(socket.assigns.link.id))}
   end
 
-  def handle_event("save_teacher_note", %{"link-id" => link_id, "note" => note}, socket) do
-    user = socket.assigns.current_user
-
-    if user.id == socket.assigns.link.teacher_id do
-      Study.update_teacher_note(link_id, note)
-      {:noreply, put_flash(socket, :info, "Anotacao salva.")}
-    else
-      {:noreply, socket}
+  def handle_event("save_teacher_note", %{"note" => note}, socket) do
+    # Usa o link montado (verificado no mount), nunca um link-id vindo do cliente.
+    case Study.update_teacher_note(socket.assigns.current_user, socket.assigns.link.id, note) do
+      {:ok, _link} -> {:noreply, put_flash(socket, :info, "Anotacao salva.")}
+      {:error, _} -> {:noreply, socket}
     end
   end
 

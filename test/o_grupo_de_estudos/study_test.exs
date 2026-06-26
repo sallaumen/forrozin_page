@@ -1,8 +1,9 @@
 defmodule OGrupoDeEstudos.StudyTest do
   use OGrupoDeEstudos.DataCase, async: true
 
+  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Study
-  alias OGrupoDeEstudos.Study.LinkError
+  alias OGrupoDeEstudos.Study.{Goal, LinkError, TeacherStudentLink}
 
   describe "accept_invite/2" do
     test "creates a pending teacher-student link from the teacher invite slug" do
@@ -136,23 +137,23 @@ defmodule OGrupoDeEstudos.StudyTest do
       assert goal.teacher_student_link_id == link.id
     end
 
-    test "toggle_goal/1 toggles completed status" do
+    test "toggle_goal/2 toggles completed status for the owner" do
       user = insert(:user)
       {:ok, goal} = Study.create_goal(%{body: "Meta teste", owner_user_id: user.id})
       assert goal.completed == false
 
-      {:ok, toggled} = Study.toggle_goal(goal.id)
+      {:ok, toggled} = Study.toggle_goal(user, goal.id)
       assert toggled.completed == true
 
-      {:ok, untoggled} = Study.toggle_goal(goal.id)
+      {:ok, untoggled} = Study.toggle_goal(user, goal.id)
       assert untoggled.completed == false
     end
 
-    test "delete_goal/1 removes a goal" do
+    test "delete_goal/2 removes the owner's goal" do
       user = insert(:user)
       {:ok, goal} = Study.create_goal(%{body: "Deletar", owner_user_id: user.id})
 
-      assert {:ok, _} = Study.delete_goal(goal.id)
+      assert {:ok, _} = Study.delete_goal(user, goal.id)
       assert Study.list_personal_goals(user.id) == []
     end
 
@@ -160,11 +161,52 @@ defmodule OGrupoDeEstudos.StudyTest do
       user = insert(:user)
       {:ok, g1} = Study.create_goal(%{body: "A", owner_user_id: user.id})
       {:ok, g2} = Study.create_goal(%{body: "B", owner_user_id: user.id})
-      Study.toggle_goal(g1.id)
+      Study.toggle_goal(user, g1.id)
 
       goals = Study.list_personal_goals(user.id)
       # g2 (not completed) must come before g1 (completed)
       assert hd(goals).id == g2.id
+    end
+
+    test "delete_goal/2 refuses another user's personal goal (IDOR)" do
+      owner = insert(:user)
+      attacker = insert(:user)
+      {:ok, goal} = Study.create_goal(%{body: "Privada", owner_user_id: owner.id})
+
+      assert {:error, :not_found} = Study.delete_goal(attacker, goal.id)
+      assert Repo.get(Goal, goal.id), "a meta da vitima deve sobreviver"
+    end
+
+    test "toggle_goal/2 refuses another user's personal goal (IDOR)" do
+      owner = insert(:user)
+      attacker = insert(:user)
+      {:ok, goal} = Study.create_goal(%{body: "Privada", owner_user_id: owner.id})
+
+      assert {:error, :not_found} = Study.toggle_goal(attacker, goal.id)
+      assert Repo.get(Goal, goal.id).completed == false
+    end
+
+    test "toggle_goal/2 allows both members of the link on a shared goal" do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(link, teacher)
+      {:ok, goal} = Study.create_goal(%{body: "Compartilhada", teacher_student_link_id: link.id})
+
+      assert {:ok, %{completed: true}} = Study.toggle_goal(teacher, goal.id)
+      assert {:ok, %{completed: false}} = Study.toggle_goal(student, goal.id)
+    end
+
+    test "delete_goal/2 refuses a shared goal for a non-member (IDOR)" do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      outsider = insert(:user)
+      {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(link, teacher)
+      {:ok, goal} = Study.create_goal(%{body: "Compartilhada", teacher_student_link_id: link.id})
+
+      assert {:error, :not_found} = Study.delete_goal(outsider, goal.id)
+      assert Repo.get(Goal, goal.id), "a meta compartilhada deve sobreviver"
     end
   end
 
@@ -204,14 +246,28 @@ defmodule OGrupoDeEstudos.StudyTest do
   end
 
   describe "teacher_note" do
-    test "update_teacher_note/2 saves a private note" do
+    setup do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
       {:ok, link} = Study.accept_link_request(link, teacher)
+      %{teacher: teacher, student: student, link: link}
+    end
 
-      {:ok, updated} = Study.update_teacher_note(link.id, "Precisa focar em giros")
+    test "update_teacher_note/3 saves a private note for the link's teacher", ctx do
+      {:ok, updated} =
+        Study.update_teacher_note(ctx.teacher, ctx.link.id, "Precisa focar em giros")
+
       assert updated.teacher_note == "Precisa focar em giros"
+    end
+
+    test "update_teacher_note/3 refuses anyone who is not the link's teacher (IDOR)", ctx do
+      assert {:error, :unauthorized} = Study.update_teacher_note(ctx.student, ctx.link.id, "hack")
+
+      assert {:error, :unauthorized} =
+               Study.update_teacher_note(insert(:user), ctx.link.id, "hack")
+
+      refute Repo.get(TeacherStudentLink, ctx.link.id).teacher_note == "hack"
     end
   end
 
