@@ -19,15 +19,16 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
       errors = load_errors(0)
 
       {:ok,
-       assign(socket,
+       socket
+       |> assign(
          page_title: "Erros do Sistema",
          is_admin: true,
          nav_mode: :primary,
-         errors: errors,
          page: 0,
-         has_more: length(errors) == @page_size,
-         expanded: nil
-       )}
+         loaded_count: length(errors),
+         has_more: length(errors) == @page_size
+       )
+       |> stream(:errors, errors)}
     else
       {:ok, socket |> put_flash(:error, "Acesso restrito") |> redirect(to: ~p"/collection")}
     end
@@ -39,34 +40,33 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
     more = load_errors(page)
 
     {:noreply,
-     assign(socket,
+     socket
+     |> assign(
        page: page,
-       errors: socket.assigns.errors ++ more,
+       loaded_count: socket.assigns.loaded_count + length(more),
        has_more: length(more) == @page_size
-     )}
-  end
-
-  def handle_event("toggle_expand", %{"id" => id}, socket) do
-    expanded = if socket.assigns.expanded == id, do: nil, else: id
-    {:noreply, assign(socket, :expanded, expanded)}
+     )
+     |> stream(:errors, more)}
   end
 
   def handle_event("clear_all", _, socket) do
     Repo.delete_all(ErrorLog)
 
     {:noreply,
-     assign(socket, errors: [], page: 0, has_more: false)
+     socket
+     |> assign(page: 0, loaded_count: 0, has_more: false)
+     |> stream(:errors, [], reset: true)
      |> put_flash(:info, "Todos os erros foram limpos.")}
   end
 
   def handle_event("copy_error", %{"id" => id}, socket) do
-    error = Enum.find(socket.assigns.errors, &(&1.id == id))
+    # Stream items live in the DOM, not in socket assigns, so fetch from the DB.
+    case Repo.get(ErrorLog, id) do
+      nil ->
+        {:noreply, socket}
 
-    if error do
-      text = format_for_copy(error)
-      {:noreply, push_event(socket, "copy_to_clipboard", %{text: text})}
-    else
-      {:noreply, socket}
+      error ->
+        {:noreply, push_event(socket, "copy_to_clipboard", %{text: format_for_copy(error)})}
     end
   end
 
