@@ -101,13 +101,3 @@
     </button>
   </main>
 </div>
-
-<script>
-  window.addEventListener("phx:copy_to_clipboard", (e) => {
-    navigator.clipboard.writeText(e.detail.text).then(() => {
-      // Brief visual feedback
-      const btn = document.activeElement
-      if (btn) { btn.style.color = '#27ae60'; setTimeout(() => btn.style.color = '', 1000) }
-    })
-  })
-</script>

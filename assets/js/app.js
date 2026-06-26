@@ -109,6 +109,18 @@ window.addEventListener("phx:set-dark-mode", (e) => {
   }
 })
 
+// Copy-to-clipboard: triggered by a server push (e.g. the admin error copy
+// button). Lives here, not as an inline <script>, so the CSP can forbid inline.
+window.addEventListener("phx:copy_to_clipboard", (e) => {
+  navigator.clipboard.writeText(e.detail.text).then(() => {
+    const btn = document.activeElement
+    if (btn) {
+      btn.style.color = "#27ae60"
+      setTimeout(() => { btn.style.color = "" }, 1000)
+    }
+  })
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
