@@ -813,38 +813,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
-  describe "3D playback" do
-    setup :setup_graph
-
-    test "entering 3D mode loads the active sequence animation", %{conn: conn, step_a: step_a} do
-      user = insert(:user)
-      sequence = insert(:sequence, name: "Sequência 3D", user: user)
-      insert(:sequence_step, sequence: sequence, step: step_a, position: 1)
-
-      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
-      render_click(lv, "highlight_saved_sequence", %{"id" => sequence.id})
-
-      html = render_click(lv, "enter_3d_mode", %{})
-
-      assert html =~ ~s(id="three-canvas")
-      assert_push_event(lv, "load_animation", %{steps: _steps})
-    end
-
-    test "exiting 3D mode leaves the 3D view", %{conn: conn, step_a: step_a} do
-      user = insert(:user)
-      sequence = insert(:sequence, name: "Sequência 3D", user: user)
-      insert(:sequence_step, sequence: sequence, step: step_a, position: 1)
-
-      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
-      render_click(lv, "highlight_saved_sequence", %{"id" => sequence.id})
-      render_click(lv, "enter_3d_mode", %{})
-
-      html = render_click(lv, "exit_3d_mode", %{})
-
-      refute html =~ ~s(id="three-canvas")
-    end
-  end
-
   describe "like/favorite on graph" do
     setup :setup_graph
 

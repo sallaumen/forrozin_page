@@ -40,7 +40,7 @@ Seguir **todos** os principios de `~/.tavano_rfc.txt`. Destaques criticos:
 | Engagement | Follows, likes, comments, favorites, notifications, badges, Presence |
 | Sequences | Sequencias de passos (gerador, manual builder, validador) |
 | Admin | Backups JSON, error_log, suggestions |
-| Media | Storage (avatars com Mogrify), step_animation |
+| Media | Storage (avatars com Mogrify) |
 | Authorization | Policy.authorize/3 |
 
 ## Rotas principais
