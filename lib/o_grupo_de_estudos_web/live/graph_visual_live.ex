@@ -17,6 +17,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
   use OGrupoDeEstudosWeb.Handlers.GraphThreeD
+  use OGrupoDeEstudosWeb.Handlers.GraphSearch
+  use OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite
 
   import OGrupoDeEstudosWeb.UI.ActivityToast
 
@@ -732,44 +734,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     {:noreply, assign(socket, :seq_required_codes, new_required)}
   end
 
-  def handle_event("search_graph_step", %{"value" => term}, socket) do
-    term = String.trim(term)
-
-    results =
-      if String.length(term) >= 1 do
-        GraphData.search_graph_nodes(socket.assigns.graph_search_nodes, term)
-      else
-        []
-      end
-
-    {:noreply,
-     socket
-     |> assign(:graph_search_query, term)
-     |> assign(:graph_search_results, results)}
-  end
-
-  def handle_event("select_graph_step", %{"code" => code}, socket) do
-    label =
-      case Enum.find(socket.assigns.graph_search_nodes, &(&1.code == code)) do
-        nil -> code
-        step -> "#{step.code} · #{step.name}"
-      end
-
-    {:noreply,
-     socket
-     |> assign(:graph_search_query, label)
-     |> assign(:graph_search_results, [])
-     |> push_event("focus_graph_node", %{code: code})}
-  end
-
-  def handle_event("clear_graph_search", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(:graph_search_query, "")
-     |> assign(:graph_search_results, [])
-     |> push_event("clear_graph_focus", %{})}
-  end
-
   def handle_event("toggle_edit_mode", _params, socket) do
     if socket.assigns.is_admin do
       new_mode = not socket.assigns.edit_mode
@@ -854,45 +818,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
              orphans: if(edit_mode, do: GraphData.build_orphans_json(graph), else: "[]")
            })}
       end
-    else
-      {:noreply, socket}
-    end
-  end
-
-  # ── Like + Favorite from graph drawer ──────────────────
-
-  def handle_event("toggle_step_like_graph", %{"code" => code}, socket) do
-    user = socket.assigns.current_user
-    step = StepQuery.get_by(code: code)
-
-    if step do
-      Engagement.toggle_like(user.id, "step", step.id)
-      liked_codes = Engagement.liked_step_codes(user.id)
-
-      {:noreply,
-       socket
-       |> assign(:liked_step_codes, liked_codes)
-       |> push_event("set_liked_steps", %{codes: liked_codes})}
-    else
-      {:noreply, socket}
-    end
-  end
-
-  def handle_event("toggle_step_favorite_graph", %{"code" => code}, socket) do
-    user = socket.assigns.current_user
-    step = StepQuery.get_by(code: code)
-
-    if step do
-      Engagement.toggle_favorite(user.id, "step", step.id)
-      liked_codes = Engagement.liked_step_codes(user.id)
-      fav_codes = favorited_step_codes(user.id)
-
-      {:noreply,
-       socket
-       |> assign(:liked_step_codes, liked_codes)
-       |> assign_manual_favorite_steps()
-       |> push_event("set_liked_steps", %{codes: liked_codes})
-       |> push_event("set_favorited_steps", %{codes: fav_codes})}
     else
       {:noreply, socket}
     end
