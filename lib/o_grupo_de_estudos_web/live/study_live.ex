@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   alias OGrupoDeEstudos.{Accounts, Engagement, Study}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
+  alias OGrupoDeEstudos.Study.LinkError
+  alias OGrupoDeEstudosWeb.ErrorMessage
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -265,11 +267,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
          |> put_flash(:info, "Pedido enviado! O professor será notificado.")
          |> assign(teacher_search: "", teacher_search_results: [])}
 
-      {:error, :already_connected} ->
-        {:noreply, put_flash(socket, :info, "Vocês já estão conectados.")}
-
-      {:error, :already_pending} ->
-        {:noreply, put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta.")}
+      {:error, %LinkError{} = err} ->
+        {:noreply, put_flash(socket, ErrorMessage.flash_level(err), ErrorMessage.to_flash(err))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível enviar o pedido.")}
