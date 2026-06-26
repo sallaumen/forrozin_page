@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Sequences, Study, Suggestions}
   alias OGrupoDeEstudos.Engagement.{Badges, ProfileCommentQuery}
+  alias OGrupoDeEstudos.Study.LinkError
+  alias OGrupoDeEstudosWeb.ErrorMessage
 
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
@@ -400,13 +402,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            |> assign(:study_link_status, :connected)
            |> put_flash(:info, "Conexão aceita!")}
 
-        {:error, :invalid} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             "Não foi possível aceitar: você não pode aceitar um pedido que você mesmo iniciou."
-           )}
+        {:error, %LinkError{} = err} ->
+          {:noreply, put_flash(socket, ErrorMessage.flash_level(err), ErrorMessage.to_flash(err))}
 
         _ ->
           {:noreply, put_flash(socket, :error, "Não foi possível aceitar o pedido.")}
@@ -471,11 +468,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
      )}
   end
 
-  defp handle_study_result({:error, :already_connected}, socket, _profile),
-    do: {:noreply, put_flash(socket, :info, "Vocês já estão conectados.")}
-
-  defp handle_study_result({:error, :already_pending}, socket, _profile),
-    do: {:noreply, put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta.")}
+  defp handle_study_result({:error, %LinkError{} = err}, socket, _profile),
+    do: {:noreply, put_flash(socket, ErrorMessage.flash_level(err), ErrorMessage.to_flash(err))}
 
   defp handle_study_result(_result, socket, _profile),
     do: {:noreply, socket}

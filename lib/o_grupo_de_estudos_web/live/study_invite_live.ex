@@ -4,6 +4,8 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLive do
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Study
+  alias OGrupoDeEstudos.Study.LinkError
+  alias OGrupoDeEstudosWeb.ErrorMessage
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -45,18 +47,14 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLive do
          )
          |> push_navigate(to: ~p"/users/#{teacher.username}")}
 
-      {:error, :cannot_link_self} ->
-        {:noreply, put_flash(socket, :error, "Você não pode ser aluno de si mesmo.")}
-
-      {:error, :already_pending} ->
-        {:noreply,
-         put_flash(socket, :info, "Pedido já enviado. Aguarde a resposta do professor.")}
-
-      {:error, :already_connected} ->
+      {:error, %LinkError{code: :already_connected} = err} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Vocês já estudam juntos!")
+         |> put_flash(:info, ErrorMessage.to_flash(err))
          |> push_navigate(to: ~p"/users/#{teacher.username}")}
+
+      {:error, %LinkError{} = err} ->
+        {:noreply, put_flash(socket, ErrorMessage.flash_level(err), ErrorMessage.to_flash(err))}
 
       _ ->
         {:noreply,

@@ -2,6 +2,7 @@ defmodule OGrupoDeEstudos.StudyTest do
   use OGrupoDeEstudos.DataCase, async: true
 
   alias OGrupoDeEstudos.Study
+  alias OGrupoDeEstudos.Study.LinkError
 
   describe "accept_invite/2" do
     test "creates a pending teacher-student link from the teacher invite slug" do
@@ -14,6 +15,37 @@ defmodule OGrupoDeEstudos.StudyTest do
       assert link.pending == true
       assert link.active == false
       assert link.ended_at == nil
+    end
+  end
+
+  describe "link errors are returned as %LinkError{} (domain error data)" do
+    test "accept_invite with an unknown slug -> teacher_not_found" do
+      assert {:error, %LinkError{code: :teacher_not_found}} =
+               Study.accept_invite(insert(:user), "nope")
+    end
+
+    test "accept_invite with your own slug -> cannot_link_self" do
+      me = insert(:user, is_teacher: true, invite_slug: "eu")
+      assert {:error, %LinkError{code: :cannot_link_self}} = Study.accept_invite(me, "eu")
+    end
+
+    test "request_teacher_link to yourself -> cannot_link_self" do
+      me = insert(:user)
+      assert {:error, %LinkError{code: :cannot_link_self}} = Study.request_teacher_link(me, me.id)
+    end
+
+    test "request_teacher_link when a request is already pending -> already_pending" do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      assert {:ok, _} = Study.request_teacher_link(student, teacher.id)
+
+      assert {:error, %LinkError{code: :already_pending}} =
+               Study.request_teacher_link(student, teacher.id)
+    end
+
+    test "invite_student_link from a non-teacher -> not_teacher" do
+      assert {:error, %LinkError{code: :not_teacher}} =
+               Study.invite_student_link(insert(:user), insert(:user).id)
     end
   end
 

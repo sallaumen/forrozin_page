@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudos.Study do
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.PubSub
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Study.{Goal, Note, NoteStep, TeacherStudentLink}
+  alias OGrupoDeEstudos.Study.{Goal, LinkError, Note, NoteStep, TeacherStudentLink}
   alias Phoenix.PubSub, as: PhoenixPubSub
 
   # ── Teacher search & request ──────────────────────────────────────────
@@ -102,10 +102,10 @@ defmodule OGrupoDeEstudos.Study do
         end
 
       %{active: true} ->
-        {:error, :already_connected}
+        {:error, LinkError.new(:already_connected)}
 
       %{pending: true} ->
-        {:error, :already_pending}
+        {:error, LinkError.new(:already_pending)}
 
       existing ->
         # Reactivate as pending
@@ -115,7 +115,7 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  def request_teacher_link(%User{}, _teacher_id), do: {:error, :cannot_link_self}
+  def request_teacher_link(%User{}, _teacher_id), do: {:error, LinkError.new(:cannot_link_self)}
 
   @doc "Teacher invites a student. Creates a pending link that student needs to accept."
   def invite_student_link(%User{id: teacher_id, is_teacher: true}, student_id)
@@ -143,10 +143,10 @@ defmodule OGrupoDeEstudos.Study do
         end
 
       %{active: true} ->
-        {:error, :already_connected}
+        {:error, LinkError.new(:already_connected)}
 
       %{pending: true} ->
-        {:error, :already_pending}
+        {:error, LinkError.new(:already_pending)}
 
       existing ->
         existing
@@ -160,7 +160,7 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  def invite_student_link(_, _), do: {:error, :not_teacher}
+  def invite_student_link(_, _), do: {:error, LinkError.new(:not_teacher)}
 
   @doc "Accept a pending link request. Either side can accept if they didn't initiate."
   def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: acceptor_id})
@@ -183,7 +183,7 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  def accept_link_request(_, _), do: {:error, :invalid}
+  def accept_link_request(_, _), do: {:error, LinkError.new(:invalid)}
 
   @doc "Teacher rejects a pending request."
   def reject_link_request(%TeacherStudentLink{pending: true} = link, %User{id: teacher_id})
@@ -191,7 +191,7 @@ defmodule OGrupoDeEstudos.Study do
     Repo.delete(link)
   end
 
-  def reject_link_request(_, _), do: {:error, :invalid}
+  def reject_link_request(_, _), do: {:error, LinkError.new(:invalid)}
 
   @doc "List pending requests for a teacher."
   def list_pending_requests_for_teacher(teacher_id) do
@@ -210,10 +210,10 @@ defmodule OGrupoDeEstudos.Study do
 
     case Repo.get_by(User, invite_slug: invite_slug, is_teacher: true) do
       nil ->
-        {:error, :teacher_not_found}
+        {:error, LinkError.new(:teacher_not_found)}
 
       %User{id: teacher_id} when teacher_id == student_id ->
-        {:error, :cannot_link_self}
+        {:error, LinkError.new(:cannot_link_self)}
 
       teacher ->
         case Repo.get_by(TeacherStudentLink, teacher_id: teacher.id, student_id: student_id) do
@@ -230,10 +230,10 @@ defmodule OGrupoDeEstudos.Study do
             |> Repo.insert()
 
           %TeacherStudentLink{pending: true} ->
-            {:error, :already_pending}
+            {:error, LinkError.new(:already_pending)}
 
           %TeacherStudentLink{active: true} ->
-            {:error, :already_connected}
+            {:error, LinkError.new(:already_connected)}
 
           link ->
             link
@@ -419,7 +419,7 @@ defmodule OGrupoDeEstudos.Study do
     |> Repo.update()
   end
 
-  def end_link(%TeacherStudentLink{}, %User{}), do: {:error, :forbidden}
+  def end_link(%TeacherStudentLink{}, %User{}), do: {:error, LinkError.new(:forbidden)}
 
   def note_topic(%TeacherStudentLink{id: id}), do: note_topic(id)
   def note_topic(id) when is_binary(id), do: "study:shared_note:#{id}"
