@@ -20,6 +20,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   use OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite
   use OGrupoDeEstudosWeb.Handlers.GraphPanel
   use OGrupoDeEstudosWeb.Handlers.GraphHighlight
+  use OGrupoDeEstudosWeb.Handlers.GraphGenerator
 
   import OGrupoDeEstudosWeb.UI.ActivityToast
 
@@ -175,48 +176,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
   @impl true
-  def handle_event("generate_sequences", params, socket) do
-    start_code =
-      params
-      |> Map.get("start_query", Map.get(params, "start_code", ""))
-      |> resolve_step_code(socket.assigns.graph_search_nodes, Map.get(params, "start_code", ""))
-
-    loop_mode = Map.get(params, "loop_mode", "none")
-
-    allow_repeats =
-      loop_mode in ["light", "free"] or Map.get(params, "allow_repeats") in ["true", "on"]
-
-    cyclic = Map.get(params, "cyclic") in ["true", "on"]
-    min_length = if allow_repeats, do: 8, else: 4
-    length_val = parse_int(Map.get(params, "length", "10"), 10) |> max(min_length)
-    count_val = parse_int(Map.get(params, "count", "3"), 3)
-
-    required_codes = socket.assigns.seq_required_codes
-
-    max_bf = parse_int(Map.get(params, "max_bf_visits", "3"), 3)
-
-    gen_params = %{
-      start_code: start_code,
-      length: length_val,
-      count: count_val,
-      required_codes: required_codes,
-      allow_repeats: allow_repeats,
-      cyclic: cyclic,
-      max_bf_visits: max_bf,
-      max_same_pair_loops: max_same_pair_loops(loop_mode)
-    }
-
-    {:ok, sequences, warnings} = Sequences.generate(gen_params)
-
-    {:noreply,
-     socket
-     |> assign(:seq_results, sequences)
-     |> assign(:seq_warnings, warnings)
-     |> assign(:seq_view, :results)
-     |> assign(:seq_saving, nil)
-     |> assign(:seq_missing_edges, [])}
-  end
-
   def handle_event("edit_saved_sequence", %{"id" => id}, socket) do
     saved = Sequences.get_sequence(id)
 
@@ -287,15 +246,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     else
       {:noreply, put_flash(socket, :error, "Passo nao encontrado")}
     end
-  end
-
-  def handle_event("start_save_sequence", %{"index" => index_str}, socket) do
-    index = parse_int(index_str, 0)
-    {:noreply, assign(socket, :seq_saving, index)}
-  end
-
-  def handle_event("cancel_save_sequence", _params, socket) do
-    {:noreply, assign(socket, :seq_saving, nil)}
   end
 
   def handle_event("save_sequence", %{"index" => index_str, "name" => name}, socket) do
@@ -549,82 +499,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   # Autocomplete — start step
-  def handle_event("search_start_step", %{"value" => term}, socket) do
-    suggestions =
-      if String.length(term) >= 1 do
-        StepQuery.list_by(search: term, public_only: true, limit: 6, order_by: [asc: :code])
-        |> Enum.map(&%{code: &1.code, name: &1.name})
-      else
-        []
-      end
-
-    {:noreply,
-     socket
-     |> assign(:seq_start_query, term)
-     |> assign(:seq_start_suggestions, suggestions)}
-  end
-
-  def handle_event("select_start_step", %{"code" => code, "name" => name}, socket) do
-    label = step_display_label(%{code: code, name: name})
-
-    {:noreply,
-     socket
-     |> assign(:seq_start_code, code)
-     |> assign(:seq_start_query, label)
-     |> assign(:seq_start_suggestions, [])
-     |> push_event("set_start_step_input", %{value: label, name: name})}
-  end
-
-  # Autocomplete — required steps
-  def handle_event("search_required_step", %{"value" => term}, socket) do
-    suggestions =
-      if String.length(term) >= 1 do
-        already = socket.assigns.seq_required_codes
-
-        StepQuery.list_by(search: term, public_only: true, limit: 6, order_by: [asc: :code])
-        |> Enum.reject(&(&1.code in already))
-        |> Enum.map(&%{code: &1.code, name: &1.name})
-      else
-        []
-      end
-
-    {:noreply,
-     socket
-     |> assign(:seq_required_search, term)
-     |> assign(:seq_required_suggestions, suggestions)}
-  end
-
-  def handle_event("select_required_step", %{"code" => code}, socket) do
-    already = socket.assigns.seq_required_codes
-
-    new_required =
-      if code in already do
-        already
-      else
-        already ++ [code]
-      end
-
-    {:noreply,
-     socket
-     |> assign(:seq_required_codes, new_required)
-     |> assign(:seq_required_search, "")
-     |> assign(:seq_required_suggestions, [])
-     |> push_event("clear_required_input", %{})}
-  end
-
-  def handle_event("hide_seq_suggestions", _params, socket) do
-    {:noreply,
-     assign(socket,
-       seq_start_suggestions: [],
-       seq_required_suggestions: []
-     )}
-  end
-
-  def handle_event("remove_required_step", %{"code" => code}, socket) do
-    new_required = Enum.reject(socket.assigns.seq_required_codes, &(&1 == code))
-    {:noreply, assign(socket, :seq_required_codes, new_required)}
-  end
-
   def handle_event("toggle_edit_mode", _params, socket) do
     if socket.assigns.is_admin do
       new_mode = not socket.assigns.edit_mode
@@ -910,36 +784,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
     assign(socket, :seq_start_query, step_display_label(code, socket.assigns.graph_search_nodes))
   end
-
-  defp resolve_step_code(query, steps, fallback) do
-    query = String.trim(to_string(query || ""))
-    fallback = String.trim(to_string(fallback || ""))
-    prefix = query |> String.split("·", parts: 2) |> List.first() |> String.trim()
-    normalized_query = TextSearch.normalize(query)
-
-    cond do
-      query == "" ->
-        fallback
-
-      step_code?(steps, prefix) ->
-        prefix
-
-      match = Enum.find(steps, &(TextSearch.normalize(&1.code) == normalized_query)) ->
-        match.code
-
-      match = Enum.find(steps, &(TextSearch.normalize(&1.name) == normalized_query)) ->
-        match.code
-
-      true ->
-        fallback
-    end
-  end
-
-  defp step_code?(steps, code), do: Enum.any?(steps, &(&1.code == code))
-
-  defp max_same_pair_loops("free"), do: 3
-  defp max_same_pair_loops("light"), do: 2
-  defp max_same_pair_loops(_mode), do: 1
 
   defp maybe_clear_deleted_sequence(socket, sequence_id) do
     active? = socket.assigns.seq_active_id == sequence_id
