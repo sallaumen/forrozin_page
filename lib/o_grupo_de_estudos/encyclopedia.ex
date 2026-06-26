@@ -206,17 +206,6 @@ defmodule OGrupoDeEstudos.Encyclopedia do
     %{nodes: nodes, edges: edges}
   end
 
-  @doc """
-  Returns all steps (including wip) indexed by code.
-
-  Internal use: Mix tasks for seeding and connection extraction.
-  Returns `%{code => step}`.
-  """
-  def list_all_steps_map do
-    StepQuery.list_by()
-    |> Map.new(&{&1.code, &1})
-  end
-
   @doc "Lists all technical concepts ordered by title."
   def list_technical_concepts do
     TechnicalConcept
