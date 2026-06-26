@@ -12,6 +12,7 @@ defmodule OGrupoDeEstudos.Engagement.LikeQuery do
   alias OGrupoDeEstudos.Repo
 
   @doc "Returns `true` if the user has liked the given entity."
+  @spec exists?(Ecto.UUID.t(), String.t(), Ecto.UUID.t()) :: boolean()
   def exists?(user_id, likeable_type, likeable_id) do
     Repo.exists?(
       from l in Like,
@@ -23,6 +24,7 @@ defmodule OGrupoDeEstudos.Engagement.LikeQuery do
   end
 
   @doc "Returns the total like count for a single entity."
+  @spec count(String.t(), Ecto.UUID.t()) :: non_neg_integer()
   def count(likeable_type, likeable_id) do
     Repo.aggregate(
       from(l in Like,
@@ -38,6 +40,10 @@ defmodule OGrupoDeEstudos.Engagement.LikeQuery do
 
   Useful for rendering like state on list pages without N+1 queries.
   """
+  @spec batch_map(Ecto.UUID.t(), String.t(), [Ecto.UUID.t()]) :: %{
+          liked_ids: MapSet.t(Ecto.UUID.t()),
+          counts: %{optional(Ecto.UUID.t()) => non_neg_integer()}
+        }
   def batch_map(user_id, likeable_type, likeable_ids) do
     liked_ids =
       from(l in Like,

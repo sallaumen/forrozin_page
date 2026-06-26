@@ -11,7 +11,14 @@ defmodule OGrupoDeEstudos.Encyclopedia.SectionQuery do
   alias OGrupoDeEstudos.Encyclopedia.Section
   alias OGrupoDeEstudos.Repo
 
+  @type list_opt ::
+          {:id, Ecto.UUID.t()}
+          | {:order_by, Keyword.t()}
+          | {:preload, term()}
+  @type opts :: [list_opt()]
+
   @doc "Returns the first section matching `opts`, or `nil`."
+  @spec get_by(opts()) :: Section.t() | nil
   def get_by(opts) do
     opts
     |> Enum.reduce(default_scope(), &shared_reducer/2)
@@ -19,6 +26,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.SectionQuery do
   end
 
   @doc "Returns all sections matching `opts`, ordered by position by default."
+  @spec list_by(opts()) :: [Section.t()]
   def list_by(opts \\ []) do
     opts
     |> Keyword.put_new(:order_by, asc: :position)

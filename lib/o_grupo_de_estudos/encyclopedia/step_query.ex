@@ -11,7 +11,27 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
   alias OGrupoDeEstudos.Encyclopedia.Step
   alias OGrupoDeEstudos.Repo
 
+  @type list_opt ::
+          {:include_deleted, boolean()}
+          | {:code, String.t()}
+          | {:status, String.t()}
+          | {:wip, boolean()}
+          | {:public_only, boolean()}
+          | {:section_id, Ecto.UUID.t()}
+          | {:subsection_nil, boolean()}
+          | {:suggested_by_id, Ecto.UUID.t()}
+          | {:has_suggestions, boolean()}
+          | {:approved_only, boolean()}
+          | {:pending_only, boolean()}
+          | {:step_ids, [Ecto.UUID.t()]}
+          | {:search, String.t()}
+          | {:order_by, Keyword.t()}
+          | {:preload, term()}
+          | {:limit, non_neg_integer()}
+  @type opts :: [list_opt()]
+
   @doc "Returns the first step matching `opts`, or `nil`."
+  @spec get_by(opts()) :: Step.t() | nil
   def get_by(opts) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -20,6 +40,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
   end
 
   @doc "Returns all steps matching `opts`, ordered by name by default."
+  @spec list_by(opts()) :: [Step.t()]
   def list_by(opts \\ []) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -29,6 +50,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
   end
 
   @doc "Counts steps matching `opts`."
+  @spec count_by(opts()) :: non_neg_integer()
   def count_by(opts \\ []) do
     opts
     |> Keyword.put_new(:include_deleted, false)

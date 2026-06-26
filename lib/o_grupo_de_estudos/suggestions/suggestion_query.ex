@@ -5,6 +5,17 @@ defmodule OGrupoDeEstudos.Suggestions.SuggestionQuery do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Suggestions.Suggestion
 
+  @type list_opt ::
+          {:status, String.t()}
+          | {:user_id, Ecto.UUID.t()}
+          | {:target_type, String.t()}
+          | {:action, String.t()}
+          | {:target_id, Ecto.UUID.t()}
+          | {:limit, non_neg_integer()}
+          | {:preload, term()}
+  @type opts :: [list_opt()]
+
+  @spec list_by(opts()) :: [Suggestion.t()]
   def list_by(opts \\ []) do
     Suggestion
     |> apply_filters(opts)
@@ -13,12 +24,14 @@ defmodule OGrupoDeEstudos.Suggestions.SuggestionQuery do
     |> maybe_preload(Keyword.get(opts, :preload, []))
   end
 
+  @spec count_by(opts()) :: non_neg_integer()
   def count_by(opts \\ []) do
     Suggestion
     |> apply_filters(opts)
     |> Repo.aggregate(:count)
   end
 
+  @spec get(Ecto.UUID.t()) :: Suggestion.t() | nil
   def get(id) do
     Repo.get(Suggestion, id)
     |> Repo.preload([:user, :reviewed_by])

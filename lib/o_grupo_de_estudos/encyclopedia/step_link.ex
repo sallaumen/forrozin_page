@@ -2,6 +2,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLink do
   @moduledoc "Represents a user-submitted external link for a step."
 
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}

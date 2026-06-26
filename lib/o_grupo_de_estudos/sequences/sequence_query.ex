@@ -11,7 +11,17 @@ defmodule OGrupoDeEstudos.Sequences.SequenceQuery do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences.Sequence
 
+  @type list_opt ::
+          {:include_deleted, boolean()}
+          | {:id, Ecto.UUID.t()}
+          | {:user_id, Ecto.UUID.t()}
+          | {:public, boolean()}
+          | {:order_by, Keyword.t()}
+          | {:preload, term()}
+  @type opts :: [list_opt()]
+
   @doc "Returns the first sequence matching `opts`, or `nil`."
+  @spec get_by(opts()) :: Sequence.t() | nil
   def get_by(opts) do
     opts
     |> Keyword.put_new(:include_deleted, false)
@@ -20,6 +30,7 @@ defmodule OGrupoDeEstudos.Sequences.SequenceQuery do
   end
 
   @doc "Returns all sequences matching `opts`, ordered by inserted_at desc by default."
+  @spec list_by(opts()) :: [Sequence.t()]
   def list_by(opts \\ []) do
     opts
     |> Keyword.put_new(:include_deleted, false)

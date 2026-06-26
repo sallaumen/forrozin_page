@@ -1,5 +1,7 @@
 defmodule OGrupoDeEstudos.Encyclopedia.Section do
   use Ecto.Schema
+
+  @type t :: %__MODULE__{}
   import Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}

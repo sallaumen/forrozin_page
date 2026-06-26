@@ -11,6 +11,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Repo
 
+  @type list_opt :: {:limit, non_neg_integer()} | {:offset, non_neg_integer()}
+  @type opts :: [list_opt()]
+
   @doc """
   Returns notifications for the given user, ordered unread-first then by newest.
 
@@ -19,6 +22,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
   - `:limit` — max results (default 20)
   - `:offset` — pagination offset (default 0)
   """
+  @spec list_for_user(Ecto.UUID.t(), opts()) :: [Notification.t()]
   def list_for_user(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
     offset = Keyword.get(opts, :offset, 0)
@@ -34,6 +38,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
   end
 
   @doc "Returns the count of unread notifications for the given user."
+  @spec unread_count(Ecto.UUID.t()) :: non_neg_integer()
   def unread_count(user_id) do
     from(n in Notification,
       where: n.user_id == ^user_id and is_nil(n.read_at),
