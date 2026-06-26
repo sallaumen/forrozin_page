@@ -84,6 +84,20 @@
     >
     </div>
 
+    <%!-- Loading skeleton — dead/HTTP render, before the WebSocket connects --%>
+    <div
+      :if={!@loaded?}
+      id="graph-canvas-skeleton"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-ink-100"
+      aria-hidden="true"
+    >
+      <div class="flex flex-col items-center gap-3 text-ink-500">
+        <div class="h-10 w-10 animate-spin rounded-full border-2 border-ink-300 border-t-accent-green">
+        </div>
+        <span class="font-serif text-sm">Carregando o mapa...</span>
+      </div>
+    </div>
+
     <div
       :if={@seq_view == :manual && !@three_d_mode && !@seq_mobile_visible}
       id="seq-manual-mode-banner"

@@ -22,6 +22,27 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     %{step_a: step_a, step_b: step_b}
   end
 
+  describe "dead render (disconnected mount)" do
+    setup :setup_graph
+
+    test "shows a loading skeleton and defers the graph before connect", %{conn: conn} do
+      html = logged_in_conn(conn) |> get(~p"/graph/visual") |> html_response(200)
+
+      assert html =~ ~s(id="graph-canvas-skeleton")
+      assert html =~ "Carregando o mapa"
+      # The graph is built on the connected mount: empty placeholder JSON here.
+      assert html =~ ~s(data-graph="{&quot;nodes&quot;:[])
+      refute html =~ "Base frontal"
+    end
+
+    test "connected render hides the skeleton and loads the graph", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      refute html =~ ~s(id="graph-canvas-skeleton")
+      assert html =~ "Base frontal"
+    end
+  end
+
   describe "mount" do
     test "renders the graph page with graph-canvas", %{conn: conn} do
       cat = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
