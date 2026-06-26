@@ -26,7 +26,7 @@ defmodule OGrupoDeEstudos.Sequences do
   or `{:error, changeset}` if validation fails.
   """
   def create_sequence(user_id, name, step_ids, allow_repeats \\ false) do
-    Repo.transaction(fn ->
+    Repo.transact(fn ->
       changeset =
         Sequence.changeset(%Sequence{}, %{
           name: name,
@@ -34,13 +34,9 @@ defmodule OGrupoDeEstudos.Sequences do
           allow_repeats: allow_repeats
         })
 
-      case Repo.insert(changeset) do
-        {:ok, sequence} ->
-          insert_sequence_step_ids(sequence, step_ids)
-          Repo.preload(sequence, steps_preload())
-
-        {:error, changeset} ->
-          Repo.rollback(changeset)
+      with {:ok, sequence} <- Repo.insert(changeset) do
+        insert_sequence_step_ids(sequence, step_ids)
+        {:ok, Repo.preload(sequence, steps_preload())}
       end
     end)
   end
@@ -61,7 +57,7 @@ defmodule OGrupoDeEstudos.Sequences do
     step_codes = Map.get(attrs, :step_codes, Map.get(attrs, "step_codes", []))
 
     with {:ok, steps} <- resolve_step_codes(step_codes) do
-      Repo.transaction(fn ->
+      Repo.transact(fn ->
         insert_manual_sequence_txn(user_id, attrs, steps)
       end)
     end
@@ -75,18 +71,14 @@ defmodule OGrupoDeEstudos.Sequences do
       allow_repeats: true
     }
 
-    case sequence |> Sequence.changeset(update_attrs) |> Repo.update() do
-      {:ok, updated} ->
-        from(ss in SequenceStep,
-          where: ss.sequence_id == ^sequence.id and is_nil(ss.deleted_at)
-        )
-        |> Repo.delete_all()
+    with {:ok, updated} <- sequence |> Sequence.changeset(update_attrs) |> Repo.update() do
+      from(ss in SequenceStep,
+        where: ss.sequence_id == ^sequence.id and is_nil(ss.deleted_at)
+      )
+      |> Repo.delete_all()
 
-        insert_sequence_steps(sequence, steps)
-        Repo.preload(updated, steps_preload(), force: true)
-
-      {:error, changeset} ->
-        Repo.rollback(changeset)
+      insert_sequence_steps(sequence, steps)
+      {:ok, Repo.preload(updated, steps_preload(), force: true)}
     end
   end
 
@@ -100,13 +92,9 @@ defmodule OGrupoDeEstudos.Sequences do
         allow_repeats: true
       })
 
-    case Repo.insert(changeset) do
-      {:ok, sequence} ->
-        insert_sequence_steps(sequence, steps)
-        Repo.preload(sequence, steps_preload())
-
-      {:error, changeset} ->
-        Repo.rollback(changeset)
+    with {:ok, sequence} <- Repo.insert(changeset) do
+      insert_sequence_steps(sequence, steps)
+      {:ok, Repo.preload(sequence, steps_preload())}
     end
   end
 
@@ -120,7 +108,7 @@ defmodule OGrupoDeEstudos.Sequences do
     step_codes = Map.get(attrs, :step_codes, Map.get(attrs, "step_codes", []))
 
     with {:ok, steps} <- resolve_step_codes(step_codes) do
-      Repo.transaction(fn ->
+      Repo.transact(fn ->
         update_manual_sequence_txn(sequence, attrs, steps)
       end)
     end
