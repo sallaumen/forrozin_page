@@ -89,7 +89,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           >
             <svg
               class="w-auto shrink-0"
-              style="height: 1.6em"
+              style="height: 1.6em; overflow: visible"
               viewBox="96 76 320 384"
               role="img"
               aria-label="O"
@@ -402,7 +402,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           >
             <svg
               class="w-auto shrink-0"
-              style="height: 2.5em"
+              style="height: 2.5em; overflow: visible"
               viewBox="96 76 320 384"
               role="img"
               aria-label="O"
