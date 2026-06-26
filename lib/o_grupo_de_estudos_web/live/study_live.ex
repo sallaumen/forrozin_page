@@ -237,14 +237,14 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("toggle_goal", %{"id" => id}, socket) do
-    Study.toggle_goal(id)
+    Study.toggle_goal(socket.assigns.current_user, id)
 
     {:noreply,
      assign(socket, :personal_goals, Study.list_personal_goals(socket.assigns.current_user.id))}
   end
 
   def handle_event("delete_goal", %{"id" => id}, socket) do
-    Study.delete_goal(id)
+    Study.delete_goal(socket.assigns.current_user, id)
 
     {:noreply,
      assign(socket, :personal_goals, Study.list_personal_goals(socket.assigns.current_user.id))}
@@ -298,14 +298,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("save_teacher_note", %{"link-id" => link_id, "note" => note}, socket) do
-    user = socket.assigns.current_user
-    link = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Study.TeacherStudentLink, link_id)
-
-    if user.id == link.teacher_id do
-      Study.update_teacher_note(link_id, note)
-      {:noreply, put_flash(socket, :info, "Anotacao salva.")}
-    else
-      {:noreply, socket}
+    case Study.update_teacher_note(socket.assigns.current_user, link_id, note) do
+      {:ok, _link} -> {:noreply, put_flash(socket, :info, "Anotacao salva.")}
+      {:error, _} -> {:noreply, socket}
     end
   end
 

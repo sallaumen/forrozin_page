@@ -403,13 +403,17 @@ defmodule OGrupoDeEstudos.Study do
     |> Repo.one()
   end
 
-  @doc "Updates the teacher's private note on a student link."
-  def update_teacher_note(link_id, note) do
-    link = Repo.get!(TeacherStudentLink, link_id)
+  @doc "Updates a link's private teacher note, only by that link's teacher."
+  def update_teacher_note(%User{id: actor_id}, link_id, note) do
+    case Repo.get(TeacherStudentLink, link_id) do
+      %TeacherStudentLink{teacher_id: ^actor_id} = link ->
+        link
+        |> TeacherStudentLink.changeset(%{teacher_note: note})
+        |> Repo.update()
 
-    link
-    |> TeacherStudentLink.changeset(%{teacher_note: note})
-    |> Repo.update()
+      _ ->
+        {:error, :unauthorized}
+    end
   end
 
   def end_link(%TeacherStudentLink{} = link, %User{id: actor_id})
@@ -536,17 +540,39 @@ defmodule OGrupoDeEstudos.Study do
     |> Repo.insert()
   end
 
-  def toggle_goal(goal_id) do
-    goal = Repo.get!(Goal, goal_id)
-
-    goal
-    |> Goal.changeset(%{completed: !goal.completed})
-    |> Repo.update()
+  @doc "Toggles a goal's completion, scoped to the actor (owner or link member)."
+  def toggle_goal(%User{} = actor, goal_id) do
+    case authorized_goal(actor, goal_id) do
+      nil -> {:error, :not_found}
+      goal -> goal |> Goal.changeset(%{completed: !goal.completed}) |> Repo.update()
+    end
   end
 
-  def delete_goal(goal_id) do
-    goal = Repo.get!(Goal, goal_id)
-    Repo.delete(goal)
+  @doc "Deletes a goal, scoped to the actor (owner or link member)."
+  def delete_goal(%User{} = actor, goal_id) do
+    case authorized_goal(actor, goal_id) do
+      nil -> {:error, :not_found}
+      goal -> Repo.delete(goal)
+    end
+  end
+
+  # Uma meta so pode ser tocada pelo dono pessoal ou por um membro
+  # (professor/aluno) do vinculo a que ela pertence. Qualquer outro caso
+  # retorna nil, tratado como nao encontrado.
+  defp authorized_goal(%User{id: user_id}, goal_id) do
+    member_link_ids =
+      from(l in TeacherStudentLink,
+        where: l.teacher_id == ^user_id or l.student_id == ^user_id,
+        select: l.id
+      )
+
+    from(g in Goal,
+      where:
+        g.id == ^goal_id and
+          (g.owner_user_id == ^user_id or
+             g.teacher_student_link_id in subquery(member_link_ids))
+    )
+    |> Repo.one()
   end
 
   # ── Step frequency ranking ─────────────────────────────────────────────
