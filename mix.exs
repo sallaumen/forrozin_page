@@ -115,9 +115,11 @@ defmodule OGrupoDeEstudos.MixProject do
       ],
       # Gate de qualidade. deps.audit ignora o advisory do decimal
       # (GHSA-rhv4-8758-jx7v): preso por ecto `~> 2.0`, sem uso direto.
-      # sobelow gateia em High e ignora Config.CSP (CSP ausente, no backlog de
-      # seguranca); os Traversal Medium/Low restantes sao server-side, com
-      # caminhos reconstruidos via Path.basename (falsos positivos).
+      # sobelow gateia em High. `-i Config.CSP` e supressao de FALSO-POSITIVO: o
+      # CSP existe (Plugs.ContentSecurityPolicy, com nonce por request), mas o
+      # sobelow so reconhece CSP em put_secure_browser_headers, nao via plug.
+      # Os Traversal Medium/Low restantes sao server-side, com caminhos
+      # reconstruidos via Path.basename (falsos positivos).
       lint: [
         "format --check-formatted",
         "deps.audit --ignore-advisory-ids GHSA-rhv4-8758-jx7v",

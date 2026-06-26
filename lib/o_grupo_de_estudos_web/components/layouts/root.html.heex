@@ -57,7 +57,7 @@
     />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#1a0e05" />
-    <script>
+    <script nonce={assigns[:csp_nonce]}>
       // Apply dark mode ASAP to prevent flash of light theme
       (function() {
         var stored = localStorage.getItem("dark_mode");

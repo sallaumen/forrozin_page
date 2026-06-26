@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     plug :put_root_layout, html: {OGrupoDeEstudosWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicy
     plug OGrupoDeEstudosWeb.UserAuth, :fetch_current_user
     plug OGrupoDeEstudosWeb.Plugs.DeviceTracker
   end
@@ -93,8 +94,19 @@ defmodule OGrupoDeEstudosWeb.Router do
   if Application.compile_env(:o_grupo_de_estudos, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 
+    # LiveDashboard relies on inline scripts/eval; keep it off the strict CSP
+    # pipeline. Dev-only, so this never reaches production.
+    pipeline :dev_browser do
+      plug :accepts, ["html"]
+      plug :fetch_session
+      plug :fetch_live_flash
+      plug :put_root_layout, html: {OGrupoDeEstudosWeb.Layouts, :root}
+      plug :protect_from_forgery
+      plug :put_secure_browser_headers
+    end
+
     scope "/dev" do
-      pipe_through :browser
+      pipe_through :dev_browser
 
       live_dashboard "/dashboard", metrics: OGrupoDeEstudosWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
