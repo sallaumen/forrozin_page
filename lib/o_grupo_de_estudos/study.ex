@@ -446,16 +446,13 @@ defmodule OGrupoDeEstudos.Study do
   defp persist_note(base_attrs, content, step_ids, existing_note) do
     note = existing_note || struct!(Note, Map.merge(base_attrs, %{content: content}))
 
-    Repo.transaction(fn ->
-      case note
-           |> Note.changeset(Map.merge(base_attrs, %{content: content}))
-           |> Repo.insert_or_update() do
-        {:ok, saved_note} ->
-          replace_note_steps(saved_note, step_ids)
-          saved_note
-
-        {:error, changeset} ->
-          Repo.rollback(changeset)
+    Repo.transact(fn ->
+      with {:ok, saved_note} <-
+             note
+             |> Note.changeset(Map.merge(base_attrs, %{content: content}))
+             |> Repo.insert_or_update() do
+        replace_note_steps(saved_note, step_ids)
+        {:ok, saved_note}
       end
     end)
     |> case do

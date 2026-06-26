@@ -10,7 +10,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   import Ecto.Query
 
-  alias Ecto.Multi
   alias OGrupoDeEstudos.Authorization.Policy
 
   alias OGrupoDeEstudos.Engagement.Comments.{
@@ -153,16 +152,13 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
         |> Map.put(parent_field, parent_id)
       )
 
-    # reply_count is handled by Postgres trigger — no Multi.run needed
-    Multi.new()
-    |> Multi.insert(:comment, changeset)
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{comment: comment}} ->
+    # reply_count is handled by a Postgres trigger — a single insert needs no transaction
+    case Repo.insert(changeset) do
+      {:ok, comment} ->
         safe_dispatch(:new_comment, comment, user, query_mod)
         {:ok, Repo.preload(comment, user_assoc(query_mod))}
 
-      {:error, :comment, changeset, _} ->
+      {:error, changeset} ->
         {:error, changeset}
     end
   end
