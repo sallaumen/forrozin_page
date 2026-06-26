@@ -1,110 +1,43 @@
 defmodule OGrupoDeEstudos.Media.Storage do
   @moduledoc """
-  Centralized file storage for user-uploaded media.
+  Facade for user-uploaded media storage (avatars).
 
-  Abstracts the filesystem so callers never deal with paths directly.
-  In production, files live on a Fly.io persistent volume (`/app/uploads`).
-  In development, files live at `priv/static/uploads`.
+  Delegates to the configured adapter, so callers depend on this stable port
+  (`OGrupoDeEstudos.Media.Storage.Behaviour`) rather than a concrete
+  filesystem + Mogrify implementation. Defaults to
+  `OGrupoDeEstudos.Media.Storage.Local`; tests swap in a Mox mock via:
+
+      config :o_grupo_de_estudos, OGrupoDeEstudos.Media.Storage, adapter: SomeMock
+
+  The adapter is resolved at runtime so a single test can override it.
 
   ## Usage
 
       Storage.save_avatar(user_id, tmp_path, ".jpg")
       #=> {:ok, "/uploads/avatars/abc123.jpg"}
-
-      Storage.delete_avatar(user_id, ".jpg")
-      #=> :ok
-
-      Storage.avatar_exists?(user_id, ".jpg")
-      #=> true
   """
 
-  @avatar_size 400
+  @default_adapter OGrupoDeEstudos.Media.Storage.Local
 
-  # ── Public API ─────────────────────────────────────────────────────────
-
-  @doc """
-  Saves an avatar image, cropping it to a square and resizing to #{@avatar_size}x#{@avatar_size}.
-  Returns `{:ok, public_url}` or `{:error, reason}`.
-  """
-  def save_avatar(user_id, tmp_path, ext) do
-    dest_dir = dir("avatars")
-    File.mkdir_p!(dest_dir)
-    # Include timestamp to bust browser cache when avatar changes
-    ts = System.system_time(:second)
-    filename = "#{user_id}_#{ts}#{ext}"
-    dest = Path.join(dest_dir, filename)
-
-    with :ok <- crop_square_and_resize(tmp_path, dest) do
-      # Clean up old avatars for this user (different timestamps)
-      cleanup_old_avatars(dest_dir, user_id, filename)
-      {:ok, "/uploads/avatars/#{filename}"}
-    end
-  end
-
-  defp cleanup_old_avatars(dir, user_id, current_filename) do
-    case File.ls(dir) do
-      {:ok, files} ->
-        prefix = "#{user_id}_"
-
-        files
-        |> Enum.filter(&(String.starts_with?(&1, prefix) and &1 != current_filename))
-        |> Enum.each(&File.rm(Path.join(dir, &1)))
-
-      _ ->
-        :ok
-    end
-  end
+  @doc "Saves an avatar image. Returns `{:ok, public_url}` or `{:error, reason}`."
+  @spec save_avatar(term(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  def save_avatar(user_id, tmp_path, ext), do: adapter().save_avatar(user_id, tmp_path, ext)
 
   @doc "Deletes an avatar file if it exists."
-  def delete_avatar(user_id, ext) do
-    path = Path.join(dir("avatars"), "#{user_id}#{ext}")
+  @spec delete_avatar(term(), String.t()) :: :ok | {:error, term()}
+  def delete_avatar(user_id, ext), do: adapter().delete_avatar(user_id, ext)
 
-    case File.rm(path) do
-      :ok -> :ok
-      {:error, :enoent} -> :ok
-      error -> error
-    end
-  end
-
-  @doc "Returns true if the avatar file exists on disk."
-  def avatar_exists?(user_id, ext) do
-    Path.join(dir("avatars"), "#{user_id}#{ext}")
-    |> File.exists?()
-  end
+  @doc "Returns true if the avatar file exists."
+  @spec avatar_exists?(term(), String.t()) :: boolean()
+  def avatar_exists?(user_id, ext), do: adapter().avatar_exists?(user_id, ext)
 
   @doc "Returns the base uploads directory for a given subdirectory."
-  def dir(subdir) do
-    Path.join(base_path(), subdir)
-  end
+  @spec dir(String.t()) :: String.t()
+  def dir(subdir), do: adapter().dir(subdir)
 
-  # ── Image Processing ───────────────────────────────────────────────────
-
-  defp crop_square_and_resize(source, dest) do
-    source
-    |> Mogrify.open()
-    |> Mogrify.resize_to_fill("#{@avatar_size}x#{@avatar_size}")
-    |> Mogrify.gravity("Center")
-    |> Mogrify.save(path: dest)
-
-    :ok
-  rescue
-    _e ->
-      # Mogrify/ImageMagick failed — fallback to raw copy (no resize)
-      case File.cp(source, dest) do
-        :ok -> :ok
-        error -> error
-      end
-  end
-
-  # ── Path Resolution ────────────────────────────────────────────────────
-
-  defp base_path do
-    Application.get_env(:o_grupo_de_estudos, :uploads_path, default_path())
-  end
-
-  defp default_path do
-    if File.dir?("/app/uploads"),
-      do: "/app/uploads",
-      else: Path.join(:code.priv_dir(:o_grupo_de_estudos), "static/uploads")
+  defp adapter do
+    :o_grupo_de_estudos
+    |> Application.get_env(__MODULE__, [])
+    |> Keyword.get(:adapter, @default_adapter)
   end
 end
