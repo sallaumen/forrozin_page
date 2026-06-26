@@ -178,6 +178,37 @@ defmodule OGrupoDeEstudos.SequencesTest do
     end
   end
 
+  describe "get_sequence_for_viewer/3 (private-sequence read guard)" do
+    test "refuses another user's private sequence (IDOR)" do
+      owner = insert(:user)
+      private = insert(:sequence, user: owner, public: false)
+
+      assert is_nil(Sequences.get_sequence_for_viewer(private.id, insert(:user).id))
+    end
+
+    test "allows the owner to read their own private sequence" do
+      owner = insert(:user)
+      private = insert(:sequence, user: owner, public: false)
+
+      assert %{id: id} = Sequences.get_sequence_for_viewer(private.id, owner.id)
+      assert id == private.id
+    end
+
+    test "allows any viewer to read a public sequence" do
+      public = insert(:sequence, user: insert(:user), public: true)
+
+      assert %{id: id} = Sequences.get_sequence_for_viewer(public.id, insert(:user).id)
+      assert id == public.id
+    end
+
+    test "allows an admin to read any private sequence" do
+      private = insert(:sequence, user: insert(:user), public: false)
+
+      assert %{id: id} = Sequences.get_sequence_for_viewer(private.id, insert(:user).id, true)
+      assert id == private.id
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # delete_sequence/1
   # ---------------------------------------------------------------------------

@@ -833,4 +833,42 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert_push_event(lv, "set_favorited_steps", %{codes: ["BF"]})
     end
   end
+
+  describe "private sequence read guard" do
+    test "?seq= does not highlight another user's private sequence", %{conn: conn} do
+      owner = insert(:user)
+      step = insert(:step, code: "BF", name: "Base frontal")
+      private = insert(:sequence, user: owner, public: false)
+      insert(:sequence_step, sequence: private, step: step, position: 1)
+
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual?seq=#{private.id}")
+
+      assert html =~ ~s(data-initial-sequence-steps="[]")
+    end
+
+    test "?seq= highlights a public sequence", %{conn: conn} do
+      owner = insert(:user)
+      step = insert(:step, code: "BF", name: "Base frontal")
+      public = insert(:sequence, user: owner, public: true)
+      insert(:sequence_step, sequence: public, step: step, position: 1)
+
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual?seq=#{public.id}")
+
+      refute html =~ ~s(data-initial-sequence-steps="[]")
+    end
+
+    test "favoriting another user's private sequence does not leak it into the library",
+         %{conn: conn} do
+      owner = insert(:user)
+      step = insert(:step, code: "BF", name: "Base frontal")
+      private = insert(:sequence, user: owner, name: "Sequencia secreta", public: false)
+      insert(:sequence_step, sequence: private, step: step, position: 1)
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      render_hook(lv, "toggle_sequence_favorite_graph", %{"id" => private.id})
+      html = render_click(lv, "show_seq_library", %{})
+
+      refute html =~ "Sequencia secreta"
+    end
+  end
 end

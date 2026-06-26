@@ -134,6 +134,20 @@ defmodule OGrupoDeEstudos.Sequences do
     SequenceQuery.get_by(id: id, preload: steps_preload())
   end
 
+  @doc """
+  Fetches a sequence by id only if it is visible to the viewer: public, owned by
+  the viewer, or the viewer is an admin. Returns `nil` otherwise. Guards read
+  paths (deep links, favoriting) against leaking other users' private sequences.
+  """
+  def get_sequence_for_viewer(id, viewer_id, is_admin \\ false) do
+    case get_sequence(id) do
+      nil -> nil
+      %Sequence{public: true} = seq -> seq
+      %Sequence{user_id: ^viewer_id} = seq -> seq
+      seq -> if is_admin, do: seq, else: nil
+    end
+  end
+
   @doc "Soft-deletes a sequence by setting deleted_at. The sequence is excluded from all default queries."
   def delete_sequence(%Sequence{} = sequence) do
     utc_now = NaiveDateTime.utc_now()
