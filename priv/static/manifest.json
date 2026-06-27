@@ -1,7 +1,7 @@
 {
   "name": "O Grupo de Estudos",
-  "short_name": "Grupo de Estudos",
-  "description": "Acervo de forró roots — passos, conexões e sequências",
+  "short_name": "O Grupo de Estudos",
+  "description": "Acervo de forró roots: passos, conexões e sequências",
   "start_url": "/collection",
   "scope": "/",
   "display": "standalone",
