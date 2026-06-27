@@ -562,7 +562,7 @@
   <%!-- Drawer backdrop: desfoca e escurece o centro enquanto o painel está aberto --%>
   <div
     class={[
-      "fixed inset-0 z-[39] bg-ink-900/25 backdrop-blur-[3px] transition-opacity duration-200",
+      "fixed inset-0 z-[39] bg-black/30 backdrop-blur-[3px] transition-opacity duration-200",
       @drawer_open && "opacity-100",
       !@drawer_open && "pointer-events-none opacity-0"
     ]}
