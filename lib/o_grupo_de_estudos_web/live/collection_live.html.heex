@@ -22,47 +22,28 @@
     <%!-- Hero --%>
     <div id="collection-hero" class="border-b border-ink-300/50 px-6 pt-12 pb-9 bg-ink-200">
       <div class="max-w-[1600px] mx-auto">
-        <h1
-          class="brand-display is-hero text-4xl md:text-5xl font-bold text-ink-900 tracking-tight leading-tight mb-4 flex items-center"
-          style="gap: 0.28em"
-        >
-          <svg
-            class="w-auto shrink-0"
-            style="height: 1.05em; overflow: visible"
-            viewBox="96 76 320 384"
-            role="img"
-            aria-label="O"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <g fill="currentColor">
-              <circle cx="200" cy="110" r="34" />
-              <circle cx="312" cy="110" r="34" />
-            </g>
-            <g fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round">
-              <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
-              <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
-            </g>
-          </svg>
-          <span>Grupo de Estudos</span>
-        </h1>
-        <p class="text-base text-ink-700 leading-relaxed max-w-2xl mb-2.5">
-          <%= if @loaded? do %>
-            {total_steps(@sections)} passos de forró catalogados aqui.
-          <% else %>
-            O acervo de forró, organizado para estudo.
-          <% end %>
-          Nomes inventados, descrições duvidosas, mas feito com carinho.
+        <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-ink-500">
+          Acervo
         </p>
-        <p class="text-sm text-ink-500 italic leading-relaxed max-w-2xl">
-          Sentiu falta de algum passo?
-          <a
+        <h1 class="brand-display mb-4 text-4xl font-bold leading-[1.05] tracking-tight text-ink-900 md:text-5xl">
+          A biblioteca de passos
+        </h1>
+        <p class="mb-2.5 max-w-2xl text-base leading-relaxed text-ink-700">
+          <%= if @loaded? do %>
+            {total_steps(@sections)} passos de forró catalogados e conectados entre si.
+          <% else %>
+            O acervo de forró, catalogado e conectado.
+          <% end %>
+          Escolha uma família e abra o que quiser, sem caçar cliques.
+        </p>
+        <p class="max-w-2xl text-sm italic leading-relaxed text-ink-500">
+          Sentiu falta de algum passo? <a
             href="#"
             phx-click="toggle_suggest"
             class="font-semibold no-underline text-accent-purple"
           >
             Sugere aí
-          </a>
-          , a gente cresce junto.
+          </a>, a gente cresce junto.
         </p>
       </div>
     </div>
@@ -352,49 +333,46 @@
                   id={"collection-section-card-#{card.id}"}
                   phx-click="enter_section"
                   phx-value-section_id={card.id}
-                  class="group flex h-full flex-col overflow-hidden rounded-[18px] border border-ink-300/50 bg-ink-50 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                  class="group flex h-full flex-col overflow-hidden rounded-2xl border border-ink-300/50 bg-ink-50 text-left transition duration-200 hover:-translate-y-0.5 hover:border-ink-400/50 hover:shadow-[0_16px_40px_-14px_rgba(60,40,20,0.30)]"
                 >
-                  <div class="relative aspect-[1.2] w-full overflow-hidden">
-                    <%= if card.image_path do %>
-                      <img
-                        src={card.image_path}
-                        alt={card.title}
-                        class="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                      <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
-                    <% else %>
-                      <div
-                        class="absolute inset-0"
-                        style="background-color: var(--collection-layer-outer);"
-                      />
-                    <% end %>
-                    <div class="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-                      <div class="max-w-[10rem] text-lg font-bold leading-tight text-white sm:text-xl">
-                        {card.title}
-                      </div>
-                    </div>
+                  <%!-- Faixa de cor da categoria (sem imagem) --%>
+                  <div
+                    class="flex items-start justify-between px-4 pb-9 pt-4"
+                    style={"background: linear-gradient(155deg, #{card.category_color}2e, #{card.category_color}0a 58%, transparent 92%);"}
+                  >
+                    <span
+                      class="text-[10px] font-semibold uppercase tracking-[0.2em]"
+                      style={"color: #{card.category_color};"}
+                    >
+                      {card.category_label}
+                    </span>
+                    <span class="shrink-0 text-[11px] text-ink-500">
+                      <span class="font-semibold text-ink-700">{card.step_count}</span> passos
+                    </span>
                   </div>
-                  <div class="flex flex-1 flex-col gap-2 p-3 sm:p-4">
-                    <div class="flex items-start justify-between gap-3">
-                      <div>
-                        <div class="text-[10px] uppercase tracking-[0.18em] text-ink-500">
-                          {card.category_label}
-                        </div>
-                        <div class="mt-1 text-xs text-ink-600 sm:text-sm">
-                          {card.step_count} passos
-                        </div>
-                      </div>
-                      <span
-                        data-role="popularity"
-                        class="rounded-full bg-ink-900 px-2.5 py-1 text-[10px] font-semibold text-ink-100 sm:text-xs"
-                      >
-                        {card.popularity_score} likes
-                      </span>
-                    </div>
-                    <div class="text-xs leading-5 text-ink-700 sm:text-sm sm:leading-6">
+                  <%!-- Corpo --%>
+                  <div class="-mt-4 flex flex-1 flex-col px-4 pb-4">
+                    <h3 class="font-serif text-xl font-bold leading-tight text-ink-900 sm:text-2xl">
+                      {card.title}
+                    </h3>
+                    <p class="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-ink-600">
                       {card.description ||
                         "Explora os caminhos mais curtidos e as variacoes dessa familia."}
+                    </p>
+                    <div class="mt-auto flex items-center justify-between pt-4 text-xs">
+                      <span class="inline-flex items-center gap-1 text-ink-500">
+                        <.icon name="hero-heart-solid" class="size-3.5 text-accent-red/80" />
+                        {card.popularity_score}
+                      </span>
+                      <span class="inline-flex items-center gap-1 font-semibold text-ink-600 transition-colors group-hover:text-ink-900">
+                        Abrir
+                        <span
+                          class="transition-transform group-hover:translate-x-0.5"
+                          aria-hidden="true"
+                        >
+                          →
+                        </span>
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -581,11 +559,23 @@
     </div>
   </div>
 
+  <%!-- Drawer backdrop: desfoca e escurece o centro enquanto o painel está aberto --%>
+  <div
+    class={[
+      "fixed inset-0 z-[39] bg-ink-900/25 backdrop-blur-[3px] transition-opacity duration-200",
+      @drawer_open && "opacity-100",
+      !@drawer_open && "pointer-events-none opacity-0"
+    ]}
+    phx-click="close_drawer"
+    aria-hidden="true"
+  >
+  </div>
+
   <%!-- Drawer --%>
   <div
     class={[
       "fixed top-[110px] right-0 w-[380px] max-w-screen h-[calc(100vh-110px)] z-40",
-      "bg-ink-50 border-l border-ink-200 shadow-lg flex flex-col overflow-hidden font-serif",
+      "bg-ink-50 border-l border-ink-200 shadow-xl flex flex-col overflow-hidden font-serif",
       "transition-transform duration-200"
     ]}
     style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
@@ -794,70 +784,75 @@
         <% end %>
 
         <%!-- Connections --%>
-        <div class="text-xs text-ink-800 mb-3 font-semibold">
-          {length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas
+        <div class="mb-2.5 flex items-baseline justify-between">
+          <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-500">
+            Conexões
+          </span>
+          <span class="text-[11px] text-ink-500">
+            {length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas
+          </span>
         </div>
 
         <%= if @drawer_connections_out != [] do %>
-          <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mb-1.5">
-            Saídas →
+          <% out_rest = Enum.drop(@drawer_connections_out, 8) %>
+          <div class="mb-1.5 text-[11px] font-semibold text-ink-600">Vai para →</div>
+          <div class="mb-4 flex flex-wrap gap-1.5">
+            <.connection_chip
+              :for={conn <- Enum.take(@drawer_connections_out, 8)}
+              step={conn.target_step}
+              can_edit={@can_edit_drawer}
+              delete_source={@drawer_item.code}
+              delete_target={conn.target_step.code}
+            />
+            <span id="conn-out-rest" style="display: none">
+              <.connection_chip
+                :for={conn <- out_rest}
+                step={conn.target_step}
+                can_edit={@can_edit_drawer}
+                delete_source={@drawer_item.code}
+                delete_target={conn.target_step.code}
+              />
+            </span>
+            <button
+              :if={out_rest != []}
+              type="button"
+              phx-click={JS.toggle(to: "#conn-out-rest", display: "contents")}
+              class="rounded-lg border border-dashed border-ink-300 px-2 py-1 text-[11px] text-ink-500 transition hover:border-ink-400 hover:text-ink-700"
+            >
+              +{length(out_rest)} mais
+            </button>
           </div>
-          <%= for conn <- @drawer_connections_out do %>
-            <div class="flex items-center py-1 border-b border-ink-200/40">
-              <span
-                phx-click="open_step"
-                phx-value-code={conn.target_step.code}
-                class="text-sm text-ink-900 cursor-pointer flex-1"
-              >
-                <code class="text-[10px] text-ink-500 mr-1">
-                  {conn.target_step.code}
-                </code>
-                {conn.target_step.name}
-              </span>
-              <%= if @can_edit_drawer do %>
-                <button
-                  phx-click="delete_step_connection"
-                  phx-value-source={@drawer_item.code}
-                  phx-value-target={conn.target_step.code}
-                  data-confirm={"Remover #{@drawer_item.code} → #{conn.target_step.code}?"}
-                  class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
-                >
-                  ×
-                </button>
-              <% end %>
-            </div>
-          <% end %>
         <% end %>
 
         <%= if @drawer_connections_in != [] do %>
-          <div class="text-[10px] font-bold text-ink-500 uppercase tracking-widest mt-2.5 mb-1.5">
-            ← Entradas
+          <% in_rest = Enum.drop(@drawer_connections_in, 8) %>
+          <div class="mb-1.5 text-[11px] font-semibold text-ink-600">← Vem de</div>
+          <div class="mb-4 flex flex-wrap gap-1.5">
+            <.connection_chip
+              :for={conn <- Enum.take(@drawer_connections_in, 8)}
+              step={conn.source_step}
+              can_edit={@can_edit_drawer}
+              delete_source={conn.source_step.code}
+              delete_target={@drawer_item.code}
+            />
+            <span id="conn-in-rest" style="display: none">
+              <.connection_chip
+                :for={conn <- in_rest}
+                step={conn.source_step}
+                can_edit={@can_edit_drawer}
+                delete_source={conn.source_step.code}
+                delete_target={@drawer_item.code}
+              />
+            </span>
+            <button
+              :if={in_rest != []}
+              type="button"
+              phx-click={JS.toggle(to: "#conn-in-rest", display: "contents")}
+              class="rounded-lg border border-dashed border-ink-300 px-2 py-1 text-[11px] text-ink-500 transition hover:border-ink-400 hover:text-ink-700"
+            >
+              +{length(in_rest)} mais
+            </button>
           </div>
-          <%= for conn <- @drawer_connections_in do %>
-            <div class="flex items-center py-1 border-b border-ink-200/40">
-              <span
-                phx-click="open_step"
-                phx-value-code={conn.source_step.code}
-                class="text-sm text-ink-900 cursor-pointer flex-1"
-              >
-                <code class="text-[10px] text-ink-500 mr-1">
-                  {conn.source_step.code}
-                </code>
-                {conn.source_step.name}
-              </span>
-              <%= if @can_edit_drawer do %>
-                <button
-                  phx-click="delete_step_connection"
-                  phx-value-source={conn.source_step.code}
-                  phx-value-target={@drawer_item.code}
-                  data-confirm={"Remover #{conn.source_step.code} → #{@drawer_item.code}?"}
-                  class="bg-transparent border-0 text-accent-red cursor-pointer text-sm"
-                >
-                  ×
-                </button>
-              <% end %>
-            </div>
-          <% end %>
         <% end %>
 
         <%= if @can_edit_drawer do %>

@@ -146,8 +146,8 @@ defmodule OGrupoDeEstudos.Encyclopedia do
           Repo.preload(step, [
             :category,
             :technical_concepts,
-            connections_as_source: :target_step,
-            connections_as_target: :source_step
+            connections_as_source: [target_step: :category],
+            connections_as_target: [source_step: :category]
           ])
 
         {:ok, step}

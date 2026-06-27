@@ -256,4 +256,48 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
   end
 
   defp youtube_id(_), do: nil
+
+  @chip_fallback_color "#9a7a5a"
+
+  @doc """
+  A compact connection chip: code badge (tinted by the step's category) plus the
+  step name, opening that step on click. In edit mode it shows a delete affordance.
+  """
+  attr :step, :map, required: true
+  attr :can_edit, :boolean, default: false
+  attr :delete_source, :string, default: nil
+  attr :delete_target, :string, default: nil
+
+  def connection_chip(assigns) do
+    assigns = assign(assigns, :color, chip_color(assigns.step))
+
+    ~H"""
+    <span
+      class="inline-flex items-center overflow-hidden rounded-lg border bg-ink-50 transition hover:bg-ink-200/50"
+      style={"border-color: #{@color}40;"}
+    >
+      <button
+        phx-click="open_step"
+        phx-value-code={@step.code}
+        class="inline-flex max-w-[190px] items-center gap-1.5 px-2 py-1 text-left"
+      >
+        <code class="shrink-0 text-[10px] font-bold" style={"color: #{@color};"}>{@step.code}</code>
+        <span class="truncate text-xs text-ink-700">{@step.name}</span>
+      </button>
+      <button
+        :if={@can_edit}
+        phx-click="delete_step_connection"
+        phx-value-source={@delete_source}
+        phx-value-target={@delete_target}
+        data-confirm={"Remover #{@delete_source} → #{@delete_target}?"}
+        class="self-stretch border-l border-ink-200 px-1.5 text-accent-red/70 transition hover:bg-accent-red/10 hover:text-accent-red"
+      >
+        ×
+      </button>
+    </span>
+    """
+  end
+
+  defp chip_color(%{category: %{color: color}}) when is_binary(color), do: color
+  defp chip_color(_), do: @chip_fallback_color
 end
