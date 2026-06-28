@@ -4,6 +4,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Encyclopedia.StepQuery
   alias OGrupoDeEstudosWeb.GraphVisual.{GraphData, SequenceLibrary, TextSearch}
+  alias OGrupoDeEstudosWeb.StepDrawer
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -12,6 +13,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
   import OGrupoDeEstudosWeb.GraphVisual.SequenceSummary
+  import OGrupoDeEstudosWeb.StepDetail, only: [step_detail: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
@@ -90,9 +92,148 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> assign(:bubble_search, "")
       |> assign(:bubble_search_results, [])
       |> assign(:suggested_users, [])
+      |> assign(StepDrawer.initial_assigns())
       |> load_graph_data()
 
     {:ok, socket}
+  end
+
+  # ── Drawer de detalhe do passo (StepDetail compartilhado com a CollectionLive) ──
+
+  @impl true
+  def handle_event("open_step", %{"code" => code}, socket) do
+    case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:drawer_open, true)
+         |> StepDrawer.load_step(code)
+         |> push_event("center_node", %{code: code})}
+
+      {:error, :not_found} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_drawer", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(drawer_open: false, drawer_item: nil)
+     |> push_event("clear_spotlight", %{})}
+  end
+
+  def handle_event("toggle_connections", _params, socket) do
+    {:noreply, assign(socket, :connections_expanded, not socket.assigns.connections_expanded)}
+  end
+
+  def handle_event("copy_step_link", %{"code" => code}, socket) do
+    {:noreply,
+     socket
+     |> push_event("clipboard:copy", %{text: url(~p"/collection?step=#{code}")})
+     |> put_flash(:info, "Link copiado")}
+  end
+
+  def handle_event("toggle_step_like", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_like(user.id, "step", step_id) do
+      {:ok, _} ->
+        liked = Engagement.liked_step_codes(user.id)
+
+        {:noreply,
+         socket
+         |> assign(:liked_step_codes, liked)
+         |> StepDrawer.sync_engagement(step_id)
+         |> push_event("set_liked_steps", %{codes: liked})}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_step_favorite", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_favorite(user.id, "step", step_id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> StepDrawer.sync_engagement(step_id)
+         |> push_event("set_favorited_steps", %{codes: favorited_step_codes(user.id)})}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_link_video", %{"link-id" => link_id}, socket) do
+    current = socket.assigns.expanded_video
+    {:noreply, assign(socket, :expanded_video, if(current == link_id, do: nil, else: link_id))}
+  end
+
+  def handle_event("toggle_link_like", %{"link-id" => link_id}, socket) do
+    case Engagement.toggle_like(socket.assigns.current_user.id, "step_link", link_id) do
+      {:ok, _} -> {:noreply, StepDrawer.reload_link_likes(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao registrar like")}
+    end
+  end
+
+  def handle_event("create_comment", %{"body" => body}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.create_step_comment(user, socket.assigns.expanded_step, %{body: body}) do
+      {:ok, _} -> {:noreply, StepDrawer.reload_comments(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao postar comentário.")}
+    end
+  end
+
+  def handle_event("create_reply", %{"body" => body, "parent-id" => parent_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.create_step_comment(user, socket.assigns.expanded_step, %{
+           body: body,
+           parent_step_comment_id: parent_id
+         }) do
+      {:ok, _} ->
+        {:noreply, socket |> StepDrawer.reload_comments() |> assign(:expanded_replying_to, nil)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao postar resposta.")}
+    end
+  end
+
+  def handle_event("toggle_comment_like", %{"type" => type, "id" => id}, socket) do
+    case Engagement.toggle_like(socket.assigns.current_user.id, type, id) do
+      {:ok, _} -> {:noreply, StepDrawer.reload_comments(socket)}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("start_reply", %{"id" => comment_id}, socket) do
+    {:noreply, assign(socket, :expanded_replying_to, comment_id)}
+  end
+
+  def handle_event("toggle_replies", %{"id" => comment_id}, socket) do
+    replies_map = socket.assigns.expanded_replies_map
+
+    if Map.has_key?(replies_map, comment_id) do
+      {:noreply, assign(socket, :expanded_replies_map, Map.delete(replies_map, comment_id))}
+    else
+      replies =
+        Engagement.list_replies(OGrupoDeEstudos.Engagement.Comments.StepCommentQuery, comment_id)
+
+      socket = assign(socket, :expanded_replies_map, Map.put(replies_map, comment_id, replies))
+      {:noreply, StepDrawer.reload_comment_likes(socket)}
+    end
+  end
+
+  def handle_event("delete_comment", %{"id" => id, "type" => "step_comment"}, socket) do
+    comment = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Engagement.Comments.StepComment, id)
+
+    case Engagement.delete_step_comment(socket.assigns.current_user, comment) do
+      {:ok, _} -> {:noreply, StepDrawer.reload_comments(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
+    end
   end
 
   # Iron Law: o grafo e a biblioteca de sequências (queries pesadas) só rodam
