@@ -13,6 +13,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     plug OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicy
     plug OGrupoDeEstudosWeb.UserAuth, :fetch_current_user
     plug OGrupoDeEstudosWeb.Plugs.DeviceTracker
+    plug OGrupoDeEstudosWeb.Plugs.TrackDailyActivity
   end
 
   pipeline :api do

@@ -197,7 +197,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       <div class="flex items-baseline gap-1.5">
         <span class="font-serif text-3xl font-bold leading-none text-ink-900">{@monthly_count}</span>
         <span class="text-xs text-ink-500">
-          {if @monthly_count == 1, do: "registro", else: "registros"} em {@month_name}
+          {if @monthly_count == 1, do: "dia", else: "dias"} em {@month_name}
         </span>
       </div>
       <div class="mt-3 flex justify-between gap-1">

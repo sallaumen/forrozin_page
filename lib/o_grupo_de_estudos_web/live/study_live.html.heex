@@ -24,9 +24,9 @@
   <%!-- ───────────────── Aba: Meu estudo ───────────────── --%>
   <main
     :if={@active_study_tab == "personal"}
-    class="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-4 py-5 pb-24 md:pb-10 sm:px-6 lg:px-8"
+    class="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-4 py-5 pb-24 md:pb-10 sm:px-6 lg:px-8 2xl:max-w-[1536px]"
   >
-    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
       <%!-- Coluna principal: diário + histórico --%>
       <div class="flex min-w-0 flex-col gap-4">
         <.diary_card
