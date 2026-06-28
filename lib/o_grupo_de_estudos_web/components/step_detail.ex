@@ -138,10 +138,11 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
             </button>
             <.link
               navigate={~p"/steps/#{@step.code}"}
-              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 text-ink-500 no-underline transition-colors hover:border-ink-400 hover:text-ink-900"
-              title="Abrir página completa"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 text-ink-500 no-underline transition-colors hover:border-accent-orange/40 hover:text-accent-orange"
+              title="Editar passo"
+              aria-label="Editar passo"
             >
-              <.icon name="hero-arrow-top-right-on-square" class="size-3.5" />
+              <.icon name="hero-cog-6-tooth" class="size-3.5" />
             </.link>
           </div>
         </div>
