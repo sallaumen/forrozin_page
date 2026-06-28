@@ -5,14 +5,14 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Suggestions}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
+  alias OGrupoDeEstudosWeb.StepDetail
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
-  import OGrupoDeEstudosWeb.UI.CommentThread
-  import OGrupoDeEstudosWeb.UI.InlineFollowButton
   import OGrupoDeEstudosWeb.UI.SocialBubble
+  import OGrupoDeEstudosWeb.StepDetail, only: [step_detail: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
@@ -65,7 +65,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         step_like_count = step.like_count
         step_favorited = Engagement.favorited?(user_id, "step", step.id)
 
-        step_image = resolve_step_image(step)
+        step_image = StepDetail.resolve_step_image(step)
 
         {:ok,
          assign(socket,
@@ -84,6 +84,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            edit_mode: false,
            connections_out: connections_out,
            connections_in: connections_in,
+           connections_expanded: false,
            connection_search: "",
            connection_suggestions: [],
            incoming_search: "",
@@ -135,6 +136,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     {:noreply, assign(socket, edit_mode: not socket.assigns.edit_mode)}
   end
 
+  def handle_event("toggle_connections", _params, socket) do
+    {:noreply, assign(socket, connections_expanded: not socket.assigns.connections_expanded)}
+  end
+
   def handle_event("update_step", %{"step" => params}, socket) do
     if socket.assigns.can_edit do
       case Admin.update_step(socket.assigns.step, params) do
@@ -146,6 +151,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
                 :category,
                 :technical_concepts,
                 :suggested_by,
+                :last_edited_by,
                 connections_as_source: :target_step,
                 connections_as_target: :source_step
               ]
@@ -206,7 +212,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     {:noreply, assign(socket, connection_search: code, connection_suggestions: [])}
   end
 
-  def handle_event("create_connection", %{"target_code" => target_code}, socket) do
+  def handle_event("create_step_connection", %{"target_code" => target_code}, socket) do
     if socket.assigns.can_edit do
       do_create_outgoing_connection(socket, target_code)
     else
@@ -215,7 +221,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event(
-        "delete_connection",
+        "delete_step_connection",
         %{"source" => source_code, "target" => target_code},
         socket
       ) do
@@ -329,7 +335,22 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     end
   end
 
-  # --- Unapprove step ---
+  # --- Approve / unapprove step ---
+
+  def handle_event("approve_step", %{"code" => code}, socket) do
+    if socket.assigns.is_admin do
+      case StepQuery.get_by(code: code) do
+        nil ->
+          {:noreply, socket}
+
+        step ->
+          Admin.update_step(step, %{approved: true})
+          {:noreply, socket |> reload_step(code) |> put_flash(:info, "Passo aprovado!")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
 
   def handle_event("unapprove_step", _params, socket) do
     if socket.assigns.is_admin do
@@ -774,73 +795,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
       _ ->
         socket
-    end
-  end
-
-  def category_color(%{category: %{color: color}}), do: color
-  def category_color(_), do: "#7f8c8d"
-
-  def category_label(%{category: %{label: label}}), do: label
-  def category_label(_), do: "—"
-
-  @doc """
-  Parses a URL and returns `{:youtube, embed_url}` for YouTube links,
-  or `:external` for all other URLs.
-
-  Supports:
-  - `https://www.youtube.com/watch?v=VIDEO_ID`
-  - `https://youtu.be/VIDEO_ID`
-  - URLs with additional query parameters (only `v` is used)
-  """
-  def youtube_embed_url(url) when is_binary(url) do
-    url |> URI.parse() |> extract_youtube_id()
-  end
-
-  def youtube_embed_url(_), do: :external
-
-  defp extract_youtube_id(%URI{host: host, path: "/watch", query: query})
-       when host in ["www.youtube.com", "youtube.com"] do
-    case URI.decode_query(query || "") do
-      %{"v" => video_id} when video_id != "" ->
-        {:youtube, "https://www.youtube.com/embed/#{video_id}"}
-
-      _ ->
-        :external
-    end
-  end
-
-  defp extract_youtube_id(%URI{host: "youtu.be", path: path}) when is_binary(path) do
-    video_id = String.trim_leading(path, "/")
-
-    if video_id != "",
-      do: {:youtube, "https://www.youtube.com/embed/#{video_id}"},
-      else: :external
-  end
-
-  defp extract_youtube_id(_uri), do: :external
-
-  @step_image_overrides %{
-    "SC" => "/images/collection/sacada-simples.png",
-    "SC-E" => "/images/collection/sacada-esquerda.png",
-    "SCSP" => "/images/collection/scsp.png",
-    "GP" => "/images/collection/gp.png",
-    "CA-E" => "/images/collection/caminhada.png",
-    "IV" => "/images/collection/inversao.png",
-    "TR-F" => "/images/collection/trava-frontal.png",
-    "PE" => "/images/collection/pescada.png"
-  }
-
-  defp resolve_step_image(step) do
-    case Map.get(@step_image_overrides, step.code) do
-      nil ->
-        case step.image_path do
-          nil -> nil
-          "/" <> _ -> step.image_path
-          path -> "/" <> path
-        end
-
-      override ->
-        override
     end
   end
 end

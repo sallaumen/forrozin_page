@@ -571,381 +571,64 @@
   >
   </div>
 
-  <%!-- Drawer --%>
+  <%!-- Drawer: painel lateral amplo com o detalhe completo do passo --%>
   <div
     class={[
-      "fixed top-[110px] right-0 w-[380px] max-w-screen h-[calc(100vh-110px)] z-40",
-      "bg-ink-50 border-l border-ink-200 shadow-xl flex flex-col overflow-hidden font-serif",
+      "fixed right-0 z-40 top-[110px] h-[calc(100vh-110px)]",
+      "w-full sm:w-[600px] lg:w-[680px] max-w-full",
+      "bg-ink-50 border-l border-ink-200 shadow-2xl font-serif",
       "transition-transform duration-200"
     ]}
     style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
   >
-    <%= if @drawer_type == :step and @drawer_item do %>
-      <%!-- Step header --%>
-      <div
-        id="collection-drawer-header"
-        class="shrink-0 border-b border-ink-200 bg-ink-50 p-6 pr-4"
-      >
-        <div class="flex items-start gap-3 mb-2">
-          <div class="min-w-0 flex-1">
-            <div class="text-[11px] text-ink-500 tracking-wide mb-1">
-              {@drawer_item.code}
-            </div>
-            <div class="text-xl font-bold text-ink-900 leading-snug">
-              {@drawer_item.name}
-            </div>
+    <button
+      :if={@drawer_open}
+      phx-click="close_drawer"
+      aria-label="Fechar painel"
+      class="absolute right-3 top-3 z-20 inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-ink-200 bg-ink-50/90 text-ink-500 shadow-sm backdrop-blur transition hover:bg-ink-100 hover:text-ink-900"
+    >
+      <.icon name="hero-x-mark" class="size-5" />
+    </button>
+
+    <div class="h-full overflow-y-auto overflow-x-hidden pb-24 md:pb-6">
+      <.step_detail
+        :if={@drawer_type == :step and @drawer_item}
+        mode={:drawer}
+        step={@drawer_item}
+        step_image={@drawer_step_image}
+        current_user={@current_user}
+        is_admin={@is_admin}
+        can_edit={@can_edit_drawer}
+        edit_mode={@edit_mode}
+        following_user_ids={@following_user_ids}
+        categories={@categories}
+        step_liked={@drawer_liked}
+        step_like_count={@drawer_like_count}
+        step_favorited={@drawer_favorited}
+        connections_out={@drawer_connections_out}
+        connections_in={@drawer_connections_in}
+        connections_expanded={@connections_expanded}
+        links={@drawer_links}
+        link_likes={@drawer_link_likes}
+        expanded_video={@expanded_video}
+        comments={@expanded_comments}
+        comment_likes={@expanded_comment_likes}
+        replies_map={@expanded_replies_map}
+        replying_to={@expanded_replying_to}
+        connection_search={@connection_search}
+        connection_suggestions={@connection_suggestions}
+      />
+
+      <%!-- Section drawer --%>
+      <div :if={@drawer_type == :section and @drawer_item} class="px-5 py-6 md:px-7">
+        <div class="mb-4 pr-12">
+          <div class="text-[11px] text-ink-500 tracking-wide mb-1">
+            Seção {if @drawer_item.num, do: "##{@drawer_item.num}"}
           </div>
-          <div class="flex shrink-0 items-center gap-1.5">
-            <button
-              id="collection-drawer-share"
-              phx-click="copy_step_link"
-              phx-value-code={@drawer_item.code}
-              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-200 text-ink-500 transition-colors hover:border-accent-orange/40 hover:text-accent-orange"
-              title="Copiar link deste passo"
-            >
-              <.icon name="hero-link" class="size-3" />
-            </button>
-            <button
-              phx-click="toggle_drawer_like"
-              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-200 text-ink-500 transition-colors hover:border-accent-red/40 hover:text-accent-red"
-              title={if @drawer_liked, do: "Remover curtida", else: "Curtir"}
-            >
-              <.icon
-                name={if @drawer_liked, do: "hero-heart-solid", else: "hero-heart"}
-                class={[
-                  "size-3",
-                  @drawer_liked && "text-accent-red",
-                  !@drawer_liked && "text-ink-400"
-                ]}
-              />
-            </button>
-            <button
-              phx-click="toggle_drawer_favorite"
-              class="inline-flex h-8.5 w-8.5 items-center justify-center rounded-md border border-ink-200 text-ink-500 transition-colors hover:border-gold-500/40 hover:text-gold-500"
-              title={if @drawer_favorited, do: "Remover favorito", else: "Favoritar"}
-            >
-              <.icon
-                name={if @drawer_favorited, do: "hero-star-solid", else: "hero-star"}
-                class={[
-                  "size-3",
-                  @drawer_favorited && "text-gold-500",
-                  !@drawer_favorited && "text-ink-400"
-                ]}
-              />
-            </button>
-            <button
-              phx-click="close_drawer"
-              aria-label="Fechar"
-              class="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg border border-transparent bg-transparent text-ink-500 transition hover:bg-ink-100 hover:text-ink-900"
-            >
-              <.icon name="hero-x-mark" class="size-5" />
-            </button>
+          <div class="text-2xl font-bold text-ink-900 leading-snug">
+            {@drawer_item.title}
           </div>
         </div>
-        <%= if @drawer_item.category do %>
-          <span
-            style={"background: #{@drawer_item.category.color}18; color: #{@drawer_item.category.color}; border: 1px solid #{@drawer_item.category.color}40;"}
-            class="inline-block text-[10px] py-0.5 px-2.5 rounded-full italic"
-          >
-            {@drawer_item.category.label}
-          </span>
-        <% end %>
-        <%= if @drawer_item.wip do %>
-          <span class="inline-block text-[10px] py-0.5 px-2 rounded-full bg-accent-red/10 text-accent-red border border-accent-red/30 ml-1">
-            WIP
-          </span>
-        <% end %>
-        <%= if @drawer_item.suggested_by_id do %>
-          <% author = @drawer_item.suggested_by %>
-          <% author_username = if author, do: author.username, else: "?" %>
-          <div class="mt-2.5 flex items-center gap-2">
-            <.link
-              navigate={~p"/users/#{author_username}"}
-              class="no-underline flex items-center gap-2"
-            >
-              <.user_avatar user={author} size={:sm} />
-              <span
-                style={
-                  if @drawer_item.approved,
-                    do: "color: var(--color-accent-green);",
-                    else: "color: var(--color-accent-purple);"
-                }
-                class="text-xs font-semibold"
-              >
-                @{author_username}
-              </span>
-              <span
-                style={
-                  if @drawer_item.approved,
-                    do: "color: var(--color-accent-green);",
-                    else: "color: var(--color-accent-purple);"
-                }
-                class="text-[11px] italic opacity-80"
-              >
-                {if @drawer_item.approved,
-                  do: "✓ contribuição aprovada",
-                  else: "· sugestão pendente"}
-              </span>
-            </.link>
-            <.inline_follow_button
-              target_user_id={@drawer_item.suggested_by_id}
-              current_user_id={@current_user.id}
-              following_user_ids={@following_user_ids}
-            />
-            <%= if @is_admin and not @drawer_item.approved do %>
-              <button
-                phx-click="approve_step"
-                phx-value-code={@drawer_item.code}
-                data-confirm="Aprovar este passo como oficial?"
-                class="inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded bg-accent-green text-white border-0 cursor-pointer"
-              >
-                Aprovar
-              </button>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-
-      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
-        <%!-- Note or edit form --%>
-        <%= if @can_edit_drawer do %>
-          <form
-            phx-submit="update_step"
-            class="mb-4 flex flex-col gap-2"
-          >
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Nome
-            </label>
-            <input
-              type="text"
-              name="step[name]"
-              value={@drawer_item.name}
-              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
-            />
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Código
-            </label>
-            <input
-              type="text"
-              name="step[code]"
-              value={@drawer_item.code}
-              class="w-full py-2.5 px-3 border border-ink-300 rounded font-mono text-base text-ink-900 box-border"
-            />
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Nota mecânica
-            </label>
-            <textarea
-              name="step[note]"
-              rows="4"
-              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
-            ><%= @drawer_item.note %></textarea>
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Categoria
-            </label>
-            <select
-              name="step[category_id]"
-              class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
-            >
-              <%= for cat <- @categories do %>
-                <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
-                  {cat.label}
-                </option>
-              <% end %>
-            </select>
-            <div class="flex gap-2.5 items-center">
-              <label class="text-[11px] text-ink-700 flex items-center gap-1">
-                <input type="hidden" name="step[wip]" value="false" />
-                <input type="checkbox" name="step[wip]" value="true" checked={@drawer_item.wip} />
-                WIP
-              </label>
-              <label class="text-[11px] text-ink-700 flex items-center gap-1">
-                <input type="hidden" name="step[highlighted]" value="false" />
-                <input
-                  type="checkbox"
-                  name="step[highlighted]"
-                  value="true"
-                  checked={@drawer_item.highlighted}
-                /> Destacado no mapa
-              </label>
-            </div>
-            <button
-              type="submit"
-              class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
-            >
-              Salvar passo
-            </button>
-          </form>
-        <% else %>
-          <%= if @drawer_item.note do %>
-            <div class="text-xs text-ink-700 italic leading-relaxed mb-4 py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
-              {@drawer_item.note}
-            </div>
-          <% end %>
-        <% end %>
-
-        <%!-- Connections --%>
-        <div class="mb-2.5 flex items-baseline justify-between">
-          <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-500">
-            Conexões
-          </span>
-          <span class="text-[11px] text-ink-500">
-            {length(@drawer_connections_out)} saídas · {length(@drawer_connections_in)} entradas
-          </span>
-        </div>
-
-        <%= if @drawer_connections_out != [] do %>
-          <% out_rest = Enum.drop(@drawer_connections_out, 8) %>
-          <div class="mb-1.5 text-[11px] font-semibold text-ink-600">Vai para →</div>
-          <div class="mb-4 flex flex-wrap gap-1.5">
-            <.connection_chip
-              :for={conn <- Enum.take(@drawer_connections_out, 8)}
-              step={conn.target_step}
-              can_edit={@can_edit_drawer}
-              delete_source={@drawer_item.code}
-              delete_target={conn.target_step.code}
-            />
-            <span id="conn-out-rest" style="display: none">
-              <.connection_chip
-                :for={conn <- out_rest}
-                step={conn.target_step}
-                can_edit={@can_edit_drawer}
-                delete_source={@drawer_item.code}
-                delete_target={conn.target_step.code}
-              />
-            </span>
-            <button
-              :if={out_rest != []}
-              type="button"
-              phx-click={JS.toggle(to: "#conn-out-rest", display: "contents")}
-              class="rounded-lg border border-dashed border-ink-300 px-2 py-1 text-[11px] text-ink-500 transition hover:border-ink-400 hover:text-ink-700"
-            >
-              +{length(out_rest)} mais
-            </button>
-          </div>
-        <% end %>
-
-        <%= if @drawer_connections_in != [] do %>
-          <% in_rest = Enum.drop(@drawer_connections_in, 8) %>
-          <div class="mb-1.5 text-[11px] font-semibold text-ink-600">← Vem de</div>
-          <div class="mb-4 flex flex-wrap gap-1.5">
-            <.connection_chip
-              :for={conn <- Enum.take(@drawer_connections_in, 8)}
-              step={conn.source_step}
-              can_edit={@can_edit_drawer}
-              delete_source={conn.source_step.code}
-              delete_target={@drawer_item.code}
-            />
-            <span id="conn-in-rest" style="display: none">
-              <.connection_chip
-                :for={conn <- in_rest}
-                step={conn.source_step}
-                can_edit={@can_edit_drawer}
-                delete_source={conn.source_step.code}
-                delete_target={@drawer_item.code}
-              />
-            </span>
-            <button
-              :if={in_rest != []}
-              type="button"
-              phx-click={JS.toggle(to: "#conn-in-rest", display: "contents")}
-              class="rounded-lg border border-dashed border-ink-300 px-2 py-1 text-[11px] text-ink-500 transition hover:border-ink-400 hover:text-ink-700"
-            >
-              +{length(in_rest)} mais
-            </button>
-          </div>
-        <% end %>
-
-        <%= if @can_edit_drawer do %>
-          <div class="mt-2.5 relative">
-            <form
-              phx-submit="create_step_connection"
-              phx-change="search_connection"
-              class="flex gap-1.5"
-            >
-              <input
-                type="text"
-                name="target_code"
-                value={@connection_search}
-                placeholder="Buscar passo por código ou nome..."
-                autocomplete="off"
-                phx-debounce="150"
-                class="flex-1 py-2 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900"
-              />
-              <button
-                type="submit"
-                class="py-2 px-3.5 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer text-xs whitespace-nowrap"
-              >
-                + Conexão
-              </button>
-            </form>
-            <%= if @connection_suggestions != [] do %>
-              <div class="absolute top-[42px] left-0 right-[60px] bg-ink-50 border border-ink-300 rounded shadow-lg z-10 max-h-[200px] overflow-y-auto">
-                <%= for step <- @connection_suggestions do %>
-                  <div
-                    phx-click="select_connection_target"
-                    phx-value-code={step.code}
-                    class="py-2 px-3 cursor-pointer border-b border-ink-200/40 font-serif text-sm text-ink-900 hover:bg-ink-200/60"
-                  >
-                    <code
-                      style={"color: #{if step.category, do: step.category.color, else: "#9a7a5a"};"}
-                      class="text-[11px] mr-1.5"
-                    >
-                      {step.code}
-                    </code>
-                    {step.name}
-                    <%= if step.category do %>
-                      <span
-                        style={"color: #{step.category.color};"}
-                        class="text-[10px] italic ml-1.5"
-                      >
-                        {step.category.label}
-                      </span>
-                    <% end %>
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
-
-        <%= if @drawer_link_count > 0 do %>
-          <div class="mt-4 py-2.5 px-3.5 bg-gold-500/10 border border-gold-500/30 rounded-md text-xs text-ink-700 italic">
-            🎬 {@drawer_link_count} link(s) disponível(is). Ver no passo completo
-          </div>
-        <% end %>
-        <.link
-          navigate={~p"/steps/#{@drawer_item.code}"}
-          class="block mt-3 py-3 px-4 text-center bg-ink-900 text-ink-100 rounded-md no-underline text-sm font-semibold tracking-wide"
-        >
-          Ver passo completo →
-        </.link>
-      </div>
-    <% end %>
-
-    <%= if @drawer_type == :section and @drawer_item do %>
-      <div
-        id="collection-drawer-header"
-        class="shrink-0 border-b border-ink-200 bg-ink-50 p-6 pr-4"
-      >
-        <div class="flex items-start gap-3">
-          <div class="min-w-0 flex-1">
-            <div class="text-[11px] text-ink-500 tracking-wide mb-1">
-              Seção {if @drawer_item.num, do: "##{@drawer_item.num}"}
-            </div>
-            <div class="text-xl font-bold text-ink-900 leading-snug">
-              {@drawer_item.title}
-            </div>
-          </div>
-          <button
-            phx-click="close_drawer"
-            aria-label="Fechar"
-            class="inline-flex min-h-[36px] min-w-[36px] shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-ink-500 transition hover:bg-ink-100 hover:text-ink-900"
-          >
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
-        </div>
-      </div>
-      <div id="collection-drawer-body" class="min-h-0 flex-1 overflow-y-auto p-6 pb-24 md:pb-6">
         <%= if @edit_mode do %>
           <form phx-submit="update_section" class="flex flex-col gap-2">
             <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
@@ -981,11 +664,13 @@
               name="section[category_id]"
               class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
             >
-              <%= for cat <- @categories do %>
-                <option value={cat.id} selected={cat.id == @drawer_item.category_id}>
-                  {cat.label}
-                </option>
-              <% end %>
+              <option
+                :for={cat <- @categories}
+                value={cat.id}
+                selected={cat.id == @drawer_item.category_id}
+              >
+                {cat.label}
+              </option>
             </select>
             <button
               type="submit"
@@ -995,19 +680,21 @@
             </button>
           </form>
         <% else %>
-          <%= if @drawer_item.description do %>
-            <p class="text-sm text-ink-600 italic leading-relaxed mb-3">
-              {@drawer_item.description}
-            </p>
-          <% end %>
-          <%= if @drawer_item.note do %>
-            <div class="text-xs text-ink-700 italic leading-relaxed py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r">
-              {@drawer_item.note}
-            </div>
-          <% end %>
+          <p
+            :if={@drawer_item.description}
+            class="text-sm text-ink-600 italic leading-relaxed mb-3"
+          >
+            {@drawer_item.description}
+          </p>
+          <div
+            :if={@drawer_item.note}
+            class="text-xs text-ink-700 italic leading-relaxed py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r"
+          >
+            {@drawer_item.note}
+          </div>
         <% end %>
       </div>
-    <% end %>
+    </div>
   </div>
 
   <%!-- Footer --%>
