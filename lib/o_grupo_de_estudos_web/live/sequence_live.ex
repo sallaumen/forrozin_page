@@ -870,12 +870,13 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             />
           </span>
           <span class="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2.5">
-            <span class="truncate font-serif text-base font-bold leading-tight text-ink-900">
+            <span class="line-clamp-2 font-serif text-sm font-bold leading-tight text-ink-900 sm:truncate sm:text-base">
               {@seq.name}
             </span>
+            <%!-- Prévia da cadeia de códigos: só no desktop (no mobile engrossa o card). --%>
             <span
               :if={@step_codes != []}
-              class="flex flex-wrap items-center gap-x-1 font-mono text-[11px] leading-tight text-ink-400"
+              class="hidden flex-wrap items-center gap-x-1 font-mono text-[11px] leading-tight text-ink-400 sm:flex"
             >
               <%= for {code, index} <- Enum.with_index(Enum.take(@step_codes, 12)) do %>
                 <span :if={index > 0} class="text-ink-300">→</span>
@@ -889,13 +890,13 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
         <div class="flex shrink-0 items-center gap-2">
           <span
             :if={@seq.video_url}
-            class="inline-flex items-center gap-1 rounded-full bg-gold-500/12 px-2 py-1 text-[10px] font-semibold text-gold-600"
+            class="hidden items-center gap-1 rounded-full bg-gold-500/12 px-2 py-1 text-[10px] font-semibold text-gold-600 sm:inline-flex"
             title="Sequência com vídeo"
           >
             <.icon name="hero-play-circle" class="size-3" /> vídeo
           </span>
 
-          <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 text-[11px] font-semibold text-ink-500">
+          <span class="hidden items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 text-[11px] font-semibold text-ink-500 sm:inline-flex">
             {@step_count} {if @step_count == 1, do: "passo", else: "passos"}
           </span>
 
