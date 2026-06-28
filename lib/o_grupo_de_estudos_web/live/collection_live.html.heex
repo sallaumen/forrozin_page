@@ -571,13 +571,13 @@
   >
   </div>
 
-  <%!-- Drawer: painel lateral amplo com o detalhe completo do passo --%>
+  <%!-- Drawer: tela cheia no mobile; card flutuante (com margem e cantos
+  arredondados) em telas grandes, deixando o acervo borrado aparecer em volta. --%>
   <div
     class={[
-      "fixed right-0 z-40 top-[110px] h-[calc(100vh-110px)]",
-      "w-full sm:w-[600px] lg:w-[680px] max-w-full",
-      "bg-ink-50 border-l border-ink-200 shadow-2xl font-serif",
-      "transition-transform duration-200"
+      "fixed z-40 font-serif bg-ink-50 shadow-2xl transition-transform duration-200 overflow-hidden",
+      "right-0 top-[110px] h-[calc(100vh-110px)] w-full sm:w-[600px] max-w-full border-l border-ink-200",
+      "lg:top-[96px] lg:bottom-4 lg:h-auto lg:w-[640px] lg:rounded-l-2xl lg:border-y lg:border-l lg:border-ink-200/70"
     ]}
     style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
   >
