@@ -19,7 +19,7 @@
 
   <main class="mx-auto max-w-5xl px-4 py-10">
     <section class="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-      <div class="rounded-lg border border-ink-200 bg-ink-50 p-6 shadow-sm">
+      <div class="rounded-2xl border border-ink-200 bg-ink-50 p-6 shadow-sm">
         <p class="text-xs font-bold uppercase tracking-[2px] text-accent-orange">
           Convite de estudo
         </p>
@@ -38,7 +38,7 @@
         </div>
       </div>
 
-      <div class="rounded-lg border border-ink-200 bg-ink-50 p-6 shadow-sm">
+      <div class="rounded-2xl border border-ink-200 bg-ink-50 p-6 shadow-sm">
         <div class="flex items-center gap-4">
           <%= if @teacher.avatar_path do %>
             <img
@@ -67,15 +67,15 @@
           id="study-invite-accept"
           type="button"
           phx-click="accept_invite"
-          class="mt-8 inline-flex w-full items-center justify-center rounded bg-accent-orange px-5 py-3 text-base font-semibold text-white transition hover:brightness-105"
+          class="mt-8 inline-flex w-full items-center justify-center rounded-full bg-accent-orange px-5 py-3 text-base font-semibold text-white transition hover:bg-accent-orange/90"
         >
           Quero estudar com {OGrupoDeEstudos.Accounts.first_name(@teacher)}
         </button>
 
         <p class="mt-3 text-xs leading-6 text-ink-500">
           {if @current_user,
-            do: "Seu pedido sera enviado ao professor, que precisa aprovar antes de comecar.",
-            else: "Se voce ainda nao entrou, a gente te leva para criar sua conta primeiro."}
+            do: "Seu pedido será enviado ao professor, que precisa aprovar antes de começar.",
+            else: "Se você ainda não entrou, a gente te leva para criar sua conta primeiro."}
         </p>
       </div>
     </section>

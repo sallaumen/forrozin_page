@@ -11,6 +11,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
   import OGrupoDeEstudosWeb.UI.UserAvatar
+  import OGrupoDeEstudosWeb.StudyComponents
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 
@@ -151,7 +152,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   def handle_event("add_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do
     note = Enum.find(socket.assigns.history, &(&1.id == note_id))
 
-    if note do
+    if socket.assigns.link.active && note do
       existing_ids = Enum.map(note.related_steps, & &1.id)
       Study.update_note_steps(note_id, [step_id | existing_ids])
     end
@@ -167,7 +168,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   def handle_event("remove_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do
     note = Enum.find(socket.assigns.history, &(&1.id == note_id))
 
-    if note do
+    if socket.assigns.link.active && note do
       remaining_ids =
         note.related_steps |> Enum.map(& &1.id) |> Enum.reject(&(&1 == step_id))
 
