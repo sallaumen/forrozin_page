@@ -22,9 +22,9 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       {:ok, lv, html} = live(conn, ~p"/study")
 
       assert has_element?(lv, "#study-home-shell")
-      assert has_element?(lv, "#study-diary-panel")
-      assert html =~ "Encontrar professor"
-      assert html =~ "Sem registro ainda"
+      assert has_element?(lv, "#personal-diary")
+      assert html =~ "Meus professores"
+      assert html =~ "O que rolou na prática?"
     end
 
     test "hides students section when user is not a teacher", %{conn: conn} do
@@ -69,14 +69,13 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       assert render_change(lv, "search_personal_step", %{"term" => "sac"}) =~ "Sacada simples"
 
-      lv
-      |> element("#add-personal-step-#{step.id}")
-      |> render_click()
+      html = render_click(lv, "add_personal_step", %{"id" => step.id})
 
-      assert has_element?(lv, "#personal-related-step-#{step.id}")
+      assert html =~ step.code
+      assert has_element?(lv, "[phx-click='remove_personal_step'][phx-value-id='#{step.id}']")
     end
 
-    test "shows movement and clickable profile links when there is shared activity", %{conn: conn} do
+    test "shows the teacher in the teachers tab with a link to the shared diary", %{conn: conn} do
       teacher = insert(:user, is_teacher: true, name: "Ana", username: "ana")
       student = insert(:user, name: "Lia", username: "lia")
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
@@ -93,24 +92,13 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       {:ok, lv, _html} = live(conn, ~p"/study")
 
       assert has_element?(lv, "#study-home-shell")
-      assert has_element?(lv, "#study-diary-panel")
-      assert has_element?(lv, "#study-movement-panel")
-      assert has_element?(lv, "#study-movement-card-#{link.id}")
-      assert has_element?(lv, "#study-overview-grid")
-      # study-people-panel was replaced by compact teacher section
-      assert has_element?(lv, "#study-history-panel")
-      assert has_element?(lv, "#study-diary-form")
-      assert has_element?(lv, "#study-related-steps-panel")
+      assert has_element?(lv, "#personal-diary")
 
-      assert has_element?(
-               lv,
-               "#study-profile-link-#{teacher.username}[href='/users/#{teacher.username}']"
-             )
+      html = render_click(lv, "switch_study_tab", %{"tab" => "teachers"})
 
-      assert has_element?(
-               lv,
-               "#study-open-shared-note-#{link.id}[href='/study/shared/#{link.id}']"
-             )
+      assert html =~ teacher.name
+      assert has_element?(lv, "a[href='/study/shared/#{link.id}']")
+      assert has_element?(lv, "a[href='/users/#{teacher.username}']")
     end
 
     test "can add a step to a historical note via inline editor", %{conn: conn} do
@@ -222,7 +210,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       refute has_element?(lv, "#study-nudge-student-#{link.id}")
     end
 
-    test "shows weekly study summary in the hero area", %{conn: conn} do
+    test "shows the monthly consistency summary in the sidebar", %{conn: conn} do
       user = insert(:user)
 
       assert {:ok, _note} =
@@ -232,9 +220,41 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
                })
 
       conn = log_in_user(conn, user)
+      {:ok, _lv, html} = live(conn, ~p"/study")
+
+      assert html =~ "Consistência"
+      assert html =~ "registro"
+    end
+  end
+
+  describe "authorization (IDOR)" do
+    test "save_teacher_note refuses a forged link-id from another teacher", %{conn: conn} do
+      teacher_a = insert(:user, is_teacher: true)
+      teacher_b = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, link} = Study.accept_invite(student, teacher_a.invite_slug)
+      {:ok, link} = Study.accept_link_request(link, teacher_a)
+
+      conn = log_in_user(conn, teacher_b)
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      assert has_element?(lv, "#study-weekly-summary")
+      render_change(lv, "save_teacher_note", %{"link-id" => link.id, "note" => "hack"})
+
+      refute Study.get_link_for_member(link.id, teacher_a.id).teacher_note == "hack"
+    end
+
+    test "accept_request refuses another teacher's pending request", %{conn: conn} do
+      teacher_a = insert(:user, is_teacher: true)
+      teacher_b = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, pending} = Study.accept_invite(student, teacher_a.invite_slug)
+
+      conn = log_in_user(conn, teacher_b)
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      render_click(lv, "accept_request", %{"id" => pending.id})
+
+      assert Study.get_link_for_member(pending.id, teacher_a.id).pending
     end
   end
 
@@ -283,7 +303,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       conn = log_in_user(conn, user)
       {:ok, _lv, html} = live(conn, ~p"/study")
 
-      assert html =~ "Hoje e um bom dia pra praticar"
+      assert html =~ "Sem registro hoje ainda"
     end
 
     test "oculta estado vazio quando usuario ja registrou hoje", %{conn: conn} do
@@ -297,7 +317,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       conn = log_in_user(conn, user)
       {:ok, _lv, html} = live(conn, ~p"/study")
 
-      refute html =~ "Hoje e um bom dia pra praticar"
+      refute html =~ "Sem registro hoje ainda"
     end
   end
 end

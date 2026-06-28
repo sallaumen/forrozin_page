@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
-  import OGrupoDeEstudosWeb.UI.StudyConsistency
+  import OGrupoDeEstudosWeb.StudyComponents
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
@@ -34,6 +34,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:page_title, "Estudos")
      |> assign(:is_admin, Accounts.admin?(user))
      |> assign(:today, today)
+     |> assign(:today_weekday, Date.day_of_week(today))
+     |> assign(:adding_teacher, false)
      |> assign(:personal_step_suggestions, [])
      |> assign(:editing_history_note_id, nil)
      |> assign(:expanded_note_ids, MapSet.new())
@@ -42,8 +44,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:section_teachers_open, true)
      |> assign(:section_students_open, false)
      |> assign(:active_study_tab, "personal")
-     |> assign(:students_wrote_today, 0)
-     |> assign(:wrote_today_ids, MapSet.new())
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
      |> assign(:bubble_open, false)
@@ -63,29 +63,18 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   @impl true
   def handle_event("switch_study_tab", %{"tab" => tab}, socket) do
-    socket = assign(socket, :active_study_tab, tab)
+    # Os dados do dashboard já estão carregados (mount + recarga após mutações);
+    # trocar de aba é só estado de UI, não precisa re-rodar as queries.
+    {:noreply, assign(socket, :active_study_tab, tab)}
+  end
 
-    socket =
-      if tab == "students" and socket.assigns.current_user.is_teacher do
-        user = socket.assigns.current_user
-        today = socket.assigns.today
-        student_links = Study.list_student_links_for_teacher(user.id)
-        pending = Study.list_pending_requests_for_teacher(user.id)
-
-        link_ids = Enum.map(student_links, & &1.id)
-        wrote_today_ids = Study.shared_note_link_ids(link_ids, today)
-
-        assign(socket,
-          student_links: student_links,
-          pending_requests: pending,
-          students_wrote_today: MapSet.size(wrote_today_ids),
-          wrote_today_ids: wrote_today_ids
-        )
-      else
-        socket
-      end
-
-    {:noreply, socket}
+  def handle_event("toggle_add_teacher", _params, socket) do
+    {:noreply,
+     assign(socket,
+       adding_teacher: not socket.assigns.adding_teacher,
+       teacher_search: "",
+       teacher_search_results: []
+     )}
   end
 
   def handle_event("copy_invite_link", _params, socket) do
@@ -265,7 +254,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
         {:noreply,
          socket
          |> put_flash(:info, "Pedido enviado! O professor será notificado.")
-         |> assign(teacher_search: "", teacher_search_results: [])}
+         |> assign(teacher_search: "", teacher_search_results: [], adding_teacher: false)}
 
       {:error, %LinkError{} = err} ->
         {:noreply, put_flash(socket, ErrorMessage.flash_level(err), ErrorMessage.to_flash(err))}
@@ -306,9 +295,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   def handle_event("nudge_student", %{"link-id" => link_id}, socket) do
     user = socket.assigns.current_user
-    link = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Study.TeacherStudentLink, link_id)
+    link = Study.get_link_for_member(link_id, user.id)
 
-    if user.id == link.teacher_id do
+    if link && link.active && link.teacher_id == user.id do
       Dispatcher.notify_nudge(user, link.student_id, link.id)
       {:noreply, put_flash(socket, :info, "Lembrete enviado!")}
     else
@@ -338,10 +327,12 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     |> assign(:personal_history, dashboard.personal_history)
     |> assign(:weekly_note_count, dashboard.weekly_note_count)
     |> assign(:monthly_note_count, dashboard.monthly_note_count)
+    |> assign(:week_weekdays, dashboard.week_weekdays)
     |> assign(:today_status, dashboard.today_status)
-    |> assign(:movement_cards, dashboard.movement_cards)
     |> assign(:teacher_links, dashboard.teacher_links)
     |> assign(:student_links, dashboard.student_links)
+    |> assign(:wrote_today_ids, dashboard.wrote_today_ids)
+    |> assign(:students_wrote_today, dashboard.students_wrote_today)
     |> assign(:pending_requests, dashboard.pending_requests)
   end
 
@@ -349,6 +340,13 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     today_note = Study.get_personal_note(user.id, today)
     personal_history = Study.list_personal_note_history(user.id)
     month_start = Date.new!(today.year, today.month, 1)
+    teacher_links = Study.list_teacher_links_for_student(user.id)
+
+    student_links =
+      if user.is_teacher, do: Study.list_student_links_for_teacher(user.id), else: []
+
+    all_link_ids = Enum.map(teacher_links, & &1.id) ++ Enum.map(student_links, & &1.id)
+    wrote_today_ids = Study.shared_note_link_ids(all_link_ids, today)
 
     %{
       today_note: today_note,
@@ -358,14 +356,29 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
       weekly_note_count: Study.personal_note_week_count(user.id, today),
       monthly_note_count:
         Enum.count(personal_history, &(Date.compare(&1.note_date, month_start) != :lt)),
+      week_weekdays: week_note_weekdays(personal_history, today),
       today_status: personal_today_status(today_note),
-      movement_cards: Study.list_shared_activity_for_user(user.id, today),
-      teacher_links: Study.list_teacher_links_for_student(user.id),
-      student_links:
-        if(user.is_teacher, do: Study.list_student_links_for_teacher(user.id), else: []),
+      teacher_links: teacher_links,
+      student_links: student_links,
+      wrote_today_ids: wrote_today_ids,
+      students_wrote_today: Enum.count(student_links, &MapSet.member?(wrote_today_ids, &1.id)),
       pending_requests:
         if(user.is_teacher, do: Study.list_pending_requests_for_teacher(user.id), else: [])
     }
+  end
+
+  # Dias da semana atual (1=segunda .. 7=domingo) que já têm registro pessoal.
+  defp week_note_weekdays(history, today) do
+    week_start = Date.beginning_of_week(today)
+    week_end = Date.end_of_week(today)
+
+    history
+    |> Enum.filter(fn note ->
+      Date.compare(note.note_date, week_start) != :lt and
+        Date.compare(note.note_date, week_end) != :gt
+    end)
+    |> Enum.map(&Date.day_of_week(&1.note_date))
+    |> MapSet.new()
   end
 
   defp personal_today_status(nil), do: %{label: "Sem registro ainda", tone: :warning}

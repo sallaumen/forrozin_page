@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
 
       html =
         lv
-        |> form("#shared-note-form", %{"shared_note" => %{"content" => "Treinamos sacadas hoje"}})
+        |> form("#shared-diary-form", %{"shared_note" => %{"content" => "Treinamos sacadas hoje"}})
         |> render_change()
 
       _ = :sys.get_state(lv.pid)
@@ -26,6 +26,19 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
 
       assert Study.get_shared_note(link.id, OGrupoDeEstudos.Brazil.today()).content ==
                "Treinamos sacadas hoje"
+    end
+
+    test "non-member is redirected away from a shared diary (IDOR)", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      {:ok, pending_link} = Study.accept_invite(student, teacher.invite_slug)
+      {:ok, link} = Study.accept_link_request(pending_link, teacher)
+
+      stranger = insert(:user)
+      conn = log_in_user(conn, stranger)
+
+      assert {:error, {:live_redirect, %{to: "/study"}}} =
+               live(conn, ~p"/study/shared/#{link.id}")
     end
 
     test "ended links remain visible but readonly", %{conn: conn} do
@@ -137,11 +150,10 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
 
       assert render_change(lv, "search_shared_step", %{"term" => "base"}) =~ "Base frontal"
 
-      lv
-      |> element("#add-shared-step-#{step.id}")
-      |> render_click()
+      html = render_click(lv, "add_shared_step", %{"id" => step.id})
 
-      assert has_element?(lv, "#shared-related-step-#{step.id}")
+      assert html =~ step.code
+      assert has_element?(lv, "[phx-click='remove_shared_step'][phx-value-id='#{step.id}']")
     end
   end
 
