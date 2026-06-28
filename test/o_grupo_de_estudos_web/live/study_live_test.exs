@@ -225,6 +225,15 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert html =~ "Consistência"
       assert html =~ "registro"
     end
+
+    test "visiting study counts toward consistency even without a note", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      {:ok, _lv, _html} = live(conn, ~p"/study")
+
+      today = OGrupoDeEstudos.Brazil.today()
+      assert MapSet.member?(Study.active_days_between(user.id, today, today), today)
+    end
   end
 
   describe "authorization (IDOR)" do

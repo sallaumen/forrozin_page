@@ -294,4 +294,26 @@ defmodule OGrupoDeEstudos.StudyTest do
       assert Study.suggest_teachers(student, limit: 5) == []
     end
   end
+
+  describe "active days (consistência)" do
+    test "record_active_day/2 é idempotente por (user, dia)" do
+      user = insert(:user)
+      today = Date.utc_today()
+
+      assert {:ok, _} = Study.record_active_day(user.id, today)
+      assert {:ok, _} = Study.record_active_day(user.id, today)
+
+      assert Study.active_days_between(user.id, today, today) == MapSet.new([today])
+    end
+
+    test "active_days_between/3 devolve só os dias dentro do intervalo" do
+      user = insert(:user)
+      Study.record_active_day(user.id, ~D[2026-06-01])
+      Study.record_active_day(user.id, ~D[2026-06-15])
+      Study.record_active_day(user.id, ~D[2026-07-01])
+
+      assert Study.active_days_between(user.id, ~D[2026-06-01], ~D[2026-06-30]) ==
+               MapSet.new([~D[2026-06-01], ~D[2026-06-15]])
+    end
+  end
 end

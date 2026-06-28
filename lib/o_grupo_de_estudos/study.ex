@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudos.Study do
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.PubSub
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Study.{Goal, LinkError, Note, NoteStep, TeacherStudentLink}
+  alias OGrupoDeEstudos.Study.{ActiveDay, Goal, LinkError, Note, NoteStep, TeacherStudentLink}
   alias Phoenix.PubSub, as: PhoenixPubSub
 
   # ── Teacher search & request ──────────────────────────────────────────
@@ -305,6 +305,24 @@ defmodule OGrupoDeEstudos.Study do
       select: count(note.id)
     )
     |> Repo.one()
+  end
+
+  @doc "Marca o usuário como ativo no dia (idempotente). Alimenta a consistência."
+  def record_active_day(user_id, day) do
+    Repo.insert(%ActiveDay{user_id: user_id, day: day},
+      on_conflict: :nothing,
+      conflict_target: [:user_id, :day]
+    )
+  end
+
+  @doc "Datas (MapSet) em que o usuário esteve ativo no intervalo [from, to]."
+  def active_days_between(user_id, from, to) do
+    from(a in ActiveDay,
+      where: a.user_id == ^user_id and a.day >= ^from and a.day <= ^to,
+      select: a.day
+    )
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   def list_teachers_for_student(student_id) do

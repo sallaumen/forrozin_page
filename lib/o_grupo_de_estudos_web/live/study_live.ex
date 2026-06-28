@@ -339,7 +339,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   defp build_dashboard(user, today) do
     today_note = Study.get_personal_note(user.id, today)
     personal_history = Study.list_personal_note_history(user.id)
-    month_start = Date.new!(today.year, today.month, 1)
+    consistency = consistency(user.id, today, personal_history)
     teacher_links = Study.list_teacher_links_for_student(user.id)
 
     student_links =
@@ -354,9 +354,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
       personal_related_steps: if(today_note, do: today_note.related_steps, else: []),
       personal_history: personal_history,
       weekly_note_count: Study.personal_note_week_count(user.id, today),
-      monthly_note_count:
-        Enum.count(personal_history, &(Date.compare(&1.note_date, month_start) != :lt)),
-      week_weekdays: week_note_weekdays(personal_history, today),
+      monthly_note_count: consistency.monthly_count,
+      week_weekdays: consistency.week_weekdays,
       today_status: personal_today_status(today_note),
       teacher_links: teacher_links,
       student_links: student_links,
@@ -367,17 +366,28 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     }
   end
 
-  # Dias da semana atual (1=segunda .. 7=domingo) que já têm registro pessoal.
-  defp week_note_weekdays(history, today) do
+  # Consistência = dias (no intervalo relevante) em que a pessoa apareceu no app
+  # OU registrou no diário. Só visitar já conta, pra incentivar o hábito.
+  defp consistency(user_id, today, history) do
+    month_start = Date.new!(today.year, today.month, 1)
+    range_start = Enum.min([Date.beginning_of_week(today), month_start], Date)
+    note_days = history |> Enum.map(& &1.note_date) |> MapSet.new()
+    days = MapSet.union(Study.active_days_between(user_id, range_start, today), note_days)
+
+    %{
+      monthly_count: Enum.count(days, &(Date.compare(&1, month_start) != :lt)),
+      week_weekdays: weekdays_in_current_week(days, today)
+    }
+  end
+
+  # Dias da semana atual (1=segunda .. 7=domingo) presentes no conjunto de datas.
+  defp weekdays_in_current_week(days, today) do
     week_start = Date.beginning_of_week(today)
     week_end = Date.end_of_week(today)
 
-    history
-    |> Enum.filter(fn note ->
-      Date.compare(note.note_date, week_start) != :lt and
-        Date.compare(note.note_date, week_end) != :gt
-    end)
-    |> Enum.map(&Date.day_of_week(&1.note_date))
+    days
+    |> Enum.filter(&(Date.compare(&1, week_start) != :lt and Date.compare(&1, week_end) != :gt))
+    |> Enum.map(&Date.day_of_week/1)
     |> MapSet.new()
   end
 
