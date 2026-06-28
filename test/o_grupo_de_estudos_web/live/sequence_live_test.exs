@@ -91,6 +91,38 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
       assert has_element?(lv, "#community-sequences-filter option", "Giros")
     end
 
+    test "search also matches sequences by step name and code", %{conn: conn} do
+      author = insert(:user)
+      bases = insert(:category, name: "bases", label: "Bases")
+
+      primeira = insert(:sequence, user: author, public: true, name: "Primeira")
+      segunda = insert(:sequence, user: author, public: true, name: "Segunda")
+
+      insert(:sequence_step,
+        sequence: primeira,
+        step: insert(:step, code: "AF", name: "Passo Alfa", category: bases),
+        position: 1
+      )
+
+      insert(:sequence_step,
+        sequence: segunda,
+        step: insert(:step, code: "BS", name: "Passo Beta", category: bases),
+        position: 1
+      )
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
+
+      # by step name
+      html = render_keyup(lv, "search_sequences", %{"term" => "Passo Beta"})
+      assert html =~ "Segunda"
+      refute html =~ "Primeira"
+
+      # by step code
+      html = render_keyup(lv, "search_sequences", %{"term" => "AF"})
+      assert html =~ "Primeira"
+      refute html =~ "Segunda"
+    end
+
     test "selecting a category filter narrows community sequences by category", %{conn: conn} do
       author = insert(:user)
 
@@ -204,6 +236,41 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
       render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
       assert has_element?(lv, ~s|a[href="/graph/visual?seq=#{seq.id}"]|)
+    end
+
+    test "expanded card renders the inline map preview with nodes and a path", %{conn: conn} do
+      author = insert(:user)
+      bases = insert(:category, name: "bases", label: "Bases")
+      giros = insert(:category, name: "giros", label: "Giros")
+      seq = insert(:sequence, user: author, public: true, name: "Mapa Seq")
+
+      insert(:sequence_step,
+        sequence: seq,
+        step: insert(:step, code: "M1", name: "Um", category: bases),
+        position: 1
+      )
+
+      insert(:sequence_step,
+        sequence: seq,
+        step: insert(:step, code: "M2", name: "Dois", category: giros),
+        position: 2
+      )
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
+      render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
+
+      assert has_element?(lv, "#sequence-expanded-#{seq.id} svg circle")
+      assert has_element?(lv, "#sequence-expanded-#{seq.id} svg line")
+      assert has_element?(lv, ~s|marker[id^="seq-arrow-#{seq.id}"]|)
+    end
+
+    test "favoriting an expanded sequence marks it as favorited", %{conn: conn, sequence: seq} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
+
+      render_click(lv, "toggle_seq_expand", %{"seq-id" => seq.id})
+      html = render_click(lv, "toggle_seq_favorite", %{"id" => seq.id})
+
+      assert html =~ "hero-star-solid"
     end
 
     test "deep-linked sequence opens expanded and highlighted", %{conn: conn, sequence: seq} do
