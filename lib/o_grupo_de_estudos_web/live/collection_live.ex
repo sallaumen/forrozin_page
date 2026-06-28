@@ -12,6 +12,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
+  alias OGrupoDeEstudosWeb.StepDetail
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -20,10 +21,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.CollectionComponents
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
-  import OGrupoDeEstudosWeb.UI.InlineFollowButton
+  import OGrupoDeEstudosWeb.StepDetail, only: [step_detail: 1]
   import OGrupoDeEstudosWeb.UI.PWAInstallBanner
   import OGrupoDeEstudosWeb.UI.SocialBubble
-  import OGrupoDeEstudosWeb.UI.UserAvatar
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
@@ -84,7 +84,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       drawer_item: nil,
       drawer_connections_out: [],
       drawer_connections_in: [],
-      drawer_link_count: 0,
+      connections_expanded: false,
+      drawer_step_image: nil,
+      drawer_links: [],
+      drawer_link_likes: %{liked_ids: MapSet.new(), counts: %{}},
+      drawer_like_count: 0,
       connection_search: "",
       connection_suggestions: [],
       suggest_mode: false,
@@ -102,7 +106,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       bubble_search_results: [],
       expanded_step: nil,
       expanded_comments: [],
-      expanded_links: [],
       expanded_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
       expanded_replies_map: %{},
       expanded_replying_to: nil,
@@ -254,30 +257,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
-        step =
-          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
-
-        out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
-        inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
-        link_count = StepLinkQuery.count_by(step_id: step.id, approved: true)
-
-        user_id = socket.assigns.current_user.id
-        can_edit = socket.assigns.edit_mode or step.suggested_by_id == user_id
-        drawer_liked = Engagement.liked?(user_id, "step", step.id)
-        drawer_favorited = Engagement.favorited?(user_id, "step", step.id)
-
         {:noreply,
-         assign(socket,
-           drawer_open: true,
-           drawer_type: :step,
-           drawer_item: step,
-           drawer_connections_out: out,
-           drawer_connections_in: inn,
-           drawer_link_count: link_count,
-           can_edit_drawer: can_edit,
-           drawer_liked: drawer_liked,
-           drawer_favorited: drawer_favorited
-         )}
+         socket
+         |> assign(drawer_open: true, drawer_type: :step)
+         |> load_drawer_step(code)}
 
       {:error, :not_found} ->
         {:noreply, socket}
@@ -312,26 +295,19 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:noreply, assign(socket, drawer_open: false, drawer_type: nil, drawer_item: nil)}
   end
 
+  def handle_event("toggle_connections", _params, socket) do
+    {:noreply, assign(socket, connections_expanded: not socket.assigns.connections_expanded)}
+  end
+
   def handle_event("update_step", %{"step" => params}, socket) do
     if socket.assigns.is_admin do
       step = socket.assigns.drawer_item
 
       case Admin.update_step(step, params) do
         {:ok, updated} ->
-          updated =
-            StepQuery.get_by(
-              code: updated.code,
-              preload: [
-                :category,
-                :technical_concepts,
-                connections_as_source: :target_step,
-                connections_as_target: :source_step
-              ]
-            )
-
           {:noreply,
            socket
-           |> assign(drawer_item: updated)
+           |> load_drawer_step(updated.code)
            |> reload_sections()
            |> put_flash(:info, "Passo atualizado")}
 
@@ -507,42 +483,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-  # ── Inline expansion: comments + links per step ─────────────
-
-  def handle_event("toggle_step_expand", %{"step-id" => step_id}, socket) do
-    if socket.assigns.expanded_step == step_id do
-      # Collapse
-      {:noreply,
-       assign(socket,
-         expanded_step: nil,
-         expanded_comments: [],
-         expanded_links: [],
-         expanded_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},
-         expanded_replies_map: %{},
-         expanded_replying_to: nil,
-         expanded_video: nil
-       )}
-    else
-      # Expand: lazy-load comments + links
-      user = socket.assigns.current_user
-      comments = Engagement.list_step_comments(step_id, limit: 5)
-      comment_ids = Enum.map(comments, & &1.id)
-      comment_likes = Engagement.likes_map(user.id, "step_comment", comment_ids)
-
-      links = StepLinkQuery.list_by(step_id: step_id, approved: true, preload: [:submitted_by])
-
-      {:noreply,
-       assign(socket,
-         expanded_step: step_id,
-         expanded_comments: comments,
-         expanded_links: links,
-         expanded_comment_likes: comment_likes,
-         expanded_replies_map: %{},
-         expanded_replying_to: nil,
-         expanded_video: nil
-       )}
-    end
-  end
+  # ── Comentários do passo em foco no drawer (assigns expanded_*) ──
 
   def handle_event("create_comment", %{"body" => body}, socket) do
     user = socket.assigns.current_user
@@ -607,43 +548,28 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-  def handle_event("toggle_expanded_video", %{"link-id" => link_id}, socket) do
+  def handle_event("toggle_link_video", %{"link-id" => link_id}, socket) do
     current = socket.assigns.expanded_video
     {:noreply, assign(socket, :expanded_video, if(current == link_id, do: nil, else: link_id))}
   end
 
-  def handle_event("toggle_drawer_like", _params, socket) do
-    user = socket.assigns.current_user
-    step = socket.assigns.drawer_item
+  def handle_event("toggle_link_like", %{"link-id" => link_id}, socket) do
+    user_id = socket.assigns.current_user.id
 
-    case Engagement.toggle_like(user.id, "step", step.id) do
+    case Engagement.toggle_like(user_id, "step_link", link_id) do
       {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:drawer_liked, Engagement.liked?(user.id, "step", step.id))
-         |> reload_collection_step_likes()}
+        link_ids = Enum.map(socket.assigns.drawer_links, & &1.id)
+        link_likes = Engagement.likes_map(user_id, "step_link", link_ids)
+
+        sorted =
+          Enum.sort_by(socket.assigns.drawer_links, fn link ->
+            -Map.get(link_likes.counts, link.id, 0)
+          end)
+
+        {:noreply, assign(socket, drawer_link_likes: link_likes, drawer_links: sorted)}
 
       {:error, _} ->
-        {:noreply, socket}
-    end
-  end
-
-  def handle_event("toggle_drawer_favorite", _params, socket) do
-    user = socket.assigns.current_user
-    step = socket.assigns.drawer_item
-
-    case Engagement.toggle_favorite(user.id, "step", step.id) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(
-           drawer_liked: Engagement.liked?(user.id, "step", step.id),
-           drawer_favorited: Engagement.favorited?(user.id, "step", step.id)
-         )
-         |> reload_collection_step_likes()}
-
-      {:error, _} ->
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "Erro ao registrar like")}
     end
   end
 
@@ -651,7 +577,19 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     user = socket.assigns.current_user
 
     case Engagement.toggle_like(user.id, "step", step_id) do
-      {:ok, _} -> {:noreply, reload_collection_step_likes(socket)}
+      {:ok, _} ->
+        {:noreply, socket |> reload_collection_step_likes() |> sync_drawer_engagement(step_id)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("toggle_step_favorite", %{"id" => step_id}, socket) do
+    user = socket.assigns.current_user
+
+    case Engagement.toggle_favorite(user.id, "step", step_id) do
+      {:ok, _} -> {:noreply, sync_drawer_engagement(socket, step_id)}
       {:error, _} -> {:noreply, socket}
     end
   end
@@ -660,7 +598,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     step_id = socket.assigns.expanded_step
     user = socket.assigns.current_user
 
-    comments = Engagement.list_step_comments(step_id, limit: 5)
+    # Mesmo critério do load_drawer_step: o drawer mostra o detalhe completo do
+    # passo, igual à página /steps. Cap diferente aqui faria comentários sumirem
+    # ao interagir (criar/curtir/responder).
+    comments = Engagement.list_step_comments(step_id)
     comment_ids = Enum.map(comments, & &1.id)
 
     # Refresh expanded replies from DB (so like_count updates)
@@ -783,23 +724,68 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   defp reopen_step_drawer(socket, code) do
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
-      {:ok, _} ->
-        step =
-          StepQuery.get_by(code: code, preload: [:suggested_by, :category, :technical_concepts])
+      {:ok, _} -> load_drawer_step(socket, code)
+      _ -> assign(socket, drawer_open: false)
+    end
+  end
 
-        out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
-        inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
-        link_count = StepLinkQuery.count_by(step_id: step.id, approved: true)
+  # Carrega no socket tudo que o detalhe do passo no drawer consome: passo +
+  # conexões, links/likes e comentários (estes reusam os assigns `expanded_*`,
+  # cujos handlers de comentário já existem neste módulo).
+  defp load_drawer_step(socket, code) do
+    user_id = socket.assigns.current_user.id
+
+    step =
+      StepQuery.get_by(
+        code: code,
+        preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
+      )
+
+    links = StepLinkQuery.list_by(step_id: step.id, approved: true, preload: [:submitted_by])
+    link_likes = Engagement.likes_map(user_id, "step_link", Enum.map(links, & &1.id))
+    sorted_links = Enum.sort_by(links, fn link -> -Map.get(link_likes.counts, link.id, 0) end)
+
+    comments = Engagement.list_step_comments(step.id)
+    comment_likes = Engagement.likes_map(user_id, "step_comment", Enum.map(comments, & &1.id))
+
+    assign(socket,
+      drawer_item: step,
+      drawer_step_image: StepDetail.resolve_step_image(step),
+      drawer_connections_out:
+        ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step]),
+      drawer_connections_in:
+        ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step]),
+      drawer_links: sorted_links,
+      drawer_link_likes: link_likes,
+      drawer_like_count: step.like_count,
+      connections_expanded: false,
+      drawer_liked: Engagement.liked?(user_id, "step", step.id),
+      drawer_favorited: Engagement.favorited?(user_id, "step", step.id),
+      can_edit_drawer: socket.assigns.edit_mode or step.suggested_by_id == user_id,
+      expanded_step: step.id,
+      expanded_comments: comments,
+      expanded_comment_likes: comment_likes,
+      expanded_replies_map: %{},
+      expanded_replying_to: nil,
+      expanded_video: nil
+    )
+  end
+
+  # Mantém o estado de engajamento do drawer em sincronia quando o like/favorito
+  # mexido é justamente o do passo aberto no painel.
+  defp sync_drawer_engagement(socket, step_id) do
+    case socket.assigns.drawer_item do
+      %{id: ^step_id} ->
+        user_id = socket.assigns.current_user.id
 
         assign(socket,
-          drawer_item: step,
-          drawer_connections_out: out,
-          drawer_connections_in: inn,
-          drawer_link_count: link_count
+          drawer_liked: Engagement.liked?(user_id, "step", step_id),
+          drawer_favorited: Engagement.favorited?(user_id, "step", step_id),
+          drawer_like_count: Engagement.count_likes("step", step_id)
         )
 
       _ ->
-        assign(socket, drawer_open: false)
+        socket
     end
   end
 

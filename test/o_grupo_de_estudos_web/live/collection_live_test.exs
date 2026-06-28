@@ -306,17 +306,20 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ "Mechanical note"
     end
 
-    test "drawer keeps step actions in a fixed header above scrollable content", %{conn: conn} do
+    test "drawer renders the full shared step detail in a scrollable panel", %{conn: conn} do
       section = insert(:section, title: "Bases", position: 1)
       insert(:step, section: section, code: "BF", name: "Base frontal", note: "Mechanical note")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
 
       html = render_click(lv, "open_step", %{"code" => "BF"})
 
-      assert html =~ ~s(id="collection-drawer-header")
-      assert html =~ ~s(id="collection-drawer-body")
-      assert html =~ "flex flex-col overflow-hidden"
-      assert html =~ "min-h-0 flex-1 overflow-y-auto p-6"
+      # The drawer now shows the same detail as the page: note, connections, comments.
+      assert html =~ "Mechanical note"
+      assert html =~ "Conexões"
+      assert html =~ "Comentários"
+      # Panel scrolls on its own and exposes an accessible close affordance.
+      assert html =~ "overflow-y-auto"
+      assert has_element?(lv, ~s(button[phx-click="close_drawer"][aria-label="Fechar painel"]))
     end
 
     test "step drawer can copy a deep link", %{conn: conn} do
@@ -349,6 +352,24 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       html = render_click(lv, "open_step", %{"code" => "BF"})
       assert html =~ "1 saídas"
       assert html =~ "SC"
+    end
+
+    test "drawer collapses long connection lists until expanded", %{conn: conn} do
+      section = insert(:section, title: "Bases", position: 1)
+      source = insert(:step, section: section, code: "SRC", name: "Source")
+
+      for i <- 1..12 do
+        target = insert(:step, section: section, code: "T#{i}", name: "Target #{i}")
+        insert(:connection, source_step: source, target_step: target)
+      end
+
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
+      html = render_click(lv, "open_step", %{"code" => "SRC"})
+      assert html =~ "+2 mais"
+
+      expanded = render_click(lv, "toggle_connections", %{})
+      assert expanded =~ "ver menos"
+      refute expanded =~ "+2 mais"
     end
 
     test "regular user does not see edit button", %{conn: conn} do
@@ -530,26 +551,26 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
   end
 
   describe "drawer like and favorite" do
-    test "toggle_drawer_like likes the drawer step", %{conn: conn} do
+    test "liking the step from the open drawer", %{conn: conn} do
       user = insert(:user)
       step = insert(:step, section: insert(:section))
       conn = log_in_user(conn, user)
 
       {:ok, view, _html} = live(conn, ~p"/collection")
       view |> render_click("open_step", %{"code" => step.code})
-      view |> render_click("toggle_drawer_like")
+      view |> render_click("toggle_step_like", %{"id" => step.id})
 
       assert OGrupoDeEstudos.Engagement.liked?(user.id, "step", step.id)
     end
 
-    test "toggle_drawer_favorite favorites and auto-likes", %{conn: conn} do
+    test "favoriting the step from the open drawer also auto-likes", %{conn: conn} do
       user = insert(:user)
       step = insert(:step, section: insert(:section))
       conn = log_in_user(conn, user)
 
       {:ok, view, _html} = live(conn, ~p"/collection")
       view |> render_click("open_step", %{"code" => step.code})
-      view |> render_click("toggle_drawer_favorite")
+      view |> render_click("toggle_step_favorite", %{"id" => step.id})
 
       assert OGrupoDeEstudos.Engagement.favorited?(user.id, "step", step.id)
       assert OGrupoDeEstudos.Engagement.liked?(user.id, "step", step.id)
