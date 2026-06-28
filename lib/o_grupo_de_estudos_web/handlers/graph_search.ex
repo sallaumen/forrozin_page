@@ -12,6 +12,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphSearch do
   defmacro __using__(_opts) do
     quote do
       alias OGrupoDeEstudosWeb.GraphVisual.GraphData
+      alias OGrupoDeEstudosWeb.StepDrawer
 
       def handle_event("search_graph_step", %{"value" => term}, socket) do
         term = String.trim(term)
@@ -40,6 +41,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphSearch do
          socket
          |> assign(:graph_search_query, label)
          |> assign(:graph_search_results, [])
+         |> assign(:drawer_open, true)
+         |> StepDrawer.load_step(code)
          |> push_event("focus_graph_node", %{code: code})}
       end
 
@@ -48,6 +51,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphSearch do
          socket
          |> assign(:graph_search_query, "")
          |> assign(:graph_search_results, [])
+         |> assign(drawer_open: false, drawer_item: nil)
          |> push_event("clear_graph_focus", %{})}
       end
     end

@@ -794,14 +794,15 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
              "graph drawer should use transform: translateX(100%) for off-screen positioning"
     end
 
-    test "step detail drawer uses fixed header and stays hidden on mobile", %{conn: conn} do
+    test "step detail drawer stays hidden on mobile and clips horizontal overflow", %{conn: conn} do
       {:ok, _view, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
-      assert html =~ ~s(id="drawer-header")
-      assert html =~ ~s(id="drawer-header-content")
-      assert html =~ ~s(id="drawer-content" class="min-h-0 flex-1 overflow-y-auto p-6")
-      assert html =~ "hidden bg-ink-50"
-      assert html =~ "md:flex md:flex-col"
+      # Drawer unificado (mesmo StepDetail da Collection): escondido no mobile,
+      # visivel a partir de md, e clipando overflow horizontal para nao gerar
+      # scroll lateral no documento.
+      assert html =~ ~s(id="graph-drawer")
+      assert html =~ "hidden overflow-hidden"
+      assert html =~ "md:block"
     end
 
     test "applying a new sequence highlight does not refit before focusing the sequence" do
@@ -810,6 +811,58 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert js =~ "_clearSequenceHighlight({ refit: false })"
       assert js =~ "if (refit) {"
       assert js =~ "cy.animate({ fit: { padding: 60 }, duration: 400 })"
+    end
+  end
+
+  describe "drawer unificado (StepDetail compartilhado com a Collection)" do
+    setup :setup_graph
+
+    test "open_step carrega o detalhe server-side e abre o painel", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html = render_hook(lv, "open_step", %{"code" => "BF"})
+
+      # Painel aberto (estado server-side, nao mais HTML montado por JS).
+      assert html =~ ~s(data-open="true")
+      assert html =~ "translateX(0)"
+      assert html =~ ~s(aria-label="Fechar painel")
+
+      # Corpo do StepDetail renderizou: os mesmos eventos/sections da Collection.
+      assert html =~ ~s(phx-click="toggle_step_like")
+      assert html =~ ~s(phx-click="toggle_step_favorite")
+      assert html =~ "Conexões"
+      assert html =~ "Comentários"
+    end
+
+    test "close_drawer fecha o painel", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "open_step", %{"code" => "BF"})
+      html = render_hook(lv, "close_drawer", %{})
+
+      assert html =~ ~s(data-open="false")
+      assert html =~ "translateX(100%)"
+      refute html =~ ~s(aria-label="Fechar painel")
+    end
+
+    test "selecionar um resultado da busca abre o mesmo painel server-side", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html = render_hook(lv, "select_graph_step", %{"code" => "BF"})
+
+      assert html =~ ~s(data-open="true")
+      assert html =~ ~s(phx-click="toggle_step_like")
+      assert_push_event(lv, "focus_graph_node", %{code: "BF"})
+    end
+
+    test "limpar a busca fecha o painel", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "select_graph_step", %{"code" => "BF"})
+      html = render_hook(lv, "clear_graph_search", %{})
+
+      assert html =~ ~s(data-open="false")
+      refute html =~ ~s(aria-label="Fechar painel")
     end
   end
 

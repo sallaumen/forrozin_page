@@ -1476,31 +1476,49 @@
       </div>
     </div>
 
-    <%!-- Side drawer — populated by JS on node click --%>
+    <%!-- Painel de detalhe do passo: StepDetail compartilhado com a Collection
+    (server-side). O clique no nó empurra open_step; o open/close é estado. --%>
     <div
       id="graph-drawer"
-      data-open="false"
-      inert
-      style="position: absolute; top: 0; right: 0; width: 380px; max-width: 100vw; height: 100%; z-index: 20; transform: translateX(100%); transition: transform 0.2s ease;"
-      class="hidden bg-ink-50 border-l border-ink-200 shadow-lg overflow-hidden font-serif md:flex md:flex-col"
+      data-open={to_string(@drawer_open)}
+      style={"position: absolute; top: 0; right: 0; width: 420px; max-width: 100vw; height: 100%; z-index: 20; transition: transform 0.2s ease; transform: translateX(#{if @drawer_open, do: "0", else: "100%"});"}
+      class="hidden overflow-hidden border-l border-ink-200 bg-ink-50 font-serif shadow-2xl md:block"
     >
-      <div
-        id="drawer-header"
-        class="shrink-0 border-b border-ink-200 bg-ink-50 p-6 pr-4"
+      <button
+        :if={@drawer_open}
+        phx-click="close_drawer"
+        aria-label="Fechar painel"
+        class="absolute right-3 top-3 z-20 inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-ink-200 bg-ink-50/90 text-ink-500 shadow-sm backdrop-blur transition hover:bg-ink-100 hover:text-ink-900"
       >
-        <div class="flex items-start gap-3">
-          <div id="drawer-header-content" class="min-w-0 flex-1"></div>
-          <button
-            id="drawer-close"
-            type="button"
-            aria-label="Fechar"
-            class="inline-flex min-h-[36px] min-w-[36px] shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-ink-500 transition hover:bg-ink-100 hover:text-ink-900"
-          >
-            <.icon name="hero-x-mark" class="size-5" />
-          </button>
-        </div>
+        <.icon name="hero-x-mark" class="size-5" />
+      </button>
+      <div class="h-full overflow-y-auto overflow-x-hidden">
+        <.step_detail
+          :if={@drawer_item}
+          mode={:drawer}
+          step={@drawer_item}
+          step_image={@drawer_step_image}
+          current_user={@current_user}
+          is_admin={@is_admin}
+          can_edit={false}
+          edit_mode={false}
+          following_user_ids={@following_user_ids}
+          categories={@categories}
+          step_liked={@drawer_liked}
+          step_like_count={@drawer_like_count}
+          step_favorited={@drawer_favorited}
+          connections_out={@drawer_connections_out}
+          connections_in={@drawer_connections_in}
+          connections_expanded={@connections_expanded}
+          links={@drawer_links}
+          link_likes={@drawer_link_likes}
+          expanded_video={@expanded_video}
+          comments={@expanded_comments}
+          comment_likes={@expanded_comment_likes}
+          replies_map={@expanded_replies_map}
+          replying_to={@expanded_replying_to}
+        />
       </div>
-      <div id="drawer-content" class="min-h-0 flex-1 overflow-y-auto p-6"></div>
     </div>
   </div>
   <.bottom_nav

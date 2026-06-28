@@ -12,7 +12,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
-  alias OGrupoDeEstudosWeb.StepDetail
+  alias OGrupoDeEstudosWeb.StepDrawer
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -594,52 +594,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-  defp reload_expanded(socket) do
-    step_id = socket.assigns.expanded_step
-    user = socket.assigns.current_user
+  defp reload_expanded(socket), do: StepDrawer.reload_comments(socket)
 
-    # Mesmo critério do load_drawer_step: o drawer mostra o detalhe completo do
-    # passo, igual à página /steps. Cap diferente aqui faria comentários sumirem
-    # ao interagir (criar/curtir/responder).
-    comments = Engagement.list_step_comments(step_id)
-    comment_ids = Enum.map(comments, & &1.id)
-
-    # Refresh expanded replies from DB (so like_count updates)
-    replies_map =
-      socket.assigns.expanded_replies_map
-      |> Map.keys()
-      |> Enum.reduce(%{}, fn parent_id, acc ->
-        replies = Engagement.list_replies(StepCommentQuery, parent_id)
-        Map.put(acc, parent_id, replies)
-      end)
-
-    reply_ids =
-      replies_map |> Map.values() |> List.flatten() |> Enum.map(& &1.id)
-
-    all_ids = comment_ids ++ reply_ids
-    comment_likes = Engagement.likes_map(user.id, "step_comment", all_ids)
-
-    assign(socket,
-      expanded_comments: comments,
-      expanded_comment_likes: comment_likes,
-      expanded_replies_map: replies_map
-    )
-  end
-
-  defp reload_expanded_likes(socket) do
-    user = socket.assigns.current_user
-    comment_ids = Enum.map(socket.assigns.expanded_comments, & &1.id)
-
-    reply_ids =
-      socket.assigns.expanded_replies_map
-      |> Map.values()
-      |> List.flatten()
-      |> Enum.map(& &1.id)
-
-    all_ids = comment_ids ++ reply_ids
-    comment_likes = Engagement.likes_map(user.id, "step_comment", all_ids)
-    assign(socket, :expanded_comment_likes, comment_likes)
-  end
+  defp reload_expanded_likes(socket), do: StepDrawer.reload_comment_likes(socket)
 
   defp reload_collection_step_likes(socket) do
     sections = socket.assigns.sections
@@ -729,65 +686,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-  # Carrega no socket tudo que o detalhe do passo no drawer consome: passo +
-  # conexões, links/likes e comentários (estes reusam os assigns `expanded_*`,
-  # cujos handlers de comentário já existem neste módulo).
-  defp load_drawer_step(socket, code) do
-    user_id = socket.assigns.current_user.id
+  # Carrega o detalhe do passo no drawer (passo + conexões, links/likes e
+  # comentários). Fonte única em StepDrawer, compartilhada com a GraphVisualLive.
+  defp load_drawer_step(socket, code), do: StepDrawer.load_step(socket, code)
 
-    step =
-      StepQuery.get_by(
-        code: code,
-        preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
-      )
-
-    links = StepLinkQuery.list_by(step_id: step.id, approved: true, preload: [:submitted_by])
-    link_likes = Engagement.likes_map(user_id, "step_link", Enum.map(links, & &1.id))
-    sorted_links = Enum.sort_by(links, fn link -> -Map.get(link_likes.counts, link.id, 0) end)
-
-    comments = Engagement.list_step_comments(step.id)
-    comment_likes = Engagement.likes_map(user_id, "step_comment", Enum.map(comments, & &1.id))
-
-    assign(socket,
-      drawer_item: step,
-      drawer_step_image: StepDetail.resolve_step_image(step),
-      drawer_connections_out:
-        ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step]),
-      drawer_connections_in:
-        ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step]),
-      drawer_links: sorted_links,
-      drawer_link_likes: link_likes,
-      drawer_like_count: step.like_count,
-      connections_expanded: false,
-      drawer_liked: Engagement.liked?(user_id, "step", step.id),
-      drawer_favorited: Engagement.favorited?(user_id, "step", step.id),
-      can_edit_drawer: socket.assigns.edit_mode or step.suggested_by_id == user_id,
-      expanded_step: step.id,
-      expanded_comments: comments,
-      expanded_comment_likes: comment_likes,
-      expanded_replies_map: %{},
-      expanded_replying_to: nil,
-      expanded_video: nil
-    )
-  end
-
-  # Mantém o estado de engajamento do drawer em sincronia quando o like/favorito
-  # mexido é justamente o do passo aberto no painel.
-  defp sync_drawer_engagement(socket, step_id) do
-    case socket.assigns.drawer_item do
-      %{id: ^step_id} ->
-        user_id = socket.assigns.current_user.id
-
-        assign(socket,
-          drawer_liked: Engagement.liked?(user_id, "step", step_id),
-          drawer_favorited: Engagement.favorited?(user_id, "step", step_id),
-          drawer_like_count: Engagement.count_likes("step", step_id)
-        )
-
-      _ ->
-        socket
-    end
-  end
+  defp sync_drawer_engagement(socket, step_id), do: StepDrawer.sync_engagement(socket, step_id)
 
   defp find_step_context(sections, step_code) do
     Enum.find_value(sections, :error, fn section ->

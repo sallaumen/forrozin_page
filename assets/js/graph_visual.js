@@ -175,49 +175,7 @@ function setupZoneRedraw(cy, sectorCenters, byCat) {
 }
 
 // ---------------------------------------------------------------------------
-// Drawer helpers: build HTML content from trusted server data
-// NOTE: All data originates from Encyclopedia.build_graph/1 — admin/seeder
-// created only. No user-generated content. escapeHTML used defensively.
-// ---------------------------------------------------------------------------
-function escapeHTML(str) {
-  if (!str) return ""
-  const div = document.createElement("div")
-  div.textContent = str
-  return div.innerHTML
-}
-
-function isMobileViewport() {
-  return window.matchMedia && window.matchMedia("(max-width: 767px)").matches
-}
-
-function buildDrawerActionHTML(d) {
-  const isLiked = window._likedStepCodes && window._likedStepCodes.has(d.id)
-  const isFavorited = window._favoritedStepCodes && window._favoritedStepCodes.has(d.id)
-  const likeCount = d.like_count || 0
-
-  const dark = document.documentElement.classList.contains("dark")
-  const s = getComputedStyle(document.documentElement)
-  const iconColor = s.getPropertyValue("--color-ink-500").trim()
-  const borderColor = dark ? "rgba(245,237,228,0.14)" : "rgba(60,40,20,0.12)"
-  const accentRed = s.getPropertyValue("--color-accent-red").trim()
-  const goldColor = s.getPropertyValue("--color-gold-500").trim()
-
-  const heartSolidPath = `m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z`
-  const heartOutlinePath = `M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z`
-  const starSolidPath = `M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z`
-  const starOutlinePath = `M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z`
-
-  const heartIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ${isLiked ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="1.5"'} style="width:18px;height:18px;flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="${isLiked ? heartSolidPath : heartOutlinePath}"/></svg>`
-  const starIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ${isFavorited ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="1.5"'} style="width:18px;height:18px;flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="${isFavorited ? starSolidPath : starOutlinePath}"/></svg>`
-
-  return [
-    `<button class="drawer-like-btn" data-code="${escapeHTML(d.id)}" aria-label="Curtir" title="${isLiked ? "Remover curtida" : "Curtir"}" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:36px;height:36px;background:transparent;border:1px solid ${isLiked ? accentRed + "40" : borderColor};border-radius:8px;cursor:pointer;color:${isLiked ? accentRed : iconColor};font-family:Georgia,serif;transition:all 0.15s;">${heartIcon}<span style="font-size:11px;font-weight:700;">${likeCount}</span></button>`,
-    `<button class="drawer-fav-btn" data-code="${escapeHTML(d.id)}" aria-label="Favoritar" title="${isFavorited ? "Remover favorito" : "Favoritar"}" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;background:transparent;border:1px solid ${isFavorited ? goldColor + "40" : borderColor};border-radius:8px;cursor:pointer;color:${isFavorited ? goldColor : iconColor};font-family:Georgia,serif;transition:all 0.15s;">${starIcon}</button>`
-  ].join("")
-}
-
-// ---------------------------------------------------------------------------
-// Theme helpers for Cytoscape and drawer (D1: CSS vars = single source of truth)
+// Theme helpers for Cytoscape (D1: CSS vars = single source of truth)
 // ---------------------------------------------------------------------------
 function cyTheme() {
   const s = getComputedStyle(document.documentElement)
@@ -236,30 +194,6 @@ function cyTheme() {
     edgeHighlightColor:  dark ? get("--color-accent-orange") : "#c4621e",
     edgeLabelText:       dark ? get("--color-ink-800") : "#3a2510",
     edgeLabelBg:         dark ? get("--color-ink-100") : "#fffdf8",
-  }
-}
-
-function drawerColors() {
-  const s = getComputedStyle(document.documentElement)
-  const get = v => s.getPropertyValue(v).trim()
-  const dark = document.documentElement.classList.contains("dark")
-  if (!dark) return {
-    code: "#9a7a5a", name: "#1a0e05",
-    nota: { text: "#5c3a1a", bg: "rgba(212,160,84,0.08)", border: "#d4a054" },
-    stats: "#7a5c3a", sectionHeader: "#9a7a5a", link: "#2c1a0e",
-    rowBorder: "rgba(60,40,20,0.06)", btnBorder: "rgba(60,40,20,0.12)",
-    ctaBg: "#1a0e05", ctaText: "#f2ede4",
-  }
-  return {
-    code: get("--color-ink-500"),
-    name: get("--color-ink-900"),
-    nota: { text: get("--color-ink-600"), bg: "rgba(230,179,71,0.08)", border: get("--color-gold-500") },
-    stats: get("--color-ink-600"),
-    sectionHeader: get("--color-ink-500"),
-    link: get("--color-ink-800"),
-    rowBorder: "rgba(255,255,255,0.10)",
-    btnBorder: "rgba(255,255,255,0.12)",
-    ctaBg: get("--color-ink-900"), ctaText: get("--color-ink-50"),
   }
 }
 
@@ -367,157 +301,6 @@ function buildCyStyle(currentUserId) {
       }
     }
   ]
-}
-
-function buildDrawerHeaderHTML(d, colors) {
-  const category = d.categoria
-    ? `<span style="display:inline-block;font-size:10px;padding:2px 10px;border-radius:10px;background:${escapeHTML(d.cor)}18;color:${escapeHTML(d.cor)};border:1px solid ${escapeHTML(d.cor)}40;font-style:italic;">${escapeHTML(d.categoria)}</span>`
-    : ""
-
-  return [
-    `<div style="display:flex;align-items:flex-start;gap:12px;">`,
-    `<div style="min-width:0;flex:1;">`,
-    `<div style="font-size:11px;color:${colors.code};letter-spacing:1px;margin-bottom:4px;">${escapeHTML(d.id)}</div>`,
-    `<div style="font-size:20px;font-weight:700;color:${colors.name};line-height:1.3;margin-bottom:8px;">${escapeHTML(d.label)}</div>`,
-    category,
-    `</div>`,
-    `<div style="display:flex;flex-shrink:0;align-items:center;gap:6px;">${buildDrawerActionHTML(d)}</div>`,
-    `</div>`
-  ].join("")
-}
-
-function buildDrawerBodyHTML(d, outEdges, inEdges, degree, editMode, colors) {
-  const parts = []
-
-  if (d.nota) {
-    parts.push(`<div style="font-size: 12px; color: ${colors.nota.text}; font-style: italic; line-height: 1.7; margin-bottom: 16px; padding: 10px 14px; background: ${colors.nota.bg}; border-left: 3px solid ${colors.nota.border}; border-radius: 0 4px 4px 0;">${escapeHTML(d.nota)}</div>`)
-  }
-
-  parts.push(`<div style="font-size: 11px; color: ${colors.stats}; margin-bottom: 16px;">${outEdges.length} saidas - ${inEdges.length} entradas - ${degree} conexoes</div>`)
-
-  if (outEdges.length > 0) {
-    parts.push(`<div style="font-size: 10px; font-weight: 700; color: ${colors.sectionHeader}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Saidas</div>`)
-    outEdges.forEach(e => {
-      const t = e.target()
-      const lb = e.data("label") ? ` <span style="color: ${colors.sectionHeader}; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
-      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(d.id)}" data-target="${escapeHTML(t.id())}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">x</button>` : ""
-      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid ${colors.rowBorder};">`)
-      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(t.id())}" style="font-size: 12px; color: ${colors.link}; cursor: pointer; flex:1;">`)
-      parts.push(`<code style="font-size: 10px; color: ${escapeHTML(t.data("cor"))}; margin-right: 6px;">${escapeHTML(t.id())}</code>${escapeHTML(t.data("label"))}${lb}</div>${deleteBtn}</div>`)
-    })
-  }
-
-  if (inEdges.length > 0) {
-    parts.push(`<div style="font-size: 10px; font-weight: 700; color: ${colors.sectionHeader}; text-transform: uppercase; letter-spacing: 2px; margin: 16px 0 8px;">Entradas</div>`)
-    inEdges.forEach(e => {
-      const s = e.source()
-      const lb = e.data("label") ? ` <span style="color: ${colors.sectionHeader}; font-style: italic;">(${escapeHTML(e.data("label"))})</span>` : ""
-      const deleteBtn = editMode ? `<button class="delete-connection-btn" data-source="${escapeHTML(s.id())}" data-target="${escapeHTML(d.id)}" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:auto;">x</button>` : ""
-      parts.push(`<div class="connection-row" style="display:flex;align-items:center;padding: 6px 0; border-bottom: 1px solid ${colors.rowBorder};">`)
-      parts.push(`<div class="drawer-link" data-node-id="${escapeHTML(s.id())}" style="font-size: 12px; color: ${colors.link}; cursor: pointer; flex:1;">`)
-      parts.push(`<code style="font-size: 10px; color: ${escapeHTML(s.data("cor"))}; margin-right: 6px;">${escapeHTML(s.id())}</code>${escapeHTML(s.data("label"))}${lb}</div>${deleteBtn}</div>`)
-    })
-  }
-
-  parts.push(`<a href="/steps/${encodeURIComponent(d.id)}" style="display: block; margin-top: 16px; padding: 12px 16px; text-align: center; background: ${colors.ctaBg}; color: ${colors.ctaText}; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; letter-spacing: 0.3px;">Ver passo completo</a>`)
-
-  return parts.join("")
-}
-
-function openDrawer(node, cy, editMode, hook) {
-  const el = document.getElementById("graph-drawer")
-  const header = document.getElementById("drawer-header-content")
-  const content = document.getElementById("drawer-content")
-  if (!el || !header || !content) return
-
-  if (isMobileViewport()) {
-    closeDrawer()
-    return
-  }
-
-  const d = node.data()
-  const colors = drawerColors()
-  header.innerHTML = buildDrawerHeaderHTML(d, colors)
-  content.innerHTML = buildDrawerBodyHTML(d, node.outgoers("edge"), node.incomers("edge"), node.degree(), editMode, colors)
-  el.style.transform = "translateX(0)"
-  el.dataset.open = "true"
-  el.removeAttribute("inert")
-
-  // Navigation links
-  content.querySelectorAll(".drawer-link").forEach(link => {
-    link.addEventListener("click", () => {
-      const targetNode = cy.getElementById(link.dataset.nodeId)
-      if (targetNode.length > 0) {
-        cy.animate({ center: { eles: targetNode }, duration: 300 })
-        targetNode.select()
-        openDrawer(targetNode, cy, editMode, hook)
-        applySpotlight(cy, targetNode)
-      }
-    })
-  })
-
-  // Delete buttons (edit mode only)
-  if (editMode && hook) {
-    content.querySelectorAll(".delete-connection-btn").forEach(btn => {
-      btn.addEventListener("click", function() {
-        const source = this.dataset.source
-        const target = this.dataset.target
-        const row = this.closest(".connection-row")
-
-        // Show confirmation inline
-        const confirmDiv = document.createElement("div")
-        confirmDiv.style.cssText = "padding:6px 0;font-size:11px;color:#c0392b;"
-        const confirmText = document.createTextNode(`Remover ${source} → ${target}? `)
-        const confirmBtn = document.createElement("button")
-        confirmBtn.textContent = "Confirmar"
-        confirmBtn.style.cssText = "background:#c0392b;color:white;border:none;padding:3px 10px;border-radius:3px;cursor:pointer;font-family:Georgia,serif;font-size:11px;margin-right:6px;"
-        const cancelBtn = document.createElement("button")
-        cancelBtn.textContent = "Cancelar"
-        cancelBtn.style.cssText = "background:transparent;color:#9a7a5a;border:1px solid #9a7a5a40;padding:3px 10px;border-radius:3px;cursor:pointer;font-family:Georgia,serif;font-size:11px;"
-
-        confirmDiv.appendChild(confirmText)
-        confirmDiv.appendChild(confirmBtn)
-        confirmDiv.appendChild(cancelBtn)
-
-        row.textContent = ""
-        row.appendChild(confirmDiv)
-
-        confirmBtn.addEventListener("click", () => {
-          hook.pushEvent("delete_connection", { source, target })
-        })
-        cancelBtn.addEventListener("click", () => {
-          // Re-open drawer to restore original state
-          openDrawer(node, cy, editMode, hook)
-        })
-      })
-    })
-  }
-
-  // Like + Favorite buttons in drawer
-  if (hook) {
-    el.querySelectorAll(".drawer-like-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        hook.pushEvent("toggle_step_like_graph", { code: btn.dataset.code })
-        // Optimistic UI update
-        setTimeout(() => openDrawer(node, cy, editMode, hook), 300)
-      })
-    })
-    el.querySelectorAll(".drawer-fav-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        hook.pushEvent("toggle_step_favorite_graph", { code: btn.dataset.code })
-        setTimeout(() => openDrawer(node, cy, editMode, hook), 300)
-      })
-    })
-  }
-}
-
-function closeDrawer() {
-  const el = document.getElementById("graph-drawer")
-  if (el) {
-    el.style.transform = "translateX(100%)"
-    el.dataset.open = "false"
-    el.setAttribute("inert", "")
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -664,6 +447,23 @@ const GraphVisual = {
     // Favorited steps (for drawer buttons)
     this.handleEvent("set_favorited_steps", ({ codes }) => {
       window._favoritedStepCodes = new Set(codes)
+    })
+
+    // Drawer do StepDetail (server-side): centrar/destacar o nó ao abrir (clique
+    // no nó ou num chip de conexão) e limpar o destaque ao fechar.
+    this.handleEvent("center_node", ({ code }) => {
+      const cy = this._cy
+      if (!cy) return
+      const node = cy.getElementById(code)
+      if (node.length > 0) {
+        cy.animate({ center: { eles: node }, duration: 300 })
+        node.select()
+        applySpotlight(cy, node)
+      }
+    })
+
+    this.handleEvent("clear_spotlight", () => {
+      if (this._cy) clearSpotlight(this._cy)
     })
   },
 
@@ -894,7 +694,7 @@ const GraphVisual = {
       hook._activeCategory = null
       hook._resetLegend()
       applySpotlight(cy, node)
-      openDrawer(node, cy, isEditMode && isAdmin, hook)
+      hook.pushEvent("open_step", { code: node.id() })
     })
 
     cy.on("tap", function(evt) {
@@ -905,7 +705,7 @@ const GraphVisual = {
           return
         }
         clearSpotlight(cy)
-        closeDrawer()
+        hook.pushEvent("close_drawer", {})
         hook._activeCategory = null
         hook._resetLegend()
       }
@@ -931,10 +731,6 @@ const GraphVisual = {
       if (!hook._activeCategory) clearSpotlight(cy)
     })
 
-    document.getElementById("drawer-close")?.addEventListener("click", () => {
-      closeDrawer(); clearSpotlight(cy); cancelGhost()
-    })
-
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         // If sequence is active, clear it first (single-purpose Escape)
@@ -948,7 +744,7 @@ const GraphVisual = {
           return
         }
         cancelGhost()
-        closeDrawer()
+        hook.pushEvent("close_drawer", {})
         hook._closeMobileLegend()
         clearSpotlight(cy)
         hook._activeCategory = null
@@ -986,11 +782,6 @@ const GraphVisual = {
             n.style({ "border-color": t.likeBorderColor })
           })
         })
-        const drawerEl = document.getElementById("graph-drawer")
-        if (drawerEl?.dataset.open === "true") {
-          const openNode = cy.$("node:selected").first()
-          if (openNode.length > 0) openDrawer(openNode, cy, isEditMode && isAdmin, hook)
-        }
         break
       }
     })
@@ -1021,7 +812,7 @@ const GraphVisual = {
       if (!cy) return
 
       const catName = btn.dataset.category
-      closeDrawer()
+      this.pushEvent("close_drawer", {})
       this._closeMobileLegend()
 
       const sequenceActive = this._seqHighlightActive || window._seqHighlightActive
@@ -1350,7 +1141,6 @@ const GraphVisual = {
     cy.nodes().unselect()
     node.select()
     applySpotlight(cy, node)
-    openDrawer(node, cy, this._isEditMode && this._isAdmin, this)
 
     const neighborhood = node.closedNeighborhood()
     cy.animate({ fit: { eles: neighborhood, padding: 120 }, duration: 350 })
@@ -1361,7 +1151,6 @@ const GraphVisual = {
     if (!cy) return
 
     cy.nodes().unselect()
-    closeDrawer()
     clearSpotlight(cy)
   }
 }

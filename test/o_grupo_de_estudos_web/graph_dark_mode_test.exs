@@ -24,20 +24,9 @@ defmodule OGrupoDeEstudosWeb.GraphDarkModeTest do
            "aba ativa do segmented control precisa de dark:bg-ink-300"
   end
 
-  # FOR-39 fix 3: buildDrawerActionHTML usa CSS vars para dark mode
-  test "buildDrawerActionHTML nao usa cores hardcoded light-mode para icones" do
-    js = File.read!("assets/js/graph_visual.js")
-
-    assert js =~ ~r/function buildDrawerActionHTML[\s\S]{0,800}--color-ink-500/,
-           "buildDrawerActionHTML deve usar --color-ink-500 via getComputedStyle ao invés de #9a7a5a hardcoded"
-  end
-
-  test "buildDrawerActionHTML usa getComputedStyle para adaptar ao tema" do
-    js = File.read!("assets/js/graph_visual.js")
-
-    assert js =~ ~r/function buildDrawerActionHTML[\s\S]{0,400}classList\.contains\("dark"\)/,
-           "buildDrawerActionHTML precisa detectar dark mode via classList.contains(\"dark\")"
-  end
+  # Os icones de curtir/favoritar do drawer agora sao server-side (StepDetail
+  # mode :drawer, compartilhado com a Collection): o dark mode vem dos tokens
+  # ink-* no bloco .dark {}, sem logica de cor em JS para regredir.
 
   # FOR-39 fix 4: separadores de linha visíveis em dark mode
   test "cards de sequencia usam dark:border-ink-400/20 nos separadores" do
