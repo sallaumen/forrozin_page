@@ -29,13 +29,14 @@ defmodule OGrupoDeEstudosWeb.UI.BackButton do
       aria-label={@label}
       phx-hook="BackButton"
       class={[
-        "inline-flex items-center justify-center w-11 h-11 rounded-md",
+        "inline-flex h-11 items-center gap-1 rounded-md pl-1.5 pr-3",
         "text-ink-100 hover:bg-ink-700 active:scale-95 transition-colors",
         "cursor-pointer",
         @class
       ]}
     >
-      <.icon name="hero-chevron-left" class="size-5" />
+      <.icon name="hero-chevron-left" class="size-5 shrink-0" />
+      <span class="text-sm font-semibold">{@label}</span>
     </button>
     """
   end

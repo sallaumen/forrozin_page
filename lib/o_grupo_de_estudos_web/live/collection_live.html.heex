@@ -381,10 +381,13 @@
           <% else %>
             <div id="collection-drilldown-shell" class="space-y-6">
               <div id="collection-breadcrumb" class="flex items-center gap-2 text-sm text-ink-600">
-                <button phx-click="back_to_overview" class="font-semibold text-ink-900">
-                  Acervo
+                <button
+                  phx-click="back_to_overview"
+                  class="inline-flex items-center gap-1 font-semibold text-ink-900 transition-colors hover:text-accent-orange"
+                >
+                  <.icon name="hero-arrow-left" class="size-4" /> Acervo
                 </button>
-                <span>/</span>
+                <span class="text-ink-400">/</span>
                 <span>{@active_section_card.title}</span>
               </div>
 
@@ -581,16 +584,25 @@
     ]}
     style={if @drawer_open, do: "transform: translateX(0);", else: "transform: translateX(100%);"}
   >
+    <%!-- Desktop: X discreto no canto (painel lateral). --%>
     <button
       :if={@drawer_open}
       phx-click="close_drawer"
       aria-label="Fechar painel"
-      class="absolute right-3 top-3 z-20 inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-ink-200 bg-ink-50/90 text-ink-500 shadow-sm backdrop-blur transition hover:bg-ink-100 hover:text-ink-900"
+      class="absolute right-3 top-3 z-20 hidden min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-ink-200 bg-ink-50/90 text-ink-500 shadow-sm backdrop-blur transition hover:bg-ink-100 hover:text-ink-900 md:inline-flex"
     >
       <.icon name="hero-x-mark" class="size-5" />
     </button>
 
     <div class="h-full overflow-y-auto overflow-x-hidden pb-24 md:pb-6">
+      <%!-- Mobile: barra de voltar clara no topo (PWA do iPhone não tem botão de voltar). --%>
+      <button
+        :if={@drawer_open}
+        phx-click="close_drawer"
+        class="sticky top-0 z-10 flex w-full items-center gap-1.5 border-b border-ink-200 bg-ink-50/95 px-5 py-3 text-sm font-semibold text-ink-700 backdrop-blur md:hidden"
+      >
+        <.icon name="hero-arrow-left" class="size-4 shrink-0" /> Voltar ao acervo
+      </button>
       <.step_detail
         :if={@drawer_type == :step and @drawer_item}
         mode={:drawer}

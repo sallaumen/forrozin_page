@@ -386,13 +386,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
       <%!-- Mobile layout (<md): different based on nav_mode --%>
       <div class="md:hidden flex items-center justify-between px-4 py-2 min-h-[48px]">
         <%= if @nav_mode == :detail do %>
-          <%!-- Detail: back button + title --%>
+          <%!-- Detail: back button (rotulado) + título --%>
           <.back_button />
-          <div class="flex-1 text-center px-2 text-sm font-bold truncate">
+          <div class="min-w-0 flex-1 truncate px-2 text-sm font-bold text-ink-200">
             {@title || ""}
           </div>
-          <%!-- Spacer to balance the back button width --%>
-          <div class="w-11"></div>
         <% else %>
           <%!-- Primary: logo + settings/logout menu --%>
           <.link

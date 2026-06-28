@@ -42,12 +42,15 @@
     @step_image && "pt-4",
     !@step_image && "pt-10"
   ]}>
-    <%!-- Breadcrumb --%>
-    <p class="text-xs text-ink-500 mb-6 tracking-wide">
-      <.link navigate={~p"/collection"} class="text-ink-500 no-underline">
-        acervo
+    <%!-- Breadcrumb / voltar --%>
+    <p class="mb-6 text-sm tracking-wide text-ink-500">
+      <.link
+        navigate={~p"/collection"}
+        class="inline-flex items-center gap-1 font-semibold text-ink-700 no-underline transition-colors hover:text-accent-orange"
+      >
+        <.icon name="hero-arrow-left" class="size-4" /> Acervo
       </.link>
-      <span class="mx-1.5">›</span>
+      <span class="mx-1.5 text-ink-400">›</span>
       {@step.code}
     </p>
 
