@@ -70,8 +70,9 @@
       </div>
     </div>
 
-    <%!-- Grupo direito: modo manual (se ativo, à esquerda) + busca --%>
-    <div class="ml-auto flex min-w-0 items-center gap-2">
+    <%!-- Grupo direito: modo manual (se ativo, à esquerda) + busca. Em telas
+    que não cabem numa linha, ocupa a largura toda (busca full-width). --%>
+    <div class="ml-auto flex w-full min-w-0 items-center gap-2 min-[800px]:w-auto">
       <div
         :if={@seq_view == :manual && !@seq_mobile_visible}
         id="seq-manual-mode-banner"
@@ -94,7 +95,7 @@
         </button>
       </div>
 
-      <div class="relative w-[420px] max-w-[calc(100vw-1.5rem)]">
+      <div class="relative flex-1 min-[800px]:w-[420px] min-[800px]:flex-none">
         <label for="graph-step-search" class="sr-only">Pesquisar passo no mapa</label>
         <input
           type="search"
@@ -135,7 +136,9 @@
               {step.code}
             </code>
             <span class="min-w-0">
-              <span class="block truncate text-sm font-semibold text-ink-900">{step.name}</span>
+              <span class="block text-sm font-semibold leading-snug text-ink-900 line-clamp-2">
+                {step.name}
+              </span>
               <span class="block text-[11px] text-ink-500">{step.category}</span>
             </span>
           </button>
