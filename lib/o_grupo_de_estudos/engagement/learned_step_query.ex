@@ -27,6 +27,12 @@ defmodule OGrupoDeEstudos.Engagement.LearnedStepQuery do
     |> Repo.delete_all()
   end
 
+  @doc "Removes ALL learned marks for the user (reiniciar progresso). Returns `{count, nil}`."
+  @spec delete_all_for_user(Ecto.UUID.t()) :: {non_neg_integer(), nil}
+  def delete_all_for_user(user_id) do
+    Repo.delete_all(from l in LearnedStep, where: l.user_id == ^user_id)
+  end
+
   @doc "Codes of the user's learned steps (soft-deleted steps excluded)."
   @spec codes_for_user(Ecto.UUID.t()) :: [String.t()]
   def codes_for_user(user_id) do

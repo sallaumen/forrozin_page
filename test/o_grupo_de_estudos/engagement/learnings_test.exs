@@ -140,6 +140,35 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
     end
   end
 
+  describe "reset_learned/1" do
+    test "remove todos os passos aprendidos do usuário (favoritos ficam)" do
+      user = insert(:user)
+      bf = insert(:step)
+      Engagement.toggle_learned(user.id, bf.id)
+      Engagement.toggle_learned(user.id, insert(:step).id)
+      assert Engagement.count_user_learned(user.id) == 2
+
+      Engagement.reset_learned(user.id)
+
+      assert Engagement.count_user_learned(user.id) == 0
+      assert Engagement.learned_step_codes(user.id) == []
+      # o favorito implicado pelo aprender permanece
+      assert Engagement.favorited?(user.id, "step", bf.id)
+    end
+
+    test "reinicia só o usuário dado" do
+      user = insert(:user)
+      other = insert(:user)
+      Engagement.toggle_learned(user.id, insert(:step).id)
+      Engagement.toggle_learned(other.id, insert(:step).id)
+
+      Engagement.reset_learned(user.id)
+
+      assert Engagement.count_user_learned(user.id) == 0
+      assert Engagement.count_user_learned(other.id) == 1
+    end
+  end
+
   describe "list_learned_steps/1" do
     test "returns the learned Step records, most recently learned first" do
       user = insert(:user)

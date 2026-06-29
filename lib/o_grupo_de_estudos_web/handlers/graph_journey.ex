@@ -48,6 +48,30 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphJourney do
          |> push_event("set_learned_steps", payload)}
       end
 
+      def handle_event("reset_progress", _params, socket) do
+        Engagement.reset_learned(socket.assigns.current_user.id)
+        next_goal = JourneyPlan.next_goal([])
+
+        {:noreply,
+         socket
+         |> assign(:learned_codes, [])
+         |> assign(:frontier_codes, [])
+         |> assign(:next_goal, next_goal)
+         |> push_event(
+           "set_learned_steps",
+           learned_payload([], [], next_goal, socket.assigns.full_map?)
+         )}
+      end
+
+      # Centra/revela um passo no mapa (clique num item de "pode aprender agora").
+      def handle_event("focus_step", %{"code" => code}, socket) do
+        {:noreply, push_event(socket, "focus_graph_node", %{code: code})}
+      end
+
+      def handle_event("toggle_journey", _params, socket) do
+        {:noreply, assign(socket, :journey_open, not socket.assigns.journey_open)}
+      end
+
       # Recarrega aprendidos/fronteira/meta e o engajamento implicado (favorito +
       # like), recolorindo o grafo e o painel sem reconstruir a instância.
       defp refresh_journey(socket, user_id, step_id) do

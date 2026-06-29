@@ -143,6 +143,7 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate learned_step_codes(user_id), to: Learnings
   defdelegate list_learned_steps(user_id), to: Learnings
   defdelegate count_user_learned(user_id), to: Learnings
+  defdelegate reset_learned(user_id), to: Learnings
 
   # ══════════════════════════════════════════════════════════════════════
   # Batch stats

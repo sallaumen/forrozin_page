@@ -50,4 +50,7 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
 
   @doc "Returns the count of steps the user has learned."
   def count_user_learned(user_id), do: LearnedStepQuery.count(user_id)
+
+  @doc "Reinicia o progresso: remove TODOS os passos aprendidos do usuário (favoritos ficam)."
+  def reset_learned(user_id), do: LearnedStepQuery.delete_all_for_user(user_id)
 end

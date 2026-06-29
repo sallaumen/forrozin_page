@@ -21,4 +21,13 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.JourneyPlan do
   def next_goal(learned_codes) do
     StudyJourney.next_goal(@base_plan, MapSet.new(learned_codes))
   end
+
+  @doc "Nome do nível da jornada a partir do percentual de progresso (0-100)."
+  @spec level(integer()) :: String.t()
+  def level(pct) when pct >= 100, do: "Dominou"
+  def level(pct) when pct >= 80, do: "Quase lá"
+  def level(pct) when pct >= 50, do: "Avançando"
+  def level(pct) when pct >= 20, do: "Engrenando"
+  def level(pct) when pct >= 1, do: "Pegando o jeito"
+  def level(_pct), do: "Começando"
 end
