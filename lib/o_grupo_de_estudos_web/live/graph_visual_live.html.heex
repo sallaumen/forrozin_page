@@ -17,7 +17,7 @@
   />
   <.activity_toast toast={assigns[:activity_toast]} />
   <%!-- Graph search: unified step lookup for the visible map --%>
-  <div class="fixed top-[64px] left-3 right-3 z-30 md:left-1/2 md:right-auto md:w-[420px] md:-translate-x-1/2">
+  <div class="fixed top-[64px] left-3 right-3 z-30 md:left-auto md:right-4 md:w-[420px]">
     <div class="relative">
       <label for="graph-step-search" class="sr-only">Pesquisar passo no mapa</label>
       <input
@@ -102,7 +102,7 @@
     e alternar para o mapa completo, mesmo com o painel fechado --%>
     <div
       :if={@loaded?}
-      class="fixed left-3 top-[112px] z-30 flex items-center gap-2 font-serif md:left-[88px] xl:top-[70px]"
+      class="fixed left-3 top-[112px] z-30 flex items-center gap-2 font-serif min-[820px]:top-[70px]"
     >
       <button
         type="button"
