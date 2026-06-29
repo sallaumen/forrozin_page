@@ -16,7 +16,17 @@ defmodule OGrupoDeEstudos.Engagement do
   import Ecto.Query
 
   alias OGrupoDeEstudos.Encyclopedia.Step
-  alias OGrupoDeEstudos.Engagement.{Badges, Comments, Favorites, Follows, Likes, Metrics}
+
+  alias OGrupoDeEstudos.Engagement.{
+    Badges,
+    Comments,
+    Favorites,
+    Follows,
+    Learnings,
+    Likes,
+    Metrics
+  }
+
   alias OGrupoDeEstudos.Engagement.Notifications.{Notification, NotificationQuery}
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences.Sequence
@@ -123,6 +133,16 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate favorites_map(user_id, favoritable_type, favoritable_ids), to: Favorites
   defdelegate list_user_favorites(user_id, type), to: Favorites
   defdelegate count_user_favorites(user_id), to: Favorites
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Learnings (jornada de estudos — delegated to Engagement.Learnings)
+  # ══════════════════════════════════════════════════════════════════════
+
+  defdelegate toggle_learned(user_id, step_id), to: Learnings
+  defdelegate learned?(user_id, step_id), to: Learnings
+  defdelegate learned_step_codes(user_id), to: Learnings
+  defdelegate list_learned_steps(user_id), to: Learnings
+  defdelegate count_user_learned(user_id), to: Learnings
 
   # ══════════════════════════════════════════════════════════════════════
   # Batch stats

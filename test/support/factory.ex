@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudos.Factory do
   }
 
   alias OGrupoDeEstudos.Engagement.Comments.{SequenceComment, StepComment}
-  alias OGrupoDeEstudos.Engagement.{Favorite, Follow, Like, ProfileComment}
+  alias OGrupoDeEstudos.Engagement.{Favorite, Follow, LearnedStep, Like, ProfileComment}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
   alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
@@ -140,6 +140,13 @@ defmodule OGrupoDeEstudos.Factory do
       favoritable_type: "step",
       favoritable_id: Ecto.UUID.generate(),
       user: build(:user)
+    }
+  end
+
+  def learned_step_factory do
+    %LearnedStep{
+      user: build(:user),
+      step: build(:step)
     }
   end
 
