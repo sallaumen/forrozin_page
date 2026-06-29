@@ -188,7 +188,6 @@ function cyTheme() {
     nodeFillOutgoing:    dark ? "#0d2016" : "#f3fbf5",
     nodeLabel:           get("--color-ink-900"),
     nodeBorderOpacity:   dark ? 0.95 : 0.85,
-    nodeSelectedOpacity: dark ? 0.22 : 0.15,
     likeBorderColor:     dark ? get("--color-accent-red") : "#c0392b",
     journeyLearned:      dark ? get("--color-accent-green") : "#2f8f5b",
     journeyFrontier:     dark ? get("--color-accent-orange") : "#c4621e",
@@ -241,11 +240,19 @@ function buildCyStyle(currentUserId) {
       }
     },
     {
+      // Nó clicado: preenchimento laranja sólido da marca (fixo nos dois temas
+      // para o texto claro manter contraste AA) + anel claro de contorno. A
+      // borda da jornada (inline) vence quando o nó tem estado; o laranja do
+      // preenchimento é o sinal principal de "selecionado".
       selector: "node:selected",
       style: {
-        "background-color": "data(cor)",
-        "background-opacity": t.nodeSelectedOpacity,
-        "border-width": 3, "border-opacity": 1.0
+        "background-color": "#c4621e",
+        "background-opacity": 1,
+        "border-color": "#fff7ec",
+        "border-width": 3,
+        "border-opacity": 0.9,
+        "color": "#fff7ec",
+        "z-index": 99
       }
     },
     {
@@ -305,6 +312,23 @@ function buildCyStyle(currentUserId) {
   ]
 }
 
+// Preenchimento + texto de um nó, conforme tema e estado de seleção. Selecionado
+// => laranja sólido da marca (sinal de "clicado"); senão => cor base do tema.
+// Aplicado inline (vence o inline que o observer de tema seta nos nós), por isso
+// e chamado nos eventos select/unselect E no observer.
+function paintNodeFill(n, t, currentUserId) {
+  if (n.selected()) {
+    n.style({ "background-color": "#c4621e", "background-opacity": 1, "color": "#fff7ec" })
+    return
+  }
+  const suggested = n.data("suggestedById") && n.data("suggestedById") === currentUserId
+  n.style({
+    "background-color": suggested ? t.nodeFillSuggested : (n.data("highlighted") ? t.nodeFillHighlighted : t.nodeFillNormal),
+    "background-opacity": 1,
+    "color": t.nodeLabel
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Spotlight: dim everything except selected node neighborhood
 // ---------------------------------------------------------------------------
@@ -321,6 +345,7 @@ function applySpotlight(cy, node) {
 
 function clearSpotlight(cy) {
   if (window._seqHighlightActive) return
+  cy.nodes().unselect()
   cy.batch(() => {
     cy.nodes().style({ opacity: 1 })
     cy.edges().style({ opacity: 0.45, width: 1.5 })
@@ -415,11 +440,13 @@ function applyJourneyStyling() {
       edge.style("display", fullMap || state !== "hidden" ? "element" : "none")
 
       if (state === "learned") {
-        edge.style({ "line-color": t.journeyLearned, "target-arrow-color": t.journeyLearned, "line-style": "solid", "line-opacity": 1 })
+        // Conexões entre passos já conhecidos: o "caminho dominado", bem
+        // destacado (grosso, verde sólido, seta maior, opaco).
+        edge.style({ "line-color": t.journeyLearned, "target-arrow-color": t.journeyLearned, "line-style": "solid", "line-opacity": 1, "opacity": 1, "width": 5, "arrow-scale": 2.2 })
       } else if (state === "frontier") {
-        edge.style({ "line-color": t.journeyFrontier, "target-arrow-color": t.journeyFrontier, "line-style": "dashed", "line-opacity": 1 })
+        edge.style({ "line-color": t.journeyFrontier, "target-arrow-color": t.journeyFrontier, "line-style": "dashed", "line-opacity": 1, "opacity": 1, "width": 3, "arrow-scale": 1.7 })
       } else {
-        edge.style({ "line-color": edge.data("cor"), "target-arrow-color": edge.data("cor"), "line-style": "solid" })
+        edge.style({ "line-color": edge.data("cor"), "target-arrow-color": edge.data("cor"), "line-style": "solid", "width": 2.5, "arrow-scale": 1.5 })
       }
     })
   })
@@ -683,6 +710,12 @@ const GraphVisual = {
     window._cyInstance = cy
     cy.edges().unselectify()
 
+    // Seleção: pinta o nó de laranja ao clicar e restaura a cor base ao soltar.
+    // Inline para vencer o inline que o observer de tema seta nos nós (robusto a
+    // alternar dark mode com um nó selecionado ou a selecionar após alternar).
+    cy.on("select", "node", evt => paintNodeFill(evt.target, cyTheme(), currentUserId))
+    cy.on("unselect", "node", evt => paintNodeFill(evt.target, cyTheme(), currentUserId))
+
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)
 
@@ -857,13 +890,8 @@ const GraphVisual = {
         const t = cyTheme()
         cy.batch(() => {
           cy.nodes().forEach(n => {
-            const suggested = n.data("suggestedById") === currentUserId
-            const highlighted = n.data("highlighted")
-            n.style({
-              "background-color": suggested ? t.nodeFillSuggested : (highlighted ? t.nodeFillHighlighted : t.nodeFillNormal),
-              "color": t.nodeLabel,
-              "border-opacity": t.nodeBorderOpacity,
-            })
+            paintNodeFill(n, t, currentUserId)
+            n.style({ "border-opacity": t.nodeBorderOpacity })
           })
           cy.edges().forEach(e => {
             const dense = e.source().degree() >= 10 || e.target().degree() >= 10
@@ -1012,8 +1040,11 @@ const GraphVisual = {
       // aparecer mesmo fora do "meu progresso". O clear reaplica a jornada.
       cy.elements().style("display", "element")
 
-      // 2. Fade everything
+      // 2. Fade everything + zera larguras da jornada para o caminho da
+      // sequência ser o mais destacado (senão arestas aprendidas em 5 ficariam
+      // mais grossas que o caminho em 4).
       cy.elements().style({ opacity: 0.12 })
+      cy.edges().style({ "width": 1.5, "arrow-scale": 1.5 })
 
       // 3. Highlight nodes (once per unique code, with all positions)
       Object.entries(positionsByCode).forEach(([code, positions]) => {
