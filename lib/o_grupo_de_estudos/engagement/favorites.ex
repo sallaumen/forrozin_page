@@ -43,6 +43,21 @@ defmodule OGrupoDeEstudos.Engagement.Favorites do
     end
   end
 
+  @doc """
+  Garante (idempotente, sem rate limit) que um favorito e seu auto-like existam.
+
+  Usado por `Engagement.Learnings`: marcar um passo como aprendido também o
+  favorita, então a estrela aparece nas demais telas. Retorna
+  `{:ok, :favorited | :already_favorited}` ou `{:error, changeset}`.
+  """
+  def ensure_favorited(user_id, favoritable_type, favoritable_id) do
+    if favorited?(user_id, favoritable_type, favoritable_id) do
+      {:ok, :already_favorited}
+    else
+      create_favorite_with_like(user_id, favoritable_type, favoritable_id)
+    end
+  end
+
   defp create_favorite_with_like(user_id, favoritable_type, favoritable_id) do
     result =
       Multi.new()
