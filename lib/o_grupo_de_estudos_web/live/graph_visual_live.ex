@@ -260,25 +260,28 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       graph = Encyclopedia.build_graph()
       liked_codes = Engagement.liked_step_codes(user_id)
       learned_codes = Engagement.learned_step_codes(user_id)
-      frontier_codes = compute_frontier(graph.edges, learned_codes)
       next_goal = JourneyPlan.next_goal(learned_codes)
 
+      socket =
+        socket
+        |> assign(:loaded?, true)
+        |> assign(:liked_step_codes, liked_codes)
+        |> assign(:learned_codes, learned_codes)
+        |> assign(:next_goal, next_goal)
+        |> assign(:following_user_ids, Engagement.following_ids(user_id))
+        |> assign_graph_data(graph, false)
+        |> assign_default_sequence_start()
+        |> assign_manual_favorite_steps()
+        |> assign_sequence_library()
+
+      # O disclosure inicial vem do JSON (data-graph já tagueia learned/frontier/
+      # goal); este push é só reforço para o estilo de likes/favoritos.
       socket
-      |> assign(:loaded?, true)
-      |> assign(:liked_step_codes, liked_codes)
-      |> assign(:learned_codes, learned_codes)
-      |> assign(:frontier_codes, frontier_codes)
-      |> assign(:next_goal, next_goal)
-      |> assign(:following_user_ids, Engagement.following_ids(user_id))
-      |> assign_graph_data(graph, false)
-      |> assign_default_sequence_start()
-      |> assign_manual_favorite_steps()
-      |> assign_sequence_library()
       |> push_event("set_liked_steps", %{codes: liked_codes})
       |> push_event("set_favorited_steps", %{codes: favorited_step_codes(user_id)})
       |> push_event(
         "set_learned_steps",
-        learned_payload(learned_codes, frontier_codes, next_goal, full_map)
+        learned_payload(learned_codes, socket.assigns.frontier_codes, next_goal, full_map)
       )
     else
       socket
@@ -648,6 +651,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   defp assign_graph_data(socket, graph, include_orphans) do
+    # Recomputa a fronteira a partir DESTE grafo (fonte única): vale no load e
+    # quando o admin cria/remove conexões, mantendo as tags do JSON corretas.
+    socket =
+      assign(socket, :frontier_codes, compute_frontier(graph.edges, socket.assigns.learned_codes))
+
     graph_json = GraphData.build_json(graph, include_orphans, build_journey(socket))
 
     connected_codes =

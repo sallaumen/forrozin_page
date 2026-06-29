@@ -905,6 +905,23 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       })
     end
 
+    test "o data-graph já tagueia learned/frontier (disclosure inicial vem do JSON, não do push)",
+         %{conn: conn, step_a: bf} do
+      user = insert(:user)
+      OGrupoDeEstudos.Engagement.toggle_learned(user.id, bf.id)
+
+      {:ok, _lv, html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      [_, raw] = Regex.run(~r/data-graph="([^"]*)"/, html)
+      decoded = raw |> String.replace("&quot;", "\"") |> Jason.decode!()
+
+      bf_node = Enum.find(decoded["nodes"], &(&1["id"] == "BF"))
+      sc_node = Enum.find(decoded["nodes"], &(&1["id"] == "SC"))
+
+      assert bf_node["learned"] == true
+      assert sc_node["frontier"] == true
+    end
+
     test "marcar aprendido tambem propaga o favorito para o mapa", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 

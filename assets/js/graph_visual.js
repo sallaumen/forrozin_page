@@ -686,7 +686,17 @@ const GraphVisual = {
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)
 
-    // Apply liked step borders after layout (layout is synchronous here)
+    // Estado da jornada vem do PRÓPRIO JSON (data-graph já tagueia
+    // learned/frontier/goal), não do push set_learned_steps: o push é racy no
+    // mount conectado e, quando perdido, o disclosure não aplicava e o mapa
+    // inteiro aparecia no "Meu progresso". O push fica só para updates ao vivo.
+    window._learnedStepCodes = new Set(nodes.filter(n => n.learned).map(n => n.id))
+    window._frontierStepCodes = new Set(nodes.filter(n => n.frontier).map(n => n.id))
+    const goalNode = nodes.find(n => n.goal)
+    window._goalStepCode = goalNode ? goalNode.id : null
+    if (window._fullMap === undefined) window._fullMap = false
+
+    // Apply liked/journey borders + progressive reveal after layout (sync here)
     applyJourneyStyling()
 
     const initialSequenceSteps = this._consumeInitialSequenceSteps()
