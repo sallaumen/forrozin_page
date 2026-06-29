@@ -102,20 +102,27 @@
     e alternar para o mapa completo, mesmo com o painel fechado --%>
     <div
       :if={@loaded?}
-      class="fixed left-3 top-[112px] z-30 flex items-center gap-2 font-serif md:left-[88px]"
+      class="fixed left-3 top-[112px] z-30 flex items-center gap-2 font-serif md:left-[88px] xl:top-[70px]"
     >
       <button
         type="button"
         phx-click="toggle_journey"
         aria-expanded={to_string(@journey_open)}
         class={[
-          "inline-flex items-center gap-1.5 rounded-full border py-1.5 pl-2.5 pr-3 text-[11px] font-semibold shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur transition",
+          "inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-3.5 text-[11px] font-semibold shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur transition",
           @journey_open && "border-accent-orange bg-accent-orange text-white",
           !@journey_open &&
-            "border-accent-orange/25 bg-ink-50/95 text-accent-orange hover:bg-ink-100"
+            "border-accent-orange/30 bg-ink-50/95 text-accent-orange hover:bg-ink-100"
         ]}
       >
-        <.icon name="hero-academic-cap" class="size-4" /> Sua jornada
+        <span class={[
+          "inline-flex size-6 items-center justify-center rounded-full transition",
+          @journey_open && "bg-white text-accent-orange",
+          !@journey_open && "bg-accent-orange text-white"
+        ]}>
+          <.icon name="hero-academic-cap" class="size-3.5" />
+        </span>
+        Sua jornada
       </button>
       <div class="flex items-center gap-0.5 rounded-full border border-ink-900/10 bg-ink-50/95 p-0.5 text-[11px] shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur">
         <button
@@ -153,8 +160,10 @@
     >
       <% learned_count = length(@learned_codes) %>
       <% {headline, subtext} = JourneyPlan.encouragement(learned_count) %>
-      <% next_steps =
+      <% all_next =
         Enum.filter(@graph_search_nodes, &(&1.code in @frontier_codes or &1.code == @next_goal)) %>
+      <% next_steps = StudyJourney.rank_suggestions(all_next, JourneyPlan.base_plan(), 10) %>
+      <% hidden_next = length(all_next) - length(next_steps) %>
 
       <div class="shrink-0 border-b border-accent-orange/15 p-4">
         <div class="flex items-start justify-between gap-2">
@@ -213,6 +222,13 @@
             </button>
           </li>
         </ul>
+
+        <p
+          :if={hidden_next > 0}
+          class="mt-2 text-center text-[11px] italic leading-relaxed text-ink-500"
+        >
+          e mais {hidden_next} pra explorar no mapa
+        </p>
       </div>
 
       <div :if={learned_count > 0} class="shrink-0 border-t border-ink-200 p-3">
@@ -1619,17 +1635,17 @@
         <.icon name="hero-x-mark" class="size-5" />
       </button>
       <div class="h-full overflow-y-auto overflow-x-hidden">
-        <div :if={@drawer_item} class="px-5 pt-5">
+        <div :if={@drawer_item} class="px-5 pt-16">
           <% learned? = @drawer_item.code in @learned_codes %>
           <button
             phx-click="toggle_step_learned"
             phx-value-code={@drawer_item.code}
             class={[
-              "inline-flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition",
+              "inline-flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold shadow-sm transition",
               learned? &&
                 "border-accent-green/40 bg-accent-green/10 text-accent-green hover:bg-accent-green/15",
               !learned? &&
-                "border-ink-300 bg-ink-900 text-ink-50 hover:bg-ink-800 dark:bg-ink-200 dark:text-ink-900"
+                "border-accent-orange bg-accent-orange text-white hover:bg-accent-orange/90"
             ]}
           >
             <.icon

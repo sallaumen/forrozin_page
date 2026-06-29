@@ -59,4 +59,36 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourneyTest do
       assert StudyJourney.next_goal(~w(BF BAL), set([])) == "BF"
     end
   end
+
+  describe "rank_suggestions/3" do
+    test "base-plan steps come first, in base-plan order; others after" do
+      nodes = [%{code: "ZZ"}, %{code: "BA"}, %{code: "BF"}, %{code: "QQ"}]
+
+      assert StudyJourney.rank_suggestions(nodes, ~w(BF BAL BA), 10) == [
+               %{code: "BF"},
+               %{code: "BA"},
+               %{code: "ZZ"},
+               %{code: "QQ"}
+             ]
+    end
+
+    test "keeps the incoming relative order among non-base-plan steps (stable sort)" do
+      nodes = [%{code: "ZZ"}, %{code: "QQ"}, %{code: "AA"}]
+      assert StudyJourney.rank_suggestions(nodes, ~w(BF), 10) == nodes
+    end
+
+    test "limits to the given size, keeping the highest-priority steps" do
+      nodes = [%{code: "X1"}, %{code: "BA"}, %{code: "X2"}, %{code: "BF"}]
+
+      assert StudyJourney.rank_suggestions(nodes, ~w(BF BAL BA), 3) == [
+               %{code: "BF"},
+               %{code: "BA"},
+               %{code: "X1"}
+             ]
+    end
+
+    test "empty nodes returns empty" do
+      assert StudyJourney.rank_suggestions([], ~w(BF), 10) == []
+    end
+  end
 end
