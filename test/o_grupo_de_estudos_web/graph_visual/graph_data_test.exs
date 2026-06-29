@@ -59,7 +59,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
                "suggested" => false,
                "suggested_by_id" => nil,
                "orphan" => false,
-               "like_count" => 5
+               "like_count" => 5,
+               "learned" => false,
+               "frontier" => false,
+               "goal" => false
              }
 
       iv = by_code(nodes, "IV")
@@ -164,7 +167,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
           false
         )
 
-      assert decode_edges(json) == [%{"from" => "A", "to" => "B", "label" => "L", "spread" => 0}]
+      assert decode_edges(json) == [
+               %{"from" => "A", "to" => "B", "label" => "L", "spread" => 0, "state" => "hidden"}
+             ]
     end
   end
 
@@ -408,6 +413,90 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
 
     test "repeated step code WITH a self-edge is satisfied" do
       assert GraphData.find_missing_edges(["A", "A"], [edge("A", "A")]) == []
+    end
+  end
+
+  # ── build_json/3 — overlay da jornada de estudos ──────────────────────
+
+  defp journey(opts) do
+    %{
+      learned: MapSet.new(Keyword.get(opts, :learned, [])),
+      full_map?: Keyword.get(opts, :full_map?, true),
+      goal_code: Keyword.get(opts, :goal_code, nil)
+    }
+  end
+
+  describe "build_json/3 jornada" do
+    test "default (sem journey) mantém o comportamento atual com flags falsas" do
+      graph = %{nodes: [mknode("BF"), mknode("SC")], edges: [edge("BF", "SC")]}
+      bf = GraphData.build_json(graph, true) |> decode_nodes() |> by_code("BF")
+
+      assert bf["learned"] == false
+      assert bf["frontier"] == false
+      assert bf["goal"] == false
+    end
+
+    test "tagueia nós aprendidos, de fronteira e a meta" do
+      graph = %{
+        nodes: [mknode("BF"), mknode("SC"), mknode("IV")],
+        edges: [edge("BF", "SC"), edge("BF", "IV")]
+      }
+
+      nodes =
+        GraphData.build_json(graph, true, journey(learned: ["BF"], goal_code: "SC"))
+        |> decode_nodes()
+
+      assert by_code(nodes, "BF")["learned"] == true
+      assert by_code(nodes, "SC")["frontier"] == true
+      assert by_code(nodes, "SC")["goal"] == true
+      assert by_code(nodes, "IV")["frontier"] == true
+      assert by_code(nodes, "IV")["learned"] == false
+    end
+
+    test "tagueia o estado das arestas (learned/frontier/hidden)" do
+      graph = %{
+        nodes: [mknode("BF"), mknode("SC"), mknode("IV")],
+        edges: [edge("BF", "SC"), edge("SC", "IV")]
+      }
+
+      edges =
+        GraphData.build_json(graph, true, journey(learned: ["BF", "SC"]))
+        |> decode_edges()
+
+      bf_sc = Enum.find(edges, &(&1["from"] == "BF" and &1["to"] == "SC"))
+      sc_iv = Enum.find(edges, &(&1["from"] == "SC" and &1["to"] == "IV"))
+
+      assert bf_sc["state"] == "learned"
+      assert sc_iv["state"] == "frontier"
+    end
+
+    test "fora do mapa completo, só mostra aprendidos + fronteira e oculta o resto" do
+      graph = %{
+        nodes: [mknode("BF"), mknode("SC"), mknode("IV"), mknode("XX")],
+        edges: [edge("BF", "SC"), edge("SC", "IV"), edge("XX", "IV")]
+      }
+
+      json = GraphData.build_json(graph, true, journey(learned: ["BF"], full_map?: false))
+      codes = json |> decode_nodes() |> Enum.map(& &1["id"]) |> Enum.sort()
+      edges = decode_edges(json)
+
+      # BF (aprendido) + SC (fronteira); IV e XX ficam ocultos
+      assert codes == ["BF", "SC"]
+      # só a aresta BF->SC (frontier) aparece; SC->IV e XX->IV são ocultas
+      assert Enum.map(edges, &{&1["from"], &1["to"]}) == [{"BF", "SC"}]
+    end
+
+    test "no mapa completo, mostra tudo mesmo com a jornada ativa" do
+      graph = %{
+        nodes: [mknode("BF"), mknode("SC"), mknode("XX")],
+        edges: [edge("BF", "SC"), edge("XX", "SC")]
+      }
+
+      json = GraphData.build_json(graph, true, journey(learned: ["BF"], full_map?: true))
+      codes = json |> decode_nodes() |> Enum.map(& &1["id"]) |> Enum.sort()
+
+      assert codes == ["BF", "SC", "XX"]
+      assert length(decode_edges(json)) == 2
     end
   end
 end

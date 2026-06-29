@@ -25,8 +25,22 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   follows `Enum.group_by` (not input order).
   """
 
+  alias OGrupoDeEstudosWeb.GraphVisual.StudyJourney
+
   @typedoc "Raw graph from `Encyclopedia.build_graph`; node `category` is a `%Category{}` or nil."
   @type raw_graph :: %{nodes: [map()], edges: [map()]}
+
+  @typedoc """
+  Contexto da jornada de estudos para colorir/filtrar o grafo. `learned` são os
+  códigos aprendidos; `full_map?` desliga a revelação progressiva (mostra tudo);
+  `goal_code` é a próxima meta a destacar. O default não altera o grafo (full
+  map, nada aprendido).
+  """
+  @type journey :: %{
+          learned: MapSet.t(String.t()),
+          full_map?: boolean(),
+          goal_code: String.t() | nil
+        }
 
   @typedoc "Assign-shaped search node where `category` is a STRING label."
   @type search_node :: %{code: String.t(), name: String.t(), category: String.t()}
@@ -67,47 +81,95 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
     |> Enum.take(8)
   end
 
+  @default_journey %{learned: MapSet.new(), full_map?: true, goal_code: nil}
+
   @doc """
   Encodes the graph as the Cytoscape nodes/edges JSON. Consumes RAW graph
   structs (node `category` is a `%Category{}` or nil). When `include_orphans`
   is false only edge-connected nodes are emitted; each node still carries an
   `orphan` flag. Notes are truncated to 300 graphemes.
-  """
-  @spec build_json(raw_graph(), boolean()) :: String.t()
-  def build_json(%{nodes: nodes, edges: edges}, include_orphans) do
-    connected_codes =
-      edges
-      |> Enum.flat_map(fn c -> [c.source_step.code, c.target_step.code] end)
-      |> MapSet.new()
 
-    visible_nodes =
-      if include_orphans do
-        nodes
-      else
-        Enum.filter(nodes, &MapSet.member?(connected_codes, &1.code))
-      end
+  The optional `journey` adds the study-journey overlay: each node gets
+  `learned`/`frontier`/`goal` flags and each edge a `state`
+  (`learned`/`frontier`/`hidden`). When `journey.full_map?` is false only the
+  learned-plus-frontier nodes and their non-hidden edges are emitted (revelação
+  progressiva). The default keeps the original behaviour (full map, no overlay).
+  """
+  @spec build_json(raw_graph(), boolean(), journey()) :: String.t()
+  def build_json(graph, include_orphans, journey \\ @default_journey)
+
+  def build_json(%{nodes: nodes, edges: edges}, include_orphans, journey) do
+    learned = journey.learned
+    frontier = StudyJourney.frontier(learned, edge_pairs(edges))
+    connected = connected_codes(edges)
+    visible = visible_codes(nodes, connected, include_orphans, journey, frontier)
 
     Jason.encode!(%{
-      nodes:
-        Enum.map(visible_nodes, fn p ->
-          cat = p.category
-
-          %{
-            id: p.code,
-            nome: p.name,
-            categoria: if(cat, do: cat.label, else: "Outros"),
-            categoriaName: if(cat, do: cat.name, else: "outros"),
-            cor: if(cat, do: cat.color, else: "#9a7a5a"),
-            nota: truncate_note(p.note, 300),
-            highlighted: p.highlighted || false,
-            suggested: p.suggested_by_id != nil,
-            suggested_by_id: p.suggested_by_id,
-            orphan: not MapSet.member?(connected_codes, p.code),
-            like_count: p.like_count || 0
-          }
-        end),
-      edges: compute_edge_spread(edges)
+      nodes: encode_nodes(nodes, visible, connected, learned, frontier, journey.goal_code),
+      edges: encode_edges(edges, learned, visible, journey.full_map?)
     })
+  end
+
+  defp edge_pairs(edges) do
+    Enum.map(edges, fn e -> {e.source_step.code, e.target_step.code} end)
+  end
+
+  defp connected_codes(edges) do
+    edges
+    |> Enum.flat_map(fn c -> [c.source_step.code, c.target_step.code] end)
+    |> MapSet.new()
+  end
+
+  defp visible_codes(nodes, connected, include_orphans, %{full_map?: true}, _frontier) do
+    base =
+      if include_orphans, do: nodes, else: Enum.filter(nodes, &MapSet.member?(connected, &1.code))
+
+    MapSet.new(base, & &1.code)
+  end
+
+  defp visible_codes(_nodes, _connected, _include_orphans, %{learned: learned}, frontier) do
+    StudyJourney.visible_codes(learned, frontier)
+  end
+
+  defp encode_nodes(nodes, visible, connected, learned, frontier, goal_code) do
+    nodes
+    |> Enum.filter(&MapSet.member?(visible, &1.code))
+    |> Enum.map(&node_map(&1, connected, learned, frontier, goal_code))
+  end
+
+  defp node_map(p, connected, learned, frontier, goal_code) do
+    cat = p.category
+
+    %{
+      id: p.code,
+      nome: p.name,
+      categoria: if(cat, do: cat.label, else: "Outros"),
+      categoriaName: if(cat, do: cat.name, else: "outros"),
+      cor: if(cat, do: cat.color, else: "#9a7a5a"),
+      nota: truncate_note(p.note, 300),
+      highlighted: p.highlighted || false,
+      suggested: p.suggested_by_id != nil,
+      suggested_by_id: p.suggested_by_id,
+      orphan: not MapSet.member?(connected, p.code),
+      like_count: p.like_count || 0,
+      learned: MapSet.member?(learned, p.code),
+      frontier: MapSet.member?(frontier, p.code),
+      goal: p.code == goal_code
+    }
+  end
+
+  defp encode_edges(edges, learned, visible, full_map?) do
+    edges
+    |> compute_edge_spread()
+    |> Enum.map(fn e -> Map.put(e, :state, StudyJourney.edge_state(learned, {e.from, e.to})) end)
+    |> Enum.filter(&edge_visible?(&1, visible, full_map?))
+  end
+
+  defp edge_visible?(_edge, _visible, true), do: true
+
+  defp edge_visible?(edge, visible, false) do
+    edge.state != :hidden and MapSet.member?(visible, edge.from) and
+      MapSet.member?(visible, edge.to)
   end
 
   @doc """
