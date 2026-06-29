@@ -355,6 +355,11 @@ function applyJourneyStyling() {
   const learned = window._learnedStepCodes
   if (!learned) return
 
+  // Overlays (highlight de sequência, modo manual) são donos temporários da
+  // visão e revelam o que precisam; não mexer aqui — o clear deles reaplica a
+  // jornada chamando applyJourneyStyling de novo.
+  if (window._seqHighlightActive || window._manualMode) return
+
   const frontier = window._frontierStepCodes || new Set()
   const goal = window._goalStepCode
   // Modo de edição (admin) sempre mostra o grafo inteiro para poder editar
@@ -371,8 +376,6 @@ function applyJourneyStyling() {
       const isFrontier = frontier.has(id)
       const isGoal = id === goal
       node.style("display", fullMap || isLearned || isFrontier || isGoal ? "element" : "none")
-
-      if (window._seqHighlightActive) return
 
       if (isLearned) {
         node.removeClass("like-active journey-frontier").addClass("journey-learned")
@@ -410,8 +413,6 @@ function applyJourneyStyling() {
       const tgt = edge.target().id()
       const state = learned.has(src) && learned.has(tgt) ? "learned" : learned.has(src) ? "frontier" : "hidden"
       edge.style("display", fullMap || state !== "hidden" ? "element" : "none")
-
-      if (window._seqHighlightActive) return
 
       if (state === "learned") {
         edge.style({ "line-color": t.journeyLearned, "target-arrow-color": t.journeyLearned, "line-style": "solid", "line-opacity": 1 })
@@ -495,14 +496,19 @@ const GraphVisual = {
       if (input) input.value = ""
     })
 
-    // Manual mode toggle
+    // Manual mode toggle. O builder manual constrói a sequência clicando nós, e
+    // nó display:none não recebe clique — então o modo manual revela o grafo
+    // inteiro (e applyJourneyStyling sai cedo enquanto _manualMode está ativo).
     this.handleEvent("set_manual_mode", ({ active }) => {
       this._manualMode = active
+      window._manualMode = active
       this.el.dataset.manualMode = active ? "true" : "false"
       if (active) {
         this._clearSequenceHighlight({ refit: false })
+        if (this._cy) this._cy.elements().style("display", "element")
       } else {
         this._clearManualStepGuide()
+        applyJourneyStyling()
       }
     })
 
@@ -534,6 +540,9 @@ const GraphVisual = {
       if (!cy) return
       const node = cy.getElementById(code)
       if (node.length > 0) {
+        // Revela o nó (um chip do drawer pode apontar para um passo escondido
+        // no modo progressivo); o fechar do drawer reaplica a jornada.
+        node.closedNeighborhood().style("display", "element")
         cy.animate({ center: { eles: node }, duration: 300 })
         node.select()
         applySpotlight(cy, node)
@@ -889,6 +898,12 @@ const GraphVisual = {
       const cy = this._cy
       if (!cy) return
 
+      // No "Meu progresso" a maioria dos nós está escondida; o filtro de
+      // categoria só faz sentido no mapa completo (ou em edição). A legenda
+      // segue como chave de cores, mas o clique não filtra aqui.
+      const legendEditMode = this.el.dataset.editMode === "true"
+      if (!window._fullMap && !legendEditMode) return
+
       const catName = btn.dataset.category
       this.pushEvent("close_drawer", {})
       this._closeMobileLegend()
@@ -1221,6 +1236,9 @@ const GraphVisual = {
 
     clearSpotlight(cy)
     cy.nodes().unselect()
+    // Revela o nó buscado e a vizinhança mesmo em "Meu progresso" (a busca é uma
+    // ação deliberada de "me mostre este passo"); o clear reaplica a jornada.
+    node.closedNeighborhood().style("display", "element")
     node.select()
     applySpotlight(cy, node)
 

@@ -73,6 +73,8 @@
     class="fixed left-1/2 top-[112px] z-30 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-ink-900/10 bg-ink-50/95 p-0.5 font-serif text-[11px] shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur"
   >
     <button
+      type="button"
+      aria-pressed={to_string(!@full_map?)}
       phx-click={@full_map? && "toggle_full_map"}
       class={[
         "rounded-full px-3 py-1.5 font-semibold transition",
@@ -83,6 +85,8 @@
       Meu progresso
     </button>
     <button
+      type="button"
+      aria-pressed={to_string(@full_map?)}
       phx-click={!@full_map? && "toggle_full_map"}
       class={[
         "rounded-full px-3 py-1.5 font-semibold transition",
