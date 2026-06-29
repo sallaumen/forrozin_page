@@ -113,38 +113,99 @@ function runHybridLayout(cy) {
 // ---------------------------------------------------------------------------
 // Category zone overlay: ellipses at fixed sector positions (not bounding box)
 // ---------------------------------------------------------------------------
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath()
+  if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return }
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+
+// Chip "tag" da área (estilo legenda): fundo papel OPACO (limpa os fios atrás)
+// + ponto na cor da categoria + nome em texto escuro, pequeno. Desenhado na
+// camada acima das arestas pra ler mesmo com o mapa cheio.
+function drawZoneChip(ctx, cx, cy, label, cor, bg, text) {
+  const fontPx = 12
+  ctx.save()
+  ctx.font = `600 ${fontPx}px Georgia, "Iowan Old Style", serif`
+  const dotR = 3.5, padX = 10, gap = 6, h = 22, r = h / 2
+  const tw = ctx.measureText(label).width
+  const w = padX * 2 + dotR * 2 + gap + tw
+  const x = cx - w / 2, y = cy - h / 2
+
+  roundRectPath(ctx, x, y, w, h, r)
+  ctx.shadowColor = "rgba(60,40,20,0.20)"
+  ctx.shadowBlur = 6
+  ctx.shadowOffsetY = 1
+  ctx.fillStyle = bg
+  ctx.fill()
+  ctx.shadowColor = "transparent"
+
+  roundRectPath(ctx, x, y, w, h, r)
+  ctx.lineWidth = 1
+  ctx.strokeStyle = cor + "45"
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.arc(x + padX + dotR, cy, dotR, 0, 2 * Math.PI)
+  ctx.fillStyle = cor
+  ctx.fill()
+
+  ctx.fillStyle = text
+  ctx.textAlign = "left"
+  ctx.textBaseline = "middle"
+  ctx.fillText(label, x + padX + dotR * 2 + gap, cy + 0.5)
+  ctx.restore()
+}
+
 function drawCategoryZones(cy, sectorCenters, byCat) {
-  const existingCanvas = cy.container().querySelector(".zone-canvas")
-  if (existingCanvas) existingCanvas.remove()
+  const container = cy.container()
+  container.querySelector(".zone-canvas")?.remove()
+  container.querySelector(".zone-label-canvas")?.remove()
 
   if (!sectorCenters || !byCat) return
 
-  const container = cy.container()
-  const canvas = document.createElement("canvas")
-  canvas.className = "zone-canvas"
-  canvas.width = container.offsetWidth
-  canvas.height = container.offsetHeight
-  canvas.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:0;"
-  container.insertBefore(canvas, container.firstChild)
+  const w = container.offsetWidth
+  const h = container.offsetHeight
 
-  const ctx = canvas.getContext("2d")
-  const pan = cy.pan()
-  const zoom = cy.zoom()
+  // Duas camadas: círculos ATRÁS do grafo (fundo translúcido) e os rótulos
+  // ACIMA das arestas (chips opacos, z-index 1), pra ler mesmo com o mapa cheio.
+  const bg = document.createElement("canvas")
+  bg.className = "zone-canvas"
+  bg.width = w
+  bg.height = h
+  bg.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:0;"
+  container.insertBefore(bg, container.firstChild)
+
+  const fg = document.createElement("canvas")
+  fg.className = "zone-label-canvas"
+  fg.width = w
+  fg.height = h
+  fg.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:1;"
+  container.appendChild(fg)
+
+  const bgCtx = bg.getContext("2d")
+  const fgCtx = fg.getContext("2d")
+  const root = getComputedStyle(document.documentElement)
+  const chipBg = root.getPropertyValue("--color-ink-50").trim() || "#fdfbf8"
+  const chipText = root.getPropertyValue("--color-ink-900").trim() || "#1a0e05"
 
   Object.entries(byCat).forEach(([cat, catNodes]) => {
     if (catNodes.length < 2) return
     const cor = catNodes[0].data("cor") || "#9a7a5a"
 
-    // Use actual bounding box of category nodes (which are now properly clustered)
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     catNodes.forEach(n => {
       const pos = n.renderedPosition()
-      const w = n.renderedWidth() / 2
-      const h = n.renderedHeight() / 2
-      minX = Math.min(minX, pos.x - w)
-      minY = Math.min(minY, pos.y - h)
-      maxX = Math.max(maxX, pos.x + w)
-      maxY = Math.max(maxY, pos.y + h)
+      const nw = n.renderedWidth() / 2
+      const nh = n.renderedHeight() / 2
+      minX = Math.min(minX, pos.x - nw)
+      minY = Math.min(minY, pos.y - nh)
+      maxX = Math.max(maxX, pos.x + nw)
+      maxY = Math.max(maxY, pos.y + nh)
     })
 
     const padding = 50
@@ -152,15 +213,18 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
     const cy_ = (minY + maxY) / 2
     const rx = (maxX - minX) / 2 + padding
     const ry = (maxY - minY) / 2 + padding
-    const r = Math.max(rx, ry, 40) // circle: use the larger dimension
+    const r = Math.max(rx, ry, 40)
 
-    ctx.beginPath()
-    ctx.arc(cx, cy_, r, 0, 2 * Math.PI)
-    ctx.fillStyle = cor + "15"
-    ctx.fill()
-    ctx.strokeStyle = cor + "35"
-    ctx.lineWidth = 2
-    ctx.stroke()
+    bgCtx.beginPath()
+    bgCtx.arc(cx, cy_, r, 0, 2 * Math.PI)
+    bgCtx.fillStyle = cor + "15"
+    bgCtx.fill()
+    bgCtx.strokeStyle = cor + "35"
+    bgCtx.lineWidth = 2
+    bgCtx.stroke()
+
+    // Nome da área num chip pequeno e opaco, no alto do círculo (acima dos fios).
+    drawZoneChip(fgCtx, cx, cy_ - r + 15, catNodes[0].data("categoria") || cat, cor, chipBg, chipText)
   })
 }
 
@@ -191,6 +255,9 @@ function cyTheme() {
     likeBorderColor:     dark ? get("--color-accent-red") : "#c0392b",
     journeyLearned:      dark ? get("--color-accent-green") : "#2f8f5b",
     journeyFrontier:     dark ? get("--color-accent-orange") : "#c4621e",
+    selectFill:          get("--color-accent-orange"),
+    selectHalo:          get("--color-gold-500"),
+    selectText:          "#2a1505",
     edgeOpacity:         dark ? 0.75 : 0.70,
     edgeHighlightColor:  dark ? get("--color-accent-orange") : "#c4621e",
     edgeLabelText:       dark ? get("--color-ink-800") : "#3a2510",
@@ -240,18 +307,18 @@ function buildCyStyle(currentUserId) {
       }
     },
     {
-      // Nó clicado: preenchimento laranja sólido da marca (fixo nos dois temas
-      // para o texto claro manter contraste AA) + anel claro de contorno. A
-      // borda da jornada (inline) vence quando o nó tem estado; o laranja do
-      // preenchimento é o sinal principal de "selecionado".
+      // Nó clicado: preenchimento no laranja PADRÃO do sistema (--color-accent-
+      // orange) + halo dourado (overlay, não conflita com a borda inline da
+      // jornada) como contorno elegante. O preenchimento (set inline por
+      // paintNodeFill nos eventos select) é o sinal principal de "selecionado".
       selector: "node:selected",
       style: {
-        "background-color": "#c4621e",
+        "background-color": t.selectFill,
         "background-opacity": 1,
-        "border-color": "#fff7ec",
-        "border-width": 3,
-        "border-opacity": 0.9,
-        "color": "#fff7ec",
+        "color": t.selectText,
+        "overlay-color": t.selectHalo,
+        "overlay-opacity": 0.22,
+        "overlay-padding": 7,
         "z-index": 99
       }
     },
@@ -318,7 +385,7 @@ function buildCyStyle(currentUserId) {
 // e chamado nos eventos select/unselect E no observer.
 function paintNodeFill(n, t, currentUserId) {
   if (n.selected()) {
-    n.style({ "background-color": "#c4621e", "background-opacity": 1, "color": "#fff7ec" })
+    n.style({ "background-color": t.selectFill, "background-opacity": 1, "color": t.selectText })
     return
   }
   const suggested = n.data("suggestedById") && n.data("suggestedById") === currentUserId
