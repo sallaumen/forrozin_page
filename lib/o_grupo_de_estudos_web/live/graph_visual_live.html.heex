@@ -152,42 +152,30 @@
       class="absolute left-0 top-0 z-30 flex h-full w-[300px] max-w-[88vw] flex-col border-r border-accent-orange/25 bg-ink-50 font-serif shadow-[2px_0_16px_rgba(60,40,20,0.10)]"
     >
       <% learned_count = length(@learned_codes) %>
-      <% total = max(length(@graph_search_nodes), 1) %>
-      <% pct = round(learned_count / total * 100) %>
+      <% {headline, subtext} = JourneyPlan.encouragement(learned_count) %>
       <% next_steps =
         Enum.filter(@graph_search_nodes, &(&1.code in @frontier_codes or &1.code == @next_goal)) %>
 
       <div class="shrink-0 border-b border-accent-orange/15 p-4">
-        <div class="flex items-start justify-between">
+        <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <div class="text-[10px] font-bold uppercase tracking-widest text-ink-500">
               Sua jornada
             </div>
-            <div class="font-serif text-lg font-bold text-ink-900">{JourneyPlan.level(pct)}</div>
+            <div class="mt-0.5 font-serif text-lg font-bold leading-tight text-ink-900">
+              {headline}
+            </div>
           </div>
           <button
             type="button"
             phx-click="toggle_journey"
             aria-label="Fechar jornada"
-            class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-700 transition hover:bg-ink-200"
+            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-700 transition hover:bg-ink-200"
           >
             <.icon name="hero-x-mark" class="size-4" />
           </button>
         </div>
-
-        <div class="mt-2">
-          <div class="flex items-baseline gap-1.5">
-            <span class="text-2xl font-bold text-accent-orange">{pct}%</span>
-            <span class="text-xs text-ink-500">{learned_count} de {total} passos</span>
-          </div>
-          <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-ink-200">
-            <div
-              class="h-full rounded-full bg-accent-orange transition-all"
-              style={"width: #{pct}%"}
-            >
-            </div>
-          </div>
-        </div>
+        <p class="m-0 mt-1.5 text-xs leading-relaxed text-ink-600">{subtext}</p>
       </div>
 
       <div class="min-h-0 flex-1 overflow-y-auto p-4">
