@@ -796,15 +796,16 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
              "graph drawer should use transform: translateX(100%) for off-screen positioning"
     end
 
-    test "step detail drawer stays hidden on mobile and clips horizontal overflow", %{conn: conn} do
+    test "step detail drawer is responsive (visible on mobile) and clips overflow", %{conn: conn} do
       {:ok, _view, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
-      # Drawer unificado (mesmo StepDetail da Collection): escondido no mobile,
-      # visivel a partir de md, e clipando overflow horizontal para nao gerar
-      # scroll lateral no documento.
+      # Drawer unificado (mesmo StepDetail da Collection): agora aparece TAMBÉM no
+      # mobile (pra dar pra marcar como aprendido no celular), full-width via
+      # max-width 100vw, e clipa overflow horizontal. Não é mais desktop-only.
       assert html =~ ~s(id="graph-drawer")
-      assert html =~ "hidden overflow-hidden"
-      assert html =~ "md:block"
+      assert html =~ "overflow-hidden"
+      assert html =~ "max-width: 100vw"
+      refute html =~ ~r/id="graph-drawer"[^>]*md:block/
     end
 
     test "applying a new sequence highlight does not refit before focusing the sequence" do
@@ -949,11 +950,16 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert_push_event(lv, "set_learned_steps", %{full_map: true})
     end
 
-    test "o drawer de jornada renderiza progresso e 'pode aprender agora'", %{conn: conn} do
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+    test "a jornada começa fechada e abre com progresso e 'pode aprender agora'", %{conn: conn} do
+      {:ok, lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      # Pill flutuante (modo estudo) sempre visível; o painel começa fechado.
+      assert html =~ "Sua jornada"
+      refute html =~ ~s(id="journey-drawer")
+
+      html = render_click(lv, "toggle_journey", %{})
 
       assert html =~ ~s(id="journey-drawer")
-      assert html =~ "Sua jornada"
       assert html =~ "Pode aprender agora"
       # 0 aprendidos -> nivel "Começando"
       assert html =~ "Começando"
