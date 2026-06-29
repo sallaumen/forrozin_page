@@ -67,6 +67,49 @@
     </div>
   </div>
 
+  <%!-- Toggle da jornada: revelação progressiva (Meu progresso) vs mapa completo --%>
+  <div
+    :if={@loaded?}
+    class="fixed left-1/2 top-[112px] z-30 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-ink-900/10 bg-ink-50/95 p-0.5 font-serif text-[11px] shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur"
+  >
+    <button
+      type="button"
+      aria-pressed={to_string(!@full_map?)}
+      phx-click={@full_map? && "toggle_full_map"}
+      class={[
+        "rounded-full px-3 py-1.5 font-semibold transition",
+        !@full_map? && "bg-accent-orange text-white shadow-sm",
+        @full_map? && "text-ink-500 hover:text-ink-900"
+      ]}
+    >
+      Meu progresso
+    </button>
+    <button
+      type="button"
+      aria-pressed={to_string(@full_map?)}
+      phx-click={!@full_map? && "toggle_full_map"}
+      class={[
+        "rounded-full px-3 py-1.5 font-semibold transition",
+        @full_map? && "bg-accent-orange text-white shadow-sm",
+        !@full_map? && "text-ink-500 hover:text-ink-900"
+      ]}
+    >
+      Explorar tudo
+    </button>
+  </div>
+
+  <%!-- Onboarding: só a meta visível (0 aprendidos) pode parecer mapa vazio --%>
+  <div
+    :if={@loaded? && @learned_codes == [] && !@full_map?}
+    class="pointer-events-none fixed left-1/2 top-[156px] z-20 w-[280px] max-w-[88vw] -translate-x-1/2 rounded-xl border border-accent-orange/20 bg-ink-50/95 px-4 py-3 text-center font-serif shadow-[0_8px_24px_rgba(60,40,20,0.12)] backdrop-blur"
+  >
+    <p class="m-0 text-sm font-semibold text-ink-900">Comece sua jornada</p>
+    <p class="m-0 mt-1 text-xs leading-relaxed text-ink-600">
+      O mapa revela os passos aos poucos. Toque no passo em destaque e marque como
+      aprendido para abrir os próximos, ou veja tudo em "Explorar tudo".
+    </p>
+  </div>
+
   <%!-- Graph canvas / 3D canvas — fills remaining viewport --%>
   <div class="flex-1 relative overflow-hidden">
     <%!-- 2D Graph --%>
@@ -1493,6 +1536,26 @@
         <.icon name="hero-x-mark" class="size-5" />
       </button>
       <div class="h-full overflow-y-auto overflow-x-hidden">
+        <div :if={@drawer_item} class="px-5 pt-5">
+          <% learned? = @drawer_item.code in @learned_codes %>
+          <button
+            phx-click="toggle_step_learned"
+            phx-value-code={@drawer_item.code}
+            class={[
+              "inline-flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition",
+              learned? &&
+                "border-accent-green/40 bg-accent-green/10 text-accent-green hover:bg-accent-green/15",
+              !learned? &&
+                "border-ink-300 bg-ink-900 text-ink-50 hover:bg-ink-800 dark:bg-ink-200 dark:text-ink-900"
+            ]}
+          >
+            <.icon
+              name={if learned?, do: "hero-check-circle-solid", else: "hero-academic-cap"}
+              class="size-5"
+            />
+            {if learned?, do: "Você já aprendeu este passo", else: "Marcar como aprendido"}
+          </button>
+        </div>
         <.step_detail
           :if={@drawer_item}
           mode={:drawer}

@@ -3,7 +3,15 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Encyclopedia.StepQuery
-  alias OGrupoDeEstudosWeb.GraphVisual.{GraphData, SequenceLibrary, TextSearch}
+
+  alias OGrupoDeEstudosWeb.GraphVisual.{
+    GraphData,
+    JourneyPlan,
+    SequenceLibrary,
+    StudyJourney,
+    TextSearch
+  }
+
   alias OGrupoDeEstudosWeb.StepDrawer
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -20,6 +28,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
   use OGrupoDeEstudosWeb.Handlers.GraphSearch
   use OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite
+  use OGrupoDeEstudosWeb.Handlers.GraphJourney
   use OGrupoDeEstudosWeb.Handlers.GraphPanel
   use OGrupoDeEstudosWeb.Handlers.GraphHighlight
   use OGrupoDeEstudosWeb.Handlers.GraphGenerator
@@ -84,6 +93,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> assign(:seq_suggested_edges, MapSet.new())
       |> assign(:seq_favorites_list, [])
       |> assign(:liked_step_codes, [])
+      |> assign(:learned_codes, [])
+      |> assign(:frontier_codes, [])
+      |> assign(:next_goal, nil)
+      |> assign(:full_map?, false)
       |> assign(:following_user_ids, MapSet.new())
       |> assign(:bubble_open, false)
       |> assign(:bubble_tab, "following")
@@ -243,12 +256,19 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp load_graph_data(socket) do
     if connected?(socket) do
       user_id = socket.assigns.current_user.id
+      full_map = socket.assigns.full_map?
       graph = Encyclopedia.build_graph()
       liked_codes = Engagement.liked_step_codes(user_id)
+      learned_codes = Engagement.learned_step_codes(user_id)
+      frontier_codes = compute_frontier(graph.edges, learned_codes)
+      next_goal = JourneyPlan.next_goal(learned_codes)
 
       socket
       |> assign(:loaded?, true)
       |> assign(:liked_step_codes, liked_codes)
+      |> assign(:learned_codes, learned_codes)
+      |> assign(:frontier_codes, frontier_codes)
+      |> assign(:next_goal, next_goal)
       |> assign(:following_user_ids, Engagement.following_ids(user_id))
       |> assign_graph_data(graph, false)
       |> assign_default_sequence_start()
@@ -256,9 +276,37 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> assign_sequence_library()
       |> push_event("set_liked_steps", %{codes: liked_codes})
       |> push_event("set_favorited_steps", %{codes: favorited_step_codes(user_id)})
+      |> push_event(
+        "set_learned_steps",
+        learned_payload(learned_codes, frontier_codes, next_goal, full_map)
+      )
     else
       socket
     end
+  end
+
+  # Fronteira ("pode aprender agora"): destinos não-aprendidos de arestas que
+  # saem de passos já aprendidos. Pura, derivada do grafo + aprendidos.
+  defp compute_frontier(edges, learned_codes) do
+    pairs = Enum.map(edges, fn e -> {e.source_step.code, e.target_step.code} end)
+
+    learned_codes
+    |> MapSet.new()
+    |> StudyJourney.frontier(pairs)
+    |> MapSet.to_list()
+  end
+
+  defp learned_payload(learned_codes, frontier_codes, next_goal, full_map) do
+    %{learned: learned_codes, frontier: frontier_codes, goal: next_goal, full_map: full_map}
+  end
+
+  # Contexto da jornada para o build_json taguear nós/arestas (sem filtrar).
+  defp build_journey(socket) do
+    %{
+      learned: MapSet.new(socket.assigns.learned_codes),
+      frontier: MapSet.new(socket.assigns.frontier_codes),
+      goal_code: socket.assigns.next_goal
+    }
   end
 
   @impl true
@@ -600,7 +648,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   defp assign_graph_data(socket, graph, include_orphans) do
-    graph_json = GraphData.build_json(graph, include_orphans)
+    graph_json = GraphData.build_json(graph, include_orphans, build_journey(socket))
 
     connected_codes =
       graph.edges

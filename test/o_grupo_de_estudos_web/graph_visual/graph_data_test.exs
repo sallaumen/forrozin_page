@@ -59,7 +59,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
                "suggested" => false,
                "suggested_by_id" => nil,
                "orphan" => false,
-               "like_count" => 5
+               "like_count" => 5,
+               "learned" => false,
+               "frontier" => false,
+               "goal" => false
              }
 
       iv = by_code(nodes, "IV")
@@ -164,7 +167,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
           false
         )
 
-      assert decode_edges(json) == [%{"from" => "A", "to" => "B", "label" => "L", "spread" => 0}]
+      assert decode_edges(json) == [
+               %{"from" => "A", "to" => "B", "label" => "L", "spread" => 0, "state" => "hidden"}
+             ]
     end
   end
 
@@ -408,6 +413,82 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
 
     test "repeated step code WITH a self-edge is satisfied" do
       assert GraphData.find_missing_edges(["A", "A"], [edge("A", "A")]) == []
+    end
+  end
+
+  # ── build_json/3 — overlay da jornada de estudos ──────────────────────
+
+  defp journey(opts) do
+    %{
+      learned: MapSet.new(Keyword.get(opts, :learned, [])),
+      frontier: MapSet.new(Keyword.get(opts, :frontier, [])),
+      goal_code: Keyword.get(opts, :goal_code, nil)
+    }
+  end
+
+  describe "build_json/3 jornada (tag-only; disclosure é no cliente)" do
+    test "default (sem journey) mantém o comportamento atual com flags falsas" do
+      graph = %{nodes: [mknode("BF"), mknode("SC")], edges: [edge("BF", "SC")]}
+      bf = GraphData.build_json(graph, true) |> decode_nodes() |> by_code("BF")
+
+      assert bf["learned"] == false
+      assert bf["frontier"] == false
+      assert bf["goal"] == false
+    end
+
+    test "tagueia nós aprendidos, de fronteira e a meta" do
+      graph = %{
+        nodes: [mknode("BF"), mknode("SC"), mknode("IV")],
+        edges: [edge("BF", "SC"), edge("BF", "IV")]
+      }
+
+      nodes =
+        GraphData.build_json(
+          graph,
+          true,
+          journey(learned: ["BF"], frontier: ["SC", "IV"], goal_code: "SC")
+        )
+        |> decode_nodes()
+
+      assert by_code(nodes, "BF")["learned"] == true
+      assert by_code(nodes, "SC")["frontier"] == true
+      assert by_code(nodes, "SC")["goal"] == true
+      assert by_code(nodes, "IV")["frontier"] == true
+      assert by_code(nodes, "IV")["learned"] == false
+    end
+
+    test "tagueia o estado das arestas (learned/frontier/hidden)" do
+      graph = %{
+        nodes: [mknode("BF"), mknode("SC"), mknode("IV")],
+        edges: [edge("BF", "SC"), edge("SC", "IV"), edge("IV", "BF")]
+      }
+
+      edges =
+        GraphData.build_json(graph, true, journey(learned: ["BF", "SC"]))
+        |> decode_edges()
+
+      state = fn from, to ->
+        Enum.find(edges, &(&1["from"] == from and &1["to"] == to))["state"]
+      end
+
+      assert state.("BF", "SC") == "learned"
+      assert state.("SC", "IV") == "frontier"
+      assert state.("IV", "BF") == "hidden"
+    end
+
+    test "emite TODOS os nós (a revelação progressiva é aplicada no cliente)" do
+      graph = %{
+        nodes: [mknode("BF"), mknode("SC"), mknode("IV"), mknode("XX")],
+        edges: [edge("BF", "SC"), edge("SC", "IV"), edge("XX", "IV")]
+      }
+
+      codes =
+        GraphData.build_json(graph, true, journey(learned: ["BF"], frontier: ["SC"]))
+        |> decode_nodes()
+        |> Enum.map(& &1["id"])
+        |> Enum.sort()
+
+      assert codes == ["BF", "IV", "SC", "XX"]
     end
   end
 end

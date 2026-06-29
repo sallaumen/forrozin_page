@@ -2,14 +2,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   @moduledoc """
   Pure graph-data computations for the visual graph (`GraphVisualLive`):
 
-    * Cytoscape JSON building (`build_json/2`, `build_orphans_json/1`)
+    * Cytoscape JSON building (`build_json/3`, `build_orphans_json/1`)
     * edge-spread geometry for parallel/bidirectional edges (`compute_edge_spread/1`)
     * node search for the graph search box (`search_graph_nodes/2`)
     * missing-edge detection for manual sequences (`find_missing_edges/2`)
 
   All functions are pure (no Repo/socket/IO). Two distinct input contracts:
 
-    * `build_json/2`, `build_orphans_json/1`, `compute_edge_spread/1`,
+    * `build_json/3`, `build_orphans_json/1`, `compute_edge_spread/1`,
       `find_missing_edges/2` consume RAW `Encyclopedia.build_graph` structs:
       nodes expose `code/name/note/highlighted/suggested_by_id/like_count/category`
       (category is a `%Category{}` with `name/label/color`); edges expose
@@ -25,8 +25,23 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   follows `Enum.group_by` (not input order).
   """
 
+  alias OGrupoDeEstudosWeb.GraphVisual.StudyJourney
+
   @typedoc "Raw graph from `Encyclopedia.build_graph`; node `category` is a `%Category{}` or nil."
   @type raw_graph :: %{nodes: [map()], edges: [map()]}
+
+  @typedoc """
+  Contexto da jornada para colorir o grafo. `learned` e `frontier` são os
+  códigos aprendidos e os da fronteira ("pode aprender agora"); `goal_code` é a
+  próxima meta a destacar. `build_json` só TAGUEIA; a revelação progressiva
+  (esconder o que não é aprendido/fronteira) é aplicada no cliente via styling.
+  O default não altera nada.
+  """
+  @type journey :: %{
+          learned: MapSet.t(String.t()),
+          frontier: MapSet.t(String.t()),
+          goal_code: String.t() | nil
+        }
 
   @typedoc "Assign-shaped search node where `category` is a STRING label."
   @type search_node :: %{code: String.t(), name: String.t(), category: String.t()}
@@ -67,47 +82,67 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
     |> Enum.take(8)
   end
 
+  @default_journey %{learned: MapSet.new(), frontier: MapSet.new(), goal_code: nil}
+
   @doc """
   Encodes the graph as the Cytoscape nodes/edges JSON. Consumes RAW graph
   structs (node `category` is a `%Category{}` or nil). When `include_orphans`
   is false only edge-connected nodes are emitted; each node still carries an
   `orphan` flag. Notes are truncated to 300 graphemes.
+
+  The optional `journey` adds the study-journey overlay (TAG ONLY): each node
+  gets `learned`/`frontier`/`goal` flags and each edge a `state`
+  (`learned`/`frontier`/`hidden`). The progressive reveal (hiding non
+  learned/frontier nodes) is applied client-side via styling, not here, so a
+  node mark is a lightweight recolor/show-hide without rebuilding the graph.
+  The default keeps the original output (every node flag false).
   """
-  @spec build_json(raw_graph(), boolean()) :: String.t()
-  def build_json(%{nodes: nodes, edges: edges}, include_orphans) do
-    connected_codes =
-      edges
-      |> Enum.flat_map(fn c -> [c.source_step.code, c.target_step.code] end)
-      |> MapSet.new()
+  @spec build_json(raw_graph(), boolean(), journey()) :: String.t()
+  def build_json(graph, include_orphans, journey \\ @default_journey)
+
+  def build_json(%{nodes: nodes, edges: edges}, include_orphans, journey) do
+    connected = connected_codes(edges)
 
     visible_nodes =
-      if include_orphans do
-        nodes
-      else
-        Enum.filter(nodes, &MapSet.member?(connected_codes, &1.code))
-      end
+      if include_orphans, do: nodes, else: Enum.filter(nodes, &MapSet.member?(connected, &1.code))
 
     Jason.encode!(%{
-      nodes:
-        Enum.map(visible_nodes, fn p ->
-          cat = p.category
-
-          %{
-            id: p.code,
-            nome: p.name,
-            categoria: if(cat, do: cat.label, else: "Outros"),
-            categoriaName: if(cat, do: cat.name, else: "outros"),
-            cor: if(cat, do: cat.color, else: "#9a7a5a"),
-            nota: truncate_note(p.note, 300),
-            highlighted: p.highlighted || false,
-            suggested: p.suggested_by_id != nil,
-            suggested_by_id: p.suggested_by_id,
-            orphan: not MapSet.member?(connected_codes, p.code),
-            like_count: p.like_count || 0
-          }
-        end),
-      edges: compute_edge_spread(edges)
+      nodes: Enum.map(visible_nodes, &node_map(&1, connected, journey)),
+      edges: encode_edges(edges, journey.learned)
     })
+  end
+
+  defp connected_codes(edges) do
+    edges
+    |> Enum.flat_map(fn c -> [c.source_step.code, c.target_step.code] end)
+    |> MapSet.new()
+  end
+
+  defp node_map(p, connected, journey) do
+    cat = p.category
+
+    %{
+      id: p.code,
+      nome: p.name,
+      categoria: if(cat, do: cat.label, else: "Outros"),
+      categoriaName: if(cat, do: cat.name, else: "outros"),
+      cor: if(cat, do: cat.color, else: "#9a7a5a"),
+      nota: truncate_note(p.note, 300),
+      highlighted: p.highlighted || false,
+      suggested: p.suggested_by_id != nil,
+      suggested_by_id: p.suggested_by_id,
+      orphan: not MapSet.member?(connected, p.code),
+      like_count: p.like_count || 0,
+      learned: MapSet.member?(journey.learned, p.code),
+      frontier: MapSet.member?(journey.frontier, p.code),
+      goal: p.code == journey.goal_code
+    }
+  end
+
+  defp encode_edges(edges, learned) do
+    edges
+    |> compute_edge_spread()
+    |> Enum.map(fn e -> Map.put(e, :state, StudyJourney.edge_state(learned, {e.from, e.to})) end)
   end
 
   @doc """
