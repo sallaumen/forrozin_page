@@ -14,6 +14,11 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicy do
     attributes and Cytoscape sets inline styles at runtime. Style injection is a
     far lower risk than script injection.
   - `connect-src 'self'`: covers the same-origin LiveView WebSocket.
+  - `frame-src 'self' youtube.com youtube-nocookie.com`: allows the embedded
+    YouTube player iframe on step detail. Without it the browser blocks the
+    iframe ("This content is blocked") because frame-src falls back to
+    `default-src 'self'`. Not to be confused with `frame-ancestors 'none'`:
+    that stops US from being framed; `frame-src` controls what WE may frame.
   - `img-src 'self' data: https:`: same-origin avatars/icons plus data URIs.
   """
 
@@ -38,6 +43,7 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicy do
         "img-src 'self' data: https:",
         "font-src 'self'",
         "connect-src 'self'",
+        "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "object-src 'none'",

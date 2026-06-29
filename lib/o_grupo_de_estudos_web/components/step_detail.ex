@@ -878,30 +878,20 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                 <span class="text-base flex-shrink-0" title="Link">
                   {if match?({:youtube, _}, embed), do: "▶", else: "🔗"}
                 </span>
-                <%= if match?({:youtube, _}, embed) do %>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-semibold text-ink-900 m-0 whitespace-nowrap overflow-hidden text-ellipsis">
-                      {if link.title && link.title != "", do: link.title, else: link.url}
-                    </p>
-                    <p class="text-xs text-ink-500 mt-0.5 mb-0 whitespace-nowrap overflow-hidden text-ellipsis">
-                      {link.url}
-                    </p>
-                  </div>
-                <% else %>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    class="flex-1 min-w-0 no-underline"
-                  >
-                    <p class="text-sm font-semibold text-ink-900 m-0 mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
-                      {if link.title && link.title != "", do: link.title, else: link.url}
-                    </p>
-                    <p class="text-xs text-ink-500 m-0 whitespace-nowrap overflow-hidden text-ellipsis">
-                      {link.url}
-                    </p>
-                  </a>
-                <% end %>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  class="flex-1 min-w-0 no-underline"
+                  title={if match?({:youtube, _}, embed), do: "Abrir no YouTube", else: "Abrir link"}
+                >
+                  <p class="text-sm font-semibold text-ink-900 m-0 mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {if link.title && link.title != "", do: link.title, else: link.url}
+                  </p>
+                  <p class="text-xs text-ink-500 m-0 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {link.url}
+                  </p>
+                </a>
                 <button
                   :if={can_edit_link}
                   phx-click="start_edit_link"
@@ -947,19 +937,28 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                   {if @expanded_video == link.id, do: "▲ Fechar", else: "▶ Assistir"}
                 </button>
               </div>
-              <div
-                :if={@expanded_video == link.id and match?({:youtube, _}, embed)}
-                class="relative pb-[56.25%] h-0 overflow-hidden bg-ink-900"
-              >
-                <iframe
-                  src={elem(embed, 1)}
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowfullscreen
-                  loading="lazy"
-                  class="absolute top-0 left-0 w-full h-full"
+              <div :if={@expanded_video == link.id and match?({:youtube, _}, embed)}>
+                <div class="relative pb-[56.25%] h-0 overflow-hidden bg-ink-900">
+                  <iframe
+                    src={elem(embed, 1)}
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                    loading="lazy"
+                    class="absolute top-0 left-0 w-full h-full"
+                  >
+                  </iframe>
+                </div>
+                <%!-- Saída garantida: se o player não tocar (vídeo sem embed,
+                rede), o usuário abre direto no YouTube/app. --%>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  class="flex items-center justify-center gap-1.5 border-t border-ink-900/10 py-2 text-xs text-ink-500 no-underline transition-colors hover:text-accent-orange"
                 >
-                </iframe>
+                  <.icon name="hero-arrow-top-right-on-square" class="w-3.5 h-3.5" /> Abrir no YouTube
+                </a>
               </div>
             </div>
           <% end %>
