@@ -98,6 +98,18 @@
     </button>
   </div>
 
+  <%!-- Onboarding: só a meta visível (0 aprendidos) pode parecer mapa vazio --%>
+  <div
+    :if={@loaded? && @learned_codes == [] && !@full_map?}
+    class="pointer-events-none fixed left-1/2 top-[156px] z-20 w-[280px] max-w-[88vw] -translate-x-1/2 rounded-xl border border-accent-orange/20 bg-ink-50/95 px-4 py-3 text-center font-serif shadow-[0_8px_24px_rgba(60,40,20,0.12)] backdrop-blur"
+  >
+    <p class="m-0 text-sm font-semibold text-ink-900">Comece sua jornada</p>
+    <p class="m-0 mt-1 text-xs leading-relaxed text-ink-600">
+      O mapa revela os passos aos poucos. Toque no passo em destaque e marque como
+      aprendido para abrir os próximos, ou veja tudo em "Explorar tudo".
+    </p>
+  </div>
+
   <%!-- Graph canvas / 3D canvas — fills remaining viewport --%>
   <div class="flex-1 relative overflow-hidden">
     <%!-- 2D Graph --%>
