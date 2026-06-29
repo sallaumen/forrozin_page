@@ -16,10 +16,10 @@
     online_count={assigns[:online_count] || 0}
   />
   <.activity_toast toast={assigns[:activity_toast]} />
-  <%!-- Barra superior numa linha: jornada (esquerda) + modo manual + busca
-  (direita). Flex com wrap calcula o espaço; em telas estreitas a busca quebra
-  pra baixo dos controles, sem nada sobrepor nada. --%>
-  <div class="fixed left-0 right-0 top-[64px] z-30 flex flex-wrap items-center gap-2 px-3 font-serif">
+  <%!-- Barra superior em duas faixas CENTRALIZADAS: controles da jornada em
+  cima, busca embaixo (com modo manual à esquerda dela). Tudo centralizado e
+  com largura limitada — sem busca "gigante" e sem nada sobrepor nada. --%>
+  <div class="fixed left-0 right-0 top-[64px] z-30 flex flex-col items-center gap-2 px-3 font-serif">
     <%!-- Controles da jornada (esquerda): abrir o painel + alternar mapa --%>
     <div :if={@loaded?} class="flex shrink-0 items-center gap-2">
       <button
@@ -70,9 +70,9 @@
       </div>
     </div>
 
-    <%!-- Grupo direito: modo manual (se ativo, à esquerda) + busca. Em telas
-    que não cabem numa linha, ocupa a largura toda (busca full-width). --%>
-    <div class="ml-auto flex w-full min-w-0 items-center gap-2 min-[800px]:w-auto">
+    <%!-- Faixa de baixo: modo manual (se ativo, à esquerda) + busca,
+    centralizados e com largura máxima. --%>
+    <div class="flex w-full items-center justify-center gap-2">
       <div
         :if={@seq_view == :manual && !@seq_mobile_visible}
         id="seq-manual-mode-banner"
@@ -95,7 +95,7 @@
         </button>
       </div>
 
-      <div class="relative flex-1 min-[800px]:w-[420px] min-[800px]:flex-none">
+      <div class="relative w-full max-w-[600px]">
         <label for="graph-step-search" class="sr-only">Pesquisar passo no mapa</label>
         <input
           type="search"
