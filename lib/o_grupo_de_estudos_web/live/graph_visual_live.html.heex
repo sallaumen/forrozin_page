@@ -178,12 +178,18 @@
       </div>
     </div>
 
-    <%!-- Drawer de jornada (SUA JORNADA) — esquerda --%>
+    <%!-- Jornada (SUA JORNADA): bottom-sheet no celular (mapa visível acima),
+    drawer à esquerda no desktop. --%>
     <div
       :if={@loaded? && @journey_open}
       id="journey-drawer"
-      class="absolute left-0 top-0 z-30 flex h-full w-[300px] max-w-[88vw] flex-col border-r border-accent-orange/25 bg-ink-50 font-serif shadow-[2px_0_16px_rgba(60,40,20,0.10)]"
+      class={[
+        "z-30 flex flex-col overflow-hidden bg-ink-50 font-serif",
+        "fixed inset-x-0 bottom-16 h-[55vh] rounded-t-2xl border-t-2 border-accent-orange/30 shadow-[0_-4px_24px_rgba(60,40,20,0.16)]",
+        "md:absolute md:inset-x-auto md:bottom-auto md:left-0 md:top-0 md:h-full md:w-[300px] md:max-w-[88vw] md:rounded-t-none md:border-t-0 md:border-r md:border-accent-orange/25 md:shadow-[2px_0_16px_rgba(60,40,20,0.10)]"
+      ]}
     >
+      <div class="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-ink-300 md:hidden"></div>
       <% learned_count = length(@learned_codes) %>
       <% {headline, subtext} = JourneyPlan.encouragement(learned_count) %>
       <% all_next =
@@ -277,12 +283,16 @@
       </div>
     </div>
 
-    <%!-- Floating sequence sheet trigger (all viewports) --%>
+    <%!-- Floating sequence sheet trigger (all viewports). No celular some quando
+    a jornada (bottom-sheet) está aberta, pra não cobrir o rodapé dela. --%>
     <button
       :if={!@seq_mobile_visible}
       type="button"
       phx-click="show_seq_mobile"
-      class="fixed bottom-20 right-4 z-30 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-white shadow-lg transition hover:bg-accent-orange/90"
+      class={[
+        "fixed bottom-20 right-4 z-30 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-white shadow-lg transition hover:bg-accent-orange/90",
+        @journey_open && "max-md:hidden"
+      ]}
       aria-label="Abrir painel de sequências"
     >
       <.icon name="hero-queue-list" class="size-4" /> Sequências
