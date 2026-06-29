@@ -45,4 +45,19 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourney do
   def next_goal(base_plan, learned) do
     Enum.find(base_plan, fn code -> not MapSet.member?(learned, code) end)
   end
+
+  @doc """
+  Ordena as sugestões de "pode aprender agora" priorizando os passos do
+  plano-base (na ordem pedagógica) e limita a lista. Recebe os nós (mapas com
+  `:code`), o plano-base ordenado e o limite. Passos do plano-base vêm primeiro,
+  na ordem do plano; os demais mantêm a ordem recebida (sort estável).
+  """
+  @spec rank_suggestions([%{code: code}], [code], pos_integer) :: [%{code: code}]
+  def rank_suggestions(nodes, base_plan, limit) do
+    order = base_plan |> Enum.with_index() |> Map.new()
+
+    nodes
+    |> Enum.sort_by(&Map.get(order, &1.code, length(base_plan)))
+    |> Enum.take(limit)
+  end
 end
