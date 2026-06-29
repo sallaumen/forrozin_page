@@ -948,6 +948,35 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       assert_push_event(lv, "set_learned_steps", %{full_map: true})
     end
+
+    test "o drawer de jornada renderiza progresso e 'pode aprender agora'", %{conn: conn} do
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      assert html =~ ~s(id="journey-drawer")
+      assert html =~ "Sua jornada"
+      assert html =~ "Pode aprender agora"
+      # 0 aprendidos -> nivel "Começando"
+      assert html =~ "Começando"
+    end
+
+    test "reset_progress zera o progresso e empurra a jornada vazia", %{conn: conn, step_a: bf} do
+      user = insert(:user)
+      OGrupoDeEstudos.Engagement.toggle_learned(user.id, bf.id)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+      render_hook(lv, "reset_progress", %{})
+
+      assert_push_event(lv, "set_learned_steps", %{learned: [], frontier: [], goal: "BF"})
+      refute OGrupoDeEstudos.Engagement.learned?(user.id, bf.id)
+    end
+
+    test "focus_step empurra focus_graph_node para centrar o passo", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "focus_step", %{"code" => "BF"})
+
+      assert_push_event(lv, "focus_graph_node", %{code: "BF"})
+    end
   end
 
   describe "private sequence read guard" do

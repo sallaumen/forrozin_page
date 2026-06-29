@@ -97,6 +97,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       |> assign(:frontier_codes, [])
       |> assign(:next_goal, nil)
       |> assign(:full_map?, false)
+      |> assign(:journey_open, true)
       |> assign(:following_user_ids, MapSet.new())
       |> assign(:bubble_open, false)
       |> assign(:bubble_tab, "following")
