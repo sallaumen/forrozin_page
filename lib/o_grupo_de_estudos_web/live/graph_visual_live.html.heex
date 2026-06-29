@@ -162,7 +162,9 @@
       <% {headline, subtext} = JourneyPlan.encouragement(learned_count) %>
       <% all_next =
         Enum.filter(@graph_search_nodes, &(&1.code in @frontier_codes or &1.code == @next_goal)) %>
-      <% next_steps = StudyJourney.rank_suggestions(all_next, JourneyPlan.base_plan(), 10) %>
+      <% base_codes = JourneyPlan.base_plan() %>
+      <% next_steps = StudyJourney.rank_suggestions(all_next, base_codes, 10) %>
+      <% goal_code = StudyJourney.primary_goal(Enum.map(next_steps, & &1.code), base_codes) %>
       <% hidden_next = length(all_next) - length(next_steps) %>
 
       <div class="shrink-0 border-b border-accent-orange/15 p-4">
@@ -214,10 +216,16 @@
               </code>
               <span class="min-w-0 flex-1 truncate text-[13px] text-ink-900">{n.name}</span>
               <span
-                :if={n.code == @next_goal}
+                :if={n.code == goal_code}
                 class="shrink-0 rounded-full bg-accent-orange px-1.5 py-0.5 text-[9px] font-bold uppercase text-white"
               >
                 meta
+              </span>
+              <span
+                :if={n.code in base_codes and n.code != goal_code}
+                class="shrink-0 rounded-full border border-accent-orange/40 bg-accent-orange/[0.08] px-1.5 py-0.5 text-[9px] font-bold uppercase text-accent-orange"
+              >
+                trilha
               </span>
             </button>
           </li>
