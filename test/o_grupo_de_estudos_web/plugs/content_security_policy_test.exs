@@ -10,12 +10,13 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicyTest do
   end
 
   describe "call/2" do
-    test "libera o player do YouTube via frame-src (senao o navegador bloqueia o iframe)" do
+    test "libera os embeds (YouTube + Instagram) via frame-src (senao o navegador bloqueia o iframe)" do
       header = conn(:get, "/") |> ContentSecurityPolicy.call([]) |> csp()
 
       assert header =~ "frame-src"
       assert header =~ "https://www.youtube.com"
       assert header =~ "https://www.youtube-nocookie.com"
+      assert header =~ "https://www.instagram.com"
     end
 
     test "mantem o restante restritivo (XSS continua mitigado)" do

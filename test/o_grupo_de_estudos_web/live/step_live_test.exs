@@ -5,7 +5,6 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
   alias OGrupoDeEstudos.Engagement
   alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
-  alias OGrupoDeEstudosWeb.StepDetail
 
   defp logged_in_conn(conn) do
     user = insert(:user)
@@ -72,41 +71,6 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
       assert expanded =~ "ver menos"
       refute expanded =~ "+2 mais"
-    end
-  end
-
-  describe "youtube_embed_url/1" do
-    test "returns {:youtube, embed_url} for standard youtube.com/watch?v= URL" do
-      assert {:youtube, "https://www.youtube.com/embed/dQw4w9WgXcQ"} =
-               StepDetail.youtube_embed_url("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-    end
-
-    test "returns {:youtube, embed_url} for youtu.be short URL" do
-      assert {:youtube, "https://www.youtube.com/embed/dQw4w9WgXcQ"} =
-               StepDetail.youtube_embed_url("https://youtu.be/dQw4w9WgXcQ")
-    end
-
-    test "returns {:youtube, embed_url} ignoring extra query params" do
-      assert {:youtube, "https://www.youtube.com/embed/dQw4w9WgXcQ"} =
-               StepDetail.youtube_embed_url(
-                 "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s&list=PLabc"
-               )
-    end
-
-    test "returns :external for non-YouTube URL" do
-      assert :external = StepDetail.youtube_embed_url("https://vimeo.com/123456")
-    end
-
-    test "returns :external for youtube.com without video id" do
-      assert :external = StepDetail.youtube_embed_url("https://www.youtube.com/watch")
-    end
-
-    test "returns :external for nil" do
-      assert :external = StepDetail.youtube_embed_url(nil)
-    end
-
-    test "returns :external for empty youtu.be" do
-      assert :external = StepDetail.youtube_embed_url("https://youtu.be/")
     end
   end
 

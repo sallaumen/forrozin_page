@@ -19,6 +19,8 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.InlineFollowButton
 
+  alias OGrupoDeEstudosWeb.MediaEmbed
+
   @fallback_color "#9a7a5a"
   @connection_limit 10
 
@@ -872,26 +874,28 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
               </div>
             </form>
           <% else %>
-            <% embed = youtube_embed_url(link.url) %>
+            <% media = MediaEmbed.resolve(link.url) %>
+            <% expanded = @expanded_video == link.id %>
             <div class="rounded-md border border-ink-900/12 bg-ink-50 overflow-hidden">
               <div class="flex items-center gap-2.5 py-2.5 px-3">
-                <span class="text-base flex-shrink-0" title="Link">
-                  {if match?({:youtube, _}, embed), do: "▶", else: "🔗"}
+                <span class="text-base flex-shrink-0" aria-hidden="true">
+                  {if media.kind == :embed, do: "▶", else: "🔗"}
                 </span>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  class="flex-1 min-w-0 no-underline"
-                  title={if match?({:youtube, _}, embed), do: "Abrir no YouTube", else: "Abrir link"}
-                >
-                  <p class="text-sm font-semibold text-ink-900 m-0 mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
-                    {if link.title && link.title != "", do: link.title, else: link.url}
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-semibold text-ink-900 m-0 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                    {if link.title && link.title != "", do: link.title, else: media.label}
                   </p>
-                  <p class="text-xs text-ink-500 m-0 whitespace-nowrap overflow-hidden text-ellipsis">
-                    {link.url}
-                  </p>
-                </a>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    class="inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold no-underline"
+                    style={provider_pill(media)}
+                    title={"Abrir no #{media.label}"}
+                  >
+                    {media.label} ↗
+                  </a>
+                </div>
                 <button
                   :if={can_edit_link}
                   phx-click="start_edit_link"
@@ -925,41 +929,19 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                   <span :if={like_count > 0} class="text-xs">{like_count}</span>
                 </button>
                 <button
-                  :if={match?({:youtube, _}, embed)}
+                  :if={media.kind == :embed}
                   phx-click="toggle_link_video"
                   phx-value-link-id={link.id}
                   class={[
                     "text-xs py-1 px-2.5 rounded cursor-pointer border border-ink-900/20 text-ink-700 whitespace-nowrap font-serif flex-shrink-0",
-                    @expanded_video == link.id && "bg-ink-900/[0.06]",
-                    @expanded_video != link.id && "bg-transparent"
+                    expanded && "bg-ink-900/[0.06]",
+                    !expanded && "bg-transparent"
                   ]}
                 >
-                  {if @expanded_video == link.id, do: "▲ Fechar", else: "▶ Assistir"}
+                  {if expanded, do: "▲ Fechar", else: "▶ Ver"}
                 </button>
               </div>
-              <div :if={@expanded_video == link.id and match?({:youtube, _}, embed)}>
-                <div class="relative pb-[56.25%] h-0 overflow-hidden bg-ink-900">
-                  <iframe
-                    src={elem(embed, 1)}
-                    frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen
-                    loading="lazy"
-                    class="absolute top-0 left-0 w-full h-full"
-                  >
-                  </iframe>
-                </div>
-                <%!-- Saída garantida: se o player não tocar (vídeo sem embed,
-                rede), o usuário abre direto no YouTube/app. --%>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  class="flex items-center justify-center gap-1.5 border-t border-ink-900/10 py-2 text-xs text-ink-500 no-underline transition-colors hover:text-accent-orange"
-                >
-                  <.icon name="hero-arrow-top-right-on-square" class="w-3.5 h-3.5" /> Abrir no YouTube
-                </a>
-              </div>
+              <.media_player :if={expanded and media.kind == :embed} media={media} url={link.url} />
             </div>
           <% end %>
         </div>
@@ -1000,6 +982,70 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
     </section>
     """
   end
+
+  # ───────── Player de mídia (embed por formato) ─────────
+
+  attr :media, :map, required: true
+  attr :url, :string, required: true
+
+  defp media_player(assigns) do
+    ~H"""
+    <div>
+      <div :if={@media.shape == :wide} class="relative h-0 overflow-hidden bg-ink-900 pb-[56.25%]">
+        <iframe
+          src={@media.embed_url}
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          loading="lazy"
+          class="absolute inset-0 h-full w-full"
+        >
+        </iframe>
+      </div>
+      <div :if={@media.shape == :tall} class="mx-auto w-full max-w-[320px]">
+        <div class="relative h-0 overflow-hidden bg-ink-900 pb-[177.78%]">
+          <iframe
+            src={@media.embed_url}
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            loading="lazy"
+            class="absolute inset-0 h-full w-full"
+          >
+          </iframe>
+        </div>
+      </div>
+      <div :if={@media.shape == :portrait} class="mx-auto w-full max-w-[400px] bg-ink-50">
+        <iframe
+          src={@media.embed_url}
+          scrolling="no"
+          loading="lazy"
+          class="w-full border-0"
+          style="height: 640px"
+        >
+        </iframe>
+      </div>
+      <a
+        href={@url}
+        target="_blank"
+        rel="noreferrer noopener"
+        class="flex items-center justify-center gap-1.5 border-t border-ink-900/10 py-2 text-xs text-ink-500 no-underline transition-colors hover:text-accent-orange"
+      >
+        <.icon name="hero-arrow-top-right-on-square" class="w-3.5 h-3.5" /> Abrir no {@media.label}
+      </a>
+    </div>
+    """
+  end
+
+  # Estilo do pill do provedor (cálculo puro): tom da marca com baixa opacidade.
+  defp provider_pill(media) do
+    color = provider_color(media)
+    "background: #{color}14; color: #{color}; border: 1px solid #{color}33;"
+  end
+
+  defp provider_color(%{label: "Instagram"}), do: "#c13584"
+  defp provider_color(%{label: "YouTube" <> _}), do: "#c0392b"
+  defp provider_color(_), do: "#7a5c3a"
 
   # ───────── Connection chip ─────────
 
@@ -1097,35 +1143,4 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
 
   defp visible_connections(connections, true, _limit), do: connections
   defp visible_connections(connections, false, limit), do: Enum.take(connections, limit)
-
-  @doc """
-  Devolve `{:youtube, embed_url}` para links do YouTube ou `:external` para os
-  demais. Suporta `youtube.com/watch?v=ID` e `youtu.be/ID`.
-  """
-  def youtube_embed_url(url) when is_binary(url) do
-    url |> URI.parse() |> extract_youtube_id()
-  end
-
-  def youtube_embed_url(_), do: :external
-
-  defp extract_youtube_id(%URI{host: host, path: "/watch", query: query})
-       when host in ["www.youtube.com", "youtube.com"] do
-    case URI.decode_query(query || "") do
-      %{"v" => video_id} when video_id != "" ->
-        {:youtube, "https://www.youtube.com/embed/#{video_id}"}
-
-      _ ->
-        :external
-    end
-  end
-
-  defp extract_youtube_id(%URI{host: "youtu.be", path: path}) when is_binary(path) do
-    video_id = String.trim_leading(path, "/")
-
-    if video_id != "",
-      do: {:youtube, "https://www.youtube.com/embed/#{video_id}"},
-      else: :external
-  end
-
-  defp extract_youtube_id(_uri), do: :external
 end
