@@ -228,7 +228,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "BA"
       assert html =~ "SC"
       assert html =~ ~s(id="seq-library-card-#{sequence.id}")
-      assert html =~ "max-md:hidden"
+      # Ver a sequência no mapa fecha o bottom-sheet de sequências.
+      assert html =~ ~r/id="seq-panel"[^>]*hidden/
     end
 
     test "sequence panel keeps its header outside the scrollable content", %{conn: conn} do
@@ -236,7 +237,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       assert html =~ ~s(id="seq-panel-header")
       assert html =~ ~s(id="seq-panel-content")
-      assert html =~ "flex flex-col overflow-hidden"
+      assert html =~ "flex-col overflow-hidden"
       assert html =~ "min-h-0 flex-1 overflow-y-auto"
     end
 
@@ -262,10 +263,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
 
       html = render_click(lv, "show_seq_mobile", %{})
-      refute html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
+      refute html =~ ~r/id="seq-panel"[^>]*\shidden/
 
       html = render_click(lv, "highlight_saved_sequence", %{"id" => sequence.id})
-      assert html =~ ~r/id="seq-panel"[^>]*max-md:hidden/
+      assert html =~ ~r/id="seq-panel"[^>]*\shidden/
     end
 
     test "sequence library combines saved and favorited sequences", %{conn: conn} do
@@ -446,9 +447,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
     test "show_seq_manual switches to manual view", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
-      render_click(lv, "toggle_seq_panel", %{})
+      render_click(lv, "show_seq_mobile", %{})
       html = render_click(lv, "show_seq_manual", %{})
-      assert html =~ "Manual"
+      assert html =~ "Verificar"
+      assert has_element?(lv, "#seq-manual-form")
     end
 
     test "add_manual_step appends step to manual list", %{conn: conn, step_a: step_a} do

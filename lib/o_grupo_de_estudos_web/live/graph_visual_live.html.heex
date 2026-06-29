@@ -165,28 +165,25 @@
       </div>
     </div>
 
-    <%!-- Mobile floating sequence panel trigger --%>
+    <%!-- Floating sequence sheet trigger (all viewports) --%>
     <button
       :if={!@seq_mobile_visible}
       type="button"
       phx-click="show_seq_mobile"
-      class="md:hidden fixed bottom-20 right-4 z-30 bg-accent-orange text-white text-sm font-serif font-semibold py-2.5 px-5 rounded-full shadow-lg"
+      class="fixed bottom-20 right-4 z-30 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-white shadow-lg transition hover:bg-accent-orange/90"
       aria-label="Abrir painel de sequências"
     >
-      Sequências
+      <.icon name="hero-queue-list" class="size-4" /> Sequências
     </button>
 
-    <%!-- Sequence panel — left side on desktop, bottom sheet on mobile --%>
+    <%!-- Sequence panel — bottom sheet on all viewports (bottom-right on desktop) --%>
     <div
       id="seq-panel"
       class={[
-        "bg-ink-50 shadow-[2px_0_12px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden font-serif z-40",
-        "max-md:fixed max-md:inset-x-0 max-md:bottom-16 max-md:h-[70vh] max-md:max-h-[70vh] max-md:rounded-t-lg max-md:border-t-2 max-md:border-accent-orange/30",
-        "md:absolute md:top-0 md:left-0 md:w-[280px] md:h-full md:border-r md:border-accent-orange/25",
-        !@seq_panel && "md:-translate-x-full",
-        !@seq_mobile_visible && "max-md:hidden"
+        "fixed bottom-16 inset-x-0 z-40 flex h-[72vh] max-h-[72vh] flex-col overflow-hidden rounded-t-xl border-t-2 border-accent-orange/30 bg-ink-50 font-serif shadow-[0_-4px_24px_rgba(60,40,20,0.16)]",
+        "md:inset-x-auto md:bottom-20 md:right-4 md:h-[60vh] md:w-[400px] md:rounded-xl md:border md:border-accent-orange/25",
+        !@seq_mobile_visible && "hidden"
       ]}
-      style="transition: transform 0.2s ease;"
     >
       <%!-- Panel header --%>
       <div id="seq-panel-header" class="shrink-0 p-4 border-b border-accent-orange/15">
@@ -197,7 +194,7 @@
           <button
             type="button"
             phx-click="hide_seq_mobile"
-            class="md:hidden w-8 h-8 inline-flex items-center justify-center text-ink-700 bg-ink-100 rounded-full shadow-sm text-base leading-none"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-base leading-none text-ink-700 shadow-sm transition hover:bg-ink-200"
             aria-label="Fechar painel de sequências"
           >
             <.icon name="hero-x-mark" class="size-4" />
@@ -214,7 +211,7 @@
               @seq_view != :library && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
-            Biblioteca
+            Sequências
           </button>
           <button
             phx-click="show_seq_config"
@@ -236,7 +233,7 @@
               @seq_view != :manual && "bg-transparent text-ink-500 hover:text-ink-800"
             ]}
           >
-            Manual
+            Verificar
           </button>
         </div>
       </div>
