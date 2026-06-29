@@ -16,94 +16,12 @@
     online_count={assigns[:online_count] || 0}
   />
   <.activity_toast toast={assigns[:activity_toast]} />
-  <%!-- Graph search: unified step lookup for the visible map --%>
-  <div class="fixed top-[64px] left-3 right-3 z-30 md:left-auto md:right-4 md:w-[420px]">
-    <div class="relative">
-      <label for="graph-step-search" class="sr-only">Pesquisar passo no mapa</label>
-      <input
-        type="search"
-        id="graph-step-search"
-        value={@graph_search_query}
-        phx-keyup="search_graph_step"
-        phx-debounce="150"
-        placeholder="Pesquisar passo no mapa..."
-        autocomplete="off"
-        class="w-full h-11 rounded-md border border-ink-900/15 bg-ink-50/95 py-2 pl-4 pr-11 font-serif text-sm text-ink-900 shadow-[0_6px_20px_rgba(60,40,20,0.10)] outline-none backdrop-blur-sm transition focus-visible:ring-2 focus-visible:ring-accent-orange/60"
-      />
-      <button
-        :if={@graph_search_query != ""}
-        type="button"
-        id="graph-step-search-clear"
-        phx-click="clear_graph_search"
-        class="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-transparent bg-transparent text-lg leading-none text-ink-500 transition hover:bg-ink-900/5 hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/60"
-        aria-label="Limpar busca do mapa"
-      >
-        ×
-      </button>
-
-      <div
-        :if={@graph_search_results != []}
-        id="graph-step-search-results"
-        class="absolute left-0 right-0 top-[calc(100%+6px)] max-h-[320px] overflow-y-auto rounded-md border border-ink-900/12 bg-ink-50 shadow-[0_12px_30px_rgba(60,40,20,0.14)]"
-        phx-click-away="clear_graph_search"
-      >
-        <button
-          :for={step <- @graph_search_results}
-          type="button"
-          id={"graph-search-result-#{step.code}"}
-          phx-click="select_graph_step"
-          phx-value-code={step.code}
-          class="flex w-full items-start gap-3 border-b border-ink-900/[0.06] bg-transparent px-3 py-2.5 text-left font-serif transition last:border-b-0 hover:bg-accent-orange/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-orange/60"
-        >
-          <code class="mt-0.5 min-w-[42px] rounded border border-accent-orange/25 bg-accent-orange/[0.07] px-1.5 py-0.5 text-center text-[11px] font-bold text-accent-orange">
-            {step.code}
-          </code>
-          <span class="min-w-0">
-            <span class="block truncate text-sm font-semibold text-ink-900">{step.name}</span>
-            <span class="block text-[11px] text-ink-500">{step.category}</span>
-          </span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <%!-- Graph canvas / 3D canvas — fills remaining viewport --%>
-  <div class="flex-1 relative overflow-hidden">
-    <%!-- 2D Graph --%>
-    <div
-      id="graph-canvas"
-      phx-hook="GraphVisual"
-      phx-update="ignore"
-      data-graph={@graph_json}
-      data-admin={to_string(@is_admin)}
-      data-edit-mode={to_string(@edit_mode)}
-      data-manual-mode={to_string(@seq_view == :manual)}
-      data-user-id={@current_user.id}
-      data-initial-sequence-steps={@seq_initial_steps_json}
-      style="width: 100%; height: calc(100vh - 86px); background: var(--color-ink-100);"
-    >
-    </div>
-
-    <%!-- Loading skeleton — dead/HTTP render, before the WebSocket connects --%>
-    <div
-      :if={!@loaded?}
-      id="graph-canvas-skeleton"
-      class="absolute inset-0 z-10 flex items-center justify-center bg-ink-100"
-      aria-hidden="true"
-    >
-      <div class="flex flex-col items-center gap-3 text-ink-500">
-        <div class="h-10 w-10 animate-spin rounded-full border-2 border-ink-300 border-t-accent-green">
-        </div>
-        <span class="font-serif text-sm">Carregando o mapa...</span>
-      </div>
-    </div>
-
-    <%!-- Controle flutuante sempre visível: abrir/fechar a jornada (modo estudo)
-    e alternar para o mapa completo, mesmo com o painel fechado --%>
-    <div
-      :if={@loaded?}
-      class="fixed left-3 top-[112px] z-30 flex items-center gap-2 font-serif min-[820px]:top-[70px]"
-    >
+  <%!-- Barra superior numa linha: jornada (esquerda) + modo manual + busca
+  (direita). Flex com wrap calcula o espaço; em telas estreitas a busca quebra
+  pra baixo dos controles, sem nada sobrepor nada. --%>
+  <div class="fixed left-0 right-0 top-[64px] z-30 flex flex-wrap items-center gap-2 px-3 font-serif">
+    <%!-- Controles da jornada (esquerda): abrir o painel + alternar mapa --%>
+    <div :if={@loaded?} class="flex shrink-0 items-center gap-2">
       <button
         type="button"
         phx-click="toggle_journey"
@@ -149,6 +67,111 @@
         >
           Explorar tudo
         </button>
+      </div>
+    </div>
+
+    <%!-- Grupo direito: modo manual (se ativo, à esquerda) + busca --%>
+    <div class="ml-auto flex min-w-0 items-center gap-2">
+      <div
+        :if={@seq_view == :manual && !@seq_mobile_visible}
+        id="seq-manual-mode-banner"
+        class="flex shrink-0 items-center gap-2 rounded-md border border-accent-green/25 bg-ink-50/95 px-3 py-1.5 shadow-[0_8px_24px_rgba(60,40,20,0.12)] backdrop-blur-sm"
+      >
+        <div class="min-w-0 leading-tight">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-accent-green">
+            Modo manual ativo
+          </div>
+          <div class="truncate text-[12px] text-ink-700">
+            {length(@seq_manual_steps)} passo(s)
+          </div>
+        </div>
+        <button
+          type="button"
+          phx-click="cancel_manual_sequence"
+          class="inline-flex min-h-[34px] shrink-0 items-center justify-center rounded-md border border-ink-900/10 bg-white px-3 text-[11px] font-bold text-ink-700 transition hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
+        >
+          Sair
+        </button>
+      </div>
+
+      <div class="relative w-[420px] max-w-[calc(100vw-1.5rem)]">
+        <label for="graph-step-search" class="sr-only">Pesquisar passo no mapa</label>
+        <input
+          type="search"
+          id="graph-step-search"
+          value={@graph_search_query}
+          phx-keyup="search_graph_step"
+          phx-debounce="150"
+          placeholder="Pesquisar passo no mapa..."
+          autocomplete="off"
+          class="h-11 w-full rounded-md border border-ink-900/15 bg-ink-50/95 py-2 pl-4 pr-11 font-serif text-sm text-ink-900 shadow-[0_6px_20px_rgba(60,40,20,0.10)] outline-none backdrop-blur-sm transition focus-visible:ring-2 focus-visible:ring-accent-orange/60"
+        />
+        <button
+          :if={@graph_search_query != ""}
+          type="button"
+          id="graph-step-search-clear"
+          phx-click="clear_graph_search"
+          class="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border border-transparent bg-transparent text-lg leading-none text-ink-500 transition hover:bg-ink-900/5 hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/60"
+          aria-label="Limpar busca do mapa"
+        >
+          ×
+        </button>
+
+        <div
+          :if={@graph_search_results != []}
+          id="graph-step-search-results"
+          class="absolute left-0 right-0 top-[calc(100%+6px)] max-h-[320px] overflow-y-auto rounded-md border border-ink-900/12 bg-ink-50 shadow-[0_12px_30px_rgba(60,40,20,0.14)]"
+          phx-click-away="clear_graph_search"
+        >
+          <button
+            :for={step <- @graph_search_results}
+            type="button"
+            id={"graph-search-result-#{step.code}"}
+            phx-click="select_graph_step"
+            phx-value-code={step.code}
+            class="flex w-full items-start gap-3 border-b border-ink-900/[0.06] bg-transparent px-3 py-2.5 text-left font-serif transition last:border-b-0 hover:bg-accent-orange/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-orange/60"
+          >
+            <code class="mt-0.5 min-w-[42px] rounded border border-accent-orange/25 bg-accent-orange/[0.07] px-1.5 py-0.5 text-center text-[11px] font-bold text-accent-orange">
+              {step.code}
+            </code>
+            <span class="min-w-0">
+              <span class="block truncate text-sm font-semibold text-ink-900">{step.name}</span>
+              <span class="block text-[11px] text-ink-500">{step.category}</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%!-- Graph canvas / 3D canvas — fills remaining viewport --%>
+  <div class="flex-1 relative overflow-hidden">
+    <%!-- 2D Graph --%>
+    <div
+      id="graph-canvas"
+      phx-hook="GraphVisual"
+      phx-update="ignore"
+      data-graph={@graph_json}
+      data-admin={to_string(@is_admin)}
+      data-edit-mode={to_string(@edit_mode)}
+      data-manual-mode={to_string(@seq_view == :manual)}
+      data-user-id={@current_user.id}
+      data-initial-sequence-steps={@seq_initial_steps_json}
+      style="width: 100%; height: calc(100vh - 86px); background: var(--color-ink-100);"
+    >
+    </div>
+
+    <%!-- Loading skeleton — dead/HTTP render, before the WebSocket connects --%>
+    <div
+      :if={!@loaded?}
+      id="graph-canvas-skeleton"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-ink-100"
+      aria-hidden="true"
+    >
+      <div class="flex flex-col items-center gap-3 text-ink-500">
+        <div class="h-10 w-10 animate-spin rounded-full border-2 border-ink-300 border-t-accent-green">
+        </div>
+        <span class="font-serif text-sm">Carregando o mapa...</span>
       </div>
     </div>
 
@@ -247,30 +270,6 @@
           class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-ink-200 bg-transparent px-3 py-2 text-xs font-semibold text-ink-500 transition hover:border-accent-red/30 hover:text-accent-red"
         >
           <.icon name="hero-arrow-path" class="size-4" /> Reiniciar progresso
-        </button>
-      </div>
-    </div>
-
-    <div
-      :if={@seq_view == :manual && !@seq_mobile_visible}
-      id="seq-manual-mode-banner"
-      class="fixed left-3 right-3 top-[112px] z-30 rounded-md border border-accent-green/25 bg-ink-50/95 px-3 py-2 font-serif shadow-[0_8px_24px_rgba(60,40,20,0.12)] backdrop-blur-sm md:left-[300px] md:right-auto md:w-[360px]"
-    >
-      <div class="flex items-center justify-between gap-3">
-        <div class="min-w-0">
-          <div class="text-[10px] font-bold uppercase tracking-widest text-accent-green">
-            Modo manual ativo
-          </div>
-          <div class="truncate text-[12px] text-ink-700">
-            {length(@seq_manual_steps)} passo(s) na sequência
-          </div>
-        </div>
-        <button
-          type="button"
-          phx-click="cancel_manual_sequence"
-          class="inline-flex min-h-[36px] shrink-0 items-center justify-center rounded-md border border-ink-900/10 bg-white px-3 text-[11px] font-bold text-ink-700 transition hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
-        >
-          Sair
         </button>
       </div>
     </div>
