@@ -91,4 +91,22 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourneyTest do
       assert StudyJourney.rank_suggestions([], ~w(BF), 10) == []
     end
   end
+
+  describe "primary_goal/2" do
+    test "returns the first code in the list that belongs to the base plan" do
+      assert StudyJourney.primary_goal(~w(AB AC GP PI), ~w(BF GP PI)) == "GP"
+    end
+
+    test "uses list order, not base-plan order (the list is pre-ranked)" do
+      assert StudyJourney.primary_goal(~w(PI GP), ~w(BF GP PI)) == "PI"
+    end
+
+    test "returns nil when no code is in the base plan" do
+      assert StudyJourney.primary_goal(~w(AB AC), ~w(BF GP)) == nil
+    end
+
+    test "returns nil for an empty list" do
+      assert StudyJourney.primary_goal([], ~w(BF)) == nil
+    end
+  end
 end

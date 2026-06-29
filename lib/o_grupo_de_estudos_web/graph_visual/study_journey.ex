@@ -60,4 +60,16 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourney do
     |> Enum.sort_by(&Map.get(order, &1.code, length(base_plan)))
     |> Enum.take(limit)
   end
+
+  @doc """
+  Meta primária da lista exibida: o primeiro código (na ordem da lista, já
+  rankeada) que pertence ao plano-base. Derivado da própria lista visível, é
+  robusto a passos do plano-base que estejam órfãos (sem conexões) e por isso
+  ausentes da lista. Retorna `nil` se nenhum passo da lista é do plano-base.
+  """
+  @spec primary_goal([code], [code]) :: code | nil
+  def primary_goal(codes, base_plan) do
+    base = MapSet.new(base_plan)
+    Enum.find(codes, &MapSet.member?(base, &1))
+  end
 end
