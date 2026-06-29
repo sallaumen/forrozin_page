@@ -43,7 +43,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphSearch do
          |> assign(:graph_search_results, [])
          |> assign(:drawer_open, true)
          |> StepDrawer.load_step(code)
-         |> push_event("focus_graph_node", %{code: code})}
+         |> push_event("focus_graph_node", %{code: code, close_journey: false})}
       end
 
       def handle_event("clear_graph_search", _params, socket) do

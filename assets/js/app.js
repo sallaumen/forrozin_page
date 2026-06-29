@@ -130,6 +130,11 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+// iOS Safari só dispara :active (usado no flash tátil de botões, ver app.css)
+// quando a página tem um listener de touch. Um listener vazio global resolve,
+// sem handler inline (CSP-safe).
+document.addEventListener("touchstart", () => {}, {passive: true})
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //

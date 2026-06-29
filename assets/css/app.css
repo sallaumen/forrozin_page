@@ -246,3 +246,22 @@ img, video, svg {
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
 }
+
+/* ============================================================
+   Feedback tátil universal — toda <button> dá um flash rápido (escurece e
+   volta) ao ser pressionada, dando resposta de toque imediata (cobre desde
+   os botões da jornada até a cutucada de professores no /study).
+   Usa só filter:brightness (preserva o contraste texto/fundo; não usa opacity,
+   que apagaria o texto, nem transform, que deslocaria botões posicionados com
+   translate, nem o atalho transition, que sobrescreveria as transições de hover
+   do Tailwind). Sem animation-fill-mode (volta ao normal sozinho, sem "travar"
+   escurecido em devices com :active atrasado). prefers-reduced-motion já zera
+   a duração acima. (O listener global de touchstart no app.js garante o
+   :active no iOS Safari; o tap-highlight nativo fica de fallback.) */
+@keyframes btn-press {
+  40% { filter: brightness(0.8); }
+}
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  animation: btn-press 0.18s ease;
+}

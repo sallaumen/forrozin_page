@@ -64,8 +64,9 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphJourney do
       end
 
       # Centra/revela um passo no mapa (clique num item de "pode aprender agora").
+      # close_journey: minimiza o painel da jornada pra o passo aparecer no mapa.
       def handle_event("focus_step", %{"code" => code}, socket) do
-        {:noreply, push_event(socket, "focus_graph_node", %{code: code})}
+        {:noreply, push_event(socket, "focus_graph_node", %{code: code, close_journey: true})}
       end
 
       def handle_event("toggle_journey", _params, socket) do
