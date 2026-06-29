@@ -236,12 +236,12 @@
         </p>
 
         <ul class="m-0 flex list-none flex-col gap-1 p-0">
-          <li :for={n <- next_steps}>
+          <li :for={n <- next_steps} class="flex items-stretch gap-1.5">
             <button
               type="button"
               phx-click="focus_step"
               phx-value-code={n.code}
-              class="flex w-full items-center gap-2 rounded-lg border border-ink-200 bg-white px-2.5 py-2 text-left transition hover:border-accent-orange/40 hover:bg-accent-orange/[0.04]"
+              class="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-ink-200 bg-white px-2.5 py-2 text-left transition hover:border-accent-orange/40 hover:bg-accent-orange/[0.04]"
             >
               <code class="shrink-0 rounded border border-accent-orange/25 bg-accent-orange/[0.07] px-1.5 py-0.5 text-[10px] font-bold text-accent-orange">
                 {n.code}
@@ -259,6 +259,16 @@
               >
                 trilha
               </span>
+            </button>
+            <button
+              type="button"
+              phx-click="toggle_step_learned"
+              phx-value-code={n.code}
+              aria-label={"Marcar #{n.code} como aprendido"}
+              title="Já sei este passo"
+              class="flex w-10 shrink-0 items-center justify-center rounded-lg border border-accent-green/40 bg-accent-green/10 text-accent-green transition hover:bg-accent-green/20"
+            >
+              <.icon name="hero-plus" class="size-5" />
             </button>
           </li>
         </ul>

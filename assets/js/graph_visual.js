@@ -504,8 +504,8 @@ const GraphVisual = {
       this._clearSequenceHighlight()
     })
 
-    this.handleEvent("focus_graph_node", ({ code }) => {
-      this._focusGraphNode(code)
+    this.handleEvent("focus_graph_node", ({ code, close_journey }) => {
+      this._focusGraphNode(code, close_journey)
     })
 
     this.handleEvent("clear_graph_focus", () => {
@@ -1260,7 +1260,7 @@ const GraphVisual = {
     }
   },
 
-  _focusGraphNode(code) {
+  _focusGraphNode(code, closeJourney) {
     const cy = this._cy
     if (!cy || !code) return
 
@@ -1283,10 +1283,10 @@ const GraphVisual = {
     node.select()
     applySpotlight(cy, node)
 
-    // No celular o bottom-sheet da jornada cobre a parte de baixo do mapa, então
-    // o nó centralizado ficaria atrás dele. Fecha o sheet pra ver o passo no mapa
-    // cheio (ele fica em destaque: selecionado/laranja + spotlight).
-    if (window.innerWidth < 768 && document.getElementById("journey-drawer")) {
+    // Só quando vem da lista da jornada (close_journey): minimiza o painel (no
+    // celular cobre o mapa; no desktop o drawer da esquerda disputa a tela) pra
+    // o passo aparecer no mapa cheio. A busca passa false (não fecha a jornada).
+    if (closeJourney && document.getElementById("journey-drawer")) {
       this.pushEvent("toggle_journey", {})
     }
 
