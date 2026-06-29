@@ -1283,6 +1283,13 @@ const GraphVisual = {
     node.select()
     applySpotlight(cy, node)
 
+    // No celular o bottom-sheet da jornada cobre a parte de baixo do mapa, então
+    // o nó centralizado ficaria atrás dele. Fecha o sheet pra ver o passo no mapa
+    // cheio (ele fica em destaque: selecionado/laranja + spotlight).
+    if (window.innerWidth < 768 && document.getElementById("journey-drawer")) {
+      this.pushEvent("toggle_journey", {})
+    }
+
     const neighborhood = node.closedNeighborhood()
     cy.animate({ fit: { eles: neighborhood, padding: 120 }, duration: 350 })
   },
