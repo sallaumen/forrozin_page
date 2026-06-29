@@ -2,14 +2,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   @moduledoc """
   Pure graph-data computations for the visual graph (`GraphVisualLive`):
 
-    * Cytoscape JSON building (`build_json/2`, `build_orphans_json/1`)
+    * Cytoscape JSON building (`build_json/3`, `build_orphans_json/1`)
     * edge-spread geometry for parallel/bidirectional edges (`compute_edge_spread/1`)
     * node search for the graph search box (`search_graph_nodes/2`)
     * missing-edge detection for manual sequences (`find_missing_edges/2`)
 
   All functions are pure (no Repo/socket/IO). Two distinct input contracts:
 
-    * `build_json/2`, `build_orphans_json/1`, `compute_edge_spread/1`,
+    * `build_json/3`, `build_orphans_json/1`, `compute_edge_spread/1`,
       `find_missing_edges/2` consume RAW `Encyclopedia.build_graph` structs:
       nodes expose `code/name/note/highlighted/suggested_by_id/like_count/category`
       (category is a `%Category{}` with `name/label/color`); edges expose
@@ -31,14 +31,15 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   @type raw_graph :: %{nodes: [map()], edges: [map()]}
 
   @typedoc """
-  Contexto da jornada de estudos para colorir/filtrar o grafo. `learned` são os
-  códigos aprendidos; `full_map?` desliga a revelação progressiva (mostra tudo);
-  `goal_code` é a próxima meta a destacar. O default não altera o grafo (full
-  map, nada aprendido).
+  Contexto da jornada para colorir o grafo. `learned` e `frontier` são os
+  códigos aprendidos e os da fronteira ("pode aprender agora"); `goal_code` é a
+  próxima meta a destacar. `build_json` só TAGUEIA; a revelação progressiva
+  (esconder o que não é aprendido/fronteira) é aplicada no cliente via styling.
+  O default não altera nada.
   """
   @type journey :: %{
           learned: MapSet.t(String.t()),
-          full_map?: boolean(),
+          frontier: MapSet.t(String.t()),
           goal_code: String.t() | nil
         }
 
@@ -81,7 +82,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
     |> Enum.take(8)
   end
 
-  @default_journey %{learned: MapSet.new(), full_map?: true, goal_code: nil}
+  @default_journey %{learned: MapSet.new(), frontier: MapSet.new(), goal_code: nil}
 
   @doc """
   Encodes the graph as the Cytoscape nodes/edges JSON. Consumes RAW graph
@@ -89,29 +90,26 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   is false only edge-connected nodes are emitted; each node still carries an
   `orphan` flag. Notes are truncated to 300 graphemes.
 
-  The optional `journey` adds the study-journey overlay: each node gets
-  `learned`/`frontier`/`goal` flags and each edge a `state`
-  (`learned`/`frontier`/`hidden`). When `journey.full_map?` is false only the
-  learned-plus-frontier nodes and their non-hidden edges are emitted (revelação
-  progressiva). The default keeps the original behaviour (full map, no overlay).
+  The optional `journey` adds the study-journey overlay (TAG ONLY): each node
+  gets `learned`/`frontier`/`goal` flags and each edge a `state`
+  (`learned`/`frontier`/`hidden`). The progressive reveal (hiding non
+  learned/frontier nodes) is applied client-side via styling, not here, so a
+  node mark is a lightweight recolor/show-hide without rebuilding the graph.
+  The default keeps the original output (every node flag false).
   """
   @spec build_json(raw_graph(), boolean(), journey()) :: String.t()
   def build_json(graph, include_orphans, journey \\ @default_journey)
 
   def build_json(%{nodes: nodes, edges: edges}, include_orphans, journey) do
-    learned = journey.learned
-    frontier = StudyJourney.frontier(learned, edge_pairs(edges))
     connected = connected_codes(edges)
-    visible = visible_codes(nodes, connected, include_orphans, journey, frontier)
+
+    visible_nodes =
+      if include_orphans, do: nodes, else: Enum.filter(nodes, &MapSet.member?(connected, &1.code))
 
     Jason.encode!(%{
-      nodes: encode_nodes(nodes, visible, connected, learned, frontier, journey.goal_code),
-      edges: encode_edges(edges, learned, visible, journey.full_map?)
+      nodes: Enum.map(visible_nodes, &node_map(&1, connected, journey)),
+      edges: encode_edges(edges, journey.learned)
     })
-  end
-
-  defp edge_pairs(edges) do
-    Enum.map(edges, fn e -> {e.source_step.code, e.target_step.code} end)
   end
 
   defp connected_codes(edges) do
@@ -120,24 +118,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
     |> MapSet.new()
   end
 
-  defp visible_codes(nodes, connected, include_orphans, %{full_map?: true}, _frontier) do
-    base =
-      if include_orphans, do: nodes, else: Enum.filter(nodes, &MapSet.member?(connected, &1.code))
-
-    MapSet.new(base, & &1.code)
-  end
-
-  defp visible_codes(_nodes, _connected, _include_orphans, %{learned: learned}, frontier) do
-    StudyJourney.visible_codes(learned, frontier)
-  end
-
-  defp encode_nodes(nodes, visible, connected, learned, frontier, goal_code) do
-    nodes
-    |> Enum.filter(&MapSet.member?(visible, &1.code))
-    |> Enum.map(&node_map(&1, connected, learned, frontier, goal_code))
-  end
-
-  defp node_map(p, connected, learned, frontier, goal_code) do
+  defp node_map(p, connected, journey) do
     cat = p.category
 
     %{
@@ -152,24 +133,16 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
       suggested_by_id: p.suggested_by_id,
       orphan: not MapSet.member?(connected, p.code),
       like_count: p.like_count || 0,
-      learned: MapSet.member?(learned, p.code),
-      frontier: MapSet.member?(frontier, p.code),
-      goal: p.code == goal_code
+      learned: MapSet.member?(journey.learned, p.code),
+      frontier: MapSet.member?(journey.frontier, p.code),
+      goal: p.code == journey.goal_code
     }
   end
 
-  defp encode_edges(edges, learned, visible, full_map?) do
+  defp encode_edges(edges, learned) do
     edges
     |> compute_edge_spread()
     |> Enum.map(fn e -> Map.put(e, :state, StudyJourney.edge_state(learned, {e.from, e.to})) end)
-    |> Enum.filter(&edge_visible?(&1, visible, full_map?))
-  end
-
-  defp edge_visible?(_edge, _visible, true), do: true
-
-  defp edge_visible?(edge, visible, false) do
-    edge.state != :hidden and MapSet.member?(visible, edge.from) and
-      MapSet.member?(visible, edge.to)
   end
 
   @doc """

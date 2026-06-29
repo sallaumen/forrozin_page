@@ -421,12 +421,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
   defp journey(opts) do
     %{
       learned: MapSet.new(Keyword.get(opts, :learned, [])),
-      full_map?: Keyword.get(opts, :full_map?, true),
+      frontier: MapSet.new(Keyword.get(opts, :frontier, [])),
       goal_code: Keyword.get(opts, :goal_code, nil)
     }
   end
 
-  describe "build_json/3 jornada" do
+  describe "build_json/3 jornada (tag-only; disclosure é no cliente)" do
     test "default (sem journey) mantém o comportamento atual com flags falsas" do
       graph = %{nodes: [mknode("BF"), mknode("SC")], edges: [edge("BF", "SC")]}
       bf = GraphData.build_json(graph, true) |> decode_nodes() |> by_code("BF")
@@ -443,7 +443,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       }
 
       nodes =
-        GraphData.build_json(graph, true, journey(learned: ["BF"], goal_code: "SC"))
+        GraphData.build_json(
+          graph,
+          true,
+          journey(learned: ["BF"], frontier: ["SC", "IV"], goal_code: "SC")
+        )
         |> decode_nodes()
 
       assert by_code(nodes, "BF")["learned"] == true
@@ -456,47 +460,35 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
     test "tagueia o estado das arestas (learned/frontier/hidden)" do
       graph = %{
         nodes: [mknode("BF"), mknode("SC"), mknode("IV")],
-        edges: [edge("BF", "SC"), edge("SC", "IV")]
+        edges: [edge("BF", "SC"), edge("SC", "IV"), edge("IV", "BF")]
       }
 
       edges =
         GraphData.build_json(graph, true, journey(learned: ["BF", "SC"]))
         |> decode_edges()
 
-      bf_sc = Enum.find(edges, &(&1["from"] == "BF" and &1["to"] == "SC"))
-      sc_iv = Enum.find(edges, &(&1["from"] == "SC" and &1["to"] == "IV"))
+      state = fn from, to ->
+        Enum.find(edges, &(&1["from"] == from and &1["to"] == to))["state"]
+      end
 
-      assert bf_sc["state"] == "learned"
-      assert sc_iv["state"] == "frontier"
+      assert state.("BF", "SC") == "learned"
+      assert state.("SC", "IV") == "frontier"
+      assert state.("IV", "BF") == "hidden"
     end
 
-    test "fora do mapa completo, só mostra aprendidos + fronteira e oculta o resto" do
+    test "emite TODOS os nós (a revelação progressiva é aplicada no cliente)" do
       graph = %{
         nodes: [mknode("BF"), mknode("SC"), mknode("IV"), mknode("XX")],
         edges: [edge("BF", "SC"), edge("SC", "IV"), edge("XX", "IV")]
       }
 
-      json = GraphData.build_json(graph, true, journey(learned: ["BF"], full_map?: false))
-      codes = json |> decode_nodes() |> Enum.map(& &1["id"]) |> Enum.sort()
-      edges = decode_edges(json)
+      codes =
+        GraphData.build_json(graph, true, journey(learned: ["BF"], frontier: ["SC"]))
+        |> decode_nodes()
+        |> Enum.map(& &1["id"])
+        |> Enum.sort()
 
-      # BF (aprendido) + SC (fronteira); IV e XX ficam ocultos
-      assert codes == ["BF", "SC"]
-      # só a aresta BF->SC (frontier) aparece; SC->IV e XX->IV são ocultas
-      assert Enum.map(edges, &{&1["from"], &1["to"]}) == [{"BF", "SC"}]
-    end
-
-    test "no mapa completo, mostra tudo mesmo com a jornada ativa" do
-      graph = %{
-        nodes: [mknode("BF"), mknode("SC"), mknode("XX")],
-        edges: [edge("BF", "SC"), edge("XX", "SC")]
-      }
-
-      json = GraphData.build_json(graph, true, journey(learned: ["BF"], full_map?: true))
-      codes = json |> decode_nodes() |> Enum.map(& &1["id"]) |> Enum.sort()
-
-      assert codes == ["BF", "SC", "XX"]
-      assert length(decode_edges(json)) == 2
+      assert codes == ["BF", "IV", "SC", "XX"]
     end
   end
 end

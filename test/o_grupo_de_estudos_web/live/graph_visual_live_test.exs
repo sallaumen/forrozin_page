@@ -887,6 +887,50 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
+  describe "jornada de estudos no grafo" do
+    setup :setup_graph
+
+    test "marcar um passo como aprendido empurra learned/fronteira/meta", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "toggle_step_learned", %{"code" => "BF"})
+
+      # BF aprendido; SC (alvo de BF->SC) entra na fronteira; a proxima meta passa
+      # a ser BAL (segundo do plano-base), full_map continua false.
+      assert_push_event(lv, "set_learned_steps", %{
+        learned: ["BF"],
+        frontier: ["SC"],
+        goal: "BAL",
+        full_map: false
+      })
+    end
+
+    test "marcar aprendido tambem propaga o favorito para o mapa", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "toggle_step_learned", %{"code" => "BF"})
+
+      assert_push_event(lv, "set_favorited_steps", %{codes: ["BF"]})
+    end
+
+    test "marcar de novo desmarca (learned volta a vazio, meta volta pra BF)", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "toggle_step_learned", %{"code" => "BF"})
+      render_hook(lv, "toggle_step_learned", %{"code" => "BF"})
+
+      assert_push_event(lv, "set_learned_steps", %{learned: [], frontier: [], goal: "BF"})
+    end
+
+    test "alternar o mapa completo empurra full_map: true", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      render_hook(lv, "toggle_full_map", %{})
+
+      assert_push_event(lv, "set_learned_steps", %{full_map: true})
+    end
+  end
+
   describe "private sequence read guard" do
     test "?seq= does not highlight another user's private sequence", %{conn: conn} do
       owner = insert(:user)
