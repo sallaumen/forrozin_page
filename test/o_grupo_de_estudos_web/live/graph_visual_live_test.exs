@@ -961,8 +961,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       assert html =~ ~s(id="journey-drawer")
       assert html =~ "Pode aprender agora"
-      # 0 aprendidos -> nivel "Começando"
-      assert html =~ "Começando"
+      # 0 aprendidos -> frase + textinho de incentivo da primeira faixa
+      assert html =~ "Começando bonito"
+      assert html =~ "abre um tanto de caminho na pista"
     end
 
     test "reset_progress zera o progresso e empurra a jornada vazia", %{conn: conn, step_a: bf} do
