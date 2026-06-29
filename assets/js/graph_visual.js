@@ -190,6 +190,8 @@ function cyTheme() {
     nodeBorderOpacity:   dark ? 0.95 : 0.85,
     nodeSelectedOpacity: dark ? 0.22 : 0.15,
     likeBorderColor:     dark ? get("--color-accent-red") : "#c0392b",
+    journeyLearned:      dark ? get("--color-accent-green") : "#2f8f5b",
+    journeyFrontier:     dark ? get("--color-accent-orange") : "#c4621e",
     edgeOpacity:         dark ? 0.75 : 0.70,
     edgeHighlightColor:  dark ? get("--color-accent-orange") : "#c4621e",
     edgeLabelText:       dark ? get("--color-ink-800") : "#3a2510",
@@ -323,7 +325,7 @@ function clearSpotlight(cy) {
     cy.nodes().style({ opacity: 1 })
     cy.edges().style({ opacity: 0.45, width: 1.5 })
   })
-  applyLikedStepStyling()
+  applyJourneyStyling()
 }
 
 function applyCategorySpotlight(cy, categoryName) {
@@ -339,27 +341,86 @@ function applyCategorySpotlight(cy, categoryName) {
 }
 
 // ---------------------------------------------------------------------------
-// Liked step styling: red border on nodes the current user has liked
+// Journey + like styling: node borders by priority (aprendido > fronteira/meta
+// > curtido > categoria), edge colors by learned-state, and progressive reveal
+// (display:none on what is neither learned nor frontier nor goal, unless the
+// "mapa completo" is on). Single source of truth for node/edge styling, so
+// learned (green) never loses to the like border (red).
 // ---------------------------------------------------------------------------
-function applyLikedStepStyling() {
-  if (!window._cytoscape || !window._likedStepCodes) return
+function applyJourneyStyling() {
   const cy = window._cyInstance
   if (!cy) return
 
-  const likeColor = cyTheme().likeBorderColor
-  cy.nodes().forEach(node => {
-    if (window._likedStepCodes.has(node.id())) {
-      node.addClass("like-active")
-      node.style({
-        'border-width': node.data('highlighted') ? 5 : (node.degree() >= 10 ? 3 : 2.5),
-        'border-color': likeColor
-      })
-    } else {
-      node.removeClass("like-active")
-      if (!window._seqHighlightActive) {
-        node.style({ 'border-color': node.data('cor') || '#9a7a5a' })
+  // Antes do primeiro push da jornada (set_learned_steps), mostra tudo sem overlay.
+  const learned = window._learnedStepCodes
+  if (!learned) return
+
+  const frontier = window._frontierStepCodes || new Set()
+  const goal = window._goalStepCode
+  // Modo de edição (admin) sempre mostra o grafo inteiro para poder editar
+  // conexões, independente da revelação progressiva.
+  const editMode = document.getElementById("graph-canvas")?.dataset.editMode === "true"
+  const fullMap = window._fullMap === true || editMode
+  const liked = window._likedStepCodes || new Set()
+  const t = cyTheme()
+
+  cy.batch(() => {
+    cy.nodes().forEach(node => {
+      const id = node.id()
+      const isLearned = learned.has(id)
+      const isFrontier = frontier.has(id)
+      const isGoal = id === goal
+      node.style("display", fullMap || isLearned || isFrontier || isGoal ? "element" : "none")
+
+      if (window._seqHighlightActive) return
+
+      if (isLearned) {
+        node.removeClass("like-active journey-frontier").addClass("journey-learned")
+        node.style({
+          "border-color": t.journeyLearned,
+          "border-width": node.data("highlighted") ? 5 : 3.5,
+          "border-style": "solid"
+        })
+      } else if (isGoal || isFrontier) {
+        node.removeClass("like-active journey-learned").addClass("journey-frontier")
+        node.style({
+          "border-color": t.journeyFrontier,
+          "border-width": isGoal ? 3.5 : 2.5,
+          "border-style": "dashed"
+        })
+      } else if (liked.has(id)) {
+        node.removeClass("journey-learned journey-frontier").addClass("like-active")
+        node.style({
+          "border-color": t.likeBorderColor,
+          "border-width": node.degree() >= 10 ? 3 : 2.5,
+          "border-style": "solid"
+        })
+      } else {
+        node.removeClass("like-active journey-learned journey-frontier")
+        node.style({
+          "border-color": node.data("cor") || "#9a7a5a",
+          "border-width": node.degree() >= 10 ? 3 : 2,
+          "border-style": node.data("suggested") ? "dashed" : "solid"
+        })
       }
-    }
+    })
+
+    cy.edges().forEach(edge => {
+      const src = edge.source().id()
+      const tgt = edge.target().id()
+      const state = learned.has(src) && learned.has(tgt) ? "learned" : learned.has(src) ? "frontier" : "hidden"
+      edge.style("display", fullMap || state !== "hidden" ? "element" : "none")
+
+      if (window._seqHighlightActive) return
+
+      if (state === "learned") {
+        edge.style({ "line-color": t.journeyLearned, "target-arrow-color": t.journeyLearned, "line-style": "solid", "line-opacity": 1 })
+      } else if (state === "frontier") {
+        edge.style({ "line-color": t.journeyFrontier, "target-arrow-color": t.journeyFrontier, "line-style": "dashed", "line-opacity": 1 })
+      } else {
+        edge.style({ "line-color": edge.data("cor"), "target-arrow-color": edge.data("cor"), "line-style": "solid" })
+      }
+    })
   })
 }
 
@@ -368,6 +429,11 @@ function applyLikedStepStyling() {
 // ---------------------------------------------------------------------------
 const GraphVisual = {
   async mounted() {
+    // Registra os handlers de push ANTES do import async: os push_events do
+    // mount conectado (set_liked_steps/set_favorited_steps/set_learned_steps)
+    // chegam cedo e seriam perdidos se o registro esperasse o import.
+    this._registerServerEvents()
+
     // Lazy-load Cytoscape + cola (only on /graph/visual)
     const [{ default: cytoscape }, { default: cytoscapeCola }] = await Promise.all([
       import("../vendor/cytoscape.min"),
@@ -378,7 +444,9 @@ const GraphVisual = {
 
     this._bindGraphLegendInteractions()
     this._initGraph()
+  },
 
+  _registerServerEvents() {
     // Listen for server push events
     this.handleEvent("graph_updated", ({ graph_json, edit_mode, orphans }) => {
       this.el.dataset.graph = graph_json
@@ -441,12 +509,22 @@ const GraphVisual = {
     // Liked steps: highlight with red border
     this.handleEvent("set_liked_steps", ({ codes }) => {
       window._likedStepCodes = new Set(codes)
-      applyLikedStepStyling()
+      applyJourneyStyling()
     })
 
     // Favorited steps (for drawer buttons)
     this.handleEvent("set_favorited_steps", ({ codes }) => {
       window._favoritedStepCodes = new Set(codes)
+    })
+
+    // Jornada de estudos: aprendidos (verde), fronteira/meta (laranja) e
+    // revelação progressiva. Recolore + mostra/esconde sem reconstruir o grafo.
+    this.handleEvent("set_learned_steps", ({ learned, frontier, goal, full_map }) => {
+      window._learnedStepCodes = new Set(learned)
+      window._frontierStepCodes = new Set(frontier)
+      window._goalStepCode = goal
+      window._fullMap = full_map === true
+      applyJourneyStyling()
     })
 
     // Drawer do StepDetail (server-side): centrar/destacar o nó ao abrir (clique
@@ -600,7 +678,7 @@ const GraphVisual = {
     const sectorCenters = runHybridLayout(cy)
 
     // Apply liked step borders after layout (layout is synchronous here)
-    applyLikedStepStyling()
+    applyJourneyStyling()
 
     const initialSequenceSteps = this._consumeInitialSequenceSteps()
     if (initialSequenceSteps && initialSequenceSteps.length > 0) {
@@ -905,6 +983,10 @@ const GraphVisual = {
     })
 
     cy.batch(() => {
+      // Sequência sobrepõe a revelação progressiva: mostra tudo para o caminho
+      // aparecer mesmo fora do "meu progresso". O clear reaplica a jornada.
+      cy.elements().style("display", "element")
+
       // 2. Fade everything
       cy.elements().style({ opacity: 0.12 })
 
@@ -1048,7 +1130,7 @@ const GraphVisual = {
     this._manualGuideActive = false
     this._manualGuideSourceId = null
 
-    if (applyLiked) applyLikedStepStyling()
+    if (applyLiked) applyJourneyStyling()
   },
 
   _showSeqExitButton() {
@@ -1115,7 +1197,7 @@ const GraphVisual = {
     this._removeSeqExitButton()
 
     // Re-apply liked step borders now that sequence highlight is gone
-    applyLikedStepStyling()
+    applyJourneyStyling()
 
     if (refit) {
       cy.animate({ fit: { padding: 60 }, duration: 400 })
