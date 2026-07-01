@@ -124,12 +124,12 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-// Escala do chip conforme o zoom do mapa: sub-linear (raiz quadrada), como
-// rótulos de região em apps de mapa — aproxima/afasta junto com o mapa, mas
-// sem virar gigante no zoom-in nem ilegível na visão geral. Clamps mantêm a
-// legibilidade nos extremos.
+// Escala do chip conforme o zoom do mapa. No zoom-out o chip é PROPORCIONAL
+// como os blocos (linear em zoom: encolhe junto com o mapa, sem piso — pedido
+// do professor); no zoom-in suaviza (raiz quadrada) pra não virar cartaz, com
+// teto em 1.3. O min() troca de regime sozinho em zoom ≈ 0.36 (1.67z = √z).
 function zoneChipScale(zoom) {
-  return Math.max(0.6, Math.min(Math.sqrt(zoom), 1.3))
+  return Math.min(1.67 * zoom, Math.sqrt(zoom), 1.3)
 }
 
 // No zoom-out extremo (círculos minúsculos) os nomes só empilhariam uns sobre
