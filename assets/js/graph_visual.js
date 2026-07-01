@@ -124,21 +124,37 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
+// Escala do chip conforme o zoom do mapa: sub-linear (raiz quadrada), como
+// rótulos de região em apps de mapa — aproxima/afasta junto com o mapa, mas
+// sem virar gigante no zoom-in nem ilegível na visão geral. Clamps mantêm a
+// legibilidade nos extremos.
+function zoneChipScale(zoom) {
+  return Math.max(0.6, Math.min(Math.sqrt(zoom), 1.3))
+}
+
+// No zoom-out extremo (círculos minúsculos) os nomes só empilhariam uns sobre
+// os outros: desvanecem suavemente em vez de poluir. A faixa fica ABAIXO do
+// zoom natural de "fit" (celular ~0.17, desktop ~0.3), então a visão padrão
+// sempre mostra os rótulos; só o pinch-out além dela os esconde.
+function zoneChipAlpha(zoom) {
+  return Math.max(0, Math.min((zoom - 0.09) / 0.05, 1))
+}
+
 // Chip "tag" da área (estilo legenda): fundo papel OPACO (limpa os fios atrás)
 // + ponto na cor da categoria + nome em texto escuro, pequeno. Desenhado na
-// camada acima das arestas pra ler mesmo com o mapa cheio.
-function drawZoneChip(ctx, cx, cy, label, cor, bg, text) {
-  const fontPx = 12
+// camada acima das arestas pra ler mesmo com o mapa cheio. `s` = escala do zoom.
+function drawZoneChip(ctx, cx, cy, label, cor, bg, text, s) {
+  const fontPx = Math.round(12 * s)
   ctx.save()
   ctx.font = `600 ${fontPx}px Georgia, "Iowan Old Style", serif`
-  const dotR = 3.5, padX = 10, gap = 6, h = 22, r = h / 2
+  const dotR = 3.5 * s, padX = 10 * s, gap = 6 * s, h = 22 * s, r = h / 2
   const tw = ctx.measureText(label).width
   const w = padX * 2 + dotR * 2 + gap + tw
   const x = cx - w / 2, y = cy - h / 2
 
   roundRectPath(ctx, x, y, w, h, r)
   ctx.shadowColor = "rgba(60,40,20,0.20)"
-  ctx.shadowBlur = 6
+  ctx.shadowBlur = 6 * s
   ctx.shadowOffsetY = 1
   ctx.fillStyle = bg
   ctx.fill()
@@ -170,28 +186,39 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
 
   const w = container.offsetWidth
   const h = container.offsetHeight
+  // Buffer em pixels FÍSICOS (devicePixelRatio) com tamanho CSS em lógicos:
+  // sem isso, telas retina (celular = DPR 2-3) esticam o canvas e tudo sai
+  // borrado ("baixa definição").
+  const dpr = window.devicePixelRatio || 1
 
   // Duas camadas: círculos ATRÁS do grafo (fundo translúcido) e os rótulos
   // ACIMA das arestas (chips opacos, z-index 1), pra ler mesmo com o mapa cheio.
   const bg = document.createElement("canvas")
   bg.className = "zone-canvas"
-  bg.width = w
-  bg.height = h
-  bg.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:0;"
+  bg.width = w * dpr
+  bg.height = h * dpr
+  bg.style.cssText = `position:absolute;top:0;left:0;width:${w}px;height:${h}px;pointer-events:none;z-index:0;`
   container.insertBefore(bg, container.firstChild)
 
   const fg = document.createElement("canvas")
   fg.className = "zone-label-canvas"
-  fg.width = w
-  fg.height = h
-  fg.style.cssText = "position:absolute;top:0;left:0;pointer-events:none;z-index:1;"
+  fg.width = w * dpr
+  fg.height = h * dpr
+  fg.style.cssText = `position:absolute;top:0;left:0;width:${w}px;height:${h}px;pointer-events:none;z-index:1;`
   container.appendChild(fg)
 
   const bgCtx = bg.getContext("2d")
   const fgCtx = fg.getContext("2d")
+  bgCtx.scale(dpr, dpr)
+  fgCtx.scale(dpr, dpr)
   const root = getComputedStyle(document.documentElement)
   const chipBg = root.getPropertyValue("--color-ink-50").trim() || "#fdfbf8"
   const chipText = root.getPropertyValue("--color-ink-900").trim() || "#1a0e05"
+
+  // Rótulos acompanham o zoom (escala + fade no zoom-out extremo).
+  const zoom = cy.zoom()
+  const chipScale = zoneChipScale(zoom)
+  fgCtx.globalAlpha = zoneChipAlpha(zoom)
 
   Object.entries(byCat).forEach(([cat, catNodes]) => {
     if (catNodes.length < 2) return
@@ -224,7 +251,10 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
     bgCtx.stroke()
 
     // Nome da área num chip pequeno e opaco, no alto do círculo (acima dos fios).
-    drawZoneChip(fgCtx, cx, cy_ - r + 15, catNodes[0].data("categoria") || cat, cor, chipBg, chipText)
+    if (fgCtx.globalAlpha > 0) {
+      const chipY = cy_ - r + 15 * chipScale
+      drawZoneChip(fgCtx, cx, chipY, catNodes[0].data("categoria") || cat, cor, chipBg, chipText, chipScale)
+    }
   })
 }
 
