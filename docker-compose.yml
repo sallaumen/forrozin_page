@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: forrozin
       POSTGRES_PASSWORD: forrozin
-      POSTGRES_DB: forrozin_dev
+      POSTGRES_DB: o_grupo_de_estudos_dev
     ports:
       - "5433:5432"
     volumes:
