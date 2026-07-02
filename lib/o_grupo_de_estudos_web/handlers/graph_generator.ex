@@ -54,15 +54,28 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
           max_same_pair_loops: SequenceGenerator.max_same_pair_loops(loop_mode)
         }
 
-        {:ok, sequences, warnings} = Sequences.generate(gen_params)
+        case Sequences.generate(gen_params) do
+          {:ok, sequences, warnings} ->
+            {:noreply,
+             socket
+             |> assign(:seq_results, sequences)
+             |> assign(:seq_warnings, warnings)
+             |> assign(:seq_view, :results)
+             |> assign(:seq_saving, nil)
+             |> assign(:seq_missing_edges, [])}
 
-        {:noreply,
-         socket
-         |> assign(:seq_results, sequences)
-         |> assign(:seq_warnings, warnings)
-         |> assign(:seq_view, :results)
-         |> assign(:seq_saving, nil)
-         |> assign(:seq_missing_edges, [])}
+          {:error, %Sequences.GeneratorError{message: message}} ->
+            # O painel de resultados e o unico lugar visivel nesta pagina
+            # (flash nao renderiza em handle_event aqui); o erro tipado do
+            # dominio vira a unica mensagem do painel.
+            {:noreply,
+             socket
+             |> assign(:seq_results, [])
+             |> assign(:seq_warnings, [message])
+             |> assign(:seq_view, :results)
+             |> assign(:seq_saving, nil)
+             |> assign(:seq_missing_edges, [])}
+        end
       end
 
       def handle_event("start_save_sequence", %{"index" => index_str}, socket) do

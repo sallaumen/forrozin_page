@@ -12,11 +12,12 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
 
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
   alias OGrupoDeEstudos.Sequences.Generator.GraphTraversal
+  alias OGrupoDeEstudos.Sequences.GeneratorError
   alias OGrupoDeEstudos.Sequences.Scorer
 
   @type step_info :: %{id: String.t(), code: String.t(), name: String.t()}
   @type sequence :: [step_info()]
-  @type result :: {:ok, [sequence()], [String.t()]}
+  @type result :: {:ok, [sequence()], [String.t()]} | {:error, GeneratorError.t()}
 
   @max_attempts 50
   @max_same_pair_loops 3
@@ -56,7 +57,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
       resolve_required_ids(params.required_codes, code_to_id)
 
     if is_nil(start_id) do
-      {:ok, [], ["Passo inicial '#{params.start_code}' não encontrado"]}
+      {:error, GeneratorError.start_step_not_found(params.start_code)}
     else
       reachable = GraphTraversal.reachable_from(start_id, adjacency)
 
