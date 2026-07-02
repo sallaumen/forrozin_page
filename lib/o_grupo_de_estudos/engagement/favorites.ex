@@ -8,11 +8,11 @@ defmodule OGrupoDeEstudos.Engagement.Favorites do
   import Ecto.Query
 
   alias Ecto.Multi
-  alias OGrupoDeEstudos.Encyclopedia.Step
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.{Favorite, Like, LikeQuery}
   alias OGrupoDeEstudos.RateLimiter
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Sequences.Sequence
+  alias OGrupoDeEstudos.Sequences
 
   @doc """
   Toggles a favorite for the given user on a favoritable entity.
@@ -94,15 +94,13 @@ defmodule OGrupoDeEstudos.Engagement.Favorites do
     end
   end
 
-  @doc "Returns the codes of every step the user has favorited."
+  @doc "Returns the codes of every step the user has favorited (deleted excluded)."
   def step_codes_for(user_id) do
-    from(f in Favorite,
-      where: f.user_id == ^user_id and f.favoritable_type == "step",
-      join: s in Step,
-      on: s.id == f.favoritable_id,
-      select: s.code
-    )
-    |> Repo.all()
+    user_id
+    |> favorited_ids("step")
+    |> Encyclopedia.step_summaries_by_ids()
+    |> Map.values()
+    |> Enum.map(& &1.code)
   end
 
   @doc "Returns `true` if the user has favorited the given entity."
@@ -139,24 +137,34 @@ defmodule OGrupoDeEstudos.Engagement.Favorites do
   Supports `"step"` and `"sequence"` — returns the full records.
   """
   def list_user_favorites(user_id, "step") do
-    from(s in Step,
-      join: f in Favorite,
-      on: f.favoritable_id == s.id and f.favoritable_type == "step",
-      where: f.user_id == ^user_id and is_nil(s.deleted_at),
-      order_by: [desc: f.inserted_at]
+    user_id
+    |> favorited_ids("step")
+    |> resolve_in_order(&Encyclopedia.steps_by_ids/1)
+  end
+
+  def list_user_favorites(user_id, "sequence") do
+    user_id
+    |> favorited_ids("sequence")
+    |> resolve_in_order(&Sequences.map_by_ids/1)
+  end
+
+  @doc "Ids favorited by the user for a type, most recently favorited first."
+  def favorited_ids(user_id, favoritable_type) do
+    from(f in Favorite,
+      where: f.user_id == ^user_id and f.favoritable_type == ^favoritable_type,
+      order_by: [desc: f.inserted_at],
+      select: f.favoritable_id
     )
     |> Repo.all()
   end
 
-  def list_user_favorites(user_id, "sequence") do
-    from(s in Sequence,
-      join: f in Favorite,
-      on: f.favoritable_id == s.id and f.favoritable_type == "sequence",
-      where: f.user_id == ^user_id and is_nil(s.deleted_at),
-      order_by: [desc: f.inserted_at],
-      preload: [:user, sequence_steps: [step: :category]]
-    )
-    |> Repo.all()
+  # Owning contexts drop deleted records; keep the favorited order.
+  defp resolve_in_order(ids, batch_fetch) do
+    records = batch_fetch.(ids)
+
+    ids
+    |> Enum.map(&records[&1])
+    |> Enum.reject(&is_nil/1)
   end
 
   @doc "Returns the total count of favorites for the given user across all types."

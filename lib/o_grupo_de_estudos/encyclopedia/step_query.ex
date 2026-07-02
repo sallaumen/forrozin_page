@@ -74,6 +74,30 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
     |> Map.new()
   end
 
+  @doc "Returns `%{id => %Step{}}` for the given ids (deleted excluded)."
+  @spec map_by_ids([Ecto.UUID.t()]) :: %{Ecto.UUID.t() => Step.t()}
+  def map_by_ids([]), do: %{}
+
+  def map_by_ids(ids) when is_list(ids) do
+    [step_ids: ids]
+    |> list_by()
+    |> Map.new(&{&1.id, &1})
+  end
+
+  @doc "Returns `%{user_id => count}` of non-deleted steps suggested by each user."
+  @spec counts_by_suggester([Ecto.UUID.t()]) :: %{Ecto.UUID.t() => non_neg_integer()}
+  def counts_by_suggester([]), do: %{}
+
+  def counts_by_suggester(user_ids) when is_list(user_ids) do
+    from(s in Step,
+      where: s.suggested_by_id in ^user_ids and is_nil(s.deleted_at),
+      group_by: s.suggested_by_id,
+      select: {s.suggested_by_id, count(s.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
   defp default_scope, do: from(s in Step, as: :step)
 
   defp shared_reducer({:include_deleted, true}, q), do: q

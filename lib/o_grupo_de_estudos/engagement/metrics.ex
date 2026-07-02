@@ -9,7 +9,7 @@ defmodule OGrupoDeEstudos.Engagement.Metrics do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Encyclopedia.Step
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.Comments.{SequenceComment, StepComment}
   alias OGrupoDeEstudos.Engagement.{Like, ProfileComment}
   alias OGrupoDeEstudos.Repo
@@ -24,15 +24,14 @@ defmodule OGrupoDeEstudos.Engagement.Metrics do
     |> MapSet.new()
   end
 
-  @doc "Returns a list of step codes that the given user has liked."
+  @doc "Returns the step codes the user has liked (deleted steps excluded)."
   def liked_step_codes(user_id) do
-    from(l in Like,
-      where: l.user_id == ^user_id and l.likeable_type == "step",
-      join: s in Step,
-      on: s.id == l.likeable_id,
-      select: s.code
-    )
-    |> Repo.all()
+    user_id
+    |> liked_step_ids()
+    |> Enum.to_list()
+    |> Encyclopedia.step_summaries_by_ids()
+    |> Map.values()
+    |> Enum.map(& &1.code)
   end
 
   @doc "Returns the count of likes given by a user for a specific likeable_type."

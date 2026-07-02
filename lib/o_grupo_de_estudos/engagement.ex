@@ -13,11 +13,8 @@ defmodule OGrupoDeEstudos.Engagement do
   preserved (now via `Engagement.Comments`) for existing LiveView callers.
   """
 
-  import Ecto.Query
-
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Encyclopedia
-  alias OGrupoDeEstudos.Encyclopedia.Step
 
   alias OGrupoDeEstudos.Engagement.{
     Badges,
@@ -32,7 +29,7 @@ defmodule OGrupoDeEstudos.Engagement do
   alias OGrupoDeEstudos.Engagement.DeviceSession
   alias OGrupoDeEstudos.Engagement.Notifications.NotificationQuery
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Sequences.Sequence
+  alias OGrupoDeEstudos.Sequences
 
   # ══════════════════════════════════════════════════════════════════════
   # Likes (delegated to Engagement.Likes)
@@ -184,24 +181,8 @@ defmodule OGrupoDeEstudos.Engagement do
   def user_stats_batch([]), do: %{}
 
   def user_stats_batch(user_ids) when is_list(user_ids) do
-    steps_counts =
-      from(s in Step,
-        where: s.suggested_by_id in ^user_ids and is_nil(s.deleted_at),
-        group_by: s.suggested_by_id,
-        select: {s.suggested_by_id, count(s.id)}
-      )
-      |> Repo.all()
-      |> Map.new()
-
-    seq_counts =
-      from(s in Sequence,
-        where: s.user_id in ^user_ids and s.public == true,
-        group_by: s.user_id,
-        select: {s.user_id, count(s.id)}
-      )
-      |> Repo.all()
-      |> Map.new()
-
+    steps_counts = Encyclopedia.count_steps_by_suggester(user_ids)
+    seq_counts = Sequences.count_public_by_users(user_ids)
     badges = Badges.primary_batch(user_ids)
 
     Map.new(user_ids, fn uid ->
