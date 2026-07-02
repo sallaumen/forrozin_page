@@ -243,5 +243,31 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
       assert html =~ "Suas sugestões pendentes"
       assert html =~ "Nome Novo"
     end
+
+    test "start_suggest ignores fields outside the suggestible whitelist", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      insert(:step, section: section, code: "PS4", name: "Passo Protegido")
+
+      {:ok, lv, _html} = live(conn, ~p"/steps/PS4")
+
+      html = render_click(lv, "start_suggest", %{"field" => "password_hash"})
+
+      refute html =~ "phx-submit=\"submit_suggestion\""
+    end
+
+    test "submit_suggestion without an active suggestion field is a no-op", %{conn: conn} do
+      user = insert(:user)
+      conn = log_in_user(conn, user)
+      section = insert(:section)
+      insert(:step, section: section, code: "PS5", name: "Passo Quieto")
+
+      {:ok, lv, _html} = live(conn, ~p"/steps/PS5")
+
+      html = render_click(lv, "submit_suggestion", %{"value" => "Qualquer"})
+
+      refute html =~ "Suas sugestões pendentes"
+    end
   end
 end

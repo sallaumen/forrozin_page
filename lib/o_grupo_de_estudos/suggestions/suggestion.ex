@@ -28,6 +28,16 @@ defmodule OGrupoDeEstudos.Suggestions.Suggestion do
     timestamps()
   end
 
+  @doc "Fields a user may suggest edits for."
+  def suggestible_fields, do: @valid_fields
+
+  @doc "Safely converts a suggestible field name to its schema atom."
+  @spec field_atom(String.t() | nil) :: {:ok, atom()} | :error
+  def field_atom("name"), do: {:ok, :name}
+  def field_atom("note"), do: {:ok, :note}
+  def field_atom("category_id"), do: {:ok, :category_id}
+  def field_atom(_other), do: :error
+
   def changeset(suggestion, attrs) do
     suggestion
     |> cast(attrs, [:target_type, :target_id, :action, :field, :old_value, :new_value, :user_id])

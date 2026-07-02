@@ -156,19 +156,9 @@ defmodule OGrupoDeEstudos.Suggestions do
   # ── Apply suggestion ─────────────────────────────────────
 
   defp apply_suggestion(%{action: "edit_field"} = s) do
-    step = Repo.get(Step, s.target_id)
-
-    if step do
-      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      field_atom = String.to_existing_atom(s.field)
-
-      Admin.update_step(step, %{
-        field_atom => s.new_value,
-        :last_edited_by_id => s.user_id,
-        :last_edited_at => now
-      })
-    else
-      {:error, :step_not_found}
+    case Suggestion.field_atom(s.field) do
+      {:ok, field_atom} -> apply_field_edit(s, field_atom)
+      :error -> {:error, :invalid_field}
     end
   end
 
@@ -191,6 +181,22 @@ defmodule OGrupoDeEstudos.Suggestions do
 
   defp apply_suggestion(%{action: "remove_connection"} = s) do
     Admin.delete_connection(s.target_id)
+  end
+
+  defp apply_field_edit(s, field_atom) do
+    case Repo.get(Step, s.target_id) do
+      nil ->
+        {:error, :step_not_found}
+
+      step ->
+        now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+        Admin.update_step(step, %{
+          field_atom => s.new_value,
+          :last_edited_by_id => s.user_id,
+          :last_edited_at => now
+        })
+    end
   end
 
   defp safe_notify(action, suggestion, admin) do
