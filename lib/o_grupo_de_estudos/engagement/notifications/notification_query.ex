@@ -38,7 +38,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
   end
 
   @doc "Returns the count of unread notifications, optionally filtered by `action:`."
-  @spec unread_count(Ecto.UUID.t(), [{:action, String.t()}]) :: non_neg_integer()
+  @spec unread_count(Ecto.UUID.t(), [{:action, atom()}]) :: non_neg_integer()
   def unread_count(user_id, opts \\ []) do
     from(n in Notification, where: n.user_id == ^user_id and is_nil(n.read_at))
     |> filter_action(opts[:action])
