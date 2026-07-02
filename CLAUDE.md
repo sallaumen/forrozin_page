@@ -4,7 +4,7 @@ Rede social de forro roots para estudo de danca. Usada em aulas em Curitiba pelo
 
 ## Padroes de qualidade
 
-Seguir **todos** os principios de `~/.tavano_rfc.txt`. Destaques criticos:
+Seguir **todos** os principios de `~/elixir-references/` (Playbook + RFCs). Destaques criticos:
 
 - TDD obrigatorio. Testes primeiro, implementacao depois.
 - Clean code: funcoes ate 10 linhas (max 18). Uma responsabilidade por funcao.
@@ -16,8 +16,30 @@ Seguir **todos** os principios de `~/.tavano_rfc.txt`. Destaques criticos:
 - Nunca `@tag :skip` em testes. Todo teste passa.
 - HEEx: usar `:if={}` no atributo, `<%= if %>` so com `else`.
 - Logging inline, nunca funcoes privadas so para logar.
-- Queries em modulos `*Query`, nunca direto no contexto.
 - Nunca usar travessao (em dash) em textos voltados ao usuario. Marca de IA.
+
+## Regras de arquitetura (em vigor desde jul/2026, PRs #139-#150)
+
+- **Triad Context/Schema/Query**: queries em modulos `*Query`, nunca direto no
+  contexto nem na camada web. `grep "Repo\.\|import Ecto.Query" lib/*_web/` deve
+  retornar vazio. Contexto delega reads (`defdelegate`) e mantem mutations.
+- **Autorizacao na borda**: todo `handle_event` que muda estado passa por
+  `Authorization.Policy.authorize/3` (ou `authorized?/3` para flags de UI).
+  Nunca checar `is_admin`/`user_id` inline; nunca castar `:role` de params.
+- **Contexto so fala com contexto pela API publica**: nunca consultar schema
+  de outro contexto (usar as batch APIs: `Encyclopedia.steps_by_ids/1`,
+  `Sequences.map_by_ids/1`, `Accounts.list_user_summaries/1`, etc.).
+- **Ecto.Enum sobre `:string` + `validate_inclusion`** para todo campo
+  enumeravel (coluna continua string no banco). Falta converter:
+  `Notification.action/parent_type/target_type`.
+- **Timestamps de negocio (`*_at`) em `:utc_datetime`**; `timestamps()`
+  (inserted_at/updated_at) seguem naive por decisao consciente.
+- **Backfills NUNCA em migrations**: migration so muda schema; backfill vai em
+  mix task/release task com streaming. Indice em tabela quente: migration
+  propria com `@disable_ddl_transaction` + `concurrently: true` +
+  `create_if_not_exists` (template: `20260702120000_add_teacher_student_links_student_index.exs`).
+- **Trabalho de boot via Oban** (`Workers.StartupScripts`), nunca Task solta
+  com sleep. Admin ids cacheados em `Accounts.AdminIdsCache` (TTL 60s; 0 em teste).
 
 ## Stack
 
