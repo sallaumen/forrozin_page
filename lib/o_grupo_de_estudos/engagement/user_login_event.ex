@@ -10,11 +10,10 @@ defmodule OGrupoDeEstudos.Engagement.UserLoginEvent do
   @foreign_key_type :binary_id
 
   @methods ~w(password auto_login)
-  @device_types ~w(mobile desktop tablet)
 
   schema "user_login_events" do
     field :method, :string
-    field :device_type, :string
+    field :device_type, Ecto.Enum, values: [:mobile, :desktop, :tablet]
     field :browser, :string
     field :is_pwa, :boolean, default: false
     field :user_agent, :string
@@ -38,7 +37,6 @@ defmodule OGrupoDeEstudos.Engagement.UserLoginEvent do
     ])
     |> validate_required([:method, :occurred_at, :user_id])
     |> validate_inclusion(:method, @methods)
-    |> validate_inclusion(:device_type, @device_types)
     |> validate_length(:user_agent, max: 500)
   end
 end

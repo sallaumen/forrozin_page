@@ -15,7 +15,6 @@ defmodule OGrupoDeEstudos.Accounts.User do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @valid_roles ~w(user admin)
   @valid_states ~w(AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO)
   @min_password 8
 
@@ -29,7 +28,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :email, :string
     field :password, :string, virtual: true
     field :password_hash, :string
-    field :role, :string, default: "user"
+    field :role, Ecto.Enum, values: [:user, :admin], default: :user
     field :confirmation_token, :string
     field :confirmed_at, :naive_datetime
     field :name, :string
@@ -55,8 +54,6 @@ defmodule OGrupoDeEstudos.Accounts.User do
       :username,
       :email,
       :password,
-      :role,
-      :confirmation_token,
       :name,
       :country,
       :state,
@@ -74,7 +71,6 @@ defmodule OGrupoDeEstudos.Accounts.User do
     |> validate_length(:city, min: 2, message: "informe a cidade")
     |> validate_state_for_brazil()
     |> validate_length(:password, min: @min_password)
-    |> validate_inclusion(:role, @valid_roles)
     |> put_invite_slug()
     |> unique_constraint(:username, message: "nome de usuário já existe")
     |> unique_constraint(:email, message: "email já cadastrado")

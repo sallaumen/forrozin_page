@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudos.AccountsTest do
 
       assert user.username == "novousuario"
       assert user.email == "novo@example.com"
-      assert user.role == "user"
+      assert user.role == :user
       assert user.password_hash != nil
       assert is_nil(user.confirmed_at), "user must NOT be auto-confirmed"
       assert is_binary(user.confirmation_token), "must generate a confirmation token"
@@ -140,8 +140,12 @@ defmodule OGrupoDeEstudos.AccountsTest do
 
   describe "admin?/1" do
     test "returns true for admin" do
-      {:ok, admin} = Accounts.register_user(Map.put(@valid_attrs, :role, "admin"))
-      assert Accounts.admin?(admin)
+      assert Accounts.admin?(insert(:admin))
+    end
+
+    test "registration cannot self-promote to admin" do
+      {:ok, user} = Accounts.register_user(Map.put(@valid_attrs, :role, "admin"))
+      refute Accounts.admin?(user)
     end
 
     test "returns false for regular user" do

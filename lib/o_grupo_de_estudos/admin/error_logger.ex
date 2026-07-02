@@ -33,7 +33,7 @@ defmodule OGrupoDeEstudos.Admin.ErrorLogger do
       Task.start(fn ->
         try do
           Repo.insert(%ErrorLog{
-            level: to_string(level),
+            level: level,
             message: String.slice(message, 0, 5000),
             source: extract_source(meta),
             stacktrace: extract_stacktrace(meta),

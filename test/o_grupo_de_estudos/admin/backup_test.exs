@@ -140,4 +140,21 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
              ]
     end
   end
+
+  describe "restore with Ecto.Enum fields" do
+    test "restores users preserving the role enum" do
+      admin = insert(:admin)
+      dir = Path.join(System.tmp_dir!(), "backup_enum_test_#{System.unique_integer([:positive])}")
+      path = Backup.create_backup!(dir)
+
+      Repo.delete_all(OGrupoDeEstudos.Engagement.Like)
+      Repo.delete_all(OGrupoDeEstudos.Accounts.User)
+      assert :ok = Backup.restore_backup!(path)
+
+      restored = Repo.get(OGrupoDeEstudos.Accounts.User, admin.id)
+      assert restored.role == :admin
+
+      File.rm_rf!(dir)
+    end
+  end
 end

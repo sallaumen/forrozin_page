@@ -49,7 +49,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionControllerTest do
 
       event = Repo.get_by!(UserLoginEvent, user_id: user.id)
       assert event.method == "password"
-      assert event.device_type == "mobile"
+      assert event.device_type == :mobile
       assert event.browser == "Chrome"
     end
 
@@ -82,7 +82,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionControllerTest do
 
       event = Repo.get_by!(UserLoginEvent, user_id: user.id)
       assert event.method == "auto_login"
-      assert event.device_type == "desktop"
+      assert event.device_type == :desktop
       assert event.browser == "Safari"
     end
   end

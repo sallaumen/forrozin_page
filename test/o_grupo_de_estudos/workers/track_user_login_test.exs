@@ -25,7 +25,7 @@ defmodule OGrupoDeEstudos.Workers.TrackUserLoginTest do
       user = Accounts.get_user_by_id(user.id)
 
       assert event.method == "password"
-      assert event.device_type == "mobile"
+      assert event.device_type == :mobile
       assert event.browser == "Chrome"
       refute event.is_pwa
       assert event.user_agent == "Mozilla/5.0 (iPhone) AppleWebKit Chrome"
