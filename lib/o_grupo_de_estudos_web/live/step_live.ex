@@ -4,6 +4,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Suggestions}
+  alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudos.Suggestions.Suggestion
   alias OGrupoDeEstudosWeb.StepDetail
@@ -35,7 +36,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
             preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
           )
 
-        can_edit = admin or step.suggested_by_id == user_id
+        can_edit = Policy.authorized?(:edit_step, socket.assigns.current_user, step)
 
         connections_out =
           ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
@@ -171,7 +172,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("delete_step", _params, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:delete_step, socket.assigns.current_user, socket.assigns.step) do
       step = socket.assigns.step
 
       # Soft-delete all connections first (cascade)
@@ -293,10 +294,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   def handle_event("update_link", %{"url" => url, "title" => title}, socket) do
     link = Enum.find(socket.assigns.approved_links, &(&1.id == socket.assigns.editing_link_id))
-    user_id = socket.assigns.current_user.id
-    can_edit_link = socket.assigns.is_admin or (link && link.submitted_by_id == user_id)
 
-    if link && can_edit_link do
+    if Policy.authorized?(:manage_step_link, socket.assigns.current_user, link) do
       case Admin.update_step_link(link, %{url: String.trim(url), title: String.trim(title)}) do
         {:ok, _} ->
           socket =
@@ -317,10 +316,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   def handle_event("delete_link", %{"link-id" => link_id}, socket) do
     link = Enum.find(socket.assigns.approved_links, &(&1.id == link_id))
-    user_id = socket.assigns.current_user.id
-    can_delete = socket.assigns.is_admin or (link && link.submitted_by_id == user_id)
 
-    if link && can_delete do
+    if Policy.authorized?(:manage_step_link, socket.assigns.current_user, link) do
       case Admin.delete_step_link(link) do
         {:ok, _} ->
           {:noreply,
@@ -339,7 +336,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   # --- Approve / unapprove step ---
 
   def handle_event("approve_step", %{"code" => code}, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:approve_step, socket.assigns.current_user, socket.assigns.step) do
       case StepQuery.get_by(code: code) do
         nil ->
           {:noreply, socket}
@@ -354,7 +351,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("unapprove_step", _params, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:approve_step, socket.assigns.current_user, socket.assigns.step) do
       case Admin.unapprove_step(socket.assigns.step) do
         {:ok, _} ->
           {:noreply,

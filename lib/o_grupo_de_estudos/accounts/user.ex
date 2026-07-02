@@ -19,6 +19,8 @@ defmodule OGrupoDeEstudos.Accounts.User do
   @valid_states ~w(AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO)
   @min_password 8
 
+  @type t :: %__MODULE__{}
+
   # Keep credentials out of logs, crash reports and inspect output. The app
   # persists exceptions via Admin.ErrorLogger, which would otherwise capture them.
   @derive {Inspect, except: [:password, :password_hash, :confirmation_token]}

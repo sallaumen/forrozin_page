@@ -378,6 +378,27 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     end
   end
 
+  describe "authorization boundary" do
+    test "regular user cannot create a section via crafted event", %{conn: conn} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/collection")
+
+      render_submit(lv, "create_section", %{"section" => %{"title" => "Invasora"}})
+
+      sections = OGrupoDeEstudos.Encyclopedia.SectionQuery.list_by()
+      refute Enum.any?(sections, &(&1.title == "Invasora"))
+    end
+
+    test "regular user cannot create a category via crafted event", %{conn: conn} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/collection")
+
+      render_submit(lv, "create_category", %{"category" => %{"name" => "Invasora"}})
+
+      refute Enum.any?(OGrupoDeEstudos.Encyclopedia.list_categories(), &(&1.name == "Invasora"))
+    end
+  end
+
   describe "drawer — admin editing" do
     defp admin_conn(conn) do
       admin = insert(:admin)

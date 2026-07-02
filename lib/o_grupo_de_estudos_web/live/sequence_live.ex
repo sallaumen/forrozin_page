@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Engagement, Sequences}
+  alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
   alias OGrupoDeEstudosWeb.Helpers.RateLimit
 
@@ -837,7 +838,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
         is_favorited: MapSet.member?(assigns.seq_favorites, seq.id),
         is_expanded: is_expanded,
         is_deep_linked: assigns.deep_linked_sequence_id == seq.id,
-        editable: assigns.is_admin or seq.user_id == current_user.id
+        editable: Policy.authorized?(:manage_sequence, current_user, seq)
       )
 
     ~H"""
