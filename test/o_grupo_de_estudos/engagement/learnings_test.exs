@@ -120,7 +120,7 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
       Engagement.toggle_learned(user.id, bf.id)
       Engagement.toggle_learned(user.id, sc.id)
 
-      bf |> Ecto.Changeset.change(deleted_at: ~N[2026-01-01 00:00:00]) |> Repo.update!()
+      bf |> Ecto.Changeset.change(deleted_at: ~U[2026-01-01 00:00:00Z]) |> Repo.update!()
 
       assert Engagement.learned_step_codes(user.id) == ["SC"]
       assert Enum.map(Engagement.list_learned_steps(user.id), & &1.code) == ["SC"]

@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
       # Create a notification inserted 100 days ago and read (should be deleted)
       old_read_notification =
         insert(:notification,
-          read_at: NaiveDateTime.add(now, -100, :day) |> NaiveDateTime.truncate(:second)
+          read_at: DateTime.utc_now() |> DateTime.add(-100, :day) |> DateTime.truncate(:second)
         )
         |> then(fn notif ->
           notif
@@ -24,7 +24,7 @@ defmodule OGrupoDeEstudos.Workers.NotificationCleanupTest do
       # Create a notification inserted 80 days ago and read (should NOT be deleted)
       recent_read_notification =
         insert(:notification,
-          read_at: NaiveDateTime.add(now, -80, :day) |> NaiveDateTime.truncate(:second)
+          read_at: DateTime.utc_now() |> DateTime.add(-80, :day) |> DateTime.truncate(:second)
         )
         |> then(fn notif ->
           notif

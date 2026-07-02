@@ -47,7 +47,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQueryTest do
         insert(:profile_comment,
           profile: profile,
           author: author,
-          deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+          deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)
         )
 
       results = ProfileCommentQuery.list_by(profile_id: profile.id)
@@ -65,7 +65,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQueryTest do
         insert(:profile_comment,
           profile: profile,
           author: author,
-          deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+          deleted_at: DateTime.utc_now() |> DateTime.truncate(:second)
         )
 
       results = ProfileCommentQuery.list_by(profile_id: profile.id, include_deleted: true)

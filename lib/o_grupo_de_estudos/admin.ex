@@ -134,8 +134,7 @@ defmodule OGrupoDeEstudos.Admin do
   end
 
   defp now do
-    utc_now = NaiveDateTime.utc_now()
-    NaiveDateTime.truncate(utc_now, :second)
+    DateTime.utc_now() |> DateTime.truncate(:second)
   end
 
   @doc "Lists error logs, newest first. Accepts `limit:` and `offset:`."

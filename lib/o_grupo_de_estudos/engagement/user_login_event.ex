@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudos.Engagement.UserLoginEvent do
     field :browser, :string
     field :is_pwa, :boolean, default: false
     field :user_agent, :string
-    field :occurred_at, :naive_datetime
+    field :occurred_at, :utc_datetime
 
     belongs_to :user, OGrupoDeEstudos.Accounts.User
 

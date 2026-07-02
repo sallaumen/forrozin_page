@@ -197,6 +197,7 @@ defmodule OGrupoDeEstudos.Admin.Backup do
 
   defp serialize_value(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
   defp serialize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
+  defp serialize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp serialize_value(value), do: value
 
   defp restore_schema(schema, records) do
@@ -229,6 +230,18 @@ defmodule OGrupoDeEstudos.Admin.Backup do
   defp deserialize_value(v, :naive_datetime) when is_binary(v) do
     {:ok, dt} = NaiveDateTime.from_iso8601(v)
     dt
+  end
+
+  defp deserialize_value(v, :utc_datetime) when is_binary(v) do
+    case DateTime.from_iso8601(v) do
+      {:ok, dt, _offset} ->
+        dt
+
+      # Backups anteriores a julho/2026 serializavam esses campos sem offset.
+      {:error, :missing_offset} ->
+        {:ok, naive} = NaiveDateTime.from_iso8601(v)
+        DateTime.from_naive!(naive, "Etc/UTC")
+    end
   end
 
   # Ecto.Enum (e outros tipos parametrizados): o insert_all faz dump pelo

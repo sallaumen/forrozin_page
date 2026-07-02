@@ -47,12 +47,21 @@ defmodule OGrupoDeEstudos.Workers.TrackUserLogin do
   end
 
   defp parse_occurred_at(nil) do
-    NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    DateTime.utc_now() |> DateTime.truncate(:second)
   end
 
   defp parse_occurred_at(occurred_at) do
+    case DateTime.from_iso8601(occurred_at) do
+      {:ok, datetime, _offset} -> DateTime.truncate(datetime, :second)
+      # Jobs enfileirados antes do deploy carregam iso8601 naive (sem Z).
+      {:error, :missing_offset} -> parse_naive_occurred_at(occurred_at)
+      {:error, _reason} -> parse_occurred_at(nil)
+    end
+  end
+
+  defp parse_naive_occurred_at(occurred_at) do
     case NaiveDateTime.from_iso8601(occurred_at) do
-      {:ok, datetime} -> NaiveDateTime.truncate(datetime, :second)
+      {:ok, naive} -> naive |> DateTime.from_naive!("Etc/UTC") |> DateTime.truncate(:second)
       {:error, _reason} -> parse_occurred_at(nil)
     end
   end

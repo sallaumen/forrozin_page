@@ -40,8 +40,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
     field :highlighted, :boolean, default: false
     field :approved, :boolean, default: false
     field :like_count, :integer, default: 0
-    field :deleted_at, :naive_datetime
-    field :last_edited_at, :naive_datetime
+    field :deleted_at, :utc_datetime
+    field :last_edited_at, :utc_datetime
 
     belongs_to :suggested_by, User, foreign_key: :suggested_by_id
     belongs_to :last_edited_by, User, foreign_key: :last_edited_by_id

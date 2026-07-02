@@ -150,8 +150,7 @@ defmodule OGrupoDeEstudos.Sequences do
 
   @doc "Soft-deletes a sequence by setting deleted_at. The sequence is excluded from all default queries."
   def delete_sequence(%Sequence{} = sequence) do
-    utc_now = NaiveDateTime.utc_now()
-    now = NaiveDateTime.truncate(utc_now, :second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
     sequence |> Ecto.Changeset.change(deleted_at: now) |> Repo.update()
   end
 

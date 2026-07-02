@@ -131,7 +131,7 @@ defmodule OGrupoDeEstudos.Engagement do
     {:ok, count}
   end
 
-  defp now_second, do: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+  defp now_second, do: DateTime.utc_now() |> DateTime.truncate(:second)
 
   # ══════════════════════════════════════════════════════════════════════
   # Follows (delegated to Engagement.Follows)

@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileComment do
 
   schema "profile_comments" do
     field :body, :string
-    field :deleted_at, :naive_datetime
+    field :deleted_at, :utc_datetime
     field :like_count, :integer, default: 0
     field :reply_count, :integer, default: 0
 

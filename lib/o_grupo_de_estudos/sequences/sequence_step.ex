@@ -7,7 +7,7 @@ defmodule OGrupoDeEstudos.Sequences.SequenceStep do
 
   schema "sequence_steps" do
     field :position, :integer
-    field :deleted_at, :naive_datetime
+    field :deleted_at, :utc_datetime
 
     belongs_to :sequence, OGrupoDeEstudos.Sequences.Sequence
     belongs_to :step, OGrupoDeEstudos.Encyclopedia.Step

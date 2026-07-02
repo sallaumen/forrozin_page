@@ -54,13 +54,12 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
   @doc "Soft-deletes all connections matching `opts` by setting deleted_at. Returns `{count, nil}`."
   @spec soft_delete_by(opts()) :: {non_neg_integer(), nil | [term()]}
   def soft_delete_by(opts) do
-    utc_now = NaiveDateTime.utc_now()
-    now = NaiveDateTime.truncate(utc_now, :second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     opts
     |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
-    |> Repo.update_all(set: [deleted_at: now, updated_at: now])
+    |> Repo.update_all(set: [deleted_at: now, updated_at: DateTime.to_naive(now)])
   end
 
   defp default_scope, do: from(c in Connection, as: :connection)

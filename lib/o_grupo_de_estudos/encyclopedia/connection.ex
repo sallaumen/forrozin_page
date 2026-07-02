@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Connection do
   schema "step_connections" do
     field :label, :string
     field :description, :string
-    field :deleted_at, :naive_datetime
+    field :deleted_at, :utc_datetime
 
     belongs_to :source_step, Step, foreign_key: :source_step_id
     belongs_to :target_step, Step, foreign_key: :target_step_id

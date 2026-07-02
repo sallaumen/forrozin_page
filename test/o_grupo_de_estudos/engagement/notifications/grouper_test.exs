@@ -77,7 +77,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.GrouperTest do
 
   test "returns read: true for read notification" do
     receiver = insert(:user)
-    n = insert(:notification, user: receiver, read_at: NaiveDateTime.utc_now())
+    n = insert(:notification, user: receiver, read_at: DateTime.utc_now())
 
     [entry] = Grouper.group([n])
     assert entry.read

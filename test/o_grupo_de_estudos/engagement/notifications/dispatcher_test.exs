@@ -123,9 +123,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     {:ok, comment} = Engagement.create_step_comment(author, step.id, %{body: "Will be gone"})
 
     comment
-    |> Ecto.Changeset.change(
-      deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-    )
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update!()
 
     Engagement.toggle_like(liker.id, "step_comment", comment.id)
