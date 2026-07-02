@@ -778,6 +778,24 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "sem loops"
       assert html =~ "BF · Base frontal"
     end
+
+    test "start code desconhecido mostra o erro no painel, sem resultados", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
+
+      html =
+        render_submit(lv, "generate_sequences", %{
+          "start_query" => "INEXISTENTE",
+          "start_code" => "INEXISTENTE",
+          "length" => "4",
+          "count" => "1",
+          "loop_mode" => "none",
+          "max_bf_visits" => "1"
+        })
+
+      assert html =~ "INEXISTENTE"
+      assert html =~ "não encontrado"
+      refute html =~ "Opção 1"
+    end
   end
 
   describe "drawer overflow prevention" do

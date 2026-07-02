@@ -3,6 +3,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
   alias OGrupoDeEstudos.Encyclopedia.ConnectionQuery
   alias OGrupoDeEstudos.Sequences.Generator
+  alias OGrupoDeEstudos.Sequences.GeneratorError
 
   # ---------------------------------------------------------------------------
   # Helpers
@@ -127,13 +128,17 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   # ---------------------------------------------------------------------------
 
   describe "invalid input" do
-    test "warns when start code not found" do
-      assert {:ok, [], [w]} = Generator.generate(base_params("NOPE", length: 3, count: 1))
-      assert w =~ "NOPE"
+    test "returns a GeneratorError when start code not found" do
+      assert {:error, %GeneratorError{code: :start_step_not_found} = error} =
+               Generator.generate(base_params("NOPE", length: 3, count: 1))
+
+      assert error.message =~ "NOPE"
+      assert error.details == %{start_code: "NOPE"}
     end
 
     test "no crash with empty DB" do
-      assert {:ok, [], [_]} = Generator.generate(base_params("X", length: 3, count: 1))
+      assert {:error, %GeneratorError{code: :start_step_not_found}} =
+               Generator.generate(base_params("X", length: 3, count: 1))
     end
 
     test "isolated start step returns empty with warning" do
