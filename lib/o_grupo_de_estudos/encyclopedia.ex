@@ -26,6 +26,10 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   @doc "Lists all categories ordered by label."
   defdelegate step_summaries_by_ids(ids), to: StepQuery, as: :summaries_by_ids
 
+  defdelegate steps_by_ids(ids), to: StepQuery, as: :map_by_ids
+
+  defdelegate count_steps_by_suggester(user_ids), to: StepQuery, as: :counts_by_suggester
+
   def list_categories do
     Category
     |> Ecto.Query.order_by([c], asc: c.label)

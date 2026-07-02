@@ -1139,4 +1139,53 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert session.user_id == user.id
     end
   end
+
+  describe "cross-context lookups exclude soft-deleted steps" do
+    test "liked_step_codes ignores deleted steps" do
+      user = insert(:user)
+      section = insert(:section)
+      alive = insert(:step, section: section, code: "DL1")
+      deleted = insert(:step, section: section, code: "DL2", deleted_at: ~N[2026-01-01 00:00:00])
+      insert(:like, user: user, likeable_type: "step", likeable_id: alive.id)
+      insert(:like, user: user, likeable_type: "step", likeable_id: deleted.id)
+
+      assert Engagement.liked_step_codes(user.id) == ["DL1"]
+    end
+
+    test "favorited_step_codes ignores deleted steps" do
+      user = insert(:user)
+      section = insert(:section)
+      alive = insert(:step, section: section, code: "DF1")
+      deleted = insert(:step, section: section, code: "DF2", deleted_at: ~N[2026-01-01 00:00:00])
+      insert(:favorite, user: user, favoritable_type: "step", favoritable_id: alive.id)
+      insert(:favorite, user: user, favoritable_type: "step", favoritable_id: deleted.id)
+
+      assert Engagement.favorited_step_codes(user.id) == ["DF1"]
+    end
+  end
+
+  describe "list_user_favorites/2 ordering" do
+    test "returns favorited steps most recently favorited first" do
+      user = insert(:user)
+      section = insert(:section)
+      older = insert(:step, section: section, code: "OF1")
+      newer = insert(:step, section: section, code: "OF2")
+
+      insert(:favorite,
+        user: user,
+        favoritable_type: "step",
+        favoritable_id: older.id,
+        inserted_at: ~N[2026-01-01 00:00:00]
+      )
+
+      insert(:favorite,
+        user: user,
+        favoritable_type: "step",
+        favoritable_id: newer.id,
+        inserted_at: ~N[2026-02-01 00:00:00]
+      )
+
+      assert [%{code: "OF2"}, %{code: "OF1"}] = Engagement.list_user_favorites(user.id, "step")
+    end
+  end
 end

@@ -481,4 +481,23 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert Sequences.list_all_public_sequences() == []
     end
   end
+
+  describe "map_by_ids/1 and count_public_by_users/1" do
+    test "map_by_ids returns sequences keyed by id with steps preloaded" do
+      sequence = insert(:sequence)
+
+      assert %{} = result = Sequences.map_by_ids([sequence.id])
+      assert result[sequence.id].id == sequence.id
+      assert is_list(result[sequence.id].sequence_steps)
+    end
+
+    test "count_public_by_users counts only public sequences" do
+      user = insert(:user)
+      insert(:sequence, user: user, public: true)
+      insert(:sequence, user: user, public: false)
+
+      assert Sequences.count_public_by_users([user.id]) == %{user.id => 1}
+      assert Sequences.count_public_by_users([]) == %{}
+    end
+  end
 end

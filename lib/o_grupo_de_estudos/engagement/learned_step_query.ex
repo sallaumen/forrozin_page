@@ -3,14 +3,12 @@ defmodule OGrupoDeEstudos.Engagement.LearnedStepQuery do
   Query module do schema `LearnedStep`. Toda leitura/remoção de "aprendido" no
   contexto Engagement passa por aqui (regra do projeto: queries em `*Query`).
 
-  As listagens visíveis (códigos, registros e contagem) ignoram passos
-  soft-deletados via `visible_for_user/1`, então os três números ficam coerentes
-  entre si.
+  Este módulo só consulta a própria tabela; a resolução dos passos (e o filtro
+  de soft-deletados) acontece em `Learnings` via API pública da Encyclopedia.
   """
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Encyclopedia.Step
   alias OGrupoDeEstudos.Engagement.LearnedStep
   alias OGrupoDeEstudos.Repo
 
@@ -33,32 +31,14 @@ defmodule OGrupoDeEstudos.Engagement.LearnedStepQuery do
     Repo.delete_all(from l in LearnedStep, where: l.user_id == ^user_id)
   end
 
-  @doc "Codes of the user's learned steps (soft-deleted steps excluded)."
-  @spec codes_for_user(Ecto.UUID.t()) :: [String.t()]
-  def codes_for_user(user_id) do
-    user_id |> visible_for_user() |> select([_l, s], s.code) |> Repo.all()
-  end
-
-  @doc "Count of the user's learned steps (soft-deleted steps excluded)."
-  @spec count(Ecto.UUID.t()) :: non_neg_integer()
-  def count(user_id) do
-    user_id |> visible_for_user() |> Repo.aggregate(:count)
-  end
-
-  @doc "Learned Step records, most recently learned first (soft-deleted excluded)."
-  @spec list_steps(Ecto.UUID.t()) :: [Step.t()]
-  def list_steps(user_id) do
-    user_id
-    |> visible_for_user()
-    |> order_by([l, _s], desc: l.inserted_at)
-    |> select([_l, s], s)
+  @doc "Step ids learned by the user, most recently learned first."
+  @spec step_ids_desc(Ecto.UUID.t()) :: [Ecto.UUID.t()]
+  def step_ids_desc(user_id) do
+    from(l in LearnedStep,
+      where: l.user_id == ^user_id,
+      order_by: [desc: l.inserted_at],
+      select: l.step_id
+    )
     |> Repo.all()
-  end
-
-  defp visible_for_user(user_id) do
-    from l in LearnedStep,
-      join: s in Step,
-      on: s.id == l.step_id,
-      where: l.user_id == ^user_id and is_nil(s.deleted_at)
   end
 end

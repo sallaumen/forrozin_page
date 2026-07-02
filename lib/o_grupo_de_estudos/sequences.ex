@@ -164,6 +164,16 @@ defmodule OGrupoDeEstudos.Sequences do
 
   # ── Private helpers ─────────────────────────────────────────
 
+  @doc "Returns `%{id => %Sequence{}}` with user and ordered steps preloaded."
+  def map_by_ids(ids) when is_list(ids) do
+    [ids: ids, preload: [:user] ++ steps_preload()]
+    |> SequenceQuery.list_by()
+    |> Map.new(&{&1.id, &1})
+  end
+
+  @doc "Returns `%{user_id => count}` of public sequences per user."
+  defdelegate count_public_by_users(user_ids), to: SequenceQuery, as: :public_counts_by_user
+
   defp steps_preload do
     ordered = from(ss in SequenceStep, order_by: [asc: ss.position])
     [sequence_steps: {ordered, [step: :category]}]

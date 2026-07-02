@@ -265,4 +265,34 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       assert Encyclopedia.step_summaries_by_ids([]) == %{}
     end
   end
+
+  describe "steps_by_ids/1 and count_steps_by_suggester/1" do
+    test "steps_by_ids returns a map of full step records, excluding deleted" do
+      section = insert(:section)
+      step = insert(:step, section: section, code: "MB1")
+
+      deleted =
+        insert(:step,
+          section: section,
+          code: "MB2",
+          deleted_at: ~N[2026-01-01 00:00:00]
+        )
+
+      result = Encyclopedia.steps_by_ids([step.id, deleted.id])
+
+      assert %{code: "MB1"} = result[step.id]
+      refute Map.has_key?(result, deleted.id)
+    end
+
+    test "count_steps_by_suggester returns counts per user, excluding deleted" do
+      user = insert(:user)
+      section = insert(:section)
+      insert(:step, section: section, suggested_by: user)
+      insert(:step, section: section, suggested_by: user)
+      insert(:step, section: section, suggested_by: user, deleted_at: ~N[2026-01-01 00:00:00])
+
+      assert Encyclopedia.count_steps_by_suggester([user.id]) == %{user.id => 2}
+      assert Encyclopedia.count_steps_by_suggester([]) == %{}
+    end
+  end
 end

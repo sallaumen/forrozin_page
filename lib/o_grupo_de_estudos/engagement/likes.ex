@@ -5,8 +5,9 @@ defmodule OGrupoDeEstudos.Engagement.Likes do
   counts, and batch lookups for list pages.
   """
 
+  alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Accounts.User
-  alias OGrupoDeEstudos.Encyclopedia.Step
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.{ActivityBroadcaster, Like, LikeQuery, SafeDispatch}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.RateLimiter
@@ -77,13 +78,12 @@ defmodule OGrupoDeEstudos.Engagement.Likes do
   # Emits the ephemeral activity toast (step likes only).
   defp safe_dispatch_like(user_id, "step", likeable_id) do
     SafeDispatch.run(fn ->
-      case Repo.get(Step, likeable_id) do
-        nil ->
-          :ok
-
-        step ->
-          user = Repo.get!(User, user_id)
-          ActivityBroadcaster.broadcast_activity(user, :liked_step, %{step_name: step.name})
+      with %{^likeable_id => %{name: step_name}} <-
+             Encyclopedia.step_summaries_by_ids([likeable_id]),
+           %User{} = user <- Accounts.get_user_by_id(user_id) do
+        ActivityBroadcaster.broadcast_activity(user, :liked_step, %{step_name: step_name})
+      else
+        _ -> :ok
       end
     end)
   end

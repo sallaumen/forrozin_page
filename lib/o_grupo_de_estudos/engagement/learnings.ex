@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
   """
 
   alias Ecto.Multi
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.{Favorites, LearnedStep, LearnedStepQuery}
   alias OGrupoDeEstudos.Repo
 
@@ -42,14 +43,36 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
   @doc "Returns `true` if the user has marked the step as learned."
   def learned?(user_id, step_id), do: LearnedStepQuery.exists?(user_id, step_id)
 
-  @doc "Returns the list of step codes the user has learned."
-  def learned_step_codes(user_id), do: LearnedStepQuery.codes_for_user(user_id)
+  @doc "Returns the list of step codes the user has learned (deleted excluded)."
+  def learned_step_codes(user_id) do
+    user_id
+    |> learned_summaries()
+    |> Enum.map(& &1.code)
+  end
 
-  @doc "Returns the learned Step records, most recently learned first."
-  def list_learned_steps(user_id), do: LearnedStepQuery.list_steps(user_id)
+  @doc "Returns the learned Step records, most recently learned first (deleted excluded)."
+  def list_learned_steps(user_id) do
+    ids = LearnedStepQuery.step_ids_desc(user_id)
+    steps = Encyclopedia.steps_by_ids(ids)
 
-  @doc "Returns the count of steps the user has learned."
-  def count_user_learned(user_id), do: LearnedStepQuery.count(user_id)
+    ids
+    |> Enum.map(&steps[&1])
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc "Returns the count of steps the user has learned (deleted excluded)."
+  def count_user_learned(user_id) do
+    user_id
+    |> learned_summaries()
+    |> length()
+  end
+
+  defp learned_summaries(user_id) do
+    user_id
+    |> LearnedStepQuery.step_ids_desc()
+    |> Encyclopedia.step_summaries_by_ids()
+    |> Map.values()
+  end
 
   @doc "Reinicia o progresso: remove TODOS os passos aprendidos do usuário (favoritos ficam)."
   def reset_learned(user_id), do: LearnedStepQuery.delete_all_for_user(user_id)
