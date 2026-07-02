@@ -2,7 +2,7 @@ defmodule OGrupoDeEstudosWeb.AboutLive do
   @moduledoc false
   use OGrupoDeEstudosWeb, :live_view
 
-  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
 
   @impl true
   def mount(_params, _session, socket) do

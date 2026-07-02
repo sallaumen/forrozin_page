@@ -1,3 +1,5 @@
+<.flash kind={:info} id="lv-flash-info" flash={@flash} />
+<.flash kind={:error} id="lv-flash-error" flash={@flash} />
 <% i_am_teacher = @current_user.id == @link.teacher_id %>
 <div class="min-h-screen bg-ink-100 font-serif flex flex-col">
   <.top_nav

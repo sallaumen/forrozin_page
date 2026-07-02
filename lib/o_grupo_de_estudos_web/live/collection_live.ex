@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.CollectionComponents
-  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
   import OGrupoDeEstudosWeb.StepDetail, only: [step_detail: 1]
   import OGrupoDeEstudosWeb.UI.PWAInstallBanner
   import OGrupoDeEstudosWeb.UI.SocialBubble

@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
-  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers

@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
-  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
   import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
