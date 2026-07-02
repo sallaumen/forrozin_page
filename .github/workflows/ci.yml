@@ -59,6 +59,82 @@ jobs:
       - name: Run tests (retry flaky once)
         run: mix test || mix test --failed
 
+  coverage:
+    name: Coverage gate
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: forrozin
+          POSTGRES_PASSWORD: forrozin
+          POSTGRES_DB: o_grupo_de_estudos_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Elixir/OTP
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.3"
+          elixir-version: "1.19.5-otp-27"
+
+      - name: Restore deps/build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      # Retry once pelo flake conhecido de deadlock (mesma razao do job Test).
+      # O gate esta em coveralls.json (minimum_coverage).
+      - name: Coverage (minimo em coveralls.json)
+        run: mix coveralls || mix coveralls
+
+  dialyzer:
+    name: Dialyzer
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Elixir/OTP
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.3"
+          elixir-version: "1.19.5-otp-27"
+
+      # Cache proprio: inclui o PLT (em _build/dev), caro de reconstruir.
+      - name: Restore deps/build/PLT cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-dev-plt-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-dev-plt-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Dialyzer
+        run: mix dialyzer
+
   lint:
     name: Lint & Security
     runs-on: ubuntu-latest

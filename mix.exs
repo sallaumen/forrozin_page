@@ -3,6 +3,12 @@ defmodule OGrupoDeEstudos.MixProject do
 
   def project do
     [
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.html": :test
+      ],
       app: :o_grupo_de_estudos,
       version: "0.1.0",
       elixir: "~> 1.15",
@@ -78,7 +84,7 @@ defmodule OGrupoDeEstudos.MixProject do
       # Adaptador SMTP (necessário em dev para envio real; em prod, trocar por API adapter)
       {:gen_smtp, "~> 1.0"},
       # HTTP client (integração com APIs de IA)
-      {:req, "~> 0.5"},
+      {:req, "~> 0.6"},
       # Jobs assíncronos (verificação de email, geração de vídeo)
       {:oban, "~> 2.19"},
       # Qualidade de código
@@ -91,7 +97,8 @@ defmodule OGrupoDeEstudos.MixProject do
       {:ex_machina, "~> 2.7", only: :test},
       # Seguranca estatica (Sobelow) e auditoria de CVEs em dependencias
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false}
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.18", only: :test, runtime: false}
     ]
   end
 
