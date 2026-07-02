@@ -31,7 +31,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: actor.id,
-        action: "replied_comment",
+        action: :replied_comment,
         group_key: "comment:#{query_mod.likeable_type()}:#{root_comment_id(comment, query_mod)}",
         target_type: query_mod.likeable_type(),
         target_id: comment.id,
@@ -86,7 +86,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: follower_id,
-        action: "followed_user",
+        action: :followed_user,
         group_key: "follow:#{followed_id}",
         target_type: "profile",
         target_id: follower_id,
@@ -108,7 +108,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: initiator_id,
-        action: "study_request",
+        action: :study_request,
         group_key: "study_request:#{link_id}",
         target_type: "study_link",
         target_id: link_id,
@@ -126,7 +126,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: teacher_id,
-        action: "study_accepted",
+        action: :study_accepted,
         group_key: "study_accepted:#{link_id}",
         target_type: "study_link",
         target_id: link_id,
@@ -144,7 +144,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: teacher.id,
-        action: "study_nudge",
+        action: :study_nudge,
         group_key: "nudge:#{link_id}:#{Date.utc_today()}",
         target_type: "study_link",
         target_id: link_id,
@@ -162,7 +162,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: teacher.id,
-        action: "shared_note_updated",
+        action: :shared_note_updated,
         group_key: "shared_note:#{link_id}:#{Date.utc_today()}",
         target_type: "study_link",
         target_id: link_id,
@@ -197,19 +197,19 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   defp determine_like_context(actor_id, "step_comment", comment_id) do
     comment = Comments.get_step_comment(comment_id)
     recipients = comment_author_recipients(comment, :user_id, actor_id)
-    {recipients, "liked_comment", "step_comment", "step", comment && comment.step_id}
+    {recipients, :liked_comment, "step_comment", "step", comment && comment.step_id}
   end
 
   defp determine_like_context(actor_id, "sequence_comment", comment_id) do
     comment = Comments.get_sequence_comment(comment_id)
     recipients = comment_author_recipients(comment, :user_id, actor_id)
-    {recipients, "liked_comment", "sequence_comment", "sequence", comment && comment.sequence_id}
+    {recipients, :liked_comment, "sequence_comment", "sequence", comment && comment.sequence_id}
   end
 
   defp determine_like_context(actor_id, "profile_comment", comment_id) do
     comment = Comments.get_profile_comment(comment_id)
     recipients = comment_author_recipients(comment, :author_id, actor_id)
-    {recipients, "liked_comment", "profile_comment", "profile", comment && comment.profile_id}
+    {recipients, :liked_comment, "profile_comment", "profile", comment && comment.profile_id}
   end
 
   defp determine_like_context(actor_id, "step", step_id) do
@@ -224,7 +224,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
           []
       end
 
-    {recipients, "liked_step", "step", "step", step_id}
+    {recipients, :liked_step, "step", "step", step_id}
   end
 
   defp determine_like_context(actor_id, "sequence", sequence_id) do
@@ -235,11 +235,11 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         owner_id -> [owner_id]
       end
 
-    {recipients, "liked_sequence", "sequence", "sequence", sequence_id}
+    {recipients, :liked_sequence, "sequence", "sequence", sequence_id}
   end
 
   defp determine_like_context(_actor_id, _type, _id) do
-    {[], "liked_comment", "step_comment", "step", nil}
+    {[], :liked_comment, "step_comment", "step", nil}
   end
 
   # ── Private: admin broadcast ───────────────────────────
@@ -303,7 +303,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: suggestion.user_id,
-        action: "suggestion_created",
+        action: :suggestion_created,
         group_key: "suggestion:#{suggestion.id}",
         target_type: "suggestion",
         target_id: suggestion.id,
@@ -323,8 +323,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   def notify_suggestion(:suggestion_reviewed, suggestion, admin) do
     action =
       case suggestion.status do
-        :approved -> "suggestion_approved"
-        :rejected -> "suggestion_rejected"
+        :approved -> :suggestion_approved
+        :rejected -> :suggestion_rejected
         _ -> nil
       end
 

@@ -8,7 +8,22 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
   @foreign_key_type :binary_id
 
   schema "notifications" do
-    field :action, :string
+    field :action, Ecto.Enum,
+      values: [
+        :replied_comment,
+        :liked_comment,
+        :liked_step,
+        :liked_sequence,
+        :followed_user,
+        :study_request,
+        :study_accepted,
+        :study_nudge,
+        :shared_note_updated,
+        :suggestion_created,
+        :suggestion_approved,
+        :suggestion_rejected
+      ]
+
     field :group_key, :string
     field :target_type, :string
     field :target_id, :binary_id

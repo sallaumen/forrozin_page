@@ -24,7 +24,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     notifications = Repo.all(from n in Notification, where: n.user_id == ^author.id)
     assert length(notifications) == 1
     [notif] = notifications
-    assert notif.action == "replied_comment"
+    assert notif.action == :replied_comment
     assert notif.actor_id == replier.id
   end
 
@@ -66,7 +66,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     assert [notif] =
              Repo.all(
                from n in Notification,
-                 where: n.user_id == ^author.id and n.action == "liked_comment"
+                 where: n.user_id == ^author.id and n.action == :liked_comment
              )
 
     assert notif.actor_id == liker.id
@@ -85,7 +85,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     assert [notif] =
              Repo.all(
                from n in Notification,
-                 where: n.user_id == ^author.id and n.action == "liked_comment"
+                 where: n.user_id == ^author.id and n.action == :liked_comment
              )
 
     assert notif.actor_id == liker.id
@@ -109,7 +109,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     assert [notif] =
              Repo.all(
                from n in Notification,
-                 where: n.user_id == ^suggester.id and n.action == "liked_step"
+                 where: n.user_id == ^suggester.id and n.action == :liked_step
              )
 
     assert notif.actor_id == liker.id
@@ -131,7 +131,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     author_notifications =
       Repo.all(
         from n in Notification,
-          where: n.user_id == ^author.id and n.action == "liked_comment"
+          where: n.user_id == ^author.id and n.action == :liked_comment
       )
 
     assert author_notifications == []
@@ -148,7 +148,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     notifications =
       Repo.all(
         from n in Notification,
-          where: n.user_id == ^student.id and n.action == "shared_note_updated"
+          where: n.user_id == ^student.id and n.action == :shared_note_updated
       )
 
     assert notifications != []
@@ -168,7 +168,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     notifications =
       Repo.all(
         from n in Notification,
-          where: n.user_id == ^student.id and n.action == "study_nudge"
+          where: n.user_id == ^student.id and n.action == :study_nudge
       )
 
     assert [notif] = notifications
@@ -186,7 +186,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     [notification] =
       Repo.all(
         from n in Notification,
-          where: n.user_id == ^followed.id and n.action == "followed_user"
+          where: n.user_id == ^followed.id and n.action == :followed_user
       )
 
     assert notification.actor_id == follower.id

@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.GrouperTest do
         actor: user1,
         user: receiver,
         group_key: "like:step:#{target_id}",
-        action: "liked_step",
+        action: :liked_step,
         inserted_at: ~N[2026-01-01 10:00:00]
       )
 
@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.GrouperTest do
         actor: user2,
         user: receiver,
         group_key: "like:step:#{target_id}",
-        action: "liked_step",
+        action: :liked_step,
         inserted_at: ~N[2026-01-01 11:00:00]
       )
 

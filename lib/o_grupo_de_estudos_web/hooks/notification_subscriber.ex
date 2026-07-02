@@ -108,6 +108,6 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
   end
 
   defp pending_study_count(%{id: user_id}) do
-    Engagement.unread_count(user_id, action: "shared_note_updated")
+    Engagement.unread_count(user_id, action: :shared_note_updated)
   end
 end

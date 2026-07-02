@@ -185,7 +185,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       notifications =
         Repo.all(
           from n in Notification,
-            where: n.user_id == ^student.id and n.action == "study_nudge"
+            where: n.user_id == ^student.id and n.action == :study_nudge
         )
 
       assert notifications != []

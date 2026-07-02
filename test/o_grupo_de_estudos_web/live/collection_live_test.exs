@@ -59,7 +59,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       insert(:notification,
         user: user,
         actor: actor,
-        action: "followed_user",
+        action: :followed_user,
         group_key: "follow:#{user.id}",
         target_type: "profile",
         target_id: actor.id,

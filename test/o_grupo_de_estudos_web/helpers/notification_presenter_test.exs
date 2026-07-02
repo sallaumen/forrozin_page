@@ -30,20 +30,20 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenterTest do
 
   describe "action_text/1" do
     test "singular when count is 1" do
-      assert Presenter.action_text(%{action: "liked_step", count: 1}) == " curtiu o passo"
+      assert Presenter.action_text(%{action: :liked_step, count: 1}) == " curtiu o passo"
     end
 
     test "plural when count is greater than 1" do
-      assert Presenter.action_text(%{action: "liked_step", count: 3}) == " curtiram o passo"
+      assert Presenter.action_text(%{action: :liked_step, count: 3}) == " curtiram o passo"
     end
 
     test "follow pluralizes" do
-      assert Presenter.action_text(%{action: "followed_user", count: 2}) ==
+      assert Presenter.action_text(%{action: :followed_user, count: 2}) ==
                " começaram a te seguir"
     end
 
     test "study actions ignore count" do
-      assert Presenter.action_text(%{action: "study_request", count: 5}) ==
+      assert Presenter.action_text(%{action: :study_request, count: 5}) ==
                " quer estudar com você"
     end
 
@@ -52,7 +52,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenterTest do
     end
 
     test "defaults to singular without a count key" do
-      assert Presenter.action_text(%{action: "liked_step"}) == " curtiu o passo"
+      assert Presenter.action_text(%{action: :liked_step}) == " curtiu o passo"
     end
   end
 
