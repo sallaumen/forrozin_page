@@ -53,11 +53,8 @@ jobs:
       - name: Compile (warnings as errors)
         run: mix compile --warnings-as-errors
 
-      # Retry once: re-runs only the tests that failed. A known concurrency
-      # flake (async tests inserting the same unique step code "BF" deadlock)
-      # passes on retry; a real failure persists. Root fix tracked in the plan.
-      - name: Run tests (retry flaky once)
-        run: mix test || mix test --failed
+      - name: Run tests
+        run: mix test
 
   coverage:
     name: Coverage gate
@@ -99,10 +96,8 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
-      # Retry once pelo flake conhecido de deadlock (mesma razao do job Test).
-      # O gate esta em coveralls.json (minimum_coverage).
       - name: Coverage (minimo em coveralls.json)
-        run: mix coveralls || mix coveralls
+        run: mix coveralls
 
   dialyzer:
     name: Dialyzer

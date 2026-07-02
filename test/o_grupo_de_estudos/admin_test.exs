@@ -11,8 +11,8 @@ defmodule OGrupoDeEstudos.AdminTest do
 
   describe "create_connection/1" do
     test "creates valid connection between two steps" do
-      source = insert(:step, code: "BF")
-      target = insert(:step, code: "SC")
+      source = insert(:step, code: "ADBF")
+      target = insert(:step, code: "ADSC")
 
       assert {:ok, connection} =
                Admin.create_connection(%{
@@ -25,7 +25,7 @@ defmodule OGrupoDeEstudos.AdminTest do
     end
 
     test "returns error when source step does not exist" do
-      target = insert(:step, code: "SC")
+      target = insert(:step, code: "ADSC")
       nonexistent_id = Ecto.UUID.generate()
 
       assert {:error, changeset} =
@@ -38,8 +38,8 @@ defmodule OGrupoDeEstudos.AdminTest do
     end
 
     test "returns constraint error for duplicate connection" do
-      source = insert(:step, code: "BF")
-      target = insert(:step, code: "SC")
+      source = insert(:step, code: "ADBF")
+      target = insert(:step, code: "ADSC")
       insert(:connection, source_step: source, target_step: target)
 
       assert {:error, changeset} =
@@ -54,7 +54,7 @@ defmodule OGrupoDeEstudos.AdminTest do
 
     test "creates connection with optional label and description" do
       source = insert(:step, code: "ARM-D")
-      target = insert(:step, code: "TR-ARM")
+      target = insert(:step, code: "ADTR-ARM")
 
       assert {:ok, connection} =
                Admin.create_connection(%{
@@ -77,8 +77,8 @@ defmodule OGrupoDeEstudos.AdminTest do
 
   describe "update_connection/2" do
     test "updates label of an existing connection" do
-      source = insert(:step, code: "BF")
-      target = insert(:step, code: "SC")
+      source = insert(:step, code: "ADBF")
+      target = insert(:step, code: "ADSC")
       connection = insert(:connection, source_step: source, target_step: target)
 
       assert {:ok, updated} = Admin.update_connection(connection.id, %{label: "Trava Armada"})
@@ -86,8 +86,8 @@ defmodule OGrupoDeEstudos.AdminTest do
     end
 
     test "updates description of an existing connection" do
-      source = insert(:step, code: "BF")
-      target = insert(:step, code: "SC")
+      source = insert(:step, code: "ADBF")
+      target = insert(:step, code: "ADSC")
       connection = insert(:connection, source_step: source, target_step: target)
 
       assert {:ok, updated} =
@@ -107,8 +107,8 @@ defmodule OGrupoDeEstudos.AdminTest do
 
   describe "delete_connection/1" do
     test "soft-deletes an existing connection by setting deleted_at" do
-      source = insert(:step, code: "BF")
-      target = insert(:step, code: "SC")
+      source = insert(:step, code: "ADBF")
+      target = insert(:step, code: "ADSC")
       connection = insert(:connection, source_step: source, target_step: target)
 
       assert {:ok, deleted} = Admin.delete_connection(connection.id)
@@ -122,8 +122,8 @@ defmodule OGrupoDeEstudos.AdminTest do
     end
 
     test "excluded from default queries after soft delete" do
-      source = insert(:step, code: "BF")
-      target = insert(:step, code: "SC")
+      source = insert(:step, code: "ADBF")
+      target = insert(:step, code: "ADSC")
       connection = insert(:connection, source_step: source, target_step: target)
 
       {:ok, _} = Admin.delete_connection(connection.id)
@@ -143,7 +143,7 @@ defmodule OGrupoDeEstudos.AdminTest do
 
   describe "update_step/2" do
     test "updates step name" do
-      step = insert(:step, code: "BF", name: "Base frontal")
+      step = insert(:step, code: "ADBF", name: "Base frontal")
       assert {:ok, updated} = Admin.update_step(step, %{name: "Base frontal v2"})
       assert updated.name == "Base frontal v2"
     end
@@ -151,7 +151,7 @@ defmodule OGrupoDeEstudos.AdminTest do
 
   describe "delete_step/1" do
     test "soft-deletes a step by setting deleted_at" do
-      step = insert(:step, code: "BF")
+      step = insert(:step, code: "ADBF")
 
       assert {:ok, deleted} = Admin.delete_step(step)
       assert deleted.deleted_at != nil
@@ -163,19 +163,19 @@ defmodule OGrupoDeEstudos.AdminTest do
     end
 
     test "excluded from default StepQuery after soft delete" do
-      step = insert(:step, code: "BF")
+      step = insert(:step, code: "ADBF")
 
       {:ok, _} = Admin.delete_step(step)
 
-      assert is_nil(StepQuery.get_by(code: "BF"))
+      assert is_nil(StepQuery.get_by(code: "ADBF"))
     end
 
     test "visible with include_deleted: true after soft delete" do
-      step = insert(:step, code: "BF")
+      step = insert(:step, code: "ADBF")
 
       {:ok, _} = Admin.delete_step(step)
 
-      assert StepQuery.get_by(code: "BF", include_deleted: true) !=
+      assert StepQuery.get_by(code: "ADBF", include_deleted: true) !=
                nil
     end
   end

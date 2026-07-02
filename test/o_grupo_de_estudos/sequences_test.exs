@@ -11,9 +11,9 @@ defmodule OGrupoDeEstudos.SequencesTest do
   describe "create_sequence/4" do
     test "creates a sequence with the given steps in order" do
       user = insert(:user)
-      step_a = insert(:step, code: "BF", name: "Base Frontal")
-      step_b = insert(:step, code: "SC", name: "Sacada")
-      step_c = insert(:step, code: "TR", name: "Trava")
+      step_a = insert(:step, code: "SEBF", name: "Base Frontal")
+      step_b = insert(:step, code: "SESC", name: "Sacada")
+      step_c = insert(:step, code: "SETR", name: "Trava")
 
       assert {:ok, sequence} =
                Sequences.create_sequence(user.id, "Aula de Terça", [
@@ -29,12 +29,12 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert positions == [1, 2, 3]
 
       codes = Enum.map(sequence.sequence_steps, & &1.step.code)
-      assert codes == ["BF", "SC", "TR"]
+      assert codes == ["SEBF", "SESC", "SETR"]
     end
 
     test "creates a sequence with allow_repeats true" do
       user = insert(:user)
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "SEBF", name: "Base Frontal")
 
       assert {:ok, sequence} =
                Sequences.create_sequence(user.id, "Repetida", [step.id, step.id], true)
@@ -60,7 +60,7 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "preloads sequence_steps with step on success" do
       user = insert(:user)
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "SEBF", name: "Base Frontal")
 
       {:ok, sequence} = Sequences.create_sequence(user.id, "Com Passo", [step.id])
 
@@ -115,14 +115,14 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "preloads sequence_steps with step" do
       user = insert(:user)
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "SEBF", name: "Base Frontal")
       sequence = insert(:sequence, user: user)
       insert(:sequence_step, sequence: sequence, step: step, position: 1)
 
       [result] = Sequences.list_user_sequences(user.id)
 
       assert [seq_step] = result.sequence_steps
-      assert seq_step.step.code == "BF"
+      assert seq_step.step.code == "SEBF"
     end
 
     test "returns sequence_steps ordered by position ascending" do
@@ -149,7 +149,7 @@ defmodule OGrupoDeEstudos.SequencesTest do
   describe "get_sequence/1" do
     test "returns the sequence with preloaded steps" do
       user = insert(:user)
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "SEBF", name: "Base Frontal")
       sequence = insert(:sequence, user: user, name: "Sequência Específica")
       insert(:sequence_step, sequence: sequence, step: step, position: 1)
 
@@ -158,7 +158,7 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert result.id == sequence.id
       assert result.name == "Sequência Específica"
       assert [seq_step] = result.sequence_steps
-      assert seq_step.step.code == "BF"
+      assert seq_step.step.code == "SEBF"
     end
 
     test "returns nil when sequence does not exist" do
@@ -167,8 +167,8 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "returns sequence_steps ordered by position ascending" do
       user = insert(:user)
-      step_a = insert(:step, code: "TR", name: "Trava")
-      step_b = insert(:step, code: "BF", name: "Base Frontal")
+      step_a = insert(:step, code: "SETR", name: "Trava")
+      step_b = insert(:step, code: "SEBF", name: "Base Frontal")
       sequence = insert(:sequence, user: user)
       insert(:sequence_step, sequence: sequence, step: step_a, position: 2)
       insert(:sequence_step, sequence: sequence, step: step_b, position: 1)
@@ -176,7 +176,7 @@ defmodule OGrupoDeEstudos.SequencesTest do
       result = Sequences.get_sequence(sequence.id)
 
       codes = Enum.map(result.sequence_steps, & &1.step.code)
-      assert codes == ["BF", "TR"]
+      assert codes == ["SEBF", "SETR"]
     end
   end
 
@@ -359,30 +359,30 @@ defmodule OGrupoDeEstudos.SequencesTest do
   describe "create_manual_sequence/2" do
     test "creates a sequence from step codes in order" do
       user = insert(:user)
-      step_a = insert(:step, code: "BF", name: "Base Frontal")
-      step_b = insert(:step, code: "SC", name: "Sacada")
+      step_a = insert(:step, code: "SEBF", name: "Base Frontal")
+      step_b = insert(:step, code: "SESC", name: "Sacada")
 
       assert {:ok, sequence} =
                Sequences.create_manual_sequence(user.id, %{
                  name: "Manual Terça",
-                 step_codes: ["BF", "SC"]
+                 step_codes: ["SEBF", "SESC"]
                })
 
       assert sequence.name == "Manual Terça"
       codes = Enum.map(sequence.sequence_steps, & &1.step.code)
-      assert codes == ["BF", "SC"]
+      assert codes == ["SEBF", "SESC"]
       _ = step_a
       _ = step_b
     end
 
     test "stores description and video_url" do
       user = insert(:user)
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "SEBF", name: "Base Frontal")
 
       assert {:ok, sequence} =
                Sequences.create_manual_sequence(user.id, %{
                  name: "Com Vídeo",
-                 step_codes: ["BF"],
+                 step_codes: ["SEBF"],
                  description: "Sequência teste",
                  video_url: "https://youtu.be/xyz"
                })
@@ -404,12 +404,12 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "returns error changeset when name is blank" do
       user = insert(:user)
-      _step = insert(:step, code: "BF", name: "Base Frontal")
+      _step = insert(:step, code: "SEBF", name: "Base Frontal")
 
       assert {:error, changeset} =
                Sequences.create_manual_sequence(user.id, %{
                  name: "",
-                 step_codes: ["BF"]
+                 step_codes: ["SEBF"]
                })
 
       assert %{name: [_]} = errors_on(changeset)
@@ -450,7 +450,7 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "preloads user and sequence_steps with step" do
       user = insert(:user)
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "SEBF", name: "Base Frontal")
       sequence = insert(:sequence, user: user, public: true)
       insert(:sequence_step, sequence: sequence, step: step, position: 1)
 
@@ -458,13 +458,13 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
       assert result.user.id == user.id
       assert [ss] = result.sequence_steps
-      assert ss.step.code == "BF"
+      assert ss.step.code == "SEBF"
     end
 
     test "returns sequence_steps ordered by position ascending" do
       user = insert(:user)
-      step_a = insert(:step, code: "TR", name: "Trava")
-      step_b = insert(:step, code: "BF", name: "Base Frontal")
+      step_a = insert(:step, code: "SETR", name: "Trava")
+      step_b = insert(:step, code: "SEBF", name: "Base Frontal")
       sequence = insert(:sequence, user: user, public: true)
       insert(:sequence_step, sequence: sequence, step: step_a, position: 2)
       insert(:sequence_step, sequence: sequence, step: step_b, position: 1)
@@ -472,7 +472,7 @@ defmodule OGrupoDeEstudos.SequencesTest do
       [result] = Sequences.list_all_public_sequences()
 
       codes = Enum.map(result.sequence_steps, & &1.step.code)
-      assert codes == ["BF", "TR"]
+      assert codes == ["SEBF", "SETR"]
     end
 
     test "excludes soft-deleted sequences" do

@@ -137,13 +137,13 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
 
       insert(:sequence_step,
         sequence: base_sequence,
-        step: insert(:step, code: "BF", name: "Base Frontal", category: bases),
+        step: insert(:step, code: "SLBF", name: "Base Frontal", category: bases),
         position: 1
       )
 
       insert(:sequence_step,
         sequence: giro_sequence,
-        step: insert(:step, code: "GP", name: "Giro Paulista", category: giros),
+        step: insert(:step, code: "SLGP", name: "Giro Paulista", category: giros),
         position: 1
       )
 
@@ -162,7 +162,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
     setup do
       author = insert(:user)
       section = insert(:section)
-      step = insert(:step, section: section, code: "BF", name: "Base Frontal")
+      step = insert(:step, section: section, code: "SLBF", name: "Base Frontal")
       sequence = insert(:sequence, user: author, public: true, name: "Sequência Pública")
       insert(:sequence_step, sequence: sequence, step: step, position: 1)
 
@@ -229,7 +229,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
 
     test "shows step codes inline", %{conn: conn} do
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
-      assert html =~ "BF"
+      assert html =~ "SLBF"
     end
 
     test "view on map link carries the selected sequence id", %{conn: conn, sequence: seq} do

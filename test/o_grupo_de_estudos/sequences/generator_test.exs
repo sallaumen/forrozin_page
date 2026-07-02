@@ -432,7 +432,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
       wip_step =
         insert(:step,
-          code: "WIP1",
+          code: "GNWIP1",
           name: "WIP Step",
           wip: true,
           status: :published,
@@ -442,10 +442,10 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       insert(:connection, source_step: by_code["C2"], target_step: wip_step)
 
       {:ok, seqs, warnings} =
-        Generator.generate(base_params("C0", length: 4, count: 1, required_codes: ["WIP1"]))
+        Generator.generate(base_params("C0", length: 4, count: 1, required_codes: ["GNWIP1"]))
 
-      refute Enum.any?(seqs, fn seq -> "WIP1" in Enum.map(seq, & &1.code) end)
-      assert Enum.any?(warnings, &(&1 =~ "WIP1"))
+      refute Enum.any?(seqs, fn seq -> "GNWIP1" in Enum.map(seq, & &1.code) end)
+      assert Enum.any?(warnings, &(&1 =~ "GNWIP1"))
     end
   end
 

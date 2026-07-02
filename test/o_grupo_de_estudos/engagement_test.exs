@@ -1056,10 +1056,10 @@ defmodule OGrupoDeEstudos.EngagementTest do
     test "returns codes of steps the user favorited" do
       user = insert(:user)
       section = insert(:section)
-      step = insert(:step, section: section, code: "FAV1")
+      step = insert(:step, section: section, code: "ENFAV1")
       insert(:favorite, user: user, favoritable_type: "step", favoritable_id: step.id)
 
-      assert Engagement.favorited_step_codes(user.id) == ["FAV1"]
+      assert Engagement.favorited_step_codes(user.id) == ["ENFAV1"]
     end
 
     test "ignores favorites of other users and other types" do
