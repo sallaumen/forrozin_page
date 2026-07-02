@@ -135,11 +135,11 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
     )
   end
 
-  defp target_name(%{action: "liked_sequence"}, _targets), do: nil
-  defp target_name(%{action: "followed_user"}, _targets), do: nil
-  defp target_name(%{action: "study_request"}, _targets), do: "Ver pedido →"
-  defp target_name(%{action: "study_accepted"}, _targets), do: "Ir para estudos →"
-  defp target_name(%{action: "shared_note_updated"}, _targets), do: "Ver diário →"
-  defp target_name(%{action: "study_nudge"}, _targets), do: "Abrir diário →"
+  defp target_name(%{action: :liked_sequence}, _targets), do: nil
+  defp target_name(%{action: :followed_user}, _targets), do: nil
+  defp target_name(%{action: :study_request}, _targets), do: "Ver pedido →"
+  defp target_name(%{action: :study_accepted}, _targets), do: "Ir para estudos →"
+  defp target_name(%{action: :shared_note_updated}, _targets), do: "Ver diário →"
+  defp target_name(%{action: :study_nudge}, _targets), do: "Abrir diário →"
   defp target_name(notif, targets), do: NotificationRoutes.step_name(notif, targets)
 end

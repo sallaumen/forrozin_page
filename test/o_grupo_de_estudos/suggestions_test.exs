@@ -298,7 +298,7 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
       notifications =
         Repo.all(
           from n in Notification,
-            where: n.user_id == ^admin.id and n.action == "suggestion_created"
+            where: n.user_id == ^admin.id and n.action == :suggestion_created
         )
 
       assert length(notifications) == 1
@@ -321,7 +321,7 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
       notifications =
         Repo.all(
           from n in Notification,
-            where: n.user_id == ^admin.id and n.action == "suggestion_created"
+            where: n.user_id == ^admin.id and n.action == :suggestion_created
         )
 
       assert notifications == []

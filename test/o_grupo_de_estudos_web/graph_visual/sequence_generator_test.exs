@@ -29,5 +29,4 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceGeneratorTest do
       assert SequenceGenerator.resolve_step_code("zzz", @steps, "FALL") == "FALL"
     end
   end
-
 end

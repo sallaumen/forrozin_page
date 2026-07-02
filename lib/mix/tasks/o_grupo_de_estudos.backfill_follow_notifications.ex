@@ -66,7 +66,7 @@ defmodule Mix.Tasks.OGrupoDeEstudos.BackfillFollowNotifications do
         where:
           n.user_id == ^follow.followed_id and
             n.actor_id == ^follow.follower_id and
-            n.action == "followed_user"
+            n.action == :followed_user
       )
     )
   end
@@ -76,7 +76,7 @@ defmodule Mix.Tasks.OGrupoDeEstudos.BackfillFollowNotifications do
     |> Notification.changeset(%{
       user_id: follow.followed_id,
       actor_id: follow.follower_id,
-      action: "followed_user",
+      action: :followed_user,
       group_key: "follow:#{follow.followed_id}",
       target_type: "profile",
       target_id: follow.follower_id,

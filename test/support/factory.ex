@@ -184,7 +184,7 @@ defmodule OGrupoDeEstudos.Factory do
 
   def notification_factory do
     %Notification{
-      action: "replied_comment",
+      action: :replied_comment,
       group_key: sequence(:group_key, &"comment:step_comment:#{Ecto.UUID.generate()}_#{&1}"),
       target_type: "step_comment",
       target_id: Ecto.UUID.generate(),

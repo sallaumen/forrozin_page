@@ -10,19 +10,19 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutesTest do
 
   defp notif(attrs) do
     Map.merge(
-      %{action: "liked_step", target_type: nil, target_id: nil, parent_type: nil, parent_id: nil},
+      %{action: :liked_step, target_type: nil, target_id: nil, parent_type: nil, parent_id: nil},
       attrs
     )
   end
 
   describe "path/2" do
     test "study nudge goes to the shared diary" do
-      n = notif(%{action: "study_nudge", target_type: "study_link", target_id: "l1"})
+      n = notif(%{action: :study_nudge, target_type: "study_link", target_id: "l1"})
       assert NotificationRoutes.path(n, @targets) == "/study/shared/l1"
     end
 
     test "shared note update goes to the shared diary" do
-      n = notif(%{action: "shared_note_updated", target_type: "study_link", target_id: "l1"})
+      n = notif(%{action: :shared_note_updated, target_type: "study_link", target_id: "l1"})
       assert NotificationRoutes.path(n, @targets) == "/study/shared/l1"
     end
 

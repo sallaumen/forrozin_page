@@ -13,10 +13,10 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
   @type targets :: %{steps: %{optional(binary()) => map()}, users: %{optional(binary()) => map()}}
 
   @spec path(map(), targets()) :: String.t()
-  def path(%{action: "study_nudge", target_type: "study_link", target_id: id}, _targets),
+  def path(%{action: :study_nudge, target_type: "study_link", target_id: id}, _targets),
     do: ~p"/study/shared/#{id}"
 
-  def path(%{action: "shared_note_updated", target_type: "study_link", target_id: id}, _targets),
+  def path(%{action: :shared_note_updated, target_type: "study_link", target_id: id}, _targets),
     do: ~p"/study/shared/#{id}"
 
   def path(%{parent_type: "study_link"}, _targets), do: ~p"/study"

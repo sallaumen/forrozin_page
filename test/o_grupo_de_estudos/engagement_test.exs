@@ -55,7 +55,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
       liker_id = liker.id
 
-      assert [%Notification{action: "liked_step", actor_id: ^liker_id}] =
+      assert [%Notification{action: :liked_step, actor_id: ^liker_id}] =
                NotificationQuery.list_for_user(author.id)
     end
 
@@ -74,7 +74,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
       liker_id = liker.id
 
-      assert [%Notification{action: "liked_sequence", actor_id: ^liker_id}] =
+      assert [%Notification{action: :liked_sequence, actor_id: ^liker_id}] =
                NotificationQuery.list_for_user(owner.id)
     end
 
@@ -85,7 +85,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       {:ok, :liked} = Engagement.toggle_like(liker.id, "step", step.id)
       {:ok, :unliked} = Engagement.toggle_like(liker.id, "step", step.id)
 
-      assert [%Notification{action: "liked_step"}] = NotificationQuery.list_for_user(author.id)
+      assert [%Notification{action: :liked_step}] = NotificationQuery.list_for_user(author.id)
     end
   end
 
@@ -762,7 +762,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
             where:
               n.user_id == ^other.id and
                 n.actor_id == ^user.id and
-                n.action == "followed_user"
+                n.action == :followed_user
         )
 
       assert notification.target_type == "profile"
@@ -1076,10 +1076,10 @@ defmodule OGrupoDeEstudos.EngagementTest do
   describe "unread_count/2" do
     test "filters by action when given" do
       user = insert(:user)
-      insert(:notification, user: user, action: "shared_note_updated")
-      insert(:notification, user: user, action: "liked_step")
+      insert(:notification, user: user, action: :shared_note_updated)
+      insert(:notification, user: user, action: :liked_step)
 
-      assert Engagement.unread_count(user.id, action: "shared_note_updated") == 1
+      assert Engagement.unread_count(user.id, action: :shared_note_updated) == 1
       assert Engagement.unread_count(user.id) == 2
     end
   end
