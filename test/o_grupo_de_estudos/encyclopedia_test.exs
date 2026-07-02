@@ -295,4 +295,20 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       assert Encyclopedia.count_steps_by_suggester([]) == %{}
     end
   end
+
+  describe "ConnectionQuery.soft_delete_by/1" do
+    test "bumps updated_at along with deleted_at" do
+      connection = insert(:connection, updated_at: ~N[2026-01-01 00:00:00])
+
+      {1, _} =
+        OGrupoDeEstudos.Encyclopedia.ConnectionQuery.soft_delete_by(
+          source_step_id: connection.source_step_id,
+          target_step_id: connection.target_step_id
+        )
+
+      reloaded = Repo.get(OGrupoDeEstudos.Encyclopedia.Connection, connection.id)
+      assert reloaded.deleted_at
+      assert NaiveDateTime.compare(reloaded.updated_at, ~N[2026-01-01 00:00:00]) == :gt
+    end
+  end
 end
