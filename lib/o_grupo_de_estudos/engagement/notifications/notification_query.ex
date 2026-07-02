@@ -47,4 +47,18 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
 
   defp filter_action(query, nil), do: query
   defp filter_action(query, action), do: where(query, [n], n.action == ^action)
+
+  @doc "Composable scope: unread notifications of a user."
+  @spec unread_by_user(Ecto.UUID.t()) :: Ecto.Query.t()
+  def unread_by_user(user_id) do
+    from(n in Notification, where: n.user_id == ^user_id and is_nil(n.read_at))
+  end
+
+  @doc "Composable scope: one specific unread notification of a user."
+  @spec unread_by_user(Ecto.UUID.t(), Ecto.UUID.t()) :: Ecto.Query.t()
+  def unread_by_user(user_id, notification_id) do
+    user_id
+    |> unread_by_user()
+    |> where([n], n.id == ^notification_id)
+  end
 end

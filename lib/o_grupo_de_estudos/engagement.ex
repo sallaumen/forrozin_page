@@ -30,7 +30,7 @@ defmodule OGrupoDeEstudos.Engagement do
   }
 
   alias OGrupoDeEstudos.Engagement.DeviceSession
-  alias OGrupoDeEstudos.Engagement.Notifications.{Notification, NotificationQuery}
+  alias OGrupoDeEstudos.Engagement.Notifications.NotificationQuery
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences.Sequence
 
@@ -115,12 +115,9 @@ defmodule OGrupoDeEstudos.Engagement do
 
   @doc "Marks a single notification as read."
   def mark_as_read(user, notification_id) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-
-    from(n in Notification,
-      where: n.id == ^notification_id and n.user_id == ^user.id and is_nil(n.read_at)
-    )
-    |> Repo.update_all(set: [read_at: now])
+    user.id
+    |> NotificationQuery.unread_by_user(notification_id)
+    |> Repo.update_all(set: [read_at: now_second()])
     |> case do
       {1, _} -> {:ok, :marked}
       {0, _} -> {:ok, :already_read}
@@ -129,16 +126,15 @@ defmodule OGrupoDeEstudos.Engagement do
 
   @doc "Marks all unread notifications as read for the given user."
   def mark_all_read(user) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-
     {count, _} =
-      from(n in Notification,
-        where: n.user_id == ^user.id and is_nil(n.read_at)
-      )
-      |> Repo.update_all(set: [read_at: now])
+      user.id
+      |> NotificationQuery.unread_by_user()
+      |> Repo.update_all(set: [read_at: now_second()])
 
     {:ok, count}
   end
+
+  defp now_second, do: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
   # ══════════════════════════════════════════════════════════════════════
   # Follows (delegated to Engagement.Follows)

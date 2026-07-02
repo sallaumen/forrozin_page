@@ -5,12 +5,21 @@ defmodule OGrupoDeEstudos.Study do
 
   import Ecto.Query
 
+  alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.PubSub
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Study.{ActiveDay, Goal, LinkError, Note, NoteStep, TeacherStudentLink}
+
+  alias OGrupoDeEstudos.Study.{
+    ActiveDayQuery,
+    GoalQuery,
+    LinkQuery,
+    NoteQuery
+  }
+
   alias Phoenix.PubSub, as: PhoenixPubSub
 
   # ── Teacher search & request ──────────────────────────────────────────
@@ -22,23 +31,7 @@ defmodule OGrupoDeEstudos.Study do
     if String.length(term) < 2 do
       []
     else
-      pattern = "%#{OGrupoDeEstudos.Search.escape_like(term)}%"
-
-      query =
-        from(u in User,
-          where: u.is_teacher == true,
-          where: ilike(u.name, ^pattern) or ilike(u.username, ^pattern),
-          order_by: [asc: u.name],
-          limit: 8,
-          select: %{id: u.id, name: u.name, username: u.username, city: u.city, state: u.state}
-        )
-
-      query =
-        if exclude_user_id,
-          do: where(query, [u], u.id != ^exclude_user_id),
-          else: query
-
-      Repo.all(query)
+      Accounts.search_teachers(term, exclude_id: exclude_user_id)
     end
   end
 
@@ -50,28 +43,8 @@ defmodule OGrupoDeEstudos.Study do
   def suggest_teachers(user, opts \\ []) do
     limit = Keyword.get(opts, :limit, 5)
 
-    existing_teacher_ids =
-      from(l in TeacherStudentLink,
-        where: l.student_id == ^user.id,
-        select: l.teacher_id
-      )
-
-    from(u in User,
-      where: u.is_teacher == true,
-      where: u.id != ^user.id,
-      where: u.id not in subquery(existing_teacher_ids),
-      left_join: links in TeacherStudentLink,
-      on: links.teacher_id == u.id and links.active == true and links.pending == false,
-      group_by: u.id,
-      order_by: [
-        desc: count(links.id),
-        desc: fragment("CASE WHEN ? = ? THEN 1 ELSE 0 END", u.city, ^(user.city || "")),
-        desc: u.last_seen_at
-      ],
-      limit: ^limit,
-      select: %{user: u, student_count: count(links.id)}
-    )
-    |> Repo.all()
+    user
+    |> LinkQuery.list_suggested_teachers(limit)
     |> Enum.map(fn %{user: teacher, student_count: student_count} ->
       Map.put(teacher, :student_count, student_count)
     end)
@@ -166,19 +139,7 @@ defmodule OGrupoDeEstudos.Study do
   Returns the teacher/student link between two users regardless of direction,
   or `nil`. Accepts `status: :pending | :active` to narrow the lookup.
   """
-  def get_link_between(user_a_id, user_b_id, opts \\ []) do
-    from(l in TeacherStudentLink,
-      where:
-        (l.teacher_id == ^user_a_id and l.student_id == ^user_b_id) or
-          (l.teacher_id == ^user_b_id and l.student_id == ^user_a_id)
-    )
-    |> filter_link_status(opts[:status])
-    |> Repo.one()
-  end
-
-  defp filter_link_status(query, nil), do: query
-  defp filter_link_status(query, :pending), do: where(query, [l], l.pending == true)
-  defp filter_link_status(query, :active), do: where(query, [l], l.active == true)
+  defdelegate get_link_between(user_a_id, user_b_id, opts \\ []), to: LinkQuery, as: :get_between
 
   @doc "Accept a pending link request. Either side can accept if they didn't initiate."
   def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: acceptor_id})
@@ -212,14 +173,9 @@ defmodule OGrupoDeEstudos.Study do
   def reject_link_request(_, _), do: {:error, LinkError.new(:invalid)}
 
   @doc "List pending requests for a teacher."
-  def list_pending_requests_for_teacher(teacher_id) do
-    from(link in TeacherStudentLink,
-      where: link.teacher_id == ^teacher_id and link.pending == true,
-      preload: [:student],
-      order_by: [desc: link.inserted_at]
-    )
-    |> Repo.all()
-  end
+  defdelegate list_pending_requests_for_teacher(teacher_id),
+    to: LinkQuery,
+    as: :list_pending_for_teacher
 
   # ── Invite flow (existing) ────────────────────────────────────────────
 
@@ -261,23 +217,12 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  def get_personal_note(user_id, date) do
-    Repo.get_by(Note, kind: "personal", owner_user_id: user_id, note_date: date)
-    |> preload_note()
-  end
+  defdelegate get_personal_note(user_id, date), to: NoteQuery, as: :get_personal
 
-  def get_shared_note(link_id, date) do
-    Repo.get_by(Note, kind: "shared", teacher_student_link_id: link_id, note_date: date)
-    |> preload_note()
-  end
+  defdelegate get_shared_note(link_id, date), to: NoteQuery, as: :get_shared
 
   @doc "Returns true if a shared note exists for the given link and date."
-  def shared_note_exists?(link_id, date) do
-    from(n in Note,
-      where: n.teacher_student_link_id == ^link_id and n.note_date == ^date and n.kind == "shared"
-    )
-    |> Repo.exists?()
-  end
+  defdelegate shared_note_exists?(link_id, date), to: NoteQuery, as: :shared_exists?
 
   @doc """
   Batch version of `shared_note_exists?/2`.
@@ -285,15 +230,7 @@ defmodule OGrupoDeEstudos.Study do
   Returns a MapSet of link IDs that have a shared note on the given date.
   Use this when rendering a list of student links to avoid N+1 queries.
   """
-  def shared_note_link_ids(link_ids, date) when is_list(link_ids) do
-    from(n in Note,
-      where:
-        n.teacher_student_link_id in ^link_ids and n.note_date == ^date and n.kind == "shared",
-      select: n.teacher_student_link_id
-    )
-    |> Repo.all()
-    |> MapSet.new()
-  end
+  defdelegate shared_note_link_ids(link_ids, date), to: NoteQuery, as: :shared_link_ids_on
 
   def search_related_steps(term) when is_binary(term) do
     if String.trim(term) == "" do
@@ -305,24 +242,10 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  def list_personal_note_history(user_id) do
-    from(note in Note,
-      where: note.kind == "personal" and note.owner_user_id == ^user_id,
-      order_by: [desc: note.note_date]
-    )
-    |> Repo.all()
-    |> Repo.preload(:related_steps)
-  end
+  defdelegate list_personal_note_history(user_id), to: NoteQuery, as: :list_personal_history
 
   def personal_note_week_count(user_id, today \\ OGrupoDeEstudos.Brazil.today()) do
-    week_start = Date.add(today, -6)
-
-    from(note in Note,
-      where: note.kind == "personal" and note.owner_user_id == ^user_id,
-      where: note.note_date >= ^week_start and note.note_date <= ^today,
-      select: count(note.id)
-    )
-    |> Repo.one()
+    NoteQuery.count_personal_between(user_id, Date.add(today, -6), today)
   end
 
   @doc "Marca o usuário como ativo no dia (idempotente). Alimenta a consistência."
@@ -334,42 +257,25 @@ defmodule OGrupoDeEstudos.Study do
   end
 
   @doc "Datas (MapSet) em que o usuário esteve ativo no intervalo [from, to]."
-  def active_days_between(user_id, from, to) do
-    from(a in ActiveDay,
-      where: a.user_id == ^user_id and a.day >= ^from and a.day <= ^to,
-      select: a.day
-    )
-    |> Repo.all()
-    |> MapSet.new()
-  end
+  defdelegate active_days_between(user_id, from, to), to: ActiveDayQuery, as: :days_between
 
   def list_teachers_for_student(student_id) do
     list_teacher_links_for_student(student_id)
     |> Enum.map(& &1.teacher)
   end
 
-  def list_teacher_links_for_student(student_id) do
-    from(link in TeacherStudentLink,
-      preload: [:teacher],
-      where: link.student_id == ^student_id and link.active == true,
-      order_by: [asc: link.inserted_at]
-    )
-    |> Repo.all()
-  end
+  defdelegate list_teacher_links_for_student(student_id),
+    to: LinkQuery,
+    as: :list_active_for_student
 
   def list_students_for_teacher(teacher_id) do
     list_student_links_for_teacher(teacher_id)
     |> Enum.map(& &1.student)
   end
 
-  def list_student_links_for_teacher(teacher_id) do
-    from(link in TeacherStudentLink,
-      preload: [:student],
-      where: link.teacher_id == ^teacher_id and link.active == true,
-      order_by: [asc: link.inserted_at]
-    )
-    |> Repo.all()
-  end
+  defdelegate list_student_links_for_teacher(teacher_id),
+    to: LinkQuery,
+    as: :list_active_for_teacher
 
   def list_shared_activity_for_user(user_or_id, today \\ OGrupoDeEstudos.Brazil.today())
 
@@ -378,13 +284,8 @@ defmodule OGrupoDeEstudos.Study do
   end
 
   def list_shared_activity_for_user(user_id, today) do
-    from(link in TeacherStudentLink,
-      where:
-        (link.teacher_id == ^user_id or link.student_id == ^user_id) and link.pending == false,
-      preload: [:teacher, :student],
-      order_by: [desc: link.updated_at]
-    )
-    |> Repo.all()
+    user_id
+    |> LinkQuery.list_accepted_for_user()
     |> Enum.map(fn link ->
       today_note = get_shared_note(link.id, today)
       last_note = List.first(list_shared_note_history(link.id))
@@ -422,22 +323,9 @@ defmodule OGrupoDeEstudos.Study do
     result
   end
 
-  def list_shared_note_history(link_id) do
-    from(note in Note,
-      where: note.kind == "shared" and note.teacher_student_link_id == ^link_id,
-      order_by: [desc: note.note_date]
-    )
-    |> Repo.all()
-    |> Repo.preload(:related_steps)
-  end
+  defdelegate list_shared_note_history(link_id), to: NoteQuery, as: :list_shared_history
 
-  def get_link_for_member(id, user_id) do
-    from(link in TeacherStudentLink,
-      where: link.id == ^id and (link.teacher_id == ^user_id or link.student_id == ^user_id),
-      preload: [:teacher, :student]
-    )
-    |> Repo.one()
-  end
+  defdelegate get_link_for_member(id, user_id), to: LinkQuery, as: :get_for_member
 
   @doc "Updates a link's private teacher note, only by that link's teacher."
   def update_teacher_note(%User{id: actor_id}, link_id, note) do
@@ -510,7 +398,9 @@ defmodule OGrupoDeEstudos.Study do
   end
 
   def replace_note_steps(%Note{id: note_id}, step_ids) do
-    Repo.delete_all(from ns in NoteStep, where: ns.study_note_id == ^note_id)
+    NoteStep
+    |> where([ns], ns.study_note_id == ^note_id)
+    |> Repo.delete_all()
 
     Enum.each(step_ids, fn step_id ->
       %NoteStep{}
@@ -554,21 +444,9 @@ defmodule OGrupoDeEstudos.Study do
 
   # ── Goals ─────────────────────────────────────────────────────────────
 
-  def list_personal_goals(user_id) do
-    from(g in Goal,
-      where: g.owner_user_id == ^user_id,
-      order_by: [asc: g.completed, asc: g.position, desc: g.inserted_at]
-    )
-    |> Repo.all()
-  end
+  defdelegate list_personal_goals(user_id), to: GoalQuery, as: :list_personal
 
-  def list_shared_goals(link_id) do
-    from(g in Goal,
-      where: g.teacher_student_link_id == ^link_id,
-      order_by: [asc: g.completed, asc: g.position, desc: g.inserted_at]
-    )
-    |> Repo.all()
-  end
+  defdelegate list_shared_goals(link_id), to: GoalQuery, as: :list_shared
 
   def create_goal(attrs) do
     %Goal{}
@@ -592,52 +470,11 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  # Uma meta so pode ser tocada pelo dono pessoal ou por um membro
-  # (professor/aluno) do vinculo a que ela pertence. Qualquer outro caso
-  # retorna nil, tratado como nao encontrado.
   defp authorized_goal(%User{id: user_id}, goal_id) do
-    member_link_ids =
-      from(l in TeacherStudentLink,
-        where: l.teacher_id == ^user_id or l.student_id == ^user_id,
-        select: l.id
-      )
-
-    from(g in Goal,
-      where:
-        g.id == ^goal_id and
-          (g.owner_user_id == ^user_id or
-             g.teacher_student_link_id in subquery(member_link_ids))
-    )
-    |> Repo.one()
+    GoalQuery.get_authorized(goal_id, user_id)
   end
 
   # ── Step frequency ranking ─────────────────────────────────────────────
 
-  def step_frequency_ranking(:personal, user_id) do
-    from(ns in NoteStep,
-      join: n in Note,
-      on: ns.study_note_id == n.id,
-      join: s in OGrupoDeEstudos.Encyclopedia.Step,
-      on: ns.step_id == s.id,
-      where: n.owner_user_id == ^user_id and n.kind == "personal",
-      group_by: [s.id, s.code, s.name],
-      select: %{step_id: s.id, code: s.code, name: s.name, count: count(ns.id)},
-      order_by: [desc: count(ns.id)]
-    )
-    |> Repo.all()
-  end
-
-  def step_frequency_ranking(:shared, link_id) do
-    from(ns in NoteStep,
-      join: n in Note,
-      on: ns.study_note_id == n.id,
-      join: s in OGrupoDeEstudos.Encyclopedia.Step,
-      on: ns.step_id == s.id,
-      where: n.teacher_student_link_id == ^link_id and n.kind == "shared",
-      group_by: [s.id, s.code, s.name],
-      select: %{step_id: s.id, code: s.code, name: s.name, count: count(ns.id)},
-      order_by: [desc: count(ns.id)]
-    )
-    |> Repo.all()
-  end
+  defdelegate step_frequency_ranking(kind, id), to: NoteQuery, as: :step_frequency
 end

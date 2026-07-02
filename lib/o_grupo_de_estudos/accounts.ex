@@ -3,9 +3,8 @@ defmodule OGrupoDeEstudos.Accounts do
   Action context responsible for users and authentication.
   """
 
-  import Ecto.Query
-
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Accounts.UserQuery
   alias OGrupoDeEstudos.Metadata
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workers.{SendConfirmationEmail, SendPasswordResetEmail}
@@ -123,42 +122,23 @@ defmodule OGrupoDeEstudos.Accounts do
   Requires at least 2 characters to execute.
   """
   def search_users(term, opts \\ []) when is_binary(term) do
-    exclude_id = Keyword.get(opts, :exclude_id)
-
     if String.length(term) < 2 do
       []
     else
-      term_like = "%#{OGrupoDeEstudos.Search.escape_like(String.downcase(term))}%"
-
-      query =
-        from(u in User,
-          where: ilike(u.username, ^term_like) or ilike(u.name, ^term_like),
-          order_by: [asc: u.username],
-          limit: 5
-        )
-
-      query = if exclude_id, do: where(query, [u], u.id != ^exclude_id), else: query
-
-      Repo.all(query)
+      UserQuery.search(term, opts)
     end
   end
 
-  @doc "Batch-loads lightweight user summaries (id, username, name, avatar) by id."
-  def list_user_summaries([]), do: []
-
-  def list_user_summaries(ids) when is_list(ids) do
-    from(u in User,
-      where: u.id in ^ids,
-      select: %{id: u.id, username: u.username, name: u.name, avatar_path: u.avatar_path}
-    )
-    |> Repo.all()
+  @doc "Searches teachers by name or username. Accepts `exclude_id:`."
+  def search_teachers(term, opts \\ []) when is_binary(term) do
+    UserQuery.search_teachers(term, opts)
   end
+
+  @doc "Batch-loads lightweight user summaries (id, username, name, avatar) by id."
+  defdelegate list_user_summaries(ids), to: UserQuery, as: :summaries_by_ids
 
   @doc "Returns a list of all usernames (for sitemap generation)."
-  def list_all_usernames do
-    from(u in User, select: u.username, order_by: u.username)
-    |> Repo.all()
-  end
+  defdelegate list_all_usernames, to: UserQuery, as: :list_usernames
 
   @doc "Finds a user by email. Returns nil if not found."
   def get_user_by_email(email) when is_binary(email) do
