@@ -1041,4 +1041,162 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute html =~ "Sequencia secreta"
     end
   end
+
+  describe "graph handlers — engagement" do
+    setup :setup_graph
+
+    test "toggle_step_like_graph registra e desfaz o like", %{conn: conn, step_a: step_a} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "toggle_step_like_graph", %{"code" => step_a.code})
+      assert OGrupoDeEstudos.Engagement.liked?(user.id, "step", step_a.id)
+
+      render_click(lv, "toggle_step_like_graph", %{"code" => step_a.code})
+      refute OGrupoDeEstudos.Engagement.liked?(user.id, "step", step_a.id)
+    end
+
+    test "toggle_step_favorite_graph registra o favorito", %{conn: conn, step_a: step_a} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "toggle_step_favorite_graph", %{"code" => step_a.code})
+
+      assert OGrupoDeEstudos.Engagement.favorited?(user.id, "step", step_a.id)
+    end
+
+    test "toggle_step_learned marca aprendido e implica favorito", %{conn: conn, step_a: step_a} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "toggle_step_learned", %{"code" => step_a.code})
+
+      assert OGrupoDeEstudos.Engagement.learned?(user.id, step_a.id)
+      assert OGrupoDeEstudos.Engagement.favorited?(user.id, "step", step_a.id)
+    end
+
+    test "reset_progress limpa os passos aprendidos", %{conn: conn, step_a: step_a} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "toggle_step_learned", %{"code" => step_a.code})
+      render_click(lv, "reset_progress", %{})
+
+      refute OGrupoDeEstudos.Engagement.learned?(user.id, step_a.id)
+    end
+  end
+
+  describe "graph handlers — sequência manual e biblioteca" do
+    setup :setup_graph
+
+    test "fluxo do rascunho manual salva a sequência", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "show_seq_manual", %{})
+      render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
+      render_click(lv, "add_manual_step", %{"code" => step_b.code, "name" => step_b.name})
+      render_submit(lv, "save_manual_sequence", %{"name" => "Minha Sequência Manual"})
+
+      assert [sequence] = OGrupoDeEstudos.Sequences.list_user_sequences(user.id)
+      assert sequence.name == "Minha Sequência Manual"
+      assert length(sequence.sequence_steps) == 2
+    end
+
+    test "save_manual_sequence sem nome mostra erro e não salva", %{conn: conn, step_a: step_a} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "show_seq_manual", %{})
+      render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
+      html = render_submit(lv, "save_manual_sequence", %{"name" => ""})
+
+      assert html =~ "Nome é obrigatório."
+      assert OGrupoDeEstudos.Sequences.list_user_sequences(user.id) == []
+    end
+
+    test "dono deleta a própria sequência", %{conn: conn} do
+      user = insert(:user)
+      sequence = insert(:sequence, user: user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "delete_sequence", %{"id" => sequence.id})
+
+      assert OGrupoDeEstudos.Sequences.get_sequence(sequence.id) == nil
+    end
+
+    test "não-dono não deleta sequência alheia via evento forjado", %{conn: conn} do
+      user = insert(:user)
+      sequence = insert(:sequence, public: true)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "delete_sequence", %{"id" => sequence.id})
+
+      assert OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
+    end
+
+    test "toggle_sequence_favorite_graph favorita a sequência", %{conn: conn} do
+      user = insert(:user)
+      sequence = insert(:sequence, public: true)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "toggle_sequence_favorite_graph", %{"id" => sequence.id})
+
+      assert OGrupoDeEstudos.Engagement.favorited?(user.id, "sequence", sequence.id)
+    end
+  end
+
+  describe "graph handlers — busca" do
+    setup :setup_graph
+
+    test "search_graph_step encontra por nome e clear limpa", %{conn: conn} do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+
+      html = render_click(lv, "search_graph_step", %{"value" => "Sacada"})
+      assert html =~ "Sacada simples"
+
+      render_click(lv, "clear_graph_search", %{})
+    end
+  end
+
+  describe "graph drawer — comentários" do
+    setup :setup_graph
+
+    test "fluxo completo: abrir drawer, comentar, responder e curtir", %{
+      conn: conn,
+      step_a: step_a
+    } do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      html = render_click(lv, "open_step", %{"code" => step_a.code})
+      assert html =~ step_a.name
+
+      html = render_submit(lv, "create_comment", %{"body" => "Passo excelente!"})
+      assert html =~ "Passo excelente!"
+
+      assert [comment] = OGrupoDeEstudos.Engagement.list_step_comments(step_a.id)
+
+      render_submit(lv, "create_reply", %{"body" => "Concordo!", "parent-id" => comment.id})
+      render_click(lv, "toggle_replies", %{"id" => comment.id})
+      assert render(lv) =~ "Concordo!"
+
+      render_click(lv, "toggle_comment_like", %{"type" => "step_comment", "id" => comment.id})
+      assert OGrupoDeEstudos.Engagement.liked?(user.id, "step_comment", comment.id)
+    end
+
+    test "like no passo pelo drawer sincroniza o estado", %{conn: conn, step_a: step_a} do
+      user = insert(:user)
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
+
+      render_click(lv, "open_step", %{"code" => step_a.code})
+      render_click(lv, "toggle_step_like_graph", %{"code" => step_a.code})
+
+      assert OGrupoDeEstudos.Engagement.liked?(user.id, "step", step_a.id)
+    end
+  end
 end
