@@ -16,6 +16,10 @@ defmodule OGrupoDeEstudosWeb.Router do
     plug OGrupoDeEstudosWeb.Plugs.TrackDailyActivity
   end
 
+  pipeline :require_admin do
+    plug OGrupoDeEstudosWeb.UserAuth, :require_admin
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -88,8 +92,26 @@ defmodule OGrupoDeEstudosWeb.Router do
       live "/admin/suggestions", AdminSuggestionsLive
       live "/admin/errors", AdminErrorsLive
     end
+  end
 
-    get "/admin/backups/download/:filename", BackupController, :download
+  # Rotas admin de conn (controller/dashboard): o gate e o plug require_admin,
+  # ja que on_mount de live_session nao cobre requests HTTP comuns.
+  scope "/admin", OGrupoDeEstudosWeb do
+    pipe_through [:browser, :require_admin]
+
+    get "/backups/download/:filename", BackupController, :download
+  end
+
+  import Phoenix.LiveDashboard.Router
+
+  scope "/admin" do
+    pipe_through [:browser, :require_admin]
+
+    live_dashboard "/dashboard",
+      metrics: OGrupoDeEstudosWeb.Telemetry,
+      ecto_repos: [OGrupoDeEstudos.Repo],
+      csp_nonce_assign_key: :csp_nonce,
+      live_session_name: :admin_live_dashboard
   end
 
   if Application.compile_env(:o_grupo_de_estudos, :dev_routes) do

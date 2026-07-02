@@ -43,6 +43,29 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
     end
   end
 
+  @doc """
+  Plug de conn para rotas admin (controllers e live_dashboard, onde o
+  on_mount :ensure_admin não se aplica). Não-admin volta para o mapa;
+  anônimo vai para o login.
+  """
+  def require_admin(conn, _opts) do
+    case conn.assigns[:current_user] do
+      %{role: :admin} ->
+        conn
+
+      nil ->
+        conn
+        |> put_flash(:error, "Você precisa estar autenticado para acessar esta página.")
+        |> redirect(to: ~p"/login")
+        |> halt()
+
+      _user ->
+        conn
+        |> redirect(to: ~p"/graph/visual")
+        |> halt()
+    end
+  end
+
   @doc "Redireciona para / se o usuário já estiver autenticado."
   def redirect_if_authenticated(conn, _opts) do
     if conn.assigns[:current_user] do
