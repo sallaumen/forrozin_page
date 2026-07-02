@@ -642,14 +642,14 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
             </span>
             <div class="min-w-0 flex-1 text-xs text-ink-700">
               <%= cond do %>
-                <% sug.action == "edit_field" -> %>
+                <% sug.action == :edit_field -> %>
                   <span class="font-semibold">{sug.field}</span>:
                   <span class="line-through text-ink-400">{sug.old_value}</span>
                   <span class="text-ink-400">→</span>
                   <span class="font-semibold text-accent-green">{sug.new_value}</span>
-                <% sug.action == "create_connection" -> %>
+                <% sug.action == :create_connection -> %>
                   Nova conexão: <span class="font-semibold text-accent-green">{sug.new_value}</span>
-                <% sug.action == "remove_connection" -> %>
+                <% sug.action == :remove_connection -> %>
                   Remover conexão:
                   <span class="font-semibold text-accent-red line-through">{sug.old_value}</span>
               <% end %>

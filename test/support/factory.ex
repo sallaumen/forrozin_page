@@ -206,13 +206,13 @@ defmodule OGrupoDeEstudos.Factory do
 
   def suggestion_factory do
     %Suggestion{
-      target_type: "step",
+      target_type: :step,
       target_id: Ecto.UUID.generate(),
-      action: "edit_field",
+      action: :edit_field,
       field: "name",
       old_value: "Old Name",
       new_value: "New Name",
-      status: "pending",
+      status: :pending,
       user: build(:user)
     }
   end

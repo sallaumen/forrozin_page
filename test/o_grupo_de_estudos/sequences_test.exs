@@ -127,8 +127,10 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "returns sequence_steps ordered by position ascending" do
       user = insert(:user)
-      step_a = insert(:step, code: "TR", name: "Trava")
-      step_b = insert(:step, code: "BF", name: "Base Frontal")
+      # Codes exclusivos deste teste: literais repetidos entre arquivos async
+      # colidem no unique index de steps.code e causam deadlock esporadico.
+      step_a = insert(:step, code: "ORD2", name: "Trava")
+      step_b = insert(:step, code: "ORD1", name: "Base Frontal")
       sequence = insert(:sequence, user: user)
       insert(:sequence_step, sequence: sequence, step: step_a, position: 2)
       insert(:sequence_step, sequence: sequence, step: step_b, position: 1)
@@ -136,7 +138,7 @@ defmodule OGrupoDeEstudos.SequencesTest do
       [result] = Sequences.list_user_sequences(user.id)
 
       codes = Enum.map(result.sequence_steps, & &1.step.code)
-      assert codes == ["BF", "TR"]
+      assert codes == ["ORD1", "ORD2"]
     end
   end
 

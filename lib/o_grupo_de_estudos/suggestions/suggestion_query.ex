@@ -6,9 +6,9 @@ defmodule OGrupoDeEstudos.Suggestions.SuggestionQuery do
   alias OGrupoDeEstudos.Suggestions.Suggestion
 
   @type list_opt ::
-          {:status, String.t()}
+          {:status, :pending | :approved | :rejected}
           | {:user_id, Ecto.UUID.t()}
-          | {:target_type, String.t()}
+          | {:target_type, :step | :connection}
           | {:action, String.t()}
           | {:target_id, Ecto.UUID.t()}
           | {:limit, non_neg_integer()}
