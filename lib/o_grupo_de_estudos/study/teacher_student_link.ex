@@ -2,6 +2,8 @@ defmodule OGrupoDeEstudos.Study.TeacherStudentLink do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Study.Note
 
