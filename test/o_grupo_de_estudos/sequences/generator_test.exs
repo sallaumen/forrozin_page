@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
           code: "C#{i}",
           name: "Chain Step #{i}",
           wip: false,
-          status: "published",
+          status: :published,
           approved: true
         )
       end
@@ -59,7 +59,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
           code: "S#{i}",
           name: "Step #{i}",
           wip: false,
-          status: "published",
+          status: :published,
           approved: true
         )
       end
@@ -141,7 +141,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         code: "ALONE",
         name: "Lonely",
         wip: false,
-        status: "published",
+        status: :published,
         approved: true
       )
 
@@ -190,10 +190,10 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
     test "respects max_same_pair_loops" do
       s0 =
-        insert(:step, code: "L0", name: "Loop 0", wip: false, status: "published", approved: true)
+        insert(:step, code: "L0", name: "Loop 0", wip: false, status: :published, approved: true)
 
       s1 =
-        insert(:step, code: "L1", name: "Loop 1", wip: false, status: "published", approved: true)
+        insert(:step, code: "L1", name: "Loop 1", wip: false, status: :published, approved: true)
 
       insert(:connection, source_step: s0, target_step: s1)
       insert(:connection, source_step: s1, target_step: s0)
@@ -386,10 +386,10 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
       # Disconnected step
       d0 =
-        insert(:step, code: "D0", name: "Disc 0", wip: false, status: "published", approved: true)
+        insert(:step, code: "D0", name: "Disc 0", wip: false, status: :published, approved: true)
 
       d1 =
-        insert(:step, code: "D1", name: "Disc 1", wip: false, status: "published", approved: true)
+        insert(:step, code: "D1", name: "Disc 1", wip: false, status: :published, approved: true)
 
       insert(:connection, source_step: d0, target_step: d1)
 
@@ -430,7 +430,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
           code: "WIP1",
           name: "WIP Step",
           wip: true,
-          status: "published",
+          status: :published,
           approved: true
         )
 
@@ -457,7 +457,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
           code: "WIPX",
           name: "WIP X",
           wip: true,
-          status: "published",
+          status: :published,
           approved: true
         )
 
@@ -479,7 +479,7 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
           code: "DRAFT1",
           name: "Draft Step",
           wip: false,
-          status: "draft",
+          status: :draft,
           approved: true
         )
 
@@ -549,12 +549,12 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       # A → D → E → F
       # Without backtracking: 50% chance of hitting dead end at C
       # With backtracking: always finds A→D→E→F
-      a = insert(:step, code: "A", name: "A", wip: false, status: "published", approved: true)
-      b = insert(:step, code: "B", name: "B", wip: false, status: "published", approved: true)
-      c = insert(:step, code: "C", name: "C", wip: false, status: "published", approved: true)
-      d = insert(:step, code: "D", name: "D", wip: false, status: "published", approved: true)
-      e = insert(:step, code: "E", name: "E", wip: false, status: "published", approved: true)
-      f = insert(:step, code: "F", name: "F", wip: false, status: "published", approved: true)
+      a = insert(:step, code: "A", name: "A", wip: false, status: :published, approved: true)
+      b = insert(:step, code: "B", name: "B", wip: false, status: :published, approved: true)
+      c = insert(:step, code: "C", name: "C", wip: false, status: :published, approved: true)
+      d = insert(:step, code: "D", name: "D", wip: false, status: :published, approved: true)
+      e = insert(:step, code: "E", name: "E", wip: false, status: :published, approved: true)
+      f = insert(:step, code: "F", name: "F", wip: false, status: :published, approved: true)
 
       insert(:connection, source_step: a, target_step: b)
       insert(:connection, source_step: b, target_step: c)

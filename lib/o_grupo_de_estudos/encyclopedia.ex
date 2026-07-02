@@ -4,7 +4,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
   Pure calculation module: all functions are DB queries with no side effects.
   Step visibility is controlled here — steps with `wip: true` or
-  `status: "draft"` are not returned to the public.
+  `status: :draft` are not returned to the public.
 
   All Repo access is delegated to the Query modules (StepQuery, ConnectionQuery,
   SectionQuery). This context is the public API; Query modules are internal.
@@ -71,8 +71,8 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
     visibility_filter =
       if admin,
-        do: dynamic([p], p.status == "published" and is_nil(p.deleted_at)),
-        else: dynamic([p], p.wip == false and p.status == "published" and is_nil(p.deleted_at))
+        do: dynamic([p], p.status == ^:published and is_nil(p.deleted_at)),
+        else: dynamic([p], p.wip == false and p.status == ^:published and is_nil(p.deleted_at))
 
     # Direct steps: only those NOT in a subsection (avoids duplicates).
     # Official steps (no suggested_by_id) come first, community steps after.
@@ -140,7 +140,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
     query_opts =
       if admin,
-        do: [code: code, status: "published"],
+        do: [code: code, status: :published],
         else: [code: code, public_only: true]
 
     case StepQuery.get_by(query_opts) do
@@ -175,8 +175,8 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
     extra_opts =
       if admin,
-        do: [status: "published"],
-        else: [status: "published", wip: false]
+        do: [status: :published],
+        else: [status: :published, wip: false]
 
     StepQuery.list_by(base_opts ++ extra_opts)
   end
@@ -197,7 +197,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
     node_opts =
       if admin,
-        do: [status: "published", order_by: [asc: :name], preload: [:category]],
+        do: [status: :published, order_by: [asc: :name], preload: [:category]],
         else: [public_only: true, order_by: [asc: :name], preload: [:category]]
 
     nodes = StepQuery.list_by(node_opts)
@@ -223,7 +223,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   def list_suggested_steps do
     StepQuery.list_by(
       has_suggestions: true,
-      status: "published",
+      status: :published,
       order_by: [desc: :inserted_at],
       preload: [:category, :suggested_by]
     )
@@ -242,7 +242,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
 
     base = [
       has_suggestions: true,
-      status: "published",
+      status: :published,
       order_by: [desc: :inserted_at],
       preload: [:category, :suggested_by]
     ]

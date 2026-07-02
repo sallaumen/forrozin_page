@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
           {:include_deleted, boolean()}
           | {:id, Ecto.UUID.t()}
           | {:code, String.t()}
-          | {:status, String.t()}
+          | {:status, :published | :draft}
           | {:wip, boolean()}
           | {:public_only, boolean()}
           | {:section_id, Ecto.UUID.t()}
@@ -116,7 +116,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
     do: where(q, [step: s], s.wip == ^wip)
 
   defp shared_reducer({:public_only, true}, q),
-    do: where(q, [step: s], s.wip == false and s.status == "published")
+    do: where(q, [step: s], s.wip == false and s.status == ^:published)
 
   defp shared_reducer({:section_id, id}, q),
     do: where(q, [step: s], s.section_id == ^id)

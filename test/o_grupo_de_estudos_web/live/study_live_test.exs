@@ -61,7 +61,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
           name: "Sacada simples",
           approved: true,
           wip: false,
-          status: "published"
+          status: :published
         )
 
       conn = log_in_user(conn, user)
@@ -110,7 +110,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
           name: "Giro paulista",
           approved: true,
           wip: false,
-          status: "published"
+          status: :published
         )
 
       past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
@@ -145,7 +145,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
           name: "Base lateral",
           approved: true,
           wip: false,
-          status: "published"
+          status: :published
         )
 
       past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)

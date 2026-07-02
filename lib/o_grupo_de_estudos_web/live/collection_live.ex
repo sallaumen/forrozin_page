@@ -351,7 +351,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
          String.length(term) >= 1 do
       suggestions =
         StepQuery.list_by(
-          status: "published",
+          status: :published,
           search: term,
           order_by: [asc: :name],
           limit: 8,

@@ -967,7 +967,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Seeder do
         note: step_data[:note],
         wip: wip,
         image_path: image_path,
-        status: "published",
+        status: :published,
         position: position,
         section_id: section_id,
         subsection_id: subsection_id,
