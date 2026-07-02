@@ -70,7 +70,12 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
       submitter = insert(:user)
 
       pending =
-        insert(:step_link, step: step, submitted_by: submitter, approved: false, title: "Link ALTR")
+        insert(:step_link,
+          step: step,
+          submitted_by: submitter,
+          approved: false,
+          title: "Link ALTR"
+        )
 
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/admin/links")
 
@@ -90,7 +95,12 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
       submitter = insert(:user)
 
       pending =
-        insert(:step_link, step: step, submitted_by: submitter, approved: false, title: "Link ALGP")
+        insert(:step_link,
+          step: step,
+          submitted_by: submitter,
+          approved: false,
+          title: "Link ALGP"
+        )
 
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/admin/links")
 
@@ -110,7 +120,12 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
       submitter = insert(:user)
 
       approved =
-        insert(:step_link, step: step, submitted_by: submitter, approved: true, title: "Link ALIV")
+        insert(:step_link,
+          step: step,
+          submitted_by: submitter,
+          approved: true,
+          title: "Link ALIV"
+        )
 
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/admin/links")
 
