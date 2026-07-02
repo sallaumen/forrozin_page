@@ -30,12 +30,4 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceGeneratorTest do
     end
   end
 
-  describe "max_same_pair_loops/1" do
-    test "maps loop modes to limits" do
-      assert SequenceGenerator.max_same_pair_loops("free") == 3
-      assert SequenceGenerator.max_same_pair_loops("light") == 2
-      assert SequenceGenerator.max_same_pair_loops("none") == 1
-      assert SequenceGenerator.max_same_pair_loops("whatever") == 1
-    end
-  end
 end

@@ -35,10 +35,5 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceGenerator do
     end
   end
 
-  @doc "Máximo de repetições do mesmo par de passos permitido para um modo de loop."
-  def max_same_pair_loops("free"), do: 3
-  def max_same_pair_loops("light"), do: 2
-  def max_same_pair_loops(_mode), do: 1
-
   defp step_code?(steps, code), do: Enum.any?(steps, &(&1.code == code))
 end

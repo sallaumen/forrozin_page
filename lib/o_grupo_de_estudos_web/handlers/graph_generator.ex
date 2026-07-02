@@ -29,30 +29,12 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
             Map.get(params, "start_code", "")
           )
 
-        loop_mode = Map.get(params, "loop_mode", "none")
-
-        allow_repeats =
-          loop_mode in ["light", "free"] or Map.get(params, "allow_repeats") in ["true", "on"]
-
-        cyclic = Map.get(params, "cyclic") in ["true", "on"]
-        min_length = if allow_repeats, do: 8, else: 4
-        length_val = parse_int(Map.get(params, "length", "10"), 10) |> max(min_length)
-        count_val = parse_int(Map.get(params, "count", "3"), 3)
-
-        required_codes = socket.assigns.seq_required_codes
-
-        max_bf = parse_int(Map.get(params, "max_bf_visits", "3"), 3)
-
-        gen_params = %{
-          start_code: start_code,
-          length: length_val,
-          count: count_val,
-          required_codes: required_codes,
-          allow_repeats: allow_repeats,
-          cyclic: cyclic,
-          max_bf_visits: max_bf,
-          max_same_pair_loops: SequenceGenerator.max_same_pair_loops(loop_mode)
-        }
+        gen_params =
+          OGrupoDeEstudos.Sequences.GenerationParams.from_raw(
+            start_code,
+            socket.assigns.seq_required_codes,
+            params
+          )
 
         case Sequences.generate(gen_params) do
           {:ok, sequences, warnings} ->
