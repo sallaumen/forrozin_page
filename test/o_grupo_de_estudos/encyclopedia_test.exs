@@ -245,4 +245,24 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       assert titles == ["Elástico", "Transferência de peso"]
     end
   end
+
+  describe "step_summaries_by_ids/1" do
+    test "returns a map of id => %{code, name} for the given ids" do
+      section = insert(:section)
+      step_a = insert(:step, section: section, code: "SA", name: "Passo A")
+      step_b = insert(:step, section: section, code: "SB", name: "Passo B")
+      _other = insert(:step, section: section, code: "SC", name: "Passo C")
+
+      summaries = Encyclopedia.step_summaries_by_ids([step_a.id, step_b.id])
+
+      assert summaries == %{
+               step_a.id => %{code: "SA", name: "Passo A"},
+               step_b.id => %{code: "SB", name: "Passo B"}
+             }
+    end
+
+    test "returns an empty map for an empty list" do
+      assert Encyclopedia.step_summaries_by_ids([]) == %{}
+    end
+  end
 end

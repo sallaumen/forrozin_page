@@ -380,19 +380,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
 
-    import Ecto.Query
-    alias OGrupoDeEstudos.Study.TeacherStudentLink
-
-    # Find the pending link between these two users (either direction)
-    link =
-      OGrupoDeEstudos.Repo.one(
-        from(l in TeacherStudentLink,
-          where:
-            l.pending == true and
-              ((l.teacher_id == ^profile.id and l.student_id == ^current.id) or
-                 (l.teacher_id == ^current.id and l.student_id == ^profile.id))
-        )
-      )
+    link = Study.get_link_between(current.id, profile.id, status: :pending)
 
     if link do
       case Study.accept_link_request(link, current) do
@@ -417,18 +405,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
 
-    import Ecto.Query
-    alias OGrupoDeEstudos.Study.TeacherStudentLink
-
-    link =
-      OGrupoDeEstudos.Repo.one(
-        from(l in TeacherStudentLink,
-          where:
-            l.active == true and
-              ((l.teacher_id == ^profile.id and l.student_id == ^current.id) or
-                 (l.teacher_id == ^current.id and l.student_id == ^profile.id))
-        )
-      )
+    link = Study.get_link_between(current.id, profile.id, status: :active)
 
     if link do
       Study.end_link(link, current)
@@ -528,16 +505,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   end
 
   defp find_study_link(current_user, profile_user) do
-    import Ecto.Query
-    alias OGrupoDeEstudos.Study.TeacherStudentLink
-
-    OGrupoDeEstudos.Repo.one(
-      from(l in TeacherStudentLink,
-        where:
-          (l.teacher_id == ^profile_user.id and l.student_id == ^current_user.id) or
-            (l.teacher_id == ^current_user.id and l.student_id == ^profile_user.id)
-      )
-    )
+    Study.get_link_between(current_user.id, profile_user.id)
   end
 
   defp interpret_study_link(nil, current_user, profile_user) do

@@ -13,6 +13,8 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   use Phoenix.Component
   use OGrupoDeEstudosWeb, :verified_routes
 
+  alias OGrupoDeEstudosWeb.Helpers.NotificationRoutes
+
   import OGrupoDeEstudosWeb.UI.BackButton, only: [back_button: 1]
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.UserAvatar
@@ -26,6 +28,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   attr :notification_dropdown_enabled, :boolean, default: false
   attr :notification_dropdown_open, :boolean, default: false
   attr :notification_preview_groups, :list, default: []
+  attr :notification_targets, :map, default: %{steps: %{}, users: %{}}
   attr :pending_suggestions_count, :integer, default: 0
   attr :pending_study_count, :integer, default: 0
   attr :edit_action_enabled, :boolean, default: false
@@ -297,7 +300,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                   <% else %>
                     <.link
                       :for={notif <- @notification_preview_groups}
-                      navigate={notification_path(notif)}
+                      navigate={NotificationRoutes.path(notif, @notification_targets)}
                       class={[
                         "flex items-start gap-3 border-b border-ink-900/[0.06] px-4 py-3 text-left no-underline transition last:border-b-0 hover:bg-accent-orange/[0.06]",
                         !notif.read && "bg-accent-orange/[0.04]"
@@ -311,10 +314,10 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                           <span class="font-bold text-ink-900">{actors_label(notif)}</span>
                           <span>{action_text(notif)}</span>
                           <span
-                            :if={target_name(notif)}
+                            :if={NotificationRoutes.step_name(notif, @notification_targets)}
                             class="font-semibold text-accent-orange"
                           >
-                            {target_name(notif)}
+                            {NotificationRoutes.step_name(notif, @notification_targets)}
                           </span>
                         </p>
                         <p class="m-0 mt-1 text-[11px] text-ink-400">
@@ -524,58 +527,4 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
     </div>
     """
   end
-
-  defp notification_path(%{action: "followed_user", parent_type: "profile", parent_id: id}) do
-    profile_path(id)
-  end
-
-  defp notification_path(%{
-         action: "shared_note_updated",
-         target_type: "study_link",
-         target_id: id
-       }) do
-    ~p"/study/shared/#{id}"
-  end
-
-  defp notification_path(%{
-         action: "study_nudge",
-         target_type: "study_link",
-         target_id: id
-       }) do
-    ~p"/study/shared/#{id}"
-  end
-
-  defp notification_path(%{parent_type: "study_link"}) do
-    ~p"/study"
-  end
-
-  defp notification_path(%{parent_type: "step", parent_id: id}) do
-    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
-      nil -> ~p"/collection"
-      step -> ~p"/steps/#{step.code}"
-    end
-  end
-
-  defp notification_path(%{parent_type: "profile", parent_id: id}) do
-    profile_path(id)
-  end
-
-  defp notification_path(%{parent_type: "sequence"}), do: ~p"/sequence"
-  defp notification_path(_), do: ~p"/collection"
-
-  defp profile_path(id) do
-    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Accounts.User, id) do
-      nil -> ~p"/collection"
-      user -> ~p"/users/#{user.username}"
-    end
-  end
-
-  defp target_name(%{parent_type: "step", parent_id: id}) when not is_nil(id) do
-    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
-      nil -> nil
-      step -> step.name
-    end
-  end
-
-  defp target_name(_), do: nil
 end

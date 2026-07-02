@@ -6,6 +6,9 @@ defmodule OGrupoDeEstudos.Admin do
   Authorization is the responsibility of the Web layer (LiveViews/Plugs).
   """
 
+  import Ecto.Query, only: [from: 2]
+
+  alias OGrupoDeEstudos.Admin.ErrorLog
   alias OGrupoDeEstudos.Encyclopedia.{Category, Connection, Section, Step, StepLink, Subsection}
   alias OGrupoDeEstudos.Repo
 
@@ -134,4 +137,19 @@ defmodule OGrupoDeEstudos.Admin do
     utc_now = NaiveDateTime.utc_now()
     NaiveDateTime.truncate(utc_now, :second)
   end
+
+  @doc "Lists error logs, newest first. Accepts `limit:` and `offset:`."
+  def list_error_logs(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+    offset = Keyword.get(opts, :offset, 0)
+
+    from(e in ErrorLog, order_by: [desc: e.inserted_at], limit: ^limit, offset: ^offset)
+    |> Repo.all()
+  end
+
+  @doc "Returns an error log by id, or `nil`."
+  def get_error_log(id), do: Repo.get(ErrorLog, id)
+
+  @doc "Deletes every error log. Returns `{count, nil}`."
+  def clear_error_logs, do: Repo.delete_all(ErrorLog)
 end

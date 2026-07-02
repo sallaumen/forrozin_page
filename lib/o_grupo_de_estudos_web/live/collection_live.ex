@@ -544,13 +544,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("delete_comment", %{"id" => id, "type" => "step_comment"}, socket) do
-    user = socket.assigns.current_user
-    alias OGrupoDeEstudos.Engagement.Comments.StepComment
-    comment = OGrupoDeEstudos.Repo.get!(StepComment, id)
-
-    case Engagement.delete_step_comment(user, comment) do
-      {:ok, _} -> {:noreply, reload_expanded(socket)}
-      {:error, _} -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
+    with %{} = comment <- Engagement.get_step_comment(id),
+         {:ok, _} <- Engagement.delete_step_comment(socket.assigns.current_user, comment) do
+      {:noreply, reload_expanded(socket)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
     end
   end
 

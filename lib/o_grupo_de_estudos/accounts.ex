@@ -143,6 +143,17 @@ defmodule OGrupoDeEstudos.Accounts do
     end
   end
 
+  @doc "Batch-loads lightweight user summaries (id, username, name, avatar) by id."
+  def list_user_summaries([]), do: []
+
+  def list_user_summaries(ids) when is_list(ids) do
+    from(u in User,
+      where: u.id in ^ids,
+      select: %{id: u.id, username: u.username, name: u.name, avatar_path: u.avatar_path}
+    )
+    |> Repo.all()
+  end
+
   @doc "Returns a list of all usernames (for sitemap generation)."
   def list_all_usernames do
     from(u in User, select: u.username, order_by: u.username)

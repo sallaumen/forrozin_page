@@ -9,8 +9,7 @@ defmodule OGrupoDeEstudosWeb.Plugs.DeviceTracker do
 
   import Plug.Conn
 
-  alias OGrupoDeEstudos.Engagement.DeviceSession
-  alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Engagement
   alias OGrupoDeEstudosWeb.Tracking.ClientInfo
 
   def init(opts), do: opts
@@ -40,8 +39,6 @@ defmodule OGrupoDeEstudosWeb.Plugs.DeviceTracker do
   end
 
   defp insert_device_session(attrs) do
-    %DeviceSession{}
-    |> DeviceSession.changeset(attrs)
-    |> Repo.insert()
+    Engagement.track_device_session(attrs)
   end
 end

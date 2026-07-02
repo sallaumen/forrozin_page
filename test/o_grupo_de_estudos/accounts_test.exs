@@ -215,4 +215,21 @@ defmodule OGrupoDeEstudos.AccountsTest do
       assert reloaded.dark_mode == true
     end
   end
+
+  describe "list_user_summaries/1" do
+    test "returns id, username, name and avatar_path for the given ids" do
+      user = insert(:user, name: "Maria")
+      _other = insert(:user)
+
+      assert [summary] = Accounts.list_user_summaries([user.id])
+      assert summary.id == user.id
+      assert summary.username == user.username
+      assert summary.name == "Maria"
+      assert Map.has_key?(summary, :avatar_path)
+    end
+
+    test "returns an empty list for an empty list of ids" do
+      assert Accounts.list_user_summaries([]) == []
+    end
+  end
 end

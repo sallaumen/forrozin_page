@@ -316,4 +316,35 @@ defmodule OGrupoDeEstudos.StudyTest do
                MapSet.new([~D[2026-06-01], ~D[2026-06-15]])
     end
   end
+
+  describe "get_link_between/3" do
+    test "finds a link regardless of direction" do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      link = insert(:teacher_student_link, teacher: teacher, student: student)
+
+      assert Study.get_link_between(teacher.id, student.id).id == link.id
+      assert Study.get_link_between(student.id, teacher.id).id == link.id
+    end
+
+    test "filters by status" do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+
+      link =
+        insert(:teacher_student_link,
+          teacher: teacher,
+          student: student,
+          pending: true,
+          active: false
+        )
+
+      assert Study.get_link_between(teacher.id, student.id, status: :pending).id == link.id
+      assert Study.get_link_between(teacher.id, student.id, status: :active) == nil
+    end
+
+    test "returns nil when there is no link" do
+      assert Study.get_link_between(insert(:user).id, insert(:user).id) == nil
+    end
+  end
 end

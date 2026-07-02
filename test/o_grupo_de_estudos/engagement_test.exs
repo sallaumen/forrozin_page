@@ -1057,4 +1057,86 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert length(results) <= 3
     end
   end
+
+  describe "favorited_step_codes/1" do
+    test "returns codes of steps the user favorited" do
+      user = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "FAV1")
+      insert(:favorite, user: user, favoritable_type: "step", favoritable_id: step.id)
+
+      assert Engagement.favorited_step_codes(user.id) == ["FAV1"]
+    end
+
+    test "ignores favorites of other users and other types" do
+      user = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "FAV2")
+      insert(:favorite, favoritable_type: "step", favoritable_id: step.id)
+      insert(:favorite, user: user, favoritable_type: "sequence", favoritable_id: step.id)
+
+      assert Engagement.favorited_step_codes(user.id) == []
+    end
+  end
+
+  describe "unread_count/2" do
+    test "filters by action when given" do
+      user = insert(:user)
+      insert(:notification, user: user, action: "shared_note_updated")
+      insert(:notification, user: user, action: "liked_step")
+
+      assert Engagement.unread_count(user.id, action: "shared_note_updated") == 1
+      assert Engagement.unread_count(user.id) == 2
+    end
+  end
+
+  describe "notification_targets/1" do
+    test "batch-resolves step and profile parents" do
+      section = insert(:section)
+      step = insert(:step, section: section, code: "NT1", name: "Passo NT")
+      profile = insert(:user)
+
+      notifications = [
+        build(:notification, parent_type: "step", parent_id: step.id),
+        build(:notification, parent_type: "profile", parent_id: profile.id),
+        build(:notification, parent_type: "sequence", parent_id: Ecto.UUID.generate())
+      ]
+
+      targets = Engagement.notification_targets(notifications)
+
+      assert targets.steps == %{step.id => %{code: "NT1", name: "Passo NT"}}
+      assert %{username: _} = targets.users[profile.id]
+    end
+
+    test "returns empty maps when nothing to resolve" do
+      assert Engagement.notification_targets([]) == %{steps: %{}, users: %{}}
+    end
+  end
+
+  describe "get_step_comment/1 and get_sequence_comment/1" do
+    test "returns the comment or nil" do
+      comment = insert(:step_comment)
+      assert Engagement.get_step_comment(comment.id).id == comment.id
+      assert Engagement.get_step_comment(Ecto.UUID.generate()) == nil
+
+      seq_comment = insert(:sequence_comment)
+      assert Engagement.get_sequence_comment(seq_comment.id).id == seq_comment.id
+      assert Engagement.get_sequence_comment(Ecto.UUID.generate()) == nil
+    end
+  end
+
+  describe "track_device_session/1" do
+    test "persists a device session" do
+      user = insert(:user)
+
+      assert {:ok, session} =
+               Engagement.track_device_session(%{
+                 user_id: user.id,
+                 device_type: "mobile",
+                 user_agent: "test-agent"
+               })
+
+      assert session.user_id == user.id
+    end
+  end
 end

@@ -35,7 +35,7 @@
       <.link
         :for={notif <- @notifications}
         role="listitem"
-        navigate={notification_path(notif)}
+        navigate={NotificationRoutes.path(notif, @notification_targets)}
         class={[
           "flex items-start gap-3 px-4 py-3 transition-colors no-underline cursor-pointer hover:bg-ink-50",
           !notif.read && "bg-gold-400/8"
@@ -64,10 +64,10 @@
             </span>
             <span class="text-ink-600">{action_text(notif)}</span>
             <span
-              :if={target_name(notif)}
+              :if={target_name(notif, @notification_targets)}
               class="font-semibold text-accent-orange"
             >
-              {target_name(notif)}
+              {target_name(notif, @notification_targets)}
             </span>
           </p>
           <p class="text-xs text-ink-400 mt-0.5 m-0">{time_ago(notif.latest_at)}</p>

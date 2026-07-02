@@ -56,6 +56,7 @@ defmodule OGrupoDeEstudosWeb.NotificationHandlers do
 
         raw = Engagement.list_notifications(user.id, limit: 8)
         grouped = Grouper.group(raw)
+        targets = Engagement.notification_targets(grouped)
 
         Engagement.mark_all_read(user)
 
@@ -68,6 +69,7 @@ defmodule OGrupoDeEstudosWeb.NotificationHandlers do
         assign(socket,
           notification_dropdown_open: true,
           notification_preview_groups: grouped,
+          notification_targets: targets,
           notification_count: 0
         )
       end
