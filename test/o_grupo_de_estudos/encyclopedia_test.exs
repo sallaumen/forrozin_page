@@ -78,8 +78,8 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
 
     test "does not include draft steps" do
       section = insert(:section)
-      insert(:step, section: section, code: "BF", name: "Base frontal", status: "published")
-      insert(:step, section: section, code: "BQ", name: "Base quadrada", status: "draft")
+      insert(:step, section: section, code: "BF", name: "Base frontal", status: :published)
+      insert(:step, section: section, code: "BQ", name: "Base quadrada", status: :draft)
 
       [result] = Encyclopedia.list_sections_with_steps()
 

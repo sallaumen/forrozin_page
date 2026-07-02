@@ -27,13 +27,13 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
     end
 
     test "returns nil for draft steps" do
-      insert(:step, code: "BQ", name: "Base quadrada", status: "draft")
+      insert(:step, code: "BQ", name: "Base quadrada", status: :draft)
 
       assert nil == StepQuery.get_by(code: "BQ", public_only: true)
     end
 
     test "returns step when public" do
-      insert(:step, code: "BF", name: "Base frontal", wip: false, status: "published")
+      insert(:step, code: "BF", name: "Base frontal", wip: false, status: :published)
 
       assert %{code: "BF"} = StepQuery.get_by(code: "BF", public_only: true)
     end
@@ -71,10 +71,10 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
 
   describe "list_by/1 with :status" do
     test "filters by status" do
-      insert(:step, code: "BF", name: "Base frontal", status: "published")
-      insert(:step, code: "BQ", name: "Base quadrada", status: "draft")
+      insert(:step, code: "BF", name: "Base frontal", status: :published)
+      insert(:step, code: "BQ", name: "Base quadrada", status: :draft)
 
-      results = StepQuery.list_by(status: "published")
+      results = StepQuery.list_by(status: :published)
       codes = Enum.map(results, & &1.code)
 
       assert "BF" in codes
@@ -108,16 +108,16 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
 
   describe "list_by/1 with :public_only" do
     test "excludes wip and draft steps" do
-      insert(:step, code: "BF", name: "Base frontal", wip: false, status: "published")
+      insert(:step, code: "BF", name: "Base frontal", wip: false, status: :published)
 
       insert(:step,
         code: "HF-SRS",
         name: "Sacada Rotativa Suspensa",
         wip: true,
-        status: "published"
+        status: :published
       )
 
-      insert(:step, code: "BQ", name: "Base quadrada", wip: false, status: "draft")
+      insert(:step, code: "BQ", name: "Base quadrada", wip: false, status: :draft)
 
       results = StepQuery.list_by(public_only: true)
       codes = Enum.map(results, & &1.code)
@@ -248,8 +248,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
 
     test "counts only public steps with :public_only" do
       initial = StepQuery.count_by(public_only: true)
-      insert(:step, code: "BF-CNT2", wip: false, status: "published")
-      insert(:step, code: "HF-CNT2", wip: true, status: "published")
+      insert(:step, code: "BF-CNT2", wip: false, status: :published)
+      insert(:step, code: "HF-CNT2", wip: true, status: :published)
 
       assert StepQuery.count_by(public_only: true) == initial + 1
     end

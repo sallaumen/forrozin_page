@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepTest do
       section = insert(:section)
       attrs = %{code: "BF", name: "Base frontal", position: 0, section_id: section.id}
       changeset = Step.changeset(%Step{}, attrs)
-      assert Ecto.Changeset.get_field(changeset, :status) == "published"
+      assert Ecto.Changeset.get_field(changeset, :status) == :published
     end
 
     test "default wip is false" do

@@ -65,7 +65,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
           name: "Inversao",
           approved: true,
           wip: false,
-          status: "published"
+          status: :published
         )
 
       {:ok, pending_link} = Study.accept_invite(student, teacher.invite_slug)
@@ -104,7 +104,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
           name: "Sacada circular",
           approved: true,
           wip: false,
-          status: "published"
+          status: :published
         )
 
       {:ok, pending_link} = Study.accept_invite(student, teacher.invite_slug)
@@ -140,7 +140,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
           name: "Base frontal",
           approved: true,
           wip: false,
-          status: "published"
+          status: :published
         )
 
       {:ok, pending_link} = Study.accept_invite(student, teacher.invite_slug)

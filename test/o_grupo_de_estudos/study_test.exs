@@ -67,7 +67,7 @@ defmodule OGrupoDeEstudos.StudyTest do
         name: "Sacada simples",
         approved: true,
         wip: false,
-        status: "published"
+        status: :published
       )
 
       assert [%{code: "SC"} | _] = Study.search_related_steps("sac")

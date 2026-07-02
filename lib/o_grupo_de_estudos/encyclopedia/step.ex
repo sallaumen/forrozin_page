@@ -36,7 +36,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
     field :image_path, :string
     field :position, :integer
     field :wip, :boolean, default: false
-    field :status, :string, default: "published"
+    field :status, Ecto.Enum, values: [:published, :draft], default: :published
     field :highlighted, :boolean, default: false
     field :approved, :boolean, default: false
     field :like_count, :integer, default: 0
@@ -69,7 +69,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.Step do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_length(:code, min: 1, max: 20)
-    |> validate_inclusion(:status, ["published", "draft"])
     |> unique_constraint(:code)
     |> foreign_key_constraint(:category_id)
     |> foreign_key_constraint(:section_id)

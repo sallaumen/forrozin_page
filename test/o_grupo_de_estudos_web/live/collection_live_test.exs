@@ -83,8 +83,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
 
     test "does not display draft steps in drilldown", %{conn: conn} do
       section = insert(:section, code: "TEST2")
-      insert(:step, section: section, name: "Publicado", status: "published")
-      insert(:step, section: section, name: "Rascunho", status: "draft")
+      insert(:step, section: section, name: "Publicado", status: :published)
+      insert(:step, section: section, name: "Rascunho", status: :draft)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       html = render_click(lv, "enter_section", %{"section_id" => section.id})
       assert html =~ "Publicado"
