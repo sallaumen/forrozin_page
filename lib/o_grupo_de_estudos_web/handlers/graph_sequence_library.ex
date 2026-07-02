@@ -123,8 +123,16 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphSequenceLibrary do
         # senão favoritar um id arbitrário vazaria sequência privada na biblioteca.
         if Sequences.get_sequence_for_viewer(seq_id, user_id, socket.assigns.is_admin) do
           case Engagement.toggle_favorite(user_id, "sequence", seq_id) do
-            {:ok, _} -> {:noreply, assign_sequence_library(socket)}
-            {:error, _changeset} -> {:noreply, socket}
+            {:ok, _} ->
+              {:noreply, assign_sequence_library(socket)}
+
+            {:error, reason} ->
+              {:noreply,
+               put_flash(
+                 socket,
+                 :error,
+                 OGrupoDeEstudosWeb.Helpers.EngagementMessages.favorite_error(reason)
+               )}
           end
         else
           {:noreply, socket}

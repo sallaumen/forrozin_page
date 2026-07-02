@@ -212,8 +212,16 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   def handle_event("save_teacher_note", %{"note" => note}, socket) do
     # Usa o link montado (verificado no mount), nunca um link-id vindo do cliente.
     case Study.update_teacher_note(socket.assigns.current_user, socket.assigns.link.id, note) do
-      {:ok, _link} -> {:noreply, put_flash(socket, :info, "Anotacao salva.")}
-      {:error, _} -> {:noreply, socket}
+      {:ok, _link} ->
+        {:noreply, put_flash(socket, :info, "Anotacao salva.")}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           OGrupoDeEstudosWeb.Helpers.EngagementMessages.teacher_note_error(reason)
+         )}
     end
   end
 

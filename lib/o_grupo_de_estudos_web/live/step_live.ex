@@ -499,8 +499,16 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     user = socket.assigns.current_user
 
     case Engagement.toggle_like(user.id, type, id) do
-      {:ok, _} -> {:noreply, reload_step_comments(socket)}
-      {:error, _} -> {:noreply, socket}
+      {:ok, _} ->
+        {:noreply, reload_step_comments(socket)}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           OGrupoDeEstudosWeb.Helpers.EngagementMessages.like_error(reason)
+         )}
     end
   end
 

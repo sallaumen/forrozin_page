@@ -521,8 +521,16 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     user = socket.assigns.current_user
 
     case Engagement.toggle_like(user.id, type, id) do
-      {:ok, _} -> {:noreply, reload_expanded(socket)}
-      {:error, _} -> {:noreply, socket}
+      {:ok, _} ->
+        {:noreply, reload_expanded(socket)}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           OGrupoDeEstudosWeb.Helpers.EngagementMessages.like_error(reason)
+         )}
     end
   end
 
@@ -593,8 +601,16 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     user = socket.assigns.current_user
 
     case Engagement.toggle_favorite(user.id, "step", step_id) do
-      {:ok, _} -> {:noreply, sync_drawer_engagement(socket, step_id)}
-      {:error, _} -> {:noreply, socket}
+      {:ok, _} ->
+        {:noreply, sync_drawer_engagement(socket, step_id)}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           OGrupoDeEstudosWeb.Helpers.EngagementMessages.favorite_error(reason)
+         )}
     end
   end
 

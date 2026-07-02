@@ -203,4 +203,18 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver mais")
     end
   end
+  describe "save_teacher_note — erro visível" do
+    test "aluno não salva anotação do professor e vê o motivo", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      link = insert(:teacher_student_link, teacher: teacher, student: student)
+
+      {:ok, lv, _html} = live(log_in_user(conn, student), ~p"/study/shared/#{link.id}")
+
+      html = render_submit(lv, "save_teacher_note", %{"note" => "tentativa"})
+
+      assert html =~ "Sem permissão para editar esta anotação."
+    end
+  end
+
 end
