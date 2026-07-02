@@ -339,8 +339,16 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
     user = socket.assigns.current_user
 
     case Engagement.toggle_like(user.id, type, id) do
-      {:ok, _} -> {:noreply, reload_seq_expanded_likes(socket)}
-      {:error, _} -> {:noreply, socket}
+      {:ok, _} ->
+        {:noreply, reload_seq_expanded_likes(socket)}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           OGrupoDeEstudosWeb.Helpers.EngagementMessages.like_error(reason)
+         )}
     end
   end
 

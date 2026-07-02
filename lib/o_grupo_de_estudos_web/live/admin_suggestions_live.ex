@@ -73,8 +73,13 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
              |> put_flash(:info, "Sugestão aprovada.")
              |> load_suggestions(socket.assigns.filter)}
 
-          {:error, _reason} ->
-            {:noreply, put_flash(socket, :error, "Erro ao aprovar sugestão.")}
+          {:error, reason} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               OGrupoDeEstudosWeb.Helpers.EngagementMessages.suggestion_review_error(reason)
+             )}
         end
     end
   end

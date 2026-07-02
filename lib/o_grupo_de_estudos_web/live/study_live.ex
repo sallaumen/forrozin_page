@@ -280,8 +280,16 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   def handle_event("save_teacher_note", %{"link-id" => link_id, "note" => note}, socket) do
     case Study.update_teacher_note(socket.assigns.current_user, link_id, note) do
-      {:ok, _link} -> {:noreply, put_flash(socket, :info, "Anotacao salva.")}
-      {:error, _} -> {:noreply, socket}
+      {:ok, _link} ->
+        {:noreply, put_flash(socket, :info, "Anotacao salva.")}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           OGrupoDeEstudosWeb.Helpers.EngagementMessages.teacher_note_error(reason)
+         )}
     end
   end
 

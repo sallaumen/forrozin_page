@@ -219,8 +219,16 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   def handle_event("toggle_comment_like", %{"type" => type, "id" => id}, socket) do
     case Engagement.toggle_like(socket.assigns.current_user.id, type, id) do
-      {:ok, _} -> {:noreply, StepDrawer.reload_comments(socket)}
-      {:error, _} -> {:noreply, socket}
+      {:ok, _} ->
+        {:noreply, StepDrawer.reload_comments(socket)}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           OGrupoDeEstudosWeb.Helpers.EngagementMessages.like_error(reason)
+         )}
     end
   end
 
