@@ -203,6 +203,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert has_element?(lv, "[phx-click='toggle_note_expansion']", "ver mais")
     end
   end
+
   describe "save_teacher_note — erro visível" do
     test "aluno não salva anotação do professor e vê o motivo", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
@@ -216,5 +217,4 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert html =~ "Sem permissão para editar esta anotação."
     end
   end
-
 end
