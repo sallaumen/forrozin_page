@@ -168,6 +168,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 >
                   Erros
                 </.link>
+                <.link
+                  href={~p"/admin/dashboard"}
+                  class="flex items-center rounded px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 no-underline"
+                >
+                  Dashboard
+                </.link>
               </div>
             </details>
           <% end %>
@@ -472,6 +478,12 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                     class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
                   >
                     Erros
+                  </.link>
+                  <.link
+                    href={~p"/admin/dashboard"}
+                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                  >
+                    Dashboard
                   </.link>
                 </div>
               </details>
