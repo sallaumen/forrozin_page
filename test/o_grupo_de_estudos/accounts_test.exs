@@ -232,4 +232,14 @@ defmodule OGrupoDeEstudos.AccountsTest do
       assert Accounts.list_user_summaries([]) == []
     end
   end
+
+  describe "list_admin_ids/0" do
+    test "returns only admin ids" do
+      admin = insert(:admin)
+      _user = insert(:user)
+
+      assert admin.id in Accounts.list_admin_ids()
+      refute _user.id in Accounts.list_admin_ids()
+    end
+  end
 end

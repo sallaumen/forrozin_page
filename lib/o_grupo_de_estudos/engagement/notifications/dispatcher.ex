@@ -8,11 +8,12 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   Admin users receive a copy of ALL notifications.
   """
 
-  import Ecto.Query
-
-  alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Accounts
+  alias OGrupoDeEstudos.Encyclopedia
+  alias OGrupoDeEstudos.Engagement.Comments
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Sequences
   alias Phoenix.PubSub
 
   @pubsub OGrupoDeEstudos.PubSub
@@ -194,62 +195,45 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   end
 
   defp determine_like_context(actor_id, "step_comment", comment_id) do
-    alias OGrupoDeEstudos.Engagement.Comments.StepComment
-    comment = Repo.get(StepComment, comment_id)
-
-    recipients =
-      if comment && comment.user_id != actor_id && is_nil(comment.deleted_at),
-        do: [comment.user_id],
-        else: []
-
+    comment = Comments.get_step_comment(comment_id)
+    recipients = comment_author_recipients(comment, :user_id, actor_id)
     {recipients, "liked_comment", "step_comment", "step", comment && comment.step_id}
   end
 
   defp determine_like_context(actor_id, "sequence_comment", comment_id) do
-    alias OGrupoDeEstudos.Engagement.Comments.SequenceComment
-    comment = Repo.get(SequenceComment, comment_id)
-
-    recipients =
-      if comment && comment.user_id != actor_id && is_nil(comment.deleted_at),
-        do: [comment.user_id],
-        else: []
-
+    comment = Comments.get_sequence_comment(comment_id)
+    recipients = comment_author_recipients(comment, :user_id, actor_id)
     {recipients, "liked_comment", "sequence_comment", "sequence", comment && comment.sequence_id}
   end
 
   defp determine_like_context(actor_id, "profile_comment", comment_id) do
-    alias OGrupoDeEstudos.Engagement.ProfileComment
-    comment = Repo.get(ProfileComment, comment_id)
-
-    recipients =
-      if comment && comment.author_id != actor_id && is_nil(comment.deleted_at),
-        do: [comment.author_id],
-        else: []
-
+    comment = Comments.get_profile_comment(comment_id)
+    recipients = comment_author_recipients(comment, :author_id, actor_id)
     {recipients, "liked_comment", "profile_comment", "profile", comment && comment.profile_id}
   end
 
   defp determine_like_context(actor_id, "step", step_id) do
-    alias OGrupoDeEstudos.Encyclopedia.Step
-    step = Repo.get(Step, step_id)
-
     # Notify step creator if it's a community step
     recipients =
-      if step && step.suggested_by_id && step.suggested_by_id != actor_id,
-        do: [step.suggested_by_id],
-        else: []
+      case Encyclopedia.steps_by_ids([step_id]) do
+        %{^step_id => %{suggested_by_id: suggester_id}}
+        when not is_nil(suggester_id) and suggester_id != actor_id ->
+          [suggester_id]
+
+        _ ->
+          []
+      end
 
     {recipients, "liked_step", "step", "step", step_id}
   end
 
   defp determine_like_context(actor_id, "sequence", sequence_id) do
-    alias OGrupoDeEstudos.Sequences.Sequence
-    sequence = Repo.get(Sequence, sequence_id)
-
     recipients =
-      if sequence && sequence.user_id != actor_id,
-        do: [sequence.user_id],
-        else: []
+      case Sequences.sequence_owner_id(sequence_id) do
+        nil -> []
+        ^actor_id -> []
+        owner_id -> [owner_id]
+      end
 
     {recipients, "liked_sequence", "sequence", "sequence", sequence_id}
   end
@@ -261,16 +245,20 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   # ── Private: admin broadcast ───────────────────────────
 
   defp add_admin_recipients(recipients, actor_id) do
-    admin_ids =
-      from(u in User, where: u.role == "admin", select: u.id)
-      |> Repo.all()
-
     # Add admins that aren't already recipients and aren't the actor
     extra_admins =
-      admin_ids
+      Accounts.list_admin_ids()
       |> Enum.reject(fn id -> id == actor_id || id in recipients end)
 
     Enum.uniq(recipients ++ extra_admins)
+  end
+
+  defp comment_author_recipients(nil, _author_field, _actor_id), do: []
+
+  defp comment_author_recipients(comment, author_field, actor_id) do
+    author_id = Map.get(comment, author_field)
+
+    if author_id != actor_id and is_nil(comment.deleted_at), do: [author_id], else: []
   end
 
   # ── Private: insert + broadcast ────────────────────────
@@ -308,11 +296,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   The suggestion author is excluded from receiving the notification.
   """
   def notify_suggestion(:suggestion_created, suggestion) do
-    admin_ids =
-      from(u in User, where: u.role == "admin", select: u.id)
-      |> Repo.all()
-
-    recipients = admin_ids -- [suggestion.user_id]
+    recipients = Accounts.list_admin_ids() -- [suggestion.user_id]
 
     insert_and_broadcast(recipients, fn user_id ->
       %{

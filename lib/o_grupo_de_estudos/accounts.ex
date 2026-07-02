@@ -3,8 +3,7 @@ defmodule OGrupoDeEstudos.Accounts do
   Action context responsible for users and authentication.
   """
 
-  alias OGrupoDeEstudos.Accounts.User
-  alias OGrupoDeEstudos.Accounts.UserQuery
+  alias OGrupoDeEstudos.Accounts.{AdminIdsCache, User, UserQuery}
   alias OGrupoDeEstudos.Metadata
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workers.{SendConfirmationEmail, SendPasswordResetEmail}
@@ -133,6 +132,9 @@ defmodule OGrupoDeEstudos.Accounts do
   def search_teachers(term, opts \\ []) when is_binary(term) do
     UserQuery.search_teachers(term, opts)
   end
+
+  @doc "Admin user ids (cached node-locally; see AdminIdsCache)."
+  defdelegate list_admin_ids, to: AdminIdsCache, as: :get
 
   @doc "Batch-loads lightweight user summaries (id, username, name, avatar) by id."
   defdelegate list_user_summaries(ids), to: UserQuery, as: :summaries_by_ids

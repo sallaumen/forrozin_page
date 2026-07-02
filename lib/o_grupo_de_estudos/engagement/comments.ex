@@ -193,6 +193,9 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   # ── Helpers ───────────────────────────────────────────────────────────
 
+  @doc "Returns a profile comment by id, or `nil`."
+  def get_profile_comment(id), do: Repo.get(ProfileComment, id)
+
   @doc "Returns a step comment by id, or `nil`."
   def get_step_comment(id), do: Repo.get(StepComment, id)
 

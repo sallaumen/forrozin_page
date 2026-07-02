@@ -42,6 +42,13 @@ defmodule OGrupoDeEstudos.Accounts.UserQuery do
     |> Repo.all()
   end
 
+  @doc "Ids of every admin user."
+  @spec admin_ids() :: [Ecto.UUID.t()]
+  def admin_ids do
+    from(u in User, where: u.role == "admin", select: u.id)
+    |> Repo.all()
+  end
+
   @doc "Every username, ordered (sitemap generation)."
   @spec list_usernames() :: [String.t()]
   def list_usernames do
