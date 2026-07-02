@@ -28,7 +28,7 @@ defmodule OGrupoDeEstudos.Factory do
       name: sequence(:name, &"Usuário Teste #{&1}"),
       email: sequence(:email, &"usuario#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
-      role: "user",
+      role: :user,
       is_teacher: false,
       invite_slug: sequence(:invite_slug, &"prof-usuario#{&1}"),
       country: "BR",
@@ -44,7 +44,7 @@ defmodule OGrupoDeEstudos.Factory do
       name: sequence(:name, &"Admin Teste #{&1}"),
       email: sequence(:email, &"admin#{&1}@example.com"),
       password_hash: Argon2.hash_pwd_salt("senhateste123"),
-      role: "admin",
+      role: :admin,
       is_teacher: true,
       invite_slug: sequence(:admin_invite_slug, &"prof-admin#{&1}"),
       country: "BR",
@@ -197,7 +197,7 @@ defmodule OGrupoDeEstudos.Factory do
 
   def error_log_factory do
     %ErrorLog{
-      level: "error",
+      level: :error,
       message: sequence(:error_message, &"Erro de teste #{&1}"),
       source: "test",
       metadata: %{}

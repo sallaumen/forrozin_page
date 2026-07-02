@@ -6,7 +6,7 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSession do
   @foreign_key_type :binary_id
 
   schema "device_sessions" do
-    field :device_type, :string
+    field :device_type, Ecto.Enum, values: [:mobile, :desktop, :tablet]
     field :browser, :string
     field :is_pwa, :boolean, default: false
     field :user_agent, :string
@@ -18,6 +18,5 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSession do
     session
     |> cast(attrs, [:device_type, :browser, :is_pwa, :user_agent, :user_id])
     |> validate_required([:device_type, :user_id])
-    |> validate_inclusion(:device_type, ~w(mobile desktop tablet))
   end
 end

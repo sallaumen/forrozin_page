@@ -77,17 +77,22 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
 
     test "default role is user" do
       changeset = User.registration_changeset(%User{}, @valid_attrs)
-      assert get_field(changeset, :role) == "user"
+      assert get_field(changeset, :role) == :user
     end
 
-    test "accepts admin role" do
+    test "ignores role sent in registration params (no self-promotion)" do
       changeset = User.registration_changeset(%User{}, Map.put(@valid_attrs, :role, "admin"))
-      assert changeset.valid?
+      assert get_field(changeset, :role) == :user
     end
 
-    test "rejects invalid role" do
-      changeset = User.registration_changeset(%User{}, Map.put(@valid_attrs, :role, "superadmin"))
-      assert errors_on(changeset).role != []
+    test "ignores confirmation_token sent in registration params" do
+      changeset =
+        User.registration_changeset(
+          %User{},
+          Map.put(@valid_attrs, :confirmation_token, "forjado")
+        )
+
+      assert get_field(changeset, :confirmation_token) != "forjado"
     end
 
     test "accepts is_teacher flag" do

@@ -22,7 +22,7 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSessionTest do
         })
         |> Repo.insert()
 
-      assert session.device_type == "mobile"
+      assert session.device_type == :mobile
       assert session.browser == "Chrome"
       refute session.is_pwa
       assert session.user_agent == "Mozilla/5.0 (Linux; Android 10)"
@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSessionTest do
         })
         |> Repo.insert()
 
-      assert session.device_type == "desktop"
+      assert session.device_type == :desktop
       assert session.is_pwa
     end
 
@@ -57,7 +57,7 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSessionTest do
         })
         |> Repo.insert()
 
-      assert session.device_type == "tablet"
+      assert session.device_type == :tablet
     end
 
     test "browser and user_agent are optional" do

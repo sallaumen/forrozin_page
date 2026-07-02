@@ -231,6 +231,15 @@ defmodule OGrupoDeEstudos.Admin.Backup do
     dt
   end
 
+  # Ecto.Enum (e outros tipos parametrizados): o insert_all faz dump pelo
+  # tipo do schema, que espera o atom — cast valida e converte a string.
+  defp deserialize_value(v, {:parameterized, _} = type) when is_binary(v) do
+    case Ecto.Type.cast(type, v) do
+      {:ok, cast} -> cast
+      :error -> v
+    end
+  end
+
   defp deserialize_value(v, _type), do: v
 
   defp filename do

@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudos.Accounts.UserQuery do
   @doc "Ids of every admin user."
   @spec admin_ids() :: [Ecto.UUID.t()]
   def admin_ids do
-    from(u in User, where: u.role == "admin", select: u.id)
+    from(u in User, where: u.role == :admin, select: u.id)
     |> Repo.all()
   end
 

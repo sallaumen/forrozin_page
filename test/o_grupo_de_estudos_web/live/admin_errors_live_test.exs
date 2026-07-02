@@ -25,7 +25,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLiveTest do
   describe "error list (streams)" do
     setup %{conn: conn}, do: %{conn: log_in_user(conn, insert(:admin))}
 
-    defp log_error(msg), do: Repo.insert!(%ErrorLog{level: "error", message: msg})
+    defp log_error(msg), do: Repo.insert!(%ErrorLog{level: :error, message: msg})
 
     test "renders logged errors and the loaded count", %{conn: conn} do
       log_error("boom-alpha")
