@@ -4,7 +4,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   alias OGrupoDeEstudos.{Accounts, Admin}
 
   import OGrupoDeEstudosWeb.UI.TopNav
-  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
 
   @page_size 50
 

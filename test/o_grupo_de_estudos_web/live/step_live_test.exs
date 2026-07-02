@@ -311,6 +311,20 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
       assert html =~ "Meu Passo v2"
     end
 
+    test "flash de erro de handle_event fica visivel no template", %{conn: conn} do
+      user = insert(:user)
+      section = insert(:section)
+      insert(:step, section: section, code: "FL1", name: "Passo Flash Vivo")
+      other_comment = insert(:step_comment)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/steps/FL1")
+
+      html =
+        render_click(lv, "delete_comment", %{"id" => other_comment.id, "type" => "step_comment"})
+
+      assert html =~ "Sem permissão."
+    end
+
     test "non-submitter cannot delete someone else's link via crafted event", %{conn: conn} do
       user = insert(:user)
       section = insert(:section)

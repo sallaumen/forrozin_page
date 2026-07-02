@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.UI.CommentThread
-  import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
   import OGrupoDeEstudosWeb.UI.SocialBubble
 
   use OGrupoDeEstudosWeb.NotificationHandlers
