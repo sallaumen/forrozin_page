@@ -103,13 +103,13 @@ defmodule OGrupoDeEstudos.Sequences.SequenceQueryTest do
     test "preloads sequence_steps with step" do
       user = insert(:user)
       sequence = insert(:sequence, user: user)
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "SQBF", name: "Base Frontal")
       insert(:sequence_step, sequence: sequence, step: step, position: 1)
 
       result = SequenceQuery.get_by(id: sequence.id, preload: [sequence_steps: :step])
 
       assert [_] = result.sequence_steps
-      assert hd(result.sequence_steps).step.code == "BF"
+      assert hd(result.sequence_steps).step.code == "SQBF"
     end
   end
 end

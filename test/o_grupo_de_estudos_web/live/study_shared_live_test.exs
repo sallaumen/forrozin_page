@@ -61,7 +61,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
 
       step =
         insert(:step,
-          code: "IV",
+          code: "SSIV",
           name: "Inversao",
           approved: true,
           wip: false,
@@ -100,7 +100,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
 
       step =
         insert(:step,
-          code: "SC",
+          code: "SSSC",
           name: "Sacada circular",
           approved: true,
           wip: false,
@@ -136,7 +136,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
 
       step =
         insert(:step,
-          code: "BF",
+          code: "SSBF",
           name: "Base frontal",
           approved: true,
           wip: false,

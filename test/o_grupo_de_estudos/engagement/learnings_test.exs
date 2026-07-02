@@ -99,14 +99,14 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
   describe "learned_step_codes/1" do
     test "returns the codes of the user's learned steps" do
       user = insert(:user)
-      bf = insert(:step, code: "BF")
-      sc = insert(:step, code: "SC")
+      bf = insert(:step, code: "LNBF")
+      sc = insert(:step, code: "LNSC")
       _other = insert(:step, code: "XX")
 
       Engagement.toggle_learned(user.id, bf.id)
       Engagement.toggle_learned(user.id, sc.id)
 
-      assert Enum.sort(Engagement.learned_step_codes(user.id)) == ["BF", "SC"]
+      assert Enum.sort(Engagement.learned_step_codes(user.id)) == ["LNBF", "LNSC"]
     end
 
     test "returns [] for a user with no learned steps" do
@@ -115,15 +115,15 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
 
     test "excludes soft-deleted steps from codes, list and count" do
       user = insert(:user)
-      bf = insert(:step, code: "BF")
-      sc = insert(:step, code: "SC")
+      bf = insert(:step, code: "LNBF")
+      sc = insert(:step, code: "LNSC")
       Engagement.toggle_learned(user.id, bf.id)
       Engagement.toggle_learned(user.id, sc.id)
 
       bf |> Ecto.Changeset.change(deleted_at: ~U[2026-01-01 00:00:00Z]) |> Repo.update!()
 
-      assert Engagement.learned_step_codes(user.id) == ["SC"]
-      assert Enum.map(Engagement.list_learned_steps(user.id), & &1.code) == ["SC"]
+      assert Engagement.learned_step_codes(user.id) == ["LNSC"]
+      assert Enum.map(Engagement.list_learned_steps(user.id), & &1.code) == ["LNSC"]
       assert Engagement.count_user_learned(user.id) == 1
     end
   end
@@ -172,13 +172,13 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
   describe "list_learned_steps/1" do
     test "returns the learned Step records, most recently learned first" do
       user = insert(:user)
-      bf = insert(:step, code: "BF")
-      sc = insert(:step, code: "SC")
+      bf = insert(:step, code: "LNBF")
+      sc = insert(:step, code: "LNSC")
 
       insert(:learned_step, user: user, step: bf, inserted_at: ~N[2026-01-01 10:00:00])
       insert(:learned_step, user: user, step: sc, inserted_at: ~N[2026-01-01 11:00:00])
 
-      assert Enum.map(Engagement.list_learned_steps(user.id), & &1.code) == ["SC", "BF"]
+      assert Enum.map(Engagement.list_learned_steps(user.id), & &1.code) == ["LNSC", "LNBF"]
     end
   end
 end

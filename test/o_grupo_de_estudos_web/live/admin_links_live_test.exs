@@ -26,7 +26,7 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
 
   describe "admin sees pending links" do
     test "shows pending links with approve and delete buttons", %{conn: conn} do
-      step = insert(:step, code: "BF", name: "Base Frontal")
+      step = insert(:step, code: "ALBF", name: "Base Frontal")
       submitter = insert(:user)
 
       _pending =
@@ -34,19 +34,19 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
           step: step,
           submitted_by: submitter,
           approved: false,
-          title: "Vídeo do BF"
+          title: "Vídeo do ALBF"
         )
 
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/admin/links")
 
-      assert html =~ "Vídeo do BF"
-      assert html =~ "BF"
+      assert html =~ "Vídeo do ALBF"
+      assert html =~ "ALBF"
       assert html =~ "Aprovar"
       assert html =~ "Deletar"
     end
 
     test "does not show approved links in pending section", %{conn: conn} do
-      step = insert(:step, code: "SC", name: "Saidinha")
+      step = insert(:step, code: "ALSC", name: "Saidinha")
       submitter = insert(:user)
 
       insert(:step_link,
@@ -66,11 +66,11 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
 
   describe "admin approves a link" do
     test "approves a pending link and moves it to approved section", %{conn: conn} do
-      step = insert(:step, code: "TR", name: "Trava")
+      step = insert(:step, code: "ALTR", name: "Trava")
       submitter = insert(:user)
 
       pending =
-        insert(:step_link, step: step, submitted_by: submitter, approved: false, title: "Link TR")
+        insert(:step_link, step: step, submitted_by: submitter, approved: false, title: "Link ALTR")
 
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/admin/links")
 
@@ -86,43 +86,43 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
 
   describe "admin deletes a link" do
     test "soft-deletes a pending link and removes it from view", %{conn: conn} do
-      step = insert(:step, code: "GP", name: "Giro Paulista")
+      step = insert(:step, code: "ALGP", name: "Giro Paulista")
       submitter = insert(:user)
 
       pending =
-        insert(:step_link, step: step, submitted_by: submitter, approved: false, title: "Link GP")
+        insert(:step_link, step: step, submitted_by: submitter, approved: false, title: "Link ALGP")
 
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/admin/links")
 
       html_before = render(lv)
-      assert html_before =~ "Link GP"
+      assert html_before =~ "Link ALGP"
 
       lv
       |> element(~s([phx-click="delete_link"][phx-value-id="#{pending.id}"]))
       |> render_click()
 
       html_after = render(lv)
-      refute html_after =~ "Link GP"
+      refute html_after =~ "Link ALGP"
     end
 
     test "soft-deletes an approved link", %{conn: conn} do
-      step = insert(:step, code: "IV", name: "Inversão")
+      step = insert(:step, code: "ALIV", name: "Inversão")
       submitter = insert(:user)
 
       approved =
-        insert(:step_link, step: step, submitted_by: submitter, approved: true, title: "Link IV")
+        insert(:step_link, step: step, submitted_by: submitter, approved: true, title: "Link ALIV")
 
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/admin/links")
 
       html_before = render(lv)
-      assert html_before =~ "Link IV"
+      assert html_before =~ "Link ALIV"
 
       lv
       |> element(~s([phx-click="delete_link"][phx-value-id="#{approved.id}"]))
       |> render_click()
 
       html_after = render(lv)
-      refute html_after =~ "Link IV"
+      refute html_after =~ "Link ALIV"
     end
   end
 end

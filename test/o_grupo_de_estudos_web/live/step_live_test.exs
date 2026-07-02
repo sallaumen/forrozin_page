@@ -13,7 +13,7 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
   describe "access" do
     test "redirects to /login when not authenticated", %{conn: conn} do
-      {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/steps/BF")
+      {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/steps/STBF")
     end
 
     test "redirects to /collection when step does not exist", %{conn: conn} do
@@ -25,10 +25,10 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
   describe "step detail" do
     test "displays step name and code", %{conn: conn} do
       section = insert(:section)
-      insert(:step, section: section, code: "BF", name: "Base Frontal")
-      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/steps/BF")
+      insert(:step, section: section, code: "STBF", name: "Base Frontal")
+      {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/steps/STBF")
       assert html =~ "Base Frontal"
-      assert html =~ "BF"
+      assert html =~ "STBF"
     end
 
     test "displays technical note when present", %{conn: conn} do
@@ -47,8 +47,8 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
     test "does not display wip step for regular user", %{conn: conn} do
       section = insert(:section)
-      insert(:step, section: section, code: "WIP1", name: "Passo WIP", wip: true)
-      {:error, {:redirect, %{to: "/collection"}}} = live(logged_in_conn(conn), ~p"/steps/WIP1")
+      insert(:step, section: section, code: "STWIP1", name: "Passo WIP", wip: true)
+      {:error, {:redirect, %{to: "/collection"}}} = live(logged_in_conn(conn), ~p"/steps/STWIP1")
     end
   end
 
@@ -94,7 +94,7 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
       user = insert(:user)
       conn = log_in_user(conn, user)
       section = insert(:section)
-      step = insert(:step, section: section, code: "FAV1")
+      step = insert(:step, section: section, code: "STFAV1")
 
       {:ok, view, _html} = live(conn, ~p"/steps/#{step.code}")
 

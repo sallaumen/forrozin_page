@@ -57,7 +57,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       step =
         insert(:step,
-          code: "SC",
+          code: "SDSC",
           name: "Sacada simples",
           approved: true,
           wip: false,
@@ -106,7 +106,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       step =
         insert(:step,
-          code: "GP",
+          code: "SDGP",
           name: "Giro paulista",
           approved: true,
           wip: false,
