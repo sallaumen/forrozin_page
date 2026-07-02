@@ -60,7 +60,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
     opts
     |> Keyword.put_new(:include_deleted, false)
     |> Enum.reduce(default_scope(), &shared_reducer/2)
-    |> Repo.update_all(set: [deleted_at: now])
+    |> Repo.update_all(set: [deleted_at: now, updated_at: now])
   end
 
   defp default_scope, do: from(c in Connection, as: :connection)
