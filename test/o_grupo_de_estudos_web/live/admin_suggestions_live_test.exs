@@ -18,4 +18,22 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLiveTest do
                live(log_in_user(conn, insert(:admin)), ~p"/admin/suggestions")
     end
   end
+
+  describe "filter tabs" do
+    test "switches to the all tab", %{conn: conn} do
+      {:ok, lv, _html} = live(log_in_user(conn, insert(:admin)), ~p"/admin/suggestions")
+
+      html = render_click(lv, "filter", %{"tab" => "all"})
+
+      assert html =~ "phx-value-tab=\"all\""
+    end
+
+    test "falls back to pending on an unknown tab", %{conn: conn} do
+      {:ok, lv, _html} = live(log_in_user(conn, insert(:admin)), ~p"/admin/suggestions")
+
+      html = render_click(lv, "filter", %{"tab" => "drop_table"})
+
+      assert html =~ "phx-value-tab=\"pending\""
+    end
+  end
 end

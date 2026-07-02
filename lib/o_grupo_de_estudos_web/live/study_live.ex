@@ -40,9 +40,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:editing_history_note_id, nil)
      |> assign(:expanded_note_ids, MapSet.new())
      |> assign(:history_step_suggestions, [])
-     |> assign(:section_history_open, true)
-     |> assign(:section_teachers_open, true)
-     |> assign(:section_students_open, false)
      |> assign(:active_study_tab, "personal")
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
@@ -105,11 +102,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("save_personal_note", _params, socket), do: {:noreply, socket}
-
-  def handle_event("toggle_section", %{"section" => section}, socket) do
-    key = String.to_existing_atom("section_#{section}_open")
-    {:noreply, assign(socket, key, not socket.assigns[key])}
-  end
 
   def handle_event("toggle_note_expansion", %{"id" => note_id}, socket) do
     current = socket.assigns.expanded_note_ids

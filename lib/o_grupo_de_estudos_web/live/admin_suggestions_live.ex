@@ -52,7 +52,7 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
 
   @impl true
   def handle_event("filter", %{"tab" => tab}, socket) do
-    filter = String.to_existing_atom(tab)
+    filter = parse_filter(tab)
     {:noreply, socket |> assign(:filter, filter) |> load_suggestions(filter)}
   end
 
@@ -101,6 +101,9 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
   end
 
   # ── Private helpers ───────────────────────────────────────
+
+  defp parse_filter("all"), do: :all
+  defp parse_filter(_tab), do: :pending
 
   defp load_suggestions(socket, :pending) do
     suggestions = Suggestions.list_pending()

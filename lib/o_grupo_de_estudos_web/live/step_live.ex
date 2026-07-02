@@ -5,6 +5,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Suggestions}
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
+  alias OGrupoDeEstudos.Suggestions.Suggestion
   alias OGrupoDeEstudosWeb.StepDetail
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
@@ -540,11 +541,16 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   # -- Suggestion handlers --
 
   def handle_event("start_suggest", %{"field" => field}, socket) do
-    step = socket.assigns.step
-    current_value = Map.get(step, String.to_existing_atom(field)) || ""
+    case Suggestion.field_atom(field) do
+      {:ok, field_atom} ->
+        current_value = Map.get(socket.assigns.step, field_atom) || ""
 
-    {:noreply,
-     assign(socket, suggesting_field: field, suggestion_value: to_string(current_value))}
+        {:noreply,
+         assign(socket, suggesting_field: field, suggestion_value: to_string(current_value))}
+
+      :error ->
+        {:noreply, socket}
+    end
   end
 
   def handle_event("cancel_suggest", _, socket) do
@@ -552,34 +558,9 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("submit_suggestion", %{"value" => new_value}, socket) do
-    user = socket.assigns.current_user
-    step = socket.assigns.step
-    field = socket.assigns.suggesting_field
-    old_value = Map.get(step, String.to_existing_atom(field)) || ""
-
-    case Suggestions.create(user, %{
-           target_type: "step",
-           target_id: step.id,
-           action: "edit_field",
-           field: field,
-           old_value: to_string(old_value),
-           new_value: new_value
-         }) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(suggesting_field: nil, suggestion_value: "")
-         |> assign(
-           :my_pending_suggestions,
-           Suggestions.list_user_pending_for_step(user.id, step.id)
-         )
-         |> put_flash(
-           :info,
-           "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis."
-         )}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}
+    case Suggestion.field_atom(socket.assigns.suggesting_field) do
+      {:ok, field_atom} -> submit_field_suggestion(socket, field_atom, new_value)
+      :error -> {:noreply, socket}
     end
   end
 
@@ -691,6 +672,38 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao sugerir remoção")}
     end
+  end
+
+  defp submit_field_suggestion(socket, field_atom, new_value) do
+    step = socket.assigns.step
+    old_value = to_string(Map.get(step, field_atom) || "")
+
+    attrs = %{
+      target_type: "step",
+      target_id: step.id,
+      action: "edit_field",
+      field: Atom.to_string(field_atom),
+      old_value: old_value,
+      new_value: new_value
+    }
+
+    case Suggestions.create(socket.assigns.current_user, attrs) do
+      {:ok, _} -> {:noreply, after_suggestion_created(socket)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Erro ao enviar sugestão")}
+    end
+  end
+
+  defp after_suggestion_created(socket) do
+    user = socket.assigns.current_user
+    step = socket.assigns.step
+
+    socket
+    |> assign(suggesting_field: nil, suggestion_value: "")
+    |> assign(:my_pending_suggestions, Suggestions.list_user_pending_for_step(user.id, step.id))
+    |> put_flash(
+      :info,
+      "Obrigado pela contribuição! Sua sugestão será revisada em até 2 dias úteis."
+    )
   end
 
   defp do_create_outgoing_connection(socket, target_code) do
