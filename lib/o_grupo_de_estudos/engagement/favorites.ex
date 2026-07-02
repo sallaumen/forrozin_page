@@ -94,6 +94,17 @@ defmodule OGrupoDeEstudos.Engagement.Favorites do
     end
   end
 
+  @doc "Returns the codes of every step the user has favorited."
+  def step_codes_for(user_id) do
+    from(f in Favorite,
+      where: f.user_id == ^user_id and f.favoritable_type == "step",
+      join: s in Step,
+      on: s.id == f.favoritable_id,
+      select: s.code
+    )
+    |> Repo.all()
+  end
+
   @doc "Returns `true` if the user has favorited the given entity."
   def favorited?(user_id, favoritable_type, favoritable_id) do
     Repo.exists?(

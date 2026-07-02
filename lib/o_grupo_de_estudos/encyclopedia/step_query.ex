@@ -13,6 +13,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
 
   @type list_opt ::
           {:include_deleted, boolean()}
+          | {:id, Ecto.UUID.t()}
           | {:code, String.t()}
           | {:status, String.t()}
           | {:wip, boolean()}
@@ -58,10 +59,28 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
     |> Repo.aggregate(:count)
   end
 
+  @doc "Returns `%{id => %{code: code, name: name}}` for the given step ids."
+  @spec summaries_by_ids([Ecto.UUID.t()]) :: %{
+          Ecto.UUID.t() => %{code: String.t(), name: String.t()}
+        }
+  def summaries_by_ids([]), do: %{}
+
+  def summaries_by_ids(ids) when is_list(ids) do
+    from(s in Step,
+      where: s.id in ^ids and is_nil(s.deleted_at),
+      select: {s.id, %{code: s.code, name: s.name}}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
   defp default_scope, do: from(s in Step, as: :step)
 
   defp shared_reducer({:include_deleted, true}, q), do: q
   defp shared_reducer({:include_deleted, false}, q), do: where(q, [step: s], is_nil(s.deleted_at))
+
+  defp shared_reducer({:id, id}, q),
+    do: where(q, [step: s], s.id == ^id)
 
   defp shared_reducer({:code, code}, q),
     do: where(q, [step: s], s.code == ^code)

@@ -226,4 +226,29 @@ defmodule OGrupoDeEstudos.AdminTest do
       assert updated.label == "Bases v2"
     end
   end
+
+  describe "error logs" do
+    test "list_error_logs/1 returns newest first with pagination" do
+      insert(:error_log, message: "primeiro", inserted_at: ~N[2026-01-01 10:00:00])
+      insert(:error_log, message: "segundo", inserted_at: ~N[2026-01-02 10:00:00])
+
+      assert [%{message: "segundo"}, %{message: "primeiro"}] = Admin.list_error_logs()
+      assert [%{message: "segundo"}] = Admin.list_error_logs(limit: 1)
+      assert [%{message: "primeiro"}] = Admin.list_error_logs(limit: 1, offset: 1)
+    end
+
+    test "get_error_log/1 returns the log or nil" do
+      log = insert(:error_log)
+      assert Admin.get_error_log(log.id).id == log.id
+      assert Admin.get_error_log(Ecto.UUID.generate()) == nil
+    end
+
+    test "clear_error_logs/0 removes every log" do
+      insert(:error_log)
+      insert(:error_log)
+
+      assert {2, _} = Admin.clear_error_logs()
+      assert Admin.list_error_logs() == []
+    end
+  end
 end

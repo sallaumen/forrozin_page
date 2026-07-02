@@ -15,6 +15,8 @@ defmodule OGrupoDeEstudos.Engagement do
 
   import Ecto.Query
 
+  alias OGrupoDeEstudos.Accounts
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Encyclopedia.Step
 
   alias OGrupoDeEstudos.Engagement.{
@@ -27,6 +29,7 @@ defmodule OGrupoDeEstudos.Engagement do
     Metrics
   }
 
+  alias OGrupoDeEstudos.Engagement.DeviceSession
   alias OGrupoDeEstudos.Engagement.Notifications.{Notification, NotificationQuery}
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences.Sequence
@@ -53,11 +56,13 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate list_step_comments(step_id, opts \\ []), to: Comments
   defdelegate create_step_comment(user, step_id, attrs), to: Comments
   defdelegate delete_step_comment(user, comment), to: Comments
+  defdelegate get_step_comment(id), to: Comments
 
   # Sequence comments
   defdelegate list_sequence_comments(sequence_id, opts \\ []), to: Comments
   defdelegate create_sequence_comment(user, sequence_id, attrs), to: Comments
   defdelegate delete_sequence_comment(user, comment), to: Comments
+  defdelegate get_sequence_comment(id), to: Comments
 
   # Profile comments — new typed API (2+arity)
   defdelegate list_profile_comments(profile_id, opts), to: Comments
@@ -77,9 +82,35 @@ defmodule OGrupoDeEstudos.Engagement do
     NotificationQuery.list_for_user(user_id, opts)
   end
 
-  @doc "Returns the count of unread notifications for the given user."
-  def unread_count(user_id) do
-    NotificationQuery.unread_count(user_id)
+  @doc "Returns the count of unread notifications, optionally filtered by `action:`."
+  def unread_count(user_id, opts \\ []) do
+    NotificationQuery.unread_count(user_id, opts)
+  end
+
+  @doc """
+  Batch-resolves the step and profile targets referenced by a list of
+  notifications (raw or grouped), so render layers never query per item.
+
+  Returns `%{steps: %{id => %{code, name}}, users: %{id => summary}}`.
+  """
+  def notification_targets(notifications) do
+    %{
+      steps: notifications |> parent_ids("step") |> Encyclopedia.step_summaries_by_ids(),
+      users: notifications |> parent_ids("profile") |> user_summaries_by_ids()
+    }
+  end
+
+  defp parent_ids(notifications, parent_type) do
+    notifications
+    |> Enum.filter(&(&1.parent_type == parent_type and not is_nil(&1.parent_id)))
+    |> Enum.map(& &1.parent_id)
+    |> Enum.uniq()
+  end
+
+  defp user_summaries_by_ids(ids) do
+    ids
+    |> Accounts.list_user_summaries()
+    |> Map.new(&{&1.id, &1})
   end
 
   @doc "Marks a single notification as read."
@@ -133,6 +164,7 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate favorites_map(user_id, favoritable_type, favoritable_ids), to: Favorites
   defdelegate list_user_favorites(user_id, type), to: Favorites
   defdelegate count_user_favorites(user_id), to: Favorites
+  defdelegate favorited_step_codes(user_id), to: Favorites, as: :step_codes_for
 
   # ══════════════════════════════════════════════════════════════════════
   # Learnings (jornada de estudos — delegated to Engagement.Learnings)
@@ -198,4 +230,15 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate count_likes_given_batch(user_ids, likeable_type), to: Metrics
   defdelegate count_comments_authored_batch(user_ids), to: Metrics
   defdelegate total_likes_received_batch(user_ids), to: Metrics
+
+  # ══════════════════════════════════════════════════════════════════════
+  # Device sessions
+  # ══════════════════════════════════════════════════════════════════════
+
+  @doc "Persists a device session captured at the web boundary."
+  def track_device_session(attrs) do
+    %DeviceSession{}
+    |> DeviceSession.changeset(attrs)
+    |> Repo.insert()
+  end
 end

@@ -162,6 +162,24 @@ defmodule OGrupoDeEstudos.Study do
 
   def invite_student_link(_, _), do: {:error, LinkError.new(:not_teacher)}
 
+  @doc """
+  Returns the teacher/student link between two users regardless of direction,
+  or `nil`. Accepts `status: :pending | :active` to narrow the lookup.
+  """
+  def get_link_between(user_a_id, user_b_id, opts \\ []) do
+    from(l in TeacherStudentLink,
+      where:
+        (l.teacher_id == ^user_a_id and l.student_id == ^user_b_id) or
+          (l.teacher_id == ^user_b_id and l.student_id == ^user_a_id)
+    )
+    |> filter_link_status(opts[:status])
+    |> Repo.one()
+  end
+
+  defp filter_link_status(query, nil), do: query
+  defp filter_link_status(query, :pending), do: where(query, [l], l.pending == true)
+  defp filter_link_status(query, :active), do: where(query, [l], l.active == true)
+
   @doc "Accept a pending link request. Either side can accept if they didn't initiate."
   def accept_link_request(%TeacherStudentLink{pending: true} = link, %User{id: acceptor_id})
       when acceptor_id in [link.teacher_id, link.student_id] and

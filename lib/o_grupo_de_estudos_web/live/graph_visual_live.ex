@@ -243,11 +243,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   def handle_event("delete_comment", %{"id" => id, "type" => "step_comment"}, socket) do
-    comment = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Engagement.Comments.StepComment, id)
-
-    case Engagement.delete_step_comment(socket.assigns.current_user, comment) do
-      {:ok, _} -> {:noreply, StepDrawer.reload_comments(socket)}
-      {:error, _} -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
+    with %{} = comment <- Engagement.get_step_comment(id),
+         {:ok, _} <- Engagement.delete_step_comment(socket.assigns.current_user, comment) do
+      {:noreply, StepDrawer.reload_comments(socket)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
     end
   end
 
@@ -375,17 +375,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
-  defp favorited_step_codes(user_id) do
-    import Ecto.Query
-
-    from(f in OGrupoDeEstudos.Engagement.Favorite,
-      where: f.user_id == ^user_id and f.favoritable_type == "step",
-      join: s in OGrupoDeEstudos.Encyclopedia.Step,
-      on: s.id == f.favoritable_id,
-      select: s.code
-    )
-    |> OGrupoDeEstudos.Repo.all()
-  end
+  # Contrato dos handler macros (GraphJourney, GraphLikeFavorite): o host
+  # expoe favorited_step_codes/1; a query vive no contexto Engagement.
+  defp favorited_step_codes(user_id), do: Engagement.favorited_step_codes(user_id)
 
   defp can_manage_sequence?(socket, sequence) do
     Policy.authorized?(:manage_sequence, socket.assigns.current_user, sequence)

@@ -362,13 +362,11 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
   end
 
   def handle_event("delete_comment", %{"id" => id, "type" => "sequence_comment"}, socket) do
-    user = socket.assigns.current_user
-    alias OGrupoDeEstudos.Engagement.Comments.SequenceComment
-    comment = OGrupoDeEstudos.Repo.get!(SequenceComment, id)
-
-    case Engagement.delete_sequence_comment(user, comment) do
-      {:ok, _} -> {:noreply, reload_seq_expanded(socket)}
-      {:error, _} -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
+    with %{} = comment <- Engagement.get_sequence_comment(id),
+         {:ok, _} <- Engagement.delete_sequence_comment(socket.assigns.current_user, comment) do
+      {:noreply, reload_seq_expanded(socket)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
     end
   end
 

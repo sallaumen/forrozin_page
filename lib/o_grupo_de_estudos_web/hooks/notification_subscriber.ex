@@ -2,13 +2,9 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
   @moduledoc "on_mount hook: subscribes to notification PubSub + loads unread count."
   import Phoenix.Component, only: [assign: 2]
   import Phoenix.LiveView, only: [push_event: 3]
-  import Ecto.Query
 
   alias OGrupoDeEstudos.Accounts
-  alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Engagement
-  alias OGrupoDeEstudos.Engagement.Notifications.Notification
-  alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Study
   alias OGrupoDeEstudos.Suggestions
   alias OGrupoDeEstudosWeb.Presence
@@ -17,7 +13,8 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
     socket =
       assign(socket,
         notification_dropdown_open: false,
-        notification_preview_groups: []
+        notification_preview_groups: [],
+        notification_targets: %{steps: %{}, users: %{}}
       )
 
     case connected_user(socket) do
@@ -92,15 +89,7 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
     batch_user_summaries(ids)
   end
 
-  defp batch_user_summaries([]), do: []
-
-  defp batch_user_summaries(ids) do
-    Repo.all(
-      from u in User,
-        where: u.id in ^ids,
-        select: %{id: u.id, username: u.username, name: u.name, avatar_path: u.avatar_path}
-    )
-  end
+  defp batch_user_summaries(ids), do: Accounts.list_user_summaries(ids)
 
   defp online_count do
     "users:online"
@@ -119,9 +108,6 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
   end
 
   defp pending_study_count(%{id: user_id}) do
-    from(n in Notification,
-      where: n.user_id == ^user_id and n.action == "shared_note_updated" and is_nil(n.read_at)
-    )
-    |> Repo.aggregate(:count)
+    Engagement.unread_count(user_id, action: "shared_note_updated")
   end
 end

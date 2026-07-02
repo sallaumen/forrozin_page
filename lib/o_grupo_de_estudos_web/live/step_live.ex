@@ -417,7 +417,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     case Engagement.toggle_like(user.id, "step", step_id) do
       {:ok, _} ->
-        step = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Encyclopedia.Step, step_id)
+        step = StepQuery.get_by(id: step_id)
 
         {:noreply,
          assign(socket,
@@ -435,7 +435,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     case Engagement.toggle_favorite(user.id, "step", step_id) do
       {:ok, _} ->
-        step = OGrupoDeEstudos.Repo.get!(OGrupoDeEstudos.Encyclopedia.Step, step_id)
+        step = StepQuery.get_by(id: step_id)
 
         {:noreply,
          assign(socket,
@@ -525,13 +525,11 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("delete_comment", %{"id" => id, "type" => "step_comment"}, socket) do
-    user = socket.assigns.current_user
-    alias OGrupoDeEstudos.Engagement.Comments.StepComment
-    comment = OGrupoDeEstudos.Repo.get!(StepComment, id)
-
-    case Engagement.delete_step_comment(user, comment) do
-      {:ok, _} -> {:noreply, reload_step_comments(socket)}
-      {:error, _} -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
+    with %{} = comment <- Engagement.get_step_comment(id),
+         {:ok, _} <- Engagement.delete_step_comment(socket.assigns.current_user, comment) do
+      {:noreply, reload_step_comments(socket)}
+    else
+      _ -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
     end
   end
 

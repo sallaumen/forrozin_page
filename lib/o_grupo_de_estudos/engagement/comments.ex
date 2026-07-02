@@ -193,6 +193,12 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   # ── Helpers ───────────────────────────────────────────────────────────
 
+  @doc "Returns a step comment by id, or `nil`."
+  def get_step_comment(id), do: Repo.get(StepComment, id)
+
+  @doc "Returns a sequence comment by id, or `nil`."
+  def get_sequence_comment(id), do: Repo.get(SequenceComment, id)
+
   defp paginate(query, opts) do
     limit = Keyword.get(opts, :limit, 50)
     offset = Keyword.get(opts, :offset, 0)

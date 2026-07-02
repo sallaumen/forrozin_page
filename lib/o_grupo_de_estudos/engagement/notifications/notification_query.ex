@@ -37,13 +37,14 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
     |> Repo.all()
   end
 
-  @doc "Returns the count of unread notifications for the given user."
-  @spec unread_count(Ecto.UUID.t()) :: non_neg_integer()
-  def unread_count(user_id) do
-    from(n in Notification,
-      where: n.user_id == ^user_id and is_nil(n.read_at),
-      select: count(n.id)
-    )
-    |> Repo.one()
+  @doc "Returns the count of unread notifications, optionally filtered by `action:`."
+  @spec unread_count(Ecto.UUID.t(), [{:action, String.t()}]) :: non_neg_integer()
+  def unread_count(user_id, opts \\ []) do
+    from(n in Notification, where: n.user_id == ^user_id and is_nil(n.read_at))
+    |> filter_action(opts[:action])
+    |> Repo.aggregate(:count)
   end
+
+  defp filter_action(query, nil), do: query
+  defp filter_action(query, action), do: where(query, [n], n.action == ^action)
 end

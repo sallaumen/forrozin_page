@@ -14,6 +14,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
 
   alias OGrupoDeEstudos.{Accounts, Engagement}
   alias OGrupoDeEstudos.Engagement.Notifications.Grouper
+  alias OGrupoDeEstudosWeb.Helpers.NotificationRoutes
 
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
@@ -56,6 +57,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        page_title: "Notificações",
        raw_notifications: raw,
        notifications: grouped,
+       notification_targets: Engagement.notification_targets(grouped),
        page: 0,
        has_more: length(raw) == @page_size,
        nav_mode: :primary,
@@ -108,6 +110,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        page: page,
        raw_notifications: all_raw,
        notifications: grouped,
+       notification_targets: Engagement.notification_targets(grouped),
        has_more: length(more_raw) == @page_size
      )}
   end
@@ -125,58 +128,18 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
     assign(socket,
       raw_notifications: raw,
       notifications: grouped,
+      notification_targets: Engagement.notification_targets(grouped),
       page: 0,
       has_more: length(raw) == @page_size,
       notification_count: unread
     )
   end
 
-  defp notification_path(%{parent_type: "step", parent_id: id}) do
-    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
-      nil -> "/collection"
-      step -> "/steps/#{step.code}"
-    end
-  end
-
-  defp notification_path(%{parent_type: "sequence"}), do: "/sequence"
-
-  defp notification_path(%{
-         action: "shared_note_updated",
-         target_type: "study_link",
-         target_id: id
-       }),
-       do: "/study/shared/#{id}"
-
-  defp notification_path(%{
-         action: "study_nudge",
-         target_type: "study_link",
-         target_id: id
-       }),
-       do: "/study/shared/#{id}"
-
-  defp notification_path(%{parent_type: "study_link"}), do: "/study"
-
-  defp notification_path(%{parent_type: "profile", parent_id: id}) do
-    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Accounts.User, id) do
-      nil -> "/collection"
-      user -> "/users/#{user.username}"
-    end
-  end
-
-  defp notification_path(_), do: "/collection"
-
-  defp target_name(%{parent_type: "step", parent_id: id}) when not is_nil(id) do
-    case OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Step, id) do
-      nil -> nil
-      step -> step.name
-    end
-  end
-
-  defp target_name(%{action: "liked_sequence"}), do: nil
-  defp target_name(%{action: "followed_user"}), do: nil
-  defp target_name(%{action: "study_request"}), do: "Ver pedido →"
-  defp target_name(%{action: "study_accepted"}), do: "Ir para estudos →"
-  defp target_name(%{action: "shared_note_updated"}), do: "Ver diário →"
-  defp target_name(%{action: "study_nudge"}), do: "Abrir diário →"
-  defp target_name(_), do: nil
+  defp target_name(%{action: "liked_sequence"}, _targets), do: nil
+  defp target_name(%{action: "followed_user"}, _targets), do: nil
+  defp target_name(%{action: "study_request"}, _targets), do: "Ver pedido →"
+  defp target_name(%{action: "study_accepted"}, _targets), do: "Ir para estudos →"
+  defp target_name(%{action: "shared_note_updated"}, _targets), do: "Ver diário →"
+  defp target_name(%{action: "study_nudge"}, _targets), do: "Abrir diário →"
+  defp target_name(notif, targets), do: NotificationRoutes.step_name(notif, targets)
 end

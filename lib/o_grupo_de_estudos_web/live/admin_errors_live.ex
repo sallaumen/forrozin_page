@@ -1,10 +1,7 @@
 defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Repo}
-  alias OGrupoDeEstudos.Admin.ErrorLog
-
-  import Ecto.Query
+  alias OGrupoDeEstudos.{Accounts, Admin}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
@@ -50,7 +47,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   end
 
   def handle_event("clear_all", _, socket) do
-    Repo.delete_all(ErrorLog)
+    Admin.clear_error_logs()
 
     {:noreply,
      socket
@@ -61,7 +58,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
 
   def handle_event("copy_error", %{"id" => id}, socket) do
     # Stream items live in the DOM, not in socket assigns, so fetch from the DB.
-    case Repo.get(ErrorLog, id) do
+    case Admin.get_error_log(id) do
       nil ->
         {:noreply, socket}
 
@@ -71,12 +68,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   end
 
   defp load_errors(page) do
-    from(e in ErrorLog,
-      order_by: [desc: e.inserted_at],
-      limit: @page_size,
-      offset: ^(page * @page_size)
-    )
-    |> Repo.all()
+    Admin.list_error_logs(limit: @page_size, offset: page * @page_size)
   end
 
   defp format_for_copy(error) do

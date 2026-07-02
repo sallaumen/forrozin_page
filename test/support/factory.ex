@@ -3,6 +3,7 @@ defmodule OGrupoDeEstudos.Factory do
   use ExMachina.Ecto, repo: OGrupoDeEstudos.Repo
 
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Admin.ErrorLog
 
   alias OGrupoDeEstudos.Encyclopedia.{
     Category,
@@ -191,6 +192,15 @@ defmodule OGrupoDeEstudos.Factory do
       parent_id: Ecto.UUID.generate(),
       user: build(:user),
       actor: build(:user)
+    }
+  end
+
+  def error_log_factory do
+    %ErrorLog{
+      level: "error",
+      message: sequence(:error_message, &"Erro de teste #{&1}"),
+      source: "test",
+      metadata: %{}
     }
   end
 
