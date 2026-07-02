@@ -11,9 +11,9 @@ defmodule OGrupoDeEstudos.Engagement.UserAccessTracking do
   def track_login(%User{id: user_id}, client_info, method)
       when method in [:password, :auto_login] do
     now =
-      NaiveDateTime.utc_now()
-      |> NaiveDateTime.truncate(:second)
-      |> NaiveDateTime.to_iso8601()
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+      |> DateTime.to_iso8601()
 
     args =
       client_info

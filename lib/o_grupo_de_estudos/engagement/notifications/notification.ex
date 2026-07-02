@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
     field :target_id, :binary_id
     field :parent_type, :string
     field :parent_id, :binary_id
-    field :read_at, :naive_datetime
+    field :read_at, :utc_datetime
 
     belongs_to :user, OGrupoDeEstudos.Accounts.User
     belongs_to :actor, OGrupoDeEstudos.Accounts.User

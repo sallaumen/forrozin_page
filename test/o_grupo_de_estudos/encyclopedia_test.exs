@@ -275,7 +275,7 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
         insert(:step,
           section: section,
           code: "MB2",
-          deleted_at: ~N[2026-01-01 00:00:00]
+          deleted_at: ~U[2026-01-01 00:00:00Z]
         )
 
       result = Encyclopedia.steps_by_ids([step.id, deleted.id])
@@ -289,7 +289,7 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       section = insert(:section)
       insert(:step, section: section, suggested_by: user)
       insert(:step, section: section, suggested_by: user)
-      insert(:step, section: section, suggested_by: user, deleted_at: ~N[2026-01-01 00:00:00])
+      insert(:step, section: section, suggested_by: user, deleted_at: ~U[2026-01-01 00:00:00Z])
 
       assert Encyclopedia.count_steps_by_suggester([user.id]) == %{user.id => 2}
       assert Encyclopedia.count_steps_by_suggester([]) == %{}

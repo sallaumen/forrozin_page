@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudos.Suggestions.Suggestion do
     field :old_value, :string
     field :new_value, :string
     field :status, Ecto.Enum, values: [:pending, :approved, :rejected], default: :pending
-    field :reviewed_at, :naive_datetime
+    field :reviewed_at, :utc_datetime
 
     belongs_to :user, OGrupoDeEstudos.Accounts.User
     belongs_to :reviewed_by, OGrupoDeEstudos.Accounts.User

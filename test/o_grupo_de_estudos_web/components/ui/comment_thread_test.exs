@@ -107,14 +107,14 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
     end
 
     test "renders tombstone for soft-deleted comment" do
-      deleted = comment(deleted_at: NaiveDateTime.utc_now(), body: "segredo")
+      deleted = comment(deleted_at: DateTime.utc_now(), body: "segredo")
       html = render_component(&CommentThread.comment_thread/1, base_assigns(comments: [deleted]))
       assert html =~ "Comentário removido"
       refute html =~ "segredo"
     end
 
     test "tombstone does not show username or actions" do
-      deleted = comment(deleted_at: NaiveDateTime.utc_now())
+      deleted = comment(deleted_at: DateTime.utc_now())
       html = render_component(&CommentThread.comment_thread/1, base_assigns(comments: [deleted]))
       refute html =~ ~s(href="/users/tavano")
       refute html =~ "toggle_comment_like"

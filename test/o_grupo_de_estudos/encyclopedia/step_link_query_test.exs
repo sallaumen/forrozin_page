@@ -59,7 +59,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQueryTest do
           step: step,
           submitted_by: user,
           approved: true,
-          deleted_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+          deleted_at: DateTime.truncate(DateTime.utc_now(), :second)
         )
 
       live_link = insert(:step_link, step: step, submitted_by: user, approved: true)
@@ -80,7 +80,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQueryTest do
           step: step,
           submitted_by: user,
           approved: true,
-          deleted_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+          deleted_at: DateTime.truncate(DateTime.utc_now(), :second)
         )
 
       result = StepLinkQuery.list_by(step_id: step.id, include_deleted: true)
@@ -103,7 +103,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQueryTest do
           step: step,
           submitted_by: user,
           approved: false,
-          deleted_at: NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+          deleted_at: DateTime.truncate(DateTime.utc_now(), :second)
         )
 
       result = StepLinkQuery.list_by(pending: true, step_id: step.id)

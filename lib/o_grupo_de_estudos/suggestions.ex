@@ -46,7 +46,7 @@ defmodule OGrupoDeEstudos.Suggestions do
   For `remove_connection`: soft-deletes the connection via `Admin.delete_connection/1`.
   """
   def approve(suggestion, admin) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     Multi.new()
     |> Multi.update(
@@ -78,7 +78,7 @@ defmodule OGrupoDeEstudos.Suggestions do
   Rejects a suggestion. Updates status without touching the target entity.
   """
   def reject(suggestion, admin) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     suggestion
     |> Suggestion.review_changeset(%{
@@ -189,7 +189,7 @@ defmodule OGrupoDeEstudos.Suggestions do
         {:error, :step_not_found}
 
       step ->
-        now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
 
         Admin.update_step(step, %{
           field_atom => s.new_value,

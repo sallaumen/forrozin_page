@@ -23,6 +23,9 @@ defmodule OGrupoDeEstudos.Brazil do
   def to_local(%DateTime{} = dt), do: DateTime.add(dt, @offset_seconds)
   def to_local(%NaiveDateTime{} = ndt), do: NaiveDateTime.add(ndt, @offset_seconds)
 
+  def to_local(%DateTime{} = dt),
+    do: dt |> DateTime.to_naive() |> NaiveDateTime.add(@offset_seconds)
+
   @doc "Formats a date or UTC datetime as dd/mm/yyyy."
   def format_date(nil), do: ""
   def format_date(%Date{} = d), do: Calendar.strftime(d, "%d/%m/%Y")

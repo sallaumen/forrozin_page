@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudos.Sequences.Sequence do
     field :description, :string
     field :video_url, :string
     field :like_count, :integer, default: 0
-    field :deleted_at, :naive_datetime
+    field :deleted_at, :utc_datetime
 
     belongs_to :user, OGrupoDeEstudos.Accounts.User
 

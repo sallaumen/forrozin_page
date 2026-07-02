@@ -30,7 +30,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :password_hash, :string
     field :role, Ecto.Enum, values: [:user, :admin], default: :user
     field :confirmation_token, :string
-    field :confirmed_at, :naive_datetime
+    field :confirmed_at, :utc_datetime
     field :name, :string
     field :country, :string, default: "BR"
     field :state, :string
@@ -40,8 +40,8 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :avatar_path, :string
     field :is_teacher, :boolean, default: false
     field :invite_slug, :string
-    field :last_seen_at, :naive_datetime
-    field :last_login_at, :naive_datetime
+    field :last_seen_at, :utc_datetime
+    field :last_login_at, :utc_datetime
     field :dark_mode, :boolean, default: false
 
     timestamps()
@@ -109,8 +109,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
 
   @doc "Changeset that marks the email as confirmed and invalidates the token."
   def confirmation_changeset(user) do
-    utc_now = NaiveDateTime.utc_now()
-    now = NaiveDateTime.truncate(utc_now, :second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
     change(user, confirmed_at: now, confirmation_token: nil)
   end
 

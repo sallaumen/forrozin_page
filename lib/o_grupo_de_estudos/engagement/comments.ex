@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   @doc "Soft-deletes a profile comment (legacy signature — no authorization check)."
   def delete_profile_comment(%ProfileComment{} = comment) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     comment
     |> Ecto.Changeset.change(deleted_at: now)
@@ -184,7 +184,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   end
 
   defp tombstone(comment) do
-    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     comment
     |> Ecto.Changeset.change(%{body: @tombstone_body, deleted_at: now})

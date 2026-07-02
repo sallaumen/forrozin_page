@@ -8,7 +8,7 @@ defmodule OGrupoDeEstudos.Workers.TrackUserLoginTest do
   describe "perform/1" do
     test "stores a login event and updates the user's login timestamps" do
       user = insert(:user)
-      occurred_at = ~N[2026-04-20 18:10:00]
+      occurred_at = ~U[2026-04-20 18:10:00Z]
 
       assert :ok =
                perform_job(TrackUserLogin, %{
@@ -18,7 +18,7 @@ defmodule OGrupoDeEstudos.Workers.TrackUserLoginTest do
                  "browser" => "Chrome",
                  "is_pwa" => false,
                  "user_agent" => "Mozilla/5.0 (iPhone) AppleWebKit Chrome",
-                 "occurred_at" => NaiveDateTime.to_iso8601(occurred_at)
+                 "occurred_at" => DateTime.to_iso8601(occurred_at)
                })
 
       event = Repo.get_by!(UserLoginEvent, user_id: user.id)

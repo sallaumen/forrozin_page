@@ -230,9 +230,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       {:ok, c2} = Engagement.create_step_comment(user, step.id, %{body: "Deleted"})
 
       c2
-      |> Ecto.Changeset.change(
-        deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      )
+      |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
       |> Repo.update!()
 
       comments = Engagement.list_step_comments(step.id)
@@ -554,9 +552,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
       # Soft-delete c2
       c2
-      |> Ecto.Changeset.change(
-        deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      )
+      |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
       |> Repo.update!()
 
       counts = Engagement.comment_counts_for("step", [step.id])
@@ -582,7 +578,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
     test "returns notifications for a user ordered unread first", %{user: user} do
       actor = insert(:user)
 
-      read = insert(:notification, user: user, actor: actor, read_at: ~N[2026-01-01 00:00:00])
+      read = insert(:notification, user: user, actor: actor, read_at: ~U[2026-01-01 00:00:00Z])
       unread = insert(:notification, user: user, actor: actor, read_at: nil)
 
       notifications = Engagement.list_notifications(user.id)
@@ -616,7 +612,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       actor = insert(:user)
       insert(:notification, user: user, actor: actor, read_at: nil)
       insert(:notification, user: user, actor: actor, read_at: nil)
-      insert(:notification, user: user, actor: actor, read_at: ~N[2026-01-01 00:00:00])
+      insert(:notification, user: user, actor: actor, read_at: ~U[2026-01-01 00:00:00Z])
 
       assert 2 == Engagement.unread_count(user.id)
     end
@@ -637,7 +633,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       actor = insert(:user)
 
       notification =
-        insert(:notification, user: user, actor: actor, read_at: ~N[2026-01-01 00:00:00])
+        insert(:notification, user: user, actor: actor, read_at: ~U[2026-01-01 00:00:00Z])
 
       assert {:ok, :already_read} = Engagement.mark_as_read(user, notification.id)
     end
@@ -658,7 +654,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       actor = insert(:user)
       insert(:notification, user: user, actor: actor, read_at: nil)
       insert(:notification, user: user, actor: actor, read_at: nil)
-      insert(:notification, user: user, actor: actor, read_at: ~N[2026-01-01 00:00:00])
+      insert(:notification, user: user, actor: actor, read_at: ~U[2026-01-01 00:00:00Z])
 
       assert {:ok, 2} = Engagement.mark_all_read(user)
       assert 0 == Engagement.unread_count(user.id)
@@ -952,9 +948,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       Engagement.toggle_favorite(user.id, "step", step.id)
 
       step
-      |> Ecto.Changeset.change(
-        deleted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      )
+      |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
       |> Repo.update!()
 
       assert Engagement.list_user_favorites(user.id, "step") == []
@@ -1145,7 +1139,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       user = insert(:user)
       section = insert(:section)
       alive = insert(:step, section: section, code: "DL1")
-      deleted = insert(:step, section: section, code: "DL2", deleted_at: ~N[2026-01-01 00:00:00])
+      deleted = insert(:step, section: section, code: "DL2", deleted_at: ~U[2026-01-01 00:00:00Z])
       insert(:like, user: user, likeable_type: "step", likeable_id: alive.id)
       insert(:like, user: user, likeable_type: "step", likeable_id: deleted.id)
 
@@ -1156,7 +1150,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       user = insert(:user)
       section = insert(:section)
       alive = insert(:step, section: section, code: "DF1")
-      deleted = insert(:step, section: section, code: "DF2", deleted_at: ~N[2026-01-01 00:00:00])
+      deleted = insert(:step, section: section, code: "DF2", deleted_at: ~U[2026-01-01 00:00:00Z])
       insert(:favorite, user: user, favoritable_type: "step", favoritable_id: alive.id)
       insert(:favorite, user: user, favoritable_type: "step", favoritable_id: deleted.id)
 

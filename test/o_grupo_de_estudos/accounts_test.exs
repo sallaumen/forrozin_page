@@ -80,7 +80,7 @@ defmodule OGrupoDeEstudos.AccountsTest do
 
   describe "email_confirmed?/1" do
     test "returns true for user with confirmed_at set" do
-      user = insert(:user, confirmed_at: NaiveDateTime.utc_now())
+      user = insert(:user, confirmed_at: DateTime.utc_now())
       assert Accounts.email_confirmed?(user)
     end
 

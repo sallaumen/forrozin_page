@@ -13,7 +13,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLink do
     field :url, :string
     field :title, :string
     field :approved, :boolean, default: false
-    field :deleted_at, :naive_datetime
+    field :deleted_at, :utc_datetime
 
     belongs_to :step, OGrupoDeEstudos.Encyclopedia.Step
     belongs_to :submitted_by, OGrupoDeEstudos.Accounts.User, foreign_key: :submitted_by_id

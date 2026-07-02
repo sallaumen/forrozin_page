@@ -34,7 +34,7 @@ defmodule OGrupoDeEstudos.Factory do
       country: "BR",
       state: "PR",
       city: "Curitiba",
-      confirmed_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)
     }
   end
 
@@ -50,7 +50,7 @@ defmodule OGrupoDeEstudos.Factory do
       country: "BR",
       state: "PR",
       city: "Curitiba",
-      confirmed_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      confirmed_at: DateTime.utc_now() |> DateTime.truncate(:second)
     }
   end
 
