@@ -270,4 +270,57 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
       refute html =~ "Suas sugestões pendentes"
     end
   end
+
+  describe "authorization boundary" do
+    alias OGrupoDeEstudos.Encyclopedia.StepQuery
+
+    test "regular user cannot delete a step via crafted event", %{conn: conn} do
+      user = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "AZ1", name: "Passo Vivo")
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/steps/AZ1")
+      render_click(lv, "delete_step", %{})
+
+      assert %{id: step_id, deleted_at: nil} = StepQuery.get_by(code: "AZ1")
+      assert step_id == step.id
+    end
+
+    test "regular user cannot approve a step via crafted event", %{conn: conn} do
+      user = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "AZ2", name: "Não Aprovado", approved: false)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/steps/AZ2")
+      render_click(lv, "approve_step", %{"code" => "AZ2"})
+
+      assert %{id: step_id, approved: false} = StepQuery.get_by(code: "AZ2")
+      assert step_id == step.id
+    end
+
+    test "suggester can edit their own suggested step", %{conn: conn} do
+      user = insert(:user)
+      section = insert(:section)
+      insert(:step, section: section, code: "AZ3", name: "Meu Passo", suggested_by: user)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/steps/AZ3")
+
+      html =
+        render_submit(lv, "update_step", %{"step" => %{"name" => "Meu Passo v2", "code" => "AZ3"}})
+
+      assert html =~ "Meu Passo v2"
+    end
+
+    test "non-submitter cannot delete someone else's link via crafted event", %{conn: conn} do
+      user = insert(:user)
+      section = insert(:section)
+      step = insert(:step, section: section, code: "AZ4", name: "Com Link")
+      link = insert(:step_link, step: step, approved: true)
+
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/steps/AZ4")
+      render_click(lv, "delete_link", %{"link-id" => link.id})
+
+      assert OGrupoDeEstudos.Encyclopedia.StepLinkQuery.list_by(step_id: step.id) != []
+    end
+  end
 end

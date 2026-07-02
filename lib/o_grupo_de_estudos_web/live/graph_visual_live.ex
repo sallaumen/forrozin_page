@@ -2,6 +2,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Sequences}
+  alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia.StepQuery
 
   alias OGrupoDeEstudosWeb.GraphVisual.{
@@ -386,10 +387,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     |> OGrupoDeEstudos.Repo.all()
   end
 
-  defp can_manage_sequence?(_socket, nil), do: false
-
   defp can_manage_sequence?(socket, sequence) do
-    socket.assigns.is_admin or sequence.user_id == socket.assigns.current_user.id
+    Policy.authorized?(:manage_sequence, socket.assigns.current_user, sequence)
   end
 
   defp do_create_missing_connection(socket, src_code, tgt_code) do

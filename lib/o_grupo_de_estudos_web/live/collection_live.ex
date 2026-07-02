@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement}
+  alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
@@ -238,7 +239,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("toggle_edit_mode", _params, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:manage_section, socket.assigns.current_user, nil) do
       {:noreply, assign(socket, edit_mode: not socket.assigns.edit_mode)}
     else
       {:noreply, socket}
@@ -300,7 +301,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("update_step", %{"step" => params}, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:edit_step, socket.assigns.current_user, socket.assigns.drawer_item) do
       step = socket.assigns.drawer_item
 
       case Admin.update_step(step, params) do
@@ -320,7 +321,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("update_section", %{"section" => params}, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(
+         :manage_section,
+         socket.assigns.current_user,
+         socket.assigns.drawer_item
+       ) do
       section = socket.assigns.drawer_item
 
       case Admin.update_section(section, params) do
@@ -342,7 +347,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("search_connection", %{"target_code" => term}, socket) do
-    if socket.assigns.is_admin and String.length(term) >= 1 do
+    if Policy.authorized?(:edit_step, socket.assigns.current_user, socket.assigns.drawer_item) and
+         String.length(term) >= 1 do
       suggestions =
         StepQuery.list_by(
           status: "published",
@@ -363,7 +369,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("create_step_connection", %{"target_code" => target_code}, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:edit_step, socket.assigns.current_user, socket.assigns.drawer_item) do
       do_create_step_connection(socket, target_code)
     else
       {:noreply, socket}
@@ -375,7 +381,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         %{"source" => source_code, "target" => target_code},
         socket
       ) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:edit_step, socket.assigns.current_user, socket.assigns.drawer_item) do
       connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
 
       if is_nil(connection) do
@@ -392,7 +398,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("create_section", %{"section" => params}, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:manage_section, socket.assigns.current_user, nil) do
       max_pos = socket.assigns.sections |> Enum.map(& &1.position) |> Enum.max(fn -> 0 end)
 
       case Admin.create_section(Map.put(params, "position", max_pos + 1)) do
@@ -405,7 +411,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("create_category", %{"category" => params}, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:manage_section, socket.assigns.current_user, nil) do
       case Admin.create_category(params) do
         {:ok, _} ->
           categories = Encyclopedia.list_categories()
@@ -462,7 +468,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("approve_step", %{"code" => code}, socket) do
-    if socket.assigns.is_admin do
+    if Policy.authorized?(:approve_step, socket.assigns.current_user, socket.assigns.drawer_item) do
       step = StepQuery.get_by(code: code)
 
       if step do
