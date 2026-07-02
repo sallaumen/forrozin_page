@@ -45,4 +45,6 @@ config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Tes
 config :o_grupo_de_estudos,
   env: :test,
   async_device_tracking: false,
-  persist_error_logs: false
+  persist_error_logs: false,
+  # TTL 0: cada chamada consulta o banco, preservando o isolamento do sandbox.
+  admin_ids_cache_ttl_ms: 0

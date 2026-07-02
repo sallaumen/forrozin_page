@@ -500,4 +500,13 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert Sequences.count_public_by_users([]) == %{}
     end
   end
+
+  describe "sequence_owner_id/1" do
+    test "returns the owner id or nil" do
+      sequence = insert(:sequence)
+
+      assert Sequences.sequence_owner_id(sequence.id) == sequence.user_id
+      assert Sequences.sequence_owner_id(Ecto.UUID.generate()) == nil
+    end
+  end
 end

@@ -164,6 +164,14 @@ defmodule OGrupoDeEstudos.Sequences do
 
   # ── Private helpers ─────────────────────────────────────────
 
+  @doc "Returns the owner id of a sequence, or nil (lightweight, no preloads)."
+  def sequence_owner_id(sequence_id) do
+    case SequenceQuery.get_by(id: sequence_id) do
+      nil -> nil
+      %Sequence{user_id: user_id} -> user_id
+    end
+  end
+
   @doc "Returns `%{id => %Sequence{}}` with user and ordered steps preloaded."
   def map_by_ids(ids) when is_list(ids) do
     [ids: ids, preload: [:user] ++ steps_preload()]
