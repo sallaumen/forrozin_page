@@ -5,34 +5,24 @@ defmodule OGrupoDeEstudos.Application do
 
   use Application
 
+  require Logger
+
   alias OGrupoDeEstudos.Admin.ErrorLogger
-  alias OGrupoDeEstudos.StartupScripts.Runner
+  alias OGrupoDeEstudos.Workers.StartupScripts
 
   @impl true
   def start(_type, _args) do
-    children =
-      [
-        OGrupoDeEstudosWeb.Telemetry,
-        OGrupoDeEstudos.Repo,
-        {DNSCluster,
-         query: Application.get_env(:o_grupo_de_estudos, :dns_cluster_query) || :ignore},
-        {Phoenix.PubSub, name: OGrupoDeEstudos.PubSub},
-        OGrupoDeEstudosWeb.Presence,
-        OGrupoDeEstudos.RateLimiter,
-        {Oban, Application.fetch_env!(:o_grupo_de_estudos, Oban)},
-        OGrupoDeEstudosWeb.Endpoint
-      ] ++
-        if Application.get_env(:o_grupo_de_estudos, :env) == :test do
-          []
-        else
-          [
-            {Task,
-             fn ->
-               Process.sleep(5_000)
-               Runner.run_all()
-             end}
-          ]
-        end
+    children = [
+      OGrupoDeEstudosWeb.Telemetry,
+      OGrupoDeEstudos.Repo,
+      {DNSCluster,
+       query: Application.get_env(:o_grupo_de_estudos, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: OGrupoDeEstudos.PubSub},
+      OGrupoDeEstudosWeb.Presence,
+      OGrupoDeEstudos.RateLimiter,
+      {Oban, Application.fetch_env!(:o_grupo_de_estudos, Oban)},
+      OGrupoDeEstudosWeb.Endpoint
+    ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -44,7 +34,24 @@ defmodule OGrupoDeEstudos.Application do
       ErrorLogger.install()
     end
 
+    if Application.get_env(:o_grupo_de_estudos, :env) != :test do
+      enqueue_startup_scripts()
+    end
+
     result
+  end
+
+  # Startup scripts rodam como job Oban (observavel, com retry), nao como
+  # Task solta com sleep. Falha ao enfileirar nao pode derrubar o boot.
+  defp enqueue_startup_scripts do
+    case StartupScripts.enqueue() do
+      {:ok, _job} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.error("StartupScripts enqueue falhou no boot", reason: inspect(reason))
+        :error
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration
