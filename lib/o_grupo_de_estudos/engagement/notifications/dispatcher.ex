@@ -307,7 +307,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
         group_key: "suggestion:#{suggestion.id}",
         target_type: "suggestion",
         target_id: suggestion.id,
-        parent_type: suggestion.target_type,
+        parent_type: Atom.to_string(suggestion.target_type),
         parent_id: suggestion.target_id,
         inserted_at: now()
       }
@@ -323,8 +323,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   def notify_suggestion(:suggestion_reviewed, suggestion, admin) do
     action =
       case suggestion.status do
-        "approved" -> "suggestion_approved"
-        "rejected" -> "suggestion_rejected"
+        :approved -> "suggestion_approved"
+        :rejected -> "suggestion_rejected"
         _ -> nil
       end
 
@@ -340,7 +340,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
           group_key: "suggestion:#{suggestion.id}",
           target_type: "suggestion",
           target_id: suggestion.id,
-          parent_type: suggestion.target_type,
+          parent_type: Atom.to_string(suggestion.target_type),
           parent_id: suggestion.target_id,
           inserted_at: now()
         }

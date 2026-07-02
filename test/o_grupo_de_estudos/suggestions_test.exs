@@ -36,7 +36,7 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
           new_value: "Novo Nome"
         })
 
-      assert suggestion.status == "pending"
+      assert suggestion.status == :pending
       assert suggestion.user_id == user.id
       assert suggestion.new_value == "Novo Nome"
     end
@@ -52,8 +52,8 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
           new_value: "#{step.code}→#{other.code}"
         })
 
-      assert suggestion.action == "create_connection"
-      assert suggestion.status == "pending"
+      assert suggestion.action == :create_connection
+      assert suggestion.status == :pending
     end
 
     test "creates suggestion for remove_connection", %{user: user, step: step} do
@@ -67,8 +67,8 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
           old_value: "#{step.code}→#{connection.target_step.code}"
         })
 
-      assert suggestion.action == "remove_connection"
-      assert suggestion.status == "pending"
+      assert suggestion.action == :remove_connection
+      assert suggestion.status == :pending
     end
 
     test "rejects invalid action", %{user: user, step: step} do
@@ -112,7 +112,7 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
 
       {:ok, approved} = Suggestions.approve(suggestion, admin)
 
-      assert approved.status == "approved"
+      assert approved.status == :approved
       assert approved.reviewed_by_id == admin.id
       assert approved.reviewed_at != nil
 
@@ -185,7 +185,7 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
 
       {:ok, rejected} = Suggestions.reject(suggestion, admin)
 
-      assert rejected.status == "rejected"
+      assert rejected.status == :rejected
       assert rejected.reviewed_by_id == admin.id
 
       # Step should NOT be updated

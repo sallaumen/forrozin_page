@@ -117,7 +117,7 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
 
   defp assign_grouped(socket, suggestions) do
     grouped = Enum.group_by(suggestions, & &1.action)
-    edit_suggestions = Map.get(grouped, "edit_field", [])
+    edit_suggestions = Map.get(grouped, :edit_field, [])
 
     # Resolve step records for edit_field suggestions so the template
     # can build navigation links without extra DB calls per row.
@@ -125,8 +125,8 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
 
     socket
     |> assign(:edit_field_suggestions, edit_suggestions)
-    |> assign(:create_connection_suggestions, Map.get(grouped, "create_connection", []))
-    |> assign(:remove_connection_suggestions, Map.get(grouped, "remove_connection", []))
+    |> assign(:create_connection_suggestions, Map.get(grouped, :create_connection, []))
+    |> assign(:remove_connection_suggestions, Map.get(grouped, :remove_connection, []))
     |> assign(:steps_by_id, steps_by_id)
     |> assign(:total_count, length(suggestions))
     |> assign(:pending_count, Suggestions.count_pending())

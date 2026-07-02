@@ -614,17 +614,17 @@
             <%= for s <- @contributions do %>
               <div class={[
                 "flex items-start gap-3 p-3 rounded-lg border",
-                s.status == "pending" && "bg-gold-500/5 border-gold-500/20",
-                s.status == "approved" && "bg-accent-green/5 border-accent-green/20",
-                s.status == "rejected" && "bg-accent-red/5 border-accent-red/20"
+                s.status == :pending && "bg-gold-500/5 border-gold-500/20",
+                s.status == :approved && "bg-accent-green/5 border-accent-green/20",
+                s.status == :rejected && "bg-accent-red/5 border-accent-red/20"
               ]}>
                 <span class="text-sm mt-0.5">
                   <%= case s.status do %>
-                    <% "pending" -> %>
+                    <% :pending -> %>
                       <span class="text-gold-500">●</span>
-                    <% "approved" -> %>
+                    <% :approved -> %>
                       <span class="text-accent-green">●</span>
-                    <% "rejected" -> %>
+                    <% :rejected -> %>
                       <span class="text-accent-red">●</span>
                   <% end %>
                 </span>
@@ -646,7 +646,7 @@
                     <% end %>
                   </p>
                   <p class="text-xs text-ink-400 mt-0.5">
-                    <%= if s.status == "pending" do %>
+                    <%= if s.status == :pending do %>
                       Aguardando revisão
                     <% else %>
                       {String.capitalize(s.status)}

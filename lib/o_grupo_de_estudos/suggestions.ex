@@ -52,7 +52,7 @@ defmodule OGrupoDeEstudos.Suggestions do
     |> Multi.update(
       :suggestion,
       Suggestion.review_changeset(suggestion, %{
-        status: "approved",
+        status: :approved,
         reviewed_by_id: admin.id,
         reviewed_at: now
       })
@@ -82,7 +82,7 @@ defmodule OGrupoDeEstudos.Suggestions do
 
     suggestion
     |> Suggestion.review_changeset(%{
-      status: "rejected",
+      status: :rejected,
       reviewed_by_id: admin.id,
       reviewed_at: now
     })
@@ -99,7 +99,7 @@ defmodule OGrupoDeEstudos.Suggestions do
 
   @doc "Lists pending suggestions, preloading the author and reviewer."
   def list_pending(opts \\ []) do
-    SuggestionQuery.list_by([status: "pending", preload: [:user, :reviewed_by]] ++ opts)
+    SuggestionQuery.list_by([status: :pending, preload: [:user, :reviewed_by]] ++ opts)
   end
 
   @doc "Lists all suggestions by a specific user, preloading author and reviewer."
@@ -109,7 +109,7 @@ defmodule OGrupoDeEstudos.Suggestions do
 
   @doc "Counts pending suggestions (for admin nav badge)."
   def count_pending do
-    SuggestionQuery.count_by(status: "pending")
+    SuggestionQuery.count_by(status: :pending)
   end
 
   @doc "Lists a user's pending suggestions for a specific step."
@@ -117,7 +117,7 @@ defmodule OGrupoDeEstudos.Suggestions do
     SuggestionQuery.list_by(
       user_id: user_id,
       target_id: step_id,
-      status: "pending",
+      status: :pending,
       preload: []
     )
   end
@@ -134,7 +134,7 @@ defmodule OGrupoDeEstudos.Suggestions do
   def steps_for_suggestions(suggestions) do
     ids =
       suggestions
-      |> Enum.filter(&(&1.action == "edit_field"))
+      |> Enum.filter(&(&1.action == :edit_field))
       |> Enum.map(& &1.target_id)
       |> Enum.uniq()
       |> Enum.reject(&is_nil/1)
@@ -155,14 +155,14 @@ defmodule OGrupoDeEstudos.Suggestions do
 
   # ── Apply suggestion ─────────────────────────────────────
 
-  defp apply_suggestion(%{action: "edit_field"} = s) do
+  defp apply_suggestion(%{action: :edit_field} = s) do
     case Suggestion.field_atom(s.field) do
       {:ok, field_atom} -> apply_field_edit(s, field_atom)
       :error -> {:error, :invalid_field}
     end
   end
 
-  defp apply_suggestion(%{action: "create_connection"} = s) do
+  defp apply_suggestion(%{action: :create_connection} = s) do
     case String.split(s.new_value, "\u2192") do
       [source_code, target_code] ->
         source = StepQuery.get_by(code: String.trim(source_code))
@@ -179,7 +179,7 @@ defmodule OGrupoDeEstudos.Suggestions do
     end
   end
 
-  defp apply_suggestion(%{action: "remove_connection"} = s) do
+  defp apply_suggestion(%{action: :remove_connection} = s) do
     Admin.delete_connection(s.target_id)
   end
 
