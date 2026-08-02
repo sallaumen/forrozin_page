@@ -19,6 +19,9 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
   def path(%{action: :shared_note_updated, target_type: "study_link", target_id: id}, _targets),
     do: ~p"/study/shared/#{id}"
 
+  def path(%{action: :lesson_shared, parent_type: "study_link", parent_id: id}, _targets),
+    do: ~p"/study/shared/#{id}"
+
   def path(%{parent_type: "study_link"}, _targets), do: ~p"/study"
 
   def path(%{parent_type: "step", parent_id: id}, %{steps: steps}) do

@@ -56,6 +56,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenter do
   defp action_phrase(:study_request, _), do: " quer estudar com você"
   defp action_phrase(:study_accepted, _), do: " aceitou seu pedido de estudo"
   defp action_phrase(:shared_note_updated, _), do: " escreveu no diário compartilhado"
+  defp action_phrase(:lesson_shared, _), do: " compartilhou uma lição"
   defp action_phrase(:study_nudge, _), do: " mandou um lembrete: hora de escrever no diário!"
   defp action_phrase(_, _), do: " interagiu"
 

@@ -329,4 +329,53 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       refute html =~ "Sem registro hoje ainda"
     end
   end
+  describe "achados da revisão — IDOR e badge do nav" do
+    test "outro professor não edita nem exclui lição alheia via evento forjado", %{conn: conn} do
+      owner = insert(:user, is_teacher: true)
+      link = insert(:teacher_student_link, teacher: owner, active: true)
+
+      {:ok, lesson, 1} =
+        OGrupoDeEstudos.Study.broadcast_lesson(owner, %{title: "Aula", content: "V1"}, [link.id])
+
+      atacante = insert(:user, is_teacher: true)
+      {:ok, lv, _html} = live(log_in_user(conn, atacante), ~p"/study")
+
+      render_click(lv, "edit_lesson", %{"id" => lesson.id})
+      render_submit(lv, "send_lesson", %{"lesson" => %{"title" => "Aula", "content" => "hack"}})
+      render_click(lv, "delete_lesson", %{"id" => lesson.id})
+
+      assert [%{content: "V1"}] = OGrupoDeEstudos.Study.list_lessons_for_link(link.id)
+    end
+
+    test "bolinha do nav aparece com lição não lida e some após abrir a página", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      link = insert(:teacher_student_link, teacher: teacher, student: student, active: true)
+
+      {:ok, _, 1} =
+        OGrupoDeEstudos.Study.broadcast_lesson(teacher, %{title: "A", content: "x"}, [link.id])
+
+      conn = log_in_user(conn, student)
+      {:ok, lv, _} = live(conn, ~p"/study")
+      assert has_element?(lv, ~s([data-badge="study-pending"]), "1")
+
+      {:ok, _lv2, _} = live(conn, ~p"/study/shared/#{link.id}")
+
+      {:ok, lv3, _} = live(conn, ~p"/study")
+      refute has_element?(lv3, ~s([data-badge="study-pending"]))
+    end
+
+    test "professor que também é aluno vê a bolinha de lição", %{conn: conn} do
+      prof_aluno = insert(:user, is_teacher: true)
+      mestre = insert(:user, is_teacher: true)
+      link = insert(:teacher_student_link, teacher: mestre, student: prof_aluno, active: true)
+
+      {:ok, _, 1} =
+        OGrupoDeEstudos.Study.broadcast_lesson(mestre, %{title: "A", content: "x"}, [link.id])
+
+      {:ok, lv, _} = live(log_in_user(conn, prof_aluno), ~p"/study")
+      assert has_element?(lv, ~s([data-badge="study-pending"]), "1")
+    end
+  end
+
 end

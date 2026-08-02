@@ -101,13 +101,19 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
     if Accounts.admin?(user), do: Suggestions.count_pending(), else: 0
   end
 
+  # Professor também pode ser aluno de alguém: soma pedidos pendentes (lado
+  # professor) com lições não abertas (lado aluno).
   defp pending_study_count(%{is_teacher: true, id: user_id}) do
-    user_id
-    |> Study.list_pending_requests_for_teacher()
-    |> length()
+    pending = user_id |> Study.list_pending_requests_for_teacher() |> length()
+    pending + Study.count_unread_lessons(user_id)
   end
 
+  # Aluno: notas do diário não lidas (notificação) + lições não abertas.
+  # A parte de lições usa read_at da entrega de propósito: abrir o dropdown
+  # de notificações marca tudo como lido, mas a bolinha da lição só deve
+  # sair quando o aluno abrir a página onde a lição está.
   defp pending_study_count(%{id: user_id}) do
-    Engagement.unread_count(user_id, action: :shared_note_updated)
+    Engagement.unread_count(user_id, action: :shared_note_updated) +
+      Study.count_unread_lessons(user_id)
   end
 end

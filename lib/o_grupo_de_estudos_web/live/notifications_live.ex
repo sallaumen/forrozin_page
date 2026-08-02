@@ -141,5 +141,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
   defp target_name(%{action: :study_accepted}, _targets), do: "Ir para estudos →"
   defp target_name(%{action: :shared_note_updated}, _targets), do: "Ver diário →"
   defp target_name(%{action: :study_nudge}, _targets), do: "Abrir diário →"
+  defp target_name(%{action: :lesson_shared}, _targets), do: "Ver lição →"
   defp target_name(notif, targets), do: NotificationRoutes.step_name(notif, targets)
 end

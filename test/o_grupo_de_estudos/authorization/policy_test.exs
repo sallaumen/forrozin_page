@@ -154,4 +154,27 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
       refute Policy.authorized?(:delete_step, user, step)
     end
   end
+
+  describe "authorize(:broadcast_lesson, user, _)" do
+    test "professor pode enviar lição" do
+      teacher = insert(:user, is_teacher: true)
+      assert :ok = Policy.authorize(:broadcast_lesson, teacher, nil)
+    end
+
+    test "quem não é professor não pode" do
+      user = insert(:user, is_teacher: false)
+      assert {:error, :unauthorized} = Policy.authorize(:broadcast_lesson, user, nil)
+    end
+  end
+
+  describe "authorize(:manage_lesson, user, lesson)" do
+    test "só o professor dono gerencia a lição" do
+      teacher = insert(:user, is_teacher: true)
+      other = insert(:user, is_teacher: true)
+      lesson = %OGrupoDeEstudos.Study.Lesson{teacher_id: teacher.id}
+
+      assert :ok = Policy.authorize(:manage_lesson, teacher, lesson)
+      assert {:error, :unauthorized} = Policy.authorize(:manage_lesson, other, lesson)
+    end
+  end
 end

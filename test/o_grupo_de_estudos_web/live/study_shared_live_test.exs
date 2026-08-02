@@ -217,4 +217,49 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert html =~ "Sem permissão para editar esta anotação."
     end
   end
+  describe "achados da revisão — página compartilhada" do
+    test "lição chegando com a página aberta NÃO ganha recibo de leitura", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      link = insert(:teacher_student_link, teacher: teacher, student: student, active: true)
+
+      {:ok, lv, _html} = live(log_in_user(conn, student), ~p"/study/shared/#{link.id}")
+
+      {:ok, lesson, 1} =
+        OGrupoDeEstudos.Study.broadcast_lesson(
+          teacher,
+          %{title: "Chegou agora", content: "x"},
+          [link.id]
+        )
+
+      html = render(lv)
+      assert html =~ "Chegou agora"
+      assert html =~ "Nova"
+
+      assert [%{read_at: nil}] = OGrupoDeEstudos.Study.list_lessons_for_link(link.id)
+      assert lesson.id
+    end
+
+    test "conteúdo curto em muitas linhas ganha o botão ver mais", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      student = insert(:user)
+      link = insert(:teacher_student_link, teacher: teacher, student: student, active: true)
+
+      {:ok, _, 1} =
+        OGrupoDeEstudos.Study.broadcast_lesson(
+          teacher,
+          %{title: "Lista", content: "1. SC\n2. GP\n3. TR\n4. IV\n5. BF"},
+          [link.id]
+        )
+
+      {:ok, lv, html} = live(log_in_user(conn, student), ~p"/study/shared/#{link.id}")
+      assert html =~ "ver mais"
+
+      html2 = render_click(lv, "toggle_lesson_expansion", %{"id" => hd(lesson_ids(link)).id})
+      assert html2 =~ "ver menos"
+    end
+
+    defp lesson_ids(link), do: OGrupoDeEstudos.Study.list_lessons_for_link(link.id)
+  end
+
 end
