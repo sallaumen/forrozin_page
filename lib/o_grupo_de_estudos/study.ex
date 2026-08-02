@@ -16,9 +16,12 @@ defmodule OGrupoDeEstudos.Study do
   alias OGrupoDeEstudos.Study.{
     ActiveDayQuery,
     GoalQuery,
+    LessonQuery,
     LinkQuery,
     NoteQuery
   }
+
+  alias OGrupoDeEstudos.Study.{Lesson, LessonDelivery}
 
   alias Phoenix.PubSub, as: PhoenixPubSub
 
@@ -348,6 +351,140 @@ defmodule OGrupoDeEstudos.Study do
   end
 
   def end_link(%TeacherStudentLink{}, %User{}), do: {:error, LinkError.new(:forbidden)}
+
+  # ── Lições (broadcast do professor) ───────────────────────────────────
+
+  defdelegate list_lessons_for_link(link_id), to: LessonQuery, as: :list_for_link
+
+  defdelegate list_lessons_for_teacher(teacher_id), to: LessonQuery, as: :list_for_teacher
+
+  defdelegate unread_lesson_link_ids(link_ids), to: LessonQuery, as: :unread_link_ids
+
+  defdelegate count_unread_lessons(student_id), to: LessonQuery, as: :count_unread_for_student
+
+  @doc """
+  Cria uma lição e a entrega aos vínculos selecionados do professor.
+
+  `link_ids` é filtrado contra os vínculos ATIVOS do próprio professor —
+  ids alheios ou inativos são ignorados. Sem nenhum vínculo válido,
+  retorna `{:error, :no_students}` e nada é criado. Notificações e
+  broadcast PubSub acontecem após o commit.
+  """
+  def broadcast_lesson(%User{id: teacher_id}, attrs, link_ids) do
+    links = deliverable_links(teacher_id, link_ids)
+
+    with :ok <- ensure_recipients(links),
+         {:ok, lesson} <- insert_lesson_with_deliveries(teacher_id, attrs, links) do
+      Enum.each(links, &notify_lesson_delivered(&1, lesson))
+      {:ok, lesson, length(links)}
+    end
+  end
+
+  @doc "Edita título/conteúdo de uma lição do próprio professor."
+  def update_lesson(%User{id: actor_id}, %Lesson{teacher_id: actor_id} = lesson, attrs) do
+    result =
+      lesson
+      |> Lesson.changeset(Map.take(attrs, [:title, :content]))
+      |> Repo.update()
+
+    with {:ok, updated} <- result do
+      broadcast_lesson_change(updated.id)
+      {:ok, updated}
+    end
+  end
+
+  def update_lesson(%User{}, %Lesson{}, _attrs), do: {:error, :unauthorized}
+
+  @doc "Remove uma lição do próprio professor (entregas caem em cascata)."
+  def delete_lesson(%User{id: actor_id}, %Lesson{teacher_id: actor_id} = lesson) do
+    link_ids = LessonQuery.delivery_link_ids(lesson.id)
+
+    with {:ok, deleted} <- Repo.delete(lesson) do
+      Enum.each(link_ids, &broadcast_lesson_published/1)
+      {:ok, deleted}
+    end
+  end
+
+  def delete_lesson(%User{}, %Lesson{}), do: {:error, :unauthorized}
+
+  @doc "Busca uma lição por id, ou nil (id malformado também é nil)."
+  def get_lesson(id) do
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} -> Repo.get(Lesson, uuid)
+      :error -> nil
+    end
+  end
+
+  @doc """
+  Marca as lições dadas do vínculo como lidas — só o aluno do vínculo pode,
+  e só as lições que ele efetivamente viu na tela (escopo por ids).
+  Retorna `{:ok, count}` ou `{:error, :unauthorized}`.
+  """
+  def mark_lessons_read(
+        %TeacherStudentLink{student_id: student_id} = link,
+        %User{id: student_id},
+        lesson_ids
+      ) do
+    {count, _} = LessonQuery.mark_read(link.id, lesson_ids, DateTime.utc_now())
+    {:ok, count}
+  end
+
+  def mark_lessons_read(%TeacherStudentLink{}, %User{}, _lesson_ids),
+    do: {:error, :unauthorized}
+
+  defp deliverable_links(teacher_id, link_ids) do
+    wanted = MapSet.new(link_ids)
+
+    teacher_id
+    |> LinkQuery.list_active_for_teacher()
+    |> Enum.filter(&MapSet.member?(wanted, &1.id))
+  end
+
+  defp ensure_recipients([]), do: {:error, :no_students}
+  defp ensure_recipients(_links), do: :ok
+
+  defp insert_lesson_with_deliveries(teacher_id, attrs, links) do
+    Repo.transact(fn ->
+      with {:ok, lesson} <-
+             %Lesson{}
+             |> Lesson.changeset(Map.put(attrs, :teacher_id, teacher_id))
+             |> Repo.insert() do
+        Repo.insert_all(LessonDelivery, delivery_rows(lesson, links))
+        {:ok, lesson}
+      end
+    end)
+  end
+
+  defp delivery_rows(lesson, links) do
+    now = DateTime.utc_now()
+
+    Enum.map(links, fn link ->
+      %{
+        id: Ecto.UUID.generate(),
+        lesson_id: lesson.id,
+        teacher_student_link_id: link.id,
+        inserted_at: now,
+        updated_at: now
+      }
+    end)
+  end
+
+  defp notify_lesson_delivered(link, lesson) do
+    Dispatcher.notify_lesson(lesson.teacher_id, link.student_id, link.id, lesson.id)
+    broadcast_lesson_published(link.id)
+  end
+
+  defp broadcast_lesson_published(link_id) do
+    PhoenixPubSub.broadcast(PubSub, note_topic(link_id), {:lesson_published, link_id})
+  end
+
+  # Edição corrige o conteúdo para todos que receberam; quem está com a
+  # página aberta recarrega na hora (mesmo evento do publish).
+  defp broadcast_lesson_change(lesson_id) do
+    lesson_id
+    |> LessonQuery.delivery_link_ids()
+    |> Enum.each(&broadcast_lesson_published/1)
+  end
 
   def note_topic(%TeacherStudentLink{id: id}), do: note_topic(id)
   def note_topic(id) when is_binary(id), do: "study:shared_note:#{id}"

@@ -22,6 +22,7 @@
     active={@active_study_tab}
     is_teacher={@current_user.is_teacher}
     pending_count={length(@pending_requests)}
+    lesson_count={MapSet.size(@unread_lesson_link_ids)}
   />
 
   <%!-- ───────────────── Aba: Meu estudo ───────────────── --%>
@@ -230,6 +231,12 @@
           href={~p"/users/#{link.teacher.username}"}
         >
           <:actions>
+            <span
+              :if={MapSet.member?(@unread_lesson_link_ids, link.id)}
+              class="inline-flex items-center gap-1.5 rounded-full bg-accent-red/10 px-2 py-0.5 text-[10px] font-bold text-accent-red"
+            >
+              <span class="h-1.5 w-1.5 rounded-full bg-accent-red"></span> Nova lição
+            </span>
             <.action_link navigate={~p"/study/shared/#{link.id}"} icon="hero-arrow-right">
               Abrir diário
             </.action_link>
@@ -255,6 +262,14 @@
         <.action_button tone={:ghost} icon="hero-link" phx-click="copy_invite_link">
           Link de convite
         </.action_button>
+        <.action_button
+          :if={@student_links != []}
+          tone={:primary}
+          icon="hero-paper-airplane"
+          phx-click="open_lesson_composer"
+        >
+          Enviar lição
+        </.action_button>
       </:action>
     </.section_intro>
 
@@ -269,6 +284,133 @@
         highlighted={@pending_requests != []}
       />
     </div>
+
+    <%!-- Composer de lição (broadcast para a turma) --%>
+    <section
+      :if={@composing_lesson}
+      id="lesson-composer"
+      class="mb-4 rounded-2xl border border-accent-purple/30 border-l-[3px] border-l-accent-purple/70 bg-ink-50 p-4 shadow-sm"
+    >
+      <h3 class="m-0 mb-1 text-sm font-bold text-ink-900">
+        {if @editing_lesson_id, do: "Editar lição", else: "Nova lição para a turma"}
+      </h3>
+      <p class="m-0 mb-3 text-xs text-ink-500">
+        {if @editing_lesson_id,
+          do: "A correção vale para todos os alunos que receberam esta lição.",
+          else:
+            "Escreva uma vez e envie para os alunos selecionados. A lição chega no diário compartilhado de cada um."}
+      </p>
+
+      <form id="lesson-composer-form" phx-submit="send_lesson">
+        <input
+          type="text"
+          name="lesson[title]"
+          value={@lesson_title}
+          maxlength="120"
+          placeholder="Título (ex.: Workshop de sacadas)"
+          class="mb-2 w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2 font-serif text-sm text-ink-800"
+        />
+        <textarea
+          name="lesson[content]"
+          rows="6"
+          placeholder="Conteúdo da lição: o que foi visto, dicas, o que revisar..."
+          class="mb-3 w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2 font-serif text-sm leading-relaxed text-ink-800"
+        >{@lesson_content}</textarea>
+
+        <div :if={!@editing_lesson_id} class="mb-3">
+          <p class="m-0 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-ink-500">
+            Enviar para
+          </p>
+          <div class="flex flex-col gap-0.5">
+            <label
+              :for={link <- @student_links}
+              class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-ink-100/60"
+            >
+              <input
+                type="checkbox"
+                checked={MapSet.member?(@lesson_selected_ids, link.id)}
+                phx-click="toggle_lesson_student"
+                phx-value-link-id={link.id}
+                class="h-4 w-4 cursor-pointer rounded border-ink-300 accent-accent-purple"
+              />
+              <span class="font-serif text-[13px] text-ink-800">{link.student.name}</span>
+              <span class="text-[11px] text-ink-400">@{link.student.username}</span>
+            </label>
+          </div>
+        </div>
+
+        <p :if={@lesson_error} class="m-0 mb-2 text-xs font-semibold text-accent-red">
+          {@lesson_error}
+        </p>
+
+        <div class="flex items-center gap-2.5">
+          <.action_button tone={:primary} icon="hero-paper-airplane">
+            {cond do
+              @editing_lesson_id -> "Salvar alterações"
+              MapSet.size(@lesson_selected_ids) == 1 -> "Enviar para 1 aluno"
+              true -> "Enviar para #{MapSet.size(@lesson_selected_ids)} alunos"
+            end}
+          </.action_button>
+          <button
+            type="button"
+            phx-click="close_lesson_composer"
+            class="cursor-pointer border-0 bg-transparent p-0 text-xs font-semibold text-ink-400 hover:text-ink-700"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <%!-- Lições já enviadas --%>
+    <section
+      :if={@teacher_lessons != []}
+      class="mb-4 rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm"
+    >
+      <h3 class="m-0 mb-2.5 text-[10px] font-bold uppercase tracking-widest text-ink-500">
+        Lições enviadas
+      </h3>
+      <div class="space-y-2">
+        <div
+          :for={row <- @teacher_lessons}
+          class="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2.5"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="m-0 truncate text-[13px] font-bold text-ink-900">{row.lesson.title}</p>
+            <p class="m-0 text-[11px] text-ink-400">
+              {OGrupoDeEstudos.Brazil.format_date(row.lesson.inserted_at)} · {row.delivered_count} {if row.delivered_count ==
+                                                                                                         1,
+                                                                                                       do:
+                                                                                                         "aluno",
+                                                                                                       else:
+                                                                                                         "alunos"} · {row.read_count} {if row.read_count ==
+                                                                                                                                            1,
+                                                                                                                                          do:
+                                                                                                                                            "leu",
+                                                                                                                                          else:
+                                                                                                                                            "leram"}
+            </p>
+          </div>
+          <button
+            type="button"
+            phx-click="edit_lesson"
+            phx-value-id={row.lesson.id}
+            class="cursor-pointer rounded-full border border-ink-200 bg-transparent px-2.5 py-1 text-[11px] font-semibold text-ink-600 hover:bg-ink-100"
+          >
+            Editar
+          </button>
+          <button
+            type="button"
+            phx-click="delete_lesson"
+            phx-value-id={row.lesson.id}
+            data-confirm="Excluir esta lição para todos os alunos que a receberam?"
+            class="cursor-pointer rounded-full border border-accent-red/30 bg-transparent px-2.5 py-1 text-[11px] font-semibold text-accent-red hover:bg-accent-red/10"
+          >
+            Excluir
+          </button>
+        </div>
+      </div>
+    </section>
 
     <%!-- Pedidos pendentes --%>
     <section

@@ -24,6 +24,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :active, :string, required: true, values: ~w(personal teachers students)
   attr :is_teacher, :boolean, default: false
   attr :pending_count, :integer, default: 0
+  attr :lesson_count, :integer, default: 0
 
   def study_tabs(assigns) do
     ~H"""
@@ -34,7 +35,14 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           class="inline-flex items-center gap-0.5 rounded-full border border-ink-200 bg-ink-200/60 p-1"
         >
           <.tab_button tab="personal" active={@active} label="Meu estudo" />
-          <.tab_button tab="teachers" active={@active} label="Meus professores" />
+          <.tab_button tab="teachers" active={@active} label="Meus professores">
+            <span
+              :if={@lesson_count > 0}
+              class="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-red px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+            >
+              {@lesson_count}
+            </span>
+          </.tab_button>
           <.tab_button :if={@is_teacher} tab="students" active={@active} label="Meus alunos">
             <span
               :if={@pending_count > 0}

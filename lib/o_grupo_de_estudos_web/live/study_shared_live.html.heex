@@ -93,6 +93,68 @@
           </:meta>
         </.diary_card>
 
+        <%!-- Lições do professor (broadcast) --%>
+        <section
+          :if={@lessons != []}
+          id="teacher-lessons"
+          class="rounded-2xl border border-ink-200 border-l-[3px] border-l-accent-purple/70 bg-ink-50 p-5 shadow-sm"
+        >
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h3 class="m-0 flex items-center gap-2 text-sm font-bold text-ink-900">
+              <.icon name="hero-academic-cap" class="size-4 text-accent-purple" />
+              Lições do professor
+            </h3>
+            <span class="text-[11px] text-ink-400">
+              {length(@lessons)} {if length(@lessons) == 1, do: "lição", else: "lições"}
+            </span>
+          </div>
+
+          <div class="space-y-2.5">
+            <article
+              :for={lesson <- @lessons}
+              id={"lesson-#{lesson.id}"}
+              class="rounded-xl border border-ink-200 bg-ink-100/40 px-3.5 py-3"
+            >
+              <div class="mb-1 flex flex-wrap items-center gap-2">
+                <span class="text-[13px] font-bold text-ink-900">{lesson.title}</span>
+                <span
+                  :if={!i_am_teacher and MapSet.member?(@new_lesson_ids, lesson.id)}
+                  class="inline-flex items-center rounded-full bg-accent-red px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white"
+                >
+                  Nova
+                </span>
+                <span class="ml-auto text-[11px] text-ink-400">
+                  {OGrupoDeEstudos.Brazil.format_date(lesson.inserted_at)}
+                </span>
+              </div>
+
+              <p class={[
+                "m-0 whitespace-pre-line font-serif text-[13px] leading-relaxed text-ink-700",
+                !MapSet.member?(@expanded_lesson_ids, lesson.id) && "line-clamp-3"
+              ]}>
+                {lesson.content}
+              </p>
+
+              <div class="mt-1.5 flex items-center gap-2">
+                <button
+                  :if={lesson_long?(lesson.content)}
+                  type="button"
+                  phx-click="toggle_lesson_expansion"
+                  phx-value-id={lesson.id}
+                  class="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-semibold text-accent-purple hover:underline"
+                >
+                  {if MapSet.member?(@expanded_lesson_ids, lesson.id),
+                    do: "ver menos",
+                    else: "ver mais"}
+                </button>
+                <span :if={i_am_teacher} class="ml-auto text-[11px] text-ink-400">
+                  {if lesson.read_at, do: "Lida pelo aluno", else: "Ainda não lida"}
+                </span>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <.note_history
           notes={@history}
           count_label={

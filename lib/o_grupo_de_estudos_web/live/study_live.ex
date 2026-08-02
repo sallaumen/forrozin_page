@@ -2,6 +2,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Engagement, Study}
+  alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Study.LinkError
   alias OGrupoDeEstudosWeb.ErrorMessage
@@ -40,6 +41,12 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:editing_history_note_id, nil)
      |> assign(:expanded_note_ids, MapSet.new())
      |> assign(:history_step_suggestions, [])
+     |> assign(:composing_lesson, false)
+     |> assign(:editing_lesson_id, nil)
+     |> assign(:lesson_title, "")
+     |> assign(:lesson_content, "")
+     |> assign(:lesson_error, nil)
+     |> assign(:lesson_selected_ids, MapSet.new())
      |> assign(:active_study_tab, "personal")
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
@@ -293,6 +300,77 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     end
   end
 
+  def handle_event("open_lesson_composer", _params, socket) do
+    case Policy.authorize(:broadcast_lesson, socket.assigns.current_user, nil) do
+      :ok ->
+        {:noreply,
+         assign(socket,
+           composing_lesson: true,
+           editing_lesson_id: nil,
+           lesson_title: "",
+           lesson_content: "",
+           lesson_error: nil,
+           lesson_selected_ids: MapSet.new(Enum.map(socket.assigns.student_links, & &1.id))
+         )}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("close_lesson_composer", _params, socket) do
+    {:noreply, assign(socket, composing_lesson: false, lesson_error: nil)}
+  end
+
+  def handle_event("toggle_lesson_student", %{"link-id" => link_id}, socket) do
+    selected = socket.assigns.lesson_selected_ids
+
+    updated =
+      if MapSet.member?(selected, link_id),
+        do: MapSet.delete(selected, link_id),
+        else: MapSet.put(selected, link_id)
+
+    {:noreply, assign(socket, :lesson_selected_ids, updated)}
+  end
+
+  def handle_event("send_lesson", %{"lesson" => params}, socket) do
+    case Policy.authorize(:broadcast_lesson, socket.assigns.current_user, nil) do
+      :ok -> submit_lesson(socket, params)
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("edit_lesson", %{"id" => id}, socket) do
+    with %{} = lesson <- Study.get_lesson(id),
+         :ok <- Policy.authorize(:manage_lesson, socket.assigns.current_user, lesson) do
+      {:noreply,
+       assign(socket,
+         composing_lesson: true,
+         editing_lesson_id: lesson.id,
+         lesson_title: lesson.title,
+         lesson_content: lesson.content,
+         lesson_error: nil
+       )}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("delete_lesson", %{"id" => id}, socket) do
+    user = socket.assigns.current_user
+
+    with %{} = lesson <- Study.get_lesson(id),
+         :ok <- Policy.authorize(:manage_lesson, user, lesson),
+         {:ok, _} <- Study.delete_lesson(user, lesson) do
+      {:noreply,
+       socket
+       |> assign_dashboard(build_dashboard(user, socket.assigns.today))
+       |> put_flash(:info, "Lição excluída.")}
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
   def handle_event("nudge_student", %{"link-id" => link_id}, socket) do
     user = socket.assigns.current_user
     link = Study.get_link_for_member(link_id, user.id)
@@ -319,6 +397,51 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     end
   end
 
+  defp submit_lesson(%{assigns: %{editing_lesson_id: nil}} = socket, params) do
+    user = socket.assigns.current_user
+    link_ids = MapSet.to_list(socket.assigns.lesson_selected_ids)
+    attrs = %{title: params["title"] || "", content: params["content"] || ""}
+
+    case Study.broadcast_lesson(user, attrs, link_ids) do
+      {:ok, _lesson, delivered_count} ->
+        {:noreply,
+         socket
+         |> assign(composing_lesson: false, lesson_error: nil)
+         |> assign_dashboard(build_dashboard(user, socket.assigns.today))
+         |> put_flash(:info, lesson_sent_message(delivered_count))}
+
+      {:error, :no_students} ->
+        {:noreply, assign(socket, :lesson_error, "Selecione ao menos um aluno.")}
+
+      {:error, %Ecto.Changeset{}} ->
+        {:noreply, assign(socket, :lesson_error, "Preencha o título e o conteúdo da lição.")}
+    end
+  end
+
+  defp submit_lesson(socket, params) do
+    user = socket.assigns.current_user
+    attrs = %{title: params["title"] || "", content: params["content"] || ""}
+
+    with %{} = lesson <- Study.get_lesson(socket.assigns.editing_lesson_id),
+         :ok <- Policy.authorize(:manage_lesson, user, lesson),
+         {:ok, _} <- Study.update_lesson(user, lesson, attrs) do
+      {:noreply,
+       socket
+       |> assign(composing_lesson: false, editing_lesson_id: nil, lesson_error: nil)
+       |> assign_dashboard(build_dashboard(user, socket.assigns.today))
+       |> put_flash(:info, "Lição atualizada para todos os alunos.")}
+    else
+      {:error, %Ecto.Changeset{}} ->
+        {:noreply, assign(socket, :lesson_error, "Preencha o título e o conteúdo da lição.")}
+
+      _ ->
+        {:noreply, assign(socket, :lesson_error, "Não foi possível salvar a lição.")}
+    end
+  end
+
+  defp lesson_sent_message(1), do: "Lição enviada para 1 aluno!"
+  defp lesson_sent_message(count), do: "Lição enviada para #{count} alunos!"
+
   defp assign_dashboard(socket, dashboard) do
     socket
     |> assign(:today_note, dashboard.today_note)
@@ -334,6 +457,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     |> assign(:wrote_today_ids, dashboard.wrote_today_ids)
     |> assign(:students_wrote_today, dashboard.students_wrote_today)
     |> assign(:pending_requests, dashboard.pending_requests)
+    |> assign(:teacher_lessons, dashboard.teacher_lessons)
+    |> assign(:unread_lesson_link_ids, dashboard.unread_lesson_link_ids)
   end
 
   defp build_dashboard(user, today) do
@@ -362,7 +487,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
       wrote_today_ids: wrote_today_ids,
       students_wrote_today: Enum.count(student_links, &MapSet.member?(wrote_today_ids, &1.id)),
       pending_requests:
-        if(user.is_teacher, do: Study.list_pending_requests_for_teacher(user.id), else: [])
+        if(user.is_teacher, do: Study.list_pending_requests_for_teacher(user.id), else: []),
+      teacher_lessons: if(user.is_teacher, do: Study.list_lessons_for_teacher(user.id), else: []),
+      unread_lesson_link_ids: Study.unread_lesson_link_ids(Enum.map(teacher_links, & &1.id))
     }
   end
 

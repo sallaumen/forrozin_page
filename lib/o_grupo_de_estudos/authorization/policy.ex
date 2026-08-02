@@ -15,6 +15,7 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Encyclopedia.{Step, StepLink}
   alias OGrupoDeEstudos.Sequences.Sequence
+  alias OGrupoDeEstudos.Study.Lesson
 
   @type reason :: :unauthorized | :unauthenticated
 
@@ -84,6 +85,18 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
     do: :ok
 
   def authorize(:manage_step_link, _, _), do: {:error, :unauthorized}
+
+  # ===== Study: lições =====
+  # Enviar exige ser professor; gerenciar (editar/apagar) é só do dono.
+  # Admin fica de fora de propósito: o conteúdo é do vínculo professor-aluno.
+
+  def authorize(:broadcast_lesson, %User{is_teacher: true}, _), do: :ok
+
+  def authorize(:broadcast_lesson, _, _), do: {:error, :unauthorized}
+
+  def authorize(:manage_lesson, %User{id: teacher_id}, %Lesson{teacher_id: teacher_id}), do: :ok
+
+  def authorize(:manage_lesson, _, _), do: {:error, :unauthorized}
 
   # ===== Sequences =====
   # Edit/delete: admin manages any sequence; the owner manages their own.

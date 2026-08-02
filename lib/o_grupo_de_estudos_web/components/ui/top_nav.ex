@@ -71,6 +71,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             </.link>
             <span
               :if={@pending_study_count > 0}
+              data-badge="study-pending"
               class="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 flex items-center justify-center bg-accent-red text-white text-[9px] font-bold rounded-full pointer-events-none"
             >
               {@pending_study_count}

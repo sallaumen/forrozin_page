@@ -30,9 +30,13 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
         end
 
         today = OGrupoDeEstudos.Brazil.today()
+        {lessons, new_lesson_ids} = load_lessons(link, socket)
 
         {:ok,
          assign(socket,
+           lessons: lessons,
+           new_lesson_ids: new_lesson_ids,
+           expanded_lesson_ids: MapSet.new(),
            page_title: "Diário compartilhado",
            is_admin: Accounts.admin?(socket.assigns.current_user),
            link: link,
@@ -134,6 +138,17 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
     {:noreply, assign(socket, editing_history_note_id: new_id, history_step_suggestions: [])}
   end
 
+  def handle_event("toggle_lesson_expansion", %{"id" => lesson_id}, socket) do
+    current = socket.assigns.expanded_lesson_ids
+
+    updated =
+      if MapSet.member?(current, lesson_id),
+        do: MapSet.delete(current, lesson_id),
+        else: MapSet.put(current, lesson_id)
+
+    {:noreply, assign(socket, :expanded_lesson_ids, updated)}
+  end
+
   def handle_event("toggle_note_expansion", %{"id" => note_id}, socket) do
     current = socket.assigns.expanded_note_ids
 
@@ -226,6 +241,22 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   end
 
   @impl true
+  def handle_info(
+        {:lesson_published, link_id},
+        %{assigns: %{link: %{id: link_id}}} = socket
+      ) do
+    # Recarrega, mas NÃO marca como lida: página aberta em segundo plano não
+    # é leitura — o recibo do professor só muda quando o aluno visitar de novo.
+    lessons = Study.list_lessons_for_link(link_id)
+    unread = for l <- lessons, is_nil(l.read_at), into: MapSet.new(), do: l.id
+
+    {:noreply,
+     assign(socket,
+       lessons: lessons,
+       new_lesson_ids: MapSet.union(socket.assigns.new_lesson_ids, unread)
+     )}
+  end
+
   def handle_info({:study_note_updated, link_id}, %{assigns: %{link: %{id: link_id}}} = socket) do
     note = Study.get_shared_note(link_id, socket.assigns.today)
 
@@ -239,6 +270,29 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   end
 
   def handle_info(_message, socket), do: {:noreply, socket}
+
+  # Carrega as lições do vínculo; o badge "Nova" congela o estado de leitura
+  # de ANTES desta visita, e abrir a página (render conectado) marca como
+  # lidas SOMENTE as lições listadas aqui — escopo por id, para que uma
+  # lição que chegar depois via PubSub não ganhe recibo falso. Quem decide
+  # se pode marcar é o contexto (só o aluno do vínculo); para o professor a
+  # chamada é negada lá e vira no-op.
+  defp load_lessons(link, socket) do
+    lessons = Study.list_lessons_for_link(link.id)
+    new_ids = for l <- lessons, is_nil(l.read_at), into: MapSet.new(), do: l.id
+
+    if connected?(socket) do
+      Study.mark_lessons_read(link, socket.assigns.current_user, MapSet.to_list(new_ids))
+    end
+
+    {lessons, new_ids}
+  end
+
+  # O corte visual é line-clamp-3 com whitespace-pre-line: conteúdo curto em
+  # muitas linhas também precisa do botão, senão fica inacessível.
+  defp lesson_long?(content) do
+    String.length(content) > 220 or length(String.split(content, "\n")) > 3
+  end
 
   defp counterpart(link, current_user_id) do
     if link.teacher_id == current_user_id, do: link.student, else: link.teacher

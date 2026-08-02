@@ -66,4 +66,11 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenterTest do
       assert Presenter.notification_initial(%{actors_data: []}) == "?"
     end
   end
+  test "lesson_shared tem frase própria" do
+    assert OGrupoDeEstudosWeb.Helpers.NotificationPresenter.action_text(%{
+             action: :lesson_shared,
+             count: 1
+           }) =~ "compartilhou uma lição"
+  end
+
 end

@@ -155,6 +155,24 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end)
   end
 
+  @doc "Notifica o aluno quando o professor compartilha uma lição no vínculo."
+  def notify_lesson(teacher_id, student_id, link_id, lesson_id) do
+    insert_and_broadcast([student_id], fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: teacher_id,
+        action: :lesson_shared,
+        group_key: "lesson:#{lesson_id}:#{link_id}",
+        target_type: "lesson",
+        target_id: lesson_id,
+        parent_type: "study_link",
+        parent_id: link_id,
+        inserted_at: now()
+      }
+    end)
+  end
+
   @doc "Notifies the student when their teacher writes in the shared diary."
   def notify_shared_note(teacher, student_id, link_id) do
     insert_and_broadcast([student_id], fn user_id ->

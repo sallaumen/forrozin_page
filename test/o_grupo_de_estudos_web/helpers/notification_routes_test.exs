@@ -26,6 +26,11 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutesTest do
       assert NotificationRoutes.path(n, @targets) == "/study/shared/l1"
     end
 
+    test "lesson shared goes to the shared diary of the link" do
+      n = notif(%{action: :lesson_shared, parent_type: "study_link", parent_id: "l9"})
+      assert NotificationRoutes.path(n, @targets) == "/study/shared/l9"
+    end
+
     test "study_link parent goes to the study area" do
       n = notif(%{parent_type: "study_link", parent_id: "l1"})
       assert NotificationRoutes.path(n, @targets) == "/study"
