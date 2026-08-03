@@ -30,6 +30,7 @@ defmodule OGrupoDeEstudos.Engagement do
   alias OGrupoDeEstudos.Engagement.Notifications.NotificationQuery
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences
+  alias OGrupoDeEstudos.Workshops
 
   # ══════════════════════════════════════════════════════════════════════
   # Likes (delegated to Engagement.Likes)
@@ -60,6 +61,12 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate create_sequence_comment(user, sequence_id, attrs), to: Comments
   defdelegate delete_sequence_comment(user, comment), to: Comments
   defdelegate get_sequence_comment(id), to: Comments
+
+  # Workshop comments
+  defdelegate list_workshop_comments(workshop_id, opts \\ []), to: Comments
+  defdelegate create_workshop_comment(user, workshop_id, attrs), to: Comments
+  defdelegate delete_workshop_comment(user, comment), to: Comments
+  defdelegate get_workshop_comment(id), to: Comments
 
   # Profile comments — new typed API (2+arity)
   defdelegate list_profile_comments(profile_id, opts), to: Comments
@@ -93,7 +100,8 @@ defmodule OGrupoDeEstudos.Engagement do
   def notification_targets(notifications) do
     %{
       steps: notifications |> parent_ids("step") |> Encyclopedia.step_summaries_by_ids(),
-      users: notifications |> parent_ids("profile") |> user_summaries_by_ids()
+      users: notifications |> parent_ids("profile") |> user_summaries_by_ids(),
+      workshops: notifications |> parent_ids("workshop") |> Workshops.slugs_by_ids()
     }
   end
 

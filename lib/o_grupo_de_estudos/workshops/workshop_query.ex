@@ -41,6 +41,30 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     end
   end
 
+  @doc "Id do organizador, sem carregar o workshop inteiro."
+  @spec organizer_id(Ecto.UUID.t()) :: Ecto.UUID.t() | nil
+  def organizer_id(workshop_id) do
+    case Ecto.UUID.cast(workshop_id) do
+      {:ok, uuid} -> Repo.one(from w in Workshop, where: w.id == ^uuid, select: w.organizer_id)
+      :error -> nil
+    end
+  end
+
+  @doc "Lote `id => %{slug, title}`, para montar link de notificação sem N+1."
+  @spec slugs_by_ids([Ecto.UUID.t()]) :: %{
+          Ecto.UUID.t() => %{slug: String.t(), title: String.t()}
+        }
+  def slugs_by_ids([]), do: %{}
+
+  def slugs_by_ids(ids) do
+    from(w in Workshop,
+      where: w.id in ^ids,
+      select: {w.id, %{slug: w.slug, title: w.title}}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
   @doc """
   Agenda pública: só publicados, com organizador carregado.
   Ordena por data de início (mais próximo primeiro), ou decrescente no passado.

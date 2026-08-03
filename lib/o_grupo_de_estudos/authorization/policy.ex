@@ -104,6 +104,20 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   # Gerenciar é só do organizador — inclusive para admin, porque o controle de
   # pagamento é assunto interno de quem organiza.
 
+  # Conversa continua aberta em workshop cancelado: o organizador costuma
+  # precisar dela justamente para explicar o cancelamento. Rascunho nao, que
+  # e privado de quem organiza.
+  def authorize(:comment_workshop, nil, _workshop), do: {:error, :unauthenticated}
+
+  def authorize(:comment_workshop, %User{}, %Workshop{status: status})
+      when status in [:published, :cancelled],
+      do: :ok
+
+  def authorize(:comment_workshop, _user, _workshop), do: {:error, :unauthorized}
+
+  def authorize(:like, nil, _resource), do: {:error, :unauthenticated}
+  def authorize(:like, %User{}, _resource), do: :ok
+
   def authorize(:create_workshop, %User{}, _), do: :ok
 
   def authorize(:create_workshop, nil, _), do: {:error, :unauthenticated}

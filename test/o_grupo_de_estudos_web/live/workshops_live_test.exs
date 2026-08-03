@@ -3,7 +3,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
   import Phoenix.LiveViewTest
 
-  alias OGrupoDeEstudos.{Brazil, Workshops}
+  alias OGrupoDeEstudos.{Brazil, Engagement, Workshops}
+  alias OGrupoDeEstudos.Engagement.Comments.WorkshopCommentQuery
 
   defp em(dias, hora \\ 14) do
     Brazil.today()
@@ -109,6 +110,243 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     |> OGrupoDeEstudos.Workshops.EnrollmentQuery.list_participants()
     |> hd()
     |> Map.fetch!(:id)
+  end
+
+  describe "conversa na página do workshop" do
+    setup %{conn: conn} do
+      organizer = insert(:user)
+      %{organizer: organizer, workshop: publicado(organizer, %{}), conn: conn}
+    end
+
+    test "visitante sem conta lê a conversa mas não vê o formulário", %{
+      conn: conn,
+      workshop: w
+    } do
+      autor = insert(:user)
+      {:ok, _} = Engagement.create_workshop_comment(autor, w.id, %{body: "que horas começa?"})
+
+      {:ok, _lv, html} = live(conn, ~p"/workshops/#{w.slug}")
+
+      assert html =~ "que horas começa?"
+      refute html =~ ~s(phx-submit="create_comment")
+      assert html =~ "Entre para comentar"
+    end
+
+    test "quem tem conta comenta e vê o comentário na hora", %{conn: conn, workshop: w} do
+      visitante = insert(:user)
+      {:ok, lv, _} = live(log_in_user(conn, visitante), ~p"/workshops/#{w.slug}")
+
+      html = render_submit(lv, "create_comment", %{"body" => "eu vou!"})
+
+      assert html =~ "eu vou!"
+      assert [comment] = Engagement.list_workshop_comments(w.id)
+      assert comment.user_id == visitante.id
+    end
+
+    test "comentário vazio não cria linha nenhuma", %{conn: conn, workshop: w} do
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+
+      render_submit(lv, "create_comment", %{"body" => "   "})
+
+      assert Engagement.list_workshop_comments(w.id) == []
+    end
+
+    test "responder aparece indentado sob o comentário", %{conn: conn, workshop: w} do
+      {:ok, raiz} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "e o local?"})
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+
+      html =
+        render_submit(lv, "create_reply", %{"body" => "no Batel", "parent-id" => raiz.id})
+
+      assert html =~ "no Batel"
+    end
+
+    test "curtir comentário conta e descurte volta", %{conn: conn, workshop: w} do
+      {:ok, comment} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "boa!"})
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+
+      render_click(lv, "toggle_comment_like", %{"type" => "workshop_comment", "id" => comment.id})
+      assert Engagement.count_likes("workshop_comment", comment.id) == 1
+
+      render_click(lv, "toggle_comment_like", %{"type" => "workshop_comment", "id" => comment.id})
+      assert Engagement.count_likes("workshop_comment", comment.id) == 0
+    end
+
+    test "autor apaga o próprio comentário pela página", %{conn: conn, workshop: w} do
+      autor = insert(:user)
+      {:ok, comment} = Engagement.create_workshop_comment(autor, w.id, %{body: "removo isso"})
+
+      {:ok, lv, _} = live(log_in_user(conn, autor), ~p"/workshops/#{w.slug}")
+
+      html =
+        render_click(lv, "delete_comment", %{"id" => comment.id, "type" => "workshop_comment"})
+
+      refute html =~ "removo isso"
+      assert Engagement.list_workshop_comments(w.id) == []
+    end
+
+    test "ninguém apaga comentário alheio pela página", %{conn: conn, workshop: w} do
+      {:ok, comment} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "meu"})
+
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+      render_click(lv, "delete_comment", %{"id" => comment.id, "type" => "workshop_comment"})
+
+      assert [_ainda_la] = Engagement.list_workshop_comments(w.id)
+    end
+
+    test "rascunho explica que a conversa abre ao publicar", %{conn: conn, organizer: organizer} do
+      {:ok, rascunho} =
+        Workshops.create_workshop(organizer, %{
+          title: "Ainda rascunho",
+          description: "Sem publicar.",
+          starts_at: em(7)
+        })
+
+      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{rascunho.slug}")
+
+      # Mostrar um campo que sempre falha no envio seria pior que não mostrar.
+      refute html =~ ~s(phx-submit="create_comment")
+      assert html =~ "A conversa abre quando você publicar"
+    end
+
+    test "visitante anônimo não vê o botão Responder", %{conn: conn, workshop: w} do
+      {:ok, _} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "e o local?"})
+
+      {:ok, _lv, html} = live(conn, ~p"/workshops/#{w.slug}")
+
+      # Deixar clicar e jogar o texto fora no envio é pior que não oferecer.
+      refute html =~ "Responder"
+      assert html =~ "Entre para comentar"
+    end
+
+    test "rascunho não aceita comentário", %{conn: conn, organizer: organizer} do
+      {:ok, rascunho} =
+        Workshops.create_workshop(organizer, %{
+          title: "Ainda rascunho",
+          description: "Sem publicar.",
+          starts_at: em(7)
+        })
+
+      {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{rascunho.slug}")
+
+      render_submit(lv, "create_comment", %{"body" => "tentando"})
+
+      assert Engagement.list_workshop_comments(rascunho.id) == []
+    end
+
+    test "workshop cancelado continua aceitando comentário", %{
+      conn: conn,
+      organizer: organizer,
+      workshop: w
+    } do
+      {:ok, cancelado} = Workshops.cancel_workshop(organizer, w)
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{cancelado.slug}")
+
+      render_submit(lv, "create_comment", %{"body" => "que pena, o que houve?"})
+
+      assert [_] = Engagement.list_workshop_comments(cancelado.id)
+    end
+  end
+
+  describe "resistência a id inválido" do
+    setup %{conn: conn} do
+      %{workshop: publicado(insert(:user), %{}), conn: conn}
+    end
+
+    test "visitante anônimo não derruba a página com id qualquer", %{conn: conn, workshop: w} do
+      {:ok, lv, _} = live(conn, ~p"/workshops/#{w.slug}")
+
+      # A página é pública: qualquer um manda o evento que quiser pelo socket.
+      for evento <- ~w(toggle_replies start_reply) do
+        render_click(lv, evento, %{"id" => "; drop table"})
+      end
+
+      assert render(lv) =~ "Conversa"
+    end
+
+    test "usuário logado não derruba a página com id qualquer", %{conn: conn, workshop: w} do
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+
+      render_click(lv, "toggle_comment_like", %{"type" => "workshop_comment", "id" => "nada"})
+      render_click(lv, "delete_comment", %{"id" => "nada", "type" => "workshop_comment"})
+      render_click(lv, "toggle_replies", %{"id" => "nada"})
+      render_submit(lv, "create_reply", %{"body" => "oi", "parent-id" => "nada"})
+
+      assert render(lv) =~ "Conversa"
+    end
+
+    test "resposta não se prende a comentário de outro workshop", %{conn: conn, workshop: w} do
+      alheio = publicado(insert(:user), %{title: "Outro workshop"})
+      {:ok, de_fora} = Engagement.create_workshop_comment(insert(:user), alheio.id, %{body: "lá"})
+
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+      render_submit(lv, "create_reply", %{"body" => "invadindo", "parent-id" => de_fora.id})
+
+      assert Engagement.list_workshop_comments(w.id) == []
+      assert Engagement.list_replies(WorkshopCommentQuery, de_fora.id) == []
+    end
+  end
+
+  describe "curtir o workshop" do
+    test "curte, conta e descurte", %{conn: conn} do
+      w = publicado(insert(:user), %{})
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+
+      render_click(lv, "toggle_workshop_like", %{})
+      assert Engagement.count_likes("workshop", w.id) == 1
+
+      render_click(lv, "toggle_workshop_like", %{})
+      assert Engagement.count_likes("workshop", w.id) == 0
+    end
+
+    test "visitante sem conta não curte, vai para o cadastro", %{conn: conn} do
+      w = publicado(insert(:user), %{})
+      {:ok, lv, _} = live(conn, ~p"/workshops/#{w.slug}")
+
+      assert {:error, {:redirect, %{to: destino}}} =
+               render_click(lv, "toggle_workshop_like", %{})
+
+      assert destino =~ "/signup"
+      assert Engagement.count_likes("workshop", w.id) == 0
+    end
+  end
+
+  describe "notificação para o organizador" do
+    test "inscrição acende o contador e o link leva ao painel", %{conn: conn} do
+      organizer = insert(:user)
+      w = publicado(organizer, %{})
+      aluna = insert(:user)
+
+      {:ok, _} = Workshops.enroll(w, aluna)
+
+      assert Engagement.unread_count(organizer.id) == 1
+
+      # O painel do organizador é onde a notificação desemboca: precisa do sino.
+      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
+      assert html =~ "hero-bell"
+    end
+
+    test "o link da notificação de inscrição aponta para o painel", %{conn: conn} do
+      organizer = insert(:user)
+      w = publicado(organizer, %{})
+      {:ok, _} = Workshops.enroll(w, insert(:user))
+
+      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/notifications")
+
+      assert html =~ "se inscreveu no seu workshop"
+      assert html =~ "/workshops/#{w.slug}/gerenciar"
+    end
+
+    test "comentário no workshop leva à página pública", %{conn: conn} do
+      organizer = insert(:user)
+      w = publicado(organizer, %{})
+      {:ok, _} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "e aí?"})
+
+      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/notifications")
+
+      assert html =~ "comentou no seu workshop"
+      assert html =~ "/workshops/#{w.slug}"
+    end
   end
 
   describe "agenda: ids de DOM" do

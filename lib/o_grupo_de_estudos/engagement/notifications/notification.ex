@@ -20,6 +20,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
         :study_nudge,
         :shared_note_updated,
         :lesson_shared,
+        :workshop_enrolled,
+        :workshop_commented,
+        :liked_workshop,
         :suggestion_created,
         :suggestion_approved,
         :suggestion_rejected
@@ -38,9 +41,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
     timestamps(updated_at: false)
   end
 
-  @valid_actions ~w(liked_comment replied_comment liked_step liked_sequence followed_user suggestion_created suggestion_approved suggestion_rejected study_request study_accepted study_nudge shared_note_updated lesson_shared)
-  @valid_target_types ~w(step_comment sequence_comment profile_comment step sequence profile suggestion study_link lesson)
-  @valid_parent_types ~w(step sequence profile suggestion study_link)
+  @valid_target_types ~w(step_comment sequence_comment profile_comment workshop_comment step sequence profile workshop suggestion study_link lesson)
+  @valid_parent_types ~w(step sequence profile workshop suggestion study_link)
 
   def changeset(notification, attrs) do
     notification
@@ -65,7 +67,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
       :user_id,
       :actor_id
     ])
-    |> validate_inclusion(:action, @valid_actions)
     |> validate_inclusion(:target_type, @valid_target_types)
     |> validate_inclusion(:parent_type, @valid_parent_types)
     |> foreign_key_constraint(:user_id)

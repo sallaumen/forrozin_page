@@ -1103,7 +1103,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
 
     test "returns empty maps when nothing to resolve" do
-      assert Engagement.notification_targets([]) == %{steps: %{}, users: %{}}
+      assert Engagement.notification_targets([]) == %{steps: %{}, users: %{}, workshops: %{}}
     end
   end
 

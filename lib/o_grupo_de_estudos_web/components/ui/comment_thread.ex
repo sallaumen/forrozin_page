@@ -34,6 +34,12 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :replying_to, :string, default: nil
   attr :replies_map, :map, default: %{}
   attr :is_admin, :boolean, default: false
+  # `%{user_id => badge}` pre-calculado pelo host. Vazio cai no calculo por
+  # comentario, que e um N+1 e so sobrevive por compatibilidade.
+  attr :badges, :map, default: %{}
+  # Pagina publica: visitante sem conta le a conversa, mas nao escreve.
+  attr :show_form, :boolean, default: true
+  slot :form_placeholder
 
   # ---------------------------------------------------------------------------
   # Public API
@@ -51,10 +57,15 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
           replying_to={@replying_to}
           replies={Map.get(@replies_map, comment.id, [])}
           is_admin={@is_admin}
+          show_form={@show_form}
+          badges={@badges}
         />
       <% end %>
 
-      <.new_comment_form />
+      <.new_comment_form :if={@show_form} />
+      <div :if={!@show_form && @form_placeholder != []} class="border-t border-ink-100 pt-3 mt-2">
+        {render_slot(@form_placeholder)}
+      </div>
     </div>
     """
   end
@@ -70,6 +81,8 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :replying_to, :string, required: true
   attr :replies, :list, required: true
   attr :is_admin, :boolean, required: true
+  attr :show_form, :boolean, default: true
+  attr :badges, :map, default: %{}
 
   defp root_comment(assigns) do
     ~H"""
@@ -81,6 +94,8 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
         comment_type={@comment_type}
         is_admin={@is_admin}
         size={:root}
+        show_reply={@show_form}
+        badges={@badges}
       />
 
       <%!-- Inline reply form — shown when this comment is being replied to --%>
@@ -98,6 +113,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             comment_type={@comment_type}
             is_admin={@is_admin}
             size={:reply}
+            badges={@badges}
           />
         <% end %>
       </div>
@@ -132,6 +148,8 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :comment_type, :string, required: true
   attr :is_admin, :boolean, required: true
   attr :size, :atom, required: true
+  attr :show_reply, :boolean, default: true
+  attr :badges, :map, default: %{}
 
   defp comment_row(%{comment: %{deleted_at: deleted_at}} = assigns) when not is_nil(deleted_at) do
     ~H"""
@@ -145,16 +163,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   defp comment_row(assigns) do
     user = get_user(assigns.comment)
 
-    badge =
-      if user do
-        try do
-          Badges.primary(get_user_id(assigns.comment))
-        rescue
-          _ -> nil
-        end
-      else
-        nil
-      end
+    badge = badge_for(assigns.badges, user, get_user_id(assigns.comment))
 
     assigns =
       assigns
@@ -205,9 +214,9 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             </span>
           </button>
 
-          <%!-- Reply button — only for root comments --%>
+          <%!-- Reply button — only for root comments, and only for who can write --%>
           <button
-            :if={@size == :root}
+            :if={@size == :root && @show_reply}
             phx-click="start_reply"
             phx-value-id={@comment.id}
             type="button"
@@ -239,7 +248,12 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
 
   defp reply_form(assigns) do
     ~H"""
-    <form phx-submit="create_reply" phx-value-parent-id={@parent_id} class="flex items-center gap-2">
+    <form
+      id={"reply-form-#{@parent_id}"}
+      phx-submit="create_reply"
+      phx-value-parent-id={@parent_id}
+      class="flex items-center gap-2"
+    >
       <input
         type="text"
         name="body"
@@ -261,7 +275,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   defp new_comment_form(assigns) do
     ~H"""
     <div class="border-t border-ink-100 pt-3 mt-2">
-      <form phx-submit="create_comment" class="flex items-center gap-2">
+      <form id="new-comment-form" phx-submit="create_comment" class="flex items-center gap-2">
         <input
           type="text"
           name="body"
@@ -284,6 +298,19 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   # ---------------------------------------------------------------------------
   # Helpers
   # ---------------------------------------------------------------------------
+
+  # Host que passa `badges` evita uma consulta por comentario renderizado. Sem
+  # o mapa, cai no calculo individual (comportamento historico).
+  defp badge_for(_badges, nil, _user_id), do: nil
+
+  defp badge_for(badges, _user, user_id) when is_map_key(badges, user_id),
+    do: Map.fetch!(badges, user_id)
+
+  defp badge_for(_badges, _user, user_id) do
+    Badges.primary(user_id)
+  rescue
+    _ -> nil
+  end
 
   defp get_user(comment) do
     cond do
