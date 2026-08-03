@@ -356,7 +356,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
       <%!-- Chave Pix costuma ser CPF ou telefone: só depois de garantir a
       vaga, mesma regra da página do workshop. --%>
-      <p :if={@program.payment_info && @ja_comprou} class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500">
+      <p
+        :if={@program.payment_info && @ja_comprou}
+        class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500"
+      >
         {@program.payment_info}
       </p>
 
