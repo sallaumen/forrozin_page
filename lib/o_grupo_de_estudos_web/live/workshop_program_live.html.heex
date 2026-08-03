@@ -90,6 +90,70 @@
         </div>
       </div>
 
+      <%!-- Montagem: quem organiza mexe sem sair da pagina --%>
+      <section :if={@owner?} class="mt-8 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5">
+        <h2 class="m-0 text-[12.5px] font-bold text-ink-700">Montar a programação</h2>
+        <p class="m-0 mt-1 mb-3 text-[12px] leading-snug text-ink-500">
+          Só você vê isto. Dá para tirar e pôr workshop a qualquer momento, inclusive
+          depois de publicar.
+        </p>
+
+        <div :if={@dentro != []} class="flex flex-col gap-1.5">
+          <div
+            :for={w <- @dentro}
+            id={"dentro-#{w.id}"}
+            class="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[13px] font-bold text-ink-900">{w.title}</span>
+              <span class="block truncate text-[11.5px] text-ink-500">{schedule_label(w)}</span>
+            </span>
+            <.workshop_tag :if={w.status == :draft} tone={:neutral}>Rascunho</.workshop_tag>
+            <button
+              type="button"
+              phx-click="detach_workshop"
+              phx-value-id={w.id}
+              class="shrink-0 cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            >
+              Tirar
+            </button>
+          </div>
+        </div>
+
+        <div :if={@disponiveis != []} class="mt-4">
+          <p class="m-0 mb-1.5 text-[11px] font-bold uppercase tracking-[1.4px] text-ink-500">
+            Seus workshops fora desta programação
+          </p>
+          <div class="flex flex-col gap-1.5">
+            <div
+              :for={w <- @disponiveis}
+              id={"fora-#{w.id}"}
+              class="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-ink-300 px-3 py-2"
+            >
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-[13px] font-bold text-ink-800">{w.title}</span>
+                <span class="block truncate text-[11.5px] text-ink-500">{schedule_label(w)}</span>
+              </span>
+              <button
+                type="button"
+                phx-click="attach_workshop"
+                phx-value-id={w.id}
+                class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+              >
+                Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <.link
+          navigate={~p"/study/workshops/novo?#{[programa: @program.slug]}"}
+          class="mt-4 inline-flex items-center gap-1.5 rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white no-underline"
+        >
+          <.icon name="hero-plus" class="size-4" /> Criar workshop já nesta programação
+        </.link>
+      </section>
+
       <.workshop_empty
         :if={@days == []}
         title="Nenhum workshop nesta programação ainda"

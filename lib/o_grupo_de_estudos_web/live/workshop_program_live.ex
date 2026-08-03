@@ -38,6 +38,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:workshop_count, length(workshops))
     |> assign(:enrolled_ids, enrolled_ids(user))
     |> assign(:enrollment_counts, Workshops.enrollment_counts(Enum.map(workshops, & &1.id)))
+    |> assign_montagem(workshops, owner?, user)
+  end
+
+  # Painel de montagem: so para quem organiza, e so com o que ele administra.
+  defp assign_montagem(socket, _workshops, false, _user) do
+    socket |> assign(:dentro, []) |> assign(:disponiveis, [])
+  end
+
+  defp assign_montagem(socket, workshops, true, user) do
+    dentro_ids = MapSet.new(workshops, & &1.id)
+
+    disponiveis =
+      user.id
+      |> Workshops.list_for_organizer()
+      |> Enum.reject(&MapSet.member?(dentro_ids, &1.id))
+
+    socket
+    |> assign(:dentro, workshops)
+    |> assign(:disponiveis, disponiveis)
   end
 
   @impl true
@@ -53,6 +72,34 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível publicar.")}
+    end
+  end
+
+  def handle_event("attach_workshop", %{"id" => id}, socket) do
+    montar(socket, id, &Workshops.attach_workshop/3, "Workshop adicionado à programação.")
+  end
+
+  def handle_event("detach_workshop", %{"id" => id}, socket) do
+    montar(socket, id, &Workshops.detach_workshop/3, "Workshop tirado da programação.")
+  end
+
+  # Id vem de params numa pagina publica: so quem organiza mexe, e a
+  # autorizacao real mora no contexto, que confere os dois lados.
+  defp montar(%{assigns: %{owner?: false}} = socket, _id, _fun, _mensagem),
+    do: {:noreply, socket}
+
+  defp montar(socket, id, fun, mensagem) do
+    user = socket.assigns.current_user
+
+    case fun.(socket.assigns.program, user, id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign_program(socket.assigns.program, user)
+         |> put_flash(:info, mensagem)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível mexer nessa programação.")}
     end
   end
 

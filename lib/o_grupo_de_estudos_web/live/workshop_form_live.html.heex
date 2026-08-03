@@ -24,6 +24,17 @@
       Um evento pontual, com data e link próprio. Quem se inscreve não vira seu aluno.
     </p>
 
+    <div
+      :if={@program}
+      class="mb-4 flex items-start gap-2.5 rounded-xl border border-accent-purple/30 bg-accent-purple/10 px-4 py-3"
+    >
+      <.icon name="hero-calendar-days" class="size-4 shrink-0 text-accent-purple" />
+      <p class="m-0 text-[12.5px] leading-snug text-ink-700">
+        Este workshop já vai entrar na programação <b class="text-ink-900">{@program.title}</b>
+        assim que você salvar.
+      </p>
+    </div>
+
     <form id="workshop-form" phx-change="validate" phx-submit="save">
       <div class="rounded-2xl border border-ink-200 bg-ink-50 p-5 shadow-sm">
         <div class="mb-4">
