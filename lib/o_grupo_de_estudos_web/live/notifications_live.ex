@@ -59,7 +59,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        notifications: grouped,
        notification_targets: Engagement.notification_targets(grouped),
        page: 0,
-       has_more: length(raw) == @page_size,
+       has_more: has_more?(grouped),
        nav_mode: :primary,
        is_admin: Accounts.admin?(user),
        notification_count: notification_count,
@@ -111,7 +111,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
        raw_notifications: all_raw,
        notifications: grouped,
        notification_targets: Engagement.notification_targets(grouped),
-       has_more: length(more_raw) == @page_size
+       has_more: has_more?(Grouper.group(more_raw))
      )}
   end
 
@@ -130,10 +130,14 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
       notifications: grouped,
       notification_targets: Engagement.notification_targets(grouped),
       page: 0,
-      has_more: length(raw) == @page_size,
+      has_more: has_more?(grouped),
       notification_count: unread
     )
   end
+
+  # `list_notifications` corta por group_key, entao a pagina cheia se mede em
+  # assuntos. Contar linhas escondia o botao assim que um assunto trazia duas.
+  defp has_more?(grouped), do: length(grouped) == @page_size
 
   defp target_name(%{action: :liked_sequence}, _targets), do: nil
   defp target_name(%{action: :followed_user}, _targets), do: nil

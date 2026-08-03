@@ -16,6 +16,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
+  use OGrupoDeEstudosWeb.NotificationHandlers
+
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.WorkshopComponents
 

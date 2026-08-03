@@ -220,6 +220,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   defp reais_label(reais, centavos),
     do: "R$ #{reais},#{String.pad_leading(to_string(centavos), 2, "0")}"
 
+  @doc "Rótulo do botão de curtir: some o número quando ninguém curtiu ainda."
+  def like_label(true, 1), do: "Você curtiu"
+  def like_label(true, count), do: "Você e mais #{count - 1}"
+  def like_label(false, 0), do: "Curtir"
+  def like_label(false, count), do: "Curtir · #{count}"
+
   @doc "Ex.: 1 inscrito / 32 inscritos"
   def people_label(1), do: "1 inscrito"
   def people_label(count), do: "#{count} inscritos"

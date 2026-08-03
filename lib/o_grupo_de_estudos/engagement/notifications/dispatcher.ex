@@ -11,28 +11,35 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.Comments
+  alias OGrupoDeEstudos.Engagement.Comments.WorkshopCommentQuery
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences
+  alias OGrupoDeEstudos.Workshops
   alias Phoenix.PubSub
 
   @pubsub OGrupoDeEstudos.PubSub
 
   # ── Comment notifications ──────────────────────────────
 
-  @doc "Dispatches notification when a comment reply is created."
+  @doc """
+  Dispatches notification when a comment is created.
+
+  Resposta avisa o autor do comentario pai. Comentario raiz so avisa alguem em
+  workshop, onde existe um dono da pagina para avisar; passo, sequencia e
+  perfil seguem sem notificacao de raiz.
+  """
   def notify(:new_comment, comment, actor, query_mod) do
-    recipients = determine_comment_recipients(comment, actor, query_mod)
-    parent_field = query_mod.parent_field()
-    parent_id = Map.get(comment, parent_field)
+    {recipients, action, group_key} = comment_context(comment, actor, query_mod)
+    parent_id = Map.get(comment, query_mod.parent_field())
 
     builder = fn user_id ->
       %{
         id: Ecto.UUID.generate(),
         user_id: user_id,
         actor_id: actor.id,
-        action: :replied_comment,
-        group_key: "comment:#{query_mod.likeable_type()}:#{root_comment_id(comment, query_mod)}",
+        action: action,
+        group_key: group_key,
         target_type: query_mod.likeable_type(),
         target_id: comment.id,
         parent_type: parent_type_from(query_mod),
@@ -41,9 +48,40 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
       }
     end
 
-    all_recipients = add_admin_recipients(recipients, actor.id)
-    insert_and_broadcast(all_recipients, builder)
+    recipients
+    |> add_admin_recipients(actor.id)
+    |> insert_and_broadcast(builder)
   end
+
+  @doc """
+  Avisa o organizador de que alguem se inscreveu no workshop.
+
+  Sem copia para admin: um workshop de 100 pessoas geraria 100 x N_admins
+  linhas. O `group_key` por workshop faz o Grouper colapsar as inscricoes em
+  uma entrada so ("Fulano e mais 99 se inscreveram").
+  """
+  @spec notify_workshop_enrollment(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
+  def notify_workshop_enrollment(actor_id, organizer_id, workshop_id)
+      when actor_id != organizer_id do
+    builder = fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: actor_id,
+        action: :workshop_enrolled,
+        group_key: "workshop_enrolled:#{workshop_id}",
+        target_type: "workshop",
+        target_id: workshop_id,
+        parent_type: "workshop",
+        parent_id: workshop_id,
+        inserted_at: now()
+      }
+    end
+
+    insert_and_broadcast([organizer_id], builder)
+  end
+
+  def notify_workshop_enrollment(_actor_id, _organizer_id, _workshop_id), do: :ok
 
   # ── Like notifications ─────────────────────────────────
 
@@ -193,22 +231,36 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   # ── Private: recipient determination ───────────────────
 
-  defp determine_comment_recipients(comment, actor, query_mod) do
-    parent_comment_field = query_mod.parent_comment_field()
-    parent_comment_id = Map.get(comment, parent_comment_field)
+  defp comment_context(comment, actor, query_mod) do
+    case Map.get(comment, query_mod.parent_comment_field()) do
+      nil -> root_comment_context(comment, actor, query_mod)
+      parent_comment_id -> reply_context(parent_comment_id, actor, query_mod)
+    end
+  end
+
+  # Raiz em workshop: quem recebe e o organizador, e o agrupamento e por
+  # workshop, para varios comentarios virarem uma linha so.
+  defp root_comment_context(comment, actor, WorkshopCommentQuery) do
+    {workshop_organizer_recipients(comment.workshop_id, actor.id), :workshop_commented,
+     "workshop_comment:#{comment.workshop_id}"}
+  end
+
+  defp root_comment_context(comment, _actor, query_mod),
+    do: {[], :replied_comment, "comment:#{query_mod.likeable_type()}:#{comment.id}"}
+
+  defp reply_context(parent_comment_id, actor, query_mod) do
+    parent = Repo.get(query_mod.schema(), parent_comment_id)
     user_field = query_mod.user_field()
-    actor_id = Map.get(actor, :id)
 
-    if parent_comment_id do
-      parent = Repo.get(query_mod.schema(), parent_comment_id)
+    {comment_author_recipients(parent, user_field, Map.get(actor, :id)), :replied_comment,
+     "comment:#{query_mod.likeable_type()}:#{parent_comment_id}"}
+  end
 
-      if parent && Map.get(parent, user_field) != actor_id && is_nil(parent.deleted_at) do
-        [Map.get(parent, user_field)]
-      else
-        []
-      end
-    else
-      []
+  defp workshop_organizer_recipients(workshop_id, actor_id) do
+    case Workshops.organizer_id(workshop_id) do
+      nil -> []
+      ^actor_id -> []
+      organizer_id -> [organizer_id]
     end
   end
 
@@ -228,6 +280,17 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     comment = Comments.get_profile_comment(comment_id)
     recipients = comment_author_recipients(comment, :author_id, actor_id)
     {recipients, :liked_comment, "profile_comment", "profile", comment && comment.profile_id}
+  end
+
+  defp determine_like_context(actor_id, "workshop_comment", comment_id) do
+    comment = Comments.get_workshop_comment(comment_id)
+    recipients = comment_author_recipients(comment, :user_id, actor_id)
+    {recipients, :liked_comment, "workshop_comment", "workshop", comment && comment.workshop_id}
+  end
+
+  defp determine_like_context(actor_id, "workshop", workshop_id) do
+    recipients = workshop_organizer_recipients(workshop_id, actor_id)
+    {recipients, :liked_workshop, "workshop", "workshop", workshop_id}
   end
 
   defp determine_like_context(actor_id, "step", step_id) do
@@ -294,16 +357,12 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   # ── Helpers ────────────────────────────────────────────
 
-  defp root_comment_id(comment, query_mod) do
-    parent_comment_field = query_mod.parent_comment_field()
-    Map.get(comment, parent_comment_field) || comment.id
-  end
-
   defp parent_type_from(query_mod) do
     case query_mod.parent_field() do
       :step_id -> "step"
       :sequence_id -> "sequence"
       :profile_id -> "profile"
+      :workshop_id -> "workshop"
     end
   end
 

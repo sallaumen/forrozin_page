@@ -11,6 +11,68 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
     {log_in_user(conn, user), user}
   end
 
+  # `insert_all` porque e assim que o Dispatcher grava: sem changeset.
+  defp notificar(user, actor, group_key, minutos_atras) do
+    at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-minutos_atras * 60, :second)
+      |> NaiveDateTime.truncate(:second)
+
+    OGrupoDeEstudos.Repo.insert_all(OGrupoDeEstudos.Engagement.Notifications.Notification, [
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user.id,
+        actor_id: actor.id,
+        action: :followed_user,
+        group_key: group_key,
+        target_type: "profile",
+        target_id: actor.id,
+        parent_type: "profile",
+        parent_id: actor.id,
+        inserted_at: at
+      }
+    ])
+  end
+
+  describe "paginação por assunto" do
+    test "botão continua aparecendo quando um assunto tem várias linhas", %{conn: conn} do
+      user = insert(:user)
+
+      # 21 assuntos: mais que a primeira página, então tem página 2.
+      for i <- 1..21, do: notificar(user, insert(:user), "follow:#{i}", i)
+
+      # Um deles com 4 linhas: antes, isso fazia a contagem de LINHAS passar
+      # de 20 e o botão sumir, escondendo o resto do histórico para sempre.
+      for _ <- 1..3, do: notificar(user, insert(:user), "follow:1", 1)
+
+      {:ok, _lv, html} = live(log_in_user(conn, user), ~p"/notifications")
+
+      assert html =~ "Carregar mais"
+    end
+
+    test "botão some quando não há mais assunto nenhum", %{conn: conn} do
+      user = insert(:user)
+      for i <- 1..3, do: notificar(user, insert(:user), "follow:#{i}", i)
+
+      {:ok, _lv, html} = live(log_in_user(conn, user), ~p"/notifications")
+
+      refute html =~ "Carregar mais"
+    end
+
+    test "carregar mais traz os assuntos restantes", %{conn: conn} do
+      user = insert(:user)
+      for i <- 1..25, do: notificar(user, insert(:user), "follow:#{i}", i)
+
+      {:ok, lv, html} = live(log_in_user(conn, user), ~p"/notifications")
+      assert html =~ "Carregar mais"
+
+      html = render_click(lv, "load_more", %{})
+
+      # 25 assuntos: a segunda página fecha a conta e o botão sai de cena.
+      refute html =~ "Carregar mais"
+    end
+  end
+
   describe "access" do
     test "redirects to /login when not authenticated", %{conn: conn} do
       {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/notifications")

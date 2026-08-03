@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudosWeb.Hooks.NotificationSubscriber do
       assign(socket,
         notification_dropdown_open: false,
         notification_preview_groups: [],
-        notification_targets: %{steps: %{}, users: %{}}
+        notification_targets: %{steps: %{}, users: %{}, workshops: %{}}
       )
 
     case connected_user(socket) do

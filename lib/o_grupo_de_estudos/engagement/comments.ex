@@ -16,7 +16,9 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
     SequenceComment,
     SequenceCommentQuery,
     StepComment,
-    StepCommentQuery
+    StepCommentQuery,
+    WorkshopComment,
+    WorkshopCommentQuery
   }
 
   alias OGrupoDeEstudos.Engagement.{ProfileComment, ProfileCommentQuery, SafeDispatch}
@@ -76,6 +78,20 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   @doc "Deletes a sequence comment with authorization."
   def delete_sequence_comment(user, comment),
     do: delete_comment(SequenceComment, SequenceCommentQuery, user, comment)
+
+  # ── Workshop comments — typed public API ──────────────────────────────
+
+  @doc "Lists root workshop comments for the given workshop, ordered by engagement."
+  def list_workshop_comments(workshop_id, opts \\ []),
+    do: list_comments(WorkshopCommentQuery, workshop_id, opts)
+
+  @doc "Creates a workshop comment (root or reply)."
+  def create_workshop_comment(user, workshop_id, attrs),
+    do: create_comment(WorkshopComment, WorkshopCommentQuery, user, workshop_id, attrs)
+
+  @doc "Deletes a workshop comment with authorization."
+  def delete_workshop_comment(user, comment),
+    do: delete_comment(WorkshopComment, WorkshopCommentQuery, user, comment)
 
   # ── Profile comments — new typed API (2-arity) ────────────────────────
 
@@ -163,19 +179,24 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
     end
   end
 
-  defp delete_comment(schema_mod, query_mod, user, comment) do
+  defp delete_comment(schema_mod, _query_mod, user, comment) do
     with :ok <- Policy.authorize(:delete_comment, user, comment) do
-      parent_comment_field = query_mod.parent_comment_field()
-
-      if comment.reply_count == 0 do
-        hard_delete(schema_mod, comment, parent_comment_field)
-      else
-        tombstone(comment)
-      end
+      # Reply count read fresh: the in-memory struct may predate a reply, and
+      # hard-deleting then would orphan it (the FK nilifies, so the reply would
+      # resurface as a root comment).
+      schema_mod
+      |> Repo.get(comment.id)
+      |> delete_or_tombstone()
     end
   end
 
-  defp hard_delete(_schema_mod, comment, _parent_comment_field) do
+  defp delete_or_tombstone(nil), do: {:ok, :deleted}
+
+  defp delete_or_tombstone(%{reply_count: 0} = comment), do: hard_delete(comment)
+
+  defp delete_or_tombstone(comment), do: tombstone(comment)
+
+  defp hard_delete(comment) do
     # reply_count decrement handled by Postgres trigger on DELETE
     case Repo.delete(comment) do
       {:ok, _} -> {:ok, :deleted}
@@ -201,6 +222,9 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   @doc "Returns a sequence comment by id, or `nil`."
   def get_sequence_comment(id), do: Repo.get(SequenceComment, id)
+
+  @doc "Returns a workshop comment by id, or `nil`."
+  def get_workshop_comment(id), do: Repo.get(WorkshopComment, id)
 
   defp paginate(query, opts) do
     limit = Keyword.get(opts, :limit, 50)

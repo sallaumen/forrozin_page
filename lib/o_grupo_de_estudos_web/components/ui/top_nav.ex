@@ -28,7 +28,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   attr :notification_dropdown_enabled, :boolean, default: false
   attr :notification_dropdown_open, :boolean, default: false
   attr :notification_preview_groups, :list, default: []
-  attr :notification_targets, :map, default: %{steps: %{}, users: %{}}
+  attr :notification_targets, :map, default: %{steps: %{}, users: %{}, workshops: %{}}
   attr :pending_suggestions_count, :integer, default: 0
   attr :pending_study_count, :integer, default: 0
   attr :edit_action_enabled, :boolean, default: false

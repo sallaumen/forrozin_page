@@ -10,7 +10,11 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
     endpoint: OGrupoDeEstudosWeb.Endpoint,
     router: OGrupoDeEstudosWeb.Router
 
-  @type targets :: %{steps: %{optional(binary()) => map()}, users: %{optional(binary()) => map()}}
+  @type targets :: %{
+          steps: %{optional(binary()) => map()},
+          users: %{optional(binary()) => map()},
+          workshops: %{optional(binary()) => map()}
+        }
 
   @spec path(map(), targets()) :: String.t()
   def path(%{action: :study_nudge, target_type: "study_link", target_id: id}, _targets),
@@ -38,9 +42,19 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
     end
   end
 
+  # Inscricao leva para o painel: quem organiza quer ver a lista.
+  def path(%{action: :workshop_enrolled, parent_id: id}, %{workshops: workshops}),
+    do: workshop_path(workshops[id], "/gerenciar")
+
+  def path(%{parent_type: "workshop", parent_id: id}, %{workshops: workshops}),
+    do: workshop_path(workshops[id], "")
+
   def path(%{parent_type: "sequence"}, _targets), do: ~p"/sequence"
 
   def path(_notification, _targets), do: ~p"/collection"
+
+  defp workshop_path(nil, _suffix), do: ~p"/study/workshops"
+  defp workshop_path(%{slug: slug}, suffix), do: ~p"/workshops/#{slug}" <> suffix
 
   @spec step_name(map(), targets()) :: String.t() | nil
   def step_name(%{parent_type: "step", parent_id: id}, %{steps: steps}) when not is_nil(id) do

@@ -17,22 +17,43 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
   @doc """
   Returns notifications for the given user, ordered unread-first then by newest.
 
+  O limite conta **assuntos** (`group_key`), não linhas: como o `Grouper`
+  colapsa cada assunto em uma entrada só, cortar por linha faria uma rajada
+  (um workshop com 100 inscritos) ocupar a lista inteira e esconder o resto.
+  Todas as linhas dos assuntos escolhidos vêm juntas, senão o "e mais 99"
+  seria contado por cima de uma amostra.
+
   ## Options
 
-  - `:limit` — max results (default 20)
-  - `:offset` — pagination offset (default 0)
+  - `:limit` — máximo de assuntos (default 20)
+  - `:offset` — deslocamento, também em assuntos (default 0)
   """
   @spec list_for_user(Ecto.UUID.t(), opts()) :: [Notification.t()]
   def list_for_user(user_id, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 20)
-    offset = Keyword.get(opts, :offset, 0)
+    keys = recent_group_keys(user_id, opts)
 
     from(n in Notification,
-      where: n.user_id == ^user_id,
+      where: n.user_id == ^user_id and n.group_key in ^keys,
       order_by: [asc_nulls_first: n.read_at, desc: n.inserted_at],
-      limit: ^limit,
-      offset: ^offset,
       preload: [:actor]
+    )
+    |> Repo.all()
+  end
+
+  # Um assunto conta como não lido enquanto tiver qualquer linha não lida, e
+  # vale pela data da linha mais recente. Em Postgres false < true, então
+  # "tem não lido" (= false para o teste de zero) ordena primeiro.
+  defp recent_group_keys(user_id, opts) do
+    from(n in Notification,
+      where: n.user_id == ^user_id,
+      group_by: n.group_key,
+      select: n.group_key,
+      order_by: [
+        asc: fragment("count(*) FILTER (WHERE ? IS NULL) = 0", n.read_at),
+        desc: max(n.inserted_at)
+      ],
+      limit: ^Keyword.get(opts, :limit, 20),
+      offset: ^Keyword.get(opts, :offset, 0)
     )
     |> Repo.all()
   end

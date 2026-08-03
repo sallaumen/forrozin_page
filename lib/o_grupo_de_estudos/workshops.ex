@@ -14,6 +14,8 @@ defmodule OGrupoDeEstudos.Workshops do
   import Ecto.Query, only: [from: 2]
 
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
+  alias OGrupoDeEstudos.Engagement.SafeDispatch
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops.{EnrollmentQuery, Workshop, WorkshopEnrollment, WorkshopQuery}
 
@@ -23,6 +25,8 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate list_for_organizer(organizer_id), to: WorkshopQuery
   defdelegate get_by_slug(slug), to: WorkshopQuery
   defdelegate get_workshop(id), to: WorkshopQuery, as: :get
+  defdelegate organizer_id(workshop_id), to: WorkshopQuery
+  defdelegate slugs_by_ids(ids), to: WorkshopQuery
 
   defdelegate list_participants(workshop_id), to: EnrollmentQuery
   defdelegate count_enrollments(workshop_id), to: EnrollmentQuery, as: :count
@@ -100,6 +104,12 @@ defmodule OGrupoDeEstudos.Workshops do
   def enroll(%Workshop{organizer_id: id}, %User{id: id}), do: {:error, :organizer}
 
   def enroll(%Workshop{} = workshop, %User{} = user) do
+    workshop
+    |> insert_enrollment_locked(user)
+    |> notify_organizer(workshop, user)
+  end
+
+  defp insert_enrollment_locked(workshop, user) do
     Repo.transact(fn ->
       with {:ok, locked} <- lock_workshop(workshop.id),
            :ok <- ensure_open(locked),
@@ -108,6 +118,18 @@ defmodule OGrupoDeEstudos.Workshops do
       end
     end)
   end
+
+  # Fora da transacao de proposito: broadcast nao faz rollback, entao um erro
+  # tardio deixaria o organizador com aviso de uma inscricao inexistente.
+  defp notify_organizer({:ok, _enrollment} = result, workshop, user) do
+    SafeDispatch.run(fn ->
+      Dispatcher.notify_workshop_enrollment(user.id, workshop.organizer_id, workshop.id)
+    end)
+
+    result
+  end
+
+  defp notify_organizer(error, _workshop, _user), do: error
 
   @doc "Cancela a própria inscrição, liberando a vaga."
   @spec cancel_enrollment(Workshop.t(), User.t()) ::
