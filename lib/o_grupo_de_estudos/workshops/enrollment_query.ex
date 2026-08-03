@@ -14,6 +14,38 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopEnrollment}
 
   @doc """
+  Inscrições em workshops que acontecem no intervalo e que ainda não receberam
+  o aviso de véspera.
+
+  Devolve o par `{inscrição, workshop}` já com o usuário carregado, para o
+  worker montar a mensagem sem N+1.
+  """
+  @spec pending_reminders(DateTime.t(), DateTime.t()) :: [{WorkshopEnrollment.t(), map()}]
+  def pending_reminders(de, ate) do
+    from(e in WorkshopEnrollment,
+      join: w in assoc(e, :workshop),
+      join: u in assoc(e, :user),
+      where: is_nil(e.reminded_at),
+      where: w.status == :published,
+      where: w.starts_at >= ^de and w.starts_at <= ^ate,
+      order_by: [asc: w.starts_at],
+      select: {e, w, u}
+    )
+    |> Repo.all()
+  end
+
+  @doc "Marca que o aviso saiu, para não repetir se o job rodar de novo."
+  @spec mark_reminded([Ecto.UUID.t()]) :: {non_neg_integer(), nil}
+  def mark_reminded([]), do: {0, nil}
+
+  def mark_reminded(enrollment_ids) do
+    agora = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(e in WorkshopEnrollment, where: e.id in ^enrollment_ids)
+    |> Repo.update_all(set: [reminded_at: agora])
+  end
+
+  @doc """
   Próximos workshops em que a pessoa está inscrita, do mais próximo em diante.
 
   Workshop rolando agora ainda conta: quem está no meio do evento quer ver que

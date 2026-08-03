@@ -56,6 +56,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenter do
   defp action_phrase(:workshop_commented, true), do: " comentaram no seu workshop"
   defp action_phrase(:liked_workshop, false), do: " curtiu seu workshop"
   defp action_phrase(:liked_workshop, true), do: " curtiram seu workshop"
+  defp action_phrase(:workshop_reminder, _), do: " tem workshop com você amanhã"
   defp action_phrase(:suggestion_created, _), do: " enviou uma sugestão"
   defp action_phrase(:suggestion_approved, _), do: " aprovou sua sugestão ✓"
   defp action_phrase(:suggestion_rejected, _), do: " rejeitou sua sugestão"
