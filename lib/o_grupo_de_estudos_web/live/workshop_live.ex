@@ -23,22 +23,29 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
-    case Workshops.get_by_slug(slug) do
-      nil ->
-        {:ok,
-         socket
-         |> put_flash(:error, "Workshop não encontrado.")
-         |> redirect(to: ~p"/study/workshops")}
+    workshop = Workshops.get_by_slug(slug)
 
-      workshop ->
-        {:ok,
-         socket
-         |> assign(:page_title, workshop.title)
-         |> assign(:replying_to, nil)
-         |> assign(:replies_map, %{})
-         |> assign_workshop(workshop)
-         |> reload_comments()}
+    case Policy.authorize(:view_workshop, socket.assigns[:current_user], workshop) do
+      :ok -> {:ok, assign_page(socket, workshop)}
+      {:error, _} -> {:ok, not_found(socket)}
     end
+  end
+
+  defp assign_page(socket, workshop) do
+    socket
+    |> assign(:page_title, workshop.title)
+    |> assign(:replying_to, nil)
+    |> assign(:replies_map, %{})
+    |> assign_workshop(workshop)
+    |> reload_comments()
+  end
+
+  # Mesma resposta de slug inexistente: um "sem permissao" confirmaria que o
+  # workshop existe naquele endereco.
+  defp not_found(socket) do
+    socket
+    |> put_flash(:error, "Workshop não encontrado.")
+    |> redirect(to: ~p"/study/workshops")
   end
 
   @impl true
