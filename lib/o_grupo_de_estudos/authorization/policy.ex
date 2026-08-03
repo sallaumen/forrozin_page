@@ -118,6 +118,17 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   def authorize(:like, nil, _resource), do: {:error, :unauthenticated}
   def authorize(:like, %User{}, _resource), do: :ok
 
+  # Rascunho e privado de quem organiza. Devolve :not_found, nao :unauthorized:
+  # dizer "sem permissao" ja confirma que o workshop existe naquele slug.
+  def authorize(:view_workshop, _user, %Workshop{status: status})
+      when status in [:published, :cancelled],
+      do: :ok
+
+  def authorize(:view_workshop, %User{id: organizer_id}, %Workshop{organizer_id: organizer_id}),
+    do: :ok
+
+  def authorize(:view_workshop, _user, _workshop), do: {:error, :not_found}
+
   def authorize(:create_workshop, %User{}, _), do: :ok
 
   def authorize(:create_workshop, nil, _), do: {:error, :unauthenticated}

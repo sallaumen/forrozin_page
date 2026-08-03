@@ -2,6 +2,7 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
   use OGrupoDeEstudos.DataCase, async: true
   import OGrupoDeEstudos.Factory
   alias OGrupoDeEstudos.Authorization.Policy
+  alias OGrupoDeEstudos.Workshops.Workshop
 
   describe "authorize(:delete_comment, user, comment)" do
     test "admin can delete any comment" do
@@ -175,6 +176,37 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
 
       assert :ok = Policy.authorize(:manage_lesson, teacher, lesson)
       assert {:error, :unauthorized} = Policy.authorize(:manage_lesson, other, lesson)
+    end
+  end
+
+  describe "authorize(:view_workshop, user, workshop)" do
+    test "publicado abre para qualquer um, inclusive sem conta" do
+      workshop = %Workshop{organizer_id: insert(:user).id, status: :published}
+
+      assert Policy.authorize(:view_workshop, nil, workshop) == :ok
+      assert Policy.authorize(:view_workshop, insert(:user), workshop) == :ok
+    end
+
+    test "cancelado continua legível: quem se inscreveu precisa saber o que houve" do
+      workshop = %Workshop{organizer_id: insert(:user).id, status: :cancelled}
+
+      assert Policy.authorize(:view_workshop, nil, workshop) == :ok
+    end
+
+    test "rascunho é só de quem organiza" do
+      dono = insert(:user)
+      workshop = %Workshop{organizer_id: dono.id, status: :draft}
+
+      assert Policy.authorize(:view_workshop, dono, workshop) == :ok
+      assert Policy.authorize(:view_workshop, nil, workshop) == {:error, :not_found}
+      assert Policy.authorize(:view_workshop, insert(:user), workshop) == {:error, :not_found}
+    end
+
+    test "admin do site não entra no rascunho alheio" do
+      # Mesma regra de :manage_workshop: workshop é do organizador, não da casa.
+      workshop = %Workshop{organizer_id: insert(:user).id, status: :draft}
+
+      assert Policy.authorize(:view_workshop, insert(:admin), workshop) == {:error, :not_found}
     end
   end
 

@@ -248,6 +248,51 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
+  describe "rascunho não vaza pelo link" do
+    setup %{conn: conn} do
+      organizer = insert(:user)
+
+      {:ok, rascunho} =
+        Workshops.create_workshop(organizer, %{
+          title: "Segredo ainda",
+          description: "Preço e local que ninguém deveria ver.",
+          starts_at: em(7)
+        })
+
+      %{organizer: organizer, rascunho: rascunho, conn: conn}
+    end
+
+    test "visitante sem conta não abre", %{conn: conn, rascunho: w} do
+      assert {:error, {:redirect, %{to: destino}}} = live(conn, ~p"/workshops/#{w.slug}")
+      assert destino == ~p"/study/workshops"
+    end
+
+    test "estranho logado não abre", %{conn: conn, rascunho: w} do
+      assert {:error, {:redirect, _}} =
+               live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
+    end
+
+    test "admin do site também não abre rascunho alheio", %{conn: conn, rascunho: w} do
+      assert {:error, {:redirect, _}} =
+               live(log_in_user(conn, insert(:admin)), ~p"/workshops/#{w.slug}")
+    end
+
+    test "quem organiza abre normalmente", %{conn: conn, organizer: dono, rascunho: w} do
+      {:ok, _lv, html} = live(log_in_user(conn, dono), ~p"/workshops/#{w.slug}")
+
+      assert html =~ "Segredo ainda"
+    end
+
+    test "a mensagem não confirma que o workshop existe", %{conn: conn, rascunho: w} do
+      conn = get(conn, ~p"/workshops/#{w.slug}")
+
+      # Mesma resposta de slug inexistente: quem sonda não descobre nada.
+      inexistente = get(build_conn(), ~p"/workshops/workshop-que-nao-existe-aaaaaa")
+      assert redirected_to(conn) == redirected_to(inexistente)
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "não encontrado"
+    end
+  end
+
   describe "resistência a id inválido" do
     setup %{conn: conn} do
       %{workshop: publicado(insert(:user), %{}), conn: conn}
