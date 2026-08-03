@@ -464,6 +464,45 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
     end
   end
 
+  describe "edição e exclusão de lição (feedback)" do
+    test "editar carrega a lição e salvar confirma para todos", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      link = insert(:teacher_student_link, teacher: teacher, active: true)
+
+      {:ok, lesson, _} =
+        OGrupoDeEstudos.Study.broadcast_lesson(teacher, %{title: "Aula", content: "V1"}, [link.id])
+
+      {:ok, lv, _} = live(log_in_user(conn, teacher), ~p"/study")
+      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+
+      html = render_click(lv, "edit_lesson", %{"id" => lesson.id})
+      assert html =~ "Salvar alterações"
+      assert html =~ "V1"
+
+      html =
+        render_submit(lv, "send_lesson", %{"lesson" => %{"title" => "Aula", "content" => "V2"}})
+
+      assert html =~ "Lição atualizada para todos os alunos."
+      assert [%{content: "V2"}] = OGrupoDeEstudos.Study.list_lessons_for_link(link.id)
+    end
+
+    test "excluir confirma e some da lista", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      link = insert(:teacher_student_link, teacher: teacher, active: true)
+
+      {:ok, lesson, _} =
+        OGrupoDeEstudos.Study.broadcast_lesson(teacher, %{title: "Aula", content: "x"}, [link.id])
+
+      {:ok, lv, _} = live(log_in_user(conn, teacher), ~p"/study")
+      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+
+      html = render_click(lv, "delete_lesson", %{"id" => lesson.id})
+
+      assert html =~ "Lição excluída."
+      assert OGrupoDeEstudos.Study.list_lessons_for_link(link.id) == []
+    end
+  end
+
   describe "feedback visual (flash)" do
     test "cutucada devolve flash de confirmação no HTML", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
