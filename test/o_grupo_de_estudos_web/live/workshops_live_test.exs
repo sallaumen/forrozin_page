@@ -101,7 +101,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     test "estado vazio orienta quem chega", %{conn: conn} do
       {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/study/workshops")
 
-      assert html =~ "Nenhum workshop por aqui ainda"
+      assert html =~ "Nada marcado por aqui ainda"
     end
   end
 
@@ -470,6 +470,125 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
       assert html =~ "comentou no seu workshop"
       assert html =~ "/workshops/#{w.slug}"
+    end
+  end
+
+  describe "agenda colapsada por programação" do
+    setup %{conn: conn} do
+      dono = insert(:user)
+      %{dono: dono, conn: conn}
+    end
+
+    test "festival vira uma linha em vez de quinze", ctx do
+      workshops =
+        for i <- 1..15 do
+          publicado(ctx.dono, %{title: "Itaúnas #{i}", starts_at: em(20 + i)})
+        end
+
+      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival de Itaúnas"})
+      for w <- workshops, do: Workshops.attach_workshop(p, ctx.dono, w.id)
+      {:ok, p} = Workshops.publish_program(ctx.dono, p)
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
+
+      assert html =~ "Festival de Itaúnas"
+      assert html =~ "Ver programação"
+      refute html =~ "Itaúnas 7"
+      assert html =~ ~s(id="program-card-#{p.id}")
+    end
+
+    test "workshop solto continua na agenda", ctx do
+      solto = publicado(ctx.dono, %{title: "Aulão avulso"})
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
+
+      assert html =~ solto.title
+    end
+
+    test "buscar abre a programação e acha o workshop de dentro", ctx do
+      dentro = publicado(ctx.dono, %{title: "Pisada nordestina", starts_at: em(20)})
+      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, dentro.id)
+      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+
+      {:ok, lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
+      refute html =~ "Pisada nordestina"
+
+      html = render_change(lv, "search_workshops", %{"term" => "pisada"})
+
+      assert html =~ "Pisada nordestina"
+    end
+
+    test "o contador conta os dois tipos", ctx do
+      publicado(ctx.dono, %{title: "Solto"})
+      dentro = publicado(ctx.dono, %{title: "Dentro", starts_at: em(20)})
+      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, dentro.id)
+      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
+
+      assert html =~ "1 workshop · 1 programação"
+    end
+  end
+
+  describe "agenda colapsada: o que a revisão pegou" do
+    setup %{conn: conn} do
+      %{dono: insert(:user), conn: conn}
+    end
+
+    test "workshop em programação rascunho continua na agenda", ctx do
+      w = publicado(ctx.dono, %{title: "Já anunciado no grupo"})
+      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Ainda montando"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, w.id)
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
+
+      # Sumir daqui seria pior que nao colapsar: o workshop ja circulou.
+      assert html =~ "Já anunciado no grupo"
+    end
+
+    test "o card de quem organiza mantém a contagem mesmo colapsado", ctx do
+      w = publicado(ctx.dono, %{title: "Com inscritos", capacity: 1, starts_at: em(20)})
+      {:ok, _} = Workshops.enroll(w, insert(:user))
+
+      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, w.id)
+      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.dono), ~p"/study/workshops")
+
+      # A secao "Voce organiza" ainda mostra o workshop, entao a contagem dele
+      # precisa vir junto.
+      assert html =~ "1 inscrito"
+      assert html =~ "Esgotado"
+    end
+
+    test "quem está inscrito num workshop colapsado vê a marca no card da programação", ctx do
+      w = publicado(ctx.dono, %{title: "Dentro", starts_at: em(20)})
+      aluna = insert(:user)
+      {:ok, _} = Workshops.enroll(w, aluna)
+
+      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, w.id)
+      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, aluna), ~p"/study/workshops")
+
+      assert html =~ "Você está em 1"
+    end
+
+    test "na busca, o workshop diz de que programação é", ctx do
+      dentro = publicado(ctx.dono, %{title: "Xote nordestino", starts_at: em(20)})
+      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival de Itaúnas"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, dentro.id)
+      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+
+      {:ok, lv, _} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
+      html = render_change(lv, "search_workshops", %{"term" => "xote"})
+
+      assert html =~ "Xote nordestino"
+      assert html =~ "Festival de Itaúnas"
     end
   end
 

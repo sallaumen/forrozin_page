@@ -45,6 +45,7 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate count_enrollments(workshop_id), to: EnrollmentQuery, as: :count
   defdelegate enrollment_counts(workshop_ids), to: EnrollmentQuery, as: :count_by_workshop
   defdelegate enrolled_workshop_ids(user_id), to: EnrollmentQuery
+  defdelegate enrolled_counts_by_program(user_id, program_ids), to: EnrollmentQuery
   defdelegate get_enrollment(workshop_id, user_id), to: EnrollmentQuery, as: :get_for_user
 
   # ── Ciclo de vida do workshop ─────────────────────────────────────────
@@ -106,6 +107,70 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+
+  # ── Agenda ────────────────────────────────────────────────────────────
+
+  @doc """
+  A agenda da comunidade, misturando workshops soltos e programações em ordem
+  de data.
+
+  Sem busca, workshop que está numa programação NÃO aparece solto: um festival
+  com quinze workshops viraria quinze linhas repetindo o mesmo nome. Com busca
+  a programação abre, senão o workshop lá dentro ficaria impossível de achar.
+
+  Cada item é `%{kind: :workshop | :program, starts_at: ...}`, para a tela
+  renderizar sem precisar decidir nada.
+  """
+  @spec list_agenda(keyword()) :: [map()]
+  def list_agenda(opts \\ []) do
+    buscando? = busca_ativa?(opts[:search])
+
+    programas = ProgramQuery.list_feed(opts)
+    resumos = ProgramQuery.summaries_by_ids(Enum.map(programas, fn {p, _} -> p.id end))
+
+    opts
+    |> Keyword.put(:only_loose, not buscando?)
+    |> WorkshopQuery.list_feed()
+    |> sem_repetir_programa(programas)
+    |> Enum.map(&item_de_workshop/1)
+    |> Enum.concat(Enum.map(programas, &item_de_programa(&1, resumos)))
+    |> ordenar_por_data(Keyword.get(opts, :period, :upcoming))
+  end
+
+  # Na busca a programacao e os workshops dela podem casar ao mesmo tempo. Sem
+  # isso o card do festival sairia ensanduichado entre os proprios filhos, e o
+  # contador anunciaria tres eventos onde existe um.
+  defp sem_repetir_programa(workshops, programas) do
+    ja_listados = MapSet.new(programas, fn {program, _} -> program.id end)
+
+    Enum.reject(workshops, &MapSet.member?(ja_listados, &1.program_id))
+  end
+
+  defp busca_ativa?(nil), do: false
+  defp busca_ativa?(""), do: false
+  defp busca_ativa?(termo), do: String.trim(termo) != ""
+
+  defp item_de_workshop(workshop) do
+    %{kind: :workshop, id: workshop.id, starts_at: workshop.starts_at, workshop: workshop}
+  end
+
+  # O periodo decide QUAIS programacoes entram; o resumo mostrado e o do
+  # festival inteiro, senao o card diria "3 workshops" enquanto a pagina da
+  # programacao mostra quinze.
+  defp item_de_programa({program, do_periodo}, resumos) do
+    %{
+      kind: :program,
+      id: program.id,
+      starts_at: do_periodo.starts_at,
+      program: program,
+      summary: Map.get(resumos, program.id, do_periodo)
+    }
+  end
+
+  # No passado a agenda vai do mais recente para tras: o que acabou de
+  # acontecer interessa mais que o de um ano atras.
+  defp ordenar_por_data(itens, :past), do: Enum.sort_by(itens, & &1.starts_at, {:desc, DateTime})
+  defp ordenar_por_data(itens, _period), do: Enum.sort_by(itens, & &1.starts_at, DateTime)
 
   # ── Flyer ─────────────────────────────────────────────────────────────
 
