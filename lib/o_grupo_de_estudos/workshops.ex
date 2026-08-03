@@ -48,6 +48,15 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate enrollment_counts(workshop_ids), to: EnrollmentQuery, as: :count_by_workshop
   defdelegate enrolled_workshop_ids(user_id), to: EnrollmentQuery
   defdelegate enrolled_counts_by_program(user_id, program_ids), to: EnrollmentQuery
+
+  defdelegate upcoming_enrollments(user_id, opts \\ []),
+    to: EnrollmentQuery,
+    as: :list_upcoming_for_user
+
+  defdelegate count_upcoming_enrollments(user_id),
+    to: EnrollmentQuery,
+    as: :count_upcoming_for_user
+
   defdelegate get_enrollment(workshop_id, user_id), to: EnrollmentQuery, as: :get_for_user
 
   # ── Ciclo de vida do workshop ─────────────────────────────────────────
