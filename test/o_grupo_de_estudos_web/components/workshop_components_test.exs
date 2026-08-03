@@ -2,6 +2,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
   use ExUnit.Case, async: true
 
   import OGrupoDeEstudosWeb.WorkshopComponents
+  import Phoenix.LiveViewTest
+
+  @id "11111111-1111-1111-1111-111111111111"
+  @autora_id "22222222-2222-2222-2222-222222222222"
 
   # Horários em UTC; o rótulo sai no fuso de Brasília (UTC-3).
   defp workshop(starts_at, ends_at \\ nil) do
@@ -95,5 +99,72 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
       assert money_label(36_000) == "R$ 360"
       assert money_label(18_050) == "R$ 180,50"
     end
+  end
+
+  describe "media_gallery/1 com vídeo em transcode" do
+    test "vídeo processando avisa e não oferece player quebrado" do
+      html = galeria([item(kind: :video, status: :processing)])
+
+      assert html =~ "Processando"
+      refute html =~ "<video"
+    end
+
+    test "vídeo pronto vira player" do
+      html = galeria([item(kind: :video, status: :ready)])
+
+      assert html =~ "<video"
+      refute html =~ "Processando"
+    end
+
+    test "vídeo pronto usa o poster como capa" do
+      html = galeria([item(kind: :video, status: :ready, poster_key: "workshop_media/abc.jpg")])
+
+      assert html =~ ~s|poster="/workshop-media/#{@id}/poster"|
+    end
+
+    test "sem poster o player não ganha atributo vazio" do
+      html = galeria([item(kind: :video, status: :ready, poster_key: nil)])
+
+      assert html =~ "<video"
+      refute html =~ "poster="
+    end
+
+    test "foto não passa por transcode nenhum e aparece direto" do
+      html = galeria([item(kind: :photo, status: :ready)])
+
+      assert html =~ "<img"
+      refute html =~ "Processando"
+    end
+
+    test "dá para tirar da galeria mesmo enquanto processa" do
+      # O contrario prenderia a aluna: mandou o video errado e so poderia
+      # apagar quando o ffmpeg terminasse.
+      html = galeria([item(kind: :video, status: :processing)], autora())
+
+      assert html =~ "remove_media"
+    end
+  end
+
+  defp autora, do: %{id: @autora_id}
+
+  defp item(attrs) do
+    defaults = %{
+      id: @id,
+      kind: :photo,
+      status: :ready,
+      poster_key: nil,
+      official: false,
+      caption: nil,
+      uploaded_by_id: @autora_id,
+      uploaded_by: %{name: "Aluna", username: "aluna"}
+    }
+
+    Enum.into(attrs, defaults)
+  end
+
+  defp galeria(media, current_user \\ nil) do
+    assigns = %{media: media, current_user: current_user, pode_apagar_tudo: false}
+
+    render_component(&media_gallery/1, assigns)
   end
 end

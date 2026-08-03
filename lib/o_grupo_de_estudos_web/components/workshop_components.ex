@@ -267,9 +267,21 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           class="aspect-square w-full object-cover"
         />
 
+        <%!-- Enquanto o ffmpeg roda o arquivo ainda é o HEVC do celular, que
+        em boa parte dos Android dá tela preta. Melhor dizer que está
+        processando do que entregar um player que não toca. --%>
+        <div
+          :if={processando?(item)}
+          class="flex aspect-square w-full flex-col items-center justify-center gap-2 bg-ink-100 text-ink-500"
+        >
+          <.icon name="hero-arrow-path" class="size-5 animate-spin text-ink-400" />
+          <span class="text-[11px] font-medium">Processando vídeo</span>
+        </div>
+
         <video
-          :if={item.kind == :video}
+          :if={pronto?(item)}
           src={~p"/workshop-media/#{item.id}"}
+          poster={poster_url(item)}
           controls
           playsinline
           preload="metadata"
@@ -303,6 +315,17 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     </div>
     """
   end
+
+  defp processando?(%{kind: :video, status: :processing}), do: true
+  defp processando?(_outra), do: false
+
+  defp pronto?(%{kind: :video, status: :ready}), do: true
+  defp pronto?(_outra), do: false
+
+  # nil vira ausência do atributo no HEEx: `poster=""` faria o navegador pedir
+  # a própria página como imagem.
+  defp poster_url(%{poster_key: nil}), do: nil
+  defp poster_url(%{id: id}), do: ~p"/workshop-media/#{id}/poster"
 
   defp pode_apagar?(_item, nil, _admin?), do: false
   defp pode_apagar?(_item, _user, true), do: true

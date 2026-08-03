@@ -8,6 +8,9 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
 
   `official` marca o que veio de quem administra o workshop, e não de
   `User.role == :admin`: oficial aqui é "de quem dá a aula".
+
+  `status` existe por causa do vídeo: o upload responde na hora e o transcode
+  roda depois, numa fila à parte. Foto nasce `:ready`.
   """
 
   use Ecto.Schema
@@ -27,6 +30,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
     field :content_type, :string
     field :byte_size, :integer
     field :poster_key, :string
+    field :status, Ecto.Enum, values: [:processing, :ready], default: :ready
     field :official, :boolean, default: false
     field :caption, :string
     field :deleted_at, :utc_datetime
@@ -45,6 +49,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
     :content_type,
     :byte_size,
     :poster_key,
+    :status,
     :official,
     :caption
   ]
@@ -77,4 +82,13 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
   def kind_do_tipo("image/" <> _), do: :photo
   def kind_do_tipo("video/" <> _), do: :video
   def kind_do_tipo(_outro), do: :error
+
+  @doc """
+  Status com que a mídia entra na galeria.
+
+  Vídeo espera o transcode; foto já está no formato que o navegador abre.
+  """
+  @spec status_inicial(:photo | :video) :: :processing | :ready
+  def status_inicial(:video), do: :processing
+  def status_inicial(:photo), do: :ready
 end

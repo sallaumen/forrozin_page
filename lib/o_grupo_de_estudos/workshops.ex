@@ -13,12 +13,16 @@ defmodule OGrupoDeEstudos.Workshops do
 
   import Ecto.Query, only: [from: 2]
 
+  require Logger
+
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Engagement.SafeDispatch
   alias OGrupoDeEstudos.Media.Storage
+  alias OGrupoDeEstudos.Media.Video
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Workers.TranscodeWorkshopVideo
 
   alias OGrupoDeEstudos.Workshops.{
     Access,
@@ -267,14 +271,25 @@ defmodule OGrupoDeEstudos.Workshops do
       storage_key: key,
       content_type: content_type,
       byte_size: byte_size,
+      status: WorkshopMedia.status_inicial(kind),
       official: admin?(workshop, user)
     })
     |> Repo.insert()
     |> case do
-      {:ok, media} -> {:ok, Repo.preload(media, :uploaded_by)}
+      {:ok, media} -> {:ok, enfileirado(media)}
       {:error, changeset} -> descartar_arquivo(key, changeset)
     end
   end
+
+  # Vídeo sai do upload em `:processing`: o arquivo já está salvo e a conversão
+  # acontece depois, para a aluna não ficar olhando a barra parada enquanto o
+  # ffmpeg roda.
+  defp enfileirado(%WorkshopMedia{status: :processing, id: id} = media) do
+    Oban.insert(TranscodeWorkshopVideo.new(%{"media_id" => id}))
+    Repo.preload(media, :uploaded_by)
+  end
+
+  defp enfileirado(media), do: Repo.preload(media, :uploaded_by)
 
   defp descartar_arquivo(key, erro) do
     Storage.delete_private(key)
@@ -284,6 +299,11 @@ defmodule OGrupoDeEstudos.Workshops do
   @doc "Caminho no disco de uma mídia, para o controller servir."
   @spec private_media_path(WorkshopMedia.t()) :: String.t()
   def private_media_path(%WorkshopMedia{storage_key: key}), do: Storage.private_path(key)
+
+  @doc "Caminho no disco do poster do vídeo, ou nil se não houve."
+  @spec poster_path(WorkshopMedia.t()) :: String.t() | nil
+  def poster_path(%WorkshopMedia{poster_key: nil}), do: nil
+  def poster_path(%WorkshopMedia{poster_key: key}), do: Storage.private_path(key)
 
   @doc """
   Tira uma mídia da galeria.
@@ -315,10 +335,147 @@ defmodule OGrupoDeEstudos.Workshops do
     case media |> Ecto.Changeset.change(deleted_at: agora) |> Repo.update() do
       {:ok, apagada} ->
         Storage.delete_private(media.storage_key)
+        apagar_poster(media.poster_key)
         {:ok, apagada}
 
       erro ->
         erro
+    end
+  end
+
+  defp apagar_poster(nil), do: :ok
+  defp apagar_poster(key), do: Storage.delete_private(key)
+
+  # ── Transcode de vídeo ────────────────────────────────────────────────
+
+  @doc """
+  Converte o vídeo de uma mídia para 720p H.264 e marca como pronta.
+
+  Chamada pelo `Workers.TranscodeWorkshopVideo`, nunca direto pela borda: o
+  ffmpeg leva dezenas de segundos e não cabe num `handle_event`.
+
+  Sempre termina em `:ready`, mesmo quando dá errado. Um vídeo preso em
+  "processando" para sempre é pior do que um vídeo grande: a aluna vê o dela
+  na galeria de qualquer jeito, e quem tem Android antigo é que talvez não
+  consiga abrir. Falhar o upload por causa disso seria trocar um problema
+  parcial por um total.
+  """
+  @spec transcode_media(Ecto.UUID.t()) :: :ok | {:error, term()}
+  def transcode_media(media_id) do
+    case MediaQuery.get(media_id) do
+      %WorkshopMedia{status: :processing, kind: :video, deleted_at: nil} = media ->
+        converter(media, Video.available?())
+
+      _pronta_apagada_ou_inexistente ->
+        :ok
+    end
+  end
+
+  defp converter(media, false) do
+    Logger.warning("[Transcode] sem ffmpeg, mídia #{media.id} fica como veio")
+    marcar_pronta(media, %{})
+  end
+
+  defp converter(media, true) do
+    saida = caminho_temporario("mp4")
+
+    try do
+      rodar_transcode(media, saida)
+    after
+      File.rm(saida)
+    end
+  end
+
+  defp rodar_transcode(media, saida) do
+    case Video.transcode(private_media_path(media), saida) do
+      :ok -> guardar_convertido(media, saida, tamanho(saida))
+      {:error, motivo} -> desistir(media, motivo)
+    end
+  end
+
+  # ffmpeg que sai com 0 mas escreve arquivo vazio existe. Guardar isso
+  # apagaria o vídeo da aluna e trocaria por nada.
+  defp guardar_convertido(media, _saida, 0), do: desistir(media, :saida_vazia)
+
+  defp guardar_convertido(media, saida, bytes) do
+    case Storage.put_private(@media_dir, saida, ".mp4") do
+      {:ok, chave} -> trocar_arquivo(media, chave, bytes, gerar_poster(saida))
+      {:error, motivo} -> desistir(media, motivo)
+    end
+  end
+
+  defp trocar_arquivo(media, chave, bytes, poster_key) do
+    atributos = %{
+      storage_key: chave,
+      content_type: "video/mp4",
+      byte_size: bytes,
+      poster_key: poster_key
+    }
+
+    case marcar_pronta(media, atributos) do
+      :ok -> Storage.delete_private(media.storage_key)
+      erro -> descartar_convertido(chave, poster_key, erro)
+    end
+  end
+
+  # Banco recusou: o original continua de pé, então some com o que acabou de
+  # ser escrito para o retry do Oban não deixar lixo acumulado.
+  defp descartar_convertido(chave, poster_key, erro) do
+    Storage.delete_private(chave)
+    apagar_poster(poster_key)
+    erro
+  end
+
+  defp desistir(media, motivo) do
+    Logger.warning("[Transcode] mídia #{media.id} falhou (#{inspect(motivo)}), fica o original")
+    marcar_pronta(media, %{})
+  end
+
+  defp marcar_pronta(media, atributos) do
+    media
+    |> WorkshopMedia.changeset(Map.put(atributos, :status, :ready))
+    |> Repo.update()
+    |> case do
+      {:ok, _pronta} -> :ok
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  # Poster é enfeite: sem ele a galeria mostra o primeiro quadro do vídeo, que
+  # costuma ser preto. Não é motivo para segurar a mídia em "processando".
+  defp gerar_poster(video) do
+    destino = caminho_temporario("jpg")
+
+    try do
+      guardar_poster(video, destino)
+    after
+      File.rm(destino)
+    end
+  end
+
+  defp guardar_poster(video, destino) do
+    case Video.poster(video, destino) do
+      :ok -> chave_do_poster(destino)
+      {:error, _motivo} -> nil
+    end
+  end
+
+  defp chave_do_poster(destino) do
+    case Storage.put_private(@media_dir, destino, ".jpg") do
+      {:ok, chave} -> chave
+      {:error, _motivo} -> nil
+    end
+  end
+
+  defp caminho_temporario(ext) do
+    nome = "workshop_video_#{System.unique_integer([:positive])}.#{ext}"
+    Path.join(System.tmp_dir!(), nome)
+  end
+
+  defp tamanho(caminho) do
+    case File.stat(caminho) do
+      {:ok, %{size: bytes}} -> bytes
+      {:error, _motivo} -> 0
     end
   end
 
