@@ -18,6 +18,10 @@ defmodule OGrupoDeEstudos.Brazil do
     |> DateTime.to_date()
   end
 
+  @doc "Returns the current time in Brazilian time (UTC-3)."
+  @spec now() :: DateTime.t()
+  def now, do: to_local(DateTime.utc_now())
+
   @doc "Converts a UTC datetime to Brazilian time (UTC-3)."
   def to_local(nil), do: nil
   def to_local(%DateTime{} = dt), do: DateTime.add(dt, @offset_seconds)

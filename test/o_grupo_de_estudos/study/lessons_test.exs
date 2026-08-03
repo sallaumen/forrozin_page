@@ -245,6 +245,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert Study.count_unread_lessons(link.student_id) == 1
     end
   end
+
   describe "achados da revisão — recibo honesto e vínculo encerrado" do
     test "broadcast publica {:lesson_published} no tópico de cada vínculo" do
       {teacher, [link]} = teacher_with_students(1)
@@ -314,5 +315,4 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       end
     end
   end
-
 end

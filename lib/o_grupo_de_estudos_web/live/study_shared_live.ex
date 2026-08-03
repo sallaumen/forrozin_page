@@ -30,10 +30,13 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
         end
 
         today = OGrupoDeEstudos.Brazil.today()
-        {lessons, new_lesson_ids} = load_lessons(link, socket)
+        {lessons, new_lesson_ids, marked_read} = load_lessons(link, socket)
 
         {:ok,
-         assign(socket,
+         socket
+         |> drop_study_badge(marked_read)
+         |> assign(
+           note_saved_at: nil,
            lessons: lessons,
            new_lesson_ids: new_lesson_ids,
            expanded_lesson_ids: MapSet.new(),
@@ -81,7 +84,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
        assign(socket,
          today_note: note,
          today_note_content: content,
-         history: Study.list_shared_note_history(link.id)
+         history: Study.list_shared_note_history(link.id),
+         note_saved_at: OGrupoDeEstudos.Brazil.now()
        )}
     else
       {:noreply, socket}
@@ -277,15 +281,30 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   # lição que chegar depois via PubSub não ganhe recibo falso. Quem decide
   # se pode marcar é o contexto (só o aluno do vínculo); para o professor a
   # chamada é negada lá e vira no-op.
+  # A bolinha da aba Estudos é calculada no on_mount (antes deste mount), então
+  # sem isso ela ficaria mostrando a lição que o aluno acabou de abrir.
+  defp drop_study_badge(socket, 0), do: socket
+
+  defp drop_study_badge(socket, marked) do
+    atual = socket.assigns[:pending_study_count] || 0
+    assign(socket, :pending_study_count, max(atual - marked, 0))
+  end
+
   defp load_lessons(link, socket) do
     lessons = Study.list_lessons_for_link(link.id)
     new_ids = for l <- lessons, is_nil(l.read_at), into: MapSet.new(), do: l.id
 
-    if connected?(socket) do
-      Study.mark_lessons_read(link, socket.assigns.current_user, MapSet.to_list(new_ids))
-    end
+    marked =
+      if connected?(socket) do
+        case Study.mark_lessons_read(link, socket.assigns.current_user, MapSet.to_list(new_ids)) do
+          {:ok, count} -> count
+          {:error, _} -> 0
+        end
+      else
+        0
+      end
 
-    {lessons, new_ids}
+    {lessons, new_ids, marked}
   end
 
   # O corte visual é line-clamp-3 com whitespace-pre-line: conteúdo curto em

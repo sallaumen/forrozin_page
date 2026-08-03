@@ -217,6 +217,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert html =~ "Sem permissão para editar esta anotação."
     end
   end
+
   describe "achados da revisão — página compartilhada" do
     test "lição chegando com a página aberta NÃO ganha recibo de leitura", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
@@ -261,5 +262,4 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
 
     defp lesson_ids(link), do: OGrupoDeEstudos.Study.list_lessons_for_link(link.id)
   end
-
 end

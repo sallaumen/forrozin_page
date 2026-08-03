@@ -121,21 +121,28 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
 
   attr :tone, :atom, default: :primary, values: [:primary, :ghost]
   attr :icon, :string, default: nil
+  # Dentro de um form o botão precisa ser submit, senão o clique não envia nada.
+  attr :type, :string, default: "button", values: ~w(button submit)
+  attr :disabled, :boolean, default: false
 
   attr :rest, :global,
-    include: ~w(phx-click phx-value-id phx-value-tab navigate href data-confirm)
+    include:
+      ~w(phx-click phx-value-id phx-value-tab phx-value-link-id navigate href data-confirm phx-disable-with)
 
   slot :inner_block, required: true
 
   def action_button(assigns) do
     ~H"""
     <button
-      type="button"
+      type={@type}
+      disabled={@disabled}
       class={[
         "inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-serif text-sm font-semibold no-underline transition-colors",
         @tone == :primary && "bg-accent-orange text-white hover:bg-accent-orange/90",
         @tone == :ghost &&
-          "border border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400 hover:text-ink-900"
+          "border border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400 hover:text-ink-900",
+        @disabled && "cursor-not-allowed opacity-50",
+        !@disabled && "cursor-pointer"
       ]}
       {@rest}
     >

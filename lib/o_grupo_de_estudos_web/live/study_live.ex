@@ -41,6 +41,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:editing_history_note_id, nil)
      |> assign(:expanded_note_ids, MapSet.new())
      |> assign(:history_step_suggestions, [])
+     |> assign(:nudged_link_ids, MapSet.new())
+     |> assign(:note_saved_at, nil)
      |> assign(:composing_lesson, false)
      |> assign(:editing_lesson_id, nil)
      |> assign(:lesson_title, "")
@@ -105,7 +107,11 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
     dashboard = build_dashboard(socket.assigns.current_user, socket.assigns.today)
 
-    {:noreply, socket |> assign_dashboard(dashboard) |> assign(:today_note_content, content)}
+    {:noreply,
+     socket
+     |> assign_dashboard(dashboard)
+     |> assign(:today_note_content, content)
+     |> assign(:note_saved_at, OGrupoDeEstudos.Brazil.now())}
   end
 
   def handle_event("save_personal_note", _params, socket), do: {:noreply, socket}
@@ -322,15 +328,14 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     {:noreply, assign(socket, composing_lesson: false, lesson_error: nil)}
   end
 
-  def handle_event("toggle_lesson_student", %{"link-id" => link_id}, socket) do
-    selected = socket.assigns.lesson_selected_ids
-
-    updated =
-      if MapSet.member?(selected, link_id),
-        do: MapSet.delete(selected, link_id),
-        else: MapSet.put(selected, link_id)
-
-    {:noreply, assign(socket, :lesson_selected_ids, updated)}
+  # O form inteiro é controlado: cada mudança (texto ou seleção de aluno)
+  # devolve todos os campos, então re-render nenhum apaga o que foi escrito.
+  def handle_event("lesson_form_changed", %{"lesson" => params}, socket) do
+    {:noreply,
+     socket
+     |> assign(:lesson_title, params["title"] || "")
+     |> assign(:lesson_content, params["content"] || "")
+     |> assign(:lesson_selected_ids, selected_link_ids(params, socket))}
   end
 
   def handle_event("send_lesson", %{"lesson" => params}, socket) do
@@ -377,9 +382,14 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
     if link && link.active && link.teacher_id == user.id do
       Dispatcher.notify_nudge(user, link.student_id, link.id)
-      {:noreply, put_flash(socket, :info, "Lembrete enviado!")}
+      nome = link.student.name || "seu aluno"
+
+      {:noreply,
+       socket
+       |> assign(:nudged_link_ids, MapSet.put(socket.assigns.nudged_link_ids, link.id))
+       |> put_flash(:info, "Cutucada enviada para #{nome}!")}
     else
-      {:noreply, socket}
+      {:noreply, put_flash(socket, :error, "Não foi possível enviar a cutucada.")}
     end
   end
 
@@ -391,9 +401,12 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
       Study.reject_link_request(link, user)
       dashboard = build_dashboard(user, socket.assigns.today)
 
-      {:noreply, assign_dashboard(socket, dashboard)}
+      {:noreply,
+       socket
+       |> assign_dashboard(dashboard)
+       |> put_flash(:info, "Pedido recusado.")}
     else
-      {:noreply, socket}
+      {:noreply, put_flash(socket, :error, "Pedido não encontrado.")}
     end
   end
 
@@ -414,7 +427,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
         {:noreply, assign(socket, :lesson_error, "Selecione ao menos um aluno.")}
 
       {:error, %Ecto.Changeset{}} ->
-        {:noreply, assign(socket, :lesson_error, "Preencha o título e o conteúdo da lição.")}
+        {:noreply, lesson_validation_error(socket, params)}
     end
   end
 
@@ -432,12 +445,28 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
        |> put_flash(:info, "Lição atualizada para todos os alunos.")}
     else
       {:error, %Ecto.Changeset{}} ->
-        {:noreply, assign(socket, :lesson_error, "Preencha o título e o conteúdo da lição.")}
+        {:noreply, lesson_validation_error(socket, params)}
 
       _ ->
         {:noreply, assign(socket, :lesson_error, "Não foi possível salvar a lição.")}
     end
   end
+
+  # Erro de validação nunca pode custar o texto: o re-render volta com o que
+  # o professor escreveu (params do submit, mais recentes que o assign).
+  defp lesson_validation_error(socket, params) do
+    socket
+    |> assign(:lesson_title, params["title"] || socket.assigns.lesson_title)
+    |> assign(:lesson_content, params["content"] || socket.assigns.lesson_content)
+    |> assign(:lesson_error, "Preencha o título e o conteúdo da lição.")
+  end
+
+  # Na edição o form não tem os checkboxes; preserva a seleção em vez de zerar.
+  defp selected_link_ids(_params, %{assigns: %{editing_lesson_id: id}} = socket)
+       when not is_nil(id),
+       do: socket.assigns.lesson_selected_ids
+
+  defp selected_link_ids(params, _socket), do: MapSet.new(params["student_ids"] || [])
 
   defp lesson_sent_message(1), do: "Lição enviada para 1 aluno!"
   defp lesson_sent_message(count), do: "Lição enviada para #{count} alunos!"
