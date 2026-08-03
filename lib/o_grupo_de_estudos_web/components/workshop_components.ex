@@ -220,6 +220,37 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   defp reais_label(reais, centavos),
     do: "R$ #{reais},#{String.pad_leading(to_string(centavos), 2, "0")}"
 
+  @doc """
+  Resumo de uma programação: quantos workshops e em que dias.
+
+  Ex.: `2 workshops · 14 e 15 de agosto`, `15 workshops · 12 a 18 de fevereiro`
+  """
+  def program_span([], _count), do: "Nenhum workshop ainda"
+
+  def program_span(days, count) do
+    datas = Enum.map(days, fn {date, _} -> date end)
+    "#{workshop_count_label(count)} · #{date_span(List.first(datas), List.last(datas))}"
+  end
+
+  defp workshop_count_label(1), do: "1 workshop"
+  defp workshop_count_label(count), do: "#{count} workshops"
+
+  defp date_span(date, date), do: Brazil.strftime(date, "%d de %B")
+
+  # Mesmo mes nomeia o mes uma vez so: "07 e 08 de agosto", "12 a 18 de
+  # fevereiro". Dia sempre com dois digitos, como no resto do app.
+  defp date_span(%{month: m, year: y} = inicio, %{month: m, year: y} = fim) do
+    "#{Brazil.strftime(inicio, "%d")} #{juntor(inicio, fim)} #{Brazil.strftime(fim, "%d de %B")}"
+  end
+
+  defp date_span(inicio, fim) do
+    "#{Brazil.strftime(inicio, "%d de %B")} a #{Brazil.strftime(fim, "%d de %B")}"
+  end
+
+  defp juntor(inicio, fim) do
+    if Date.diff(fim, inicio) == 1, do: "e", else: "a"
+  end
+
   @doc "Rótulo do botão de curtir: some o número quando ninguém curtiu ainda."
   def like_label(true, 1), do: "Você curtiu"
   def like_label(true, count), do: "Você e mais #{count - 1}"

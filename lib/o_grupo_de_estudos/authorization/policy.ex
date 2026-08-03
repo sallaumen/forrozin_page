@@ -16,7 +16,7 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   alias OGrupoDeEstudos.Encyclopedia.{Step, StepLink}
   alias OGrupoDeEstudos.Sequences.Sequence
   alias OGrupoDeEstudos.Study.Lesson
-  alias OGrupoDeEstudos.Workshops.{Access, Workshop}
+  alias OGrupoDeEstudos.Workshops.{Access, Workshop, WorkshopProgram}
 
   @type reason :: :unauthorized | :unauthenticated
 
@@ -128,6 +128,25 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
     do: :ok
 
   def authorize(:view_workshop, _user, _workshop), do: {:error, :not_found}
+
+  # Programacao segue a mesma regra de visibilidade do workshop: rascunho e
+  # de quem criou, e a resposta e :not_found para nao confirmar existencia.
+  def authorize(:view_program, _user, %WorkshopProgram{status: status})
+      when status in [:published, :cancelled],
+      do: :ok
+
+  def authorize(:view_program, %User{id: owner_id}, %WorkshopProgram{owner_id: owner_id}),
+    do: :ok
+
+  def authorize(:view_program, _user, _program), do: {:error, :not_found}
+
+  def authorize(:create_program, %User{}, _), do: :ok
+  def authorize(:create_program, nil, _), do: {:error, :unauthenticated}
+
+  def authorize(:manage_program, %User{id: owner_id}, %WorkshopProgram{owner_id: owner_id}),
+    do: :ok
+
+  def authorize(:manage_program, _, _), do: {:error, :unauthorized}
 
   def authorize(:create_workshop, %User{}, _), do: :ok
 

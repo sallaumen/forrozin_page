@@ -23,9 +23,11 @@ defmodule OGrupoDeEstudos.Workshops do
     Access,
     AdminQuery,
     EnrollmentQuery,
+    ProgramQuery,
     Workshop,
     WorkshopAdmin,
     WorkshopEnrollment,
+    WorkshopProgram,
     WorkshopQuery
   }
 
@@ -103,6 +105,87 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+
+  # ── Programação ───────────────────────────────────────────────────────
+
+  defdelegate get_program_by_slug(slug), to: ProgramQuery, as: :get_by_slug
+  defdelegate get_program(id), to: ProgramQuery, as: :get
+  defdelegate list_programs_for_owner(owner_id), to: ProgramQuery, as: :list_for_owner
+  defdelegate program_summaries(program_ids), to: ProgramQuery, as: :summaries_by_ids
+
+  @doc "Workshops da programação, do mais cedo ao mais tarde."
+  @spec list_program_workshops(WorkshopProgram.t(), keyword()) :: [Workshop.t()]
+  def list_program_workshops(%WorkshopProgram{} = program, opts \\ []),
+    do: ProgramQuery.list_workshops(program.id, opts)
+
+  @doc "Cria uma programação. Qualquer pessoa com conta pode."
+  @spec create_program(User.t(), map()) ::
+          {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t()}
+  def create_program(%User{id: owner_id}, attrs) do
+    %WorkshopProgram{}
+    |> WorkshopProgram.changeset(Map.put(attrs, :owner_id, owner_id))
+    |> Repo.insert()
+  end
+
+  @doc "Edita a programação. Só quem criou."
+  @spec update_program(User.t(), WorkshopProgram.t(), map()) ::
+          {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
+  def update_program(%User{} = user, %WorkshopProgram{} = program, attrs) do
+    with :ok <- ensure_program_owner(program, user) do
+      program |> WorkshopProgram.changeset(attrs) |> Repo.update()
+    end
+  end
+
+  @doc "Publica: a partir daqui o link abre para quem não tem conta."
+  @spec publish_program(User.t(), WorkshopProgram.t()) ::
+          {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
+  def publish_program(%User{} = user, %WorkshopProgram{} = program) do
+    with :ok <- ensure_program_owner(program, user) do
+      program |> WorkshopProgram.status_changeset(:published) |> Repo.update()
+    end
+  end
+
+  @doc "Cancela a programação. Os workshops dentro continuam existindo."
+  @spec cancel_program(User.t(), WorkshopProgram.t()) ::
+          {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
+  def cancel_program(%User{} = user, %WorkshopProgram{} = program) do
+    with :ok <- ensure_program_owner(program, user) do
+      program |> WorkshopProgram.status_changeset(:cancelled) |> Repo.update()
+    end
+  end
+
+  @doc """
+  Põe um workshop na programação.
+
+  Exige administrar os dois lados. É assim que um festival funciona: a equipe
+  vira co-organizadora do workshop de cada professor e monta a programação.
+  """
+  @spec attach_workshop(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, Workshop.t()} | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
+  def attach_workshop(%WorkshopProgram{} = program, %User{} = user, workshop_id) do
+    move_workshop(program, user, workshop_id, program.id)
+  end
+
+  @doc "Tira o workshop da programação. Ele continua existindo, solto."
+  @spec detach_workshop(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, Workshop.t()} | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
+  def detach_workshop(%WorkshopProgram{} = program, %User{} = user, workshop_id) do
+    move_workshop(program, user, workshop_id, nil)
+  end
+
+  defp move_workshop(program, user, workshop_id, program_id) do
+    with :ok <- ensure_program_owner(program, user),
+         %Workshop{} = workshop <- WorkshopQuery.get(workshop_id),
+         :ok <- ensure_admin(workshop, user) do
+      workshop |> Ecto.Changeset.change(program_id: program_id) |> Repo.update()
+    else
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp ensure_program_owner(%WorkshopProgram{owner_id: id}, %User{id: id}), do: :ok
+  defp ensure_program_owner(%WorkshopProgram{}, %User{}), do: {:error, :unauthorized}
 
   # ── Administradores ───────────────────────────────────────────────────
 

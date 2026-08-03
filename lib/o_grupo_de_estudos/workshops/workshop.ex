@@ -31,6 +31,9 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
 
     belongs_to :organizer, OGrupoDeEstudos.Accounts.User
+    # Zero ou uma programacao. Quem move e o contexto, nao o changeset
+    # publico: entrar numa programacao exige administrar os dois lados.
+    belongs_to :program, OGrupoDeEstudos.Workshops.WorkshopProgram
     has_many :enrollments, WorkshopEnrollment
 
     timestamps(type: :utc_datetime_usec)
