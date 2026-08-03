@@ -110,6 +110,108 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     end
   end
 
+  describe "inscrição em lote pelo checklist" do
+    test "marca os dois e confirma de uma vez", ctx do
+      aluna = insert(:user)
+
+      {:ok, lv, html} =
+        live(log_in_user(build_conn(), aluna), ~p"/programacao/#{ctx.program.slug}")
+
+      assert html =~ "Marque os workshops que você vai"
+
+      render_click(lv, "toggle_selection", %{"id" => ctx.quinta.id})
+      html = render_click(lv, "toggle_selection", %{"id" => ctx.sexta.id})
+      assert html =~ "2 workshops marcados"
+
+      html = render_click(lv, "confirm_enrollment", %{})
+
+      assert html =~ "2 inscrições confirmadas"
+      inscritos = Workshops.enrolled_workshop_ids(aluna.id)
+      assert MapSet.member?(inscritos, ctx.quinta.id)
+      assert MapSet.member?(inscritos, ctx.sexta.id)
+    end
+
+    test "desmarcar tira da conta sem desinscrever ninguém", ctx do
+      aluna = insert(:user)
+      {:ok, lv, _} = live(log_in_user(build_conn(), aluna), ~p"/programacao/#{ctx.program.slug}")
+
+      render_click(lv, "toggle_selection", %{"id" => ctx.quinta.id})
+      html = render_click(lv, "toggle_selection", %{"id" => ctx.quinta.id})
+
+      assert html =~ "Marque os workshops que você vai"
+      assert Workshops.enrolled_workshop_ids(aluna.id) |> MapSet.size() == 0
+    end
+
+    test "confirmar sem marcar nada avisa em vez de fingir que deu", ctx do
+      {:ok, lv, _} =
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.program.slug}")
+
+      html = render_click(lv, "confirm_enrollment", %{})
+
+      assert html =~ "Marque pelo menos um workshop"
+    end
+
+    test "um lotado no meio: os outros entram e a mensagem nomeia o que faltou", ctx do
+      lotado =
+        insert(:workshop,
+          organizer: ctx.dono,
+          title: "Lotado demais",
+          capacity: 1,
+          starts_at: em(9, 19)
+        )
+
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.dono, lotado.id)
+      {:ok, _} = Workshops.enroll(lotado, insert(:user))
+
+      aluna = insert(:user)
+      {:ok, lv, _} = live(log_in_user(build_conn(), aluna), ~p"/programacao/#{ctx.program.slug}")
+
+      # Lotado nem oferece checkbox, então a pessoa nem tenta.
+      render_click(lv, "toggle_selection", %{"id" => lotado.id})
+      render_click(lv, "toggle_selection", %{"id" => ctx.quinta.id})
+      html = render_click(lv, "confirm_enrollment", %{})
+
+      assert html =~ "1 inscrição confirmada"
+      assert MapSet.member?(Workshops.enrolled_workshop_ids(aluna.id), ctx.quinta.id)
+    end
+
+    test "quem já está inscrito vê a marca e não o checkbox", ctx do
+      aluna = insert(:user)
+      {:ok, _} = Workshops.enroll(ctx.quinta, aluna)
+
+      {:ok, _lv, html} =
+        live(log_in_user(build_conn(), aluna), ~p"/programacao/#{ctx.program.slug}")
+
+      refute html =~ ~s(id="escolher-#{ctx.quinta.id}")
+      assert html =~ ~s(id="escolher-#{ctx.sexta.id}")
+    end
+
+    test "quem organiza não recebe checklist do que é dele", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(build_conn(), ctx.dono), ~p"/programacao/#{ctx.program.slug}")
+
+      refute html =~ ~s(id="escolher-#{ctx.quinta.id}")
+    end
+
+    test "visitante sem conta vai para o cadastro em vez de quebrar", ctx do
+      {:ok, lv, _} = live(build_conn(), ~p"/programacao/#{ctx.program.slug}")
+
+      assert {:error, {:redirect, %{to: destino}}} = render_click(lv, "confirm_enrollment", %{})
+      assert destino =~ "/signup"
+    end
+
+    test "id forjado não entra na seleção", ctx do
+      aluna = insert(:user)
+      alheio = insert(:workshop)
+
+      {:ok, lv, _} = live(log_in_user(build_conn(), aluna), ~p"/programacao/#{ctx.program.slug}")
+
+      html = render_click(lv, "toggle_selection", %{"id" => alheio.id})
+
+      assert html =~ "Marque os workshops que você vai"
+    end
+  end
+
   describe "montar a programação sem sair da página" do
     test "quem organiza adiciona um workshop solto na hora", ctx do
       # O cenario do festival: alguem improvisa um workshop no meio do evento.

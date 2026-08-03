@@ -83,6 +83,37 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     |> insert_and_broadcast(builder)
   end
 
+  @doc """
+  Avisa um organizador de que alguem se inscreveu em workshops de uma
+  programacao.
+
+  O `group_key` e da programacao, nao do workshop: inscrever em tres de uma vez
+  vira uma linha so na caixa de quem organiza, em vez de tres que nem colapsam.
+  """
+  @spec notify_program_enrollment(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) ::
+          :ok
+  def notify_program_enrollment(actor_id, organizer_id, workshop_id, program_id)
+      when actor_id != organizer_id do
+    builder = fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: actor_id,
+        action: :workshop_enrolled,
+        group_key: "workshop_enrolled:program:#{program_id}",
+        target_type: "workshop",
+        target_id: workshop_id,
+        parent_type: "workshop",
+        parent_id: workshop_id,
+        inserted_at: now()
+      }
+    end
+
+    insert_and_broadcast([organizer_id], builder)
+  end
+
+  def notify_program_enrollment(_actor_id, _organizer_id, _workshop_id, _program_id), do: :ok
+
   # ── Like notifications ─────────────────────────────────
 
   @doc """

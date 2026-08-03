@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   alias OGrupoDeEstudos.{Accounts, Brazil, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
+  alias OGrupoDeEstudos.Workshops.Workshop
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.WorkshopComponents
@@ -39,7 +40,34 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:enrolled_ids, enrolled_ids(user))
     |> assign(:enrollment_counts, Workshops.enrollment_counts(Enum.map(workshops, & &1.id)))
     |> assign_montagem(workshops, owner?, user)
+    |> limpar_selecao(workshops, user)
   end
+
+  # So oferece checkbox no que da para se inscrever agora: publicado, com vaga
+  # e onde a pessoa ainda nao esta.
+  defp limpar_selecao(socket, workshops, user) do
+    inscritos = socket.assigns.enrolled_ids
+    contagens = socket.assigns.enrollment_counts
+
+    selecionaveis =
+      workshops
+      |> Enum.filter(&pode_marcar?(&1, user, inscritos, contagens))
+      |> MapSet.new(& &1.id)
+
+    socket
+    |> assign(:selecionaveis, selecionaveis)
+    |> assign(:selecionados, MapSet.intersection(selecionados(socket), selecionaveis))
+  end
+
+  defp pode_marcar?(workshop, user, inscritos, contagens) do
+    workshop.status == :published and
+      not MapSet.member?(inscritos, workshop.id) and
+      not Workshop.full?(workshop, Map.get(contagens, workshop.id, 0)) and
+      not Workshops.admin?(workshop, user)
+  end
+
+  defp selecionados(%{assigns: %{selecionados: atual}}), do: atual
+  defp selecionados(_socket), do: MapSet.new()
 
   # Painel de montagem: so para quem organiza, e so com o que ele administra.
   defp assign_montagem(socket, _workshops, false, _user) do
@@ -75,6 +103,34 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     end
   end
 
+  def handle_event("toggle_selection", %{"id" => id}, socket) do
+    case MapSet.member?(socket.assigns.selecionaveis, id) do
+      true -> {:noreply, assign(socket, :selecionados, alternar(socket.assigns.selecionados, id))}
+      false -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("confirm_enrollment", _params, %{assigns: %{current_user: nil}} = socket) do
+    {:noreply, redirect(socket, to: ~p"/signup?#{[programa: socket.assigns.program.slug]}")}
+  end
+
+  def handle_event("confirm_enrollment", _params, socket) do
+    user = socket.assigns.current_user
+    escolhidos = MapSet.to_list(socket.assigns.selecionados)
+
+    case Workshops.enroll_many(socket.assigns.program, user, escolhidos) do
+      {:ok, resultado} ->
+        {:noreply,
+         socket
+         |> assign(:selecionados, MapSet.new())
+         |> assign_program(socket.assigns.program, user)
+         |> put_flash(tom(resultado), resumo_do_lote(resultado))}
+
+      {:error, :none_selected} ->
+        {:noreply, put_flash(socket, :error, "Marque pelo menos um workshop.")}
+    end
+  end
+
   def handle_event("attach_workshop", %{"id" => id}, socket) do
     montar(socket, id, &Workshops.attach_workshop/3, "Workshop adicionado à programação.")
   end
@@ -82,6 +138,37 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   def handle_event("detach_workshop", %{"id" => id}, socket) do
     montar(socket, id, &Workshops.detach_workshop/3, "Workshop tirado da programação.")
   end
+
+  defp alternar(selecionados, id) do
+    case MapSet.member?(selecionados, id) do
+      true -> MapSet.delete(selecionados, id)
+      false -> MapSet.put(selecionados, id)
+    end
+  end
+
+  defp tom(%{enrolled: []}), do: :error
+  defp tom(_resultado), do: :info
+
+  # Nomeia o que falhou: "nao deu em uma" nao diz qual nem por que.
+  defp resumo_do_lote(%{enrolled: [], failed: [{workshop, motivo} | _]}) do
+    "#{workshop.title} não deu: #{motivo_do_erro(motivo)}"
+  end
+
+  defp resumo_do_lote(%{enrolled: inscritos, failed: []}) do
+    "#{confirmadas(length(inscritos))} Te vejo lá."
+  end
+
+  defp resumo_do_lote(%{enrolled: inscritos, failed: [{workshop, motivo} | _]}) do
+    "#{confirmadas(length(inscritos))} #{workshop.title} não deu: #{motivo_do_erro(motivo)}"
+  end
+
+  defp confirmadas(1), do: "1 inscrição confirmada."
+  defp confirmadas(total), do: "#{total} inscrições confirmadas."
+
+  defp motivo_do_erro(:full), do: "as vagas acabaram."
+  defp motivo_do_erro(:not_open), do: "não está aberto para inscrição."
+  defp motivo_do_erro(:organizer), do: "você organiza esse."
+  defp motivo_do_erro(_outro), do: "não foi possível inscrever."
 
   # Id vem de params numa pagina publica: so quem organiza mexe, e a
   # autorizacao real mora no contexto, que confere os dois lados.
@@ -122,6 +209,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> Enum.group_by(&(&1.starts_at |> Brazil.to_local() |> DateTime.to_date()))
     |> Enum.sort_by(fn {date, _} -> date end, Date)
   end
+
+  @doc false
+  def selecao_label(0), do: "Marque os workshops que você vai."
+  def selecao_label(1), do: "1 workshop marcado."
+  def selecao_label(total), do: "#{total} workshops marcados."
 
   @doc false
   def day_heading(date) do
