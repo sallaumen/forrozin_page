@@ -245,4 +245,37 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
       refute html =~ "Ótimo passo!"
     end
   end
+
+  describe "visitante sem conta (current_user nil)" do
+    test "renderiza a thread sem quebrar" do
+      html =
+        render_component(&CommentThread.comment_thread/1, base_assigns(current_user: nil))
+
+      assert html =~ ~s(data-ui="comment-thread")
+      assert html =~ "Ótimo passo!"
+    end
+
+    test "não oferece apagar comentário para quem não está logado" do
+      html =
+        render_component(&CommentThread.comment_thread/1, base_assigns(current_user: nil))
+
+      refute html =~ "delete_comment"
+    end
+
+    test "autor logado continua podendo apagar o próprio comentário" do
+      html = render_component(&CommentThread.comment_thread/1, base_assigns())
+
+      assert html =~ "delete_comment"
+    end
+
+    test "admin deslogado é impossível, mas is_admin sem usuário não quebra" do
+      html =
+        render_component(
+          &CommentThread.comment_thread/1,
+          base_assigns(current_user: nil, is_admin: true)
+        )
+
+      assert html =~ ~s(data-ui="comment-thread")
+    end
+  end
 end
