@@ -32,7 +32,8 @@ defmodule OGrupoDeEstudos.MixProject do
   def application do
     [
       mod: {OGrupoDeEstudos.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      # :xmerl e o parser SAX do adapter R2 (ListObjectsV2).
+      extra_applications: [:logger, :runtime_tools, :xmerl]
     ]
   end
 
@@ -85,6 +86,7 @@ defmodule OGrupoDeEstudos.MixProject do
       {:gen_smtp, "~> 1.0"},
       # HTTP client (integração com APIs de IA)
       {:req, "~> 0.6"},
+      {:req_s3, "~> 0.2.3"},
       # Jobs assíncronos (verificação de email, geração de vídeo)
       {:oban, "~> 2.19"},
       # Qualidade de código

@@ -23,6 +23,24 @@ end
 config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# Storage de objetos no Cloudflare R2, ligado pela presença dos secrets: com
+# eles, TODO upload novo (avatar, flyer, galeria) vai para o R2; sem eles, o
+# disco local continua valendo. Fora de :test de propósito: a suíte controla
+# o adapter por conta própria, e um env exportado na máquina não pode mudar
+# o comportamento dos testes.
+if System.get_env("R2_ACCOUNT_ID") && config_env() != :test do
+  config :o_grupo_de_estudos, OGrupoDeEstudos.Media.ObjectStorage,
+    adapter: OGrupoDeEstudos.Media.ObjectStorage.R2
+
+  config :o_grupo_de_estudos, OGrupoDeEstudos.Media.ObjectStorage.R2,
+    account_id: System.fetch_env!("R2_ACCOUNT_ID"),
+    access_key_id: System.fetch_env!("R2_ACCESS_KEY_ID"),
+    secret_access_key: System.fetch_env!("R2_SECRET_ACCESS_KEY"),
+    public_base_url: System.fetch_env!("R2_PUBLIC_BASE_URL"),
+    private_bucket: System.get_env("R2_PRIVATE_BUCKET", "ogde-private"),
+    public_bucket: System.get_env("R2_PUBLIC_BUCKET", "ogde-public")
+end
+
 if config_env() == :prod do
   # Volume do Fly, montado em /app/uploads (fly.toml). Explicito para nao
   # depender de um File.dir? adivinhando o ambiente.

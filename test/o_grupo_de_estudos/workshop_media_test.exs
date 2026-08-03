@@ -162,6 +162,76 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
     end
   end
 
+  describe "cota por workshop" do
+    # O byte_size declarado no upload é o que conta para a cota, então dá para
+    # simular um workshop quase cheio sem gravar 2 GB de verdade.
+    @cota 2_147_483_648
+
+    test "workshop no limite recusa o próximo arquivo com motivo próprio", ctx do
+      {:ok, _quase_cheio} =
+        Workshops.add_media(ctx.workshop, ctx.aluna, %{
+          tmp_path: ctx.origem,
+          content_type: "image/png",
+          byte_size: @cota - 100
+        })
+
+      assert {:error, :media_quota} =
+               Workshops.add_media(ctx.workshop, ctx.aluna, %{
+                 tmp_path: ctx.origem,
+                 content_type: "image/png",
+                 byte_size: 200
+               })
+    end
+
+    test "o que couber exatamente na cota ainda entra", ctx do
+      {:ok, _} =
+        Workshops.add_media(ctx.workshop, ctx.aluna, %{
+          tmp_path: ctx.origem,
+          content_type: "image/png",
+          byte_size: @cota - 100
+        })
+
+      assert {:ok, _} =
+               Workshops.add_media(ctx.workshop, ctx.aluna, %{
+                 tmp_path: ctx.origem,
+                 content_type: "image/png",
+                 byte_size: 100
+               })
+    end
+
+    test "a cota é por workshop, não global", ctx do
+      {:ok, _} =
+        Workshops.add_media(ctx.workshop, ctx.aluna, %{
+          tmp_path: ctx.origem,
+          content_type: "image/png",
+          byte_size: @cota - 100
+        })
+
+      outro = insert(:workshop, organizer: ctx.dono)
+      {:ok, _} = Workshops.enroll(outro, ctx.aluna)
+
+      assert {:ok, _} = Workshops.add_media(outro, ctx.aluna, foto(ctx))
+    end
+
+    test "mídia apagada devolve o espaço da cota", ctx do
+      {:ok, grande} =
+        Workshops.add_media(ctx.workshop, ctx.aluna, %{
+          tmp_path: ctx.origem,
+          content_type: "image/png",
+          byte_size: @cota - 100
+        })
+
+      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, grande.id)
+
+      assert {:ok, _} =
+               Workshops.add_media(ctx.workshop, ctx.aluna, %{
+                 tmp_path: ctx.origem,
+                 content_type: "image/png",
+                 byte_size: 200
+               })
+    end
+  end
+
   describe "media_usage/1" do
     test "conta arquivos e bytes", ctx do
       {:ok, _} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))

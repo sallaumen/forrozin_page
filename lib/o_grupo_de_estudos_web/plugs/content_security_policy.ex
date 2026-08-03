@@ -42,6 +42,9 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicy do
         "script-src 'self' 'nonce-#{nonce}'",
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https:",
+        # Video da galeria vem por redirect para URL assinada do R2 (outra
+        # origem). Mesmo criterio do img-src: só carrega, não executa.
+        "media-src 'self' https:",
         "font-src 'self'",
         "connect-src 'self'",
         "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.instagram.com https://instagram.com",
