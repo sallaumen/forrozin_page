@@ -42,6 +42,11 @@ config :o_grupo_de_estudos, Oban, testing: :inline
 # trocam esta chave por um tmp proprio.
 config :o_grupo_de_estudos, :uploads_path, Path.expand("../tmp/test_uploads", __DIR__)
 
+# Video: por padrao a suite roda como maquina sem ffmpeg, para nao depender de
+# binario instalado. Teste de transcode troca pelo mock Mox.
+config :o_grupo_de_estudos, OGrupoDeEstudos.Media.Video,
+  adapter: OGrupoDeEstudos.Media.Video.NotInstalled
+
 # Mailer — captura emails nos testes via Swoosh.TestAssertions
 config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Test
 

@@ -20,6 +20,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   import OGrupoDeEstudosWeb.WorkshopComponents
 
   @comment_type "workshop_comment"
+  # 4s: o transcode de um clipe de 45s leva bem mais do que isso, entao a
+  # pagina pode perguntar de novo algumas vezes sem pesar.
+  @recarga_galeria_ms 4_000
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -188,8 +191,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     end
   end
 
+  @impl true
+  def handle_info(:recarregar_galeria, socket) do
+    # O timer disparou, então não há mais nenhum pendente: liberar a trava
+    # antes de reler deixa `assign_workshop/2` agendar o próximo, se ainda
+    # houver vídeo convertendo.
+    socket = assign(socket, :recarga_agendada?, false)
+
+    {:noreply, assign_workshop(socket, socket.assigns.workshop)}
+  end
+
   defp atributos_da_media(tmp_path, entry) do
     %{tmp_path: tmp_path, content_type: entry.client_type, byte_size: entry.client_size}
+  end
+
+  defp resultado_do_envio([{:ok, %{status: :processing}}], socket) do
+    {:noreply,
+     socket
+     |> assign_page(socket.assigns.workshop)
+     |> put_flash(:info, "Enviado! O vídeo aparece na galeria assim que terminar de preparar.")}
   end
 
   defp resultado_do_envio([{:ok, _media}], socket) do
@@ -346,8 +366,42 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
     |> assign(:pode_ver_media?, Workshops.can_see_media?(workshop, user))
     |> assign(:media, media_visivel(workshop, user))
+    |> agendar_recarga_da_galeria()
     |> assign_workshop_likes()
   end
+
+  # Transcode roda em outra fila e nao tem como avisar esta pagina. Enquanto
+  # houver video convertendo, a galeria se relê sozinha: sem isso a aluna manda
+  # o video e fica olhando "Processando" ate lembrar de dar F5.
+  #
+  # Nada de PubSub: a fila tem concurrency 1 e a espera e de segundos, entao
+  # um timer que so existe enquanto ha o que esperar sai mais barato do que
+  # topico, subscribe e broadcast.
+  defp agendar_recarga_da_galeria(socket) do
+    esperando? = connected?(socket) and Enum.any?(socket.assigns.media, &processando?/1)
+
+    agendar_recarga(socket, esperando?, socket.assigns[:recarga_agendada?] || false)
+  end
+
+  # Já tem timer voando: não agenda outro. `assign_workshop/2` roda a cada
+  # inscrição e a cada like, e sem esta trava cada clique somaria mais um poll
+  # em cima do mesmo vídeo.
+  defp agendar_recarga(socket, true, true), do: socket
+
+  defp agendar_recarga(socket, true, false) do
+    Process.send_after(self(), :recarregar_galeria, intervalo_recarga())
+    assign(socket, :recarga_agendada?, true)
+  end
+
+  defp agendar_recarga(socket, false, _agendada?), do: assign(socket, :recarga_agendada?, false)
+
+  # Configurável só para o teste conseguir esperar o timer sem segurar a suíte.
+  defp intervalo_recarga do
+    Application.get_env(:o_grupo_de_estudos, :recarga_galeria_ms, @recarga_galeria_ms)
+  end
+
+  defp processando?(%{status: :processing}), do: true
+  defp processando?(_outra), do: false
 
   defp assign_workshop_likes(socket) do
     workshop = socket.assigns.workshop

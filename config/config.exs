@@ -54,9 +54,15 @@ config :phoenix, :json_library, Jason
 # Oban — filas de jobs assíncronos
 config :o_grupo_de_estudos, Oban,
   repo: OGrupoDeEstudos.Repo,
-  queues: [email: 10, tracking: 5, backup: 1, maintenance: 1, reminders: 5],
+  # video: 1 de proposito. A VM tem 1 vCPU compartilhado e o ffmpeg come tudo
+  # que encontra: dois transcodes em paralelo deixam o site lento para quem
+  # esta navegando, e a fila so precisa terminar, nao correr.
+  queues: [email: 10, tracking: 5, backup: 1, maintenance: 1, reminders: 5, video: 1],
   plugins: [
     Oban.Plugins.Pruner,
+    # Deploy no meio de um transcode deixaria o job em `executing` para sempre,
+    # e a midia presa em "processando" na tela. O Lifeline devolve para a fila.
+    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
     {Oban.Plugins.Cron,
      crontab: [
        # Backup completo do banco a cada hora

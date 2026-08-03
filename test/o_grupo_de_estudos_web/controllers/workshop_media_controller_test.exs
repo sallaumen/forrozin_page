@@ -40,7 +40,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaControllerTest do
         byte_size: byte_size(@png)
       })
 
-    %{dono: dono, aluna: aluna, workshop: workshop, media: media}
+    %{dir: dir, dono: dono, aluna: aluna, workshop: workshop, media: media}
   end
 
   describe "GET /workshop-media/:id" do
@@ -97,6 +97,69 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaControllerTest do
       conn = get(build_conn(), "/uploads/#{ctx.media.storage_key}")
 
       assert conn.status in [400, 404]
+    end
+  end
+
+  describe "GET /workshop-media/:id/poster" do
+    setup ctx do
+      # Poster de verdade nao existe sem ffmpeg, entao a linha e escrita como o
+      # transcode a deixaria e o arquivo vai para o disco na mao.
+      chave = Path.join("workshop_media", "poster_teste.jpg")
+      File.mkdir_p!(Path.join(ctx.dir, "workshop_media"))
+      File.write!(Path.join(ctx.dir, chave), @png)
+
+      {:ok, com_poster} =
+        ctx.media
+        |> Ecto.Changeset.change(poster_key: chave, kind: :video, content_type: "video/mp4")
+        |> OGrupoDeEstudos.Repo.update()
+
+      %{com_poster: com_poster}
+    end
+
+    test "quem se inscreveu recebe a capa como imagem", ctx do
+      conn = get(log_in_user(build_conn(), ctx.aluna), ~p"/workshop-media/#{ctx.media.id}/poster")
+
+      assert conn.status == 200
+      # O poster e JPEG mesmo que o video seja mp4: o content_type da linha e
+      # do video, e serviria imagem com tipo errado.
+      assert get_resp_header(conn, "content-type") == ["image/jpeg"]
+    end
+
+    test "estranho logado NAO recebe a capa", ctx do
+      # A capa e um quadro do video pago: vazar ela vaza o conteudo.
+      conn =
+        get(log_in_user(build_conn(), insert(:user)), ~p"/workshop-media/#{ctx.media.id}/poster")
+
+      assert conn.status == 404
+    end
+
+    test "visitante sem conta NAO recebe a capa", ctx do
+      conn = get(build_conn(), ~p"/workshop-media/#{ctx.media.id}/poster")
+
+      assert conn.status == 404
+    end
+
+    test "midia sem poster devolve 404 em vez de estourar", ctx do
+      {:ok, sem_poster} =
+        ctx.com_poster |> Ecto.Changeset.change(poster_key: nil) |> OGrupoDeEstudos.Repo.update()
+
+      conn = get(log_in_user(build_conn(), ctx.aluna), ~p"/workshop-media/#{sem_poster.id}/poster")
+
+      assert conn.status == 404
+    end
+
+    test "capa nao vai para cache compartilhado", ctx do
+      conn = get(log_in_user(build_conn(), ctx.aluna), ~p"/workshop-media/#{ctx.media.id}/poster")
+
+      assert get_resp_header(conn, "cache-control") == ["private, no-store"]
+    end
+
+    test "midia apagada nao serve mais a capa", ctx do
+      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, ctx.media.id)
+
+      conn = get(log_in_user(build_conn(), ctx.aluna), ~p"/workshop-media/#{ctx.media.id}/poster")
+
+      assert conn.status == 404
     end
   end
 end

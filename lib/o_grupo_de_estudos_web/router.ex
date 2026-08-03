@@ -56,7 +56,9 @@ defmodule OGrupoDeEstudosWeb.Router do
     pipe_through :browser
 
     # Midia de workshop: passa pela sessao de proposito, o arquivo e restrito.
+    # A capa do video tem a mesma trava: e um quadro do conteudo pago.
     get "/workshop-media/:id", WorkshopMediaController, :show
+    get "/workshop-media/:id/poster", WorkshopMediaController, :poster
 
     delete "/logout", UserSessionController, :delete
     get "/confirm/:token", UserConfirmationController, :confirm
