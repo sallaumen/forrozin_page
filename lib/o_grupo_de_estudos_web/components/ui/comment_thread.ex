@@ -27,7 +27,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   # ---------------------------------------------------------------------------
 
   attr :comments, :list, required: true
-  attr :current_user, :map, required: true
+  attr :current_user, :map, default: nil
   attr :likes_map, :map, required: true
   attr :comment_type, :string, required: true
   attr :parent_id, :string, required: true
@@ -64,7 +64,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   # ---------------------------------------------------------------------------
 
   attr :comment, :map, required: true
-  attr :current_user, :map, required: true
+  attr :current_user, :map, default: nil
   attr :likes_map, :map, required: true
   attr :comment_type, :string, required: true
   attr :replying_to, :string, required: true
@@ -127,7 +127,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   end
 
   attr :comment, :map, required: true
-  attr :current_user, :map, required: true
+  attr :current_user, :map, default: nil
   attr :likes_map, :map, required: true
   attr :comment_type, :string, required: true
   attr :is_admin, :boolean, required: true
@@ -302,6 +302,9 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   end
 
   defp liked?(_likes_map, _comment_id), do: false
+
+  # Visitante sem conta não apaga nada — e a página não pode quebrar por isso.
+  defp can_delete?(_comment, nil, _is_admin), do: false
 
   defp can_delete?(comment, current_user, is_admin) do
     is_admin || current_user.id == get_user_id(comment)
