@@ -1,0 +1,140 @@
+<div id="workshops-shell" class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.flash kind={:info} id="lv-flash-info" flash={@flash} />
+  <.flash kind={:error} id="lv-flash-error" flash={@flash} />
+
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    notification_count={@notification_count}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={@notification_dropdown_open}
+    notification_preview_groups={@notification_preview_groups}
+    notification_targets={@notification_targets}
+    pending_suggestions_count={@pending_suggestions_count}
+    pending_study_count={@pending_study_count}
+    online_users={@online_users}
+    online_count={@online_count}
+  />
+
+  <.study_tabs active="workshops" is_teacher={@current_user.is_teacher} />
+
+  <main class="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
+    <.section_intro
+      eyebrow="Agenda da comunidade"
+      eyebrow_icon="hero-calendar-days"
+      tone={:purple}
+      title="Workshops"
+      description="Eventos pontuais abertos a qualquer pessoa. Quem se inscreve num workshop não vira seu aluno: são coisas diferentes de propósito."
+    >
+      <:action>
+        <.action_link :if={@can_create} navigate={~p"/study/workshops/novo"} icon="hero-plus">
+          Criar workshop
+        </.action_link>
+      </:action>
+    </.section_intro>
+
+    <%!-- Busca e filtros --%>
+    <div class="mt-5 flex flex-col gap-3">
+      <form phx-change="search_workshops" phx-submit="search_workshops" class="w-full">
+        <div class="relative">
+          <.icon
+            name="hero-magnifying-glass"
+            class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-400"
+          />
+          <input
+            type="text"
+            name="term"
+            value={@search}
+            phx-debounce="300"
+            placeholder="Buscar por workshop ou professor..."
+            class="w-full rounded-xl border border-ink-200 bg-ink-50 py-2.5 pl-10 pr-10 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+          />
+          <button
+            :if={@search != ""}
+            type="button"
+            phx-click="clear_search"
+            aria-label="Limpar busca"
+            class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0 text-ink-400 hover:text-ink-700"
+          >
+            <.icon name="hero-x-mark" class="size-4" />
+          </button>
+        </div>
+      </form>
+
+      <.period_filter active={@period} />
+    </div>
+
+    <%!-- Meus workshops (só aparece para quem organiza algum) --%>
+    <section :if={@mine != []} class="mt-7">
+      <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+        Você organiza
+      </h2>
+      <div class="flex flex-col gap-2.5">
+        <.workshop_card
+          :for={w <- @mine}
+          id_prefix="organiza"
+          workshop={w}
+          organizer?={true}
+          enrolled_count={Map.get(@enrollment_counts, w.id, 0)}
+        />
+      </div>
+    </section>
+
+    <%!-- Agenda --%>
+    <section class="mt-7">
+      <div class="mb-2.5 flex items-baseline justify-between gap-3">
+        <h2 class="m-0 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+          {period_heading(@period)}
+        </h2>
+        <span :if={@workshops != []} class="text-[12px] text-ink-500">
+          {length(@workshops)} {if length(@workshops) == 1, do: "workshop", else: "workshops"}
+        </span>
+      </div>
+
+      <div :if={@workshops != []} class="flex flex-col gap-2.5">
+        <.workshop_card
+          :for={w <- @workshops}
+          workshop={w}
+          enrolled_count={Map.get(@enrollment_counts, w.id, 0)}
+          enrolled?={MapSet.member?(@enrolled_ids, w.id)}
+          organizer?={w.organizer_id == @current_user.id}
+        />
+      </div>
+
+      <.workshop_empty
+        :if={@workshops == [] && @search != ""}
+        title="Nada encontrado"
+        description={"Nenhum workshop combina com \"#{@search}\" neste período."}
+      >
+        <:action>
+          <button
+            type="button"
+            phx-click="clear_search"
+            class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700"
+          >
+            Limpar busca
+          </button>
+        </:action>
+      </.workshop_empty>
+
+      <.workshop_empty
+        :if={@workshops == [] && @search == ""}
+        title="Nenhum workshop por aqui ainda"
+        description={empty_hint(@period)}
+      >
+        <:action>
+          <.action_link :if={@can_create} navigate={~p"/study/workshops/novo"} icon="hero-plus">
+            Criar o primeiro
+          </.action_link>
+        </:action>
+      </.workshop_empty>
+    </section>
+  </main>
+
+  <.bottom_nav
+    current_user={@current_user}
+    current_path="/study"
+    notification_count={@notification_count}
+    pending_study_count={@pending_study_count}
+  />
+</div>

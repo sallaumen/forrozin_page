@@ -68,6 +68,18 @@ defmodule OGrupoDeEstudosWeb.Router do
     end
   end
 
+  # Workshop é divulgado por link (WhatsApp): a página abre para quem ainda não
+  # tem conta. O que é privado (conversa, nomes dos inscritos, gestão) fica
+  # atrás de login dentro da própria LiveView.
+  scope "/", OGrupoDeEstudosWeb do
+    pipe_through :browser
+
+    live_session :workshops_public,
+      on_mount: [{OGrupoDeEstudosWeb.UserAuth, :mount_current_user}] do
+      live "/workshops/:slug", WorkshopLive
+    end
+  end
+
   # Rotas que exigem autenticação e/ou papel admin (gating no router via live_session)
   scope "/", OGrupoDeEstudosWeb do
     pipe_through :browser
@@ -83,6 +95,10 @@ defmodule OGrupoDeEstudosWeb.Router do
       live "/steps/:code", StepLive
       live "/users/:username", UserProfileLive
       live "/settings", SettingsLive
+      live "/study/workshops", WorkshopsLive
+      live "/study/workshops/novo", WorkshopFormLive, :new
+      live "/study/workshops/:slug/editar", WorkshopFormLive, :edit
+      live "/workshops/:slug/gerenciar", WorkshopManageLive
     end
 
     live_session :admin, on_mount: [{OGrupoDeEstudosWeb.UserAuth, :ensure_admin}] do

@@ -16,6 +16,7 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   alias OGrupoDeEstudos.Encyclopedia.{Step, StepLink}
   alias OGrupoDeEstudos.Sequences.Sequence
   alias OGrupoDeEstudos.Study.Lesson
+  alias OGrupoDeEstudos.Workshops.Workshop
 
   @type reason :: :unauthorized | :unauthenticated
 
@@ -97,6 +98,20 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   def authorize(:manage_lesson, %User{id: teacher_id}, %Lesson{teacher_id: teacher_id}), do: :ok
 
   def authorize(:manage_lesson, _, _), do: {:error, :unauthorized}
+
+  # ===== Workshops =====
+  # Criar é aberto a qualquer usuário (workshop não é privilégio de professor).
+  # Gerenciar é só do organizador — inclusive para admin, porque o controle de
+  # pagamento é assunto interno de quem organiza.
+
+  def authorize(:create_workshop, %User{}, _), do: :ok
+
+  def authorize(:create_workshop, nil, _), do: {:error, :unauthenticated}
+
+  def authorize(:manage_workshop, %User{id: organizer_id}, %Workshop{organizer_id: organizer_id}),
+    do: :ok
+
+  def authorize(:manage_workshop, _, _), do: {:error, :unauthorized}
 
   # ===== Sequences =====
   # Edit/delete: admin manages any sequence; the owner manages their own.

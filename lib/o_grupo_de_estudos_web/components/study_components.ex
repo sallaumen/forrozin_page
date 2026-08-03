@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
 
   # ── Abas principais ──────────────────────────────────────────────────
 
-  attr :active, :string, required: true, values: ~w(personal teachers students)
+  attr :active, :string, required: true, values: ~w(personal teachers students workshops)
   attr :is_teacher, :boolean, default: false
   attr :pending_count, :integer, default: 0
   attr :lesson_count, :integer, default: 0
@@ -29,13 +29,34 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   def study_tabs(assigns) do
     ~H"""
     <div class="sticky top-[48px] md:top-[52px] z-30 border-b border-ink-300/40 bg-ink-100/95 backdrop-blur-sm">
-      <div class="mx-auto max-w-[1500px] px-4 py-2.5 sm:px-6 lg:px-8">
+      <%!-- overflow-x-auto: com quatro abas o tablist estoura a largura no celular --%>
+      <div class="mx-auto max-w-[1500px] overflow-x-auto px-4 py-2.5 sm:px-6 lg:px-8">
         <div
           role="tablist"
           class="inline-flex items-center gap-0.5 rounded-full border border-ink-200 bg-ink-200/60 p-1"
         >
-          <.tab_button tab="personal" active={@active} label="Meu estudo" />
-          <.tab_button tab="teachers" active={@active} label="Meus professores">
+          <.tab_link
+            :if={@active == "workshops"}
+            navigate="/study"
+            label="Meu estudo"
+          />
+          <.tab_button
+            :if={@active != "workshops"}
+            tab="personal"
+            active={@active}
+            label="Meu estudo"
+          />
+          <.tab_link
+            :if={@active == "workshops"}
+            navigate="/study"
+            label="Meus professores"
+          />
+          <.tab_button
+            :if={@active != "workshops"}
+            tab="teachers"
+            active={@active}
+            label="Meus professores"
+          >
             <span
               :if={@lesson_count > 0}
               class="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-red px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
@@ -43,7 +64,17 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
               {@lesson_count}
             </span>
           </.tab_button>
-          <.tab_button :if={@is_teacher} tab="students" active={@active} label="Meus alunos">
+          <.tab_link
+            :if={@active == "workshops" && @is_teacher}
+            navigate="/study"
+            label="Meus alunos"
+          />
+          <.tab_button
+            :if={@active != "workshops" && @is_teacher}
+            tab="students"
+            active={@active}
+            label="Meus alunos"
+          >
             <span
               :if={@pending_count > 0}
               class="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-red px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
@@ -51,9 +82,37 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
               {@pending_count}
             </span>
           </.tab_button>
+          <.tab_link
+            navigate="/study/workshops"
+            label="Workshops"
+            active={@active == "workshops"}
+          />
         </div>
       </div>
     </div>
+    """
+  end
+
+  # A aba de workshops mora numa LiveView própria (deep-link e URL de verdade),
+  # então navega em vez de trocar estado local.
+  attr :navigate, :string, required: true
+  attr :label, :string, required: true
+  attr :active, :boolean, default: false
+
+  defp tab_link(assigns) do
+    ~H"""
+    <.link
+      navigate={@navigate}
+      role="tab"
+      aria-selected={to_string(@active)}
+      class={[
+        "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 font-serif text-xs font-semibold tracking-tight no-underline transition-colors sm:px-3.5 sm:text-[13px]",
+        @active && "bg-ink-50 text-accent-orange shadow-sm",
+        !@active && "bg-transparent text-ink-500 hover:text-ink-800"
+      ]}
+    >
+      {@label}
+    </.link>
     """
   end
 

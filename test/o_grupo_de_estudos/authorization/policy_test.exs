@@ -177,4 +177,22 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
       assert {:error, :unauthorized} = Policy.authorize(:manage_lesson, other, lesson)
     end
   end
+
+  describe "authorize(:create_workshop | :manage_workshop, ...)" do
+    test "qualquer usuário logado cria workshop" do
+      assert :ok = Policy.authorize(:create_workshop, insert(:user, is_teacher: false), nil)
+      assert {:error, :unauthenticated} = Policy.authorize(:create_workshop, nil, nil)
+    end
+
+    test "só o organizador gerencia, nem admin entra" do
+      organizer = insert(:user)
+      workshop = %OGrupoDeEstudos.Workshops.Workshop{organizer_id: organizer.id}
+
+      assert :ok = Policy.authorize(:manage_workshop, organizer, workshop)
+      assert {:error, :unauthorized} = Policy.authorize(:manage_workshop, insert(:user), workshop)
+
+      assert {:error, :unauthorized} =
+               Policy.authorize(:manage_workshop, insert(:admin), workshop)
+    end
+  end
 end
