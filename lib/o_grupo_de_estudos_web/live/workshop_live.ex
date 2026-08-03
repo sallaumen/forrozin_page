@@ -234,6 +234,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp erro_de_media(:storage_full),
     do: "O armazenamento está no limite. Avise quem organiza antes de tentar de novo."
 
+  defp erro_de_media(:media_quota),
+    do: "Este workshop chegou ao limite de 2 GB em fotos e vídeos."
+
   defp erro_de_media(:unsupported_type), do: "Só entra foto ou vídeo."
   defp erro_de_media(:unauthorized), do: "Só quem está no workshop manda mídia."
   defp erro_de_media(_outro), do: "Não foi possível enviar."

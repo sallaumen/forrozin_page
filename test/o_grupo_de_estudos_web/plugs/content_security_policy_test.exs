@@ -19,6 +19,16 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicyTest do
       assert header =~ "https://www.instagram.com"
     end
 
+    test "libera video e imagem de storage externo (R2 assinado), sem abrir script" do
+      # A galeria serve video por redirect para URL assinada do R2, que e
+      # outra origem. Sem media-src o navegador cai no default-src 'self' e
+      # bloqueia o player.
+      header = conn(:get, "/") |> ContentSecurityPolicy.call([]) |> csp()
+
+      assert header =~ "media-src 'self' https:"
+      assert header =~ "img-src 'self' data: https:"
+    end
+
     test "mantem o restante restritivo (XSS continua mitigado)" do
       header = conn(:get, "/") |> ContentSecurityPolicy.call([]) |> csp()
 

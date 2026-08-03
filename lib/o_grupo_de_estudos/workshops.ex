@@ -201,7 +201,13 @@ defmodule OGrupoDeEstudos.Workshops do
   @media_dir "workshop_media"
   # Recusa upload novo com menos de 1 GB livre. Sem isso o volume enche e o
   # proximo upload estoura ENOSPC no meio, sem mensagem que ajude ninguem.
+  # No R2 nao se aplica: free_bytes devolve :unknown e quem limita e a cota.
   @min_free_bytes 1_073_741_824
+  # 2 GiB de midia por workshop. Com storage praticamente ilimitado (R2), o
+  # risco deixa de ser disco cheio e vira custo: so inscritos mandam midia,
+  # mas nada impediria alguem de despejar video atras de video. 2 GiB dao
+  # ~3h de video transcodificado, folga para uso real.
+  @max_media_bytes_por_workshop 2_147_483_648
 
   defdelegate list_media(workshop_id), to: MediaQuery, as: :list_for_workshop
   defdelegate get_media(media_id), to: MediaQuery, as: :get
@@ -228,7 +234,7 @@ defmodule OGrupoDeEstudos.Workshops do
   """
   @spec add_media(Workshop.t(), User.t(), map()) ::
           {:ok, WorkshopMedia.t()}
-          | {:error, :unauthorized | :unsupported_type | :storage_full | term()}
+          | {:error, :unauthorized | :unsupported_type | :storage_full | :media_quota | term()}
   def add_media(%Workshop{} = workshop, %User{} = user, %{
         tmp_path: tmp_path,
         content_type: content_type,
@@ -236,6 +242,7 @@ defmodule OGrupoDeEstudos.Workshops do
       }) do
     with :ok <- ensure_pode_enviar(workshop, user),
          {:ok, kind} <- ensure_tipo(content_type),
+         :ok <- ensure_cota(workshop.id, byte_size),
          :ok <- ensure_espaco(byte_size),
          {:ok, key} <-
            Storage.put_private(@media_dir, tmp_path, WorkshopMedia.extensao(content_type)) do
@@ -252,6 +259,14 @@ defmodule OGrupoDeEstudos.Workshops do
       :error -> {:error, :unsupported_type}
       kind -> {:ok, kind}
     end
+  end
+
+  defp ensure_cota(workshop_id, byte_size) do
+    %{bytes: usados} = MediaQuery.usage(workshop_id)
+
+    if usados + byte_size <= @max_media_bytes_por_workshop,
+      do: :ok,
+      else: {:error, :media_quota}
   end
 
   defp ensure_espaco(byte_size) do
