@@ -263,8 +263,7 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   defp inserir_media(workshop, user, kind, key, content_type, byte_size) do
-    %WorkshopMedia{}
-    |> WorkshopMedia.changeset(%{
+    atributos = %{
       workshop_id: workshop.id,
       uploaded_by_id: user.id,
       kind: kind,
@@ -273,23 +272,37 @@ defmodule OGrupoDeEstudos.Workshops do
       byte_size: byte_size,
       status: WorkshopMedia.status_inicial(kind),
       official: admin?(workshop, user)
-    })
-    |> Repo.insert()
-    |> case do
-      {:ok, media} -> {:ok, enfileirado(media)}
-      {:error, changeset} -> descartar_arquivo(key, changeset)
+    }
+
+    case gravar_com_fila(atributos) do
+      {:ok, media} -> {:ok, Repo.preload(media, :uploaded_by)}
+      {:error, motivo} -> descartar_arquivo(key, motivo)
     end
+  end
+
+  # Mídia e job de transcode entram na MESMA transação: ou o vídeo entra com
+  # a conversão agendada, ou nada entra. Sem isso, uma falha ao enfileirar
+  # deixaria a linha em "processando" para sempre, sem job nenhum, e o
+  # Lifeline não resgata job que não existe.
+  defp gravar_com_fila(atributos) do
+    Repo.transact(fn ->
+      with {:ok, media} <- Repo.insert(WorkshopMedia.changeset(%WorkshopMedia{}, atributos)) do
+        enfileirado(media)
+      end
+    end)
   end
 
   # Vídeo sai do upload em `:processing`: o arquivo já está salvo e a conversão
   # acontece depois, para a aluna não ficar olhando a barra parada enquanto o
   # ffmpeg roda.
   defp enfileirado(%WorkshopMedia{status: :processing, id: id} = media) do
-    Oban.insert(TranscodeWorkshopVideo.new(%{"media_id" => id}))
-    Repo.preload(media, :uploaded_by)
+    case Oban.insert(TranscodeWorkshopVideo.new(%{"media_id" => id})) do
+      {:ok, _job} -> {:ok, media}
+      {:error, motivo} -> {:error, motivo}
+    end
   end
 
-  defp enfileirado(media), do: Repo.preload(media, :uploaded_by)
+  defp enfileirado(media), do: {:ok, media}
 
   defp descartar_arquivo(key, erro) do
     Storage.delete_private(key)
@@ -419,30 +432,41 @@ defmodule OGrupoDeEstudos.Workshops do
 
     case marcar_pronta(media, atributos) do
       :ok -> Storage.delete_private(media.storage_key)
-      erro -> descartar_convertido(chave, poster_key, erro)
+      # Quem apagou durante o transcode ganhou: o convertido e o poster vão
+      # embora em vez de virarem órfãos, e não há nada para tentar de novo.
+      {:error, :apagada} -> descartar_convertido(chave, poster_key)
     end
   end
 
-  # Banco recusou: o original continua de pé, então some com o que acabou de
-  # ser escrito para o retry do Oban não deixar lixo acumulado.
-  defp descartar_convertido(chave, poster_key, erro) do
+  defp descartar_convertido(chave, poster_key) do
     Storage.delete_private(chave)
     apagar_poster(poster_key)
-    erro
+    :ok
   end
 
   defp desistir(media, motivo) do
     Logger.warning("[Transcode] mídia #{media.id} falhou (#{inspect(motivo)}), fica o original")
-    marcar_pronta(media, %{})
+
+    case marcar_pronta(media, %{}) do
+      :ok -> :ok
+      {:error, :apagada} -> :ok
+    end
   end
 
+  # Condicionado a `deleted_at` DE NOVO, não só na entrada do job: o ffmpeg
+  # leva minutos, e uma remoção nesse meio tempo não pode ser atropelada.
   defp marcar_pronta(media, atributos) do
-    media
-    |> WorkshopMedia.changeset(Map.put(atributos, :status, :ready))
-    |> Repo.update()
-    |> case do
-      {:ok, _pronta} -> :ok
-      {:error, changeset} -> {:error, changeset}
+    campos =
+      atributos
+      |> Map.put(:status, :ready)
+      |> Map.put(:updated_at, NaiveDateTime.utc_now(:second))
+      |> Map.to_list()
+
+    viva = from(m in WorkshopMedia, where: m.id == ^media.id and is_nil(m.deleted_at))
+
+    case Repo.update_all(viva, set: campos) do
+      {1, _} -> :ok
+      {0, _} -> {:error, :apagada}
     end
   end
 

@@ -239,6 +239,35 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
     end
   end
 
+  describe "remoção no meio do transcode" do
+    test "quem apaga durante o ffmpeg ganha: nada convertido sobra no volume", ctx do
+      media = subir_video(ctx)
+
+      expect(Video.Mock, :available?, fn -> true end)
+
+      expect(Video.Mock, :transcode, fn _origem, destino ->
+        # A aluna apaga enquanto o ffmpeg trabalha (ele segue com o arquivo
+        # aberto). O job não pode ressuscitar a mídia apagada nem largar o
+        # convertido órfão no volume: ninguém mais o deletaria.
+        {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
+        File.write!(destino, :binary.copy(<<1>>, 800_000))
+        :ok
+      end)
+
+      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+
+      assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
+
+      assert OGrupoDeEstudos.Media.ObjectStorage.list("workshop_media/") == []
+
+      apagada = Workshops.get_media(media.id)
+      refute is_nil(apagada.deleted_at)
+      # A linha apagada não ganha a chave do convertido: fica como a remoção
+      # a deixou.
+      assert apagada.storage_key == media.storage_key
+    end
+  end
+
   describe "remoção depois do transcode" do
     test "apagar a mídia leva o poster junto", ctx do
       media = subir_video(ctx)
