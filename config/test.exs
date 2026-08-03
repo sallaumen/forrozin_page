@@ -38,6 +38,10 @@ config :phoenix,
 # Oban — executa jobs sincronamente nos testes
 config :o_grupo_de_estudos, Oban, testing: :inline
 
+# Uploads num diretorio descartavel. Testes que precisam inspecionar arquivo
+# trocam esta chave por um tmp proprio.
+config :o_grupo_de_estudos, :uploads_path, Path.expand("../tmp/test_uploads", __DIR__)
+
 # Mailer — captura emails nos testes via Swoosh.TestAssertions
 config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Test
 

@@ -64,6 +64,65 @@ defmodule OGrupoDeEstudos.Media.Storage.Local do
     |> File.exists?()
   end
 
+  @flyer_max_width 1200
+  @key_random_bytes 16
+
+  @doc """
+  Guarda uma imagem redimensionada, com nome aleatorio.
+
+  Diferente do avatar, a chave nao carrega id nenhum: um flyer e publico, e
+  nome previsivel deixaria varrer o que os outros publicaram.
+  """
+  @impl true
+  def save_image(subdir, tmp_path, ext) do
+    dest_dir = dir(subdir)
+    File.mkdir_p!(dest_dir)
+    filename = "#{random_key()}#{ext}"
+    dest = Path.join(dest_dir, filename)
+
+    with :ok <- resize_to_width(tmp_path, dest) do
+      {:ok, "/uploads/#{subdir}/#{filename}"}
+    end
+  end
+
+  @doc "Apaga uma imagem pela URL publica."
+  @impl true
+  def delete_image("/uploads/" <> relative) do
+    caminho = Path.join(base_path(), relative)
+
+    case File.rm(caminho) do
+      :ok -> :ok
+      {:error, :enoent} -> :ok
+      error -> error
+    end
+  end
+
+  def delete_image(_outra_coisa), do: :ok
+
+  defp random_key do
+    @key_random_bytes
+    |> :crypto.strong_rand_bytes()
+    |> Base.url_encode64(padding: false)
+    |> String.replace(~r/[^A-Za-z0-9]/, "")
+  end
+
+  # Flyer e cartaz: mantem a proporcao e so limita a largura. Sem isso, uma
+  # foto de celular de 4 MB vira 4 MB no volume.
+  defp resize_to_width(source, dest) do
+    source
+    |> Mogrify.open()
+    |> Mogrify.resize_to_limit("#{@flyer_max_width}x#{@flyer_max_width * 3}")
+    |> Mogrify.save(path: dest)
+
+    :ok
+  rescue
+    _e ->
+      case File.cp(source, dest) do
+        :ok -> :ok
+        error -> error
+      end
+  end
+
   @doc "Returns the base uploads directory for a given subdirectory."
   @impl true
   def dir(subdir) do

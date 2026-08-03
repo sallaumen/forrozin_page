@@ -24,6 +24,10 @@ config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 if config_env() == :prod do
+  # Volume do Fly, montado em /app/uploads (fly.toml). Explicito para nao
+  # depender de um File.dir? adivinhando o ambiente.
+  config :o_grupo_de_estudos, :uploads_path, System.get_env("UPLOADS_PATH", "/app/uploads")
+
   config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
     adapter: Swoosh.Adapters.SMTP,
     relay: System.get_env("SMTP_HOST", "smtp-relay.brevo.com"),

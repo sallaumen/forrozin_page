@@ -33,6 +33,16 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStaticTest do
     assert response(conn, 200) == "png-fake"
   end
 
+  test "flyer e publico: material de divulgacao existe para circular", %{conn: conn} do
+    dir = Application.get_env(:o_grupo_de_estudos, :uploads_path)
+    File.mkdir_p!(Path.join(dir, "flyers"))
+    File.write!(Path.join(dir, "flyers/cartaz.png"), "png-fake")
+
+    conn = get(conn, "/uploads/flyers/cartaz.png")
+
+    assert response(conn, 200) == "png-fake"
+  end
+
   test "pasta nova no volume NAO vira publica sozinha", %{conn: conn} do
     dir = Application.get_env(:o_grupo_de_estudos, :uploads_path)
     File.mkdir_p!(Path.join(dir, "workshops"))

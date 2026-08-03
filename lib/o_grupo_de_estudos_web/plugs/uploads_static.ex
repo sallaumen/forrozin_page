@@ -21,7 +21,10 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStatic do
 
   # Conteudo que e publico por natureza. Qualquer coisa fora daqui exige
   # autorizacao e portanto nao passa por este plug.
-  @public_dirs ["avatars"]
+  # Flyer e material de divulgacao: existe para circular. Avatar idem. Tudo
+  # que for restrito (midia paga de workshop) fica fora daqui e passa por
+  # controller com permissao.
+  @public_dirs ["avatars", "flyers"]
 
   @impl true
   def init(_opts), do: []

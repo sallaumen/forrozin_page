@@ -67,6 +67,12 @@
           placeholder="O que é este conjunto de workshops, para quem é, o que levar."
           class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm leading-relaxed text-ink-800 placeholder:text-ink-400"
         >{@form["description"]}</textarea>
+
+        <.flyer_field
+          upload={@uploads.flyer}
+          current_path={@program && @program.flyer_path}
+          legenda="Cartaz do evento inteiro. Cada workshop pode ter o seu também."
+        />
       </div>
 
       <%!-- Quais workshops entram --%>

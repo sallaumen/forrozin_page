@@ -40,3 +40,7 @@ npm-debug.log
 tmp/
 docs/
 .superpowers/
+
+# Uploads de desenvolvimento
+/priv/uploads/
+/tmp/test_uploads/

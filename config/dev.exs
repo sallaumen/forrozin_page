@@ -1,6 +1,11 @@
 import Config
 
 # Configure your database
+# Uploads FORA de priv/static de proposito: la dentro o Plug.Static principal
+# do endpoint intercepta o caminho antes do UploadsStatic e recusa o arquivo
+# por nao estar na :only dele, devolvendo 400 para todo upload em dev.
+config :o_grupo_de_estudos, :uploads_path, Path.expand("../priv/uploads", __DIR__)
+
 config :o_grupo_de_estudos, OGrupoDeEstudos.Repo,
   username: "forrozin",
   password: "forrozin",

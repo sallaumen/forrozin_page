@@ -142,6 +142,12 @@
 
       <%!-- Caixa de inscrição --%>
       <aside>
+        <img
+          :if={@workshop.flyer_path}
+          src={@workshop.flyer_path}
+          alt={"Flyer de #{@workshop.title}"}
+          class="mb-4 w-full rounded-2xl border border-ink-200 object-cover shadow-sm"
+        />
         <div class="rounded-2xl border border-ink-200 border-l-[3px] border-l-accent-green bg-ink-50 p-4 shadow-sm">
           <p class="m-0 font-serif text-[24px] font-bold tracking-tight text-ink-900">
             {price_label(@workshop)}

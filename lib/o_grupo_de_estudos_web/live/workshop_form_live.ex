@@ -13,15 +13,24 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.WorkshopComponents
 
   @impl true
   def mount(params, _session, socket) do
     user = socket.assigns.current_user
 
     case Policy.authorize(:create_workshop, user, nil) do
-      :ok -> {:ok, prepare(socket, socket.assigns.live_action, params)}
+      :ok -> {:ok, permitir_flyer(prepare(socket, socket.assigns.live_action, params))}
       {:error, _} -> {:ok, redirect(socket, to: ~p"/study/workshops")}
     end
+  end
+
+  defp permitir_flyer(socket) do
+    allow_upload(socket, :flyer,
+      accept: ~w(.jpg .jpeg .png .webp),
+      max_entries: 1,
+      max_file_size: 8_000_000
+    )
   end
 
   defp prepare(socket, :new, params) do
@@ -33,16 +42,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     |> assign(:form, empty_form())
     |> assign(:program, program_from(params, socket.assigns.current_user))
   end
-
-  # `?programa=slug` faz o workshop nascer ja dentro da programacao. So vale
-  # se a pessoa e dona dela: senao o workshop nasce solto, sem reclamar.
-  defp program_from(%{"programa" => slug}, user) do
-    program = Workshops.get_program_by_slug(slug)
-
-    if program && Policy.authorized?(:manage_program, user, program), do: program, else: nil
-  end
-
-  defp program_from(_params, _user), do: nil
 
   defp prepare(socket, :edit, %{"slug" => slug}) do
     workshop = Workshops.get_by_slug(slug)
@@ -71,6 +70,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
   # Os dois botões submetem o mesmo form e se distinguem pelo name/value: assim
   # os campos vêm do DOM, sem depender do assign que o phx-change sincroniza.
+  def handle_event("remove_flyer", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Workshops.remove_workshop_flyer(socket.assigns.workshop, user) do
+      {:ok, atualizado} -> {:noreply, assign(socket, :workshop, atualizado)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Não foi possível tirar o flyer.")}
+    end
+  end
+
   def handle_event("save", %{"workshop" => params} = event, socket) do
     submit(socket, socket.assigns.workshop, params, publish?: event["publish"] == "true")
   end
@@ -81,6 +89,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     case Workshops.create_workshop(user, to_attrs(params)) do
       {:ok, workshop} ->
         attach_to_program(socket.assigns[:program], user, workshop)
+        workshop = guardar_flyer(socket, workshop, user)
         finish(socket, user, workshop, publish?)
 
       {:error, changeset} ->
@@ -88,17 +97,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     end
   end
 
-  defp attach_to_program(nil, _user, _workshop), do: :ok
-
-  defp attach_to_program(program, user, workshop),
-    do: Workshops.attach_workshop(program, user, workshop.id)
-
   defp submit(socket, workshop, params, publish?: publish?) do
     user = socket.assigns.current_user
 
     case Workshops.update_workshop(user, workshop, to_attrs(params)) do
       {:ok, updated} ->
-        finish(socket, user, updated, publish?)
+        finish(socket, user, guardar_flyer(socket, updated, user), publish?)
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, form_failed(socket, params, changeset)}
@@ -107,6 +111,39 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
         {:noreply, redirect(socket, to: ~p"/study/workshops")}
     end
   end
+
+  # `?programa=slug` faz o workshop nascer ja dentro da programacao. So vale
+  # se a pessoa e dona dela: senao o workshop nasce solto, sem reclamar.
+  defp program_from(%{"programa" => slug}, user) do
+    program = Workshops.get_program_by_slug(slug)
+
+    if program && Policy.authorized?(:manage_program, user, program), do: program, else: nil
+  end
+
+  defp program_from(_params, _user), do: nil
+
+  # O upload nao bloqueia o salvamento: se o flyer falhar, o workshop existe
+  # do mesmo jeito e a pessoa tenta o cartaz de novo depois.
+  defp guardar_flyer(socket, workshop, user) do
+    socket
+    |> consume_uploaded_entries(:flyer, fn %{path: tmp_path}, entry ->
+      {:ok, Workshops.put_workshop_flyer(workshop, user, tmp_path, extensao(entry))}
+    end)
+    |> case do
+      [{:ok, atualizado}] -> atualizado
+      _ -> workshop
+    end
+  end
+
+  defp extensao(entry) do
+    [ext | _] = MIME.extensions(entry.client_type)
+    "." <> ext
+  end
+
+  defp attach_to_program(nil, _user, _workshop), do: :ok
+
+  defp attach_to_program(program, user, workshop),
+    do: Workshops.attach_workshop(program, user, workshop.id)
 
   defp finish(socket, user, workshop, true) do
     case Workshops.publish_workshop(user, workshop) do

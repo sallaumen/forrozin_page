@@ -29,6 +29,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
     field :description, :string
     field :location, :string
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
+    field :flyer_path, :string
 
     belongs_to :owner, User
     has_many :workshops, Workshop, foreign_key: :program_id
@@ -51,6 +52,11 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
     |> put_slug()
     |> unique_constraint(:slug)
     |> foreign_key_constraint(:owner_id)
+  end
+
+  @doc "Grava ou tira o flyer. Caminho vem do storage, nunca do usuario."
+  def flyer_changeset(program, flyer_path) do
+    change(program, flyer_path: flyer_path)
   end
 
   @doc "Muda o estado (publicar, cancelar, voltar a rascunho)."
