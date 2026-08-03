@@ -34,9 +34,9 @@ defmodule OGrupoDeEstudos.Workshops do
     ProgramQuery,
     Workshop,
     WorkshopAdmin,
-    InviteQuery,
+    JoinRequest,
+    JoinRequestQuery,
     WorkshopEnrollment,
-    WorkshopInvite,
     WorkshopMedia,
     WorkshopProgram,
     WorkshopQuery
@@ -130,70 +130,159 @@ defmodule OGrupoDeEstudos.Workshops do
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
 
-  # ── Convite (workshop privado) ────────────────────────────────────────
+  # ── Pedido de entrada (workshop privado) ──────────────────────────────
 
-  defdelegate list_invites(workshop_id), to: InviteQuery, as: :list_for_workshop
-  defdelegate invited?(workshop_id, user_id), to: InviteQuery
+  @doc "Fila de pedidos esperando resposta. Aceita o workshop ou só o id."
+  @spec list_pending_requests(Workshop.t() | Ecto.UUID.t()) :: [map()]
+  def list_pending_requests(%Workshop{id: id}), do: JoinRequestQuery.list_pending(id)
+  def list_pending_requests(workshop_id), do: JoinRequestQuery.list_pending(workshop_id)
+
+  @doc "Quantos pedidos esperando, para o contador do painel."
+  @spec count_pending_requests(Workshop.t() | Ecto.UUID.t()) :: non_neg_integer()
+  def count_pending_requests(%Workshop{id: id}), do: JoinRequestQuery.count_pending(id)
+  def count_pending_requests(workshop_id), do: JoinRequestQuery.count_pending(workshop_id)
 
   @doc """
-  Convida alguém para um workshop privado.
+  Quem pode ABRIR a página do workshop.
 
-  Convidar já libera: quem foi convidado enxerga a página e decide se se
-  inscreve, que é a confirmação de verdade.
+  Todo workshop publicado abre para qualquer um, inclusive o privado: esconder
+  faria a agenda parecer vazia justamente quando tem gente usando. O que se
+  protege é o interior, não a existência.
   """
-  @spec invite(Workshop.t(), User.t(), Ecto.UUID.t()) ::
-          {:ok, WorkshopInvite.t()} | {:error, :unauthorized | :not_found | :already_invited}
-  def invite(%Workshop{} = workshop, %User{} = actor, user_id) do
+  @spec can_see_page?(Workshop.t(), User.t() | nil) :: boolean()
+  def can_see_page?(%Workshop{status: status}, _user) when status in [:published, :cancelled],
+    do: true
+
+  def can_see_page?(%Workshop{} = workshop, %User{} = user), do: admin?(workshop, user)
+  def can_see_page?(%Workshop{}, nil), do: false
+
+  @doc """
+  Se a pessoa tem acesso ao INTERIOR: nomes de quem vai, galeria, conversa e
+  dados de pagamento.
+
+  Público libera para quem tem conta. Privado exige aprovação, que vira
+  inscrição.
+  """
+  @spec liberado?(Workshop.t(), User.t() | nil) :: boolean()
+  def liberado?(%Workshop{visibility: :public}, %User{}), do: true
+  def liberado?(%Workshop{visibility: :public}, nil), do: false
+  def liberado?(%Workshop{}, nil), do: false
+
+  def liberado?(%Workshop{} = workshop, %User{} = user) do
+    admin?(workshop, user) or not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
+  end
+
+  @doc "Em que pé está o pedido desta pessoa: `:none`, `:pending`, `:approved` ou `:rejected`."
+  @spec join_status(Workshop.t(), User.t() | nil) :: :none | :pending | :approved | :rejected
+  def join_status(%Workshop{}, nil), do: :none
+
+  def join_status(%Workshop{} = workshop, %User{} = user),
+    do: JoinRequestQuery.status(workshop.id, user.id)
+
+  @doc """
+  Pede para entrar num workshop privado.
+
+  Pedir não matricula: a vaga só existe depois do aceite. Uma recusa anterior
+  não fecha a porta, o mesmo pedido volta para a fila.
+  """
+  @spec request_join(Workshop.t(), User.t() | nil) ::
+          {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_private | :already_requested}
+  def request_join(%Workshop{}, nil), do: {:error, :unauthorized}
+
+  def request_join(%Workshop{visibility: :public}, %User{}), do: {:error, :not_private}
+
+  def request_join(%Workshop{} = workshop, %User{} = user) do
+    case JoinRequestQuery.get(workshop.id, user.id) do
+      nil -> criar_pedido(workshop, user)
+      %JoinRequest{status: :rejected} = recusado -> repetir_pedido(recusado, workshop, user)
+      %JoinRequest{} -> {:error, :already_requested}
+    end
+  end
+
+  defp criar_pedido(workshop, user) do
+    %JoinRequest{}
+    |> JoinRequest.changeset(%{workshop_id: workshop.id, user_id: user.id, status: :pending})
+    |> Repo.insert()
+    |> avisar_do_pedido(workshop, user)
+  end
+
+  defp repetir_pedido(pedido, workshop, user) do
+    pedido
+    |> Ecto.Changeset.change(status: :pending, reviewed_at: nil, reviewed_by_id: nil)
+    |> Repo.update()
+    |> avisar_do_pedido(workshop, user)
+  end
+
+  defp avisar_do_pedido({:ok, pedido}, workshop, user) do
+    SafeDispatch.run(fn ->
+      Dispatcher.notify_workshop_join_request(user.id, workshop.organizer_id, workshop.id)
+    end)
+
+    {:ok, pedido}
+  end
+
+  defp avisar_do_pedido({:error, _changeset}, _workshop, _user), do: {:error, :already_requested}
+
+  @doc """
+  Aceita o pedido e matricula de uma vez.
+
+  Quem pediu para entrar já disse o que queria; um segundo clique para
+  confirmar seria burocracia para dizer a mesma coisa.
+  """
+  @spec approve_join(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_found | :full | term()}
+  def approve_join(%Workshop{} = workshop, %User{} = actor, request_id) do
     with :ok <- ensure_admin(workshop, actor),
-         %User{} = convidado <- Accounts.get_user_by_id(user_id) do
-      inserir_convite(workshop, actor, convidado)
+         %JoinRequest{} = pedido <- buscar_pedido(workshop, request_id),
+         %User{} = pessoa <- Accounts.get_user_by_id(pedido.user_id),
+         {:ok, _inscricao} <- enroll(workshop, pessoa) do
+      responder(pedido, :approved, actor, workshop, :workshop_join_approved)
     else
       nil -> {:error, :not_found}
       {:error, motivo} -> {:error, motivo}
     end
   end
 
-  defp inserir_convite(workshop, actor, convidado) do
-    %WorkshopInvite{}
-    |> WorkshopInvite.changeset(%{
-      workshop_id: workshop.id,
-      user_id: convidado.id,
-      invited_by_id: actor.id
-    })
-    |> Repo.insert()
-    |> case do
-      {:ok, convite} -> avisar_convidado(convite, workshop, actor, convidado)
-      {:error, %Ecto.Changeset{}} -> {:error, :already_invited}
+  @doc "Recusa o pedido. Silencioso para a turma, e a pessoa pode pedir de novo."
+  @spec reject_join(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_found}
+  def reject_join(%Workshop{} = workshop, %User{} = actor, request_id) do
+    with :ok <- ensure_admin(workshop, actor),
+         %JoinRequest{} = pedido <- buscar_pedido(workshop, request_id) do
+      responder(pedido, :rejected, actor, workshop, :workshop_join_rejected)
+    else
+      nil -> {:error, :not_found}
+      {:error, motivo} -> {:error, motivo}
     end
   end
 
-  defp avisar_convidado(convite, workshop, actor, convidado) do
+  defp buscar_pedido(workshop, request_id) do
+    Repo.get_by(JoinRequest, id: request_id, workshop_id: workshop.id)
+  rescue
+    Ecto.Query.CastError -> nil
+  end
+
+  defp responder(pedido, status, actor, workshop, acao) do
+    pedido
+    |> JoinRequest.review_changeset(status, actor)
+    |> Repo.update()
+    |> case do
+      {:ok, respondido} -> avisar_da_resposta(respondido, workshop, acao)
+      erro -> erro
+    end
+  end
+
+  defp avisar_da_resposta(pedido, workshop, acao) do
     SafeDispatch.run(fn ->
-      Dispatcher.notify_workshop_invite(actor.id, convidado.id, workshop.id)
+      Dispatcher.notify_workshop_join_review(
+        workshop.organizer_id,
+        pedido.user_id,
+        workshop.id,
+        acao
+      )
     end)
 
-    {:ok, convite}
-  end
-
-  @doc "Tira o convite. Quem administra tira qualquer um."
-  @spec revoke_invite(Workshop.t(), User.t(), Ecto.UUID.t()) ::
-          {:ok, WorkshopInvite.t()} | {:error, :unauthorized | :not_found}
-  def revoke_invite(%Workshop{} = workshop, %User{} = actor, user_id) do
-    with :ok <- ensure_admin(workshop, actor) do
-      InviteQuery.delete(workshop.id, user_id)
-    end
-  end
-
-  @doc """
-  Quem pode abrir a página de um workshop privado: quem administra, quem foi
-  convidado, ou quem já está inscrito.
-  """
-  @spec can_see_private?(Workshop.t(), User.t() | nil) :: boolean()
-  def can_see_private?(%Workshop{}, nil), do: false
-
-  def can_see_private?(%Workshop{} = workshop, %User{} = user) do
-    admin?(workshop, user) or InviteQuery.invited?(workshop.id, user.id) or
-      not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
+    {:ok, pedido}
   end
 
   # ── Galeria ───────────────────────────────────────────────────────────
@@ -920,16 +1009,9 @@ defmodule OGrupoDeEstudos.Workshops do
       user_id: user && user.id,
       owner?: owner?(workshop, user),
       admin?: admin?(workshop, user),
-      enrolled?: enrolled?(workshop, user),
-      invited?: convidado?(workshop, user)
+      enrolled?: enrolled?(workshop, user)
     }
   end
-
-  defp convidado?(%Workshop{visibility: :public}, _user), do: false
-  defp convidado?(%Workshop{}, nil), do: false
-
-  defp convidado?(%Workshop{} = workshop, %User{} = user),
-    do: InviteQuery.invited?(workshop.id, user.id)
 
   defp owner?(%Workshop{organizer_id: id}, %User{id: id}), do: true
   defp owner?(%Workshop{}, _user), do: false

@@ -114,16 +114,32 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_program_enrollment(_actor_id, _organizer_id, _workshop_id, _program_id), do: :ok
 
-  @doc "Avisa alguem de que foi convidado para um workshop privado."
-  @spec notify_workshop_invite(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
-  def notify_workshop_invite(actor_id, user_id, workshop_id) when actor_id != user_id do
+  @doc "Avisa quem organiza que alguem pediu para entrar no workshop privado."
+  @spec notify_workshop_join_request(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
+  def notify_workshop_join_request(actor_id, organizer_id, workshop_id)
+      when actor_id != organizer_id do
+    avisar_sobre_pedido(actor_id, organizer_id, workshop_id, :workshop_join_requested)
+  end
+
+  def notify_workshop_join_request(_actor_id, _organizer_id, _workshop_id), do: :ok
+
+  @doc "Avisa quem pediu que o pedido foi respondido."
+  @spec notify_workshop_join_review(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t(), atom()) :: :ok
+  def notify_workshop_join_review(actor_id, user_id, workshop_id, acao)
+      when actor_id != user_id do
+    avisar_sobre_pedido(actor_id, user_id, workshop_id, acao)
+  end
+
+  def notify_workshop_join_review(_actor_id, _user_id, _workshop_id, _acao), do: :ok
+
+  defp avisar_sobre_pedido(actor_id, destinatario_id, workshop_id, acao) do
     builder = fn destinatario ->
       %{
         id: Ecto.UUID.generate(),
         user_id: destinatario,
         actor_id: actor_id,
-        action: :workshop_invited,
-        group_key: "workshop_invited:#{workshop_id}",
+        action: acao,
+        group_key: "#{acao}:#{workshop_id}",
         target_type: "workshop",
         target_id: workshop_id,
         parent_type: "workshop",
@@ -132,10 +148,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
       }
     end
 
-    insert_and_broadcast([user_id], builder)
+    insert_and_broadcast([destinatario_id], builder)
   end
-
-  def notify_workshop_invite(_actor_id, _user_id, _workshop_id), do: :ok
 
   @doc """
   Avisa alguem de que tem workshop amanha.

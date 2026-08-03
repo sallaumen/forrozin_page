@@ -327,82 +327,98 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  describe "workshop por convite" do
+  describe "workshop privado: vitrine e entrada por aprovação" do
     setup %{conn: conn} do
       dono = insert(:user)
       privado = publicado(dono, %{title: "Turma fechada", visibility: :private})
       %{dono: dono, privado: privado, conn: conn}
     end
 
-    test "estranho não abre, e a resposta é a de slug inexistente", ctx do
-      assert {:error, {:redirect, %{to: destino}}} =
-               live(log_in_user(ctx.conn, insert(:user)), ~p"/workshops/#{ctx.privado.slug}")
+    test "APARECE na agenda, com selo de entrada por aprovação", ctx do
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
 
-      assert destino == ~p"/study/workshops"
-    end
-
-    test "visitante sem conta não abre", ctx do
-      assert {:error, {:redirect, _}} = live(ctx.conn, ~p"/workshops/#{ctx.privado.slug}")
-    end
-
-    test "convidado abre e consegue se inscrever", ctx do
-      convidada = insert(:user)
-      {:ok, _} = Workshops.invite(ctx.privado, ctx.dono, convidada.id)
-
-      {:ok, lv, html} = live(log_in_user(ctx.conn, convidada), ~p"/workshops/#{ctx.privado.slug}")
       assert html =~ "Turma fechada"
-
-      render_click(lv, "enroll", %{})
-      assert MapSet.member?(Workshops.enrolled_workshop_ids(convidada.id), ctx.privado.id)
+      assert html =~ "Por aprovação"
     end
 
-    test "quem organiza abre sem precisar de convite", ctx do
+    test "a página abre para estranho, mostrando a vitrine", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, insert(:user)), ~p"/workshops/#{ctx.privado.slug}")
+
+      assert html =~ "Turma fechada"
+      assert html =~ "Pedir para entrar"
+    end
+
+    test "abre para visitante sem conta também", ctx do
+      {:ok, _lv, html} = live(ctx.conn, ~p"/workshops/#{ctx.privado.slug}")
+
+      assert html =~ "Turma fechada"
+    end
+
+    test "pedir troca o botão por um aviso de que está esperando", ctx do
+      aluna = insert(:user)
+
+      {:ok, lv, _} = live(log_in_user(ctx.conn, aluna), ~p"/workshops/#{ctx.privado.slug}")
+      html = render_click(lv, "request_join", %{})
+
+      assert html =~ "Seu pedido foi enviado"
+      refute html =~ "Pedir para entrar"
+      assert Workshops.join_status(ctx.privado, aluna) == :pending
+    end
+
+    test "quem ainda não entrou não vê a conversa nem quem vai", ctx do
+      aluna = insert(:user)
+      {:ok, _} = Workshops.enroll(ctx.privado, insert(:user, name: "Ja Inscrita"))
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, aluna), ~p"/workshops/#{ctx.privado.slug}")
+
+      refute html =~ "Ja Inscrita"
+      assert html =~ "Escrever comentário" == false
+    end
+
+    test "depois de uma recusa, o botão de pedir volta", ctx do
+      # Recusar não fecha a porta para sempre: a pessoa pode tentar de novo
+      # (mudou de ideia, conversou com quem organiza, abriu vaga).
+      aluna = insert(:user)
+      {:ok, _} = Workshops.request_join(ctx.privado, aluna)
+      [pedido] = Workshops.list_pending_requests(ctx.privado)
+      {:ok, _} = Workshops.reject_join(ctx.privado, ctx.dono, pedido.id)
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, aluna), ~p"/workshops/#{ctx.privado.slug}")
+
+      assert html =~ "Pedir para entrar"
+    end
+
+    test "quem organiza abre tudo sem pedir nada", ctx do
       {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}")
 
       assert html =~ "Turma fechada"
+      refute html =~ "Pedir para entrar"
     end
 
-    test "não aparece na agenda, nem para quem foi convidado", ctx do
-      convidada = insert(:user)
-      {:ok, _} = Workshops.invite(ctx.privado, ctx.dono, convidada.id)
-
-      {:ok, _lv, html} = live(log_in_user(ctx.conn, convidada), ~p"/study/workshops")
-
-      refute html =~ "Turma fechada"
-    end
-
-    test "o painel lista convidados e permite convidar e retirar", ctx do
-      convidada = insert(:user, name: "Joana Convidada")
+    test "o painel lista a fila e o aceite matricula", ctx do
+      aluna = insert(:user, name: "Joana Pediu")
+      {:ok, _} = Workshops.request_join(ctx.privado, aluna)
 
       {:ok, lv, html} =
         live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}/gerenciar")
 
-      assert html =~ "Quem foi convidado"
+      assert html =~ "Pedidos para entrar"
+      assert html =~ "Joana Pediu"
 
-      html = render_submit(lv, "invite", %{"username" => convidada.username})
-      assert html =~ "Joana Convidada"
-      assert Workshops.invited?(ctx.privado.id, convidada.id)
+      [pedido] = Workshops.list_pending_requests(ctx.privado)
+      render_click(lv, "approve_join", %{"id" => pedido.id})
 
-      render_click(lv, "revoke_invite", %{"id" => convidada.id})
-      refute Workshops.invited?(ctx.privado.id, convidada.id)
+      assert MapSet.member?(Workshops.enrolled_workshop_ids(aluna.id), ctx.privado.id)
     end
 
-    test "nome de usuário inexistente avisa em vez de quebrar", ctx do
-      {:ok, lv, _} =
-        live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}/gerenciar")
-
-      html = render_submit(lv, "invite", %{"username" => "nao_existe_esse"})
-
-      assert html =~ "Não encontrei esse usuário"
-    end
-
-    test "workshop público não mostra painel de convite", ctx do
+    test "workshop público não mostra fila de pedidos", ctx do
       publico = publicado(ctx.dono, %{title: "Aberto"})
 
       {:ok, _lv, html} =
         live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{publico.slug}/gerenciar")
 
-      refute html =~ "Quem foi convidado"
+      refute html =~ "Pedidos para entrar"
     end
   end
 

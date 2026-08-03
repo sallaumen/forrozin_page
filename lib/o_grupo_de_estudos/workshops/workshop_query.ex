@@ -73,8 +73,11 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   def list_feed(opts \\ []) do
     period = Keyword.get(opts, :period, :upcoming)
 
+    # Privado entra na agenda junto com o resto: ele não é secreto, só tem a
+    # entrada por aprovação. Esconder faria a comunidade parecer vazia
+    # justamente quando tem workshop rolando.
     from(w in Workshop, as: :periodo)
-    |> where([w], w.status == :published and w.visibility == :public)
+    |> where([w], w.status == :published)
     |> in_period(period, Keyword.get(opts, :now, DateTime.utc_now()))
     |> apply_grouping(opts[:only_loose])
     |> apply_search(opts[:search])

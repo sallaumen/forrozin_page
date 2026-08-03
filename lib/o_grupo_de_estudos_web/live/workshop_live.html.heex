@@ -48,6 +48,9 @@
     <%!-- Cabeçalho --%>
     <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-5">
       <div class="min-w-0">
+        <.workshop_tag :if={@workshop.visibility == :private} tone={:gold}>
+          <.icon name="hero-lock-closed" class="mr-1 size-3" /> Entrada por aprovação
+        </.workshop_tag>
         <h1 class="m-0 font-serif text-[26px] font-bold tracking-tight text-ink-900 sm:text-[30px]">
           {@workshop.title}
         </h1>
@@ -139,8 +142,36 @@
               Gerenciar inscritos
             </.link>
 
+            <%!-- Workshop privado troca a inscrição direta por um pedido: a
+            porta passa por quem organiza. --%>
             <button
-              :if={!@organizer? && !@enrolled? && !@full? && @workshop.status == :published}
+              :if={pede_para_entrar?(@workshop, @organizer?, @enrolled?, @join_status, @full?)}
+              type="button"
+              phx-click="request_join"
+              phx-disable-with="Enviando..."
+              class="w-full cursor-pointer rounded-full border-0 bg-gold-600 px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-gold-500"
+            >
+              Pedir para entrar
+            </button>
+
+            <div
+              :if={@join_status == :pending && !@enrolled?}
+              class="rounded-xl border border-gold-500/40 bg-gold-500/12 px-4 py-3"
+            >
+              <p class="m-0 text-[13px] font-bold text-ink-800">
+                <.icon name="hero-clock" class="size-4 -mt-0.5" /> Seu pedido foi enviado
+              </p>
+              <p class="m-0 mt-1 text-[12px] leading-snug text-ink-600">
+                Assim que {@workshop.organizer.name} aceitar, a página abre inteira e você
+                recebe um aviso no sino.
+              </p>
+            </div>
+
+            <button
+              :if={
+                !@organizer? && !@enrolled? && !@full? && @workshop.status == :published &&
+                  @workshop.visibility == :public
+              }
               type="button"
               phx-click="enroll"
               phx-disable-with="Inscrevendo..."
@@ -204,7 +235,17 @@
         </div>
 
         <%!-- Inscritos: nomes só para quem está logado --%>
-        <section :if={@current_user && @participants != []} class="mt-7">
+        <%!-- Vitrine: quem ainda não entrou vê a forma do que tem lá dentro,
+        nunca o conteúdo. Esconder diria "aqui não tem nada"; mostrar
+        entregaria o que é pago. Desfocado com a contagem por baixo diz a
+        única coisa que interessa de fora: tem gente aqui dentro. --%>
+        <.locked_preview
+          :if={@vitrine?}
+          enrolled_count={@enrolled_count}
+          comment_count={length(@comments)}
+        />
+
+        <section :if={!@vitrine? && @current_user && @participants != []} class="mt-7">
           <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Quem vai
           </h2>
@@ -231,7 +272,7 @@
         </p>
 
         <%!-- Galeria: só para quem está no workshop --%>
-        <section :if={@pode_ver_media?} class="mt-8 border-t border-ink-200 pt-6">
+        <section :if={!@vitrine? && @pode_ver_media?} class="mt-8 border-t border-ink-200 pt-6">
           <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Fotos e vídeos
           </h2>
@@ -288,7 +329,7 @@
         </section>
 
         <%!-- Conversa: aberta a leitura, escrita exige conta --%>
-        <section class="mt-8 border-t border-ink-200 pt-6">
+        <section :if={!@vitrine?} class="mt-8 border-t border-ink-200 pt-6">
           <h2 class="m-0 mb-3 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Conversa
           </h2>
