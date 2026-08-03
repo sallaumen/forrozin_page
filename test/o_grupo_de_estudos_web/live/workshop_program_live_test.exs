@@ -110,6 +110,140 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     end
   end
 
+  describe "montar a programação sem sair da página" do
+    test "quem organiza adiciona um workshop solto na hora", ctx do
+      # O cenario do festival: alguem improvisa um workshop no meio do evento.
+      improvisado = insert(:workshop, organizer: ctx.dono, title: "Roda improvisada")
+
+      {:ok, lv, html} =
+        live(log_in_user(build_conn(), ctx.dono), ~p"/programacao/#{ctx.program.slug}")
+
+      assert html =~ "Roda improvisada"
+
+      render_click(lv, "attach_workshop", %{"id" => improvisado.id})
+
+      ids = ctx.program |> Workshops.list_program_workshops() |> Enum.map(& &1.id)
+      assert improvisado.id in ids
+    end
+
+    test "e tira um de dentro na hora", ctx do
+      {:ok, lv, _} =
+        live(log_in_user(build_conn(), ctx.dono), ~p"/programacao/#{ctx.program.slug}")
+
+      render_click(lv, "detach_workshop", %{"id" => ctx.sexta.id})
+
+      assert [restante] = Workshops.list_program_workshops(ctx.program)
+      assert restante.id == ctx.quinta.id
+      # Tirar da programacao nao apaga o workshop.
+      assert Workshops.get_workshop(ctx.sexta.id)
+    end
+
+    test "quem não organiza não vê o painel nem consegue mexer", ctx do
+      estranho = insert(:user)
+      workshop_dele = insert(:workshop, organizer: estranho)
+
+      {:ok, lv, html} =
+        live(log_in_user(build_conn(), estranho), ~p"/programacao/#{ctx.program.slug}")
+
+      refute html =~ "Montar a programação"
+
+      render_click(lv, "attach_workshop", %{"id" => workshop_dele.id})
+      render_click(lv, "detach_workshop", %{"id" => ctx.quinta.id})
+
+      assert length(Workshops.list_program_workshops(ctx.program)) == 2
+    end
+
+    test "visitante sem conta não derruba a página mandando o evento", ctx do
+      {:ok, lv, _} = live(build_conn(), ~p"/programacao/#{ctx.program.slug}")
+
+      render_click(lv, "attach_workshop", %{"id" => ctx.quinta.id})
+      render_click(lv, "detach_workshop", %{"id" => ctx.quinta.id})
+
+      assert render(lv) =~ ctx.program.title
+      assert length(Workshops.list_program_workshops(ctx.program)) == 2
+    end
+
+    test "id inventado não quebra nada", ctx do
+      {:ok, lv, _} =
+        live(log_in_user(build_conn(), ctx.dono), ~p"/programacao/#{ctx.program.slug}")
+
+      render_click(lv, "attach_workshop", %{"id" => "nao-e-uuid"})
+
+      assert render(lv) =~ ctx.program.title
+    end
+
+    test "o painel só oferece workshops que ainda não estão dentro", ctx do
+      fora = insert(:workshop, organizer: ctx.dono, title: "Ainda fora da programação")
+
+      {:ok, lv, html} =
+        live(log_in_user(build_conn(), ctx.dono), ~p"/programacao/#{ctx.program.slug}")
+
+      assert html =~ "Ainda fora da programação"
+
+      html = render_click(lv, "attach_workshop", %{"id" => fora.id})
+
+      # Depois de entrar, sai da lista de "adicionar" e vai para a de dentro.
+      assert html =~ "Tirar"
+    end
+  end
+
+  describe "criar workshop já dentro da programação" do
+    test "o formulário sabe em qual programação vai entrar", ctx do
+      {:ok, _lv, html} =
+        live(
+          log_in_user(build_conn(), ctx.dono),
+          ~p"/study/workshops/novo?#{[programa: ctx.program.slug]}"
+        )
+
+      assert html =~ ctx.program.title
+    end
+
+    test "ao salvar, o workshop já nasce dentro", ctx do
+      {:ok, lv, _} =
+        live(
+          log_in_user(build_conn(), ctx.dono),
+          ~p"/study/workshops/novo?#{[programa: ctx.program.slug]}"
+        )
+
+      lv
+      |> form("#workshop-form", %{
+        "workshop" => %{
+          "title" => "Roda improvisada",
+          "description" => "Surgiu na hora.",
+          "starts_at" => "2026-12-20T22:00"
+        }
+      })
+      |> render_submit(%{"publish" => "true"})
+
+      titulos = ctx.program |> Workshops.list_program_workshops() |> Enum.map(& &1.title)
+      assert "Roda improvisada" in titulos
+    end
+
+    test "programação alheia é ignorada: o workshop nasce solto", ctx do
+      alheia = ctx.program
+      outro = insert(:user)
+
+      {:ok, lv, _} =
+        live(
+          log_in_user(build_conn(), outro),
+          ~p"/study/workshops/novo?#{[programa: alheia.slug]}"
+        )
+
+      lv
+      |> form("#workshop-form", %{
+        "workshop" => %{
+          "title" => "Tentando entrar",
+          "description" => "Sem permissão.",
+          "starts_at" => "2026-12-20T22:00"
+        }
+      })
+      |> render_submit(%{"publish" => "true"})
+
+      titulos = alheia |> Workshops.list_program_workshops() |> Enum.map(& &1.title)
+      refute "Tentando entrar" in titulos
+    end
+  end
+
   describe "criar e editar programação" do
     test "cria escolhendo os workshops de uma vez", %{dono: dono, quinta: quinta, sexta: sexta} do
       {:ok, lv, _} = live(log_in_user(build_conn(), dono), ~p"/study/programacoes/nova")

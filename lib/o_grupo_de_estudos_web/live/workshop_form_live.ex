@@ -24,14 +24,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     end
   end
 
-  defp prepare(socket, :new, _params) do
+  defp prepare(socket, :new, params) do
     socket
     |> assign(:page_title, "Novo workshop")
     |> assign(:is_admin, Accounts.admin?(socket.assigns.current_user))
     |> assign(:workshop, nil)
     |> assign(:form_error, nil)
     |> assign(:form, empty_form())
+    |> assign(:program, program_from(params, socket.assigns.current_user))
   end
+
+  # `?programa=slug` faz o workshop nascer ja dentro da programacao. So vale
+  # se a pessoa e dona dela: senao o workshop nasce solto, sem reclamar.
+  defp program_from(%{"programa" => slug}, user) do
+    program = Workshops.get_program_by_slug(slug)
+
+    if program && Policy.authorized?(:manage_program, user, program), do: program, else: nil
+  end
+
+  defp program_from(_params, _user), do: nil
 
   defp prepare(socket, :edit, %{"slug" => slug}) do
     workshop = Workshops.get_by_slug(slug)
@@ -44,6 +55,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       |> assign(:is_admin, Accounts.admin?(user))
       |> assign(:workshop, workshop)
       |> assign(:form_error, nil)
+      |> assign(:program, nil)
       |> assign(:form, form_from(workshop))
     else
       socket
@@ -67,10 +79,19 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     user = socket.assigns.current_user
 
     case Workshops.create_workshop(user, to_attrs(params)) do
-      {:ok, workshop} -> finish(socket, user, workshop, publish?)
-      {:error, changeset} -> {:noreply, form_failed(socket, params, changeset)}
+      {:ok, workshop} ->
+        attach_to_program(socket.assigns[:program], user, workshop)
+        finish(socket, user, workshop, publish?)
+
+      {:error, changeset} ->
+        {:noreply, form_failed(socket, params, changeset)}
     end
   end
+
+  defp attach_to_program(nil, _user, _workshop), do: :ok
+
+  defp attach_to_program(program, user, workshop),
+    do: Workshops.attach_workshop(program, user, workshop.id)
 
   defp submit(socket, workshop, params, publish?: publish?) do
     user = socket.assigns.current_user
