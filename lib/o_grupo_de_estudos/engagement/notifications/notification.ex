@@ -23,6 +23,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
         :workshop_enrolled,
         :workshop_commented,
         :liked_workshop,
+        :workshop_reminder,
         :suggestion_created,
         :suggestion_approved,
         :suggestion_rejected

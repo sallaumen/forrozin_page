@@ -57,6 +57,9 @@ defmodule OGrupoDeEstudos.Workshops do
     to: EnrollmentQuery,
     as: :count_upcoming_for_user
 
+  defdelegate pending_reminders(de, ate), to: EnrollmentQuery
+  defdelegate mark_reminded(enrollment_ids), to: EnrollmentQuery
+
   defdelegate get_enrollment(workshop_id, user_id), to: EnrollmentQuery, as: :get_for_user
 
   # ── Ciclo de vida do workshop ─────────────────────────────────────────

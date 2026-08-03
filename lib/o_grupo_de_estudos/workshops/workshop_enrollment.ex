@@ -18,6 +18,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
   schema "workshop_enrollments" do
     field :payment_status, Ecto.Enum, values: [:pending, :paid, :waived], default: :pending
     field :paid_at, :utc_datetime
+    # Quando o aviso de vespera saiu. Nulo = ainda nao avisamos.
+    field :reminded_at, :utc_datetime
 
     belongs_to :workshop, OGrupoDeEstudos.Workshops.Workshop
     belongs_to :user, OGrupoDeEstudos.Accounts.User

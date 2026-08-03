@@ -197,7 +197,6 @@ defmodule OGrupoDeEstudos.Admin.Backup do
 
   defp serialize_value(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
   defp serialize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
-  defp serialize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp serialize_value(value), do: value
 
   defp restore_schema(schema, records) do

@@ -114,6 +114,32 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_program_enrollment(_actor_id, _organizer_id, _workshop_id, _program_id), do: :ok
 
+  @doc """
+  Avisa alguem de que tem workshop amanha.
+
+  O ator e o organizador: a notificacao exige actor_id, e "Tavano: amanha tem
+  workshop com voce" le natural.
+  """
+  @spec notify_workshop_reminder(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
+  def notify_workshop_reminder(organizer_id, user_id, workshop_id) do
+    builder = fn destinatario ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: destinatario,
+        actor_id: organizer_id,
+        action: :workshop_reminder,
+        group_key: "workshop_reminder:#{workshop_id}",
+        target_type: "workshop",
+        target_id: workshop_id,
+        parent_type: "workshop",
+        parent_id: workshop_id,
+        inserted_at: now()
+      }
+    end
+
+    insert_and_broadcast([user_id], builder)
+  end
+
   # ── Like notifications ─────────────────────────────────
 
   @doc """
