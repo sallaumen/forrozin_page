@@ -82,6 +82,29 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     end
   end
 
+  def handle_event("join_waitlist", _params, %{assigns: %{current_user: nil}} = socket) do
+    {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
+  end
+
+  def handle_event("join_waitlist", _params, socket) do
+    case Workshops.join_waitlist(socket.assigns.workshop, socket.assigns.current_user) do
+      {:ok, _entrada} ->
+        {:noreply,
+         socket
+         |> reload_workshop()
+         |> put_flash(:info, "Você entrou na lista de espera. Se abrir vaga, ela é sua.")}
+
+      {:error, _motivo} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível entrar na lista.")}
+    end
+  end
+
+  def handle_event("leave_waitlist", _params, socket) do
+    Workshops.leave_waitlist(socket.assigns.workshop, socket.assigns[:current_user])
+
+    {:noreply, socket |> reload_workshop() |> put_flash(:info, "Você saiu da lista de espera.")}
+  end
+
   def handle_event("enroll", _params, %{assigns: %{current_user: nil}} = socket) do
     # Sem conta: guarda para onde voltar e manda para o cadastro.
     {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
@@ -390,6 +413,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:liberado?, Workshops.liberado?(workshop, user))
     |> assign(:vitrine?, vitrine?(workshop, user))
     |> assign(:join_status, Workshops.join_status(workshop, user))
+    |> assign(:na_fila, Workshops.waitlist_position(workshop, user))
+    |> assign(:fila_total, Workshops.waitlist_count(workshop.id))
     |> agendar_recarga_da_galeria()
     |> assign_workshop_likes()
   end

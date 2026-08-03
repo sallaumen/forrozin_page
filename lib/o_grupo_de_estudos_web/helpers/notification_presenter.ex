@@ -60,6 +60,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenter do
   defp action_phrase(:workshop_join_requested, _), do: " pediu para entrar no seu workshop"
   defp action_phrase(:workshop_join_approved, _), do: " aceitou seu pedido de entrada"
   defp action_phrase(:workshop_join_rejected, _), do: " respondeu seu pedido de entrada"
+  defp action_phrase(:workshop_waitlist_promoted, _), do: ": abriu vaga e você entrou"
   defp action_phrase(:suggestion_created, _), do: " enviou uma sugestão"
   defp action_phrase(:suggestion_approved, _), do: " aprovou sua sugestão ✓"
   defp action_phrase(:suggestion_rejected, _), do: " rejeitou sua sugestão"

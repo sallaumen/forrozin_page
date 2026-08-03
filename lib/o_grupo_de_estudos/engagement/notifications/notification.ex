@@ -27,6 +27,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
         :workshop_join_requested,
         :workshop_join_approved,
         :workshop_join_rejected,
+        :workshop_waitlist_promoted,
         :suggestion_created,
         :suggestion_approved,
         :suggestion_rejected

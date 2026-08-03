@@ -286,6 +286,37 @@
       </p>
     </section>
 
+    <%!-- Fila de espera: a demanda reprimida em número. Fila grande é o
+    sinal de que cabe abrir outra turma, e era isso que se perdia quando a
+    página só dizia "esgotado". --%>
+    <section :if={@fila != []} class="mt-8">
+      <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+        Lista de espera <span class="text-accent-orange">· {length(@fila)} esperando</span>
+      </h2>
+      <p class="m-0 mb-3 text-[12.5px] text-ink-500">
+        Gente que quis entrar e não coube. Se alguém cancelar, a primeira da fila entra
+        sozinha. Fila cheia costuma valer uma turma nova.
+      </p>
+
+      <div class="overflow-hidden rounded-2xl border border-ink-200 bg-ink-50">
+        <div
+          :for={{pessoa, indice} <- Enum.with_index(@fila, 1)}
+          class="flex items-center gap-3 border-b border-ink-200 px-4 py-2.5 last:border-b-0"
+        >
+          <span class="w-5 shrink-0 text-[12px] font-bold tabular-nums text-ink-400">
+            {indice}º
+          </span>
+          <.user_avatar user={pessoa} size={:sm} />
+          <div class="min-w-0 flex-1">
+            <p class="m-0 truncate text-[13px] font-bold text-ink-900">
+              {pessoa.name || pessoa.username}
+            </p>
+            <p class="m-0 truncate text-[11.5px] text-ink-500">@{pessoa.username}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <%!-- Quem organiza junto --%>
     <section class="mt-8">
       <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">

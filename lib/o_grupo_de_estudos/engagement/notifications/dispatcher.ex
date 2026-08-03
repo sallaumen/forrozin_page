@@ -132,6 +132,14 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_workshop_join_review(_actor_id, _user_id, _workshop_id, _acao), do: :ok
 
+  @doc "Avisa que abriu vaga e a pessoa saiu da fila direto para a turma."
+  @spec notify_waitlist_promoted(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
+  def notify_waitlist_promoted(actor_id, user_id, workshop_id) when actor_id != user_id do
+    avisar_sobre_pedido(actor_id, user_id, workshop_id, :workshop_waitlist_promoted)
+  end
+
+  def notify_waitlist_promoted(_actor_id, _user_id, _workshop_id), do: :ok
+
   defp avisar_sobre_pedido(actor_id, destinatario_id, workshop_id, acao) do
     builder = fn destinatario ->
       %{

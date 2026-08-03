@@ -39,6 +39,8 @@ defmodule OGrupoDeEstudos.Workshops do
     WorkshopEnrollment,
     WorkshopMedia,
     WorkshopProgram,
+    WaitlistEntry,
+    WaitlistQuery,
     WorkshopQuery
   }
 
@@ -235,7 +237,9 @@ defmodule OGrupoDeEstudos.Workshops do
     with :ok <- ensure_admin(workshop, actor),
          %JoinRequest{} = pedido <- buscar_pedido(workshop, request_id),
          %User{} = pessoa <- Accounts.get_user_by_id(pedido.user_id),
-         {:ok, _inscricao} <- enroll(workshop, pessoa) do
+         # `enroll_overbooking` e nao `enroll`: aceitar e decisao de quem da a
+         # aula, que sabe se cabe mais um na sala. O sistema avisa, nao decide.
+         {:ok, _inscricao} <- enroll_overbooking(workshop, pessoa) do
       responder(pedido, :approved, actor, workshop, :workshop_join_approved)
     else
       nil -> {:error, :not_found}
@@ -1180,6 +1184,20 @@ defmodule OGrupoDeEstudos.Workshops do
     end)
   end
 
+  # Inscricao que ignora o limite de vagas, e SO ela. Existe para os dois
+  # caminhos em que alguem ja decidiu que a pessoa entra: o aceite de quem da
+  # a aula, e a promocao da fila para uma vaga que acabou de abrir. O caminho
+  # normal continua barrando, senao o limite nao valeria nada.
+  defp enroll_overbooking(workshop, user) do
+    Repo.transact(fn ->
+      with {:ok, locked} <- lock_workshop(workshop.id),
+           :ok <- ensure_open(locked) do
+        insert_enrollment(locked, user)
+      end
+    end)
+    |> notify_organizers(workshop, user)
+  end
+
   # Fora da transacao de proposito: broadcast nao faz rollback, entao um erro
   # tardio deixaria o organizador com aviso de uma inscricao inexistente.
   defp notify_organizers({:ok, _enrollment} = result, workshop, user) do
@@ -1195,10 +1213,110 @@ defmodule OGrupoDeEstudos.Workshops do
   @doc "Cancela a própria inscrição, liberando a vaga."
   @spec cancel_enrollment(Workshop.t(), User.t()) ::
           {:ok, WorkshopEnrollment.t()} | {:error, :not_found}
-  def cancel_enrollment(%Workshop{id: workshop_id}, %User{id: user_id}) do
-    case EnrollmentQuery.get_for_user(workshop_id, user_id) do
+  def cancel_enrollment(%Workshop{} = workshop, %User{id: user_id}) do
+    case EnrollmentQuery.get_for_user(workshop.id, user_id) do
       nil -> {:error, :not_found}
-      enrollment -> Repo.delete(enrollment)
+      enrollment -> enrollment |> Repo.delete() |> promover_da_fila(workshop)
+    end
+  end
+
+  # Vaga aberta chama quem espera ha mais tempo. Uma pessoa por vaga: a fila
+  # anda um passo, nao esvazia.
+  defp promover_da_fila({:ok, _apagada} = resultado, workshop) do
+    case WaitlistQuery.first_in_line(workshop.id) do
+      nil -> resultado
+      entrada -> promover(entrada, workshop, resultado)
+    end
+  end
+
+  defp promover_da_fila(erro, _workshop), do: erro
+
+  defp promover(entrada, workshop, resultado) do
+    with %User{} = pessoa <- Accounts.get_user_by_id(entrada.user_id),
+         {:ok, _inscricao} <- enroll_overbooking(workshop, pessoa) do
+      Repo.delete(entrada)
+      avisar_promocao(workshop, pessoa)
+    end
+
+    resultado
+  end
+
+  defp avisar_promocao(workshop, pessoa) do
+    SafeDispatch.run(fn ->
+      Dispatcher.notify_waitlist_promoted(workshop.organizer_id, pessoa.id, workshop.id)
+    end)
+  end
+
+  # ── Lista de espera ───────────────────────────────────────────────────
+
+  defdelegate list_waitlist(workshop_id), to: WaitlistQuery, as: :list_for_workshop
+  defdelegate waitlist_count(workshop_id), to: WaitlistQuery, as: :count
+
+  @doc "Em que lugar da fila a pessoa está, contando de 1. `nil` se não está."
+  @spec waitlist_position(Workshop.t(), User.t() | nil) :: pos_integer() | nil
+  def waitlist_position(%Workshop{}, nil), do: nil
+
+  def waitlist_position(%Workshop{} = workshop, %User{} = user),
+    do: WaitlistQuery.position(workshop.id, user.id)
+
+  @doc """
+  Se aceitar mais uma pessoa passaria do limite de vagas.
+
+  Serve para avisar quem organiza antes de aceitar, não para barrar: em turma
+  com aceite, caber ou não caber é decisão de quem dá a aula.
+  """
+  @spec passaria_do_limite?(Workshop.t()) :: boolean()
+  def passaria_do_limite?(%Workshop{} = workshop),
+    do: Workshop.full?(workshop, EnrollmentQuery.count(workshop.id))
+
+  @doc """
+  Entra na fila de espera de uma turma lotada.
+
+  Só faz sentido com a turma cheia: com vaga sobrando a pessoa se inscreve, e
+  esperar seria pior para ela.
+  """
+  @spec join_waitlist(Workshop.t(), User.t() | nil) ::
+          {:ok, WaitlistEntry.t()}
+          | {:error, :unauthorized | :has_room | :already_enrolled | :already_waiting}
+  def join_waitlist(%Workshop{}, nil), do: {:error, :unauthorized}
+
+  def join_waitlist(%Workshop{} = workshop, %User{} = user) do
+    with :ok <- ensure_lotado(workshop),
+         :ok <- ensure_fora_da_turma(workshop, user) do
+      inserir_na_fila(workshop, user)
+    end
+  end
+
+  defp ensure_lotado(workshop) do
+    if passaria_do_limite?(workshop), do: :ok, else: {:error, :has_room}
+  end
+
+  defp ensure_fora_da_turma(workshop, user) do
+    case EnrollmentQuery.get_for_user(workshop.id, user.id) do
+      nil -> :ok
+      _ja_esta -> {:error, :already_enrolled}
+    end
+  end
+
+  defp inserir_na_fila(workshop, user) do
+    %WaitlistEntry{}
+    |> WaitlistEntry.changeset(%{workshop_id: workshop.id, user_id: user.id})
+    |> Repo.insert()
+    |> case do
+      {:ok, entrada} -> {:ok, entrada}
+      {:error, %Ecto.Changeset{}} -> {:error, :already_waiting}
+    end
+  end
+
+  @doc "Sai da fila de espera."
+  @spec leave_waitlist(Workshop.t(), User.t() | nil) ::
+          {:ok, WaitlistEntry.t()} | {:error, :not_found}
+  def leave_waitlist(%Workshop{}, nil), do: {:error, :not_found}
+
+  def leave_waitlist(%Workshop{} = workshop, %User{} = user) do
+    case WaitlistQuery.get(workshop.id, user.id) do
+      nil -> {:error, :not_found}
+      entrada -> Repo.delete(entrada)
     end
   end
 

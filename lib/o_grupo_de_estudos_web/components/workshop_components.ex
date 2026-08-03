@@ -720,4 +720,19 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       do: true
 
   def pede_para_entrar?(_workshop, _organizer?, _enrolled?, _status, _full?), do: false
+
+  @doc """
+  Se a caixa deve oferecer a lista de espera.
+
+  Só em turma lotada de inscrição automática: onde quem organiza aceita cada
+  pessoa, a vaga extra é decisão dela, não fila.
+  """
+  def mostra_fila?(workshop, organizer?, enrolled?, full?, na_fila)
+
+  def mostra_fila?(%Workshop{visibility: :public}, false, false, true, nil), do: true
+  def mostra_fila?(_workshop, _organizer?, _enrolled?, _full?, _na_fila), do: false
+
+  @doc "Ex.: 1 pessoa na espera / 4 pessoas na espera"
+  def espera_label(1), do: "1 pessoa na espera"
+  def espera_label(total), do: "#{total} pessoas na espera"
 end
