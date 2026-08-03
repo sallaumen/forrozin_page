@@ -77,6 +77,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     live_session :workshops_public,
       on_mount: [{OGrupoDeEstudosWeb.UserAuth, :mount_current_user}] do
       live "/workshops/:slug", WorkshopLive
+      live "/programacao/:slug", WorkshopProgramLive
     end
   end
 
@@ -98,6 +99,8 @@ defmodule OGrupoDeEstudosWeb.Router do
       live "/study/workshops", WorkshopsLive
       live "/study/workshops/novo", WorkshopFormLive, :new
       live "/study/workshops/:slug/editar", WorkshopFormLive, :edit
+      live "/study/programacoes/nova", WorkshopProgramFormLive, :new
+      live "/study/programacoes/:slug/editar", WorkshopProgramFormLive, :edit
       live "/workshops/:slug/gerenciar", WorkshopManageLive
     end
 

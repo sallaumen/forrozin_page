@@ -56,6 +56,38 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
     end
   end
 
+  describe "program_span/2" do
+    defp dias(datas), do: Enum.map(datas, &{&1, []})
+
+    test "dois dias seguidos no mesmo mês" do
+      span = program_span(dias([~D[2026-08-07], ~D[2026-08-08]]), 2)
+
+      assert span == "2 workshops · 07 e 08 de agosto"
+    end
+
+    test "intervalo maior usa 'a'" do
+      span = program_span(dias([~D[2026-02-12], ~D[2026-02-18]]), 15)
+
+      assert span == "15 workshops · 12 a 18 de fevereiro"
+    end
+
+    test "meses diferentes nomeiam os dois" do
+      span = program_span(dias([~D[2026-01-30], ~D[2026-02-02]]), 4)
+
+      assert span == "4 workshops · 30 de janeiro a 02 de fevereiro"
+    end
+
+    test "um dia só não repete a data" do
+      span = program_span(dias([~D[2026-08-07]]), 1)
+
+      assert span == "1 workshop · 07 de agosto"
+    end
+
+    test "programação vazia diz isso" do
+      assert program_span([], 0) == "Nenhum workshop ainda"
+    end
+  end
+
   describe "money_label/1" do
     test "zero é um valor, não é gratuito" do
       # No painel do organizador, R$ 0 recebido é informação; "Gratuito" seria mentira.

@@ -1,0 +1,132 @@
+<div id="program-form-shell" class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.flash kind={:info} id="lv-flash-info" flash={@flash} />
+  <.flash kind={:error} id="lv-flash-error" flash={@flash} />
+
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={:detail}
+    title={@page_title}
+    notification_count={@notification_count}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={@notification_dropdown_open}
+    notification_preview_groups={@notification_preview_groups}
+    notification_targets={@notification_targets}
+    pending_suggestions_count={@pending_suggestions_count}
+    pending_study_count={@pending_study_count}
+    online_users={@online_users}
+    online_count={@online_count}
+  />
+
+  <main class="mx-auto w-full max-w-[720px] flex-1 px-4 py-6 sm:px-6">
+    <h1 class="m-0 font-serif text-[22px] font-bold tracking-tight text-ink-900">
+      {@page_title}
+    </h1>
+    <p class="m-0 mt-1 mb-5 text-[13px] leading-snug text-ink-500">
+      Junte vários workshops sob um nome só e mande um link único.
+      Quem abrir vê tudo organizado por dia e escolhe onde vai.
+    </p>
+
+    <form id="program-form" phx-change="validate" phx-submit="save">
+      <div class="rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5">
+        <label for="program-title" class="mb-1 block text-[12.5px] font-bold text-ink-700">
+          Nome da programação
+        </label>
+        <input
+          id="program-title"
+          type="text"
+          name="program[title]"
+          value={@form["title"]}
+          required
+          placeholder="Festival de Itaúnas, ou Fim de semana de forró roots"
+          class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+        />
+
+        <label for="program-location" class="mb-1 mt-4 block text-[12.5px] font-bold text-ink-700">
+          Onde <span class="font-normal text-ink-400">(opcional)</span>
+        </label>
+        <input
+          id="program-location"
+          type="text"
+          name="program[location]"
+          value={@form["location"]}
+          placeholder="Curitiba, Espaço Cultural do Batel"
+          class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+        />
+
+        <label
+          for="program-description"
+          class="mb-1 mt-4 block text-[12.5px] font-bold text-ink-700"
+        >
+          Descrição <span class="font-normal text-ink-400">(opcional)</span>
+        </label>
+        <textarea
+          id="program-description"
+          name="program[description]"
+          rows="4"
+          placeholder="O que é este conjunto de workshops, para quem é, o que levar."
+          class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm leading-relaxed text-ink-800 placeholder:text-ink-400"
+        >{@form["description"]}</textarea>
+      </div>
+
+      <%!-- Quais workshops entram --%>
+      <section class="mt-5 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5">
+        <h2 class="m-0 text-[12.5px] font-bold text-ink-700">Workshops desta programação</h2>
+        <p class="m-0 mt-1 mb-3 text-[12px] leading-snug text-ink-500">
+          Só aparecem os que você administra. Para incluir o workshop de outro professor,
+          peça para ele te adicionar como co-organizador.
+        </p>
+
+        <div :if={@my_workshops != []} class="flex flex-col gap-1.5">
+          <label
+            :for={w <- @my_workshops}
+            class="flex cursor-pointer items-center gap-3 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2.5 hover:border-ink-300"
+          >
+            <input
+              type="checkbox"
+              checked={MapSet.member?(@selected_ids, w.id)}
+              phx-click="toggle_workshop"
+              phx-value-id={w.id}
+              class="size-4 shrink-0 accent-accent-orange"
+            />
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[13.5px] font-bold text-ink-900">{w.title}</span>
+              <span class="block truncate text-[11.5px] text-ink-500">
+                {schedule_label(w)}
+              </span>
+            </span>
+            <.workshop_tag :if={w.status == :draft} tone={:neutral}>Rascunho</.workshop_tag>
+          </label>
+        </div>
+
+        <p :if={@my_workshops == []} class="m-0 text-[13px] text-ink-500">
+          Você ainda não tem workshops.
+          <.link navigate={~p"/study/workshops/novo"} class="font-semibold text-accent-orange">
+            Crie o primeiro
+          </.link>
+          e depois volte aqui para juntá-los.
+        </p>
+      </section>
+
+      <p :if={@form_error} class="m-0 mt-3 text-xs font-semibold text-accent-red">
+        {@form_error}
+      </p>
+
+      <div class="mt-4 flex flex-wrap items-center gap-2.5">
+        <button
+          type="submit"
+          phx-disable-with="Salvando..."
+          class="cursor-pointer rounded-full border-0 bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-white transition-colors hover:bg-accent-orange/90"
+        >
+          Salvar programação
+        </button>
+        <.link
+          navigate={~p"/study/workshops"}
+          class="text-xs font-semibold text-ink-400 no-underline hover:text-ink-700"
+        >
+          Cancelar
+        </.link>
+      </div>
+    </form>
+  </main>
+</div>

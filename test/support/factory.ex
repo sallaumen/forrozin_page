@@ -21,6 +21,7 @@ defmodule OGrupoDeEstudos.Factory do
   alias OGrupoDeEstudos.Sequences.{Sequence, SequenceStep}
   alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
   alias OGrupoDeEstudos.Suggestions.Suggestion
+  alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram}
 
   def user_factory do
     %User{
@@ -239,5 +240,34 @@ defmodule OGrupoDeEstudos.Factory do
       study_note: build(:study_note),
       step: build(:step)
     }
+  end
+
+  # ── Workshops ─────────────────────────────────────────────────────────
+
+  def workshop_factory do
+    %Workshop{
+      organizer: build(:user),
+      slug: sequence(:workshop_slug, &"workshop-#{&1}-#{:erlang.unique_integer([:positive])}"),
+      title: sequence(:workshop_title, &"Workshop #{&1}"),
+      description: "Conteúdo do workshop.",
+      location: "Curitiba",
+      starts_at: dias_a_frente(7),
+      status: :published
+    }
+  end
+
+  def workshop_program_factory do
+    %WorkshopProgram{
+      owner: build(:user),
+      slug: sequence(:program_slug, &"programacao-#{&1}-#{:erlang.unique_integer([:positive])}"),
+      title: sequence(:program_title, &"Programação #{&1}"),
+      description: "Vários workshops no mesmo fim de semana.",
+      location: "Curitiba",
+      status: :published
+    }
+  end
+
+  defp dias_a_frente(dias) do
+    DateTime.utc_now() |> DateTime.add(dias * 86_400, :second) |> DateTime.truncate(:second)
   end
 end
