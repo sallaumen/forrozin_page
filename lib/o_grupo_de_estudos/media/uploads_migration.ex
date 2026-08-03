@@ -39,7 +39,10 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
         }
   def run(source_dir \\ default_dir()) do
     {arquivos, falhas} = copiar_tudo(source_dir)
-    reescritos = reescrever_urls()
+    # Reescrever URL de objeto que não subiu deixaria avatar quebrado
+    # apontando para o nada: com qualquer falha de cópia, o banco não muda.
+    # A próxima rodada, com as cópias sãs, completa a reescrita.
+    reescritos = if falhas == [], do: reescrever_urls(), else: 0
 
     Logger.info(
       "[UploadsMigration] #{arquivos} arquivos copiados, #{reescritos} URLs reescritas, " <>
