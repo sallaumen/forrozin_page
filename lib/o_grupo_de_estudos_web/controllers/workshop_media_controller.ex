@@ -27,11 +27,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
   end
 
   def poster(conn, %{"id" => media_id}) do
-    with {:ok, media} <- autorizada(conn, media_id),
-         true <- is_binary(media.poster_key) do
-      entregar_poster(conn, media)
-    else
-      _sem_poster_ou_sem_permissao -> nao_encontrado(conn)
+    case autorizada(conn, media_id) do
+      {:ok, media} -> entregar_poster(conn, media)
+      :error -> nao_encontrado(conn)
     end
   end
 
@@ -48,9 +46,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
 
   defp entregar(conn, media) do
     conn
-    |> cabecalhos_de_midia()
     |> put_resp_content_type(tipo_seguro(media.content_type), nil)
-    |> send_file(200, Workshops.private_media_path(media))
+    |> responder(Workshops.serve_media(media))
   end
 
   # O poster e um quadro do video: mesma permissao da midia, senao daria para
@@ -58,10 +55,24 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
   # gerou foi o transcode, nunca o navegador de quem subiu.
   defp entregar_poster(conn, media) do
     conn
-    |> cabecalhos_de_midia()
     |> put_resp_content_type("image/jpeg", nil)
-    |> send_file(200, Workshops.poster_path(media))
+    |> responder(Workshops.serve_poster(media))
   end
+
+  # A porta de storage decide o como: arquivo local sai por sendfile do
+  # kernel; provider externo sai por URL assinada de vida curta.
+  #
+  # O skip e falso-positivo do sobelow: ele marca qualquer variavel no
+  # send_file, mas este caminho vem de `ObjectStorage.serve/1` com chave
+  # opaca gerada pelo servidor. Input de usuario e so o id, resolvido por
+  # `autorizada/2` via banco.
+  # sobelow_skip ["Traversal.SendFile"]
+  defp responder(conn, {:file, caminho}) do
+    conn |> cabecalhos_de_midia() |> send_file(200, caminho)
+  end
+
+  defp responder(conn, {:redirect, url}), do: redirect(conn, external: url)
+  defp responder(conn, {:error, :not_found}), do: nao_encontrado(conn)
 
   defp cabecalhos_de_midia(conn) do
     conn

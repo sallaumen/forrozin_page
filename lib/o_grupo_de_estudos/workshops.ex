@@ -296,14 +296,16 @@ defmodule OGrupoDeEstudos.Workshops do
     {:error, erro}
   end
 
-  @doc "Caminho no disco de uma mídia, para o controller servir."
-  @spec private_media_path(WorkshopMedia.t()) :: String.t()
-  def private_media_path(%WorkshopMedia{storage_key: key}), do: Storage.private_path(key)
+  @doc "Como servir uma mídia: `{:file, caminho}` ou `{:redirect, url}`."
+  @spec serve_media(WorkshopMedia.t()) ::
+          {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
+  def serve_media(%WorkshopMedia{storage_key: key}), do: Storage.serve_private(key)
 
-  @doc "Caminho no disco do poster do vídeo, ou nil se não houve."
-  @spec poster_path(WorkshopMedia.t()) :: String.t() | nil
-  def poster_path(%WorkshopMedia{poster_key: nil}), do: nil
-  def poster_path(%WorkshopMedia{poster_key: key}), do: Storage.private_path(key)
+  @doc "Como servir o poster do vídeo. Sem poster é not_found, não erro."
+  @spec serve_poster(WorkshopMedia.t()) ::
+          {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
+  def serve_poster(%WorkshopMedia{poster_key: nil}), do: {:error, :not_found}
+  def serve_poster(%WorkshopMedia{poster_key: key}), do: Storage.serve_private(key)
 
   @doc """
   Tira uma mídia da galeria.
@@ -386,9 +388,12 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
+  # O with_private_file existe porque num provider externo o original não é
+  # arquivo local: o adapter baixa para um temporário e o ffmpeg lê de lá.
   defp rodar_transcode(media, saida) do
-    case Video.transcode(private_media_path(media), saida) do
-      :ok -> guardar_convertido(media, saida, tamanho(saida))
+    case Storage.with_private_file(media.storage_key, &Video.transcode(&1, saida)) do
+      {:ok, :ok} -> guardar_convertido(media, saida, tamanho(saida))
+      {:ok, {:error, motivo}} -> desistir(media, motivo)
       {:error, motivo} -> desistir(media, motivo)
     end
   end

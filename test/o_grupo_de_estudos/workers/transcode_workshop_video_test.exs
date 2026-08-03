@@ -123,12 +123,12 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       assert pronta.byte_size == 800_000
       assert pronta.storage_key != chave_antiga
       assert pronta.storage_key =~ ".mp4"
-      assert File.exists?(Workshops.private_media_path(pronta))
+      assert {:file, _} = Workshops.serve_media(pronta)
     end
 
     test "o arquivo original vai embora, senão o transcode dobraria o espaço", ctx do
       media = subir_video(ctx)
-      caminho_antigo = Workshops.private_media_path(media)
+      {:file, caminho_antigo} = Workshops.serve_media(media)
       assert File.exists?(caminho_antigo)
 
       expect(Video.Mock, :available?, fn -> true end)
@@ -151,7 +151,7 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
 
       pronta = Workshops.get_media(media.id)
       assert pronta.poster_key =~ ".jpg"
-      assert File.exists?(Workshops.poster_path(pronta))
+      assert {:file, _} = Workshops.serve_poster(pronta)
     end
 
     test "não sobra arquivo temporário na área de trabalho", ctx do
@@ -182,7 +182,7 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       assert intacta.content_type == "video/quicktime"
       assert intacta.byte_size == media.byte_size
       assert is_nil(intacta.poster_key)
-      assert File.exists?(Workshops.private_media_path(intacta))
+      assert {:file, _} = Workshops.serve_media(intacta)
     end
 
     test "transcode que falha não perde o vídeo da aluna", ctx do
@@ -196,7 +196,7 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       intacta = Workshops.get_media(media.id)
       assert intacta.status == :ready
       assert intacta.storage_key == media.storage_key
-      assert File.exists?(Workshops.private_media_path(intacta))
+      assert {:file, _} = Workshops.serve_media(intacta)
     end
 
     test "poster que falha não segura o vídeo em processando", ctx do
@@ -249,7 +249,7 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
 
       :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
       pronta = Workshops.get_media(media.id)
-      caminho_poster = Workshops.poster_path(pronta)
+      {:file, caminho_poster} = Workshops.serve_poster(pronta)
 
       assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
       refute File.exists?(caminho_poster)

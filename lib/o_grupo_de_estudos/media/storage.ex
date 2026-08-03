@@ -1,61 +1,163 @@
 defmodule OGrupoDeEstudos.Media.Storage do
   @moduledoc """
-  Facade for user-uploaded media storage (avatars).
+  Serviço de mídia: política de nomes + processamento de imagem.
 
-  Delegates to the configured adapter, so callers depend on this stable port
-  (`OGrupoDeEstudos.Media.Storage.Behaviour`) rather than a concrete
-  filesystem + Mogrify implementation. Defaults to
-  `OGrupoDeEstudos.Media.Storage.Local`; tests swap in a Mox mock via:
+  Os bytes moram atrás da porta `Media.ObjectStorage` (troca de provider
+  acontece lá). Aqui mora o que NÃO muda quando o provider muda:
 
-      config :o_grupo_de_estudos, OGrupoDeEstudos.Media.Storage, adapter: SomeMock
+  - avatar tem o id no nome (com timestamp para furar cache) e a troca apaga
+    a versão anterior;
+  - flyer é redimensionado e ganha chave aleatória, nada previsível no nome;
+  - arquivo privado ganha chave opaca e nunca vira URL pública.
 
-  The adapter is resolved at runtime so a single test can override it.
-
-  ## Usage
-
-      Storage.save_avatar(user_id, tmp_path, ".jpg")
-      #=> {:ok, "/uploads/avatars/abc123.jpg"}
+  Mogrify (ImageMagick) processa imagem ANTES de guardar, com cópia crua como
+  fallback quando o binário falta.
   """
 
-  @default_adapter OGrupoDeEstudos.Media.Storage.Local
+  alias OGrupoDeEstudos.Media.ObjectStorage
 
-  @doc "Saves an avatar image. Returns `{:ok, public_url}` or `{:error, reason}`."
+  @avatar_size 400
+  @flyer_max_width 1200
+  @key_random_bytes 16
+
+  # ── Avatar ───────────────────────────────────────────────────────────
+
+  @doc """
+  Guarda o avatar quadrado (#{@avatar_size}px) e devolve a URL pública.
+
+  O nome leva timestamp para o navegador não mostrar avatar velho de cache;
+  as versões anteriores da mesma pessoa vão embora junto.
+  """
   @spec save_avatar(term(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
-  def save_avatar(user_id, tmp_path, ext), do: adapter().save_avatar(user_id, tmp_path, ext)
+  def save_avatar(user_id, tmp_path, ext) do
+    chave = "avatars/#{user_id}_#{System.system_time(:second)}#{ext}"
 
-  @doc "Deletes an avatar file if it exists."
+    with :ok <- processado(tmp_path, &quadrado/2, fn tmp -> ObjectStorage.put(chave, tmp) end) do
+      limpar_avatares_antigos(user_id, chave)
+      {:ok, ObjectStorage.public_url(chave)}
+    end
+  end
+
+  defp limpar_avatares_antigos(user_id, chave_atual) do
+    "avatars/#{user_id}_"
+    |> ObjectStorage.list()
+    |> Enum.reject(&(&1 == chave_atual))
+    |> Enum.each(&ObjectStorage.delete/1)
+  end
+
+  @doc "Apaga o avatar sem timestamp (formato legado)."
   @spec delete_avatar(term(), String.t()) :: :ok | {:error, term()}
-  def delete_avatar(user_id, ext), do: adapter().delete_avatar(user_id, ext)
+  def delete_avatar(user_id, ext), do: ObjectStorage.delete("avatars/#{user_id}#{ext}")
 
-  @doc "Returns true if the avatar file exists."
+  @doc "Se existe avatar no formato legado (sem timestamp)."
   @spec avatar_exists?(term(), String.t()) :: boolean()
-  def avatar_exists?(user_id, ext), do: adapter().avatar_exists?(user_id, ext)
+  def avatar_exists?(user_id, ext), do: ObjectStorage.exists?("avatars/#{user_id}#{ext}")
 
-  @doc "Returns the base uploads directory for a given subdirectory."
-  @spec dir(String.t()) :: String.t()
-  def dir(subdir), do: adapter().dir(subdir)
+  # ── Imagem pública (flyer, cartaz) ───────────────────────────────────
 
-  @doc "Guarda uma imagem numa pasta do storage. Chave opaca."
-  def save_image(subdir, tmp_path, ext), do: adapter().save_image(subdir, tmp_path, ext)
+  @doc """
+  Guarda uma imagem redimensionada com chave aleatória e devolve a URL.
+
+  Nada previsível no nome: flyer é público, e nome adivinhável deixaria
+  varrer o que os outros publicaram.
+  """
+  @spec save_image(String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  def save_image(subdir, tmp_path, ext) do
+    chave = Path.join(subdir, "#{random_key()}#{ext}")
+
+    with :ok <- processado(tmp_path, &limitado/2, fn tmp -> ObjectStorage.put(chave, tmp) end) do
+      {:ok, ObjectStorage.public_url(chave)}
+    end
+  end
 
   @doc "Apaga uma imagem pela URL pública. Silencioso se já não existe."
-  def delete_image(public_url), do: adapter().delete_image(public_url)
+  @spec delete_image(String.t()) :: :ok | {:error, term()}
+  def delete_image("/uploads/" <> chave), do: ObjectStorage.delete(chave)
+  def delete_image(_url_de_fora), do: :ok
 
-  @doc "Guarda um arquivo em pasta privada e devolve a chave opaca."
-  def put_private(subdir, tmp_path, ext), do: adapter().put_private(subdir, tmp_path, ext)
+  # ── Arquivo privado (galeria de workshop) ────────────────────────────
 
-  @doc "Caminho no disco de uma chave privada, para o controller servir."
-  def private_path(key), do: adapter().private_path(key)
+  @doc """
+  Guarda um arquivo cru em área privada e devolve a chave opaca.
 
-  @doc "Apaga um arquivo privado."
-  def delete_private(key), do: adapter().delete_private(key)
+  Não devolve URL de propósito: quem serve é um controller que confere
+  permissão, via `serve_private/1`.
+  """
+  @spec put_private(String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  def put_private(subdir, tmp_path, ext) do
+    chave = Path.join(subdir, "#{random_key()}#{ext}")
 
-  @doc "Bytes livres no volume, ou `:unknown` quando não dá para medir."
-  def free_bytes, do: adapter().free_bytes()
+    case ObjectStorage.put(chave, tmp_path) do
+      :ok -> {:ok, chave}
+      erro -> erro
+    end
+  end
 
-  defp adapter do
-    :o_grupo_de_estudos
-    |> Application.get_env(__MODULE__, [])
-    |> Keyword.get(:adapter, @default_adapter)
+  @doc "Como servir um arquivo privado: `{:file, caminho}` ou `{:redirect, url}`."
+  @spec serve_private(String.t()) ::
+          {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
+  def serve_private(chave), do: ObjectStorage.serve(chave)
+
+  @doc "Roda `fun` com um caminho local do arquivo privado (entrada de ffmpeg)."
+  @spec with_private_file(String.t(), (String.t() -> result)) :: {:ok, result} | {:error, term()}
+        when result: term()
+  def with_private_file(chave, fun), do: ObjectStorage.with_local_file(chave, fun)
+
+  @doc "Apaga um arquivo privado. Silencioso se já não existe."
+  @spec delete_private(String.t()) :: :ok | {:error, term()}
+  def delete_private(chave), do: ObjectStorage.delete(chave)
+
+  @doc "Bytes livres no storage, ou `:unknown`."
+  @spec free_bytes() :: non_neg_integer() | :unknown
+  def free_bytes, do: ObjectStorage.free_bytes()
+
+  # ── Processamento de imagem ──────────────────────────────────────────
+
+  # Processa para um temporário próprio e entrega para `guardar`, limpando o
+  # temporário no fim: o ObjectStorage só vê arquivo pronto.
+  defp processado(origem, transformar, guardar) do
+    tmp = Path.join(System.tmp_dir!(), "media_#{System.unique_integer([:positive])}")
+
+    try do
+      case transformar.(origem, tmp) do
+        :ok -> guardar.(tmp)
+        erro -> erro
+      end
+    after
+      File.rm(tmp)
+    end
+  end
+
+  defp quadrado(origem, destino) do
+    origem
+    |> Mogrify.open()
+    |> Mogrify.resize_to_fill("#{@avatar_size}x#{@avatar_size}")
+    |> Mogrify.gravity("Center")
+    |> Mogrify.save(path: destino)
+
+    :ok
+  rescue
+    # Sem ImageMagick, vale mais guardar a imagem crua do que falhar o upload.
+    _e -> File.cp(origem, destino)
+  end
+
+  # Flyer e cartaz: mantém a proporção e só limita a largura. Sem isso, uma
+  # foto de celular de 4 MB vira 4 MB no volume.
+  defp limitado(origem, destino) do
+    origem
+    |> Mogrify.open()
+    |> Mogrify.resize_to_limit("#{@flyer_max_width}x#{@flyer_max_width * 3}")
+    |> Mogrify.save(path: destino)
+
+    :ok
+  rescue
+    _e -> File.cp(origem, destino)
+  end
+
+  defp random_key do
+    @key_random_bytes
+    |> :crypto.strong_rand_bytes()
+    |> Base.url_encode64(padding: false)
+    |> String.replace(~r/[^A-Za-z0-9]/, "")
   end
 end
