@@ -39,7 +39,12 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
       &Req.put(base_req(),
         url: &1,
         body: File.stream!(source_path, 65_536),
-        headers: [{"content-type", MIME.from_path(key)}]
+        headers: [
+          {"content-type", MIME.from_path(key)},
+          # Corpo em streaming sairia chunked, e o R2 recusa com 411: o
+          # tamanho vai explícito, e o streaming continua.
+          {"content-length", Integer.to_string(File.stat!(source_path).size)}
+        ]
       )
     )
     |> como_resultado()

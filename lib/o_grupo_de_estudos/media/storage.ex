@@ -25,12 +25,13 @@ defmodule OGrupoDeEstudos.Media.Storage do
   @doc """
   Guarda o avatar quadrado (#{@avatar_size}px) e devolve a URL pública.
 
-  O nome leva timestamp para o navegador não mostrar avatar velho de cache;
-  as versões anteriores da mesma pessoa vão embora junto.
+  Cada pessoa tem sua pasta (`avatars/<user_id>/`); o nome leva timestamp
+  para o navegador não mostrar avatar velho de cache, e as versões
+  anteriores da mesma pessoa vão embora junto.
   """
   @spec save_avatar(term(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def save_avatar(user_id, tmp_path, ext) do
-    chave = "avatars/#{user_id}_#{System.system_time(:second)}#{ext}"
+    chave = "avatars/#{user_id}/#{System.system_time(:second)}#{ext}"
 
     with :ok <- processado(tmp_path, &quadrado/2, fn tmp -> ObjectStorage.put(chave, tmp) end) do
       limpar_avatares_antigos(user_id, chave)
@@ -39,19 +40,11 @@ defmodule OGrupoDeEstudos.Media.Storage do
   end
 
   defp limpar_avatares_antigos(user_id, chave_atual) do
-    "avatars/#{user_id}_"
+    "avatars/#{user_id}/"
     |> ObjectStorage.list()
     |> Enum.reject(&(&1 == chave_atual))
     |> Enum.each(&ObjectStorage.delete/1)
   end
-
-  @doc "Apaga o avatar sem timestamp (formato legado)."
-  @spec delete_avatar(term(), String.t()) :: :ok | {:error, term()}
-  def delete_avatar(user_id, ext), do: ObjectStorage.delete("avatars/#{user_id}#{ext}")
-
-  @doc "Se existe avatar no formato legado (sem timestamp)."
-  @spec avatar_exists?(term(), String.t()) :: boolean()
-  def avatar_exists?(user_id, ext), do: ObjectStorage.exists?("avatars/#{user_id}#{ext}")
 
   # ── Imagem pública (flyer, cartaz) ───────────────────────────────────
 

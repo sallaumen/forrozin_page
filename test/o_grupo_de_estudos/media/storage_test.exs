@@ -39,10 +39,10 @@ defmodule OGrupoDeEstudos.Media.StorageTest do
   end
 
   describe "save_avatar/3" do
-    test "guarda com o id no nome e devolve a URL pública", ctx do
+    test "cada pessoa tem sua pasta, com timestamp no nome para furar cache", ctx do
       assert {:ok, url} = Storage.save_avatar("u1", ctx.origem, ".png")
 
-      assert url =~ ~r|^/uploads/avatars/u1_\d+\.png$|
+      assert url =~ ~r|^/uploads/avatars/u1/\d+\.png$|
       assert ObjectStorage.exists?(String.replace_prefix(url, "/uploads/", ""))
     end
 
@@ -68,10 +68,13 @@ defmodule OGrupoDeEstudos.Media.StorageTest do
   end
 
   describe "save_image/3" do
-    test "flyer sai com chave aleatória, sem nada previsível no nome", ctx do
-      assert {:ok, url} = Storage.save_image("flyers", ctx.origem, ".png")
+    test "a pasta é de quem chama; o nome do arquivo é aleatório", ctx do
+      # A subpasta organiza o bucket por contexto (flyers/workshops/<id>);
+      # o nome aleatório continua: flyer é público e nome previsível
+      # deixaria varrer o que os outros publicaram.
+      assert {:ok, url} = Storage.save_image("flyers/workshops/w1", ctx.origem, ".png")
 
-      assert url =~ ~r|^/uploads/flyers/[A-Za-z0-9]+\.png$|
+      assert url =~ ~r|^/uploads/flyers/workshops/w1/[A-Za-z0-9]+\.png$|
       refute url =~ "origem"
     end
 

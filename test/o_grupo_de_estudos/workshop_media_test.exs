@@ -85,13 +85,14 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
       assert media.kind == :video
     end
 
-    test "o arquivo NÃO fica na pasta pública", ctx do
+    test "o arquivo NÃO fica na pasta pública, e mora na pasta do workshop", ctx do
       {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
 
-      # Nada de midia paga em pasta servida pelo Plug.Static.
+      # Nada de midia paga em pasta servida pelo Plug.Static; e cada workshop
+      # tem a sua pasta, para o bucket contar a historia do app.
       refute media.storage_key =~ "avatars"
       refute media.storage_key =~ "flyers"
-      assert media.storage_key =~ "workshop_media"
+      assert media.storage_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.png$}
     end
 
     test "estranho não manda mídia", ctx do

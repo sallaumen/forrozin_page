@@ -41,14 +41,19 @@ defmodule OGrupoDeEstudos.WorkshopFlyerTest do
       assert {:ok, atualizado} =
                Workshops.put_workshop_flyer(ctx.workshop, ctx.dono, ctx.origem, ".png")
 
-      assert atualizado.flyer_path =~ ~r{^/uploads/flyers/[A-Za-z0-9]+\.png$}
+      assert atualizado.flyer_path =~
+               ~r{^/uploads/flyers/workshops/#{ctx.workshop.id}/[A-Za-z0-9]+\.png$}
+
       assert File.exists?(caminho_no_disco(ctx.dir, atualizado.flyer_path))
     end
 
-    test "o nome do arquivo não carrega o id: flyer é público e não pode ser varrido", ctx do
+    test "a pasta organiza por workshop; o nome continua não adivinhável", ctx do
+      # O id do workshop na pasta não abre nada (rota é por slug) e deixa o
+      # bucket navegável por contexto. O que protege de varredura é o nome
+      # aleatório, e o id de quem organiza continua fora da URL.
       {:ok, atualizado} = Workshops.put_workshop_flyer(ctx.workshop, ctx.dono, ctx.origem, ".png")
 
-      refute atualizado.flyer_path =~ ctx.workshop.id
+      assert atualizado.flyer_path =~ "flyers/workshops/#{ctx.workshop.id}/"
       refute atualizado.flyer_path =~ ctx.dono.id
     end
 
@@ -112,7 +117,7 @@ defmodule OGrupoDeEstudos.WorkshopFlyerTest do
       assert {:ok, com_flyer} =
                Workshops.put_program_flyer(ctx.program, ctx.dono, ctx.origem, ".png")
 
-      assert com_flyer.flyer_path =~ "/uploads/flyers/"
+      assert com_flyer.flyer_path =~ "/uploads/flyers/programas/#{ctx.program.id}/"
       arquivo = caminho_no_disco(ctx.dir, com_flyer.flyer_path)
       assert File.exists?(arquivo)
 

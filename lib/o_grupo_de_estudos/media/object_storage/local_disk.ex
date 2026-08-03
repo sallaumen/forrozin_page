@@ -34,24 +34,24 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
   @impl true
   def exists?(key), do: File.exists?(path(key))
 
-  @doc "Chaves que começam com o prefixo. A pasta é a parte antes da última /."
+  @doc """
+  Chaves que começam com o prefixo, descendo em subpastas.
+
+  Chave é caminho plano no contrato (como num bucket): pasta não é objeto e
+  não aparece na lista.
+  """
   @impl true
   def list(prefix) do
     pasta = Path.dirname(prefix)
+    raiz = dir_path(pasta)
 
-    pasta
-    |> dir_path()
-    |> File.ls()
-    |> case do
-      {:ok, nomes} ->
-        nomes |> Enum.map(&Path.join(pasta, &1)) |> Enum.filter(&match_prefix(&1, prefix))
-
-      {:error, _sem_pasta} ->
-        []
-    end
+    raiz
+    |> Path.join("**")
+    |> Path.wildcard()
+    |> Enum.filter(&File.regular?/1)
+    |> Enum.map(&Path.join(pasta, Path.relative_to(&1, raiz)))
+    |> Enum.filter(&String.starts_with?(&1, prefix))
   end
-
-  defp match_prefix(key, prefix), do: String.starts_with?(key, prefix)
 
   @doc "No disco, a URL pública é o caminho servido pelo UploadsStatic."
   @impl true

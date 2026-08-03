@@ -75,15 +75,22 @@ defmodule OGrupoDeEstudos.Media.UploadsMigrationTest do
     assert is_nil(Repo.reload!(sem_avatar).avatar_path)
   end
 
-  test "arquivo que falha não derruba a migração: entra no relatório", ctx do
+  test "arquivo que falha entra no relatório E SEGURA a reescrita das URLs", ctx do
+    # Reescrever URL de objeto que não subiu deixaria avatar quebrado em
+    # produção apontando para o nada. Com falha de cópia, o banco não muda:
+    # a próxima rodada, com as cópias sãs, completa a reescrita.
     expect(ObjectStorage.Mock, :put, 2, fn chave, _caminho ->
       if chave =~ "v.mp4", do: {:error, :timeout}, else: :ok
     end)
+
+    pessoa = insert(:user, avatar_path: "/uploads/avatars/u1_9.png")
 
     resultado = UploadsMigration.run(ctx.origem)
 
     assert resultado.arquivos == 1
     assert [{"workshop_media/v.mp4", :timeout}] = resultado.falhas
+    assert resultado.reescritos == 0
+    assert Repo.reload!(pessoa).avatar_path == "/uploads/avatars/u1_9.png"
   end
 
   test "pasta de origem vazia não explode" do

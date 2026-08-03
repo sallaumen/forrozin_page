@@ -47,6 +47,9 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
         assert conn.request_path == "/ogde-private/workshop_media/v.mp4"
         assert conn.query_params["X-Amz-Signature"]
         assert Plug.Conn.get_req_header(conn, "content-type") == ["video/mp4"]
+        # R2 recusa corpo chunked com 411: o tamanho vai explícito, mesmo
+        # com o corpo em streaming.
+        assert Plug.Conn.get_req_header(conn, "content-length") == ["14"]
         {:ok, corpo, conn} = Plug.Conn.read_body(conn)
         assert corpo == "bytes do video"
         Req.Test.text(conn, "")
