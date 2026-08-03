@@ -30,7 +30,9 @@ defmodule OGrupoDeEstudos.Workshops do
     ProgramQuery,
     Workshop,
     WorkshopAdmin,
+    InviteQuery,
     WorkshopEnrollment,
+    WorkshopInvite,
     WorkshopMedia,
     WorkshopProgram,
     WorkshopQuery
@@ -123,6 +125,72 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+
+  # ── Convite (workshop privado) ────────────────────────────────────────
+
+  defdelegate list_invites(workshop_id), to: InviteQuery, as: :list_for_workshop
+  defdelegate invited?(workshop_id, user_id), to: InviteQuery
+
+  @doc """
+  Convida alguém para um workshop privado.
+
+  Convidar já libera: quem foi convidado enxerga a página e decide se se
+  inscreve, que é a confirmação de verdade.
+  """
+  @spec invite(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopInvite.t()} | {:error, :unauthorized | :not_found | :already_invited}
+  def invite(%Workshop{} = workshop, %User{} = actor, user_id) do
+    with :ok <- ensure_admin(workshop, actor),
+         %User{} = convidado <- Accounts.get_user_by_id(user_id) do
+      inserir_convite(workshop, actor, convidado)
+    else
+      nil -> {:error, :not_found}
+      {:error, motivo} -> {:error, motivo}
+    end
+  end
+
+  defp inserir_convite(workshop, actor, convidado) do
+    %WorkshopInvite{}
+    |> WorkshopInvite.changeset(%{
+      workshop_id: workshop.id,
+      user_id: convidado.id,
+      invited_by_id: actor.id
+    })
+    |> Repo.insert()
+    |> case do
+      {:ok, convite} -> avisar_convidado(convite, workshop, actor, convidado)
+      {:error, %Ecto.Changeset{}} -> {:error, :already_invited}
+    end
+  end
+
+  defp avisar_convidado(convite, workshop, actor, convidado) do
+    SafeDispatch.run(fn ->
+      Dispatcher.notify_workshop_invite(actor.id, convidado.id, workshop.id)
+    end)
+
+    {:ok, convite}
+  end
+
+  @doc "Tira o convite. Quem administra tira qualquer um."
+  @spec revoke_invite(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopInvite.t()} | {:error, :unauthorized | :not_found}
+  def revoke_invite(%Workshop{} = workshop, %User{} = actor, user_id) do
+    with :ok <- ensure_admin(workshop, actor) do
+      InviteQuery.delete(workshop.id, user_id)
+    end
+  end
+
+  @doc """
+  Quem pode abrir a página de um workshop privado: quem administra, quem foi
+  convidado, ou quem já está inscrito.
+  """
+  @spec can_see_private?(Workshop.t(), User.t() | nil) :: boolean()
+  def can_see_private?(%Workshop{}, nil), do: false
+
+  def can_see_private?(%Workshop{} = workshop, %User{} = user) do
+    admin?(workshop, user) or InviteQuery.invited?(workshop.id, user.id) or
+      not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
+  end
 
   # ── Galeria ───────────────────────────────────────────────────────────
 
@@ -639,9 +707,16 @@ defmodule OGrupoDeEstudos.Workshops do
       user_id: user && user.id,
       owner?: owner?(workshop, user),
       admin?: admin?(workshop, user),
-      enrolled?: enrolled?(workshop, user)
+      enrolled?: enrolled?(workshop, user),
+      invited?: convidado?(workshop, user)
     }
   end
+
+  defp convidado?(%Workshop{visibility: :public}, _user), do: false
+  defp convidado?(%Workshop{}, nil), do: false
+
+  defp convidado?(%Workshop{} = workshop, %User{} = user),
+    do: InviteQuery.invited?(workshop.id, user.id)
 
   defp owner?(%Workshop{organizer_id: id}, %User{id: id}), do: true
   defp owner?(%Workshop{}, _user), do: false

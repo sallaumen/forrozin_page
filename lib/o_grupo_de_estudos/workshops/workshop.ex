@@ -30,6 +30,8 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     field :capacity, :integer
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
     field :flyer_path, :string
+    # Quem enxerga. Separado de status, que e ciclo de vida.
+    field :visibility, Ecto.Enum, values: [:public, :private], default: :public
 
     belongs_to :organizer, OGrupoDeEstudos.Accounts.User
     # Zero ou uma programacao. Quem move e o contexto, nao o changeset
@@ -49,6 +51,7 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     :price_cents,
     :payment_info,
     :capacity,
+    :visibility,
     :organizer_id
   ]
 
@@ -81,6 +84,11 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
   def status_changeset(workshop, status) when status in [:draft, :published, :cancelled] do
     change(workshop, status: status)
   end
+
+  @doc "true quando o workshop só abre para quem foi convidado."
+  @spec privado?(t()) :: boolean()
+  def privado?(%__MODULE__{visibility: :private}), do: true
+  def privado?(%__MODULE__{}), do: false
 
   @doc "true quando a lotação foi atingida. Sem capacity, nunca lota."
   @spec full?(t(), non_neg_integer()) :: boolean()

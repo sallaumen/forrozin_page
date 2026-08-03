@@ -36,8 +36,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
        |> assign(:owner?, workshop.organizer_id == user.id)
        |> assign(:cobra?, !Workshop.free?(workshop))
        |> assign(:admin_form_error, nil)
+       |> assign(:invite_error, nil)
        |> load_enrollments()
-       |> load_co_admins()}
+       |> load_co_admins()
+       |> load_invites()}
     else
       {:ok,
        socket
@@ -115,6 +117,20 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     end
   end
 
+  def handle_event("invite", %{"username" => username}, socket) do
+    case Accounts.get_user_by_username(String.trim(username)) do
+      nil -> {:noreply, assign(socket, :invite_error, "Não encontrei esse usuário.")}
+      user -> convidar(socket, user)
+    end
+  end
+
+  def handle_event("revoke_invite", %{"id" => user_id}, socket) do
+    case Workshops.revoke_invite(socket.assigns.workshop, socket.assigns.current_user, user_id) do
+      {:ok, _} -> {:noreply, socket |> load_invites() |> put_flash(:info, "Convite retirado.")}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Não foi possível retirar.")}
+    end
+  end
+
   def handle_event("copy_link", _params, socket) do
     url = OGrupoDeEstudosWeb.Endpoint.url() <> "/workshops/" <> socket.assigns.workshop.slug
 
@@ -142,6 +158,28 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
       {:error, _} ->
         {:noreply, assign(socket, :admin_form_error, "Não foi possível adicionar.")}
     end
+  end
+
+  defp convidar(socket, user) do
+    case Workshops.invite(socket.assigns.workshop, socket.assigns.current_user, user.id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:invite_error, nil)
+         |> load_invites()
+         |> put_flash(:info, "#{user.name || user.username} foi convidado.")
+         |> push_event("form:clear", %{id: "invite-form"})}
+
+      {:error, :already_invited} ->
+        {:noreply, assign(socket, :invite_error, "Essa pessoa já foi convidada.")}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :invite_error, "Não foi possível convidar.")}
+    end
+  end
+
+  defp load_invites(socket) do
+    assign(socket, :convidados, Workshops.list_invites(socket.assigns.workshop.id))
   end
 
   defp load_co_admins(socket) do

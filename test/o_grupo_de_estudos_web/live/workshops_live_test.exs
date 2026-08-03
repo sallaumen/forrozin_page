@@ -327,6 +327,85 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
+  describe "workshop por convite" do
+    setup %{conn: conn} do
+      dono = insert(:user)
+      privado = publicado(dono, %{title: "Turma fechada", visibility: :private})
+      %{dono: dono, privado: privado, conn: conn}
+    end
+
+    test "estranho não abre, e a resposta é a de slug inexistente", ctx do
+      assert {:error, {:redirect, %{to: destino}}} =
+               live(log_in_user(ctx.conn, insert(:user)), ~p"/workshops/#{ctx.privado.slug}")
+
+      assert destino == ~p"/study/workshops"
+    end
+
+    test "visitante sem conta não abre", ctx do
+      assert {:error, {:redirect, _}} = live(ctx.conn, ~p"/workshops/#{ctx.privado.slug}")
+    end
+
+    test "convidado abre e consegue se inscrever", ctx do
+      convidada = insert(:user)
+      {:ok, _} = Workshops.invite(ctx.privado, ctx.dono, convidada.id)
+
+      {:ok, lv, html} = live(log_in_user(ctx.conn, convidada), ~p"/workshops/#{ctx.privado.slug}")
+      assert html =~ "Turma fechada"
+
+      render_click(lv, "enroll", %{})
+      assert MapSet.member?(Workshops.enrolled_workshop_ids(convidada.id), ctx.privado.id)
+    end
+
+    test "quem organiza abre sem precisar de convite", ctx do
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}")
+
+      assert html =~ "Turma fechada"
+    end
+
+    test "não aparece na agenda, nem para quem foi convidado", ctx do
+      convidada = insert(:user)
+      {:ok, _} = Workshops.invite(ctx.privado, ctx.dono, convidada.id)
+
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, convidada), ~p"/study/workshops")
+
+      refute html =~ "Turma fechada"
+    end
+
+    test "o painel lista convidados e permite convidar e retirar", ctx do
+      convidada = insert(:user, name: "Joana Convidada")
+
+      {:ok, lv, html} =
+        live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}/gerenciar")
+
+      assert html =~ "Quem foi convidado"
+
+      html = render_submit(lv, "invite", %{"username" => convidada.username})
+      assert html =~ "Joana Convidada"
+      assert Workshops.invited?(ctx.privado.id, convidada.id)
+
+      render_click(lv, "revoke_invite", %{"id" => convidada.id})
+      refute Workshops.invited?(ctx.privado.id, convidada.id)
+    end
+
+    test "nome de usuário inexistente avisa em vez de quebrar", ctx do
+      {:ok, lv, _} =
+        live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}/gerenciar")
+
+      html = render_submit(lv, "invite", %{"username" => "nao_existe_esse"})
+
+      assert html =~ "Não encontrei esse usuário"
+    end
+
+    test "workshop público não mostra painel de convite", ctx do
+      publico = publicado(ctx.dono, %{title: "Aberto"})
+
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{publico.slug}/gerenciar")
+
+      refute html =~ "Quem foi convidado"
+    end
+  end
+
   describe "rascunho não vaza pelo link" do
     setup %{conn: conn} do
       organizer = insert(:user)

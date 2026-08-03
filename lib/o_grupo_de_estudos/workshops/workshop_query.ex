@@ -74,7 +74,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     period = Keyword.get(opts, :period, :upcoming)
 
     from(w in Workshop, as: :periodo)
-    |> where([w], w.status == :published)
+    |> where([w], w.status == :published and w.visibility == :public)
     |> in_period(period, Keyword.get(opts, :now, DateTime.utc_now()))
     |> apply_grouping(opts[:only_loose])
     |> apply_search(opts[:search])

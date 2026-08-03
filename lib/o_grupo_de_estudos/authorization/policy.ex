@@ -120,6 +120,19 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   # Rascunho e privado de quem organiza. Devolve :not_found, nao :unauthorized:
   # dizer "sem permissao" ja confirma que o workshop existe naquele slug.
+  #
+  # Workshop privado nao decide sozinho: quem sabe se a pessoa foi convidada e
+  # o contexto, entao a borda passa um %Access{} com invited? resolvido.
+  def authorize(
+        :view_workshop,
+        _user,
+        %Access{workshop: %Workshop{visibility: :private}} = acesso
+      ),
+      do: se_convidado(acesso)
+
+  def authorize(:view_workshop, user, %Access{workshop: workshop}),
+    do: authorize(:view_workshop, user, workshop)
+
   def authorize(:view_workshop, _user, %Workshop{status: status})
       when status in [:published, :cancelled],
       do: :ok
@@ -171,4 +184,9 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   def authorize(:manage_sequence, %User{id: user_id}, %Sequence{user_id: user_id}), do: :ok
 
   def authorize(:manage_sequence, _, _), do: {:error, :unauthorized}
+
+  defp se_convidado(%Access{admin?: true}), do: :ok
+  defp se_convidado(%Access{enrolled?: true}), do: :ok
+  defp se_convidado(%Access{invited?: true}), do: :ok
+  defp se_convidado(%Access{}), do: {:error, :not_found}
 end

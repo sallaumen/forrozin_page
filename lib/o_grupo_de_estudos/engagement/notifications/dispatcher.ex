@@ -114,6 +114,29 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_program_enrollment(_actor_id, _organizer_id, _workshop_id, _program_id), do: :ok
 
+  @doc "Avisa alguem de que foi convidado para um workshop privado."
+  @spec notify_workshop_invite(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
+  def notify_workshop_invite(actor_id, user_id, workshop_id) when actor_id != user_id do
+    builder = fn destinatario ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: destinatario,
+        actor_id: actor_id,
+        action: :workshop_invited,
+        group_key: "workshop_invited:#{workshop_id}",
+        target_type: "workshop",
+        target_id: workshop_id,
+        parent_type: "workshop",
+        parent_id: workshop_id,
+        inserted_at: now()
+      }
+    end
+
+    insert_and_broadcast([user_id], builder)
+  end
+
+  def notify_workshop_invite(_actor_id, _user_id, _workshop_id), do: :ok
+
   @doc """
   Avisa alguem de que tem workshop amanha.
 
