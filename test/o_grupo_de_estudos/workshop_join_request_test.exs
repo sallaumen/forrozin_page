@@ -127,13 +127,16 @@ defmodule OGrupoDeEstudos.WorkshopJoinRequestTest do
                Workshops.approve_join(ctx.privado, insert(:user), ctx.pedido.id)
     end
 
-    test "turma lotada recusa o aceite em vez de estourar a vaga", ctx do
+    test "turma lotada NÃO barra o aceite: caber é decisão de quem dá a aula", ctx do
+      # Overbooking com aceite é intencional: quem organiza sabe se cabe mais
+      # um na sala, e a página avisa antes. O limite automático continua
+      # valendo onde ninguém decide (ver workshop_waitlist_test).
       {:ok, lotado} = Workshops.update_workshop(ctx.dono, ctx.privado, %{capacity: 1})
       {:ok, _} = Workshops.enroll(lotado, insert(:user))
 
-      assert {:error, :full} = Workshops.approve_join(lotado, ctx.dono, ctx.pedido.id)
-      # A fila continua de pé: quem organiza pode abrir vaga e aprovar depois.
-      assert length(Workshops.list_pending_requests(lotado)) == 1
+      assert Workshops.passaria_do_limite?(lotado)
+      assert {:ok, _} = Workshops.approve_join(lotado, ctx.dono, ctx.pedido.id)
+      assert Workshops.count_enrollments(lotado.id) == 2
     end
   end
 

@@ -39,7 +39,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
        |> assign(:admin_form_error, nil)
        |> load_enrollments()
        |> load_co_admins()
-       |> load_pedidos()}
+       |> load_pedidos()
+       |> load_fila()}
     else
       {:ok,
        socket
@@ -172,6 +173,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
 
   defp responder_pedido({:error, _motivo}, socket, _mensagem) do
     {:noreply, put_flash(socket, :error, "Não foi possível responder esse pedido.")}
+  end
+
+  defp load_fila(socket) do
+    assign(socket, :fila, Workshops.list_waitlist(socket.assigns.workshop.id))
   end
 
   defp load_pedidos(socket) do

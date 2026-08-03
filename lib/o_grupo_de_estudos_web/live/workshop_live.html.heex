@@ -197,12 +197,45 @@
               </button>
             </div>
 
-            <p
-              :if={@full? && !@enrolled? && !@organizer?}
-              class="m-0 rounded-xl bg-ink-200 px-4 py-3 text-center text-[13px] font-bold text-ink-600"
+            <%!-- Turma cheia deixa de ser beco sem saída: entra na fila. Sem
+            isso, quem tinha interesse sumia sem deixar rastro, e é justamente
+            esse número que diz se cabe abrir outra turma. --%>
+            <div :if={mostra_fila?(@workshop, @organizer?, @enrolled?, @full?, @na_fila)}>
+              <p class="m-0 mb-2 rounded-xl bg-ink-200 px-4 py-2.5 text-center text-[13px] font-bold text-ink-600">
+                Vagas esgotadas
+              </p>
+              <button
+                type="button"
+                phx-click="join_waitlist"
+                phx-disable-with="Entrando..."
+                class="w-full cursor-pointer rounded-full border border-ink-900 bg-ink-50 px-5 py-3 font-serif text-[15px] font-semibold text-ink-900"
+              >
+                Entrar na lista de espera
+              </button>
+              <p :if={@fila_total > 0} class="m-0 mt-1.5 text-center text-[12px] text-ink-500">
+                {espera_label(@fila_total)}
+              </p>
+            </div>
+
+            <div
+              :if={@na_fila && !@enrolled?}
+              class="rounded-xl border border-ink-300 bg-ink-100 px-4 py-3 text-center"
             >
-              Vagas esgotadas
-            </p>
+              <p class="m-0 text-[13px] font-bold text-ink-800">
+                <.icon name="hero-queue-list" class="size-4 -mt-0.5" />
+                Você é {@na_fila}º da lista de espera
+              </p>
+              <p class="m-0 mt-1 text-[12px] leading-snug text-ink-600">
+                Se alguém cancelar, a vaga é sua e você recebe um aviso.
+              </p>
+              <button
+                type="button"
+                phx-click="leave_waitlist"
+                class="mt-1.5 cursor-pointer border-0 bg-transparent p-0 text-[11.5px] text-ink-500 underline"
+              >
+                sair da lista
+              </button>
+            </div>
           </div>
         </div>
 
