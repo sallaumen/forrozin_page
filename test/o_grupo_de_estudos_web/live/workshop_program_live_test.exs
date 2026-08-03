@@ -113,7 +113,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
   describe "pacote fechado convivendo com o avulso" do
     setup ctx do
       {:ok, com_pacote} =
-        Workshops.create_program(ctx.dono, %{title: "Três dias", price_cents: 15_000})
+        Workshops.create_program(ctx.dono, %{
+          title: "Três dias",
+          price_cents: 15_000,
+          payment_info: "Pix do festival: 41 98888-7777"
+        })
 
       for w <- [ctx.quinta, ctx.sexta],
           do: Workshops.attach_workshop(com_pacote, ctx.dono, w.id)
@@ -145,6 +149,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       inscritos = Workshops.enrolled_workshop_ids(aluna.id)
       assert MapSet.member?(inscritos, ctx.quinta.id)
       assert MapSet.member?(inscritos, ctx.sexta.id)
+    end
+
+    test "o Pix NÃO aparece para quem ainda não garantiu o pacote", ctx do
+      # Chave Pix costuma ser CPF ou telefone. Na página do workshop ela só
+      # aparece depois da inscrição; aqui vale a mesma regra.
+      {:ok, _lv, html} = live(build_conn(), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      refute html =~ "41 98888-7777"
+    end
+
+    test "depois de comprar o pacote, o Pix aparece", ctx do
+      aluna = insert(:user)
+
+      {:ok, lv, _} =
+        live(log_in_user(build_conn(), aluna), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      html = render_click(lv, "buy_package", %{})
+
+      assert html =~ "41 98888-7777"
     end
 
     test "programação sem preço fechado não mostra pacote", ctx do
