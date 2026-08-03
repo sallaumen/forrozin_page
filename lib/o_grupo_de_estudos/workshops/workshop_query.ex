@@ -12,7 +12,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   alias OGrupoDeEstudos.Brazil
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Search
-  alias OGrupoDeEstudos.Workshops.Workshop
+  alias OGrupoDeEstudos.Workshops.{AdminQuery, Workshop}
 
   @type period :: :upcoming | :past | :week | :month | :year
   @type opt ::
@@ -83,11 +83,18 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     |> Repo.all()
   end
 
-  @doc "Workshops de um organizador, inclusive rascunho e cancelado."
+  @doc """
+  Workshops que a pessoa administra, inclusive rascunho e cancelado.
+
+  Inclui os que ela criou e aqueles em que foi promovida a co-organizadora:
+  senão o co-organizador não veria o workshop na própria agenda.
+  """
   @spec list_for_organizer(Ecto.UUID.t()) :: [Workshop.t()]
   def list_for_organizer(organizer_id) do
+    tambem_admin = AdminQuery.workshop_ids_for(organizer_id)
+
     Workshop
-    |> where([w], w.organizer_id == ^organizer_id)
+    |> where([w], w.organizer_id == ^organizer_id or w.id in ^tambem_admin)
     |> order_by([w], desc: w.starts_at)
     |> preload(:organizer)
     |> Repo.all()

@@ -13,11 +13,21 @@ defmodule OGrupoDeEstudos.Workshops do
 
   import Ecto.Query, only: [from: 2]
 
+  alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Engagement.SafeDispatch
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Workshops.{EnrollmentQuery, Workshop, WorkshopEnrollment, WorkshopQuery}
+
+  alias OGrupoDeEstudos.Workshops.{
+    Access,
+    AdminQuery,
+    EnrollmentQuery,
+    Workshop,
+    WorkshopAdmin,
+    WorkshopEnrollment,
+    WorkshopQuery
+  }
 
   # ── Leituras ──────────────────────────────────────────────────────────
 
@@ -47,22 +57,22 @@ defmodule OGrupoDeEstudos.Workshops do
   @doc "Edita um workshop do próprio organizador."
   @spec update_workshop(User.t(), Workshop.t(), map()) ::
           {:ok, Workshop.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
-  def update_workshop(%User{id: actor_id}, %Workshop{organizer_id: actor_id} = workshop, attrs) do
-    workshop
-    |> Workshop.changeset(normalize(attrs))
-    |> Repo.update()
+  def update_workshop(%User{} = user, %Workshop{} = workshop, attrs) do
+    with :ok <- ensure_admin(workshop, user) do
+      workshop
+      |> Workshop.changeset(normalize(attrs))
+      |> Repo.update()
+    end
   end
-
-  def update_workshop(%User{}, %Workshop{}, _attrs), do: {:error, :unauthorized}
 
   @doc "Publica: a partir daqui aparece na agenda e aceita inscrição."
   @spec publish_workshop(User.t(), Workshop.t()) ::
           {:ok, Workshop.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
-  def publish_workshop(%User{id: actor_id}, %Workshop{organizer_id: actor_id} = workshop) do
-    workshop |> Workshop.status_changeset(:published) |> Repo.update()
+  def publish_workshop(%User{} = user, %Workshop{} = workshop) do
+    with :ok <- ensure_admin(workshop, user) do
+      workshop |> Workshop.status_changeset(:published) |> Repo.update()
+    end
   end
-
-  def publish_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
 
   @doc """
   Cancela preservando o registro: inscrições, quem pagou e a conversa
@@ -70,13 +80,18 @@ defmodule OGrupoDeEstudos.Workshops do
   """
   @spec cancel_workshop(User.t(), Workshop.t()) ::
           {:ok, Workshop.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
-  def cancel_workshop(%User{id: actor_id}, %Workshop{organizer_id: actor_id} = workshop) do
-    workshop |> Workshop.status_changeset(:cancelled) |> Repo.update()
+  def cancel_workshop(%User{} = user, %Workshop{} = workshop) do
+    with :ok <- ensure_admin(workshop, user) do
+      workshop |> Workshop.status_changeset(:cancelled) |> Repo.update()
+    end
   end
 
-  def cancel_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+  @doc """
+  Apaga de vez. Só rascunho, só sem ninguém inscrito, e só quem criou.
 
-  @doc "Apaga de vez. Só rascunho e só sem ninguém inscrito."
+  De propósito fora do conjunto de administradores: co-organizador administra,
+  não destrói.
+  """
   @spec delete_workshop(User.t(), Workshop.t()) ::
           {:ok, Workshop.t()} | {:error, :unauthorized | :not_deletable}
   def delete_workshop(%User{id: actor_id}, %Workshop{organizer_id: actor_id} = workshop) do
@@ -88,6 +103,109 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+
+  # ── Administradores ───────────────────────────────────────────────────
+
+  @doc "Ids de quem administra: o criador mais os co-organizadores."
+  @spec admin_ids(Workshop.t()) :: [Ecto.UUID.t()]
+  def admin_ids(%Workshop{} = workshop) do
+    [workshop.organizer_id | AdminQuery.co_admin_ids(workshop.id)]
+  end
+
+  @doc "true quando a pessoa administra o workshop (criador ou co-organizador)."
+  @spec admin?(Workshop.t(), User.t() | nil) :: boolean()
+  def admin?(%Workshop{}, nil), do: false
+  def admin?(%Workshop{organizer_id: id}, %User{id: id}), do: true
+
+  def admin?(%Workshop{} = workshop, %User{} = user),
+    do: AdminQuery.co_admin?(workshop.id, user.id)
+
+  @doc """
+  Resolve numa passada o que a pessoa pode fazer neste workshop.
+
+  A Policy é pura e não consulta o banco; este struct traz os fatos.
+  """
+  @spec access_for(Workshop.t(), User.t() | nil) :: Access.t()
+  def access_for(%Workshop{} = workshop, user) do
+    %Access{
+      workshop: workshop,
+      user_id: user && user.id,
+      owner?: owner?(workshop, user),
+      admin?: admin?(workshop, user),
+      enrolled?: enrolled?(workshop, user)
+    }
+  end
+
+  defp owner?(%Workshop{organizer_id: id}, %User{id: id}), do: true
+  defp owner?(%Workshop{}, _user), do: false
+
+  defp enrolled?(%Workshop{}, nil), do: false
+
+  defp enrolled?(%Workshop{} = workshop, %User{} = user),
+    do: not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
+
+  @doc "Co-organizadores com dados de exibição."
+  @spec list_co_admins(Workshop.t()) :: [map()]
+  def list_co_admins(%Workshop{} = workshop), do: AdminQuery.list_co_admins(workshop.id)
+
+  @doc """
+  Promove alguém a co-organizador. Só o criador promove: quem entra por
+  convite passa a ver o controle de pagamento, e essa porta é de quem criou.
+  """
+  @spec add_admin(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopAdmin.t()} | {:error, :unauthorized | :already_admin | :not_found}
+  def add_admin(%Workshop{} = workshop, %User{} = actor, user_id) do
+    with :ok <- ensure_owner(workshop, actor),
+         :ok <- ensure_not_admin(workshop, user_id),
+         %User{} = user <- Accounts.get_user_by_id(user_id) do
+      insert_admin(workshop, actor, user)
+    else
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp insert_admin(workshop, actor, user) do
+    %WorkshopAdmin{}
+    |> WorkshopAdmin.changeset(%{
+      workshop_id: workshop.id,
+      user_id: user.id,
+      invited_by_id: actor.id
+    })
+    |> Repo.insert()
+    |> case do
+      {:ok, admin} -> {:ok, admin}
+      {:error, %Ecto.Changeset{}} -> {:error, :already_admin}
+    end
+  end
+
+  @doc "Remove um co-organizador. O criador remove qualquer um; os outros só a si mesmos."
+  @spec remove_admin(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopAdmin.t()} | {:error, :unauthorized | :cannot_remove_owner | :not_found}
+  def remove_admin(%Workshop{organizer_id: id}, %User{}, id), do: {:error, :cannot_remove_owner}
+
+  def remove_admin(%Workshop{} = workshop, %User{} = actor, user_id) do
+    with :ok <- ensure_can_remove(workshop, actor, user_id) do
+      AdminQuery.delete(workshop.id, user_id)
+    end
+  end
+
+  defp ensure_can_remove(workshop, %User{id: actor_id}, actor_id) do
+    if admin?(workshop, %User{id: actor_id}), do: :ok, else: {:error, :unauthorized}
+  end
+
+  defp ensure_can_remove(workshop, actor, _user_id), do: ensure_owner(workshop, actor)
+
+  defp ensure_owner(%Workshop{organizer_id: id}, %User{id: id}), do: :ok
+  defp ensure_owner(%Workshop{}, %User{}), do: {:error, :unauthorized}
+
+  defp ensure_admin(workshop, user) do
+    if admin?(workshop, user), do: :ok, else: {:error, :unauthorized}
+  end
+
+  defp ensure_not_admin(workshop, user_id) do
+    if user_id in admin_ids(workshop), do: {:error, :already_admin}, else: :ok
+  end
 
   # ── Inscrição ─────────────────────────────────────────────────────────
 
@@ -101,12 +219,11 @@ defmodule OGrupoDeEstudos.Workshops do
   @spec enroll(Workshop.t(), User.t()) ::
           {:ok, WorkshopEnrollment.t()}
           | {:error, :organizer | :not_open | :full | :already_enrolled}
-  def enroll(%Workshop{organizer_id: id}, %User{id: id}), do: {:error, :organizer}
-
   def enroll(%Workshop{} = workshop, %User{} = user) do
-    workshop
-    |> insert_enrollment_locked(user)
-    |> notify_organizer(workshop, user)
+    case admin?(workshop, user) do
+      true -> {:error, :organizer}
+      false -> workshop |> insert_enrollment_locked(user) |> notify_organizers(workshop, user)
+    end
   end
 
   defp insert_enrollment_locked(workshop, user) do
@@ -121,15 +238,15 @@ defmodule OGrupoDeEstudos.Workshops do
 
   # Fora da transacao de proposito: broadcast nao faz rollback, entao um erro
   # tardio deixaria o organizador com aviso de uma inscricao inexistente.
-  defp notify_organizer({:ok, _enrollment} = result, workshop, user) do
+  defp notify_organizers({:ok, _enrollment} = result, workshop, user) do
     SafeDispatch.run(fn ->
-      Dispatcher.notify_workshop_enrollment(user.id, workshop.organizer_id, workshop.id)
+      Dispatcher.notify_workshop_enrollment(user.id, admin_ids(workshop), workshop.id)
     end)
 
     result
   end
 
-  defp notify_organizer(error, _workshop, _user), do: error
+  defp notify_organizers(error, _workshop, _user), do: error
 
   @doc "Cancela a própria inscrição, liberando a vaga."
   @spec cancel_enrollment(Workshop.t(), User.t()) ::
@@ -146,21 +263,19 @@ defmodule OGrupoDeEstudos.Workshops do
   @doc "Lista de inscritos COM pagamento. Só o organizador."
   @spec list_enrollments_for_organizer(Workshop.t(), User.t()) ::
           {:ok, [WorkshopEnrollment.t()]} | {:error, :unauthorized}
-  def list_enrollments_for_organizer(%Workshop{organizer_id: actor_id} = workshop, %User{
-        id: actor_id
-      }) do
-    {:ok, EnrollmentQuery.list_for_organizer(workshop.id)}
+  def list_enrollments_for_organizer(%Workshop{} = workshop, %User{} = user) do
+    with :ok <- ensure_admin(workshop, user) do
+      {:ok, EnrollmentQuery.list_for_organizer(workshop.id)}
+    end
   end
 
-  def list_enrollments_for_organizer(%Workshop{}, %User{}), do: {:error, :unauthorized}
-
-  @doc "Resumo de pagamento (inscritos, pagos, isentos). Só o organizador."
+  @doc "Resumo de pagamento (inscritos, pagos, isentos). Quem administra vê."
   @spec payment_summary(Workshop.t(), User.t()) :: {:ok, map()} | {:error, :unauthorized}
-  def payment_summary(%Workshop{organizer_id: actor_id} = workshop, %User{id: actor_id}) do
-    {:ok, EnrollmentQuery.payment_summary(workshop.id)}
+  def payment_summary(%Workshop{} = workshop, %User{} = user) do
+    with :ok <- ensure_admin(workshop, user) do
+      {:ok, EnrollmentQuery.payment_summary(workshop.id)}
+    end
   end
-
-  def payment_summary(%Workshop{}, %User{}), do: {:error, :unauthorized}
 
   @doc """
   Marca o estado de pagamento de uma inscrição.
@@ -171,16 +286,15 @@ defmodule OGrupoDeEstudos.Workshops do
   @spec set_payment_status(Workshop.t(), User.t(), Ecto.UUID.t(), atom()) ::
           {:ok, WorkshopEnrollment.t()}
           | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
-  def set_payment_status(
-        %Workshop{organizer_id: actor_id} = workshop,
-        %User{id: actor_id},
-        enrollment_id,
-        status
-      )
+  def set_payment_status(%Workshop{} = workshop, %User{} = user, enrollment_id, status)
       when status in [:pending, :paid, :waived] do
-    case EnrollmentQuery.get_scoped(enrollment_id, workshop.id) do
+    with :ok <- ensure_admin(workshop, user),
+         %WorkshopEnrollment{} = enrollment <-
+           EnrollmentQuery.get_scoped(enrollment_id, workshop.id) do
+      enrollment |> WorkshopEnrollment.payment_changeset(status) |> Repo.update()
+    else
       nil -> {:error, :not_found}
-      enrollment -> enrollment |> WorkshopEnrollment.payment_changeset(status) |> Repo.update()
+      {:error, reason} -> {:error, reason}
     end
   end
 

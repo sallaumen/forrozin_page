@@ -37,7 +37,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     workshop = Workshops.get_by_slug(slug)
     user = socket.assigns.current_user
 
-    if workshop && Policy.authorized?(:manage_workshop, user, workshop) do
+    if workshop &&
+         Policy.authorized?(:manage_workshop, user, Workshops.access_for(workshop, user)) do
       socket
       |> assign(:page_title, "Editar workshop")
       |> assign(:is_admin, Accounts.admin?(user))

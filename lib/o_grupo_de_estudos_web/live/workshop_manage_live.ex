@@ -26,14 +26,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     workshop = Workshops.get_by_slug(slug)
     user = socket.assigns.current_user
 
-    if workshop && Policy.authorized?(:manage_workshop, user, workshop) do
+    if workshop &&
+         Policy.authorized?(:manage_workshop, user, Workshops.access_for(workshop, user)) do
       {:ok,
        socket
        |> assign(:page_title, "Gerenciar: #{workshop.title}")
        |> assign(:is_admin, Accounts.admin?(user))
        |> assign(:workshop, workshop)
+       |> assign(:owner?, workshop.organizer_id == user.id)
        |> assign(:cobra?, !Workshop.free?(workshop))
-       |> load_enrollments()}
+       |> assign(:admin_form_error, nil)
+       |> load_enrollments()
+       |> load_co_admins()}
     else
       {:ok,
        socket
@@ -92,6 +96,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     end
   end
 
+  def handle_event("add_admin", %{"username" => username}, socket) do
+    case Accounts.get_user_by_username(String.trim(username)) do
+      nil -> {:noreply, assign(socket, :admin_form_error, "Não encontrei esse usuário.")}
+      user -> promote(socket, user)
+    end
+  end
+
+  def handle_event("remove_admin", %{"id" => user_id}, socket) do
+    workshop = socket.assigns.workshop
+
+    case Workshops.remove_admin(workshop, socket.assigns.current_user, user_id) do
+      {:ok, _} ->
+        {:noreply, socket |> load_co_admins() |> put_flash(:info, "Co-organizador removido.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível remover.")}
+    end
+  end
+
   def handle_event("copy_link", _params, socket) do
     url = OGrupoDeEstudosWeb.Endpoint.url() <> "/workshops/" <> socket.assigns.workshop.slug
 
@@ -99,6 +122,30 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
      socket
      |> push_event("clipboard:copy", %{text: url})
      |> put_flash(:info, "Link copiado! Agora é só mandar para a turma.")}
+  end
+
+  defp promote(socket, user) do
+    workshop = socket.assigns.workshop
+
+    case Workshops.add_admin(workshop, socket.assigns.current_user, user.id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:admin_form_error, nil)
+         |> load_co_admins()
+         |> put_flash(:info, "#{user.name || user.username} agora organiza com você.")
+         |> push_event("form:clear", %{id: "add-admin-form"})}
+
+      {:error, :already_admin} ->
+        {:noreply, assign(socket, :admin_form_error, "Essa pessoa já organiza este workshop.")}
+
+      {:error, _} ->
+        {:noreply, assign(socket, :admin_form_error, "Não foi possível adicionar.")}
+    end
+  end
+
+  defp load_co_admins(socket) do
+    assign(socket, :co_admins, Workshops.list_co_admins(socket.assigns.workshop))
   end
 
   defp load_enrollments(socket) do

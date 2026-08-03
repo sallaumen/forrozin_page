@@ -16,7 +16,7 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   alias OGrupoDeEstudos.Encyclopedia.{Step, StepLink}
   alias OGrupoDeEstudos.Sequences.Sequence
   alias OGrupoDeEstudos.Study.Lesson
-  alias OGrupoDeEstudos.Workshops.Workshop
+  alias OGrupoDeEstudos.Workshops.{Access, Workshop}
 
   @type reason :: :unauthorized | :unauthenticated
 
@@ -132,6 +132,12 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   def authorize(:create_workshop, %User{}, _), do: :ok
 
   def authorize(:create_workshop, nil, _), do: {:error, :unauthenticated}
+
+  # Aceita o Access resolvido (que ja considera co-organizador) ou o Workshop
+  # cru, que so reconhece o criador. A borda passa Access sempre que a
+  # resposta puder depender de co-organizacao.
+  def authorize(:manage_workshop, %User{id: user_id}, %Access{user_id: user_id, admin?: true}),
+    do: :ok
 
   def authorize(:manage_workshop, %User{id: organizer_id}, %Workshop{organizer_id: organizer_id}),
     do: :ok

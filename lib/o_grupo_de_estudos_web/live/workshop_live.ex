@@ -272,7 +272,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:participants, participants)
     |> assign(:enrolled_count, length(participants))
     |> assign(:enrolled?, user && Enum.any?(participants, &(&1.user_id == user.id)))
-    |> assign(:organizer?, user && workshop.organizer_id == user.id)
+    |> assign(:organizer?, Workshops.admin?(workshop, user))
     |> assign(:full?, Workshop.full?(workshop, length(participants)))
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
     |> assign_workshop_likes()

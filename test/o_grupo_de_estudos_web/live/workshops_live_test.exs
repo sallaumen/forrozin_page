@@ -248,6 +248,85 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
+  describe "co-organizadores no painel" do
+    setup %{conn: conn} do
+      criador = insert(:user)
+      %{criador: criador, workshop: publicado(criador, %{}), parceiro: insert(:user), conn: conn}
+    end
+
+    test "criador adiciona pelo nome de usuário", ctx do
+      {:ok, lv, _} =
+        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+
+      html = render_submit(lv, "add_admin", %{"username" => ctx.parceiro.username})
+
+      assert html =~ ctx.parceiro.username
+      assert Workshops.admin?(ctx.workshop, ctx.parceiro)
+    end
+
+    test "nome de usuário que não existe avisa em vez de quebrar", ctx do
+      {:ok, lv, _} =
+        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+
+      html = render_submit(lv, "add_admin", %{"username" => "ninguem_com_esse_nome"})
+
+      assert html =~ "Não encontrei esse usuário"
+    end
+
+    test "co-organizador abre o painel e vê pagamento, mas não adiciona ninguém", ctx do
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.parceiro.id)
+
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.parceiro), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+
+      assert html =~ "Inscritos"
+      refute html =~ ~s(id="add-admin-form")
+      refute html =~ "Cancelar este workshop"
+    end
+
+    test "estranho continua fora do painel", ctx do
+      assert {:error, {:redirect, _}} =
+               live(
+                 log_in_user(ctx.conn, insert(:user)),
+                 ~p"/workshops/#{ctx.workshop.slug}/gerenciar"
+               )
+    end
+
+    test "criador remove o co-organizador", ctx do
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.parceiro.id)
+
+      {:ok, lv, _} =
+        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+
+      render_click(lv, "remove_admin", %{"id" => ctx.parceiro.id})
+
+      refute Workshops.admin?(ctx.workshop, ctx.parceiro)
+    end
+
+    test "co-organizador edita o workshop pelo formulário", ctx do
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.parceiro.id)
+
+      {:ok, lv, _} =
+        live(
+          log_in_user(ctx.conn, ctx.parceiro),
+          ~p"/study/workshops/#{ctx.workshop.slug}/editar"
+        )
+
+      assert {:error, {:redirect, _}} =
+               lv
+               |> form("#workshop-form", %{
+                 "workshop" => %{
+                   "title" => "Editado a quatro mãos",
+                   "description" => "Conteúdo.",
+                   "starts_at" => "2026-12-20T14:00"
+                 }
+               })
+               |> render_submit(%{"publish" => "true"})
+
+      assert Workshops.get_workshop(ctx.workshop.id).title == "Editado a quatro mãos"
+    end
+  end
+
   describe "rascunho não vaza pelo link" do
     setup %{conn: conn} do
       organizer = insert(:user)
