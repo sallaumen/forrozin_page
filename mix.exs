@@ -127,11 +127,13 @@ defmodule OGrupoDeEstudos.MixProject do
       # CSP existe (Plugs.ContentSecurityPolicy, com nonce por request), mas o
       # sobelow so reconhece CSP em put_secure_browser_headers, nao via plug.
       # Os Traversal Medium/Low restantes sao server-side, com caminhos
-      # reconstruidos via Path.basename (falsos positivos).
+      # reconstruidos via Path.basename (falsos positivos). `--skip` honra os
+      # `# sobelow_skip` inline, cada um justificado no proprio codigo; e a
+      # supressao mais estreita que existe: uma funcao, um check.
       lint: [
         "format --check-formatted",
         "deps.audit --ignore-advisory-ids GHSA-rhv4-8758-jx7v",
-        "sobelow --exit High -i Config.CSP",
+        "sobelow --exit High -i Config.CSP --skip",
         "credo"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]

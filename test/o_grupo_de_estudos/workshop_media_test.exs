@@ -70,7 +70,7 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
 
       assert media.kind == :photo
       refute media.official
-      assert File.exists?(Workshops.private_media_path(media))
+      assert {:file, _caminho} = Workshops.serve_media(media)
     end
 
     test "quem administra manda mídia oficial", ctx do
@@ -128,7 +128,7 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
   describe "remove_media/3" do
     test "quem enviou tira a sua, e o arquivo vai junto", ctx do
       {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
-      caminho = Workshops.private_media_path(media)
+      {:file, caminho} = Workshops.serve_media(media)
 
       assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
       refute File.exists?(caminho)
