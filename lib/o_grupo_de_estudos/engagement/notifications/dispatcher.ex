@@ -60,9 +60,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   linhas. O `group_key` por workshop faz o Grouper colapsar as inscricoes em
   uma entrada so ("Fulano e mais 99 se inscreveram").
   """
-  @spec notify_workshop_enrollment(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
-  def notify_workshop_enrollment(actor_id, organizer_id, workshop_id)
-      when actor_id != organizer_id do
+  @spec notify_workshop_enrollment(Ecto.UUID.t(), [Ecto.UUID.t()], Ecto.UUID.t()) :: :ok
+  def notify_workshop_enrollment(actor_id, organizer_ids, workshop_id)
+      when is_list(organizer_ids) do
     builder = fn user_id ->
       %{
         id: Ecto.UUID.generate(),
@@ -78,10 +78,10 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
       }
     end
 
-    insert_and_broadcast([organizer_id], builder)
+    organizer_ids
+    |> Enum.reject(&(&1 == actor_id))
+    |> insert_and_broadcast(builder)
   end
-
-  def notify_workshop_enrollment(_actor_id, _organizer_id, _workshop_id), do: :ok
 
   # ── Like notifications ─────────────────────────────────
 
