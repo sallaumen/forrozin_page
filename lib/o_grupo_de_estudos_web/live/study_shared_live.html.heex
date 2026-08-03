@@ -88,7 +88,13 @@
           <:meta>
             <span class="inline-flex items-center gap-1 text-[11px] text-ink-400">
               <.icon :if={@link.active} name="hero-check" class="size-3 text-accent-green" />
-              {if @link.active, do: "Salvando automaticamente", else: "Somente leitura"}
+              <span :if={@note_saved_at && @link.active} class="font-semibold text-accent-green">
+                <.icon name="hero-check-circle" class="size-3.5 -mt-0.5" />
+                Salvo às {Calendar.strftime(@note_saved_at, "%H:%M")}
+              </span>
+              <span :if={is_nil(@note_saved_at) || !@link.active}>
+                {if @link.active, do: "Salvando automaticamente", else: "Somente leitura"}
+              </span>
             </span>
           </:meta>
         </.diary_card>

@@ -53,18 +53,25 @@
           <:footer>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <p class="m-0 text-xs text-ink-500">
-                <%= if @today_note do %>
-                  Registro de hoje salvo. Continue quando quiser.
-                <% else %>
-                  Sem registro hoje ainda.
-                  <span class="font-semibold text-accent-orange">
-                    Escreva uma linha pra manter o ritmo ↑
-                  </span>
+                <span :if={@note_saved_at} class="font-semibold text-accent-green">
+                  <.icon name="hero-check-circle" class="size-3.5 -mt-0.5" />
+                  Salvo às {Calendar.strftime(@note_saved_at, "%H:%M")}
+                </span>
+                <%= if is_nil(@note_saved_at) do %>
+                  <%= if @today_note do %>
+                    Registro de hoje salvo. Continue quando quiser.
+                  <% else %>
+                    Sem registro hoje ainda.
+                    <span class="font-semibold text-accent-orange">
+                      Escreva uma linha pra manter o ritmo ↑
+                    </span>
+                  <% end %>
                 <% end %>
               </p>
               <button
                 type="submit"
                 form="personal-diary-form"
+                phx-disable-with="Salvando..."
                 class="shrink-0 rounded-full bg-accent-orange px-5 py-2 font-serif text-sm font-semibold text-white transition-colors hover:bg-accent-orange/90"
               >
                 Salvar registro
@@ -301,18 +308,22 @@
             "Escreva uma vez e envie para os alunos selecionados. A lição chega no diário compartilhado de cada um."}
       </p>
 
-      <form id="lesson-composer-form" phx-submit="send_lesson">
+      <%!-- phx-change no form inteiro: marcar/desmarcar aluno envia os campos de
+           texto junto, então o que já foi escrito nunca se perde no re-render. --%>
+      <form id="lesson-composer-form" phx-change="lesson_form_changed" phx-submit="send_lesson">
         <input
           type="text"
           name="lesson[title]"
           value={@lesson_title}
           maxlength="120"
+          phx-debounce="400"
           placeholder="Título (ex.: Workshop de sacadas)"
           class="mb-2 w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2 font-serif text-sm text-ink-800"
         />
         <textarea
           name="lesson[content]"
           rows="6"
+          phx-debounce="400"
           placeholder="Conteúdo da lição: o que foi visto, dicas, o que revisar..."
           class="mb-3 w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2 font-serif text-sm leading-relaxed text-ink-800"
         >{@lesson_content}</textarea>
@@ -328,9 +339,9 @@
             >
               <input
                 type="checkbox"
+                name="lesson[student_ids][]"
+                value={link.id}
                 checked={MapSet.member?(@lesson_selected_ids, link.id)}
-                phx-click="toggle_lesson_student"
-                phx-value-link-id={link.id}
                 class="h-4 w-4 cursor-pointer rounded border-ink-300 accent-accent-purple"
               />
               <span class="font-serif text-[13px] text-ink-800">{link.student.name}</span>
@@ -344,7 +355,13 @@
         </p>
 
         <div class="flex items-center gap-2.5">
-          <.action_button tone={:primary} icon="hero-paper-airplane">
+          <.action_button
+            type="submit"
+            tone={:primary}
+            icon="hero-paper-airplane"
+            disabled={!@editing_lesson_id && MapSet.size(@lesson_selected_ids) == 0}
+            phx-disable-with="Enviando..."
+          >
             {cond do
               @editing_lesson_id -> "Salvar alterações"
               MapSet.size(@lesson_selected_ids) == 1 -> "Enviar para 1 aluno"
@@ -489,13 +506,29 @@
           href={~p"/users/#{link.student.username}"}
         >
           <:actions>
+            <%!-- Depois de cutucar, o próprio botão confirma: o toast some, o
+                 estado fica. Evita cutucar duas vezes sem querer. --%>
+            <span
+              :if={
+                !MapSet.member?(@wrote_today_ids, link.id) &&
+                  MapSet.member?(@nudged_link_ids, link.id)
+              }
+              id={"study-nudged-student-#{link.id}"}
+              class="inline-flex items-center gap-1 rounded-full border border-accent-green/30 bg-accent-green/10 px-3 py-1.5 text-[13px] font-semibold text-accent-green"
+            >
+              <.icon name="hero-check" class="size-3.5" /> Cutucado
+            </span>
             <button
-              :if={!MapSet.member?(@wrote_today_ids, link.id)}
+              :if={
+                !MapSet.member?(@wrote_today_ids, link.id) &&
+                  !MapSet.member?(@nudged_link_ids, link.id)
+              }
               id={"study-nudge-student-#{link.id}"}
               type="button"
               phx-click="nudge_student"
               phx-value-link-id={link.id}
-              class="rounded-full border border-accent-orange/25 bg-accent-orange/10 px-3 py-1.5 text-[13px] font-semibold text-accent-orange transition-colors hover:bg-accent-orange/20"
+              phx-disable-with="Enviando..."
+              class="cursor-pointer rounded-full border border-accent-orange/25 bg-accent-orange/10 px-3 py-1.5 text-[13px] font-semibold text-accent-orange transition-colors hover:bg-accent-orange/20"
             >
               Cutucada
             </button>

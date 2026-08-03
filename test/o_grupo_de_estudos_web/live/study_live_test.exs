@@ -329,6 +329,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       refute html =~ "Sem registro hoje ainda"
     end
   end
+
   describe "achados da revisão — IDOR e badge do nav" do
     test "outro professor não edita nem exclui lição alheia via evento forjado", %{conn: conn} do
       owner = insert(:user, is_teacher: true)
@@ -378,4 +379,102 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
     end
   end
 
+  describe "composer de lição" do
+    setup %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      link_a = insert(:teacher_student_link, teacher: teacher, active: true)
+      link_b = insert(:teacher_student_link, teacher: teacher, active: true)
+      {:ok, lv, _html} = live(log_in_user(conn, teacher), ~p"/study")
+      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_click(lv, "open_lesson_composer", %{})
+
+      %{lv: lv, teacher: teacher, link_a: link_a, link_b: link_b}
+    end
+
+    defp composer_form(lv), do: element(lv, "#lesson-composer-form")
+
+    test "trocar a seleção de alunos não apaga o texto já escrito", %{
+      lv: lv,
+      link_a: link_a,
+      link_b: link_b
+    } do
+      escrito = %{
+        "title" => "Workshop de sacadas",
+        "content" => "Revisar SC e GP com o centro de massa baixo."
+      }
+
+      render_change(composer_form(lv), %{
+        "lesson" => Map.put(escrito, "student_ids", [link_a.id, link_b.id])
+      })
+
+      # Desmarcar um aluno é uma mudança do form: o texto vai junto e sobrevive.
+      html =
+        render_change(composer_form(lv), %{
+          "lesson" => Map.put(escrito, "student_ids", [link_a.id])
+        })
+
+      assert html =~ "Workshop de sacadas"
+      assert html =~ "Revisar SC e GP com o centro de massa baixo."
+      assert html =~ "Enviar para 1 aluno"
+    end
+
+    test "envia só para quem ficou marcado", %{
+      lv: lv,
+      teacher: teacher,
+      link_a: link_a,
+      link_b: link_b
+    } do
+      params = %{
+        "title" => "Aula de terça",
+        "content" => "Conteúdo da aula.",
+        "student_ids" => [link_a.id]
+      }
+
+      render_change(composer_form(lv), %{"lesson" => params})
+      html = render_submit(composer_form(lv), %{"lesson" => params})
+
+      assert html =~ "Lição enviada para 1 aluno!"
+      assert [%{title: "Aula de terça"}] = OGrupoDeEstudos.Study.list_lessons_for_link(link_a.id)
+      assert OGrupoDeEstudos.Study.list_lessons_for_link(link_b.id) == []
+      assert [%{delivered_count: 1}] = OGrupoDeEstudos.Study.list_lessons_for_teacher(teacher.id)
+    end
+
+    test "sem nenhum aluno marcado mostra erro e não envia", %{lv: lv, teacher: teacher} do
+      params = %{"title" => "Aula", "content" => "Texto", "student_ids" => []}
+
+      render_change(composer_form(lv), %{"lesson" => params})
+      html = render_submit(composer_form(lv), %{"lesson" => params})
+
+      assert html =~ "Selecione ao menos um aluno."
+      assert OGrupoDeEstudos.Study.list_lessons_for_teacher(teacher.id) == []
+    end
+
+    test "título vazio mostra erro e preserva o conteúdo digitado", %{lv: lv, link_a: link_a} do
+      params = %{
+        "title" => "",
+        "content" => "Conteúdo que não pode sumir",
+        "student_ids" => [link_a.id]
+      }
+
+      render_change(composer_form(lv), %{"lesson" => params})
+      html = render_submit(composer_form(lv), %{"lesson" => params})
+
+      assert html =~ "Preencha o título e o conteúdo da lição."
+      assert html =~ "Conteúdo que não pode sumir"
+    end
+  end
+
+  describe "feedback visual (flash)" do
+    test "cutucada devolve flash de confirmação no HTML", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true)
+      link = insert(:teacher_student_link, teacher: teacher, active: true)
+
+      {:ok, lv, _} = live(log_in_user(conn, teacher), ~p"/study")
+      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+
+      html = render_click(lv, "nudge_student", %{"link-id" => link.id})
+
+      assert html =~ "Cutucada enviada para"
+    end
+  end
 end
