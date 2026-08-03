@@ -33,6 +33,18 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStaticTest do
     assert response(conn, 200) == "png-fake"
   end
 
+  test "pasta nova no volume NAO vira publica sozinha", %{conn: conn} do
+    dir = Application.get_env(:o_grupo_de_estudos, :uploads_path)
+    File.mkdir_p!(Path.join(dir, "workshops"))
+    File.write!(Path.join(dir, "workshops/aula-paga.mp4"), "conteudo pago")
+
+    conn = get(conn, "/uploads/workshops/aula-paga.mp4")
+
+    # Sem allowlist, qualquer diretorio novo no volume ficaria aberto na
+    # internet no instante em que o primeiro arquivo fosse gravado.
+    assert conn.status == 404
+  end
+
   test "missing upload falls through to 404", %{conn: conn} do
     conn = get(conn, "/uploads/avatars/nao-existe.png")
 
