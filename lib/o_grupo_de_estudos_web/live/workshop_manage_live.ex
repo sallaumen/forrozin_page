@@ -19,6 +19,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
   use OGrupoDeEstudosWeb.NotificationHandlers
 
   import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
   import OGrupoDeEstudosWeb.WorkshopComponents
 
   @impl true
@@ -36,10 +37,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
        |> assign(:owner?, workshop.organizer_id == user.id)
        |> assign(:cobra?, !Workshop.free?(workshop))
        |> assign(:admin_form_error, nil)
-       |> assign(:invite_error, nil)
        |> load_enrollments()
        |> load_co_admins()
-       |> load_invites()}
+       |> load_pedidos()}
     else
       {:ok,
        socket
@@ -117,18 +117,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     end
   end
 
-  def handle_event("invite", %{"username" => username}, socket) do
-    case Accounts.get_user_by_username(String.trim(username)) do
-      nil -> {:noreply, assign(socket, :invite_error, "Não encontrei esse usuário.")}
-      user -> convidar(socket, user)
-    end
+  def handle_event("approve_join", %{"id" => id}, socket) do
+    socket.assigns.workshop
+    |> Workshops.approve_join(socket.assigns.current_user, id)
+    |> responder_pedido(socket, "Entrou na turma.")
   end
 
-  def handle_event("revoke_invite", %{"id" => user_id}, socket) do
-    case Workshops.revoke_invite(socket.assigns.workshop, socket.assigns.current_user, user_id) do
-      {:ok, _} -> {:noreply, socket |> load_invites() |> put_flash(:info, "Convite retirado.")}
-      {:error, _} -> {:noreply, put_flash(socket, :error, "Não foi possível retirar.")}
-    end
+  def handle_event("reject_join", %{"id" => id}, socket) do
+    socket.assigns.workshop
+    |> Workshops.reject_join(socket.assigns.current_user, id)
+    |> responder_pedido(socket, "Pedido recusado.")
   end
 
   def handle_event("copy_link", _params, socket) do
@@ -160,26 +158,24 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     end
   end
 
-  defp convidar(socket, user) do
-    case Workshops.invite(socket.assigns.workshop, socket.assigns.current_user, user.id) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(:invite_error, nil)
-         |> load_invites()
-         |> put_flash(:info, "#{user.name || user.username} foi convidado.")
-         |> push_event("form:clear", %{id: "invite-form"})}
-
-      {:error, :already_invited} ->
-        {:noreply, assign(socket, :invite_error, "Essa pessoa já foi convidada.")}
-
-      {:error, _} ->
-        {:noreply, assign(socket, :invite_error, "Não foi possível convidar.")}
-    end
+  defp responder_pedido({:ok, _pedido}, socket, mensagem) do
+    {:noreply,
+     socket
+     |> load_pedidos()
+     |> load_enrollments()
+     |> put_flash(:info, mensagem)}
   end
 
-  defp load_invites(socket) do
-    assign(socket, :convidados, Workshops.list_invites(socket.assigns.workshop.id))
+  defp responder_pedido({:error, :full}, socket, _mensagem) do
+    {:noreply, put_flash(socket, :error, "A turma está cheia. Abra uma vaga antes de aceitar.")}
+  end
+
+  defp responder_pedido({:error, _motivo}, socket, _mensagem) do
+    {:noreply, put_flash(socket, :error, "Não foi possível responder esse pedido.")}
+  end
+
+  defp load_pedidos(socket) do
+    assign(socket, :pedidos, Workshops.list_pending_requests(socket.assigns.workshop.id))
   end
 
   defp load_co_admins(socket) do
@@ -212,4 +208,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
   end
 
   def revenue_label(_summary, _workshop), do: "—"
+
+  # Cidade ajuda quem organiza a reconhecer a pessoa, mas nem todo mundo
+  # preenche: sem cidade a linha simplesmente não menciona.
+  defp cidade_do_pedido(%{city: cidade}) when is_binary(cidade) and cidade != "",
+    do: " · #{cidade}"
+
+  defp cidade_do_pedido(_pedido), do: ""
 end

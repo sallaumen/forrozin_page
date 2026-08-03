@@ -81,6 +81,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         </p>
 
         <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <%!-- Só o privado ganha selo: se todo card carregasse etiqueta, a
+          etiqueta viraria enfeite. Ausência de cadeado quer dizer "entra
+          quem quiser". --%>
+          <.workshop_tag :if={@workshop.visibility == :private} tone={:gold}>
+            <.icon name="hero-lock-closed" class="mr-1 size-3" /> Por aprovação
+          </.workshop_tag>
           <.workshop_tag :if={programa_do(@workshop)} tone={:purple}>
             {programa_do(@workshop).title}
           </.workshop_tag>
@@ -183,7 +189,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     )
   end
 
-  attr :tone, :atom, default: :neutral, values: [:neutral, :green, :purple, :blue, :red, :orange]
+  attr :tone, :atom,
+    default: :neutral,
+    values: [:neutral, :green, :purple, :blue, :red, :orange, :gold]
+
   slot :inner_block, required: true
 
   def workshop_tag(assigns) do
@@ -195,7 +204,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       @tone == :purple && "bg-accent-purple/15 text-accent-purple",
       @tone == :blue && "bg-accent-blue/15 text-accent-blue",
       @tone == :red && "bg-accent-red/15 text-accent-red",
-      @tone == :orange && "bg-accent-orange/15 text-accent-orange"
+      @tone == :orange && "bg-accent-orange/15 text-accent-orange",
+      @tone == :gold && "bg-gold-500/20 text-gold-600"
     ]}>
       {render_slot(@inner_block)}
     </span>
@@ -618,4 +628,96 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   defp local_hour(local),
     do: "#{local.hour}h#{String.pad_leading(to_string(local.minute), 2, "0")}"
+
+  # ── Vitrine do workshop privado ──────────────────────────────────────
+
+  attr :enrolled_count, :integer, required: true
+  attr :comment_count, :integer, default: 0
+
+  @doc """
+  O que quem está de fora vê no lugar do interior.
+
+  Mostra a forma desfocada e a contagem legível: esconder diria "aqui não tem
+  nada", e mostrar entregaria o que é pago.
+  """
+  def locked_preview(assigns) do
+    ~H"""
+    <section class="mt-7 border-t border-ink-200 pt-6">
+      <p class="m-0 mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+        <.icon name="hero-lock-closed" class="size-3.5" /> Só para quem está na turma
+      </p>
+
+      <.locked_row titulo="Quem vai" legenda={legenda_de_pessoas(@enrolled_count)}>
+        <span :for={_ <- 1..min(max(@enrolled_count, 1), 6)} class="-ml-2 first:ml-0">
+          <span class="block size-7 rounded-full border-2 border-ink-50 bg-ink-300"></span>
+        </span>
+      </.locked_row>
+
+      <.locked_row titulo="Fotos e vídeos" legenda="Mandadas por quem está no workshop.">
+        <span :for={_ <- 1..4} class="mr-1.5">
+          <span class="block size-11 rounded-lg bg-ink-300"></span>
+        </span>
+      </.locked_row>
+
+      <.locked_row titulo="Conversa" legenda={legenda_de_conversa(@comment_count)}>
+        <span class="block w-full">
+          <span class="mb-1.5 block h-2 w-3/4 rounded-full bg-ink-300"></span>
+          <span class="mb-1.5 block h-2 w-1/2 rounded-full bg-ink-300"></span>
+          <span class="block h-2 w-2/3 rounded-full bg-ink-300"></span>
+        </span>
+      </.locked_row>
+    </section>
+    """
+  end
+
+  attr :titulo, :string, required: true
+  attr :legenda, :string, required: true
+  slot :inner_block, required: true
+
+  defp locked_row(assigns) do
+    ~H"""
+    <div class="mb-2.5 overflow-hidden rounded-xl border border-dashed border-ink-300 bg-ink-100/70 px-4 py-3">
+      <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-[1.6px] text-ink-500">
+        {@titulo}
+      </p>
+      <div class="pointer-events-none flex select-none items-center opacity-50 blur-[4px]">
+        {render_slot(@inner_block)}
+      </div>
+      <p class="m-0 mt-2 text-[12.5px] text-ink-600">{@legenda}</p>
+    </div>
+    """
+  end
+
+  defp legenda_de_pessoas(0), do: "Ninguém confirmado ainda. Você pode ser a primeira pessoa."
+  defp legenda_de_pessoas(1), do: "1 pessoa confirmada. O nome aparece quando você entrar."
+
+  defp legenda_de_pessoas(total),
+    do: "#{total} pessoas confirmadas. Os nomes aparecem quando você entrar."
+
+  defp legenda_de_conversa(0), do: "Ninguém comentou ainda."
+  defp legenda_de_conversa(1), do: "1 comentário."
+  defp legenda_de_conversa(total), do: "#{total} comentários."
+
+  @doc """
+  Se a caixa deve oferecer "Pedir para entrar".
+
+  Só em workshop privado publicado, para quem não organiza, não está na turma
+  e não tem pedido esperando, e quando ainda há vaga.
+
+  `:rejected` também oferece: recusar não fecha a porta para sempre, e a
+  pessoa pode ter mudado de ideia ou conversado com quem organiza.
+  """
+  def pede_para_entrar?(workshop, organizer?, enrolled?, status, full?)
+
+  def pede_para_entrar?(
+        %Workshop{visibility: :private, status: :published},
+        false,
+        false,
+        status,
+        false
+      )
+      when status in [:none, :rejected],
+      do: true
+
+  def pede_para_entrar?(_workshop, _organizer?, _enrolled?, _status, _full?), do: false
 end

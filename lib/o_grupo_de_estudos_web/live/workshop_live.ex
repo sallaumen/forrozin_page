@@ -35,8 +35,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     end
   end
 
-  # Workshop privado precisa saber se a pessoa foi convidada, e isso e fato do
-  # banco: a Policy e pura, entao a borda resolve antes.
+  # A Policy e pura e nao consulta o banco: a borda resolve os fatos antes.
   defp acesso(nil, _socket), do: nil
   defp acesso(workshop, socket), do: Workshops.access_for(workshop, socket.assigns[:current_user])
 
@@ -66,6 +65,23 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   @impl true
+  def handle_event("request_join", _params, %{assigns: %{current_user: nil}} = socket) do
+    {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
+  end
+
+  def handle_event("request_join", _params, socket) do
+    case Workshops.request_join(socket.assigns.workshop, socket.assigns.current_user) do
+      {:ok, _pedido} ->
+        {:noreply,
+         socket
+         |> reload_workshop()
+         |> put_flash(:info, "Pedido enviado. Quem organiza vai avaliar.")}
+
+      {:error, _motivo} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível enviar o pedido.")}
+    end
+  end
+
   def handle_event("enroll", _params, %{assigns: %{current_user: nil}} = socket) do
     # Sem conta: guarda para onde voltar e manda para o cadastro.
     {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
@@ -371,9 +387,19 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:pode_ver_media?, Workshops.can_see_media?(workshop, user))
     |> assign(:media, media_visivel(workshop, user))
     |> assign(:professores, professores(workshop))
+    |> assign(:liberado?, Workshops.liberado?(workshop, user))
+    |> assign(:vitrine?, vitrine?(workshop, user))
+    |> assign(:join_status, Workshops.join_status(workshop, user))
     |> agendar_recarga_da_galeria()
     |> assign_workshop_likes()
   end
+
+  # Vitrine e o estado de quem esta do lado de fora de um workshop privado.
+  # Workshop publico nunca esta em vitrine: as regras dele nao mudaram.
+  defp vitrine?(%Workshop{visibility: :private} = workshop, user),
+    do: not Workshops.liberado?(workshop, user)
+
+  defp vitrine?(%Workshop{}, _user), do: false
 
   # Quem organiza vem primeiro, co-organizadores na ordem em que entraram. A
   # mesma forma de mapa para os dois, para a tela não saber a diferença.

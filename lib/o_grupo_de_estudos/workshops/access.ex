@@ -14,10 +14,9 @@ defmodule OGrupoDeEstudos.Workshops.Access do
           user_id: Ecto.UUID.t() | nil,
           owner?: boolean(),
           admin?: boolean(),
-          enrolled?: boolean(),
-          invited?: boolean()
+          enrolled?: boolean()
         }
 
-  @enforce_keys [:workshop, :user_id, :owner?, :admin?, :enrolled?, :invited?]
-  defstruct [:workshop, :user_id, :owner?, :admin?, :enrolled?, :invited?]
+  @enforce_keys [:workshop, :user_id, :owner?, :admin?, :enrolled?]
+  defstruct [:workshop, :user_id, :owner?, :admin?, :enrolled?]
 end

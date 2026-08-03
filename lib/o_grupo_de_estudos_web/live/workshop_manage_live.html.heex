@@ -224,68 +224,65 @@
       </.workshop_empty>
     </section>
 
-    <%!-- Convidados: só existe em workshop privado --%>
+    <%!-- Fila de pedidos: só existe em workshop privado --%>
     <section :if={@workshop.visibility == :private} class="mt-8">
       <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-        Quem foi convidado
+        Pedidos para entrar
+        <span :if={@pedidos != []} class="text-gold-600">· {length(@pedidos)} esperando</span>
       </h2>
       <p class="m-0 mb-3 text-[12.5px] text-ink-500">
-        Este workshop é privado: não aparece na agenda, e só quem está aqui consegue abrir o
-        link. Convidar já libera, e a pessoa decide se se inscreve.
+        Este workshop aparece na agenda como qualquer outro, mas a entrada passa por você.
+        Aceitar já matricula a pessoa.
       </p>
 
       <div
-        :if={@convidados != []}
+        :if={@pedidos != []}
         class="overflow-hidden rounded-2xl border border-ink-200 bg-ink-50"
       >
         <div
-          :for={convidado <- @convidados}
-          id={"convidado-#{convidado.id}"}
-          class="flex flex-wrap items-center gap-3 border-b border-ink-200 px-4 py-3 last:border-b-0"
+          :for={pedido <- @pedidos}
+          id={"pedido-#{pedido.id}"}
+          class="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-ink-200 px-4 py-3 last:border-b-0"
         >
-          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-ink-50">
-            {String.first(convidado.name || convidado.username)}
-          </span>
-          <div class="min-w-0 flex-1">
-            <p class="m-0 truncate text-[13.5px] font-bold text-ink-900">{convidado.name}</p>
-            <p class="m-0 text-[11.5px] text-ink-500">@{convidado.username}</p>
+          <div class="flex min-w-0 flex-1 basis-full items-center gap-3 sm:basis-auto">
+            <.user_avatar user={pedido} size={:md} />
+            <div class="min-w-0 flex-1">
+              <p class="m-0 truncate text-[13.5px] font-bold text-ink-900">
+                {pedido.name || pedido.username}
+              </p>
+              <p class="m-0 truncate text-[11.5px] text-ink-500">
+                @{pedido.username}{cidade_do_pedido(pedido)} · pediu em {OGrupoDeEstudos.Brazil.format_datetime(
+                  pedido.requested_at
+                )}
+              </p>
+            </div>
           </div>
-          <button
-            type="button"
-            phx-click="revoke_invite"
-            phx-value-id={convidado.user_id}
-            data-confirm={"Tirar o convite de #{convidado.name || convidado.username}?"}
-            class="shrink-0 cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
-          >
-            Tirar convite
-          </button>
+
+          <div class="flex shrink-0 gap-1.5">
+            <button
+              type="button"
+              phx-click="approve_join"
+              phx-value-id={pedido.id}
+              phx-disable-with="..."
+              class="cursor-pointer rounded-full border-0 bg-accent-green px-4 py-1.5 font-serif text-[12px] font-semibold text-white"
+            >
+              Aceitar
+            </button>
+            <button
+              type="button"
+              phx-click="reject_join"
+              phx-value-id={pedido.id}
+              data-confirm={"Recusar o pedido de #{pedido.name || pedido.username}?"}
+              class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-4 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            >
+              Recusar
+            </button>
+          </div>
         </div>
       </div>
 
-      <p :if={@convidados == []} class="m-0 text-[13px] text-ink-500">
-        Ninguém convidado ainda. Sem convite, ninguém abre este workshop.
-      </p>
-
-      <form id="invite-form" phx-submit="invite" class="mt-3 flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          name="username"
-          placeholder="Nome de usuário de quem você quer convidar"
-          autocomplete="off"
-          required
-          class="min-w-0 flex-1 rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] text-ink-800 placeholder:text-ink-400"
-        />
-        <button
-          type="submit"
-          phx-disable-with="Convidando..."
-          class="cursor-pointer rounded-full border-0 bg-ink-900 px-4 py-2 font-serif text-[13px] font-semibold text-ink-50"
-        >
-          Convidar
-        </button>
-      </form>
-
-      <p :if={@invite_error} class="m-0 mt-2 text-[12.5px] font-semibold text-accent-red">
-        {@invite_error}
+      <p :if={@pedidos == []} class="m-0 text-[13px] text-ink-500">
+        Nenhum pedido esperando. Quando alguém pedir para entrar, aparece aqui.
       </p>
     </section>
 
