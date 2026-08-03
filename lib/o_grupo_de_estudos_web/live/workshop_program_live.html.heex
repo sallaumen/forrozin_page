@@ -33,17 +33,30 @@
       </p>
     </div>
 
-    <p class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-accent-purple">
-      Programação
-    </p>
-    <h1 class="m-0 font-serif text-[26px] font-bold leading-tight tracking-tight text-ink-900 sm:text-[30px]">
-      {@program.title}
-    </h1>
+    <%!-- O cartaz acompanha o titulo em vez de tomar a tela: quem abre o link
+    quer saber o que tem e quando, e o flyer reforca sem atrapalhar. --%>
+    <div class="flex flex-wrap items-start gap-5">
+      <img
+        :if={@program.flyer_path}
+        src={@program.flyer_path}
+        alt={"Flyer de #{@program.title}"}
+        class="w-[130px] shrink-0 rounded-xl border border-ink-200 object-cover shadow-sm sm:w-[170px]"
+      />
 
-    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-500">
-      <span class="font-bold text-ink-900">{program_span(@days, @workshop_count)}</span>
-      <span :if={@program.location}>{@program.location}</span>
-      <span>por <b class="text-ink-900">{@program.owner.name}</b></span>
+      <div class="min-w-0 flex-1">
+        <p class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-accent-purple">
+          Programação
+        </p>
+        <h1 class="m-0 font-serif text-[26px] font-bold leading-tight tracking-tight text-ink-900 sm:text-[30px]">
+          {@program.title}
+        </h1>
+
+        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-500">
+          <span class="font-bold text-ink-900">{program_span(@days, @workshop_count)}</span>
+          <span :if={@program.location}>{@program.location}</span>
+          <span>por <b class="text-ink-900">{@program.owner.name}</b></span>
+        </div>
+      </div>
     </div>
 
     <div :if={@owner?} class="mt-4 flex flex-wrap gap-2">

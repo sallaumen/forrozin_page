@@ -17,6 +17,7 @@ defmodule OGrupoDeEstudos.Workshops do
   alias OGrupoDeEstudos.Accounts.User
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Engagement.SafeDispatch
+  alias OGrupoDeEstudos.Media.Storage
   alias OGrupoDeEstudos.Repo
 
   alias OGrupoDeEstudos.Workshops.{
@@ -105,6 +106,72 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+
+  # ── Flyer ─────────────────────────────────────────────────────────────
+
+  @flyer_dir "flyers"
+
+  @doc """
+  Guarda o flyer de divulgação do workshop e apaga o anterior.
+
+  Recebe o arquivo temporário do upload, não um caminho escolhido pelo
+  usuário: quem decide onde o arquivo mora é o storage.
+  """
+  @spec put_workshop_flyer(Workshop.t(), User.t(), String.t(), String.t()) ::
+          {:ok, Workshop.t()} | {:error, :unauthorized | term()}
+  def put_workshop_flyer(%Workshop{} = workshop, %User{} = user, tmp_path, ext) do
+    with :ok <- ensure_admin(workshop, user),
+         {:ok, url} <- Storage.save_image(@flyer_dir, tmp_path, ext) do
+      antigo = workshop.flyer_path
+      resultado = workshop |> Workshop.flyer_changeset(url) |> Repo.update()
+      descartar_flyer(resultado, antigo)
+    end
+  end
+
+  @doc "Tira o flyer do workshop e apaga o arquivo."
+  @spec remove_workshop_flyer(Workshop.t(), User.t()) ::
+          {:ok, Workshop.t()} | {:error, :unauthorized | term()}
+  def remove_workshop_flyer(%Workshop{} = workshop, %User{} = user) do
+    with :ok <- ensure_admin(workshop, user) do
+      antigo = workshop.flyer_path
+      resultado = workshop |> Workshop.flyer_changeset(nil) |> Repo.update()
+      descartar_flyer(resultado, antigo)
+    end
+  end
+
+  @doc "Guarda o flyer da programação e apaga o anterior."
+  @spec put_program_flyer(WorkshopProgram.t(), User.t(), String.t(), String.t()) ::
+          {:ok, WorkshopProgram.t()} | {:error, :unauthorized | term()}
+  def put_program_flyer(%WorkshopProgram{} = program, %User{} = user, tmp_path, ext) do
+    with :ok <- ensure_program_owner(program, user),
+         {:ok, url} <- Storage.save_image(@flyer_dir, tmp_path, ext) do
+      antigo = program.flyer_path
+      resultado = program |> WorkshopProgram.flyer_changeset(url) |> Repo.update()
+      descartar_flyer(resultado, antigo)
+    end
+  end
+
+  @doc "Tira o flyer da programação e apaga o arquivo."
+  @spec remove_program_flyer(WorkshopProgram.t(), User.t()) ::
+          {:ok, WorkshopProgram.t()} | {:error, :unauthorized | term()}
+  def remove_program_flyer(%WorkshopProgram{} = program, %User{} = user) do
+    with :ok <- ensure_program_owner(program, user) do
+      antigo = program.flyer_path
+      resultado = program |> WorkshopProgram.flyer_changeset(nil) |> Repo.update()
+      descartar_flyer(resultado, antigo)
+    end
+  end
+
+  # So apaga o arquivo antigo depois que o banco confirmou. Ao contrario, um
+  # erro de update deixaria a linha apontando para arquivo que nao existe mais.
+  defp descartar_flyer({:ok, _} = resultado, nil), do: resultado
+
+  defp descartar_flyer({:ok, _} = resultado, antigo) do
+    Storage.delete_image(antigo)
+    resultado
+  end
+
+  defp descartar_flyer(erro, _antigo), do: erro
 
   # ── Programação ───────────────────────────────────────────────────────
 

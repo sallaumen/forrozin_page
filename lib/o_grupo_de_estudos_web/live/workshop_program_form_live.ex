@@ -24,9 +24,17 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     user = socket.assigns.current_user
 
     case Policy.authorize(:create_program, user, nil) do
-      :ok -> {:ok, prepare(socket, socket.assigns.live_action, params)}
+      :ok -> {:ok, permitir_flyer(prepare(socket, socket.assigns.live_action, params))}
       {:error, _} -> {:ok, redirect(socket, to: ~p"/study/workshops")}
     end
+  end
+
+  defp permitir_flyer(socket) do
+    allow_upload(socket, :flyer,
+      accept: ~w(.jpg .jpeg .png .webp),
+      max_entries: 1,
+      max_file_size: 8_000_000
+    )
   end
 
   defp prepare(socket, :new, _params) do
@@ -83,6 +91,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     {:noreply, assign(socket, :selected_ids, toggle(socket.assigns.selected_ids, id))}
   end
 
+  def handle_event("remove_flyer", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Workshops.remove_program_flyer(socket.assigns.program, user) do
+      {:ok, atualizado} -> {:noreply, assign(socket, :program, atualizado)}
+      {:error, _} -> {:noreply, put_flash(socket, :error, "Não foi possível tirar o flyer.")}
+    end
+  end
+
   def handle_event("save", %{"program" => params}, socket) do
     submit(socket, socket.assigns.program, params)
   end
@@ -122,11 +139,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
   defp finish(socket, program) do
     user = socket.assigns.current_user
     sync_workshops(program, user, socket.assigns.selected_ids)
+    guardar_flyer(socket, program, user)
 
     {:noreply,
      socket
      |> put_flash(:info, "Programação salva. Agora é só compartilhar o link.")
      |> redirect(to: ~p"/programacao/#{program.slug}")}
+  end
+
+  # Nao bloqueia o salvamento: se o cartaz falhar, a programacao existe e a
+  # pessoa tenta a imagem de novo.
+  defp guardar_flyer(socket, program, user) do
+    consume_uploaded_entries(socket, :flyer, fn %{path: tmp_path}, entry ->
+      {:ok, Workshops.put_program_flyer(program, user, tmp_path, extensao(entry))}
+    end)
+  end
+
+  defp extensao(entry) do
+    [ext | _] = MIME.extensions(entry.client_type)
+    "." <> ext
   end
 
   defp sync_workshops(program, user, selected) do

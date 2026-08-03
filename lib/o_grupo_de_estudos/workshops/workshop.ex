@@ -29,6 +29,7 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     field :payment_info, :string
     field :capacity, :integer
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
+    field :flyer_path, :string
 
     belongs_to :organizer, OGrupoDeEstudos.Accounts.User
     # Zero ou uma programacao. Quem move e o contexto, nao o changeset
@@ -69,6 +70,11 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> put_slug()
     |> unique_constraint(:slug)
     |> foreign_key_constraint(:organizer_id)
+  end
+
+  @doc "Grava ou tira o flyer. Caminho vem do storage, nunca do usuario."
+  def flyer_changeset(workshop, flyer_path) do
+    change(workshop, flyer_path: flyer_path)
   end
 
   @doc "Muda o estado do workshop (publicar, cancelar, voltar a rascunho)."

@@ -35,6 +35,12 @@ defmodule OGrupoDeEstudos.Media.Storage do
   @spec dir(String.t()) :: String.t()
   def dir(subdir), do: adapter().dir(subdir)
 
+  @doc "Guarda uma imagem numa pasta do storage. Chave opaca."
+  def save_image(subdir, tmp_path, ext), do: adapter().save_image(subdir, tmp_path, ext)
+
+  @doc "Apaga uma imagem pela URL pública. Silencioso se já não existe."
+  def delete_image(public_url), do: adapter().delete_image(public_url)
+
   defp adapter do
     :o_grupo_de_estudos
     |> Application.get_env(__MODULE__, [])

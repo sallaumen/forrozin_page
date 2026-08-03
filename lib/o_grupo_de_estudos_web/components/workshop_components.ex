@@ -48,7 +48,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       id={"#{@id_prefix}-#{@workshop.id}"}
       class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm transition-colors hover:border-ink-300"
     >
-      <.date_block datetime={@workshop.starts_at} />
+      <%!-- Com flyer, o cartaz vira a ancora visual: a data continua na linha
+      de baixo, entao nada se perde. --%>
+      <img
+        :if={@workshop.flyer_path}
+        src={@workshop.flyer_path}
+        alt={"Flyer de #{@workshop.title}"}
+        loading="lazy"
+        class="h-[54px] w-[54px] shrink-0 rounded-xl border border-ink-200 object-cover"
+      />
+      <.date_block :if={is_nil(@workshop.flyer_path)} datetime={@workshop.starts_at} />
 
       <div class="min-w-0 flex-1 basis-[55%]">
         <p class="m-0 line-clamp-2 font-serif text-[15px] font-bold tracking-tight text-ink-900">
@@ -155,6 +164,66 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     </div>
     """
   end
+
+  # ── Flyer ────────────────────────────────────────────────────────────
+
+  attr :upload, :any, required: true
+  attr :current_path, :string, default: nil
+  attr :legenda, :string, default: "Cartaz de divulgação, o mesmo que você manda no WhatsApp."
+
+  def flyer_field(assigns) do
+    ~H"""
+    <div class="mt-4">
+      <p class="mb-1 text-[12.5px] font-bold text-ink-700">
+        Flyer <span class="font-normal text-ink-400">(opcional)</span>
+      </p>
+      <p class="m-0 mb-2 text-[12px] leading-snug text-ink-500">{@legenda}</p>
+
+      <div :if={@current_path} class="mb-2 flex items-start gap-3">
+        <img
+          src={@current_path}
+          alt="Flyer atual"
+          class="h-24 w-auto rounded-lg border border-ink-200 object-cover"
+        />
+        <button
+          type="button"
+          phx-click="remove_flyer"
+          class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+        >
+          Tirar flyer
+        </button>
+      </div>
+
+      <.live_file_input
+        upload={@upload}
+        class="block w-full text-[12.5px] text-ink-600 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-ink-900 file:px-4 file:py-2 file:font-serif file:text-[12.5px] file:font-semibold file:text-ink-50"
+      />
+
+      <div :for={entry <- @upload.entries} class="mt-2 flex items-center gap-3">
+        <.live_img_preview
+          entry={entry}
+          class="h-24 w-auto rounded-lg border border-ink-200 object-cover"
+        />
+        <span class="text-[12px] text-ink-500">{entry.progress}%</span>
+      </div>
+
+      <div :for={entry <- @upload.entries}>
+        <p
+          :for={erro <- upload_errors(@upload, entry)}
+          class="m-0 mt-1 text-[12px] font-semibold text-accent-red"
+        >
+          {erro_de_upload(erro)}
+        </p>
+      </div>
+    </div>
+    """
+  end
+
+  @doc false
+  def erro_de_upload(:too_large), do: "Imagem grande demais. O limite é 8 MB."
+  def erro_de_upload(:not_accepted), do: "Formato não aceito. Use JPG, PNG ou WEBP."
+  def erro_de_upload(:too_many_files), do: "Só um flyer por vez."
+  def erro_de_upload(_outro), do: "Não deu para carregar essa imagem."
 
   # ── Helpers de texto ─────────────────────────────────────────────────
 
