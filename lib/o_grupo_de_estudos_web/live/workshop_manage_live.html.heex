@@ -134,24 +134,29 @@
         :if={@enrollments != []}
         class="overflow-hidden rounded-2xl border border-ink-200 bg-ink-50"
       >
+        <%!-- No celular a linha vira duas faixas: quem é, e o que dá para
+        fazer. Tudo junto, o nome era espremido em três linhas e os botões
+        caíam de um jeito em quem pagou e de outro em quem não pagou. --%>
         <div
           :for={enrollment <- @enrollments}
           id={"enrollment-#{enrollment.id}"}
-          class="flex flex-wrap items-center gap-3 border-b border-ink-200 px-4 py-3 last:border-b-0"
+          class="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-ink-200 px-4 py-3 last:border-b-0"
         >
-          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-ink-50">
-            {String.first(enrollment.user.name || enrollment.user.username)}
-          </span>
+          <div class="flex min-w-0 flex-1 basis-full items-center gap-3 sm:basis-auto">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-ink-50">
+              {String.first(enrollment.user.name || enrollment.user.username)}
+            </span>
 
-          <div class="min-w-0 flex-1">
-            <p class="m-0 truncate text-[13.5px] font-bold text-ink-900">
-              {enrollment.user.name}
-            </p>
-            <p class="m-0 text-[11.5px] text-ink-500">
-              @{enrollment.user.username} · inscreveu-se em {OGrupoDeEstudos.Brazil.format_datetime(
-                enrollment.inserted_at
-              )}
-            </p>
+            <div class="min-w-0 flex-1">
+              <p class="m-0 truncate text-[13.5px] font-bold text-ink-900">
+                {enrollment.user.name}
+              </p>
+              <p class="m-0 truncate text-[11.5px] text-ink-500">
+                @{enrollment.user.username} · inscreveu-se em {OGrupoDeEstudos.Brazil.format_datetime(
+                  enrollment.inserted_at
+                )}
+              </p>
+            </div>
           </div>
 
           <span

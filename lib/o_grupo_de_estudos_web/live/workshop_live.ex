@@ -17,6 +17,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
   import OGrupoDeEstudosWeb.WorkshopComponents
 
   @comment_type "workshop_comment"
@@ -369,8 +370,23 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
     |> assign(:pode_ver_media?, Workshops.can_see_media?(workshop, user))
     |> assign(:media, media_visivel(workshop, user))
+    |> assign(:professores, professores(workshop))
     |> agendar_recarga_da_galeria()
     |> assign_workshop_likes()
+  end
+
+  # Quem organiza vem primeiro, co-organizadores na ordem em que entraram. A
+  # mesma forma de mapa para os dois, para a tela não saber a diferença.
+  defp professores(workshop) do
+    [
+      %{
+        user_id: workshop.organizer.id,
+        name: workshop.organizer.name,
+        username: workshop.organizer.username,
+        avatar_path: workshop.organizer.avatar_path
+      }
+      | Workshops.list_co_admins(workshop)
+    ]
   end
 
   # Transcode roda em outra fila e nao tem como avisar esta pagina. Enquanto
