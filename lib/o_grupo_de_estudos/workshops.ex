@@ -376,6 +376,73 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
+  @doc """
+  Inscreve numa lista de workshops da programação de uma vez.
+
+  Cada workshop tem a sua transação, de propósito. Uma transação única
+  seguraria N locks e duas pessoas marcando {A,B} e {B,A} ao mesmo tempo
+  travariam uma na outra; e, pior, uma vaga que acabou faria as outras
+  inscrições sumirem junto. Quem marcou três e perdeu uma quer as outras duas.
+
+  Já estar inscrito conta como sucesso: a pessoa pediu para estar lá, e está.
+  """
+  @spec enroll_many(WorkshopProgram.t(), User.t(), [Ecto.UUID.t()]) ::
+          {:ok, %{enrolled: [Workshop.t()], failed: [{Workshop.t(), atom()}]}}
+          | {:error, :none_selected}
+  def enroll_many(%WorkshopProgram{} = program, %User{} = user, workshop_ids) do
+    case ProgramQuery.workshops_scoped(program.id, workshop_ids) do
+      [] -> {:error, :none_selected}
+      workshops -> {:ok, inscrever_em_lote(program, user, workshops)}
+    end
+  end
+
+  defp inscrever_em_lote(program, user, workshops) do
+    resultado =
+      Enum.reduce(workshops, %{enrolled: [], failed: []}, fn workshop, acc ->
+        acumular(acc, workshop, inscrever_um(workshop, user))
+      end)
+
+    avisar_organizadores(resultado, program, user)
+    %{resultado | enrolled: Enum.reverse(resultado.enrolled)}
+  end
+
+  defp inscrever_um(workshop, user) do
+    case admin?(workshop, user) do
+      true -> {:error, :organizer}
+      false -> workshop |> insert_enrollment_locked(user) |> tratar_repetida()
+    end
+  end
+
+  defp tratar_repetida({:error, :already_enrolled}), do: {:ok, :ja_estava}
+  defp tratar_repetida(outro), do: outro
+
+  defp acumular(acc, workshop, {:ok, _}),
+    do: %{acc | enrolled: [workshop | acc.enrolled]}
+
+  defp acumular(acc, workshop, {:error, motivo}),
+    do: %{acc | failed: acc.failed ++ [{workshop, motivo}]}
+
+  defp avisar_organizadores(%{enrolled: []}, _program, _user), do: :ok
+
+  defp avisar_organizadores(%{enrolled: workshops}, program, user) do
+    SafeDispatch.run(fn ->
+      workshops
+      |> destinatarios_do_lote(user)
+      |> Enum.each(fn {organizer_id, workshop} ->
+        Dispatcher.notify_program_enrollment(user.id, organizer_id, workshop.id, program.id)
+      end)
+    end)
+  end
+
+  # Um aviso por pessoa, mesmo que ela organize varios workshops do lote:
+  # tres linhas iguais na caixa e o spam que a programacao existe para matar.
+  defp destinatarios_do_lote(workshops, user) do
+    workshops
+    |> Enum.flat_map(fn workshop -> Enum.map(admin_ids(workshop), &{&1, workshop}) end)
+    |> Enum.reject(fn {organizer_id, _} -> organizer_id == user.id end)
+    |> Enum.uniq_by(fn {organizer_id, _} -> organizer_id end)
+  end
+
   defp insert_enrollment_locked(workshop, user) do
     Repo.transact(fn ->
       with {:ok, locked} <- lock_workshop(workshop.id),

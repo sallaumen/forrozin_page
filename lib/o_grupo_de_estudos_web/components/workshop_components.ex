@@ -41,6 +41,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   # O mesmo workshop sai em duas listas da agenda: sem prefixo os dois cards
   # teriam o mesmo id e o LiveView atualizaria o errado.
   attr :id_prefix, :string, default: "workshop-card"
+  # Caixa de selecao da programacao. Fora do <label> de proposito: o card tem
+  # link dentro, e clicar em "Ver" nao pode marcar o checkbox.
+  slot :select
 
   def workshop_card(assigns) do
     ~H"""
@@ -48,6 +51,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       id={"#{@id_prefix}-#{@workshop.id}"}
       class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm transition-colors hover:border-ink-300"
     >
+      <div :if={@select != []} class="shrink-0">{render_slot(@select)}</div>
+
       <%!-- Com flyer, o cartaz vira a ancora visual: a data continua na linha
       de baixo, entao nada se perde. --%>
       <img

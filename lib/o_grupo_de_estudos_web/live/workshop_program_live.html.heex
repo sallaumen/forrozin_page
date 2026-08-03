@@ -99,7 +99,25 @@
             enrolled_count={Map.get(@enrollment_counts, w.id, 0)}
             enrolled?={MapSet.member?(@enrolled_ids, w.id)}
             organizer?={false}
-          />
+          >
+            <:select>
+              <input
+                :if={MapSet.member?(@selecionaveis, w.id)}
+                type="checkbox"
+                id={"escolher-#{w.id}"}
+                checked={MapSet.member?(@selecionados, w.id)}
+                phx-click="toggle_selection"
+                phx-value-id={w.id}
+                aria-label={"Marcar #{w.title}"}
+                class="size-5 cursor-pointer accent-accent-orange"
+              />
+              <.icon
+                :if={MapSet.member?(@enrolled_ids, w.id)}
+                name="hero-check-circle-solid"
+                class="size-5 text-accent-green"
+              />
+            </:select>
+          </.workshop_card>
         </div>
       </div>
 
@@ -166,6 +184,31 @@
           <.icon name="hero-plus" class="size-4" /> Criar workshop já nesta programação
         </.link>
       </section>
+
+      <%!-- Confirma tudo de uma vez: marcar nao inscreve, para um toque errado
+      no celular nao tirar ninguem de um workshop pago. --%>
+      <div
+        :if={MapSet.size(@selecionaveis) > 0}
+        class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ink-200 bg-ink-50 px-4 py-3"
+      >
+        <p class="m-0 text-[13px] text-ink-600">
+          {selecao_label(MapSet.size(@selecionados))}
+        </p>
+        <button
+          type="button"
+          phx-click="confirm_enrollment"
+          phx-disable-with="Inscrevendo..."
+          disabled={MapSet.size(@selecionados) == 0}
+          class={[
+            "cursor-pointer rounded-full border-0 px-5 py-2.5 font-serif text-[14px] font-semibold transition-colors",
+            MapSet.size(@selecionados) > 0 &&
+              "bg-accent-orange text-white hover:bg-accent-orange/90",
+            MapSet.size(@selecionados) == 0 && "cursor-not-allowed bg-ink-200 text-ink-400"
+          ]}
+        >
+          Confirmar inscrição
+        </button>
+      </div>
 
       <.workshop_empty
         :if={@days == []}
