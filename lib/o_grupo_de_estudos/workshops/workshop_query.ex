@@ -12,7 +12,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   alias OGrupoDeEstudos.Brazil
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Search
-  alias OGrupoDeEstudos.Workshops.{AdminQuery, Workshop}
+  alias OGrupoDeEstudos.Workshops.{AdminQuery, Workshop, WorkshopProgram}
 
   @type period :: :upcoming | :past | :week | :month | :year
   @type opt ::
@@ -73,15 +73,30 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   def list_feed(opts \\ []) do
     period = Keyword.get(opts, :period, :upcoming)
 
-    Workshop
+    from(w in Workshop, as: :periodo)
     |> where([w], w.status == :published)
-    |> apply_period(period, Keyword.get(opts, :now, DateTime.utc_now()))
+    |> in_period(period, Keyword.get(opts, :now, DateTime.utc_now()))
+    |> apply_grouping(opts[:only_loose])
     |> apply_search(opts[:search])
     |> order_for(period)
     |> maybe_limit(opts[:limit])
-    |> preload(:organizer)
+    |> preload([:organizer, :program])
     |> Repo.all()
   end
+
+  # Workshop dentro de programacao nao aparece solto na agenda: um festival
+  # com quinze workshops viraria quinze linhas repetindo o mesmo nome.
+  #
+  # So colapsa quando a programacao esta PUBLICADA. Enquanto ela e rascunho (ou
+  # depois de cancelada) ninguem ve o card dela, entao esconder o workshop faria
+  # sumir da agenda algo que ja tinha sido anunciado.
+  defp apply_grouping(query, true) do
+    publicadas = from(p in WorkshopProgram, where: p.status == :published, select: p.id)
+
+    where(query, [w], is_nil(w.program_id) or w.program_id not in subquery(publicadas))
+  end
+
+  defp apply_grouping(query, _outro), do: query
 
   @doc """
   Workshops que a pessoa administra, inclusive rascunho e cancelado.
@@ -102,17 +117,26 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
 
   # ── filtros ───────────────────────────────────────────────────────────
 
-  defp apply_period(query, :upcoming, now), do: where(query, [w], w.starts_at >= ^now)
-  defp apply_period(query, :past, now), do: where(query, [w], w.starts_at < ^now)
+  @doc """
+  Filtra pelo período, sobre a consulta que tiver o binding `:periodo`.
 
-  defp apply_period(query, period, now) when period in [:week, :month, :year] do
+  Publico porque a agenda de programação usa o mesmo critério: programação não
+  tem data própria, ela entra na linha do tempo pelas datas dos workshops
+  dela. Usa binding nomeado porque lá o workshop é a segunda tabela, não a
+  primeira.
+  """
+  @spec in_period(Ecto.Query.t(), period(), DateTime.t()) :: Ecto.Query.t()
+  def in_period(query, :upcoming, now), do: where(query, [periodo: w], w.starts_at >= ^now)
+  def in_period(query, :past, now), do: where(query, [periodo: w], w.starts_at < ^now)
+
+  def in_period(query, period, now) when period in [:week, :month, :year] do
     {from, to} = Brazil.range_utc(period, now |> Brazil.to_local() |> DateTime.to_date())
 
     # Sobreposição de intervalos, não só o início: um workshop que começa em
     # 30/01 e termina em 02/02 pertence aos dois meses.
     where(
       query,
-      [w],
+      [periodo: w],
       w.starts_at <= ^to and coalesce(w.ends_at, w.starts_at) >= ^from
     )
   end

@@ -53,7 +53,7 @@
             name="term"
             value={@search}
             phx-debounce="300"
-            placeholder="Buscar por workshop ou professor..."
+            placeholder="Buscar por workshop, programação ou professor..."
             class="w-full rounded-xl border border-ink-200 bg-ink-50 py-2.5 pl-10 pr-10 font-serif text-sm text-ink-800 placeholder:text-ink-400"
           />
           <button
@@ -93,25 +93,34 @@
         <h2 class="m-0 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
           {period_heading(@period)}
         </h2>
-        <span :if={@workshops != []} class="text-[12px] text-ink-500">
-          {length(@workshops)} {if length(@workshops) == 1, do: "workshop", else: "workshops"}
+        <span :if={@itens != []} class="text-[12px] text-ink-500">
+          {contagem_da_agenda(@itens)}
         </span>
       </div>
 
-      <div :if={@workshops != []} class="flex flex-col gap-2.5">
-        <.workshop_card
-          :for={w <- @workshops}
-          workshop={w}
-          enrolled_count={Map.get(@enrollment_counts, w.id, 0)}
-          enrolled?={MapSet.member?(@enrolled_ids, w.id)}
-          organizer?={w.organizer_id == @current_user.id}
-        />
+      <div :if={@itens != []} class="flex flex-col gap-2.5">
+        <%= for item <- @itens do %>
+          <.workshop_card
+            :if={item.kind == :workshop}
+            workshop={item.workshop}
+            enrolled_count={Map.get(@enrollment_counts, item.workshop.id, 0)}
+            enrolled?={MapSet.member?(@enrolled_ids, item.workshop.id)}
+            organizer?={item.workshop.organizer_id == @current_user.id}
+          />
+          <.program_card
+            :if={item.kind == :program}
+            program={item.program}
+            summary={item.summary}
+            owner?={item.program.owner_id == @current_user.id}
+            enrolled_count={Map.get(item, :enrolled_count, 0)}
+          />
+        <% end %>
       </div>
 
       <.workshop_empty
-        :if={@workshops == [] && @search != ""}
+        :if={@itens == [] && @search != ""}
         title="Nada encontrado"
-        description={"Nenhum workshop combina com \"#{@search}\" neste período."}
+        description={"Nada combina com \"#{@search}\" neste período."}
       >
         <:action>
           <button
@@ -125,14 +134,23 @@
       </.workshop_empty>
 
       <.workshop_empty
-        :if={@workshops == [] && @search == ""}
-        title="Nenhum workshop por aqui ainda"
+        :if={@itens == [] && @search == ""}
+        title="Nada marcado por aqui ainda"
         description={empty_hint(@period)}
       >
         <:action>
-          <.action_link :if={@can_create} navigate={~p"/study/workshops/novo"} icon="hero-plus">
-            Criar o primeiro
-          </.action_link>
+          <div class="flex flex-wrap justify-center gap-2">
+            <.action_link :if={@can_create} navigate={~p"/study/workshops/novo"} icon="hero-plus">
+              Criar o primeiro
+            </.action_link>
+            <.link
+              :if={@can_create}
+              navigate={~p"/study/programacoes/nova"}
+              class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
+            >
+              Juntar num link só
+            </.link>
+          </div>
         </:action>
       </.workshop_empty>
     </section>

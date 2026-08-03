@@ -73,7 +73,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         </p>
 
         <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <.workshop_tag :if={@organizer?} tone={:purple}>Você organiza</.workshop_tag>
+          <.workshop_tag :if={programa_do(@workshop)} tone={:purple}>
+            {programa_do(@workshop).title}
+          </.workshop_tag>
+          <.workshop_tag :if={@organizer?} tone={:neutral}>Você organiza</.workshop_tag>
           <.workshop_tag :if={@enrolled? && !@organizer?} tone={:green}>
             Você está inscrito
           </.workshop_tag>
@@ -98,6 +101,78 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       </.link>
     </article>
     """
+  end
+
+  # ── Card de programação na agenda ────────────────────────────────────
+
+  attr :program, :map, required: true
+  attr :summary, :map, required: true
+  attr :owner?, :boolean, default: false
+  attr :enrolled_count, :integer, default: 0
+
+  def program_card(assigns) do
+    ~H"""
+    <article
+      id={"program-card-#{@program.id}"}
+      class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-accent-purple/25 bg-ink-50 p-4 shadow-sm transition-colors hover:border-accent-purple/50"
+    >
+      <img
+        :if={@program.flyer_path}
+        src={@program.flyer_path}
+        alt={"Flyer de #{@program.title}"}
+        loading="lazy"
+        class="h-[54px] w-[54px] shrink-0 rounded-xl border border-ink-200 object-cover"
+      />
+      <div
+        :if={is_nil(@program.flyer_path)}
+        class="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-xl border border-accent-purple/25 bg-accent-purple/10"
+      >
+        <.icon name="hero-calendar-days" class="size-6 text-accent-purple" />
+      </div>
+
+      <div class="min-w-0 flex-1 basis-[55%]">
+        <p class="m-0 line-clamp-2 font-serif text-[15px] font-bold tracking-tight text-ink-900">
+          {@program.title}
+        </p>
+        <p class="m-0 mt-0.5 line-clamp-2 text-[12.5px] text-ink-500">
+          {@program.owner.name} · {program_dates(@summary)}{location_suffix(@program)}
+        </p>
+
+        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <.workshop_tag tone={:purple}>Programação</.workshop_tag>
+          <.workshop_tag :if={@owner?} tone={:neutral}>Você organiza</.workshop_tag>
+          <.workshop_tag :if={@enrolled_count > 0 && !@owner?} tone={:green}>
+            {inscricao_label(@enrolled_count)}
+          </.workshop_tag>
+          <span class="text-[11.5px] text-ink-400">{workshop_count_label(@summary.count)}</span>
+        </div>
+      </div>
+
+      <.link
+        navigate={~p"/programacao/#{@program.slug}"}
+        class="w-full shrink-0 rounded-full bg-accent-purple px-4 py-2 text-center font-serif text-[13px] font-semibold text-white no-underline transition-colors hover:bg-accent-purple/90 sm:w-auto"
+      >
+        Ver programação
+      </.link>
+    </article>
+    """
+  end
+
+  # Na busca o workshop sai solto mesmo estando numa programacao: sem esta
+  # etiqueta nada na tela liga um ao outro.
+  defp programa_do(%{program: %{title: _} = program}), do: program
+  defp programa_do(_workshop), do: nil
+
+  @doc "Ex.: Você está em 1 / Você está em 3"
+  def inscricao_label(1), do: "Você está em 1"
+  def inscricao_label(total), do: "Você está em #{total}"
+
+  @doc "Intervalo de datas de uma programação, a partir do resumo agregado."
+  def program_dates(%{starts_at: inicio, ends_at: fim}) do
+    date_span(
+      Brazil.to_local(inicio) |> DateTime.to_date(),
+      Brazil.to_local(fim) |> DateTime.to_date()
+    )
   end
 
   attr :tone, :atom, default: :neutral, values: [:neutral, :green, :purple, :blue, :red, :orange]

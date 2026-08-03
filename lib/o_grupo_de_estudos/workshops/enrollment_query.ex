@@ -13,6 +13,29 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops.WorkshopEnrollment
 
+  @doc """
+  `%{program_id => quantos}`: em quantos workshops de cada programação a
+  pessoa está inscrita.
+
+  Em lote de propósito: uma consulta por programação na agenda seria N+1.
+  """
+  @spec enrolled_counts_by_program(Ecto.UUID.t() | nil, [Ecto.UUID.t()]) :: %{
+          Ecto.UUID.t() => non_neg_integer()
+        }
+  def enrolled_counts_by_program(nil, _program_ids), do: %{}
+  def enrolled_counts_by_program(_user_id, []), do: %{}
+
+  def enrolled_counts_by_program(user_id, program_ids) do
+    from(e in WorkshopEnrollment,
+      join: w in assoc(e, :workshop),
+      where: e.user_id == ^user_id and w.program_id in ^program_ids,
+      group_by: w.program_id,
+      select: {w.program_id, count(e.id)}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
   @doc "Participantes visíveis publicamente: sem nenhum campo de pagamento."
   @spec list_participants(Ecto.UUID.t()) :: [map()]
   def list_participants(workshop_id) do

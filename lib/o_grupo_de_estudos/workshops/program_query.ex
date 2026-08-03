@@ -8,7 +8,8 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
   import Ecto.Query
 
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram}
+  alias OGrupoDeEstudos.Search
+  alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram, WorkshopQuery}
 
   @doc "Programação por slug, com dono carregado."
   @spec get_by_slug(String.t()) :: WorkshopProgram.t() | nil
@@ -61,6 +62,55 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
     |> where([w], w.program_id == ^program_id and w.id in ^ids and w.status == :published)
     |> order_by([w], asc: w.id)
     |> Repo.all()
+  end
+
+  @doc """
+  Programações publicadas com workshop publicado no período, já com o resumo
+  agregado (quantos e de quando a quando).
+
+  Uma programação sem workshop publicado não aparece: ela não tem data
+  própria, então não teria onde entrar na linha do tempo.
+  """
+  @spec list_feed(keyword()) :: [{WorkshopProgram.t(), map()}]
+  def list_feed(opts \\ []) do
+    period = Keyword.get(opts, :period, :upcoming)
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    from(p in WorkshopProgram,
+      join: w in Workshop,
+      as: :periodo,
+      on: w.program_id == p.id,
+      where: p.status == :published and w.status == :published,
+      group_by: p.id,
+      select: {
+        p,
+        %{
+          count: count(w.id),
+          starts_at: type(min(w.starts_at), :utc_datetime),
+          ends_at: type(max(coalesce(w.ends_at, w.starts_at)), :utc_datetime)
+        }
+      }
+    )
+    |> WorkshopQuery.in_period(period, now)
+    |> apply_program_search(opts[:search])
+    |> preload(:owner)
+    |> Repo.all()
+  end
+
+  defp apply_program_search(query, nil), do: query
+  defp apply_program_search(query, ""), do: query
+
+  defp apply_program_search(query, term) do
+    like = "%#{Search.escape_like(String.downcase(String.trim(term)))}%"
+
+    query
+    |> join(:inner, [p], o in assoc(p, :owner), as: :owner)
+    |> where(
+      [p, w, owner: o],
+      fragment("lower(?) LIKE ?", p.title, ^like) or
+        fragment("lower(?) LIKE ?", o.name, ^like) or
+        fragment("lower(?) LIKE ?", o.username, ^like)
+    )
   end
 
   @doc "Programações que a pessoa criou, mais recente primeiro."
