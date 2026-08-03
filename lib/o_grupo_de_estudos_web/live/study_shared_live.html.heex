@@ -87,7 +87,11 @@
         >
           <:meta>
             <span class="inline-flex items-center gap-1 text-[11px] text-ink-400">
-              <.icon :if={@link.active} name="hero-check" class="size-3 text-accent-green" />
+              <.icon
+                :if={@link.active && is_nil(@note_saved_at)}
+                name="hero-check"
+                class="size-3 text-accent-green"
+              />
               <span :if={@note_saved_at && @link.active} class="font-semibold text-accent-green">
                 <.icon name="hero-check-circle" class="size-3.5 -mt-0.5" />
                 Salvo às {Calendar.strftime(@note_saved_at, "%H:%M")}
