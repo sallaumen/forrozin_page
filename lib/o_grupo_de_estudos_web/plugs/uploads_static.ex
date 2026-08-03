@@ -7,9 +7,21 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStatic do
 
   The path is resolved at runtime via application config:
     config :o_grupo_de_estudos, :uploads_path, "/app/uploads"
+
+  ## Allowlist
+
+  Este plug roda ANTES de `Plug.Session` no endpoint, entao nao existe usuario
+  para consultar: tudo que ele serve e publico por construcao. Por isso o
+  `:only` lista o que pode ser publico, em vez de o que nao pode. Diretorio
+  novo no volume (midia de workshop, por exemplo) nao vaza sozinho: ou entra
+  aqui de proposito, ou e servido por um controller que checa permissao.
   """
 
   @behaviour Plug
+
+  # Conteudo que e publico por natureza. Qualquer coisa fora daqui exige
+  # autorizacao e portanto nao passa por este plug.
+  @public_dirs ["avatars"]
 
   @impl true
   def init(_opts), do: []
@@ -22,7 +34,8 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStatic do
       Plug.Static.init(
         at: "/uploads",
         from: path,
-        gzip: false
+        gzip: false,
+        only: @public_dirs
       )
 
     Plug.Static.call(conn, opts)
