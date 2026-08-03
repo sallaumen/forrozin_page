@@ -24,6 +24,8 @@ defmodule OGrupoDeEstudos.Workshops do
     Access,
     AdminQuery,
     EnrollmentQuery,
+    PackageQuery,
+    ProgramEnrollment,
     ProgramQuery,
     Workshop,
     WorkshopAdmin,
@@ -107,6 +109,152 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+
+  # ── Pacote da programação ─────────────────────────────────────────────
+
+  @doc """
+  Compra o pacote: entra em TODOS os workshops publicados da programação.
+
+  Tudo ou nada, ao contrário da inscrição avulsa. Quem pagou pelos três dias
+  não pode acabar em dois: se uma turma lotar no meio, as inscrições já feitas
+  são desfeitas e ninguém fica meio dentro.
+  """
+  @spec enroll_in_package(WorkshopProgram.t(), User.t()) ::
+          {:ok, ProgramEnrollment.t()}
+          | {:error,
+             :no_package | :organizer | :already_enrolled | {:full, Workshop.t()} | term()}
+  def enroll_in_package(%WorkshopProgram{} = program, %User{} = user) do
+    with :ok <- ensure_package(program),
+         :ok <- ensure_nao_organiza(program, user),
+         {:ok, matricula} <- criar_matricula(program, user) do
+      cobrir_workshops(program, user, matricula)
+    end
+  end
+
+  defp ensure_package(program) do
+    if WorkshopProgram.pacote?(program), do: :ok, else: {:error, :no_package}
+  end
+
+  defp ensure_nao_organiza(%WorkshopProgram{owner_id: id}, %User{id: id}),
+    do: {:error, :organizer}
+
+  defp ensure_nao_organiza(_program, _user), do: :ok
+
+  defp criar_matricula(program, user) do
+    %ProgramEnrollment{}
+    |> ProgramEnrollment.changeset(%{program_id: program.id, user_id: user.id})
+    |> Repo.insert()
+    |> case do
+      {:ok, matricula} -> {:ok, matricula}
+      {:error, %Ecto.Changeset{}} -> {:error, :already_enrolled}
+    end
+  end
+
+  # Cada workshop tem a sua transacao (mesmo motivo de enroll_many), e a
+  # compensacao desfaz o que ja entrou se algum falhar.
+  defp cobrir_workshops(program, user, matricula) do
+    workshops = ProgramQuery.list_workshops(program.id)
+
+    case Enum.reduce_while(workshops, [], &cobrir_um(&1, user, matricula, &2)) do
+      {:error, motivo, criadas} -> desfazer_pacote(matricula, criadas, motivo)
+      _criadas -> {:ok, matricula}
+    end
+  end
+
+  defp cobrir_um(workshop, user, matricula, criadas) do
+    case garantir_inscricao(workshop, user, matricula) do
+      {:ok, :nova} -> {:cont, [workshop | criadas]}
+      {:ok, :ja_existia} -> {:cont, criadas}
+      {:error, motivo} -> {:halt, {:error, {motivo, workshop}, criadas}}
+    end
+  end
+
+  # Quem ja estava avulso num dos workshops passa a estar pelo pacote, sem
+  # inscricao duplicada.
+  defp garantir_inscricao(workshop, user, matricula) do
+    case EnrollmentQuery.get_for_user(workshop.id, user.id) do
+      nil -> inscrever_pelo_pacote(workshop, user, matricula)
+      inscricao -> vincular_ao_pacote(inscricao, matricula)
+    end
+  end
+
+  defp inscrever_pelo_pacote(workshop, user, matricula) do
+    case insert_enrollment_locked(workshop, user) do
+      {:ok, inscricao} ->
+        inscricao
+        |> Ecto.Changeset.change(program_enrollment_id: matricula.id)
+        |> Repo.update()
+        |> case do
+          {:ok, _} -> {:ok, :nova}
+          erro -> erro
+        end
+
+      {:error, motivo} ->
+        {:error, motivo}
+    end
+  end
+
+  defp vincular_ao_pacote(inscricao, matricula) do
+    inscricao
+    |> Ecto.Changeset.change(program_enrollment_id: matricula.id)
+    |> Repo.update()
+    |> case do
+      {:ok, _} -> {:ok, :ja_existia}
+      erro -> erro
+    end
+  end
+
+  defp desfazer_pacote(matricula, criadas, {motivo, workshop}) do
+    for w <- criadas, do: apagar_inscricao(w.id, matricula.user_id)
+    Repo.delete(matricula)
+    {:error, {motivo, workshop}}
+  end
+
+  defp apagar_inscricao(workshop_id, user_id) do
+    case EnrollmentQuery.get_for_user(workshop_id, user_id) do
+      nil -> :ok
+      inscricao -> Repo.delete(inscricao)
+    end
+  end
+
+  @doc "Quem comprou o pacote. Só quem criou a programação vê."
+  @spec list_package_enrollments(WorkshopProgram.t(), User.t()) ::
+          {:ok, [map()]} | {:error, :unauthorized}
+  def list_package_enrollments(%WorkshopProgram{} = program, %User{} = user) do
+    with :ok <- ensure_program_owner(program, user) do
+      {:ok, PackageQuery.list_for_program(program.id)}
+    end
+  end
+
+  @doc "Resumo do pacote: quantos compraram, quantos pagaram, quanto entrou."
+  @spec package_summary(WorkshopProgram.t(), User.t()) :: {:ok, map()} | {:error, :unauthorized}
+  def package_summary(%WorkshopProgram{} = program, %User{} = user) do
+    with :ok <- ensure_program_owner(program, user) do
+      {:ok, PackageQuery.summary(program.id, program.price_cents)}
+    end
+  end
+
+  @doc "Marca o pagamento do pacote."
+  @spec set_package_payment(WorkshopProgram.t(), User.t(), Ecto.UUID.t(), atom()) ::
+          {:ok, ProgramEnrollment.t()} | {:error, :unauthorized | :not_found | term()}
+  def set_package_payment(%WorkshopProgram{} = program, %User{} = user, enrollment_id, status)
+      when status in [:pending, :paid, :waived] do
+    with :ok <- ensure_program_owner(program, user),
+         %ProgramEnrollment{} = matricula <-
+           PackageQuery.get_scoped(enrollment_id, program.id) do
+      matricula |> ProgramEnrollment.payment_changeset(status) |> Repo.update()
+    else
+      nil -> {:error, :not_found}
+      {:error, motivo} -> {:error, motivo}
+    end
+  end
+
+  @doc "Matrícula da pessoa no pacote desta programação, ou `nil`."
+  @spec package_enrollment(WorkshopProgram.t(), User.t() | nil) :: ProgramEnrollment.t() | nil
+  def package_enrollment(%WorkshopProgram{}, nil), do: nil
+
+  def package_enrollment(%WorkshopProgram{} = program, %User{} = user),
+    do: PackageQuery.get_for_user(program.id, user.id)
 
   # ── Agenda ────────────────────────────────────────────────────────────
 

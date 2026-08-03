@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   alias OGrupoDeEstudos.{Accounts, Brazil, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
-  alias OGrupoDeEstudos.Workshops.Workshop
+  alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.WorkshopComponents
@@ -41,6 +41,31 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:enrollment_counts, Workshops.enrollment_counts(Enum.map(workshops, & &1.id)))
     |> assign_montagem(workshops, owner?, user)
     |> limpar_selecao(workshops, user)
+    |> assign_pacote(program, workshops, user)
+  end
+
+  # As duas formas de comprar convivem: o pacote fechado e a escolha dia a dia.
+  defp assign_pacote(socket, program, workshops, user) do
+    socket
+    |> assign(:tem_pacote?, WorkshopProgram.pacote?(program))
+    |> assign(:avulso_total, Enum.sum(Enum.map(workshops, &(&1.price_cents || 0))))
+    |> assign(:matricula_pacote, Workshops.package_enrollment(program, user))
+    |> assign(
+      :pacote_indisponivel,
+      pacote_indisponivel(workshops, socket.assigns.enrollment_counts)
+    )
+  end
+
+  # Com uma turma lotada o pacote nao pode ser vendido: quem paga pelos tres
+  # dias nao pode entrar em dois.
+  defp pacote_indisponivel(workshops, contagens) do
+    lotado =
+      Enum.find(workshops, fn w ->
+        w.status == :published and Workshop.full?(w, Map.get(contagens, w.id, 0))
+      end)
+
+    lotado &&
+      "#{lotado.title} lotou, então o pacote fechado não dá. Dá para escolher os outros dias abaixo."
   end
 
   # So oferece checkbox no que da para se inscrever agora: publicado, com vaga
@@ -71,7 +96,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   # Painel de montagem: so para quem organiza, e so com o que ele administra.
   defp assign_montagem(socket, _workshops, false, _user) do
-    socket |> assign(:dentro, []) |> assign(:disponiveis, [])
+    socket
+    |> assign(:dentro, [])
+    |> assign(:disponiveis, [])
+    |> assign(:pacotes, [])
+    |> assign(:resumo_pacote, nil)
   end
 
   defp assign_montagem(socket, workshops, true, user) do
@@ -85,6 +114,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     socket
     |> assign(:dentro, workshops)
     |> assign(:disponiveis, disponiveis)
+    |> assign_pacotes(user)
+  end
+
+  defp assign_pacotes(socket, user) do
+    program = socket.assigns.program
+    {:ok, pacotes} = Workshops.list_package_enrollments(program, user)
+    {:ok, resumo} = Workshops.package_summary(program, user)
+
+    socket |> assign(:pacotes, pacotes) |> assign(:resumo_pacote, resumo)
   end
 
   @impl true
@@ -100,6 +138,43 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível publicar.")}
+    end
+  end
+
+  def handle_event("set_package_payment", %{"id" => id, "status" => status}, socket)
+      when status in ~w(pending paid waived) do
+    user = socket.assigns.current_user
+
+    case Workshops.set_package_payment(socket.assigns.program, user, id, pagamento(status)) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign_program(socket.assigns.program, user)
+         |> put_flash(:info, "Pagamento do pacote atualizado.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível atualizar.")}
+    end
+  end
+
+  def handle_event("set_package_payment", _params, socket), do: {:noreply, socket}
+
+  def handle_event("buy_package", _params, %{assigns: %{current_user: nil}} = socket) do
+    {:noreply, redirect(socket, to: ~p"/signup?#{[programa: socket.assigns.program.slug]}")}
+  end
+
+  def handle_event("buy_package", _params, socket) do
+    user = socket.assigns.current_user
+
+    case Workshops.enroll_in_package(socket.assigns.program, user) do
+      {:ok, _matricula} ->
+        {:noreply,
+         socket
+         |> assign_program(socket.assigns.program, user)
+         |> put_flash(:info, "Pronto! Você está em todos os workshops da programação.")}
+
+      {:error, motivo} ->
+        {:noreply, put_flash(socket, :error, erro_do_pacote(motivo))}
     end
   end
 
@@ -138,6 +213,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   def handle_event("detach_workshop", %{"id" => id}, socket) do
     montar(socket, id, &Workshops.detach_workshop/3, "Workshop tirado da programação.")
   end
+
+  defp pagamento("paid"), do: :paid
+  defp pagamento("waived"), do: :waived
+  defp pagamento(_pending), do: :pending
+
+  defp erro_do_pacote({:full, workshop}),
+    do: "#{workshop.title} lotou, então o pacote não deu. Escolha os dias que ainda têm vaga."
+
+  defp erro_do_pacote(:already_enrolled), do: "Você já tem a programação toda."
+  defp erro_do_pacote(:organizer), do: "Você organiza esta programação."
+  defp erro_do_pacote(:no_package), do: "Esta programação não tem preço fechado."
+  defp erro_do_pacote(_outro), do: "Não foi possível confirmar o pacote."
 
   defp alternar(selecionados, id) do
     case MapSet.member?(selecionados, id) do
@@ -209,6 +296,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> Enum.group_by(&(&1.starts_at |> Brazil.to_local() |> DateTime.to_date()))
     |> Enum.sort_by(fn {date, _} -> date end, Date)
   end
+
+  @doc false
+  def tom_do_pagamento(:paid), do: :green
+  def tom_do_pagamento(:waived), do: :neutral
+  def tom_do_pagamento(_pending), do: :orange
 
   @doc false
   def selecao_label(0), do: "Marque os workshops que você vai."

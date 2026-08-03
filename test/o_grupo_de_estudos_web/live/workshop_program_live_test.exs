@@ -110,6 +110,96 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     end
   end
 
+  describe "pacote fechado convivendo com o avulso" do
+    setup ctx do
+      {:ok, com_pacote} =
+        Workshops.create_program(ctx.dono, %{title: "Três dias", price_cents: 15_000})
+
+      for w <- [ctx.quinta, ctx.sexta],
+          do: Workshops.attach_workshop(com_pacote, ctx.dono, w.id)
+
+      {:ok, com_pacote} = Workshops.publish_program(ctx.dono, com_pacote)
+      Map.put(ctx, :com_pacote, com_pacote)
+    end
+
+    test "a página oferece as duas formas e mostra a economia", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      assert html =~ "pela programação toda"
+      assert html =~ "Quero a programação toda"
+      assert html =~ "Ou escolha os dias"
+      # Avulso soma R$ 0 no setup base, então só confere que o bloco existe.
+      assert html =~ "cada um pelo preço dele"
+    end
+
+    test "comprar o pacote entra em todos de uma vez", ctx do
+      aluna = insert(:user)
+
+      {:ok, lv, _} =
+        live(log_in_user(build_conn(), aluna), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      html = render_click(lv, "buy_package", %{})
+
+      assert html =~ "Você tem a programação toda"
+      inscritos = Workshops.enrolled_workshop_ids(aluna.id)
+      assert MapSet.member?(inscritos, ctx.quinta.id)
+      assert MapSet.member?(inscritos, ctx.sexta.id)
+    end
+
+    test "programação sem preço fechado não mostra pacote", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.program.slug}")
+
+      refute html =~ "Quero a programação toda"
+    end
+
+    test "visitante sem conta vai para o cadastro", ctx do
+      {:ok, lv, _} = live(build_conn(), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      assert {:error, {:redirect, %{to: destino}}} = render_click(lv, "buy_package", %{})
+      assert destino =~ "/signup"
+    end
+
+    test "turma lotada tira o pacote e explica, sem tirar o avulso", ctx do
+      {:ok, lotado} = Workshops.update_workshop(ctx.dono, ctx.sexta, %{capacity: 1})
+      {:ok, _} = Workshops.enroll(lotado, insert(:user))
+
+      {:ok, _lv, html} =
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      refute html =~ "Quero a programação toda"
+      assert html =~ "lotou, então o pacote fechado não dá"
+      # O caminho avulso continua de pé.
+      assert html =~ "Confirmar inscrição"
+    end
+
+    test "quem criou vê o painel do pacote e marca pago", ctx do
+      aluna = insert(:user)
+      {:ok, _} = Workshops.enroll_in_package(ctx.com_pacote, aluna)
+
+      {:ok, lv, html} =
+        live(log_in_user(build_conn(), ctx.dono), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      assert html =~ "Quem levou a programação toda"
+      assert html =~ aluna.name
+
+      {:ok, [linha]} = Workshops.list_package_enrollments(ctx.com_pacote, ctx.dono)
+      html = render_click(lv, "set_package_payment", %{"id" => linha.id, "status" => "paid"})
+
+      assert html =~ "R$ 150"
+    end
+
+    test "quem não criou não vê o painel do pacote", ctx do
+      {:ok, _} = Workshops.enroll_in_package(ctx.com_pacote, insert(:user))
+
+      {:ok, _lv, html} =
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.com_pacote.slug}")
+
+      refute html =~ "Quem levou a programação toda"
+    end
+  end
+
   describe "inscrição em lote pelo checklist" do
     test "marca os dois e confirma de uma vez", ctx do
       aluna = insert(:user)

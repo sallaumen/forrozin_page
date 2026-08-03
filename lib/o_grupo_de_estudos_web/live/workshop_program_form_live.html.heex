@@ -68,6 +68,43 @@
           class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm leading-relaxed text-ink-800 placeholder:text-ink-400"
         >{@form["description"]}</textarea>
 
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="program-price" class="mb-1 block text-[12.5px] font-bold text-ink-700">
+              Preço fechado <span class="font-normal text-ink-400">(opcional)</span>
+            </label>
+            <input
+              id="program-price"
+              type="text"
+              inputmode="decimal"
+              name="program[price]"
+              value={@form["price"]}
+              placeholder="150,00"
+              class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+            />
+            <p class="m-0 mt-1 text-[11.5px] leading-snug text-ink-400">
+              Quem levar tudo paga este valor. Sem preencher, só existe o preço de cada workshop.
+            </p>
+          </div>
+
+          <div>
+            <label
+              for="program-payment-info"
+              class="mb-1 block text-[12.5px] font-bold text-ink-700"
+            >
+              Como pagam o pacote
+            </label>
+            <input
+              id="program-payment-info"
+              type="text"
+              name="program[payment_info]"
+              value={@form["payment_info"]}
+              placeholder="Pix do festival"
+              class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+            />
+          </div>
+        </div>
+
         <.flyer_field
           upload={@uploads.flyer}
           current_path={@program && @program.flyer_path}
