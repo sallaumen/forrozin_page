@@ -41,6 +41,18 @@ defmodule OGrupoDeEstudos.Media.Storage do
   @doc "Apaga uma imagem pela URL pública. Silencioso se já não existe."
   def delete_image(public_url), do: adapter().delete_image(public_url)
 
+  @doc "Guarda um arquivo em pasta privada e devolve a chave opaca."
+  def put_private(subdir, tmp_path, ext), do: adapter().put_private(subdir, tmp_path, ext)
+
+  @doc "Caminho no disco de uma chave privada, para o controller servir."
+  def private_path(key), do: adapter().private_path(key)
+
+  @doc "Apaga um arquivo privado."
+  def delete_private(key), do: adapter().delete_private(key)
+
+  @doc "Bytes livres no volume, ou `:unknown` quando não dá para medir."
+  def free_bytes, do: adapter().free_bytes()
+
   defp adapter do
     :o_grupo_de_estudos
     |> Application.get_env(__MODULE__, [])

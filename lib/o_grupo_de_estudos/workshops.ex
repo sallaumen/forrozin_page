@@ -24,12 +24,14 @@ defmodule OGrupoDeEstudos.Workshops do
     Access,
     AdminQuery,
     EnrollmentQuery,
+    MediaQuery,
     PackageQuery,
     ProgramEnrollment,
     ProgramQuery,
     Workshop,
     WorkshopAdmin,
     WorkshopEnrollment,
+    WorkshopMedia,
     WorkshopProgram,
     WorkshopQuery
   }
@@ -121,6 +123,136 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
+
+  # ── Galeria ───────────────────────────────────────────────────────────
+
+  @media_dir "workshop_media"
+  # Recusa upload novo com menos de 1 GB livre. Sem isso o volume enche e o
+  # proximo upload estoura ENOSPC no meio, sem mensagem que ajude ninguem.
+  @min_free_bytes 1_073_741_824
+
+  defdelegate list_media(workshop_id), to: MediaQuery, as: :list_for_workshop
+  defdelegate get_media(media_id), to: MediaQuery, as: :get
+  defdelegate media_usage(workshop_id), to: MediaQuery, as: :usage
+
+  @doc """
+  Quem pode ver a galeria: quem administra o workshop ou quem se inscreveu.
+
+  A galeria é o conteúdo pelo qual se paga, então não segue a visibilidade da
+  página: workshop público continua com a galeria fechada.
+  """
+  @spec can_see_media?(Workshop.t(), User.t() | nil) :: boolean()
+  def can_see_media?(%Workshop{}, nil), do: false
+
+  def can_see_media?(%Workshop{} = workshop, %User{} = user) do
+    admin?(workshop, user) or not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
+  end
+
+  @doc """
+  Guarda uma foto ou vídeo na galeria.
+
+  Só quem está no workshop manda mídia. Marca como oficial o que veio de quem
+  administra, para aparecer primeiro e com selo.
+  """
+  @spec add_media(Workshop.t(), User.t(), map()) ::
+          {:ok, WorkshopMedia.t()}
+          | {:error, :unauthorized | :unsupported_type | :storage_full | term()}
+  def add_media(%Workshop{} = workshop, %User{} = user, %{
+        tmp_path: tmp_path,
+        content_type: content_type,
+        byte_size: byte_size
+      }) do
+    with :ok <- ensure_pode_enviar(workshop, user),
+         {:ok, kind} <- ensure_tipo(content_type),
+         :ok <- ensure_espaco(byte_size),
+         {:ok, key} <-
+           Storage.put_private(@media_dir, tmp_path, WorkshopMedia.extensao(content_type)) do
+      inserir_media(workshop, user, kind, key, content_type, byte_size)
+    end
+  end
+
+  defp ensure_pode_enviar(workshop, user) do
+    if can_see_media?(workshop, user), do: :ok, else: {:error, :unauthorized}
+  end
+
+  defp ensure_tipo(content_type) do
+    case WorkshopMedia.kind_do_tipo(content_type) do
+      :error -> {:error, :unsupported_type}
+      kind -> {:ok, kind}
+    end
+  end
+
+  defp ensure_espaco(byte_size) do
+    case Storage.free_bytes() do
+      :unknown -> :ok
+      livres when livres - byte_size > @min_free_bytes -> :ok
+      _apertado -> {:error, :storage_full}
+    end
+  end
+
+  defp inserir_media(workshop, user, kind, key, content_type, byte_size) do
+    %WorkshopMedia{}
+    |> WorkshopMedia.changeset(%{
+      workshop_id: workshop.id,
+      uploaded_by_id: user.id,
+      kind: kind,
+      storage_key: key,
+      content_type: content_type,
+      byte_size: byte_size,
+      official: admin?(workshop, user)
+    })
+    |> Repo.insert()
+    |> case do
+      {:ok, media} -> {:ok, Repo.preload(media, :uploaded_by)}
+      {:error, changeset} -> descartar_arquivo(key, changeset)
+    end
+  end
+
+  defp descartar_arquivo(key, erro) do
+    Storage.delete_private(key)
+    {:error, erro}
+  end
+
+  @doc "Caminho no disco de uma mídia, para o controller servir."
+  @spec private_media_path(WorkshopMedia.t()) :: String.t()
+  def private_media_path(%WorkshopMedia{storage_key: key}), do: Storage.private_path(key)
+
+  @doc """
+  Tira uma mídia da galeria.
+
+  Quem enviou tira a sua; quem administra tira qualquer uma. Some da tela na
+  hora e o arquivo vai embora junto.
+  """
+  @spec remove_media(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopMedia.t()} | {:error, :unauthorized | :not_found}
+  def remove_media(%Workshop{} = workshop, %User{} = user, media_id) do
+    with %WorkshopMedia{} = media <- MediaQuery.get_scoped(media_id, workshop.id),
+         :ok <- ensure_pode_apagar(workshop, user, media) do
+      apagar_media(media)
+    else
+      nil -> {:error, :not_found}
+      {:error, motivo} -> {:error, motivo}
+    end
+  end
+
+  defp ensure_pode_apagar(workshop, user, media) do
+    if media.uploaded_by_id == user.id or admin?(workshop, user),
+      do: :ok,
+      else: {:error, :unauthorized}
+  end
+
+  defp apagar_media(media) do
+    agora = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    case media |> Ecto.Changeset.change(deleted_at: agora) |> Repo.update() do
+      {:ok, apagada} ->
+        Storage.delete_private(media.storage_key)
+        {:ok, apagada}
+
+      erro ->
+        erro
+    end
+  end
 
   # ── Pacote da programação ─────────────────────────────────────────────
 
