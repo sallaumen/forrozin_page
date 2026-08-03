@@ -30,6 +30,9 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
     field :location, :string
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
     field :flyer_path, :string
+    # Preco fechado do conjunto. Nulo = so avulso, cada workshop pelo seu.
+    field :price_cents, :integer
+    field :payment_info, :string
 
     belongs_to :owner, User
     has_many :workshops, Workshop, foreign_key: :program_id
@@ -37,7 +40,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @castable [:title, :description, :location, :owner_id]
+  @castable [:title, :description, :location, :owner_id, :price_cents, :payment_info]
 
   def changeset(program, attrs) do
     program
@@ -49,10 +52,17 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
     |> validate_length(:title, max: 140)
     |> validate_length(:description, max: 20_000)
     |> validate_length(:location, max: 200)
+    |> validate_length(:payment_info, max: 200)
+    |> validate_number(:price_cents, greater_than: 0)
     |> put_slug()
     |> unique_constraint(:slug)
     |> foreign_key_constraint(:owner_id)
   end
+
+  @doc "true quando existe preço fechado para o conjunto."
+  @spec pacote?(t()) :: boolean()
+  def pacote?(%__MODULE__{price_cents: cents}) when is_integer(cents) and cents > 0, do: true
+  def pacote?(%__MODULE__{}), do: false
 
   @doc "Grava ou tira o flyer. Caminho vem do storage, nunca do usuario."
   def flyer_changeset(program, flyer_path) do

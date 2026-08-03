@@ -245,6 +245,66 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
+  # ── Caixa do pacote ──────────────────────────────────────────────────
+
+  attr :program, :map, required: true
+  attr :avulso_total, :integer, required: true
+  attr :ja_comprou, :boolean, default: false
+  attr :indisponivel, :string, default: nil
+
+  def package_box(assigns) do
+    ~H"""
+    <div class="rounded-2xl border border-ink-200 border-l-[3px] border-l-accent-green bg-ink-50 p-4 shadow-sm">
+      <p class="m-0 font-serif text-[24px] font-bold tracking-tight text-ink-900">
+        {money_label(@program.price_cents)}
+        <span class="text-[12px] font-normal text-ink-500">pela programação toda</span>
+      </p>
+
+      <p :if={economia(@program, @avulso_total) > 0} class="m-0 mt-1 text-[12.5px] text-accent-green">
+        <b>Economiza {money_label(economia(@program, @avulso_total))}</b>
+        em relação a pagar dia a dia.
+      </p>
+
+      <p :if={@program.payment_info} class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500">
+        {@program.payment_info}
+      </p>
+
+      <div
+        :if={@ja_comprou}
+        class="mt-3 rounded-xl border border-accent-green/30 bg-accent-green/10 px-4 py-3 text-center"
+      >
+        <p class="m-0 text-[13px] font-bold text-accent-green">
+          <.icon name="hero-check-circle" class="size-4 -mt-0.5" /> Você tem a programação toda
+        </p>
+      </div>
+
+      <button
+        :if={!@ja_comprou && is_nil(@indisponivel)}
+        type="button"
+        phx-click="buy_package"
+        phx-disable-with="Confirmando..."
+        class="mt-3 w-full cursor-pointer rounded-full border-0 bg-accent-green px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-green/90"
+      >
+        Quero a programação toda
+      </button>
+
+      <p
+        :if={!@ja_comprou && @indisponivel}
+        class="m-0 mt-3 rounded-xl bg-ink-200 px-4 py-3 text-center text-[12.5px] text-ink-600"
+      >
+        {@indisponivel}
+      </p>
+    </div>
+    """
+  end
+
+  @doc "Quanto o pacote economiza contra a soma dos avulsos. Zero se não economiza."
+  def economia(%{price_cents: pacote}, avulso_total)
+      when is_integer(pacote) and is_integer(avulso_total) and avulso_total > pacote,
+      do: avulso_total - pacote
+
+  def economia(_program, _avulso_total), do: 0
+
   # ── Flyer ────────────────────────────────────────────────────────────
 
   attr :upload, :any, required: true

@@ -84,6 +84,27 @@
       {@program.description}
     </p>
 
+    <%!-- As duas formas de participar: pacote fechado ou dia a dia --%>
+    <div :if={@tem_pacote?} class="mt-6 grid gap-4 sm:grid-cols-[1fr_1fr]">
+      <.package_box
+        program={@program}
+        avulso_total={@avulso_total}
+        ja_comprou={not is_nil(@matricula_pacote)}
+        indisponivel={@pacote_indisponivel}
+      />
+
+      <div class="rounded-2xl border border-dashed border-ink-300 p-4">
+        <p class="m-0 font-serif text-[15px] font-bold text-ink-900">Ou escolha os dias</p>
+        <p class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500">
+          Dá para pegar só os workshops que te interessam, cada um pelo preço dele.
+          Some {money_label(@avulso_total)} se você levar todos.
+        </p>
+        <p class="m-0 mt-2 text-[12.5px] text-ink-500">
+          Marque na lista abaixo e confirme no fim.
+        </p>
+      </div>
+    </div>
+
     <%!-- Os workshops, dia a dia --%>
     <section class="mt-7">
       <div :for={{date, workshops} <- @days} class="mb-6 last:mb-0">
@@ -120,6 +141,84 @@
           </.workshop_card>
         </div>
       </div>
+
+      <%!-- Pacote: quem comprou e quem pagou. So quem criou ve. --%>
+      <section
+        :if={@owner? && @tem_pacote?}
+        class="mt-8 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5"
+      >
+        <h2 class="m-0 text-[12.5px] font-bold text-ink-700">Quem levou a programação toda</h2>
+        <p class="m-0 mt-1 mb-3 text-[12px] leading-snug text-ink-500">
+          Só você vê isto. Quem escolheu dias avulsos aparece no painel de cada workshop.
+        </p>
+
+        <div class="mb-3 grid grid-cols-3 gap-2.5">
+          <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
+            <p class="m-0 font-serif text-[19px] font-bold leading-none text-ink-900">
+              {@resumo_pacote.packages}
+            </p>
+            <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
+              pacotes
+            </p>
+          </div>
+          <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
+            <p class="m-0 font-serif text-[19px] font-bold leading-none text-accent-green">
+              {@resumo_pacote.paid}
+            </p>
+            <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
+              pagaram
+            </p>
+          </div>
+          <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
+            <p class="m-0 font-serif text-[19px] font-bold leading-none text-ink-900">
+              {money_label(@resumo_pacote.revenue_cents)}
+            </p>
+            <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
+              recebido
+            </p>
+          </div>
+        </div>
+
+        <div :if={@pacotes != []} class="flex flex-col gap-1.5">
+          <div
+            :for={linha <- @pacotes}
+            id={"pacote-#{linha.id}"}
+            class="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-[13px] font-bold text-ink-900">{linha.name}</span>
+              <span class="block truncate text-[11.5px] text-ink-500">@{linha.username}</span>
+            </span>
+            <.workshop_tag tone={tom_do_pagamento(linha.payment_status)}>
+              {payment_status_label(linha.payment_status)}
+            </.workshop_tag>
+            <button
+              :if={linha.payment_status != :paid}
+              type="button"
+              phx-click="set_package_payment"
+              phx-value-id={linha.id}
+              phx-value-status="paid"
+              class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+            >
+              Marcar pago
+            </button>
+            <button
+              :if={linha.payment_status == :paid}
+              type="button"
+              phx-click="set_package_payment"
+              phx-value-id={linha.id}
+              phx-value-status="pending"
+              class="shrink-0 cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            >
+              Desfazer
+            </button>
+          </div>
+        </div>
+
+        <p :if={@pacotes == []} class="m-0 text-[13px] text-ink-500">
+          Ninguém levou o pacote fechado ainda.
+        </p>
+      </section>
 
       <%!-- Montagem: quem organiza mexe sem sair da pagina --%>
       <section :if={@owner?} class="mt-8 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5">

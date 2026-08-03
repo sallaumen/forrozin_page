@@ -21,6 +21,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
 
     belongs_to :workshop, OGrupoDeEstudos.Workshops.Workshop
     belongs_to :user, OGrupoDeEstudos.Accounts.User
+    # Quando presente, o pagamento deste workshop esta coberto pelo pacote.
+    belongs_to :program_enrollment, OGrupoDeEstudos.Workshops.ProgramEnrollment
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -28,7 +30,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
   @doc "Inscrição: não aceita nada de pagamento, por construção."
   def changeset(enrollment, attrs) do
     enrollment
-    |> cast(attrs, [:workshop_id, :user_id])
+    |> cast(attrs, [:workshop_id, :user_id, :program_enrollment_id])
     |> validate_required([:workshop_id, :user_id])
     |> foreign_key_constraint(:workshop_id)
     |> foreign_key_constraint(:user_id)

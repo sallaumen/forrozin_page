@@ -41,7 +41,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     socket
     |> base_assigns("Nova programação")
     |> assign(:program, nil)
-    |> assign(:form, %{"title" => "", "description" => "", "location" => ""})
+    |> assign(:form, %{
+      "title" => "",
+      "description" => "",
+      "location" => "",
+      "price" => "",
+      "payment_info" => ""
+    })
   end
 
   defp prepare(socket, :edit, %{"slug" => slug}) do
@@ -195,16 +201,33 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     %{
       "title" => program.title,
       "description" => program.description || "",
-      "location" => program.location || ""
+      "location" => program.location || "",
+      "price" => price_input(program.price_cents),
+      "payment_info" => program.payment_info || ""
     }
   end
+
+  defp price_input(nil), do: ""
+  defp price_input(cents), do: :erlang.float_to_binary(cents / 100, decimals: 2)
 
   defp to_attrs(params) do
     %{
       title: params["title"],
       description: blank_to_nil(params["description"]),
-      location: blank_to_nil(params["location"])
+      location: blank_to_nil(params["location"]),
+      payment_info: blank_to_nil(params["payment_info"]),
+      price_cents: parse_price(params["price"])
     }
+  end
+
+  defp parse_price(nil), do: nil
+  defp parse_price(""), do: nil
+
+  defp parse_price(value) do
+    case value |> String.replace(",", ".") |> Float.parse() do
+      {reais, _} -> round(reais * 100)
+      :error -> nil
+    end
   end
 
   defp blank_to_nil(nil), do: nil
