@@ -1,0 +1,225 @@
+<div id="workshop-manage-shell" class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.flash kind={:info} id="lv-flash-info" flash={@flash} />
+  <.flash kind={:error} id="lv-flash-error" flash={@flash} />
+
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={:detail}
+    title="Gerenciar workshop"
+  />
+
+  <main class="mx-auto w-full max-w-[900px] flex-1 px-4 py-6 sm:px-6">
+    <.link
+      navigate={~p"/workshops/#{@workshop.slug}"}
+      class="mb-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-500 no-underline hover:text-ink-800"
+    >
+      <.icon name="hero-arrow-left" class="size-4" /> Página do workshop
+    </.link>
+
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="m-0 font-serif text-[22px] font-bold tracking-tight text-ink-900">
+          {@workshop.title}
+        </h1>
+        <p class="m-0 mt-1 text-[13px] text-ink-500">{schedule_label(@workshop)}</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          phx-click="copy_link"
+          class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700"
+        >
+          <.icon name="hero-link" class="size-4 -mt-0.5" /> Copiar link
+        </button>
+        <.link
+          navigate={~p"/study/workshops/#{@workshop.slug}/editar"}
+          class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
+        >
+          Editar
+        </.link>
+        <button
+          :if={@workshop.status == :draft}
+          type="button"
+          phx-click="publish"
+          phx-disable-with="Publicando..."
+          class="cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white"
+        >
+          Publicar
+        </button>
+      </div>
+    </div>
+
+    <div :if={@workshop.status == :draft} class="mt-4 rounded-xl bg-gold-500/15 px-4 py-3">
+      <p class="m-0 text-[13px] font-bold text-ink-700">
+        Ainda é rascunho: ninguém além de você enxerga, e o link não aceita inscrição.
+      </p>
+    </div>
+
+    <div :if={@workshop.status == :cancelled} class="mt-4 rounded-xl bg-accent-red/10 px-4 py-3">
+      <p class="m-0 text-[13px] font-bold text-accent-red">
+        Workshop cancelado. O registro dos inscritos continua aqui.
+      </p>
+    </div>
+
+    <%!-- Aviso de privacidade: o organizador precisa saber que só ele vê --%>
+    <div
+      :if={@cobra?}
+      class="mt-5 flex items-start gap-2.5 rounded-xl border border-gold-500/35 bg-gold-500/12 px-4 py-3"
+    >
+      <.icon name="hero-lock-closed" class="size-4 shrink-0 text-ink-600" />
+      <p class="m-0 text-[12.5px] leading-snug text-ink-700">
+        <b class="text-ink-900">Só você vê esta tela.</b>
+        O controle de pagamento não aparece para os inscritos nem na página pública.
+      </p>
+    </div>
+
+    <%!-- Números. Workshop gratuito não tem o que cobrar: "a receber" e
+    "recebido" só apareceriam para dizer zero. --%>
+    <div class={[
+      "mt-5 grid gap-2.5",
+      @cobra? && "grid-cols-2 sm:grid-cols-4",
+      !@cobra? && "grid-cols-1"
+    ]}>
+      <div class="rounded-2xl border border-ink-200 bg-ink-50 p-3.5 text-center">
+        <p class="m-0 font-serif text-[22px] font-bold leading-none tracking-tight text-ink-900">
+          {@summary.total}
+        </p>
+        <p class="m-0 mt-1.5 text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500">
+          inscritos
+        </p>
+      </div>
+      <div :if={@cobra?} class="rounded-2xl border border-ink-200 bg-ink-50 p-3.5 text-center">
+        <p class="m-0 font-serif text-[22px] font-bold leading-none tracking-tight text-accent-green">
+          {@summary.paid}
+        </p>
+        <p class="m-0 mt-1.5 text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500">
+          pagaram
+        </p>
+      </div>
+      <div :if={@cobra?} class="rounded-2xl border border-ink-200 bg-ink-50 p-3.5 text-center">
+        <p class="m-0 font-serif text-[22px] font-bold leading-none tracking-tight text-accent-orange">
+          {@summary.total - @summary.paid - @summary.waived}
+        </p>
+        <p class="m-0 mt-1.5 text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500">
+          a receber
+        </p>
+      </div>
+      <div :if={@cobra?} class="rounded-2xl border border-ink-200 bg-ink-50 p-3.5 text-center">
+        <p class="m-0 font-serif text-[22px] font-bold leading-none tracking-tight text-ink-900">
+          {revenue_label(@summary, @workshop)}
+        </p>
+        <p class="m-0 mt-1.5 text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500">
+          recebido
+        </p>
+      </div>
+    </div>
+
+    <%!-- Lista de inscritos --%>
+    <section class="mt-6">
+      <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+        Inscritos
+      </h2>
+
+      <div
+        :if={@enrollments != []}
+        class="overflow-hidden rounded-2xl border border-ink-200 bg-ink-50"
+      >
+        <div
+          :for={enrollment <- @enrollments}
+          id={"enrollment-#{enrollment.id}"}
+          class="flex flex-wrap items-center gap-3 border-b border-ink-200 px-4 py-3 last:border-b-0"
+        >
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-ink-50">
+            {String.first(enrollment.user.name || enrollment.user.username)}
+          </span>
+
+          <div class="min-w-0 flex-1">
+            <p class="m-0 truncate text-[13.5px] font-bold text-ink-900">
+              {enrollment.user.name}
+            </p>
+            <p class="m-0 text-[11.5px] text-ink-500">
+              @{enrollment.user.username} · inscreveu-se em {OGrupoDeEstudos.Brazil.format_datetime(
+                enrollment.inserted_at
+              )}
+            </p>
+          </div>
+
+          <span
+            :if={@cobra?}
+            class={[
+              "inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11.5px] font-bold",
+              enrollment.payment_status == :paid && "bg-accent-green/15 text-accent-green",
+              enrollment.payment_status == :pending && "bg-accent-orange/15 text-accent-orange",
+              enrollment.payment_status == :waived && "bg-ink-200 text-ink-600"
+            ]}
+          >
+            {payment_status_label(enrollment.payment_status)}
+          </span>
+
+          <div :if={@cobra?} class="flex shrink-0 gap-1.5">
+            <button
+              :if={enrollment.payment_status != :paid}
+              type="button"
+              phx-click="set_payment"
+              phx-value-id={enrollment.id}
+              phx-value-status="paid"
+              phx-disable-with="..."
+              class="cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+            >
+              Marcar pago
+            </button>
+            <button
+              :if={enrollment.payment_status == :paid}
+              type="button"
+              phx-click="set_payment"
+              phx-value-id={enrollment.id}
+              phx-value-status="pending"
+              class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            >
+              Desfazer
+            </button>
+            <button
+              :if={enrollment.payment_status == :pending}
+              type="button"
+              phx-click="set_payment"
+              phx-value-id={enrollment.id}
+              phx-value-status="waived"
+              class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            >
+              Isentar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <.workshop_empty
+        :if={@enrollments == []}
+        title="Ninguém inscrito ainda"
+        description="Compartilhe o link do workshop para as inscrições começarem."
+      >
+        <:action>
+          <button
+            type="button"
+            phx-click="copy_link"
+            class="cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white"
+          >
+            Copiar link do workshop
+          </button>
+        </:action>
+      </.workshop_empty>
+    </section>
+
+    <%!-- Cancelar (ação destrutiva, longe do resto) --%>
+    <section :if={@workshop.status != :cancelled} class="mt-8 border-t border-ink-200 pt-5">
+      <button
+        type="button"
+        phx-click="cancel_workshop"
+        data-confirm="Cancelar este workshop? Os inscritos continuam registrados e o histórico é preservado."
+        class="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] font-semibold text-accent-red underline"
+      >
+        Cancelar este workshop
+      </button>
+    </section>
+  </main>
+</div>

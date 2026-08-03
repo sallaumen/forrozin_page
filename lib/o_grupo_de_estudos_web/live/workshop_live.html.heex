@@ -1,0 +1,201 @@
+<div id="workshop-shell" class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.flash kind={:info} id="lv-flash-info" flash={@flash} />
+  <.flash kind={:error} id="lv-flash-error" flash={@flash} />
+
+  <%!-- Visitante sem conta vê um topo simples com convite para entrar --%>
+  <header
+    :if={is_nil(@current_user)}
+    class="flex items-center justify-between bg-ink-900 px-5 py-3 text-ink-100"
+  >
+    <a
+      href={~p"/"}
+      class="brand-display text-[13px] font-bold uppercase tracking-[2.4px] text-ink-200 no-underline"
+    >
+      O Grupo de Estudos
+    </a>
+    <a href={~p"/login"} class="text-xs tracking-wider text-ink-400 no-underline">Entrar →</a>
+  </header>
+
+  <.top_nav
+    :if={@current_user}
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={:detail}
+    title="Workshop"
+  />
+
+  <main class="mx-auto w-full max-w-[1000px] flex-1 px-4 py-6 sm:px-6">
+    <.link
+      :if={@current_user}
+      navigate={~p"/study/workshops"}
+      class="mb-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-500 no-underline hover:text-ink-800"
+    >
+      <.icon name="hero-arrow-left" class="size-4" /> Workshops
+    </.link>
+
+    <div :if={@workshop.status == :cancelled} class="mb-4 rounded-xl bg-accent-red/10 px-4 py-3">
+      <p class="m-0 text-[13px] font-bold text-accent-red">
+        Este workshop foi cancelado pelo organizador.
+      </p>
+    </div>
+
+    <div :if={@workshop.status == :draft} class="mb-4 rounded-xl bg-gold-500/15 px-4 py-3">
+      <p class="m-0 text-[13px] font-bold text-ink-700">
+        Rascunho: só você enxerga esta página até publicar.
+      </p>
+    </div>
+
+    <%!-- Cabeçalho --%>
+    <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-5">
+      <div class="min-w-0">
+        <h1 class="m-0 font-serif text-[26px] font-bold tracking-tight text-ink-900 sm:text-[30px]">
+          {@workshop.title}
+        </h1>
+        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-600">
+          <span class="font-bold text-ink-900">{schedule_label(@workshop)}</span>
+          <span :if={@workshop.location}>{@workshop.location}</span>
+          <span>com <b class="text-ink-900">{@workshop.organizer.name}</b></span>
+        </div>
+      </div>
+      <.link
+        :if={@organizer?}
+        navigate={~p"/workshops/#{@workshop.slug}/gerenciar"}
+        class="shrink-0 rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
+      >
+        Gerenciar inscritos
+      </.link>
+    </div>
+
+    <div class="mt-5 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+      <%!-- Descrição --%>
+      <div>
+        <div class="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800">
+          {@workshop.description}
+        </div>
+
+        <%!-- Inscritos: nomes só para quem está logado --%>
+        <section :if={@current_user && @participants != []} class="mt-7">
+          <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+            Quem vai
+          </h2>
+          <div class="flex flex-wrap gap-2">
+            <span
+              :for={p <- @participants}
+              class="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-ink-50 py-1 pl-1 pr-3"
+            >
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-[10px] font-bold text-ink-50">
+                {String.first(p.name || p.username)}
+              </span>
+              <span class="text-[12.5px] text-ink-700">{p.name}</span>
+            </span>
+          </div>
+        </section>
+
+        <p
+          :if={is_nil(@current_user) && @enrolled_count > 0}
+          class="mt-6 text-[13px] text-ink-500"
+        >
+          {people_label(@enrolled_count)} até agora.
+          <a href={~p"/login"} class="font-semibold text-accent-orange">Entre</a>
+          para ver quem vai.
+        </p>
+      </div>
+
+      <%!-- Caixa de inscrição --%>
+      <aside>
+        <div class="rounded-2xl border border-ink-200 border-l-[3px] border-l-accent-green bg-ink-50 p-4 shadow-sm">
+          <p class="m-0 font-serif text-[24px] font-bold tracking-tight text-ink-900">
+            {price_label(@workshop)}
+            <span :if={!Workshop.free?(@workshop)} class="text-[12px] font-normal text-ink-500">
+              por pessoa
+            </span>
+          </p>
+          <p
+            :if={!Workshop.free?(@workshop)}
+            class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500"
+          >
+            {payment_hint(@workshop, @enrolled? || @organizer?)}
+          </p>
+
+          <%!-- Vagas, só quando o organizador definiu um limite --%>
+          <div :if={@workshop.capacity} class="mt-3">
+            <div class="h-1.5 w-full overflow-hidden rounded-full bg-ink-200">
+              <div
+                class="h-full rounded-full bg-accent-green"
+                style={"width: #{vagas_percent(@enrolled_count, @workshop.capacity)}%"}
+              >
+              </div>
+            </div>
+            <p class="m-0 mt-1.5 text-[12px] text-ink-600">
+              <b>{@enrolled_count} de {@workshop.capacity}</b> vagas preenchidas
+            </p>
+          </div>
+
+          <p
+            :if={is_nil(@workshop.capacity) && @enrolled_count > 0}
+            class="m-0 mt-3 text-[12px] text-ink-600"
+          >
+            <b>{people_label(@enrolled_count)}</b>
+          </p>
+
+          <div class="mt-4">
+            <%!-- Quem organiza já está no evento: inscrever ocuparia uma vaga
+            e apareceria na própria lista de pagamentos. --%>
+            <.link
+              :if={@organizer?}
+              navigate={~p"/workshops/#{@workshop.slug}/gerenciar"}
+              class="block w-full rounded-full bg-ink-900 px-5 py-3 text-center font-serif text-[15px] font-semibold text-ink-50 no-underline"
+            >
+              Gerenciar inscritos
+            </.link>
+
+            <button
+              :if={!@organizer? && !@enrolled? && !@full? && @workshop.status == :published}
+              type="button"
+              phx-click="enroll"
+              phx-disable-with="Inscrevendo..."
+              class="w-full cursor-pointer rounded-full border-0 bg-accent-orange px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-orange/90"
+            >
+              Fazer inscrição
+            </button>
+
+            <div
+              :if={@enrolled?}
+              class="rounded-xl border border-accent-green/30 bg-accent-green/10 px-4 py-3 text-center"
+            >
+              <p class="m-0 text-[13px] font-bold text-accent-green">
+                <.icon name="hero-check-circle" class="size-4 -mt-0.5" /> Você está inscrito
+              </p>
+              <button
+                type="button"
+                phx-click="cancel_enrollment"
+                data-confirm="Cancelar sua inscrição neste workshop?"
+                class="mt-1.5 cursor-pointer border-0 bg-transparent p-0 text-[11.5px] text-ink-500 underline"
+              >
+                cancelar inscrição
+              </button>
+            </div>
+
+            <p
+              :if={@full? && !@enrolled? && !@organizer?}
+              class="m-0 rounded-xl bg-ink-200 px-4 py-3 text-center text-[13px] font-bold text-ink-600"
+            >
+              Vagas esgotadas
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-3 rounded-xl border border-ink-200 bg-ink-50/60 px-4 py-3 text-[12.5px] text-ink-500">
+          Organizado por
+          <.link
+            navigate={~p"/users/#{@workshop.organizer.username}"}
+            class="font-bold text-ink-900 no-underline"
+          >
+            {@workshop.organizer.name}
+          </.link>
+          <br />@{@workshop.organizer.username}
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
