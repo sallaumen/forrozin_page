@@ -25,11 +25,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   def mount(%{"slug" => slug}, _session, socket) do
     workshop = Workshops.get_by_slug(slug)
 
-    case Policy.authorize(:view_workshop, socket.assigns[:current_user], workshop) do
+    case Policy.authorize(:view_workshop, socket.assigns[:current_user], acesso(workshop, socket)) do
       :ok -> {:ok, socket |> permitir_media() |> assign_page(workshop)}
       {:error, _} -> {:ok, not_found(socket)}
     end
   end
+
+  # Workshop privado precisa saber se a pessoa foi convidada, e isso e fato do
+  # banco: a Policy e pura, entao a borda resolve antes.
+  defp acesso(nil, _socket), do: nil
+  defp acesso(workshop, socket), do: Workshops.access_for(workshop, socket.assigns[:current_user])
 
   defp permitir_media(socket) do
     allow_upload(socket, :media,

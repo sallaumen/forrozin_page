@@ -196,7 +196,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "ends_at" => "",
       "price" => "",
       "payment_info" => "",
-      "capacity" => ""
+      "capacity" => "",
+      "visibility" => "public"
     }
   end
 
@@ -209,7 +210,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "ends_at" => datetime_input(workshop.ends_at),
       "price" => price_input(workshop.price_cents),
       "payment_info" => workshop.payment_info || "",
-      "capacity" => if(workshop.capacity, do: to_string(workshop.capacity), else: "")
+      "capacity" => if(workshop.capacity, do: to_string(workshop.capacity), else: ""),
+      "visibility" => to_string(workshop.visibility)
     }
   end
 
@@ -232,9 +234,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       starts_at: parse_datetime(params["starts_at"]),
       ends_at: parse_datetime(params["ends_at"]),
       price_cents: parse_price(params["price"]),
-      capacity: parse_int(params["capacity"])
+      capacity: parse_int(params["capacity"]),
+      visibility: visibilidade(params["visibility"])
     }
   end
+
+  defp visibilidade("private"), do: :private
+  defp visibilidade(_public), do: :public
 
   defp blank_to_nil(nil), do: nil
   defp blank_to_nil(""), do: nil
