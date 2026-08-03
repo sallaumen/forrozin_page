@@ -91,6 +91,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaControllerTest do
       assert conn.status == 404
     end
 
+    test "content_type fora da allowlist sai como binario generico", ctx do
+      # O content_type gravado veio do navegador de quem subiu o arquivo. Um
+      # cliente hostil que burlasse a validacao do upload e gravasse
+      # "image/svg+xml" ganharia XSS armazenado: SVG aberto direto na URL
+      # executa script na origem do site, com a sessao de quem clicou.
+      {:ok, forjada} =
+        ctx.media
+        |> Ecto.Changeset.change(content_type: "image/svg+xml")
+        |> OGrupoDeEstudos.Repo.update()
+
+      conn = get(log_in_user(build_conn(), ctx.aluna), ~p"/workshop-media/#{forjada.id}")
+
+      assert conn.status == 200
+      assert get_resp_header(conn, "content-type") == ["application/octet-stream"]
+    end
+
     test "o arquivo NAO e servido pelo Plug.Static", ctx do
       # A pasta da midia fica fora da allowlist: se este caminho servisse, a
       # autorizacao do controller seria decorativa.
@@ -143,7 +159,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaControllerTest do
       {:ok, sem_poster} =
         ctx.com_poster |> Ecto.Changeset.change(poster_key: nil) |> OGrupoDeEstudos.Repo.update()
 
-      conn = get(log_in_user(build_conn(), ctx.aluna), ~p"/workshop-media/#{sem_poster.id}/poster")
+      conn =
+        get(log_in_user(build_conn(), ctx.aluna), ~p"/workshop-media/#{sem_poster.id}/poster")
 
       assert conn.status == 404
     end
