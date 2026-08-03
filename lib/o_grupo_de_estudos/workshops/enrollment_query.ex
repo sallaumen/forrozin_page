@@ -11,7 +11,43 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   import Ecto.Query
 
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Workshops.WorkshopEnrollment
+  alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopEnrollment}
+
+  @doc """
+  Próximos workshops em que a pessoa está inscrita, do mais próximo em diante.
+
+  Workshop rolando agora ainda conta: quem está no meio do evento quer ver que
+  está nele.
+  """
+  @spec list_upcoming_for_user(Ecto.UUID.t(), keyword()) :: [Workshop.t()]
+  def list_upcoming_for_user(user_id, opts \\ []) do
+    agora = Keyword.get(opts, :now, DateTime.utc_now())
+
+    # Parte do Workshop, nao da inscricao: preload so funciona sobre o binding
+    # do `from`.
+    from(w in Workshop,
+      join: e in assoc(w, :enrollments),
+      where: e.user_id == ^user_id and w.status == :published,
+      where: coalesce(w.ends_at, w.starts_at) >= ^agora,
+      order_by: [asc: w.starts_at],
+      limit: ^Keyword.get(opts, :limit, 3),
+      preload: [:organizer]
+    )
+    |> Repo.all()
+  end
+
+  @doc "Quantos workshops futuros a pessoa tem, para o \"e mais N\"."
+  @spec count_upcoming_for_user(Ecto.UUID.t()) :: non_neg_integer()
+  def count_upcoming_for_user(user_id) do
+    agora = DateTime.utc_now()
+
+    from(w in Workshop,
+      join: e in assoc(w, :enrollments),
+      where: e.user_id == ^user_id and w.status == :published,
+      where: coalesce(w.ends_at, w.starts_at) >= ^agora
+    )
+    |> Repo.aggregate(:count)
+  end
 
   @doc """
   `%{program_id => quantos}`: em quantos workshops de cada programação a
