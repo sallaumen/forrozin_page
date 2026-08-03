@@ -73,6 +73,18 @@ defmodule OGrupoDeEstudos.Media.ObjectStorageTest do
       assert Enum.sort(LocalDisk.list("avatars/u1_")) == ["avatars/u1_1.jpg", "avatars/u1_2.jpg"]
       assert LocalDisk.list("workshop_media/") == []
     end
+
+    test "list desce em subpastas e devolve só arquivos, como um bucket", ctx do
+      # Chave é caminho plano no contrato: pasta não é objeto. Sem isso o
+      # adapter de disco divergiria do R2 quando as chaves têm subpastas.
+      :ok = LocalDisk.put("workshop_media/w1/a.mp4", ctx.origem)
+      :ok = LocalDisk.put("workshop_media/w2/b.mp4", ctx.origem)
+
+      assert Enum.sort(LocalDisk.list("workshop_media/")) ==
+               ["workshop_media/w1/a.mp4", "workshop_media/w2/b.mp4"]
+
+      assert LocalDisk.list("workshop_media/w1/") == ["workshop_media/w1/a.mp4"]
+    end
   end
 
   describe "LocalDisk.public_url/1" do

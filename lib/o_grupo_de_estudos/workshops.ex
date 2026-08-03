@@ -245,7 +245,11 @@ defmodule OGrupoDeEstudos.Workshops do
          :ok <- ensure_cota(workshop.id, byte_size),
          :ok <- ensure_espaco(byte_size),
          {:ok, key} <-
-           Storage.put_private(@media_dir, tmp_path, WorkshopMedia.extensao(content_type)) do
+           Storage.put_private(
+             pasta_da_galeria(workshop.id),
+             tmp_path,
+             WorkshopMedia.extensao(content_type)
+           ) do
       inserir_media(workshop, user, kind, key, content_type, byte_size)
     end
   end
@@ -431,8 +435,8 @@ defmodule OGrupoDeEstudos.Workshops do
   defp guardar_convertido(media, _saida, 0), do: desistir(media, :saida_vazia)
 
   defp guardar_convertido(media, saida, bytes) do
-    case Storage.put_private(@media_dir, saida, ".mp4") do
-      {:ok, chave} -> trocar_arquivo(media, chave, bytes, gerar_poster(saida))
+    case Storage.put_private(pasta_da_galeria(media.workshop_id), saida, ".mp4") do
+      {:ok, chave} -> trocar_arquivo(media, chave, bytes, gerar_poster(media, saida))
       {:error, motivo} -> desistir(media, motivo)
     end
   end
@@ -487,29 +491,33 @@ defmodule OGrupoDeEstudos.Workshops do
 
   # Poster é enfeite: sem ele a galeria mostra o primeiro quadro do vídeo, que
   # costuma ser preto. Não é motivo para segurar a mídia em "processando".
-  defp gerar_poster(video) do
+  defp gerar_poster(media, video) do
     destino = caminho_temporario("jpg")
 
     try do
-      guardar_poster(video, destino)
+      guardar_poster(media, video, destino)
     after
       File.rm(destino)
     end
   end
 
-  defp guardar_poster(video, destino) do
+  defp guardar_poster(media, video, destino) do
     case Video.poster(video, destino) do
-      :ok -> chave_do_poster(destino)
+      :ok -> chave_do_poster(media, destino)
       {:error, _motivo} -> nil
     end
   end
 
-  defp chave_do_poster(destino) do
-    case Storage.put_private(@media_dir, destino, ".jpg") do
+  defp chave_do_poster(media, destino) do
+    case Storage.put_private(pasta_da_galeria(media.workshop_id), destino, ".jpg") do
       {:ok, chave} -> chave
       {:error, _motivo} -> nil
     end
   end
+
+  # Uma pasta por workshop: o bucket fica navegável por contexto, e o que é
+  # de um workshop mora junto (original, convertido e poster).
+  defp pasta_da_galeria(workshop_id), do: Path.join(@media_dir, workshop_id)
 
   defp caminho_temporario(ext) do
     nome = "workshop_video_#{System.unique_integer([:positive])}.#{ext}"
@@ -735,7 +743,11 @@ defmodule OGrupoDeEstudos.Workshops do
 
   # ── Flyer ─────────────────────────────────────────────────────────────
 
-  @flyer_dir "flyers"
+  # Uma pasta por dono do cartaz: workshops e programações separados, cada um
+  # com a sua. O nome do arquivo continua aleatório, que é o que impede
+  # varredura; o id na pasta só organiza (rota é por slug, id não abre nada).
+  defp pasta_do_flyer(%Workshop{id: id}), do: "flyers/workshops/#{id}"
+  defp pasta_do_flyer(%WorkshopProgram{id: id}), do: "flyers/programas/#{id}"
 
   @doc """
   Guarda o flyer de divulgação do workshop e apaga o anterior.
@@ -747,7 +759,7 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, Workshop.t()} | {:error, :unauthorized | term()}
   def put_workshop_flyer(%Workshop{} = workshop, %User{} = user, tmp_path, ext) do
     with :ok <- ensure_admin(workshop, user),
-         {:ok, url} <- Storage.save_image(@flyer_dir, tmp_path, ext) do
+         {:ok, url} <- Storage.save_image(pasta_do_flyer(workshop), tmp_path, ext) do
       antigo = workshop.flyer_path
       resultado = workshop |> Workshop.flyer_changeset(url) |> Repo.update()
       descartar_flyer(resultado, antigo)
@@ -770,7 +782,7 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, WorkshopProgram.t()} | {:error, :unauthorized | term()}
   def put_program_flyer(%WorkshopProgram{} = program, %User{} = user, tmp_path, ext) do
     with :ok <- ensure_program_owner(program, user),
-         {:ok, url} <- Storage.save_image(@flyer_dir, tmp_path, ext) do
+         {:ok, url} <- Storage.save_image(pasta_do_flyer(program), tmp_path, ext) do
       antigo = program.flyer_path
       resultado = program |> WorkshopProgram.flyer_changeset(url) |> Repo.update()
       descartar_flyer(resultado, antigo)

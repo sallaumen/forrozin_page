@@ -122,7 +122,8 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       assert pronta.content_type == "video/mp4"
       assert pronta.byte_size == 800_000
       assert pronta.storage_key != chave_antiga
-      assert pronta.storage_key =~ ".mp4"
+      # O convertido fica na pasta do mesmo workshop, como o original.
+      assert pronta.storage_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.mp4$}
       assert {:file, _} = Workshops.serve_media(pronta)
     end
 
@@ -150,7 +151,7 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
       pronta = Workshops.get_media(media.id)
-      assert pronta.poster_key =~ ".jpg"
+      assert pronta.poster_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.jpg$}
       assert {:file, _} = Workshops.serve_poster(pronta)
     end
 
