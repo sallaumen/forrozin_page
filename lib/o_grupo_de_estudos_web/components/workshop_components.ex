@@ -8,6 +8,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   use OGrupoDeEstudosWeb, :verified_routes
 
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
+  import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
 
   alias OGrupoDeEstudos.Brazil
   alias OGrupoDeEstudos.Workshops.Workshop
@@ -68,8 +69,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         <p class="m-0 line-clamp-2 font-serif text-[15px] font-bold tracking-tight text-ink-900">
           {@workshop.title}
         </p>
-        <p class="m-0 mt-0.5 line-clamp-2 text-[12.5px] text-ink-500">
-          {@workshop.organizer.name} · {schedule_label(@workshop)}{location_suffix(@workshop)}
+        <%!-- Rosto pequeno junto do nome: quem passa os olhos na agenda
+        reconhece o professor antes de ler. O par foto+nome é inline para o
+        resto da linha continuar fluindo como texto, sem quebra forçada. --%>
+        <p class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500">
+          <span class="mr-1 inline-flex items-center gap-1 align-middle">
+            <.user_avatar user={@workshop.organizer} size={:xs} />
+            <span class="font-semibold text-ink-700">{@workshop.organizer.name}</span>
+          </span>
+          · {schedule_label(@workshop)}{location_suffix(@workshop)}
         </p>
 
         <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -428,10 +436,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         </button>
       </div>
 
-      <.live_file_input
-        upload={@upload}
-        class="block w-full text-[12.5px] text-ink-600 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-ink-900 file:px-4 file:py-2 file:font-serif file:text-[12.5px] file:font-semibold file:text-ink-50"
-      />
+      <%!-- Label no lugar do controle nativo: o texto do input de arquivo vem
+      do navegador e sai em inglês ("Choose File", "No file chosen"). O input
+      fica em sr-only, não display:none, para o teclado ainda alcançar. --%>
+      <label
+        for={@upload.ref}
+        class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink-900 px-4 py-2 font-serif text-[12.5px] font-semibold text-ink-50"
+      >
+        <.icon name="hero-arrow-up-tray" class="size-4" /> Escolher imagem
+      </label>
+      <.live_file_input upload={@upload} class="sr-only" />
 
       <div :for={entry <- @upload.entries} class="mt-2 flex items-center gap-3">
         <.live_img_preview

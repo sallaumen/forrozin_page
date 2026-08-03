@@ -37,13 +37,17 @@ defmodule OGrupoDeEstudosWeb.UI.UserAvatar do
         ]}
       />
     <% else %>
-      <div class={[
+      <%!-- <span>, não <div>: um bloco dentro de <p> faz o navegador fechar o
+      parágrafo sozinho e jogar o resto para fora. Com `flex` no span o
+      resultado visual é idêntico, e o avatar passa a caber em qualquer lugar
+      que aceite texto. --%>
+      <span class={[
         "rounded-full bg-ink-900 flex items-center justify-center text-ink-200 font-bold shrink-0",
         @dimensions.class,
         @dimensions.text
       ]}>
         {initial(@user)}
-      </div>
+      </span>
     <% end %>
     """
   end

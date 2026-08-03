@@ -1,0 +1,468 @@
+<title>Workshop privado: da invisibilidade à vitrine</title>
+<style>
+  :root {
+    --ink-50:#fdfbf8; --ink-100:#f7f3ec; --ink-200:#ede8df; --ink-300:#d4cabb;
+    --ink-400:#bba88a; --ink-500:#9a7a5a; --ink-600:#7a5c3a; --ink-700:#5c3a1a;
+    --ink-800:#3a2410; --ink-900:#1a0e05;
+    --gold-400:#e6b97e; --gold-500:#d4a054; --gold-600:#b8893f;
+    --red:#c0392b; --orange:#e67e22; --green:#27ae60; --blue:#2980b9; --purple:#8e44ad;
+    --serif: Georgia, "Iowan Old Style", serif;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --sh-sm: 0 2px 4px rgba(26,14,5,.06);
+    --sh-md: 0 4px 12px rgba(26,14,5,.08);
+
+    --page-bg: var(--ink-100);
+    --page-fg: var(--ink-900);
+    --page-muted: var(--ink-600);
+    --page-rule: var(--ink-300);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg:#140b04; --page-fg:#f2ece1; --page-muted:#bdab92; --page-rule:#42301c; }
+  }
+  :root[data-theme="dark"] { --page-bg:#140b04; --page-fg:#f2ece1; --page-muted:#bdab92; --page-rule:#42301c; }
+  :root[data-theme="light"] { --page-bg:#f7f3ec; --page-fg:#1a0e05; --page-muted:#7a5c3a; --page-rule:#d4cabb; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:3rem 1.25rem 6rem;
+    background: var(--page-bg); color: var(--page-fg);
+    font-family: var(--serif); line-height:1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 60rem; margin:0 auto; }
+
+  .eyebrow {
+    font-family: var(--sans); font-size:.68rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.18em; color: var(--gold-600);
+    margin:0 0 .5rem;
+  }
+  h1 { font-size:2.1rem; line-height:1.15; margin:0 0 .6rem; letter-spacing:-.02em; text-wrap:balance; }
+  .lede { font-size:1.05rem; color:var(--page-muted); margin:0 0 2.5rem; max-width:44rem; }
+
+  h2 {
+    font-family: var(--sans); font-size:.72rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.16em; color:var(--gold-600);
+    margin:3.5rem 0 .35rem; display:flex; align-items:baseline; gap:.6rem;
+  }
+  h2 .n { font-variant-numeric: tabular-nums; color:var(--page-rule); }
+  .h2sub { font-size:1.25rem; margin:0 0 1.1rem; letter-spacing:-.01em; }
+  .note { font-size:.92rem; color:var(--page-muted); margin:.9rem 0 0; max-width:44rem; }
+  .note b { color:var(--page-fg); font-weight:700; }
+
+  /* ── O painel é a "tela do produto": cores reais, não seguem o tema ── */
+  .screen {
+    background: var(--ink-100); color: var(--ink-900);
+    border:1px solid var(--ink-300); border-radius:14px;
+    padding:1.4rem; box-shadow: var(--sh-md);
+    font-family: var(--serif);
+  }
+  .screen + .screen { margin-top:1rem; }
+
+  /* ── Card da agenda (réplica do workshop_card) ── */
+  .card {
+    display:flex; flex-wrap:wrap; align-items:center; gap:.75rem 1rem;
+    background: var(--ink-50); border:1px solid var(--ink-200);
+    border-radius:16px; padding:1rem; box-shadow: var(--sh-sm);
+  }
+  .card + .card { margin-top:.7rem; }
+  .datebox {
+    width:54px; height:54px; flex:none; border-radius:12px;
+    border:1px solid var(--ink-200); background:var(--ink-100);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1;
+  }
+  .datebox .d { font-size:21px; font-weight:700; letter-spacing:-.02em; }
+  .datebox .m {
+    font-family:var(--sans); font-size:9px; font-weight:700; margin-top:2px;
+    text-transform:uppercase; letter-spacing:1.4px; color:var(--ink-500);
+  }
+  .cardbody { flex:1 1 55%; min-width:0; }
+  .cardtitle { font-size:15px; font-weight:700; letter-spacing:-.01em; margin:0; }
+  .cardmeta { font-size:12.5px; color:var(--ink-500); margin:.15rem 0 0; }
+  .tags { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; margin-top:.45rem; }
+  .tag {
+    font-family:var(--sans); display:inline-flex; align-items:center; gap:.25rem;
+    border-radius:99px; padding:.15rem .6rem;
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+  }
+  .t-neutral { background:var(--ink-200); color:var(--ink-600); }
+  .t-blue    { background:rgba(41,128,185,.15);  color:var(--blue); }
+  .t-green   { background:rgba(39,174,96,.15);   color:var(--green); }
+  .t-gold    { background:rgba(212,160,84,.20);  color:var(--gold-600); }
+  .t-red     { background:rgba(192,57,43,.15);   color:var(--red); }
+  .count { font-size:11.5px; color:var(--ink-400); }
+  .btn {
+    font-family:var(--serif); font-size:13px; font-weight:600; color:#fff;
+    background:var(--orange); border:0; border-radius:99px;
+    padding:.5rem 1rem; cursor:pointer; white-space:nowrap;
+  }
+  .btn-gold { background:var(--gold-600); }
+  .btn-ghost { background:transparent; color:var(--ink-600); border:1px solid var(--ink-300); }
+
+  svg.ico { width:11px; height:11px; flex:none; }
+
+  /* ── Página do workshop ── */
+  .page-head { border-bottom:1px solid var(--ink-200); padding-bottom:1rem; margin-bottom:1.1rem; }
+  .page-title { font-size:1.6rem; font-weight:700; letter-spacing:-.02em; margin:.35rem 0 .3rem; }
+  .page-meta { font-size:13px; color:var(--ink-500); margin:0; }
+  .page-meta b { color:var(--ink-900); }
+  .cols { display:grid; grid-template-columns: 1fr 15rem; gap:1.4rem; }
+  @media (max-width:640px){ .cols { grid-template-columns:1fr; } }
+  .desc { font-size:14.5px; margin:0 0 1.2rem; }
+
+  .seclabel {
+    font-family:var(--sans); font-size:10.5px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.14em; color:var(--ink-500);
+    display:flex; align-items:center; gap:.4rem; margin:0 0 .5rem;
+  }
+
+  /* Vitrine: vê-se a forma, não o conteúdo */
+  .locked {
+    position:relative; border:1px dashed var(--ink-300); border-radius:12px;
+    padding:.9rem 1rem; margin-bottom:.85rem; overflow:hidden;
+    background:
+      repeating-linear-gradient(135deg, rgba(212,160,84,.05) 0 8px, transparent 8px 16px),
+      var(--ink-100);
+  }
+  .locked .blurred { filter: blur(4.5px); opacity:.5; user-select:none; pointer-events:none; }
+  .locked .real { font-size:12.5px; color:var(--ink-600); margin:.5rem 0 0; }
+  .avatars { display:flex; }
+  .av {
+    width:26px; height:26px; border-radius:99px; background:var(--ink-300);
+    border:2px solid var(--ink-50); margin-left:-7px;
+  }
+  .av:first-child { margin-left:0; }
+  .thumbs { display:flex; gap:.35rem; }
+  .th { width:44px; height:44px; border-radius:7px; background:var(--ink-300); }
+  .bubble { height:9px; border-radius:99px; background:var(--ink-300); margin-bottom:.35rem; }
+
+  .side {
+    border:1px solid var(--ink-200); border-left:3px solid var(--gold-500);
+    border-radius:14px; background:var(--ink-50); padding:1rem; box-shadow:var(--sh-sm);
+  }
+  .price { font-size:22px; font-weight:700; letter-spacing:-.02em; margin:0; }
+  .side .sub { font-size:12px; color:var(--ink-500); margin:.1rem 0 .8rem; }
+  .side .btn { width:100%; }
+
+  .banner {
+    border-radius:12px; padding:.85rem 1rem; margin-bottom:1rem;
+    font-size:13.5px; display:flex; gap:.6rem; align-items:flex-start;
+  }
+  .b-wait { background:rgba(212,160,84,.14); border:1px solid rgba(212,160,84,.4); color:var(--ink-800); }
+  .b-ok   { background:rgba(39,174,96,.12);  border:1px solid rgba(39,174,96,.35); color:var(--ink-800); }
+  .banner b { display:block; }
+  .banner svg { width:16px; height:16px; flex:none; margin-top:1px; }
+
+  /* Painel de quem organiza */
+  .req { display:flex; align-items:center; gap:.75rem; padding:.7rem 0; }
+  .req + .req { border-top:1px solid var(--ink-200); }
+  .req .who { flex:1; min-width:0; }
+  .req .nm { font-size:14px; font-weight:700; margin:0; }
+  .req .when { font-size:12px; color:var(--ink-500); margin:0; }
+  .req .btn { padding:.35rem .8rem; font-size:12px; }
+
+  .callout {
+    border-left:3px solid var(--gold-500); background:rgba(212,160,84,.09);
+    border-radius:0 12px 12px 0; padding:1rem 1.2rem; margin:1.2rem 0;
+    font-size:.96rem;
+  }
+  .callout b { color:var(--gold-600); }
+
+  table { width:100%; border-collapse:collapse; font-size:.9rem; margin-top:.6rem; }
+  th, td { text-align:left; padding:.5rem .7rem; border-bottom:1px solid var(--page-rule); vertical-align:top; }
+  th { font-family:var(--sans); font-size:.68rem; text-transform:uppercase; letter-spacing:.12em; color:var(--page-muted); font-weight:700; }
+  td.yes { color:var(--green); font-weight:700; }
+  td.no  { color:var(--page-muted); }
+  .scroll { overflow-x:auto; }
+</style>
+
+<main>
+  <p class="eyebrow">Correção de conceito · Workshops</p>
+  <h1>De invisível para vitrine</h1>
+  <p class="lede">
+    Hoje o workshop privado some do mundo: não entra na agenda e o link responde
+    como se o endereço não existisse. Isso protege demais e mostra de menos.
+    A proposta troca o eixo: <b>todo mundo vê que ele existe</b>, e o que muda
+    é <b>como se entra</b>.
+  </p>
+
+  <div class="callout">
+    <b>A ideia condutora é uma vitrine.</b> Você passa na frente e vê pela vidraça
+    que tem gente lá dentro, que tem aula rolando, quanto custa. A porta é que
+    precisa de chave. Quem quer entrar toca a campainha e espera quem organiza abrir.
+  </div>
+
+  <h2><span class="n">01</span> A agenda</h2>
+  <p class="h2sub">Os dois convivem na mesma lista, sem hierarquia.</p>
+
+  <div class="screen">
+    <div class="card">
+      <div class="datebox"><span class="d">12</span><span class="m">set</span></div>
+      <div class="cardbody">
+        <p class="cardtitle">Pisada e Condução: fim de semana</p>
+        <p class="cardmeta">Tavano · sábado, 12 de setembro · 14h às 18h · Curitiba</p>
+        <div class="tags">
+          <span class="tag t-neutral">R$ 180</span>
+          <span class="count">17 inscritos</span>
+        </div>
+      </div>
+      <button class="btn">Ver</button>
+    </div>
+
+    <div class="card">
+      <div class="datebox"><span class="d">19</span><span class="m">set</span></div>
+      <div class="cardbody">
+        <p class="cardtitle">Turma fechada: preparação para o festival</p>
+        <p class="cardmeta">Tavano · sábado, 19 de setembro · 15h às 19h · Curitiba</p>
+        <div class="tags">
+          <span class="tag t-gold">
+            <svg class="ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+            </svg>
+            Por aprovação
+          </span>
+          <span class="tag t-neutral">R$ 220</span>
+          <span class="count">8 inscritos</span>
+        </div>
+      </div>
+      <button class="btn btn-gold">Ver</button>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>Só o privado ganha selo.</b> Se todo card carregasse etiqueta, a etiqueta
+    deixaria de ser informação e viraria enfeite: a maioria dos workshops vai ser
+    aberta, e ausência de cadeado já diz "entra quem quiser". Se você preferir o
+    par explícito (um "Aberto" verde do outro lado), é uma linha de código, mas eu
+    recomendo assim.
+  </p>
+  <p class="note">
+    <b>Sobre o preço: ele já está na lista hoje.</b> Sai como etiqueta ao lado do
+    contador de inscritos, do jeito que você vê aí em cima, e "Gratuito" ganha
+    etiqueta azul. Você ainda não tinha criado workshop nenhum para ver, então
+    fica aqui a confirmação de que esse pedido já estava pronto.
+  </p>
+
+  <h2><span class="n">02</span> A página, para quem chega de fora</h2>
+  <p class="h2sub">A vidraça: dá para ver o que tem, não dá para pegar.</p>
+
+  <div class="screen">
+    <div class="page-head">
+      <span class="tag t-gold" style="margin-bottom:.1rem">
+        <svg class="ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+        </svg>
+        Entrada por aprovação
+      </span>
+      <p class="page-title">Turma fechada: preparação para o festival</p>
+      <p class="page-meta">sábado, 19 de setembro · 15h às 19h · Curitiba · com <b>Tavano</b></p>
+    </div>
+
+    <div class="cols">
+      <div>
+        <p class="desc">
+          Quatro horas focadas em quem vai dançar no festival: pisada, condução e
+          leitura de música ao vivo. Turma pequena de propósito.
+        </p>
+
+        <p class="seclabel">
+          <svg class="ico" style="width:12px;height:12px" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+          </svg>
+          Quem vai
+        </p>
+        <div class="locked">
+          <div class="blurred avatars">
+            <span class="av"></span><span class="av"></span><span class="av"></span>
+            <span class="av"></span><span class="av"></span><span class="av"></span>
+          </div>
+          <p class="real">8 pessoas confirmadas. Os nomes aparecem quando você entrar.</p>
+        </div>
+
+        <p class="seclabel">Fotos e vídeos</p>
+        <div class="locked">
+          <div class="blurred thumbs">
+            <span class="th"></span><span class="th"></span><span class="th"></span><span class="th"></span>
+          </div>
+          <p class="real">4 fotos e 1 vídeo, mandados por quem está no workshop.</p>
+        </div>
+
+        <p class="seclabel">Conversa</p>
+        <div class="locked">
+          <div class="blurred">
+            <div class="bubble" style="width:72%"></div>
+            <div class="bubble" style="width:54%"></div>
+            <div class="bubble" style="width:63%"></div>
+          </div>
+          <p class="real">6 comentários.</p>
+        </div>
+      </div>
+
+      <aside class="side">
+        <p class="price">R$ 220</p>
+        <p class="sub">8 inscritos</p>
+        <button class="btn btn-gold">Pedir para entrar</button>
+        <p class="sub" style="margin:.6rem 0 0">
+          Quem organiza recebe seu pedido e decide. Você é avisado pelo sino.
+        </p>
+      </aside>
+    </div>
+  </div>
+
+  <p class="note">
+    O desfoque é a decisão de design que faz a coisa toda funcionar. Esconder as
+    seções diria "aqui não tem nada"; mostrar o conteúdo entregaria o que é pago.
+    Desfocado com a contagem por baixo diz a única coisa que interessa a quem está
+    do lado de fora: <b>tem gente aqui dentro, e tem coisa acontecendo</b>. É esse
+    detalhe que faz o site parecer vivo, que era o seu ponto.
+  </p>
+  <p class="note">
+    Fica de fora da vidraça o que é combinado privado: <b>a chave Pix e o endereço
+    exato</b>. Esses dois só depois do aceite, como já vale hoje para workshop pago.
+  </p>
+
+  <h2><span class="n">03</span> Pedido enviado</h2>
+  <p class="h2sub">O estado de espera precisa ser óbvio, e reversível.</p>
+
+  <div class="screen">
+    <div class="banner b-wait">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-12a.75.75 0 00-1.5 0v4c0 .28.16.54.4.67l2.5 1.44a.75.75 0 10.75-1.3l-2.15-1.24V6z" clip-rule="evenodd"/>
+      </svg>
+      <span>
+        <b>Seu pedido foi enviado para Tavano.</b>
+        Assim que ele aceitar, a página abre inteira e você recebe um aviso no sino.
+      </span>
+    </div>
+    <div class="cols">
+      <div>
+        <p class="desc" style="margin:0">
+          Quatro horas focadas em quem vai dançar no festival: pisada, condução e
+          leitura de música ao vivo. Turma pequena de propósito.
+        </p>
+      </div>
+      <aside class="side">
+        <p class="price">R$ 220</p>
+        <p class="sub">8 inscritos</p>
+        <button class="btn btn-ghost">Cancelar pedido</button>
+      </aside>
+    </div>
+  </div>
+
+  <h2><span class="n">04</span> O lado de quem organiza</h2>
+  <p class="h2sub">Uma fila curta, com o rosto de quem pediu.</p>
+
+  <div class="screen">
+    <p class="seclabel">Pedidos para entrar · 2 esperando</p>
+    <div class="req">
+      <span class="av" style="width:34px;height:34px;margin:0"></span>
+      <span class="who">
+        <p class="nm">Joana Ribeiro</p>
+        <p class="when">@joana · pediu há 2 horas · Curitiba</p>
+      </span>
+      <button class="btn" style="background:var(--green)">Aceitar</button>
+      <button class="btn btn-ghost">Recusar</button>
+    </div>
+    <div class="req">
+      <span class="av" style="width:34px;height:34px;margin:0"></span>
+      <span class="who">
+        <p class="nm">Carlos Mendes</p>
+        <p class="when">@carlosm · pediu ontem · Recife</p>
+      </span>
+      <button class="btn" style="background:var(--green)">Aceitar</button>
+      <button class="btn btn-ghost">Recusar</button>
+    </div>
+  </div>
+
+  <p class="note">
+    Aceitar <b>já matricula</b>, sem pedir uma segunda ação de ninguém: quem pediu
+    para entrar já disse o que queria. Recusar é silencioso para a turma e some da
+    fila; a pessoa volta a ver a vitrine, e pode pedir de novo depois.
+  </p>
+
+  <h2><span class="n">05</span> Depois do aceite</h2>
+  <p class="h2sub">Daqui para a frente é uma página igual à de qualquer workshop.</p>
+
+  <div class="screen">
+    <div class="banner b-ok">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.86-9.4a.75.75 0 10-1.22-.86l-3.24 4.6-1.7-1.7a.75.75 0 00-1.06 1.06l2.32 2.32a.75.75 0 001.14-.1l3.76-5.32z" clip-rule="evenodd"/>
+      </svg>
+      <span><b>Tavano aceitou seu pedido.</b> Você está na turma.</span>
+    </div>
+    <p class="seclabel">Quem vai</p>
+    <div class="avatars" style="margin-bottom:.8rem">
+      <span class="av"></span><span class="av"></span><span class="av"></span>
+      <span class="av"></span><span class="av"></span><span class="av"></span>
+    </div>
+    <p class="page-meta">Nomes, galeria, conversa e dados de pagamento: tudo aberto.</p>
+  </div>
+
+  <h2><span class="n">06</span> Quem vê o quê</h2>
+  <p class="h2sub">A regra inteira numa tabela.</p>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Informação</th>
+          <th>Público</th>
+          <th>Privado, de fora</th>
+          <th>Privado, aceito</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Aparece na agenda</td><td class="yes">sim</td><td class="yes">sim</td><td class="yes">sim</td></tr>
+        <tr><td>Título, data, local, preço</td><td class="yes">sim</td><td class="yes">sim</td><td class="yes">sim</td></tr>
+        <tr><td>Descrição</td><td class="yes">sim</td><td class="yes">sim</td><td class="yes">sim</td></tr>
+        <tr><td>Quantas pessoas vão</td><td class="yes">sim</td><td class="yes">sim</td><td class="yes">sim</td></tr>
+        <tr><td>Nomes de quem vai</td><td class="yes">sim</td><td class="no">desfocado</td><td class="yes">sim</td></tr>
+        <tr><td>Fotos e vídeos</td><td class="no">só inscritos</td><td class="no">desfocado</td><td class="yes">sim</td></tr>
+        <tr><td>Conversa</td><td class="yes">lê, e comenta inscrito</td><td class="no">desfocado</td><td class="yes">sim</td></tr>
+        <tr><td>Chave Pix e endereço exato</td><td class="no">só inscritos</td><td class="no">não</td><td class="yes">sim</td></tr>
+        <tr><td>Como entra</td><td class="yes">clica e pronto</td><td class="no">pede e espera</td><td class="no">já entrou</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span class="n">07</span> O que muda no código</h2>
+  <p class="h2sub">Menos do que parece: quase tudo já existe, com o sinal trocado.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Peça</th><th>Hoje</th><th>Vira</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Agenda</td>
+          <td>filtra privado fora do feed</td>
+          <td>mostra tudo, com selo no privado</td>
+        </tr>
+        <tr>
+          <td>Policy <code>:view_workshop</code></td>
+          <td>privado sem convite responde como inexistente</td>
+          <td>privado sempre abre; o que muda é o conteúdo</td>
+        </tr>
+        <tr>
+          <td><code>workshop_invites</code></td>
+          <td>convite que quem organiza cria</td>
+          <td>pedido que a pessoa cria, com status</td>
+        </tr>
+        <tr>
+          <td>Inscrição</td>
+          <td>convidado se inscreve sozinho</td>
+          <td>aceite já matricula</td>
+        </tr>
+        <tr>
+          <td>Notificação</td>
+          <td><code>workshop_invited</code></td>
+          <td>pedido para quem organiza, resposta para quem pediu</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note" style="margin-top:1.4rem">
+    A tabela de convites vira tabela de pedidos: mesma estrutura, mais um campo de
+    status e a autoria invertida. Como não existe workshop nenhum em produção
+    ainda, dá para mudar sem migrar dado de ninguém.
+  </p>
+</main>
