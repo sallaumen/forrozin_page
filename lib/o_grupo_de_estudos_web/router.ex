@@ -55,6 +55,9 @@ defmodule OGrupoDeEstudosWeb.Router do
   scope "/", OGrupoDeEstudosWeb do
     pipe_through :browser
 
+    # Midia de workshop: passa pela sessao de proposito, o arquivo e restrito.
+    get "/workshop-media/:id", WorkshopMediaController, :show
+
     delete "/logout", UserSessionController, :delete
     get "/confirm/:token", UserConfirmationController, :confirm
     get "/auto-login/:token", UserSessionController, :auto_login

@@ -245,6 +245,72 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
+  # ── Galeria ──────────────────────────────────────────────────────────
+
+  attr :media, :list, required: true
+  attr :current_user, :map, default: nil
+  attr :pode_apagar_tudo, :boolean, default: false
+
+  def media_gallery(assigns) do
+    ~H"""
+    <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+      <figure
+        :for={item <- @media}
+        id={"media-#{item.id}"}
+        class="group relative m-0 overflow-hidden rounded-xl border border-ink-200 bg-ink-100"
+      >
+        <img
+          :if={item.kind == :photo}
+          src={~p"/workshop-media/#{item.id}"}
+          alt={item.caption || "Foto do workshop"}
+          loading="lazy"
+          class="aspect-square w-full object-cover"
+        />
+
+        <video
+          :if={item.kind == :video}
+          src={~p"/workshop-media/#{item.id}"}
+          controls
+          playsinline
+          preload="metadata"
+          class="aspect-square w-full bg-ink-900 object-cover"
+        >
+        </video>
+
+        <span
+          :if={item.official}
+          class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-gold-500/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.4px] text-ink-900"
+        >
+          <.icon name="hero-star-solid" class="size-3" /> Oficial
+        </span>
+
+        <button
+          :if={pode_apagar?(item, @current_user, @pode_apagar_tudo)}
+          type="button"
+          phx-click="remove_media"
+          phx-value-id={item.id}
+          data-confirm="Tirar esta mídia da galeria?"
+          aria-label="Tirar da galeria"
+          class="absolute right-2 top-2 cursor-pointer rounded-full border-0 bg-ink-900/70 p-1.5 text-ink-50 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+        >
+          <.icon name="hero-trash" class="size-3.5" />
+        </button>
+
+        <figcaption class="flex items-center gap-1.5 px-2 py-1.5 text-[11px] text-ink-500">
+          <span class="truncate">{autor_da_media(item)}</span>
+        </figcaption>
+      </figure>
+    </div>
+    """
+  end
+
+  defp pode_apagar?(_item, nil, _admin?), do: false
+  defp pode_apagar?(_item, _user, true), do: true
+  defp pode_apagar?(item, user, _admin?), do: item.uploaded_by_id == user.id
+
+  defp autor_da_media(%{uploaded_by: %{name: nome, username: username}}), do: nome || username
+  defp autor_da_media(_item), do: "Alguém do workshop"
+
   # ── Caixa do pacote ──────────────────────────────────────────────────
 
   attr :program, :map, required: true

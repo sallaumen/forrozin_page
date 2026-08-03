@@ -26,9 +26,17 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     workshop = Workshops.get_by_slug(slug)
 
     case Policy.authorize(:view_workshop, socket.assigns[:current_user], workshop) do
-      :ok -> {:ok, assign_page(socket, workshop)}
+      :ok -> {:ok, socket |> permitir_media() |> assign_page(workshop)}
       {:error, _} -> {:ok, not_found(socket)}
     end
+  end
+
+  defp permitir_media(socket) do
+    allow_upload(socket, :media,
+      accept: ~w(.jpg .jpeg .png .webp .mp4 .mov),
+      max_entries: 1,
+      max_file_size: 200_000_000
+    )
   end
 
   defp assign_page(socket, workshop) do
@@ -140,6 +148,32 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     end
   end
 
+  def handle_event("validate_media", _params, socket), do: {:noreply, socket}
+
+  def handle_event("upload_media", _params, socket) do
+    workshop = socket.assigns.workshop
+    user = socket.assigns.current_user
+
+    socket
+    |> consume_uploaded_entries(:media, fn %{path: tmp_path}, entry ->
+      {:ok, Workshops.add_media(workshop, user, atributos_da_media(tmp_path, entry))}
+    end)
+    |> resultado_do_envio(socket)
+  end
+
+  def handle_event("remove_media", %{"id" => id}, socket) do
+    workshop = socket.assigns.workshop
+    user = socket.assigns.current_user
+
+    case Workshops.remove_media(workshop, user, id) do
+      {:ok, _} ->
+        {:noreply, socket |> assign_page(workshop) |> put_flash(:info, "Mídia removida.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível remover.")}
+    end
+  end
+
   def handle_event("toggle_workshop_like", _params, socket) do
     with %{} = user <- socket.assigns.current_user,
          :ok <- Policy.authorize(:like, user, nil) do
@@ -148,6 +182,36 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
       _ -> {:noreply, to_signup(socket)}
     end
   end
+
+  defp atributos_da_media(tmp_path, entry) do
+    %{tmp_path: tmp_path, content_type: entry.client_type, byte_size: entry.client_size}
+  end
+
+  defp resultado_do_envio([{:ok, _media}], socket) do
+    {:noreply,
+     socket
+     |> assign_page(socket.assigns.workshop)
+     |> put_flash(:info, "Enviado! Já está na galeria.")}
+  end
+
+  defp resultado_do_envio([{:error, motivo}], socket) do
+    {:noreply, put_flash(socket, :error, erro_de_media(motivo))}
+  end
+
+  defp resultado_do_envio(_nada, socket), do: {:noreply, socket}
+
+  @doc false
+  def erro_de_upload_media(:too_large), do: "Arquivo grande demais. O limite é 200 MB."
+  def erro_de_upload_media(:not_accepted), do: "Só foto (JPG, PNG, WEBP) ou vídeo (MP4, MOV)."
+  def erro_de_upload_media(:too_many_files), do: "Um arquivo por vez."
+  def erro_de_upload_media(_outro), do: "Não deu para carregar esse arquivo."
+
+  defp erro_de_media(:storage_full),
+    do: "O armazenamento está no limite. Avise quem organiza antes de tentar de novo."
+
+  defp erro_de_media(:unsupported_type), do: "Só entra foto ou vídeo."
+  defp erro_de_media(:unauthorized), do: "Só quem está no workshop manda mídia."
+  defp erro_de_media(_outro), do: "Não foi possível enviar."
 
   # O rate limit corta em 20 likes por 10s: sem isso o clique nao dá resposta
   # nenhuma e a pessoa acha que a pagina travou.
@@ -275,6 +339,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:organizer?, Workshops.admin?(workshop, user))
     |> assign(:full?, Workshop.full?(workshop, length(participants)))
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
+    |> assign(:pode_ver_media?, Workshops.can_see_media?(workshop, user))
+    |> assign(:media, media_visivel(workshop, user))
     |> assign_workshop_likes()
   end
 
@@ -296,6 +362,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   defp reload_workshop(socket) do
     assign_workshop(socket, Workshops.get_by_slug(socket.assigns.workshop.slug))
+  end
+
+  # Galeria e conteudo pelo qual se paga: so quem esta no workshop ve.
+  defp media_visivel(workshop, user) do
+    if Workshops.can_see_media?(workshop, user), do: Workshops.list_media(workshop.id), else: []
   end
 
   defp enroll_error(:organizer), do: "Você organiza este workshop, já está dentro."

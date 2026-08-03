@@ -23,4 +23,17 @@ defmodule OGrupoDeEstudos.Media.Storage.Behaviour do
               {:ok, String.t()} | {:error, term()}
 
   @callback delete_image(public_url :: String.t()) :: :ok | {:error, term()}
+
+  @doc """
+  Guarda um arquivo cru numa pasta PRIVADA e devolve a chave opaca.
+
+  Diferente de `save_image/3`, não devolve URL: o arquivo não é servido pelo
+  Plug.Static, e sim por um controller que confere permissão.
+  """
+  @callback put_private(subdir :: String.t(), tmp_path :: String.t(), ext :: String.t()) ::
+              {:ok, String.t()} | {:error, term()}
+
+  @callback private_path(key :: String.t()) :: String.t()
+  @callback delete_private(key :: String.t()) :: :ok | {:error, term()}
+  @callback free_bytes() :: non_neg_integer() | :unknown
 end

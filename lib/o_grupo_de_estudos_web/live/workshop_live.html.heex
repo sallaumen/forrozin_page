@@ -100,6 +100,57 @@
           para ver quem vai.
         </p>
 
+        <%!-- Galeria: só para quem está no workshop --%>
+        <section :if={@pode_ver_media?} class="mt-8 border-t border-ink-200 pt-6">
+          <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+            Fotos e vídeos
+          </h2>
+          <p class="m-0 mb-3 text-[12.5px] text-ink-500">
+            Só quem está no workshop vê e manda. O que vem de quem dá a aula aparece primeiro.
+          </p>
+
+          <.media_gallery
+            :if={@media != []}
+            media={@media}
+            current_user={@current_user}
+            pode_apagar_tudo={@organizer? || false}
+          />
+
+          <p :if={@media == []} class="m-0 mb-3 text-[13px] text-ink-500">
+            Nada aqui ainda. Mande a primeira foto ou o primeiro vídeo do workshop.
+          </p>
+
+          <form id="media-form" phx-submit="upload_media" phx-change="validate_media" class="mt-3">
+            <.live_file_input
+              upload={@uploads.media}
+              class="block w-full text-[12.5px] text-ink-600 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-ink-900 file:px-4 file:py-2 file:font-serif file:text-[12.5px] file:font-semibold file:text-ink-50"
+            />
+
+            <div :for={entry <- @uploads.media.entries} class="mt-2 flex items-center gap-3">
+              <span class="text-[12px] text-ink-500">{entry.client_name}</span>
+              <span class="text-[12px] font-bold text-ink-700">{entry.progress}%</span>
+            </div>
+
+            <div :for={entry <- @uploads.media.entries}>
+              <p
+                :for={erro <- upload_errors(@uploads.media, entry)}
+                class="m-0 mt-1 text-[12px] font-semibold text-accent-red"
+              >
+                {erro_de_upload_media(erro)}
+              </p>
+            </div>
+
+            <button
+              :if={@uploads.media.entries != []}
+              type="submit"
+              phx-disable-with="Enviando..."
+              class="mt-2 cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white"
+            >
+              Enviar para a galeria
+            </button>
+          </form>
+        </section>
+
         <%!-- Conversa: aberta a leitura, escrita exige conta --%>
         <section class="mt-8 border-t border-ink-200 pt-6">
           <h2 class="m-0 mb-3 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">

@@ -123,6 +123,77 @@ defmodule OGrupoDeEstudos.Media.Storage.Local do
       end
   end
 
+  @doc """
+  Guarda um arquivo em pasta privada, com chave opaca.
+
+  A pasta fica fora da allowlist do UploadsStatic de proposito: quem serve e
+  um controller que confere se a pessoa esta inscrita.
+  """
+  @impl true
+  def put_private(subdir, tmp_path, ext) do
+    dest_dir = dir(subdir)
+    File.mkdir_p!(dest_dir)
+    filename = "#{random_key()}#{ext}"
+
+    case File.cp(tmp_path, Path.join(dest_dir, filename)) do
+      :ok -> {:ok, Path.join(subdir, filename)}
+      erro -> erro
+    end
+  end
+
+  @doc "Caminho no disco de uma chave privada."
+  @impl true
+  def private_path(key), do: Path.join(base_path(), key)
+
+  @doc "Apaga um arquivo privado. Silencioso se ja nao existe."
+  @impl true
+  def delete_private(key) do
+    case File.rm(private_path(key)) do
+      :ok -> :ok
+      {:error, :enoent} -> :ok
+      erro -> erro
+    end
+  end
+
+  @doc """
+  Bytes livres no volume onde os uploads moram.
+
+  Existe para a galeria recusar arquivo novo antes de o disco encher: num
+  volume pequeno, video enche rapido, e falhar com mensagem clara e melhor do
+  que estourar ENOSPC no meio de um upload.
+  """
+  @impl true
+  def free_bytes do
+    caminho = base_path()
+    File.mkdir_p!(caminho)
+
+    case System.cmd("df", ["-k", caminho], stderr_to_stdout: true) do
+      {saida, 0} -> parse_df(saida)
+      _erro -> :unknown
+    end
+  rescue
+    _e -> :unknown
+  end
+
+  defp parse_df(saida) do
+    saida
+    |> String.split("\n", trim: true)
+    |> Enum.at(1)
+    |> case do
+      nil -> :unknown
+      linha -> bytes_livres(String.split(linha, ~r/\s+/, trim: true))
+    end
+  end
+
+  defp bytes_livres(colunas) when length(colunas) >= 4 do
+    case Integer.parse(Enum.at(colunas, 3)) do
+      {kb, _} -> kb * 1024
+      :error -> :unknown
+    end
+  end
+
+  defp bytes_livres(_colunas), do: :unknown
+
   @doc "Returns the base uploads directory for a given subdirectory."
   @impl true
   def dir(subdir) do
