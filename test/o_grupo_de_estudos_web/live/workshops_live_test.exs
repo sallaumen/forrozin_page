@@ -937,7 +937,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
         "description" => "Vamos dançar muito.",
         "location" => "Curitiba",
         "starts_at" => "2026-12-20T14:00",
-        "ends_at" => "2026-12-20T18:00",
+        "duration" => "240",
         "price" => "80,00",
         "capacity" => "50",
         "payment_info" => "Pix na inscrição"
@@ -956,6 +956,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert w.status == :published
       assert w.price_cents == 8000
       assert w.capacity == 50
+      assert DateTime.diff(w.ends_at, w.starts_at, :minute) == 240
     end
 
     test "saving a draft does not publish", %{conn: conn} do

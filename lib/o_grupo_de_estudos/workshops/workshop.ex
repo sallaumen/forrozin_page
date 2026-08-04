@@ -37,6 +37,12 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     # Who can see it. Separate from status, which is the life cycle.
     field :visibility, Ecto.Enum, values: [:public, :private], default: :public
 
+    # How long it runs, which is what the form asks. `ends_at` is what queries and
+    # the page read, so this only exists to compute it: typing the date twice to
+    # say "two hours" is busywork, and the second date is the first one 99% of the
+    # time.
+    field :duration_minutes, :integer, virtual: true
+
     belongs_to :organizer, OGrupoDeEstudos.Accounts.User
     # Zero or one program. The context moves it, not the public changeset: joining
     # a program requires administering both sides.
@@ -58,7 +64,8 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     :payment_phone,
     :capacity,
     :visibility,
-    :organizer_id
+    :organizer_id,
+    :duration_minutes
   ]
 
   def changeset(workshop, attrs) do
@@ -77,6 +84,8 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> validate_length(:payment_info, max: 200)
     |> validate_number(:price_cents, greater_than_or_equal_to: 0)
     |> validate_number(:capacity, greater_than: 0)
+    |> validate_number(:duration_minutes, greater_than: 0)
+    |> put_end_from_duration()
     |> validate_end_after_start()
     |> put_slug()
     |> unique_constraint(:slug)
@@ -111,6 +120,26 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
 
   defp trim(nil), do: nil
   defp trim(value) when is_binary(value), do: String.trim(value)
+
+  # The duration wins over any `ends_at` that arrives with it: it is what the form
+  # asked, so honouring the other field would silently contradict what was typed.
+  # A duration that failed to cast leaves the error alone instead of computing on
+  # garbage.
+  defp put_end_from_duration(%Ecto.Changeset{valid?: false} = changeset), do: changeset
+
+  defp put_end_from_duration(changeset) do
+    starts_at = get_field(changeset, :starts_at)
+
+    # `get_field` and not `get_change`: re-sending the same duration while moving
+    # the start is not a change to the duration, and the end would stay behind.
+    case {starts_at, get_field(changeset, :duration_minutes)} do
+      {%DateTime{}, minutes} when is_integer(minutes) ->
+        put_change(changeset, :ends_at, DateTime.add(starts_at, minutes, :minute))
+
+      _no_duration ->
+        changeset
+    end
+  end
 
   defp validate_end_after_start(changeset) do
     starts_at = get_field(changeset, :starts_at)
