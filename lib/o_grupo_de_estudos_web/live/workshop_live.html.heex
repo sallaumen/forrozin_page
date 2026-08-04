@@ -306,6 +306,81 @@
           comment_count={length(@comments)}
         />
 
+        <%!-- Passos dados na aula: o elo que faltava entre o workshop e o
+        acervo. Clicar abre a folha do passo, com o gesto de marcar como
+        aprendido, sem sair daqui. --%>
+        <section :if={!@vitrine? && (@passos != [] || @organizer?)} class="mt-7">
+          <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+            Passos desta aula
+          </h2>
+
+          <p :if={@passos == []} class="m-0 mb-2 text-[13px] text-ink-500">
+            Nenhum passo marcado ainda. Vincule o que foi dado para quem esteve na aula
+            achar depois.
+          </p>
+
+          <div class="flex flex-wrap gap-2">
+            <span :for={passo <- @passos} class="inline-flex items-center">
+              <button
+                type="button"
+                phx-click="open_step_sheet"
+                phx-value-code={passo.code}
+                class="inline-flex cursor-pointer items-center gap-1.5 rounded-l-full border border-r-0 border-accent-orange/25 bg-accent-orange/[0.08] py-1 pl-2.5 pr-2 text-[11.5px] font-semibold text-accent-orange transition-colors hover:bg-accent-orange/15"
+              >
+                <code class="font-bold">{passo.code}</code>
+                <span class="font-normal text-ink-600">{passo.name}</span>
+              </button>
+              <button
+                :if={@organizer?}
+                type="button"
+                phx-click="remove_workshop_step"
+                phx-value-id={passo.step_id}
+                aria-label={"Tirar #{passo.code} da lista"}
+                class="group cursor-pointer rounded-r-full border border-l-0 border-accent-orange/25 bg-accent-orange/[0.08] py-1 pl-1 pr-2.5"
+              >
+                <.icon
+                  name="hero-x-mark"
+                  class="size-3 text-accent-orange/60 group-hover:text-accent-orange"
+                />
+              </button>
+              <span
+                :if={!@organizer?}
+                class="rounded-r-full border border-l-0 border-accent-orange/25 bg-accent-orange/[0.08] py-1 pr-2.5"
+              >
+              </span>
+            </span>
+          </div>
+
+          <%!-- Só quem administra monta a lista: ela é o que a aula ofereceu,
+          e quem deu a aula sabe o que ofereceu. --%>
+          <div :if={@organizer?} class="relative mt-2.5 max-w-[22rem]">
+            <input
+              type="text"
+              name="term"
+              phx-change="search_workshop_step"
+              phx-debounce="200"
+              autocomplete="off"
+              placeholder="+ Vincular passo dado nesta aula"
+              class="w-full rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] text-ink-800 placeholder:text-ink-400"
+            />
+            <div
+              :if={@busca_passo != []}
+              class="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-ink-200 bg-ink-50 shadow-md"
+            >
+              <button
+                :for={sugestao <- @busca_passo}
+                type="button"
+                phx-click="add_workshop_step"
+                phx-value-id={sugestao.id}
+                class="flex w-full cursor-pointer items-center gap-2 border-0 border-b border-ink-200 bg-transparent px-3 py-2 text-left text-[13px] last:border-b-0 hover:bg-ink-100"
+              >
+                <code class="font-bold text-accent-orange">{sugestao.code}</code>
+                <span class="text-ink-700">{sugestao.name}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
         <section :if={!@vitrine? && @current_user && @participants != []} class="mt-7">
           <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Quem vai
@@ -431,3 +506,5 @@
     </div>
   </main>
 </div>
+
+<.step_sheet step={@step_sheet} learned={@step_sheet_learned} />
