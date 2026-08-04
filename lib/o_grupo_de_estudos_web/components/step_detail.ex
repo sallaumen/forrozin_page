@@ -64,7 +64,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
   attr :replies_map, :map, default: %{}
   attr :replying_to, :string, default: nil
 
-  # Estado exclusivo da página (sugestões / gestão de links / conexões).
+  # Page-only state: suggestions, link management and connections.
   attr :suggesting_field, :string, default: nil
   attr :suggestion_value, :string, default: ""
   attr :connection_search, :string, default: ""
@@ -743,8 +743,6 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
     """
   end
 
-  # ───────── Edit form (admin) ─────────
-
   attr :step, :map, required: true
   attr :categories, :list, default: []
   attr :is_admin, :boolean, default: false
@@ -848,8 +846,6 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
     </form>
     """
   end
-
-  # ───────── Links / vídeos ─────────
 
   attr :mode, :atom, default: :page
   attr :page?, :boolean, default: true
@@ -1024,8 +1020,6 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
     """
   end
 
-  # ───────── Player de mídia (embed por formato) ─────────
-
   attr :media, :map, required: true
   attr :url, :string, required: true
 
@@ -1078,7 +1072,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
     """
   end
 
-  # Estilo do pill do provedor (cálculo puro): tom da marca com baixa opacidade.
+  # Provider pill styling (pure): the brand tone at low opacity.
   defp provider_pill(media) do
     color = provider_color(media)
     "background: #{color}14; color: #{color}; border: 1px solid #{color}33;"
@@ -1087,8 +1081,6 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
   defp provider_color(%{label: "Instagram"}), do: "#c13584"
   defp provider_color(%{label: "YouTube" <> _}), do: "#c0392b"
   defp provider_color(_), do: "#7a5c3a"
-
-  # ───────── Connection chip ─────────
 
   @doc """
   Chip compacto de conexão: badge de código tingido pela categoria + nome.
@@ -1154,8 +1146,6 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
     </span>
     """
   end
-
-  # ───────── Helpers (cálculos puros) ─────────
 
   @doc "Resolve a imagem de capa de um passo, aplicando overrides por código."
   def resolve_step_image(step) do

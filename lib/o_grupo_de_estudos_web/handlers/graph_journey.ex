@@ -63,8 +63,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphJourney do
          )}
       end
 
-      # Centra/revela um passo no mapa (clique num item de "pode aprender agora").
-      # close_journey: minimiza o painel da jornada pra o passo aparecer no mapa.
+      # Centers a step on the map (click on an item of "can learn now"), minimizing
+      # the journey panel so the step is visible.
       def handle_event("focus_step", %{"code" => code}, socket) do
         {:noreply, push_event(socket, "focus_graph_node", %{code: code, close_journey: true})}
       end
@@ -73,8 +73,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphJourney do
         {:noreply, assign(socket, :journey_open, not socket.assigns.journey_open)}
       end
 
-      # Recarrega aprendidos/fronteira/meta e o engajamento implicado (favorito +
-      # like), recolorindo o grafo e o painel sem reconstruir a instância.
+      # Reloads learned, frontier, goal and the engagement they imply (favorite and
+      # like), recoloring graph and panel without rebuilding the instance.
       defp refresh_journey(socket, user_id, step_id) do
         learned_codes = Engagement.learned_step_codes(user_id)
         frontier_codes = compute_frontier(socket.assigns.edges, learned_codes)

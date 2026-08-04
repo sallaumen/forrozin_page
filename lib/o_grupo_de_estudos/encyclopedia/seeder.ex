@@ -43,10 +43,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.Seeder do
     |> Jason.decode!()
   end
 
-  # ---------------------------------------------------------------------------
-  # Privado — categorias
-  # ---------------------------------------------------------------------------
-
   defp seed_categories!(categories) do
     Enum.reduce(categories, %{}, fn cat, acc ->
       inserted =
@@ -57,10 +53,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.Seeder do
       Map.put(acc, cat["name"], inserted.id)
     end)
   end
-
-  # ---------------------------------------------------------------------------
-  # Privado — seções, subseções e passos
-  # ---------------------------------------------------------------------------
 
   defp seed_sections!(sections, hf_cards, categories_map) do
     sections
@@ -134,10 +126,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.Seeder do
       category_id: cat_id
     }
   end
-
-  # ---------------------------------------------------------------------------
-  # Privado — conceitos técnicos
-  # ---------------------------------------------------------------------------
 
   defp seed_technical_concepts!(conceitos) do
     Enum.each(conceitos, fn conceito ->

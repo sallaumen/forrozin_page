@@ -20,8 +20,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   @pubsub OGrupoDeEstudos.PubSub
 
-  # ── Comment notifications ──────────────────────────────
-
   @doc """
   Dispatches notification when a comment is created.
 
@@ -185,8 +183,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     insert_and_broadcast([user_id], builder)
   end
 
-  # ── Like notifications ─────────────────────────────────
-
   @doc """
   Dispatches notification when a like is created.
 
@@ -238,8 +234,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   end
 
   def notify_follow(_follower_id, _followed_id), do: :ok
-
-  # ── Study request notifications ────────────────────────
 
   @doc "Notifies the recipient that someone wants to study with them."
   def notify_study_request(initiator_id, recipient_id, link_id) do
@@ -331,8 +325,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end)
   end
 
-  # ── Private: recipient determination ───────────────────
-
   defp comment_context(comment, actor, query_mod) do
     case Map.get(comment, query_mod.parent_comment_field()) do
       nil -> root_comment_context(comment, actor, query_mod)
@@ -340,8 +332,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end
   end
 
-  # Raiz em workshop: quem recebe e o organizador, e o agrupamento e por
-  # workshop, para varios comentarios virarem uma linha so.
+  # A root comment on a workshop reaches the organizer, and groups by workshop
+  # so several comments collapse into one line.
   defp root_comment_context(comment, actor, WorkshopCommentQuery) do
     {workshop_organizer_recipients(comment.workshop_id, actor.id), :workshop_commented,
      "workshop_comment:#{comment.workshop_id}"}
@@ -396,7 +388,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   end
 
   defp determine_like_context(actor_id, "step", step_id) do
-    # Notify step creator if it's a community step
     recipients =
       case Encyclopedia.steps_by_ids([step_id]) do
         %{^step_id => %{suggested_by_id: suggester_id}}
@@ -425,10 +416,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     {[], :liked_comment, "step_comment", "step", nil}
   end
 
-  # ── Private: admin broadcast ───────────────────────────
-
   defp add_admin_recipients(recipients, actor_id) do
-    # Add admins that aren't already recipients and aren't the actor
     extra_admins =
       Accounts.list_admin_ids()
       |> Enum.reject(fn id -> id == actor_id || id in recipients end)
@@ -444,8 +432,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     if author_id != actor_id and is_nil(comment.deleted_at), do: [author_id], else: []
   end
 
-  # ── Private: insert + broadcast ────────────────────────
-
   defp insert_and_broadcast([], _builder), do: :ok
 
   defp insert_and_broadcast(recipients, builder) do
@@ -457,8 +443,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end)
   end
 
-  # ── Helpers ────────────────────────────────────────────
-
   defp parent_type_from(query_mod) do
     case query_mod.parent_field() do
       :step_id -> "step"
@@ -467,8 +451,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
       :workshop_id -> "workshop"
     end
   end
-
-  # ── Suggestion notifications ───────────────────────────────
 
   @doc """
   Notifies all admins that a new suggestion was submitted.

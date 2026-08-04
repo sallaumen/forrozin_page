@@ -260,8 +260,6 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
      )}
   end
 
-  # ── Inline expansion: sequence comments ────────────────────────────────
-
   def handle_event("toggle_seq_expand", %{"seq-id" => seq_id}, socket) do
     current_deep_link = socket.assigns.deep_linked_sequence_id
 
@@ -407,8 +405,6 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
      )}
   end
 
-  # ── Private helpers ─────────────────────────────────────────────────────
-
   defp reload_seq_expanded(socket) do
     seq_id = socket.assigns.expanded_seq
     user = socket.assigns.current_user
@@ -453,8 +449,6 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
     comment_likes = Engagement.likes_map(user.id, "sequence_comment", all_ids)
     assign(socket, :expanded_seq_comment_likes, comment_likes)
   end
-
-  # ── View helpers ────────────────────────────────────────────────────────
 
   def youtube_embed_url(url) when is_binary(url) do
     cond do
@@ -636,10 +630,8 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
     end
   end
 
-  # ── Apresentação do card (cálculos puros) ───────────────────────────────
-
-  # Paleta de marca usada para completar o glyph de 4 pontos quando a
-  # sequência tem menos de 4 categorias distintas.
+  # Brand palette used to complete the four-point glyph when the sequence has
+  # fewer than four distinct categories.
   @glyph_palette ["#e67e22", "#2980b9", "#27ae60", "#8e44ad"]
   @map_node_cap 12
 
@@ -668,11 +660,10 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
     (category_colors ++ @glyph_palette) |> Enum.uniq() |> Enum.take(4)
   end
 
-  # Monta uma prévia em SVG no estilo do mapa real (/graph/visual): nós
-  # agrupados por categoria em clusters com zonas translúcidas, passo inicial
-  # como hub central, e o caminho da sequência ligando os nós com setas
-  # direcionais coloridas pela categoria de origem. Nós são deduplicados por
-  # código, então revisitas reaproveitam o mesmo nó (como no grafo real).
+  # Builds an SVG preview in the style of the real map (/graph/visual): nodes
+  # grouped by category in clusters with translucent zones, the first step as the
+  # central hub, and the sequence path linking nodes with arrows colored by source
+  # category. Nodes are deduplicated by code, so revisits reuse the same node.
   defp sequence_map_nodes(seq) do
     steps = Enum.take(seq.sequence_steps, @map_node_cap)
     codes = Enum.map(steps, & &1.step.code)
@@ -704,8 +695,8 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
 
   defp cluster_centers([]), do: %{}
 
-  # Hub (primeira categoria, normalmente bases/BF) no centro; demais categorias
-  # em setores angulares ao redor, como no layout do mapa real.
+  # Hub (first category, usually the bases) at the center; the other categories in
+  # angular sectors around it, as in the real map layout.
   defp cluster_centers([hub | others]) do
     count = max(length(others), 1)
 
@@ -736,8 +727,8 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
     end)
   end
 
-  # Dispersão por filotaxia (ângulo áureo): determinística, espalha os nós de
-  # uma mesma categoria num cluster compacto sem aleatoriedade.
+  # Phyllotaxis spread (golden angle): deterministic, spreads the nodes of one
+  # category into a compact cluster with no randomness.
   defp phyllotaxis_offset(0), do: {0.0, 0.0}
 
   defp phyllotaxis_offset(k) do

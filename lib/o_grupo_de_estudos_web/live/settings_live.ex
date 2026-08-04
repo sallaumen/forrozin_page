@@ -128,8 +128,6 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
     {:noreply, cancel_upload(socket, :avatar, ref)}
   end
 
-  # --- helpers ---
-
   defp consume_avatar_upload(socket, user) do
     require Logger
 

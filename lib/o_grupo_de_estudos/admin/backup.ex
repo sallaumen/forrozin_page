@@ -236,15 +236,15 @@ defmodule OGrupoDeEstudos.Admin.Backup do
       {:ok, dt, _offset} ->
         dt
 
-      # Backups anteriores a julho/2026 serializavam esses campos sem offset.
+      # Backups written before July 2026 serialized these fields with no offset.
       {:error, :missing_offset} ->
         {:ok, naive} = NaiveDateTime.from_iso8601(v)
         DateTime.from_naive!(naive, "Etc/UTC")
     end
   end
 
-  # Ecto.Enum (e outros tipos parametrizados): o insert_all faz dump pelo
-  # tipo do schema, que espera o atom — cast valida e converte a string.
+  # insert_all dumps through the schema type, which expects the atom: cast
+  # validates and converts the string.
   defp deserialize_value(v, {:parameterized, _} = type) when is_binary(v) do
     case Ecto.Type.cast(type, v) do
       {:ok, cast} -> cast

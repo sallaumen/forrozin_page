@@ -21,7 +21,6 @@ defmodule OGrupoDeEstudosWeb.Handlers.FollowHandlers do
 
         socket = assign(socket, following_user_ids: following)
 
-        # Refresh bubble suggestions if bubble is present
         socket =
           if Map.has_key?(socket.assigns, :suggested_users) do
             users = Engagement.suggest_users(user, limit: 3)

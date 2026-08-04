@@ -30,7 +30,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
     field :location, :string
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
     field :flyer_path, :string
-    # Preco fechado do conjunto. Nulo = so avulso, cada workshop pelo seu.
+    # Closed price for the set. Null means single enrollment only, each workshop on its own.
     field :price_cents, :integer
     field :payment_info, :string
 
@@ -77,8 +77,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
   defp trim(nil), do: nil
   defp trim(value) when is_binary(value), do: String.trim(value)
 
-  # Mesmo formato do Workshop: legivel mais um sufixo curto, porque o link vai
-  # para grupo de WhatsApp e nao pode ser adivinhavel.
+  # Same shape as the Workshop slug: readable plus a short suffix, because the
+  # link goes to a WhatsApp group and cannot be guessable.
   defp put_slug(changeset) do
     case {get_field(changeset, :slug), get_field(changeset, :title)} do
       {nil, title} when is_binary(title) -> put_change(changeset, :slug, build_slug(title))

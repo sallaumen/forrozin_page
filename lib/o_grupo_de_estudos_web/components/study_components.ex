@@ -19,8 +19,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
 
   @weekday_labels {"S", "T", "Q", "Q", "S", "S", "D"}
 
-  # ── Abas principais ──────────────────────────────────────────────────
-
   attr :active, :string, required: true, values: ~w(personal teachers students workshops)
   attr :is_teacher, :boolean, default: false
   attr :pending_count, :integer, default: 0
@@ -93,8 +91,8 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # A aba de workshops mora numa LiveView própria (deep-link e URL de verdade),
-  # então navega em vez de trocar estado local.
+  # The workshops tab lives in its own LiveView (deep link and a real URL), so
+  # it navigates instead of flipping local state.
   attr :navigate, :string, required: true
   attr :label, :string, required: true
   attr :active, :boolean, default: false
@@ -140,8 +138,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Cabeçalho de seção (eyebrow + título + ação) ─────────────────────
-
   attr :eyebrow, :string, required: true
   attr :eyebrow_icon, :string, default: nil
   attr :tone, :atom, default: :orange, values: [:orange, :purple, :gold]
@@ -176,11 +172,9 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Botão de ação primário (laranja) e secundário (ghost) ────────────
-
   attr :tone, :atom, default: :primary, values: [:primary, :ghost]
   attr :icon, :string, default: nil
-  # Dentro de um form o botão precisa ser submit, senão o clique não envia nada.
+  # Inside a form the button has to be submit, otherwise the click sends nothing.
   attr :type, :string, default: "button", values: ~w(button submit)
   attr :disabled, :boolean, default: false
 
@@ -237,8 +231,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Sidebar block (card com título) ──────────────────────────────────
-
   attr :title, :string, default: nil
   attr :icon, :string, default: nil
   attr :class, :any, default: nil
@@ -258,8 +250,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     </section>
     """
   end
-
-  # ── Card de consistência (dots por dia da semana) ────────────────────
 
   attr :monthly_count, :integer, required: true
   attr :month_name, :string, required: true
@@ -296,8 +286,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Card de estatística ──────────────────────────────────────────────
-
   attr :value, :any, required: true
   attr :label, :string, required: true
   attr :tone, :atom, default: :neutral, values: [:neutral, :success, :accent]
@@ -322,8 +310,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     </div>
     """
   end
-
-  # ── Chip de passo vinculado ──────────────────────────────────────────
 
   attr :step, :map, required: true
   attr :removable, :boolean, default: false
@@ -384,8 +370,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     </button>
     """
   end
-
-  # ── Folha rápida do passo ────────────────────────────────────────────
 
   attr :step, :map, default: nil
   attr :learned, :boolean, default: false
@@ -476,8 +460,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Dropdown de busca de passos ──────────────────────────────────────
-
   attr :id, :string, required: true
   attr :suggestions, :list, default: []
   attr :placeholder, :string, default: "+ Vincular passo..."
@@ -524,8 +506,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     </div>
     """
   end
-
-  # ── Cartão do diário (nota de hoje) ──────────────────────────────────
 
   attr :id, :string, default: "study-diary"
   attr :eyebrow, :string, default: nil
@@ -610,8 +590,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     </section>
     """
   end
-
-  # ── Histórico de notas anteriores ────────────────────────────────────
 
   attr :title, :string, default: "Notas anteriores"
   attr :notes, :list, required: true
@@ -743,8 +721,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Cartão de pessoa (professor / aluno) ─────────────────────────────
-
   attr :user, :map, required: true
   attr :accent, :atom, default: :orange, values: [:orange, :purple, :green]
   attr :badge_label, :string, default: nil
@@ -821,8 +797,6 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Estado vazio ─────────────────────────────────────────────────────
-
   attr :icon, :string, default: nil
   attr :title, :string, required: true
   attr :description, :string, default: nil
@@ -846,13 +820,11 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  # ── Helpers ──────────────────────────────────────────────────────────
-
   defp weekday_label(dow), do: elem(@weekday_labels, dow - 1)
 
-  # `nil` significa "a tela nao carregou o estado": melhor mostrar tudo como
-  # ainda-nao-sabido do que estourar. MapSet de codigos e o que as telas
-  # montam, porque o chip sempre tem o codigo em maos.
+  # `nil` means the screen did not load the state: better to show everything as
+  # not-yet-known than to crash. A MapSet of codes is what the screens build,
+  # because a chip always has the code at hand.
   defp sabe?(nil, _step), do: false
   defp sabe?(codigos, %{code: code}), do: MapSet.member?(codigos, code)
   defp sabe?(_codigos, _step), do: false

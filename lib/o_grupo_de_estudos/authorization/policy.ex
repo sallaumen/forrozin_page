@@ -25,8 +25,6 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   @spec authorize(atom(), User.t() | nil, struct() | nil) :: :ok | {:error, reason()}
 
-  # ===== Comment Management =====
-
   @doc """
   Delete comment authorization.
 
@@ -55,7 +53,6 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:create_comment, nil, _), do: {:error, :unauthenticated}
 
-  # ===== Encyclopedia: steps =====
   # Admin edits anything; the user who suggested a step may keep editing it.
   # Deleting, approving and section/category management are admin-only.
 
@@ -77,7 +74,6 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:manage_section, _, _), do: {:error, :unauthorized}
 
-  # ===== Encyclopedia: step video links =====
   # Admin manages any link; the submitter manages their own link.
 
   def authorize(:manage_step_link, %User{role: :admin}, %StepLink{}), do: :ok
@@ -87,9 +83,8 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:manage_step_link, _, _), do: {:error, :unauthorized}
 
-  # ===== Study: lições =====
-  # Enviar exige ser professor; gerenciar (editar/apagar) é só do dono.
-  # Admin fica de fora de propósito: o conteúdo é do vínculo professor-aluno.
+  # Broadcasting requires being a teacher; managing belongs to the owner alone.
+  # Admin is left out on purpose: the content belongs to the teacher-student link.
 
   def authorize(:broadcast_lesson, %User{is_teacher: true}, _), do: :ok
 
@@ -99,14 +94,13 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:manage_lesson, _, _), do: {:error, :unauthorized}
 
-  # ===== Workshops =====
-  # Criar é aberto a qualquer usuário (workshop não é privilégio de professor).
-  # Gerenciar é só do organizador — inclusive para admin, porque o controle de
-  # pagamento é assunto interno de quem organiza.
+  # Creating is open to any user, since a workshop is not a teacher privilege.
+  # Managing belongs to the organizer, admin included, because payment control
+  # is internal to whoever organizes.
 
-  # Conversa continua aberta em workshop cancelado: o organizador costuma
-  # precisar dela justamente para explicar o cancelamento. Rascunho nao, que
-  # e privado de quem organiza.
+  # A cancelled workshop keeps its conversation open: the organizer usually needs
+  # it precisely to explain the cancellation. A draft does not, being private to
+  # whoever organizes.
   def authorize(:comment_workshop, nil, _workshop), do: {:error, :unauthenticated}
 
   def authorize(:comment_workshop, %User{}, %Workshop{status: status})
@@ -118,12 +112,13 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   def authorize(:like, nil, _resource), do: {:error, :unauthenticated}
   def authorize(:like, %User{}, _resource), do: :ok
 
-  # Rascunho e privado de quem organiza. Devolve :not_found, nao :unauthorized:
-  # dizer "sem permissao" ja confirma que o workshop existe naquele slug.
+  # A draft is private to the organizer. Returns :not_found rather than
+  # :unauthorized, because "no permission" already confirms a workshop exists at
+  # that slug.
   #
-  # Workshop PRIVADO nao entra aqui: privado nao e secreto, ele abre para
-  # qualquer um. O que a visibilidade muda e a porta (entrada por aprovacao),
-  # nao a existencia, e quem decide o interior e `Workshops.liberado?/2`.
+  # A PRIVATE workshop does not come through here: private is not secret, it
+  # opens for anyone. Visibility changes the door (entry by approval), not the
+  # existence, and `Workshops.liberado?/2` decides the inside.
   def authorize(:view_workshop, user, %Access{workshop: workshop}),
     do: authorize(:view_workshop, user, workshop)
 
@@ -136,8 +131,8 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:view_workshop, _user, _workshop), do: {:error, :not_found}
 
-  # Programacao segue a mesma regra de visibilidade do workshop: rascunho e
-  # de quem criou, e a resposta e :not_found para nao confirmar existencia.
+  # A program follows the same visibility rule as a workshop: a draft belongs to
+  # its creator, and the answer is :not_found so existence is not confirmed.
   def authorize(:view_program, _user, %WorkshopProgram{status: status})
       when status in [:published, :cancelled],
       do: :ok
@@ -159,9 +154,9 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:create_workshop, nil, _), do: {:error, :unauthenticated}
 
-  # Aceita o Access resolvido (que ja considera co-organizador) ou o Workshop
-  # cru, que so reconhece o criador. A borda passa Access sempre que a
-  # resposta puder depender de co-organizacao.
+  # Takes the resolved Access (which already accounts for co-organizers) or the
+  # raw Workshop, which only knows the creator. The boundary passes Access
+  # whenever the answer can depend on co-organization.
   def authorize(:manage_workshop, %User{id: user_id}, %Access{user_id: user_id, admin?: true}),
     do: :ok
 
@@ -170,7 +165,6 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:manage_workshop, _, _), do: {:error, :unauthorized}
 
-  # ===== Sequences =====
   # Edit/delete: admin manages any sequence; the owner manages their own.
 
   def authorize(:manage_sequence, %User{role: :admin}, %Sequence{}), do: :ok

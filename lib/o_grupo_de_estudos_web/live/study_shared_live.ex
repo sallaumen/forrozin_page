@@ -135,8 +135,6 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
      )}
   end
 
-  # ── History note step editing ─────────────────────────────────────────
-
   def handle_event("edit_history_steps", %{"note-id" => note_id}, socket) do
     current = socket.assigns.editing_history_note_id
     new_id = if current == note_id, do: nil, else: note_id
@@ -202,8 +200,6 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
     {:noreply, assign(socket, history: history, shared_step_ranking: ranking)}
   end
 
-  # ── Goals ────────────────────────────────────────────────────────────
-
   def handle_event("create_goal", %{"body" => body}, socket) do
     link = socket.assigns.link
 
@@ -230,7 +226,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   end
 
   def handle_event("save_teacher_note", %{"note" => note}, socket) do
-    # Usa o link montado (verificado no mount), nunca um link-id vindo do cliente.
+    # Uses the link resolved at mount, never a link id coming from the client.
     case Study.update_teacher_note(socket.assigns.current_user, socket.assigns.link.id, note) do
       {:ok, _link} ->
         {:noreply, put_flash(socket, :info, "Anotacao salva.")}
@@ -250,8 +246,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
         {:lesson_published, link_id},
         %{assigns: %{link: %{id: link_id}}} = socket
       ) do
-    # Recarrega, mas NÃO marca como lida: página aberta em segundo plano não
-    # é leitura — o recibo do professor só muda quando o aluno visitar de novo.
+    # Reloads but does NOT mark as read: a page open in the background is not
+    # reading, and the teacher's receipt only changes when the student visits again.
     lessons = Study.list_lessons_for_link(link_id)
     unread = for l <- lessons, is_nil(l.read_at), into: MapSet.new(), do: l.id
 
@@ -276,14 +272,13 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
 
   def handle_info(_message, socket), do: {:noreply, socket}
 
-  # Carrega as lições do vínculo; o badge "Nova" congela o estado de leitura
-  # de ANTES desta visita, e abrir a página (render conectado) marca como
-  # lidas SOMENTE as lições listadas aqui — escopo por id, para que uma
-  # lição que chegar depois via PubSub não ganhe recibo falso. Quem decide
-  # se pode marcar é o contexto (só o aluno do vínculo); para o professor a
-  # chamada é negada lá e vira no-op.
-  # A bolinha da aba Estudos é calculada no on_mount (antes deste mount), então
-  # sem isso ela ficaria mostrando a lição que o aluno acabou de abrir.
+  # Loads the lessons of the link. The "Nova" badge freezes the read state from
+  # BEFORE this visit, and opening the page (connected render) marks as read ONLY
+  # the lessons listed here, scoped by id, so a lesson arriving later through
+  # PubSub does not get a false receipt. The context decides who may mark (only
+  # the student of the link); for the teacher the call is denied there and becomes
+  # a no-op. The Study tab dot is computed in on_mount, before this mount, so
+  # without this it would keep showing the lesson the student just opened.
   defp drop_study_badge(socket, 0), do: socket
 
   defp drop_study_badge(socket, marked) do
@@ -308,8 +303,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
     {lessons, new_ids, marked}
   end
 
-  # O corte visual é line-clamp-3 com whitespace-pre-line: conteúdo curto em
-  # muitas linhas também precisa do botão, senão fica inacessível.
+  # The visual cut is line-clamp-3 with whitespace-pre-line: short content over
+  # many lines also needs the button, otherwise it stays out of reach.
   defp lesson_long?(content) do
     String.length(content) > 220 or length(String.split(content, "\n")) > 3
   end

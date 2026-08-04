@@ -25,8 +25,6 @@ defmodule OGrupoDeEstudos.Study do
 
   alias Phoenix.PubSub, as: PhoenixPubSub
 
-  # ── Teacher search & request ──────────────────────────────────────────
-
   @doc "Search for teachers by name or username. Returns up to 8 results."
   def search_teachers(term, exclude_user_id \\ nil) do
     term = String.trim(term)
@@ -84,7 +82,6 @@ defmodule OGrupoDeEstudos.Study do
         {:error, LinkError.new(:already_pending)}
 
       existing ->
-        # Reactivate as pending
         existing
         |> TeacherStudentLink.changeset(%{pending: true, active: false, ended_at: nil})
         |> Repo.update()
@@ -155,7 +152,6 @@ defmodule OGrupoDeEstudos.Study do
 
     case result do
       {:ok, updated_link} ->
-        # Notify the person who initiated that their request was accepted
         other_id = if acceptor_id == link.teacher_id, do: link.student_id, else: link.teacher_id
         Dispatcher.notify_study_accepted(acceptor_id, other_id, link.id)
         {:ok, updated_link}
@@ -179,8 +175,6 @@ defmodule OGrupoDeEstudos.Study do
   defdelegate list_pending_requests_for_teacher(teacher_id),
     to: LinkQuery,
     as: :list_pending_for_teacher
-
-  # ── Invite flow (existing) ────────────────────────────────────────────
 
   def accept_invite(%User{id: student_id}, invite_slug) when is_binary(invite_slug) do
     invite_slug = String.trim(invite_slug)
@@ -352,8 +346,6 @@ defmodule OGrupoDeEstudos.Study do
 
   def end_link(%TeacherStudentLink{}, %User{}), do: {:error, LinkError.new(:forbidden)}
 
-  # ── Lições (broadcast do professor) ───────────────────────────────────
-
   defdelegate list_lessons_for_link(link_id), to: LessonQuery, as: :list_for_link
 
   defdelegate list_lessons_for_teacher(teacher_id), to: LessonQuery, as: :list_for_teacher
@@ -519,8 +511,8 @@ defmodule OGrupoDeEstudos.Study do
     PhoenixPubSub.broadcast(PubSub, note_topic(link_id), {:lesson_published, link_id})
   end
 
-  # Edição corrige o conteúdo para todos que receberam; quem está com a
-  # página aberta recarrega na hora (mesmo evento do publish).
+  # Editing fixes the content for everyone who received it, and whoever has the
+  # page open reloads right away (same event as publish).
   defp broadcast_lesson_change(lesson_id) do
     lesson_id
     |> LessonQuery.delivery_link_ids()
@@ -620,8 +612,6 @@ defmodule OGrupoDeEstudos.Study do
 
   defp blank_note?(content, step_ids), do: content == "" and step_ids == []
 
-  # ── Goals ─────────────────────────────────────────────────────────────
-
   defdelegate list_personal_goals(user_id), to: GoalQuery, as: :list_personal
 
   defdelegate list_shared_goals(link_id), to: GoalQuery, as: :list_shared
@@ -651,8 +641,6 @@ defmodule OGrupoDeEstudos.Study do
   defp authorized_goal(%User{id: user_id}, goal_id) do
     GoalQuery.get_authorized(goal_id, user_id)
   end
-
-  # ── Step frequency ranking ─────────────────────────────────────────────
 
   defdelegate step_frequency_ranking(kind, id), to: NoteQuery, as: :step_frequency
 

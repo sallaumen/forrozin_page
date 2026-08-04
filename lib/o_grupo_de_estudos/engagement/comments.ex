@@ -28,8 +28,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   @tombstone_body "[comentário removido]"
 
-  # ── Profile comments — backward-compatible 1-arity signatures ─────────
-
   @doc "Returns active (non-deleted) comments on a user's profile, newest first."
   def list_profile_comments(opts) when is_list(opts) do
     ProfileCommentQuery.list_by(opts)
@@ -51,8 +49,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
     |> Repo.update()
   end
 
-  # ── Step comments — typed public API ──────────────────────────────────
-
   @doc "Lists root step comments for the given step, ordered by engagement."
   def list_step_comments(step_id, opts \\ []),
     do: list_comments(StepCommentQuery, step_id, opts)
@@ -64,8 +60,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   @doc "Deletes a step comment with authorization. Hard-deletes if no replies, tombstones otherwise."
   def delete_step_comment(user, comment),
     do: delete_comment(StepComment, StepCommentQuery, user, comment)
-
-  # ── Sequence comments — typed public API ──────────────────────────────
 
   @doc "Lists root sequence comments for the given sequence, ordered by engagement."
   def list_sequence_comments(sequence_id, opts \\ []),
@@ -79,8 +73,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   def delete_sequence_comment(user, comment),
     do: delete_comment(SequenceComment, SequenceCommentQuery, user, comment)
 
-  # ── Workshop comments — typed public API ──────────────────────────────
-
   @doc "Lists root workshop comments for the given workshop, ordered by engagement."
   def list_workshop_comments(workshop_id, opts \\ []),
     do: list_comments(WorkshopCommentQuery, workshop_id, opts)
@@ -92,8 +84,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   @doc "Deletes a workshop comment with authorization."
   def delete_workshop_comment(user, comment),
     do: delete_comment(WorkshopComment, WorkshopCommentQuery, user, comment)
-
-  # ── Profile comments — new typed API (2-arity) ────────────────────────
 
   @doc "Lists root profile comments for the given profile, ordered by engagement."
   def list_profile_comments(profile_id, opts) when is_binary(profile_id),
@@ -107,8 +97,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   def delete_profile_comment(user, comment),
     do: delete_comment(ProfileComment, ProfileCommentQuery, user, comment)
 
-  # ── Replies — generic for any comment type ────────────────────────────
-
   @doc "Lists replies for a given parent comment (`query_mod` is the Commentable impl)."
   def list_replies(query_mod, comment_id, opts \\ []) do
     query_mod.base_query()
@@ -118,8 +106,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
     |> Repo.all()
     |> preload_user(query_mod)
   end
-
-  # ── Comment counts — batch preload for list pages ─────────────────────
 
   @doc "Returns `%{parent_id => comment_count}` for the given parent type and IDs."
   def comment_counts_for(type, parent_ids) when is_list(parent_ids) do
@@ -136,8 +122,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
     Map.new(parent_ids, fn id -> {id, Map.get(counts, id, 0)} end)
   end
-
-  # ── Generic CRUD pipeline ─────────────────────────────────────────────
 
   defp list_comments(query_mod, parent_id, opts) do
     query_mod.base_query()
@@ -168,7 +152,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
         |> Map.put(parent_field, parent_id)
       )
 
-    # reply_count is handled by a Postgres trigger — a single insert needs no transaction
+    # reply_count is kept by a Postgres trigger, so a single insert needs no transaction.
     case Repo.insert(changeset) do
       {:ok, comment} ->
         safe_dispatch(:new_comment, comment, user, query_mod)
@@ -181,9 +165,9 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   defp delete_comment(schema_mod, _query_mod, user, comment) do
     with :ok <- Policy.authorize(:delete_comment, user, comment) do
-      # Reply count read fresh: the in-memory struct may predate a reply, and
-      # hard-deleting then would orphan it (the FK nilifies, so the reply would
-      # resurface as a root comment).
+      # Reply count read fresh: the in-memory struct may predate a reply, and hard
+      # deleting then would orphan it (the FK nilifies, so the reply would resurface
+      # as a root comment).
       schema_mod
       |> Repo.get(comment.id)
       |> delete_or_tombstone()
@@ -197,7 +181,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   defp delete_or_tombstone(comment), do: tombstone(comment)
 
   defp hard_delete(comment) do
-    # reply_count decrement handled by Postgres trigger on DELETE
+    # The reply_count decrement is handled by a Postgres trigger on DELETE.
     case Repo.delete(comment) do
       {:ok, _} -> {:ok, :deleted}
       {:error, reason} -> {:error, reason}
@@ -211,8 +195,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
     |> Ecto.Changeset.change(%{body: @tombstone_body, deleted_at: now})
     |> Repo.update()
   end
-
-  # ── Helpers ───────────────────────────────────────────────────────────
 
   @doc "Returns a profile comment by id, or `nil`."
   def get_profile_comment(id), do: Repo.get(ProfileComment, id)

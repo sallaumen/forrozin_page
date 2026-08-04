@@ -153,8 +153,6 @@ defmodule OGrupoDeEstudos.Suggestions do
     SuggestionQuery.get(id)
   end
 
-  # ── Apply suggestion ─────────────────────────────────────
-
   defp apply_suggestion(%{action: :edit_field} = s) do
     case Suggestion.field_atom(s.field) do
       {:ok, field_atom} -> apply_field_edit(s, field_atom)

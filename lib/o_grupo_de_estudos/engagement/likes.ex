@@ -75,7 +75,6 @@ defmodule OGrupoDeEstudos.Engagement.Likes do
     LikeQuery.batch_map(user_id, likeable_type, likeable_ids)
   end
 
-  # Emits the ephemeral activity toast (step likes only).
   defp safe_dispatch_like(user_id, "step", likeable_id) do
     SafeDispatch.run(fn ->
       with %{^likeable_id => %{name: step_name}} <-
@@ -89,11 +88,9 @@ defmodule OGrupoDeEstudos.Engagement.Likes do
   end
 
   defp safe_dispatch_like(_user_id, _likeable_type, _likeable_id) do
-    # Non-step likes do not broadcast activity toasts
     :ok
   end
 
-  # Persists a notification for the like recipient (step/sequence/comment owner).
   defp safe_notify_like(user_id, likeable_type, likeable_id) do
     SafeDispatch.run(fn -> Dispatcher.notify_like(user_id, likeable_type, likeable_id) end)
   end

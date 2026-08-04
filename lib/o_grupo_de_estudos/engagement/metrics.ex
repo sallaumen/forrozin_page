@@ -111,8 +111,6 @@ defmodule OGrupoDeEstudos.Engagement.Metrics do
     step_likes + sequence_likes + profile_likes
   end
 
-  # ── Batch helpers (used by Badges.primary_batch/1) ───────────────────
-
   @doc "Returns `%{user_id => count}` of likes given for the given type, for a list of users."
   def count_likes_given_batch(user_ids, likeable_type) do
     from(l in Like,

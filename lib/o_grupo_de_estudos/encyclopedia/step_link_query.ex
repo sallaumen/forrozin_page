@@ -70,7 +70,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQuery do
   defp shared_reducer({:approved, value}, q),
     do: where(q, [step_link: l], l.approved == ^value)
 
-  # Shortcut: pending = approved false + not deleted
   defp shared_reducer({:pending, true}, q),
     do: where(q, [step_link: l], l.approved == false and is_nil(l.deleted_at))
 

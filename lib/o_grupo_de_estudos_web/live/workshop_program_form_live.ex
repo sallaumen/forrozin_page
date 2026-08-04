@@ -78,7 +78,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     |> assign(:selected_ids, MapSet.new())
   end
 
-  # Marca os que ja estao nesta programacao.
+  # Ticks the ones already in this program.
   defp load_selection(socket) do
     ids =
       socket.assigns.program
@@ -141,7 +141,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     end
   end
 
-  # A selecao e aplicada depois de salvar: atachar exige a programacao existir.
+  # The selection is applied after saving: attaching requires the program to exist.
   defp finish(socket, program) do
     user = socket.assigns.current_user
     sync_workshops(program, user, socket.assigns.selected_ids)
@@ -153,8 +153,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
      |> redirect(to: ~p"/programacao/#{program.slug}")}
   end
 
-  # Nao bloqueia o salvamento: se o cartaz falhar, a programacao existe e a
-  # pessoa tenta a imagem de novo.
+  # Does not block saving: if the poster fails, the program exists and the image
+  # can be retried.
   defp guardar_flyer(socket, program, user) do
     consume_uploaded_entries(socket, :flyer, fn %{path: tmp_path}, entry ->
       {:ok, Workshops.put_program_flyer(program, user, tmp_path, extensao(entry))}

@@ -15,9 +15,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers do
   defmacro __using__(_opts) do
     quote do
       def handle_info({:activity_toast, message}, socket) do
-        # Only show if not already showing a toast
         if socket.assigns[:activity_toast] == nil do
-          # Auto-dismiss after 4 seconds
           Process.send_after(self(), :dismiss_activity_toast, 4000)
           {:noreply, assign(socket, :activity_toast, message)}
         else

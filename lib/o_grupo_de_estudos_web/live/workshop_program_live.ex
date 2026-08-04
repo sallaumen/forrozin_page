@@ -44,7 +44,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign_pacote(program, workshops, user)
   end
 
-  # As duas formas de comprar convivem: o pacote fechado e a escolha dia a dia.
+  # Both ways to buy coexist: the closed package and the day-by-day choice.
   defp assign_pacote(socket, program, workshops, user) do
     socket
     |> assign(:tem_pacote?, WorkshopProgram.pacote?(program))
@@ -56,8 +56,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     )
   end
 
-  # Com uma turma lotada o pacote nao pode ser vendido: quem paga pelos tres
-  # dias nao pode entrar em dois.
+  # With one class full the package cannot be sold: whoever pays for three days
+  # cannot get into two.
   defp pacote_indisponivel(workshops, contagens) do
     lotado =
       Enum.find(workshops, fn w ->
@@ -68,8 +68,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
       "#{lotado.title} lotou, então o pacote fechado não dá. Dá para escolher os outros dias abaixo."
   end
 
-  # So oferece checkbox no que da para se inscrever agora: publicado, com vaga
-  # e onde a pessoa ainda nao esta.
+  # Only offers a checkbox for what can be joined right now: published, with a
+  # seat, and where the person is not already in.
   defp limpar_selecao(socket, workshops, user) do
     inscritos = socket.assigns.enrolled_ids
     contagens = socket.assigns.enrollment_counts
@@ -94,7 +94,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   defp selecionados(%{assigns: %{selecionados: atual}}), do: atual
   defp selecionados(_socket), do: MapSet.new()
 
-  # Painel de montagem: so para quem organiza, e so com o que ele administra.
+  # Assembly panel: only for the organizer, and only over what they administer.
   defp assign_montagem(socket, _workshops, false, _user) do
     socket
     |> assign(:dentro, [])
@@ -236,7 +236,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   defp tom(%{enrolled: []}), do: :error
   defp tom(_resultado), do: :info
 
-  # Nomeia o que falhou: "nao deu em uma" nao diz qual nem por que.
+  # Names what failed: "one did not work" says neither which nor why.
   defp resumo_do_lote(%{enrolled: [], failed: [{workshop, motivo} | _]}) do
     "#{workshop.title} não deu: #{motivo_do_erro(motivo)}"
   end
@@ -257,8 +257,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   defp motivo_do_erro(:organizer), do: "você organiza esse."
   defp motivo_do_erro(_outro), do: "não foi possível inscrever."
 
-  # Id vem de params numa pagina publica: so quem organiza mexe, e a
-  # autorizacao real mora no contexto, que confere os dois lados.
+  # The id comes from params on a public page: only the organizer changes it, and
+  # the real authorization lives in the context, which checks both sides.
   defp montar(%{assigns: %{owner?: false}} = socket, _id, _fun, _mensagem),
     do: {:noreply, socket}
 
@@ -289,8 +289,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   defp enrolled_ids(nil), do: MapSet.new()
   defp enrolled_ids(user), do: Workshops.enrolled_workshop_ids(user.id)
 
-  # Agrupa pelo dia LOCAL: um workshop das 20h de quinta em Brasilia e 23h UTC
-  # da quinta, mas um das 22h ja seria sexta em UTC e apareceria no dia errado.
+  # Groups by the LOCAL day: a workshop at 20h on a Thursday in Brasília is 23h
+  # UTC on Thursday, but one at 22h would already be Friday in UTC and land on
+  # the wrong day.
   defp group_by_day(workshops) do
     workshops
     |> Enum.group_by(&(&1.starts_at |> Brazil.to_local() |> DateTime.to_date()))

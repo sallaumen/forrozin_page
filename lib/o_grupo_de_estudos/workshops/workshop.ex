@@ -27,19 +27,19 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     field :ends_at, :utc_datetime
     field :price_cents, :integer
     field :payment_info, :string
-    # O QUANDO virou escolha; `payment_info` ficou so com a chave Pix ou uma
-    # instrucao extra. Texto livre nao dava para o sistema usar.
+    # The WHEN became a choice; `payment_info` kept only the Pix key or an extra
+    # instruction. Free text was nothing the system could use.
     field :payment_mode, Ecto.Enum, values: [:on_signup, :at_event]
     field :payment_phone, :string
     field :capacity, :integer
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
     field :flyer_path, :string
-    # Quem enxerga. Separado de status, que e ciclo de vida.
+    # Who can see it. Separate from status, which is the life cycle.
     field :visibility, Ecto.Enum, values: [:public, :private], default: :public
 
     belongs_to :organizer, OGrupoDeEstudos.Accounts.User
-    # Zero ou uma programacao. Quem move e o contexto, nao o changeset
-    # publico: entrar numa programacao exige administrar os dois lados.
+    # Zero or one program. The context moves it, not the public changeset: joining
+    # a program requires administering both sides.
     belongs_to :program, OGrupoDeEstudos.Workshops.WorkshopProgram
     has_many :enrollments, WorkshopEnrollment
 
@@ -123,9 +123,9 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     end
   end
 
-  # Slug legível a partir do título mais um sufixo curto: o link vai para
-  # grupo de WhatsApp, então precisa dizer do que se trata sem ser adivinhável
-  # a ponto de alguém varrer os workshops dos outros.
+  # Readable slug from the title plus a short suffix: the link goes to a WhatsApp
+  # group, so it has to say what it is about without being guessable enough for
+  # someone to scan other people's workshops.
   defp put_slug(changeset) do
     case {get_field(changeset, :slug), get_field(changeset, :title)} do
       {nil, title} when is_binary(title) -> put_change(changeset, :slug, build_slug(title))
@@ -172,9 +172,9 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
 
   defp so_digitos(telefone), do: String.replace(telefone, ~r/\D/, "")
 
-  # Número brasileiro sem DDI tem 10 ou 11 dígitos (DDD + número). Com DDI,
-  # 12 ou 13. Qualquer coisa fora disso não vira link: melhor não oferecer do
-  # que oferecer um link que abre conversa com ninguém.
+  # A Brazilian number without country code has 10 or 11 digits (area code plus
+  # number). With it, 12 or 13. Anything else does not become a link: better not
+  # to offer one than to offer a link that opens a chat with nobody.
   defp com_ddi(digitos) when byte_size(digitos) in [10, 11], do: "55" <> digitos
   defp com_ddi("55" <> _ = digitos) when byte_size(digitos) in [12, 13], do: digitos
   defp com_ddi(_curto_ou_estranho), do: nil

@@ -15,8 +15,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   @month_abbr {"jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"}
 
-  # ── Bloco de data (dia grande + mês) ─────────────────────────────────
-
   attr :datetime, :any, required: true
 
   def date_block(assigns) do
@@ -33,17 +31,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
-  # ── Card da agenda ───────────────────────────────────────────────────
-
   attr :workshop, :map, required: true
   attr :enrolled_count, :integer, default: 0
   attr :enrolled?, :boolean, default: false
   attr :organizer?, :boolean, default: false
-  # O mesmo workshop sai em duas listas da agenda: sem prefixo os dois cards
-  # teriam o mesmo id e o LiveView atualizaria o errado.
+  # The same workshop shows up in two agenda lists: without a prefix both cards
+  # would share an id and the LiveView would update the wrong one.
   attr :id_prefix, :string, default: "workshop-card"
-  # Caixa de selecao da programacao. Fora do <label> de proposito: o card tem
-  # link dentro, e clicar em "Ver" nao pode marcar o checkbox.
+  # Program selection box. Outside the <label> on purpose: the card has a link
+  # inside it, and clicking "Ver" must not tick the checkbox.
   slot :select
 
   def workshop_card(assigns) do
@@ -117,8 +113,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
-  # ── Card de programação na agenda ────────────────────────────────────
-
   attr :program, :map, required: true
   attr :summary, :map, required: true
   attr :owner?, :boolean, default: false
@@ -172,8 +166,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
-  # Na busca o workshop sai solto mesmo estando numa programacao: sem esta
-  # etiqueta nada na tela liga um ao outro.
+  # In a search the workshop shows up loose even when it belongs to a program:
+  # without this tag nothing on screen connects the two.
   defp programa_do(%{program: %{title: _} = program}), do: program
   defp programa_do(_workshop), do: nil
 
@@ -212,8 +206,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
-  # ── Chips de período ─────────────────────────────────────────────────
-
   attr :active, :string, required: true
   attr :event, :string, default: "filter_period"
 
@@ -246,8 +238,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
-  # ── Estado vazio ─────────────────────────────────────────────────────
-
   attr :title, :string, required: true
   attr :description, :string, default: nil
   slot :action
@@ -262,8 +252,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     </div>
     """
   end
-
-  # ── Galeria ──────────────────────────────────────────────────────────
 
   attr :media, :list, required: true
   attr :current_user, :map, default: nil
@@ -340,8 +328,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   defp pronto?(%{kind: :video, status: :ready}), do: true
   defp pronto?(_outra), do: false
 
-  # nil vira ausência do atributo no HEEx: `poster=""` faria o navegador pedir
-  # a própria página como imagem.
+  # nil becomes an absent attribute in HEEx: `poster=""` would make the browser
+  # request the page itself as an image.
   defp poster_url(%{poster_key: nil}), do: nil
   defp poster_url(%{id: id}), do: ~p"/workshop-media/#{id}/poster"
 
@@ -351,8 +339,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   defp autor_da_media(%{uploaded_by: %{name: nome, username: username}}), do: nome || username
   defp autor_da_media(_item), do: "Alguém do workshop"
-
-  # ── Caixa do pacote ──────────────────────────────────────────────────
 
   attr :program, :map, required: true
   attr :avulso_total, :integer, required: true
@@ -416,8 +402,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       do: avulso_total - pacote
 
   def economia(_program, _avulso_total), do: 0
-
-  # ── Flyer ────────────────────────────────────────────────────────────
 
   attr :upload, :any, required: true
   attr :current_path, :string, default: nil
@@ -483,8 +467,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   def erro_de_upload(:too_many_files), do: "Só um flyer por vez."
   def erro_de_upload(_outro), do: "Não deu para carregar essa imagem."
 
-  # ── Helpers de texto ─────────────────────────────────────────────────
-
   @doc """
   Ex.: `sábado, 16 de agosto · 14h às 18h`, ou `16 a 18 de agosto · começa 14h`
   quando o workshop atravessa dias.
@@ -511,8 +493,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     "#{Brazil.strftime(start_local, "%A, %d de %B")} · #{time_range(workshop)}"
   end
 
-  # Atravessando dias o que importa é até quando vai, não a hora de encerrar
-  # no último dia: "12 a 13 de setembro · 14h às 18h" leria como duas coisas.
+  # Across days what matters is until when it runs, not the closing hour of the
+  # last day: "12 a 13 de setembro · 14h às 18h" would read as two things.
   defp multi_day(start_local, end_local) do
     "#{day_span(start_local, end_local)} · começa #{local_hour(start_local)}"
   end
@@ -564,8 +546,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   defp date_span(date, date), do: Brazil.strftime(date, "%d de %B")
 
-  # Mesmo mes nomeia o mes uma vez so: "07 e 08 de agosto", "12 a 18 de
-  # fevereiro". Dia sempre com dois digitos, como no resto do app.
+  # Within a month the month is named once: "07 e 08 de agosto", "12 a 18 de
+  # fevereiro". The day always takes two digits, as everywhere else in the app.
   defp date_span(%{month: m, year: y} = inicio, %{month: m, year: y} = fim) do
     "#{Brazil.strftime(inicio, "%d")} #{juntor(inicio, fim)} #{Brazil.strftime(fim, "%d de %B")}"
   end
@@ -608,7 +590,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   """
   def payment_hint(workshop, reveal? \\ true)
 
-  # Quando se paga e uma escolha; a chave Pix, quando existe, entra depois dela.
+  # When to pay is a choice; the Pix key, when there is one, comes after it.
   def payment_hint(%{payment_mode: modo} = workshop, true) when not is_nil(modo),
     do: [quando_label(modo), chave_pix(workshop)] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
 
@@ -638,8 +620,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   defp local_hour(local),
     do: "#{local.hour}h#{String.pad_leading(to_string(local.minute), 2, "0")}"
-
-  # ── Vitrine do workshop privado ──────────────────────────────────────
 
   attr :enrolled_count, :integer, required: true
   attr :comment_count, :integer, default: 0

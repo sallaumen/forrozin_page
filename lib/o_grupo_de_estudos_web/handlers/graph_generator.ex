@@ -47,9 +47,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
              |> assign(:seq_missing_edges, [])}
 
           {:error, %Sequences.GeneratorError{message: message}} ->
-            # O painel de resultados e o unico lugar visivel nesta pagina
-            # (flash nao renderiza em handle_event aqui); o erro tipado do
-            # dominio vira a unica mensagem do painel.
+            # The results panel is the only visible place on this page (flash does not
+            # render from handle_event here), so the typed domain error becomes its only message.
             {:noreply,
              socket
              |> assign(:seq_results, [])
@@ -95,7 +94,6 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
          |> push_event("set_start_step_input", %{value: label, name: name})}
       end
 
-      # Autocomplete — required steps
       def handle_event("search_required_step", %{"value" => term}, socket) do
         suggestions =
           if String.length(term) >= 1 do

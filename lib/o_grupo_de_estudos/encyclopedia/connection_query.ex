@@ -91,7 +91,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQuery do
         c.source_step_id == ^id or c.target_step_id == ^id
       )
 
-  # Finds a connection by source and target step codes, joining the steps table.
   defp shared_reducer({:source_code, code}, q) do
     q
     |> join(:inner, [connection: c], s in Step, on: c.source_step_id == s.id, as: :source_step)

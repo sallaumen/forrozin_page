@@ -31,7 +31,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments.WorkshopComment do
       foreign_key: :parent_workshop_comment_id,
       where: [deleted_at: nil]
 
-    # Naive de proposito: o comment_thread mede "ha 5min" com NaiveDateTime.
+    # Naive on purpose: comment_thread measures "5 min ago" with NaiveDateTime.
     timestamps()
   end
 

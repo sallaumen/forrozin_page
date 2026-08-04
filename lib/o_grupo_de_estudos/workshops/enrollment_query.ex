@@ -55,8 +55,8 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   def list_upcoming_for_user(user_id, opts \\ []) do
     agora = Keyword.get(opts, :now, DateTime.utc_now())
 
-    # Parte do Workshop, nao da inscricao: preload so funciona sobre o binding
-    # do `from`.
+    # Part of the Workshop, not of the enrollment: preload only works over the
+    # binding of the `from`.
     from(w in Workshop,
       join: e in assoc(w, :enrollments),
       where: e.user_id == ^user_id and w.status == :published,

@@ -56,8 +56,6 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
     {:noreply, socket |> assign(:filter, filter) |> load_suggestions(filter)}
   end
 
-  # ── Admin action handlers ─────────────────────────────────
-
   defp handle_approve(id, socket) do
     case Suggestions.get(id) do
       nil ->
@@ -104,8 +102,6 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
         end
     end
   end
-
-  # ── Private helpers ───────────────────────────────────────
 
   defp parse_filter("all"), do: :all
   defp parse_filter(_tab), do: :pending

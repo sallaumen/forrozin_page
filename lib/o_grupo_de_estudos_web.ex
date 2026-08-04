@@ -24,7 +24,6 @@ defmodule OGrupoDeEstudosWeb do
     quote do
       use Phoenix.Router, helpers: false
 
-      # Import common connection and controller functions to use in pipelines
       import Plug.Conn
       import Phoenix.Controller
       import Phoenix.LiveView.Router
@@ -69,30 +68,23 @@ defmodule OGrupoDeEstudosWeb do
     quote do
       use Phoenix.Component
 
-      # Import convenience functions from controllers
       import Phoenix.Controller,
         only: [get_csrf_token: 0, view_module: 1, view_template: 1]
 
-      # Include general helpers for rendering HTML
       unquote(html_helpers())
     end
   end
 
   defp html_helpers do
     quote do
-      # Translation
       use Gettext, backend: OGrupoDeEstudosWeb.Gettext
 
-      # HTML escaping functionality
       import Phoenix.HTML
-      # Core UI components
       import OGrupoDeEstudosWeb.CoreComponents
 
-      # Common modules used in templates
       alias OGrupoDeEstudosWeb.Layouts
       alias Phoenix.LiveView.JS
 
-      # Routes generation with the ~p sigil
       unquote(verified_routes())
     end
   end

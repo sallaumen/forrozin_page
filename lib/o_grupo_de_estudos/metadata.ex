@@ -14,13 +14,9 @@ defmodule OGrupoDeEstudos.Metadata do
 
   import Ecto.Query
 
-  # ── Registered entity names ─────────────────────────────────────────
-
   @password_reset_count "password_reset_count"
 
   def password_reset_count_name, do: @password_reset_count
-
-  # ── Public API ──────────────────────────────────────────────────────
 
   @doc "Returns the value for the given key, or nil if not found."
   def get(entity_name, entity_key_type, entity_key) do

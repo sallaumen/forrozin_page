@@ -18,12 +18,12 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
   schema "workshop_enrollments" do
     field :payment_status, Ecto.Enum, values: [:pending, :paid, :waived], default: :pending
     field :paid_at, :utc_datetime
-    # Quando o aviso de vespera saiu. Nulo = ainda nao avisamos.
+    # When the day-before reminder went out. Null means it has not gone out.
     field :reminded_at, :utc_datetime
 
     belongs_to :workshop, OGrupoDeEstudos.Workshops.Workshop
     belongs_to :user, OGrupoDeEstudos.Accounts.User
-    # Quando presente, o pagamento deste workshop esta coberto pelo pacote.
+    # When present, this workshop is covered by the package payment.
     belongs_to :program_enrollment, OGrupoDeEstudos.Workshops.ProgramEnrollment
 
     timestamps(type: :utc_datetime_usec)

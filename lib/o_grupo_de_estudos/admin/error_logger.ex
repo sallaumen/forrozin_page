@@ -21,12 +21,10 @@ defmodule OGrupoDeEstudos.Admin.ErrorLogger do
     })
   end
 
-  # :logger handler callback
   def log(%{level: level, msg: msg, meta: meta}, config) do
     message = format_message(msg)
     now = System.monotonic_time(:millisecond)
 
-    # Debounce: skip if same message within 5 seconds
     if message == config.last_msg and now - config.last_time < @debounce_ms do
       config
     else

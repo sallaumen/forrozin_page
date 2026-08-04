@@ -40,9 +40,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
     |> Repo.all()
   end
 
-  # Um assunto conta como não lido enquanto tiver qualquer linha não lida, e
-  # vale pela data da linha mais recente. Em Postgres false < true, então
-  # "tem não lido" (= false para o teste de zero) ordena primeiro.
+  # A subject counts as unread while any of its rows is unread, and takes the
+  # date of its most recent row. In Postgres false < true, so "has unread"
+  # sorts first.
   defp recent_group_keys(user_id, opts) do
     from(n in Notification,
       where: n.user_id == ^user_id,

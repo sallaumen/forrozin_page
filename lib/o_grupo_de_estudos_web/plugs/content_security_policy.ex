@@ -42,8 +42,8 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicy do
         "script-src 'self' 'nonce-#{nonce}'",
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https:",
-        # Video da galeria vem por redirect para URL assinada do R2 (outra
-        # origem). Mesmo criterio do img-src: só carrega, não executa.
+        # Gallery video arrives as a redirect to a signed R2 URL, another origin. Same
+        # criterion as img-src: it loads, it does not execute.
         "media-src 'self' https:",
         "font-src 'self'",
         "connect-src 'self'",

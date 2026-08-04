@@ -115,10 +115,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
      )}
   end
 
-  # ──────────────────────────────────────────────────────────────────────
-  # Private helpers
-  # ──────────────────────────────────────────────────────────────────────
-
   defp reload_notifications(socket) do
     user = socket.assigns.current_user
     raw = Engagement.list_notifications(user.id, limit: @page_size)
@@ -135,8 +131,8 @@ defmodule OGrupoDeEstudosWeb.NotificationsLive do
     )
   end
 
-  # `list_notifications` corta por group_key, entao a pagina cheia se mede em
-  # assuntos. Contar linhas escondia o botao assim que um assunto trazia duas.
+  # `list_notifications` cuts by group_key, so a full page is measured in subjects.
+  # Counting rows hid the button as soon as one subject brought two.
   defp has_more?(grouped), do: length(grouped) == @page_size
 
   defp target_name(%{action: :liked_sequence}, _targets), do: nil
