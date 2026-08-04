@@ -8,6 +8,20 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     log_in_user(conn, user)
   end
 
+  # The drag hook reorders the DOM optimistically and pushes positions; reading the
+  # codes back from the render is what proves the server agreed.
+  defp manual_step_codes(html) do
+    ~r/data-manual-step="([^"]+)"/
+    |> Regex.scan(html)
+    |> Enum.map(fn [_, code] -> code end)
+  end
+
+  defp manual_row_ids(html) do
+    ~r/id="(seq-manual-step-\d+)"/
+    |> Regex.scan(html)
+    |> Enum.map(fn [_, id] -> id end)
+  end
+
   defp admin_conn(conn) do
     admin = insert(:admin)
     log_in_user(conn, admin)
@@ -539,7 +553,24 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute has_element?(lv, "#seq-manual-form")
     end
 
-    test "manual step rows use larger left-side reorder controls", %{
+    test "the manual list reorders by holding and dragging", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      render_click(lv, "toggle_seq_panel", %{})
+      render_click(lv, "show_seq_manual", %{})
+      render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
+      html = render_click(lv, "add_manual_step", %{"code" => step_b.code, "name" => step_b.name})
+
+      assert html =~ ~s(phx-hook="DragReorder")
+      assert html =~ ~s(data-reorder-axis="y")
+      assert html =~ ~s(data-reorder-event="reorder_manual_steps")
+      assert has_element?(lv, "#seq-manual-remove-1")
+    end
+
+    test "the order the drag pushed becomes the sequence order", %{
       conn: conn,
       step_a: step_a,
       step_b: step_b
@@ -550,8 +581,41 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
       render_click(lv, "add_manual_step", %{"code" => step_b.code, "name" => step_b.name})
 
-      assert has_element?(lv, "#seq-manual-move-up-1")
-      assert has_element?(lv, "#seq-manual-remove-1")
+      html = render_hook(lv, "reorder_manual_steps", %{"order" => ["1", "0"]})
+
+      assert [step_b.code, step_a.code] == manual_step_codes(html)
+    end
+
+    test "a drafted step keeps its row identity when the order changes", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      render_click(lv, "toggle_seq_panel", %{})
+      render_click(lv, "show_seq_manual", %{})
+      render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
+      render_click(lv, "add_manual_step", %{"code" => step_b.code, "name" => step_b.name})
+
+      html = render_hook(lv, "reorder_manual_steps", %{"order" => ["1", "0"]})
+
+      assert ["seq-manual-step-2", "seq-manual-step-1"] == manual_row_ids(html)
+    end
+
+    test "an order that does not cover every position leaves the list alone", %{
+      conn: conn,
+      step_a: step_a,
+      step_b: step_b
+    } do
+      {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
+      render_click(lv, "toggle_seq_panel", %{})
+      render_click(lv, "show_seq_manual", %{})
+      render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
+      render_click(lv, "add_manual_step", %{"code" => step_b.code, "name" => step_b.name})
+
+      html = render_hook(lv, "reorder_manual_steps", %{"order" => ["1"]})
+
+      assert [step_a.code, step_b.code] == manual_step_codes(html)
     end
 
     test "remove_manual_step removes step by index", %{conn: conn, step_a: step_a} do

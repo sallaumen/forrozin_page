@@ -476,8 +476,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   defp append_manual_step(socket, %{code: code, name: name}) do
-    step = %{code: code, name: name}
-    new_steps = socket.assigns.seq_manual_steps ++ [step]
+    existing = socket.assigns.seq_manual_steps
+    new_steps = existing ++ [%{key: next_draft_key(existing), code: code, name: name}]
 
     socket
     |> assign(:seq_manual_steps, new_steps)
@@ -485,6 +485,12 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     |> recompute_manual_missing_edges(new_steps)
     |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})
   end
+
+  # Each drafted step carries a key so its row keeps DOM identity across reorders.
+  # Identified by position, the row stays put while the step moves away, and the
+  # keyboard focus ends up on whoever took the old spot.
+  defp next_draft_key(steps),
+    do: steps |> Enum.map(& &1.key) |> Enum.max(fn -> 0 end) |> Kernel.+(1)
 
   defp manual_step_suggestions(_socket, ""), do: []
 
