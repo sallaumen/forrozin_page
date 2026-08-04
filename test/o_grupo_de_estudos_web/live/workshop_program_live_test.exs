@@ -22,7 +22,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
   end
 
   setup do
-    owner = insert(:user, name: "Tavano")
+    owner = insert(:user, name: "Tavano", is_teacher: true)
 
     thursday =
       insert(:workshop,
@@ -442,7 +442,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
     test "someone else's program is ignored and the workshop is born loose", ctx do
       alheia = ctx.program
-      other = insert(:user)
+      other = insert(:user, is_teacher: true)
 
       {:ok, lv, _} =
         live(

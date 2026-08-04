@@ -26,12 +26,14 @@
       title="Workshops"
       description="Eventos pontuais abertos a qualquer pessoa. Quem se inscreve num workshop não vira seu aluno: são coisas diferentes de propósito."
     >
-      <:action>
-        <.action_link :if={@can_create} navigate={~p"/study/workshops/new"} icon="hero-plus">
+      <%!-- The condition sits on the slot, not inside it: an empty slot still
+           renders its wrapper, and whoever only studies would get a stray gap
+           where the buttons used to be. --%>
+      <:action :if={@can_create}>
+        <.action_link navigate={~p"/study/workshops/new"} icon="hero-plus">
           Criar workshop
         </.action_link>
         <.link
-          :if={@can_create}
           navigate={~p"/study/programs/new"}
           class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline hover:border-ink-400"
         >
@@ -138,13 +140,12 @@
         title="Nada marcado por aqui ainda"
         description={empty_hint(@period)}
       >
-        <:action>
+        <:action :if={@can_create}>
           <div class="flex flex-wrap justify-center gap-2">
-            <.action_link :if={@can_create} navigate={~p"/study/workshops/new"} icon="hero-plus">
+            <.action_link navigate={~p"/study/workshops/new"} icon="hero-plus">
               Criar o primeiro
             </.action_link>
             <.link
-              :if={@can_create}
               navigate={~p"/study/programs/new"}
               class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
             >
