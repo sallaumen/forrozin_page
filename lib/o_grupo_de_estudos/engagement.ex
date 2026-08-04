@@ -7,10 +7,6 @@ defmodule OGrupoDeEstudos.Engagement do
   via `defdelegate`, so existing callers keep a single entry point while the
   implementation stays cohesive and independently testable. Only notifications
   and `user_stats_batch/1` retain logic in this module.
-
-  Backward compatibility: the original `list_profile_comments/1`,
-  `create_profile_comment/1`, and `delete_profile_comment/1` signatures are
-  preserved (now via `Engagement.Comments`) for existing LiveView callers.
   """
 
   alias OGrupoDeEstudos.Accounts
@@ -36,10 +32,6 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate liked?(user_id, likeable_type, likeable_id), to: Likes
   defdelegate count_likes(likeable_type, likeable_id), to: Likes
   defdelegate likes_map(user_id, likeable_type, likeable_ids), to: Likes
-
-  defdelegate list_profile_comments(opts), to: Comments
-  defdelegate create_profile_comment(attrs), to: Comments
-  defdelegate delete_profile_comment(comment), to: Comments
 
   defdelegate list_step_comments(step_id, opts \\ []), to: Comments
   defdelegate create_step_comment(user, step_id, attrs), to: Comments

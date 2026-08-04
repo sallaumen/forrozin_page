@@ -348,42 +348,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  describe "profile comments with legacy 1-arity signatures" do
-    test "create_profile_comment/1 works with attrs map", %{user: user} do
-      profile = insert(:user)
-
-      assert {:ok, comment} =
-               Engagement.create_profile_comment(%{
-                 body: "Parabéns!",
-                 author_id: user.id,
-                 profile_id: profile.id
-               })
-
-      assert comment.body == "Parabéns!"
-      assert comment.author_id == user.id
-      assert comment.profile_id == profile.id
-    end
-
-    test "list_profile_comments/1 works with opts keyword list" do
-      profile = insert(:user)
-      author = insert(:user)
-
-      insert(:profile_comment, author: author, profile: profile, body: "Hello")
-
-      comments = Engagement.list_profile_comments(profile_id: profile.id, preload: [:author])
-      assert length(comments) == 1
-      assert hd(comments).body == "Hello"
-      assert hd(comments).author.id == author.id
-    end
-
-    test "delete_profile_comment/1 soft-deletes the comment" do
-      comment = insert(:profile_comment)
-      assert {:ok, deleted} = Engagement.delete_profile_comment(comment)
-      assert deleted.deleted_at != nil
-    end
-  end
-
-  describe "profile comments with the new typed API" do
+  describe "profile comments" do
     test "create_profile_comment/3 creates via generic pipeline", %{user: user} do
       profile = insert(:user)
 

@@ -30,8 +30,9 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :replying_to, :string, default: nil
   attr :replies_map, :map, default: %{}
   attr :is_admin, :boolean, default: false
-  # `%{user_id => badge}` precomputed by the host. Empty falls back to the
-  # per-comment calculation, which is an N+1 kept only for compatibility.
+  # `%{user_id => badge}` precomputed by the host. Only the workshop page does
+  # that today; every other host leaves it empty and falls back to one query per
+  # rendered comment.
   attr :badges, :map, default: %{}
   # Public page: an anonymous visitor reads the conversation but does not write.
   attr :show_form, :boolean, default: true

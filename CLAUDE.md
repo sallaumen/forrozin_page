@@ -122,12 +122,29 @@ Seguir **todos** os principios de `~/elixir-references/` (Playbook + RFCs). Dest
 - Usar "centro de massa" (nao "CDM"): regiao do umbigo
 - Passos `wip: true`: restritos, nunca exibir ao publico
 
+## Regra rigida: a suite nao pode tomar a maquina
+
+O `mix test` roda numa maquina que a pessoa esta usando ao mesmo tempo. O limite
+vive no projeto e vale para qualquer um que rode os testes:
+
+- `config/test.exs` define `max_cases` (um quarto dos cores) e o expoe em
+  `:test_max_cases`.
+- `test/test_helper.exs` derruba os schedulers da VM para o mesmo numero. Sem
+  isso o `max_cases` sozinho nao resolve: a BEAM continua espalhando por todos
+  os cores.
+
+**Nunca subir esses numeros nem contornar com flag na linha de comando.** Para uma
+rodada mais rapida quando a maquina esta livre, `TEST_MAX_CASES=8 mix test`; o CI
+usa 16 pela mesma variavel. Rodar a suite inteira so quando precisar: durante o
+desenvolvimento, `mix test caminho/do/arquivo_test.exs`.
+
 ## Comandos
 
 ```bash
 docker compose up -d              # Postgres
 mix phx.server                    # Dev
-mix test                          # Testes
+mix test                          # Testes (limitado a 1/4 dos cores)
+TEST_MAX_CASES=8 mix test         # Mais rapido, quando a maquina esta livre
 mix credo && mix dialyzer         # Qualidade
 fly deploy -a o-grupo-de-estudos  # Producao
 ```

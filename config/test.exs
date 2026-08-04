@@ -1,16 +1,19 @@
 import Config
 
-# Half the cores, so a full run leaves the machine usable instead of pinning
-# every scheduler. ExUnit defaults to twice the cores, which on a dev laptop
-# means the suite competes with the editor and the browser. CI raises it with
-# TEST_MAX_CASES, where the machine has nothing else to do.
+# A quarter of the cores, so a full run leaves the machine usable. ExUnit
+# defaults to TWICE the cores, which on a dev laptop means the suite competes
+# with the editor and the browser. `test/test_helper.exs` caps the VM schedulers
+# to match, otherwise the BEAM still spreads over every core.
+#
+# CI raises both with TEST_MAX_CASES, where the machine has nothing else to do.
 max_cases =
   case System.get_env("TEST_MAX_CASES") do
-    nil -> max(div(System.schedulers_online(), 2), 2)
+    nil -> max(div(System.schedulers_online(), 4), 2)
     value -> String.to_integer(value)
   end
 
 config :ex_unit, max_cases: max_cases
+config :o_grupo_de_estudos, :test_max_cases, max_cases
 
 # Configure your database
 #
