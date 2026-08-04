@@ -93,6 +93,10 @@ const DragReorder = {
 
     item.dataset.reorderPlaceholder = "true";
     this.el.dataset.reordering = "true";
+    // Scroll is blocked only from here: a static touch-action would also eat
+    // the scroll of whoever merely rests a finger on an item to pan the list.
+    this.onTouchMove = (e) => e.preventDefault();
+    window.addEventListener("touchmove", this.onTouchMove, { passive: false });
     if (navigator.vibrate) navigator.vibrate(8);
 
     this.drag = { item, ghost, grabX: x, grabY: y, origin: rect };
@@ -174,6 +178,7 @@ const DragReorder = {
   },
 
   cleanupGhost() {
+    window.removeEventListener("touchmove", this.onTouchMove);
     document
       .querySelectorAll("[data-reorder-ghost]")
       .forEach((g) => g.remove());
