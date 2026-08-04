@@ -19,6 +19,26 @@ defmodule OGrupoDeEstudosWeb.UserSessionControllerTest do
       assert html_response(conn, 200) =~ "/auth/google?teacher_invite=prof-joana"
     end
 
+    test "google button carries the return_to along", %{conn: conn} do
+      conn = get(conn, ~p"/login?return_to=/workshops/forro-em-curitiba")
+      response = html_response(conn, 200)
+
+      assert response =~ "return_to=%2Fworkshops%2Fforro-em-curitiba"
+    end
+
+    test "signup link carries the return_to along", %{conn: conn} do
+      conn = get(conn, ~p"/login?return_to=/workshops/forro-em-curitiba")
+      response = html_response(conn, 200)
+
+      assert response =~ "/signup?return_to=%2Fworkshops%2Fforro-em-curitiba"
+    end
+
+    test "ignores an external return_to", %{conn: conn} do
+      conn = get(conn, ~p"/login?return_to=https://evil.com")
+
+      refute html_response(conn, 200) =~ "evil.com"
+    end
+
     test "renders login form", %{conn: conn} do
       conn = get(conn, ~p"/login")
       assert html_response(conn, 200) =~ "Entrar"
@@ -75,6 +95,35 @@ defmodule OGrupoDeEstudosWeb.UserSessionControllerTest do
 
       assert redirected_to(conn) == ~p"/collection"
       assert get_session(conn, :user_id) == user.id
+    end
+
+    test "returns to the workshop page after login", %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/login", %{
+          "session" => %{
+            "username" => user.username,
+            "password" => "senhasegura123",
+            "return_to" => "/workshops/forro-em-curitiba"
+          }
+        })
+
+      assert redirected_to(conn) == "/workshops/forro-em-curitiba"
+    end
+
+    test "falls back to collection when return_to points outside the app", %{
+      conn: conn,
+      user: user
+    } do
+      conn =
+        post(conn, ~p"/login", %{
+          "session" => %{
+            "username" => user.username,
+            "password" => "senhasegura123",
+            "return_to" => "https://evil.com/phishing"
+          }
+        })
+
+      assert redirected_to(conn) == ~p"/collection"
     end
 
     test "displays error with invalid credentials", %{conn: conn} do

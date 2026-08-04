@@ -178,11 +178,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       refute html =~ "Quero a programação toda"
     end
 
-    test "anonymous visitor is sent to signup", ctx do
+    test "anonymous visitor is sent to login keeping the program as destination", ctx do
       {:ok, lv, _} = live(build_conn(), ~p"/programs/#{ctx.com_pacote.slug}")
 
       assert {:error, {:redirect, %{to: destination}}} = render_click(lv, "buy_package", %{})
-      assert destination =~ "/signup"
+      assert destination =~ "/login"
+      assert destination =~ "return_to=%2Fprograms%2F#{ctx.com_pacote.slug}"
     end
 
     test "full class removes the package and explains, keeping single enrollment", ctx do
@@ -310,13 +311,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       refute html =~ ~s(id="pick-#{ctx.thursday.id}")
     end
 
-    test "anonymous visitor is sent to signup instead of crashing", ctx do
+    test "anonymous visitor is sent to login instead of crashing", ctx do
       {:ok, lv, _} = live(build_conn(), ~p"/programs/#{ctx.program.slug}")
 
       assert {:error, {:redirect, %{to: destination}}} =
                render_click(lv, "confirm_enrollment", %{})
 
-      assert destination =~ "/signup"
+      assert destination =~ "/login"
+      assert destination =~ "return_to=%2Fprograms%2F#{ctx.program.slug}"
     end
 
     test "forged id does not enter the selection", ctx do

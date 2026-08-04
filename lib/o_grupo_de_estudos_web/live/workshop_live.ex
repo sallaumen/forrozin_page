@@ -84,7 +84,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   def handle_event("request_join", _params, %{assigns: %{current_user: nil}} = socket) do
-    {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
+    {:noreply, to_login(socket)}
   end
 
   def handle_event("request_join", _params, socket) do
@@ -101,7 +101,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   def handle_event("join_waitlist", _params, %{assigns: %{current_user: nil}} = socket) do
-    {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
+    {:noreply, to_login(socket)}
   end
 
   def handle_event("join_waitlist", _params, socket) do
@@ -124,8 +124,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   def handle_event("enroll", _params, %{assigns: %{current_user: nil}} = socket) do
-    # No account: remembers where to come back to and sends to signup.
-    {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
+    {:noreply, to_login(socket)}
   end
 
   def handle_event("enroll", _params, socket) do
@@ -177,7 +176,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     else
       # Without an account the form does not even open, which beats letting someone
       # write and throwing the text away on submit.
-      nil -> {:noreply, to_signup(socket)}
+      nil -> {:noreply, to_login(socket)}
       :error -> {:noreply, socket}
     end
   end
@@ -196,7 +195,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
       toggle_like(socket, user, @comment_type, id, &reload_comments/1)
     else
       :error -> {:noreply, socket}
-      _ -> {:noreply, to_signup(socket)}
+      _ -> {:noreply, to_login(socket)}
     end
   end
 
@@ -243,7 +242,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
          :ok <- Policy.authorize(:like, user, nil) do
       toggle_like(socket, user, "workshop", socket.assigns.workshop.id, &assign_workshop_likes/1)
     else
-      _ -> {:noreply, to_signup(socket)}
+      _ -> {:noreply, to_login(socket)}
     end
   end
 
@@ -346,7 +345,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
        |> reload_comments()
        |> push_event("form:clear", %{id: form_id})}
     else
-      {:error, :unauthenticated} -> {:noreply, to_signup(socket)}
+      {:error, :unauthenticated} -> {:noreply, to_login(socket)}
       {:error, reason} -> {:noreply, put_flash(socket, :error, comment_error(reason))}
     end
   end
@@ -355,9 +354,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp comment_error(:rate_limited), do: "Calma lá! Espere alguns segundos para comentar de novo."
   defp comment_error(_reason), do: "Não foi possível publicar seu comentário."
 
-  defp to_signup(socket) do
-    redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")
+  # Not signed in: login already offers Google and links to signup, and the
+  # workshop travels along so the person lands back where they stopped.
+  defp to_login(socket) do
+    redirect(socket, to: ~p"/login?#{[return_to: workshop_path(socket)]}")
   end
+
+  defp workshop_path(socket), do: ~p"/workshops/#{socket.assigns.workshop.slug}"
 
   defp toggle_replies(socket, comment_id) do
     replies_map = socket.assigns.replies_map
@@ -408,6 +411,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     replies_map |> Map.values() |> List.flatten() |> Enum.map(& &1.id)
   end
 
+  # Boolean, never nil: the waitlist box pattern matches on `false`, so a
+  # visitor with no account would silently lose it on a full workshop.
+  defp enrolled?(nil, _participants), do: false
+
+  defp enrolled?(user, participants), do: Enum.any?(participants, &(&1.user_id == user.id))
+
   defp assign_workshop(socket, workshop) do
     user = socket.assigns[:current_user]
     participants = Workshops.list_participants(workshop.id)
@@ -417,7 +426,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:is_admin, user && Accounts.admin?(user))
     |> assign(:participants, participants)
     |> assign(:enrolled_count, length(participants))
-    |> assign(:enrolled?, user && Enum.any?(participants, &(&1.user_id == user.id)))
+    |> assign(:enrolled?, enrolled?(user, participants))
     |> assign(:organizer?, Workshops.admin?(workshop, user))
     |> assign(:full?, Workshop.full?(workshop, length(participants)))
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))

@@ -160,7 +160,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   def handle_event("set_package_payment", _params, socket), do: {:noreply, socket}
 
   def handle_event("buy_package", _params, %{assigns: %{current_user: nil}} = socket) do
-    {:noreply, redirect(socket, to: ~p"/signup?#{[program: socket.assigns.program.slug]}")}
+    {:noreply, to_login(socket)}
   end
 
   def handle_event("buy_package", _params, socket) do
@@ -186,7 +186,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   end
 
   def handle_event("confirm_enrollment", _params, %{assigns: %{current_user: nil}} = socket) do
-    {:noreply, redirect(socket, to: ~p"/signup?#{[program: socket.assigns.program.slug]}")}
+    {:noreply, to_login(socket)}
   end
 
   def handle_event("confirm_enrollment", _params, socket) do
@@ -285,6 +285,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   defp owner?(_program, nil), do: false
   defp owner?(program, user), do: program.owner_id == user.id
+
+  # Not signed in: login already offers Google and links to signup, and the
+  # program travels along so the person lands back where they stopped.
+  defp to_login(socket) do
+    redirect(socket, to: ~p"/login?#{[return_to: ~p"/programs/#{socket.assigns.program.slug}"]}")
+  end
 
   defp enrolled_ids(nil), do: MapSet.new()
   defp enrolled_ids(user), do: Workshops.enrolled_workshop_ids(user.id)

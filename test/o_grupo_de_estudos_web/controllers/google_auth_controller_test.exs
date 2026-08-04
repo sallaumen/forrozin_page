@@ -32,6 +32,34 @@ defmodule OGrupoDeEstudosWeb.GoogleAuthControllerTest do
       assert get_session(conn, :google_auth_session_params) == %{state: "abc"}
     end
 
+    test "stores the return_to for the callback", %{conn: conn} do
+      expect(GoogleAuth.Mock, :authorize_url, fn ->
+        {:ok,
+         %{
+           url: "https://accounts.google.com/authorize?state=abc",
+           session_params: %{state: "abc"}
+         }}
+      end)
+
+      conn = get(conn, ~p"/auth/google?return_to=/workshops/forro-em-curitiba")
+
+      assert get_session(conn, :google_auth_return_to) == "/workshops/forro-em-curitiba"
+    end
+
+    test "discards an external return_to", %{conn: conn} do
+      expect(GoogleAuth.Mock, :authorize_url, fn ->
+        {:ok,
+         %{
+           url: "https://accounts.google.com/authorize?state=abc",
+           session_params: %{state: "abc"}
+         }}
+      end)
+
+      conn = get(conn, ~p"/auth/google?return_to=https://evil.com")
+
+      assert get_session(conn, :google_auth_return_to) == nil
+    end
+
     test "redirects to login with an error when the authorize url fails", %{conn: conn} do
       expect(GoogleAuth.Mock, :authorize_url, fn -> {:error, :nxdomain} end)
 
@@ -120,6 +148,42 @@ defmodule OGrupoDeEstudosWeb.GoogleAuthControllerTest do
 
       student = Accounts.get_user_by_email("maria.silva@gmail.com")
       assert OGrupoDeEstudos.Study.get_link_between(student.id, teacher.id) != nil
+    end
+
+    test "returns a new user to the workshop they came from", %{conn: conn} do
+      expect(GoogleAuth.Mock, :callback, fn _params, _session_params ->
+        {:ok, @google_profile}
+      end)
+
+      conn =
+        conn
+        |> init_test_session(%{
+          google_auth_session_params: %{state: "abc"},
+          google_auth_return_to: "/workshops/forro-em-curitiba"
+        })
+        |> get(~p"/auth/google/callback?code=ok")
+
+      assert redirected_to(conn) == "/workshops/forro-em-curitiba"
+      assert get_session(conn, :user_id) != nil
+    end
+
+    test "returns an existing user to the workshop they came from", %{conn: conn} do
+      {:ok, user, :registered} = Accounts.login_or_register_google_user(@google_profile)
+
+      expect(GoogleAuth.Mock, :callback, fn _params, _session_params ->
+        {:ok, @google_profile}
+      end)
+
+      conn =
+        conn
+        |> init_test_session(%{
+          google_auth_session_params: %{state: "abc"},
+          google_auth_return_to: "/workshops/forro-em-curitiba"
+        })
+        |> get(~p"/auth/google/callback?code=ok")
+
+      assert redirected_to(conn) == "/workshops/forro-em-curitiba"
+      assert get_session(conn, :user_id) == user.id
     end
 
     test "redirects to login with an error when the exchange fails", %{conn: conn} do

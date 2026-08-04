@@ -7,6 +7,7 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
 
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Study
+  alias OGrupoDeEstudosWeb.ReturnTo
 
   @impl true
   def mount(params, _session, socket) do
@@ -16,8 +17,21 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
      assign(socket,
        page_title: "Cadastro",
        teacher_invite_slug: teacher_invite_slug,
+       return_to: ReturnTo.safe_path(params["return_to"]),
        form: to_form(%{}, as: :user)
      )}
+  end
+
+  @doc "Login link that keeps the invite and the post-login destination."
+  def login_path(teacher_invite, return_to) do
+    params =
+      [teacher_invite: teacher_invite, return_to: return_to]
+      |> Enum.reject(fn {_key, value} -> value in [nil, ""] end)
+
+    case params do
+      [] -> ~p"/login"
+      params -> ~p"/login?#{params}"
+    end
   end
 
   @impl true
@@ -41,7 +55,7 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
          socket
          |> push_event("form_persisted_clear", %{id: "registration-form"})
          |> put_flash(:info, "Conta criada! Verifique seu email para confirmar.")
-         |> redirect(to: ~p"/auto-login/#{token}")}
+         |> redirect(to: auto_login_path(token, socket.assigns.return_to))}
 
       {:error, changeset} ->
         {:noreply,
@@ -50,6 +64,12 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
          |> assign(form: to_form(Map.put(changeset, :action, :validate), as: :user))}
     end
   end
+
+  defp auto_login_path(token, nil), do: ~p"/auto-login/#{token}"
+  defp auto_login_path(token, ""), do: ~p"/auto-login/#{token}"
+
+  defp auto_login_path(token, return_to),
+    do: ~p"/auto-login/#{token}?return_to=#{return_to}"
 
   defp maybe_accept_teacher_invite(_user, nil), do: :ok
   defp maybe_accept_teacher_invite(_user, ""), do: :ok

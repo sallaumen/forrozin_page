@@ -34,6 +34,45 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLiveTest do
 
       assert html =~ "/auth/google?teacher_invite=prof-joana"
     end
+
+    test "google button carries the return_to along", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/signup?return_to=/workshops/forro-em-curitiba")
+
+      assert html =~ "return_to=%2Fworkshops%2Fforro-em-curitiba"
+    end
+
+    test "login link carries the return_to along", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/signup?return_to=/workshops/forro-em-curitiba")
+
+      assert html =~ "/login?return_to=%2Fworkshops%2Fforro-em-curitiba"
+    end
+  end
+
+  describe "registration with a return_to" do
+    test "returns to the workshop page after signing up", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/signup?return_to=/workshops/forro-em-curitiba")
+
+      result =
+        lv
+        |> form("#registration-form",
+          user: %{
+            username: "novadancarina",
+            name: "Nova Dançarina",
+            email: "nova@example.com",
+            password: "senhasegura123",
+            country: "BR",
+            state: "PR",
+            city: "Curitiba"
+          }
+        )
+        |> render_submit()
+
+      assert {:error, {:redirect, %{to: destination}}} = result
+      assert destination =~ "return_to=%2Fworkshops%2Fforro-em-curitiba"
+
+      conn = get(conn, destination)
+      assert redirected_to(conn) == "/workshops/forro-em-curitiba"
+    end
   end
 
   describe "user registration" do
