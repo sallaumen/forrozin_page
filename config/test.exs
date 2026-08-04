@@ -1,5 +1,17 @@
 import Config
 
+# Half the cores, so a full run leaves the machine usable instead of pinning
+# every scheduler. ExUnit defaults to twice the cores, which on a dev laptop
+# means the suite competes with the editor and the browser. CI raises it with
+# TEST_MAX_CASES, where the machine has nothing else to do.
+max_cases =
+  case System.get_env("TEST_MAX_CASES") do
+    nil -> max(div(System.schedulers_online(), 2), 2)
+    value -> String.to_integer(value)
+  end
+
+config :ex_unit, max_cases: max_cases
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
@@ -12,7 +24,9 @@ config :o_grupo_de_estudos, OGrupoDeEstudos.Repo,
   port: 5433,
   database: "o_grupo_de_estudos_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  # One connection per concurrent case, plus room for the ones that check out
+  # a second connection (Oban, Presence).
+  pool_size: max_cases + 4
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
@@ -35,19 +49,19 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
-# Oban — executa jobs sincronamente nos testes
+# Oban: runs jobs synchronously in tests
 config :o_grupo_de_estudos, Oban, testing: :inline
 
-# Uploads num diretorio descartavel. Testes que precisam inspecionar arquivo
-# trocam esta chave por um tmp proprio.
+# Uploads in a disposable directory. Tests that need to inspect a file swap
+# this key for a tmp of their own.
 config :o_grupo_de_estudos, :uploads_path, Path.expand("../tmp/test_uploads", __DIR__)
 
-# Video: por padrao a suite roda como maquina sem ffmpeg, para nao depender de
-# binario instalado. Teste de transcode troca pelo mock Mox.
+# Video: by default the suite runs as a machine with no ffmpeg, so it does not
+# depend on an installed binary. The transcode test swaps in the Mox mock.
 config :o_grupo_de_estudos, OGrupoDeEstudos.Media.Video,
   adapter: OGrupoDeEstudos.Media.Video.NotInstalled
 
-# Mailer — captura emails nos testes via Swoosh.TestAssertions
+# Mailer: captures emails in tests through Swoosh.TestAssertions
 config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Test
 
 # Avoid DB writes from detached processes during SQL Sandbox tests.
@@ -55,5 +69,5 @@ config :o_grupo_de_estudos,
   env: :test,
   async_device_tracking: false,
   persist_error_logs: false,
-  # TTL 0: cada chamada consulta o banco, preservando o isolamento do sandbox.
+  # TTL 0: every call queries the database, preserving the sandbox isolation.
   admin_ids_cache_ttl_ms: 0

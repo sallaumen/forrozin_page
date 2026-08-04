@@ -55,6 +55,10 @@ jobs:
 
       - name: Run tests
         run: mix test
+        env:
+          # The runner has nothing else to do, so use every core. The local
+          # default is half of them, to keep a dev machine usable.
+          TEST_MAX_CASES: 16
 
   coverage:
     name: Coverage gate

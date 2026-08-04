@@ -32,14 +32,14 @@ defmodule OGrupoDeEstudos.MixProject do
   def application do
     [
       mod: {OGrupoDeEstudos.Application, []},
-      # :xmerl e o parser SAX do adapter R2 (ListObjectsV2).
+      # :xmerl is the SAX parser of the R2 adapter (ListObjectsV2).
       #
-      # :req_s3 esta aqui por um motivo chato: em recompilacoes parciais o Mix
-      # as vezes gera o .app SEM ele na lista de applications, e ai o dialyzer
-      # passa a acusar `ReqS3.presign_url/1` como funcao inexistente. Nao afeta
-      # producao (o release monta de um _build limpo), mas custava um
-      # `touch mix.exs` a cada PR. Listar explicitamente torna deterministico;
-      # req_s3 e biblioteca sem supervisor, entao inicia-la e no-op.
+      # :req_s3 is here for an annoying reason: on partial recompiles Mix sometimes
+      # generates the .app WITHOUT it in the applications list, and then dialyzer
+      # starts flagging `ReqS3.presign_url/1` as a missing function. It does not
+      # affect production (the release builds from a clean _build), but it cost a
+      # `touch mix.exs` on every PR. Listing it explicitly makes it deterministic;
+      # req_s3 has no supervisor, so starting it is a no-op.
       extra_applications: [:logger, :runtime_tools, :xmerl, :req_s3]
     ]
   end
@@ -85,26 +85,26 @@ defmodule OGrupoDeEstudos.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
-      # Hashing de senhas
+      # Password hashing
       {:argon2_elixir, "~> 4.0"},
       # Mailer
       {:swoosh, "~> 1.17"},
-      # Adaptador SMTP (necessário em dev para envio real; em prod, trocar por API adapter)
+      # SMTP adapter (needed in dev for real sending; in prod, swap for an API adapter)
       {:gen_smtp, "~> 1.0"},
-      # HTTP client (integração com APIs de IA)
+      # HTTP client
       {:req, "~> 0.6"},
       {:req_s3, "~> 0.2.3"},
-      # Jobs assíncronos (verificação de email, geração de vídeo)
+      # Background jobs (email confirmation, video transcode)
       {:oban, "~> 2.19"},
-      # Qualidade de código
+      # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
       {:ex_check, "~> 0.16", only: [:dev], runtime: false},
-      # Processamento de imagens (crop, resize)
+      # Image processing (crop, resize)
       {:mogrify, "~> 0.9"},
-      # Factories de teste
+      # Test factories
       {:ex_machina, "~> 2.7", only: :test},
-      # Seguranca estatica (Sobelow) e auditoria de CVEs em dependencias
+      # Static security analysis (Sobelow) and dependency CVE audit
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.18", only: :test, runtime: false}
@@ -130,15 +130,15 @@ defmodule OGrupoDeEstudos.MixProject do
         "esbuild o_grupo_de_estudos --minify",
         "phx.digest"
       ],
-      # Gate de qualidade. deps.audit ignora o advisory do decimal
-      # (GHSA-rhv4-8758-jx7v): preso por ecto `~> 2.0`, sem uso direto.
-      # sobelow gateia em High. `-i Config.CSP` e supressao de FALSO-POSITIVO: o
-      # CSP existe (Plugs.ContentSecurityPolicy, com nonce por request), mas o
-      # sobelow so reconhece CSP em put_secure_browser_headers, nao via plug.
-      # Os Traversal Medium/Low restantes sao server-side, com caminhos
-      # reconstruidos via Path.basename (falsos positivos). `--skip` honra os
-      # `# sobelow_skip` inline, cada um justificado no proprio codigo; e a
-      # supressao mais estreita que existe: uma funcao, um check.
+      # Quality gate. deps.audit ignores the decimal advisory (GHSA-rhv4-8758-jx7v):
+      # pinned by ecto `~> 2.0`, with no direct use.
+      # sobelow gates on High. `-i Config.CSP` suppresses a FALSE POSITIVE: the CSP
+      # does exist (Plugs.ContentSecurityPolicy, with a per-request nonce), but
+      # sobelow only recognizes a CSP in put_secure_browser_headers, not through a plug.
+      # The remaining Traversal Medium/Low are server-side, with paths rebuilt through
+      # Path.basename (false positives). `--skip` honors the inline `# sobelow_skip`,
+      # each one justified in the code itself, and it is the narrowest suppression
+      # there is: one function, one check.
       lint: [
         "format --check-formatted",
         "deps.audit --ignore-advisory-ids GHSA-rhv4-8758-jx7v",

@@ -27,12 +27,12 @@
       description="Eventos pontuais abertos a qualquer pessoa. Quem se inscreve num workshop não vira seu aluno: são coisas diferentes de propósito."
     >
       <:action>
-        <.action_link :if={@can_create} navigate={~p"/study/workshops/novo"} icon="hero-plus">
+        <.action_link :if={@can_create} navigate={~p"/study/workshops/new"} icon="hero-plus">
           Criar workshop
         </.action_link>
         <.link
           :if={@can_create}
-          navigate={~p"/study/programacoes/nova"}
+          navigate={~p"/study/programs/new"}
           class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline hover:border-ink-400"
         >
           Juntar num link só
@@ -140,12 +140,12 @@
       >
         <:action>
           <div class="flex flex-wrap justify-center gap-2">
-            <.action_link :if={@can_create} navigate={~p"/study/workshops/novo"} icon="hero-plus">
+            <.action_link :if={@can_create} navigate={~p"/study/workshops/new"} icon="hero-plus">
               Criar o primeiro
             </.action_link>
             <.link
               :if={@can_create}
-              navigate={~p"/study/programacoes/nova"}
+              navigate={~p"/study/programs/new"}
               class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
             >
               Juntar num link só

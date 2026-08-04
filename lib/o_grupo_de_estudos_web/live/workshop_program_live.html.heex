@@ -63,7 +63,7 @@
 
     <div :if={@owner?} class="mt-4 flex flex-wrap gap-2">
       <.link
-        navigate={~p"/study/programacoes/#{@program.slug}/editar"}
+        navigate={~p"/study/programs/#{@program.slug}/edit"}
         class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
       >
         Editar programação
@@ -117,7 +117,7 @@
         <div class="flex flex-col gap-2.5">
           <.workshop_card
             :for={w <- workshops}
-            id_prefix="programacao"
+            id_prefix="program"
             workshop={w}
             enrolled_count={Map.get(@enrollment_counts, w.id, 0)}
             enrolled?={MapSet.member?(@enrolled_ids, w.id)}
@@ -279,7 +279,7 @@
         </div>
 
         <.link
-          navigate={~p"/study/workshops/novo?#{[program: @program.slug]}"}
+          navigate={~p"/study/workshops/new?#{[program: @program.slug]}"}
           class="mt-4 inline-flex items-center gap-1.5 rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white no-underline"
         >
           <.icon name="hero-plus" class="size-4" /> Criar workshop já nesta programação

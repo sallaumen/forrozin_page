@@ -165,19 +165,19 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
   """
   @spec receipt_link(t()) :: String.t() | nil
   def receipt_link(%__MODULE__{payment_phone: phone} = workshop) when is_binary(phone) do
-    phone |> so_digitos() |> com_ddi() |> build_link(workshop)
+    phone |> digits_only() |> with_country_code() |> build_link(workshop)
   end
 
   def receipt_link(%__MODULE__{}), do: nil
 
-  defp so_digitos(phone), do: String.replace(phone, ~r/\D/, "")
+  defp digits_only(phone), do: String.replace(phone, ~r/\D/, "")
 
   # A Brazilian number without country code has 10 or 11 digits (area code plus
   # number). With it, 12 or 13. Anything else does not become a link: better not
   # to offer one than to offer a link that opens a chat with nobody.
-  defp com_ddi(digitos) when byte_size(digitos) in [10, 11], do: "55" <> digitos
-  defp com_ddi("55" <> _ = digitos) when byte_size(digitos) in [12, 13], do: digitos
-  defp com_ddi(_too_short_or_odd), do: nil
+  defp with_country_code(digits) when byte_size(digits) in [10, 11], do: "55" <> digits
+  defp with_country_code("55" <> _ = digits) when byte_size(digits) in [12, 13], do: digits
+  defp with_country_code(_too_short_or_odd), do: nil
 
   defp build_link(nil, _workshop), do: nil
 

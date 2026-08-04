@@ -43,7 +43,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
   describe "public program page" do
     test "anonymous visitor opens it and sees both workshops", ctx do
-      {:ok, _lv, html} = live(build_conn(), ~p"/programacao/#{ctx.program.slug}")
+      {:ok, _lv, html} = live(build_conn(), ~p"/programs/#{ctx.program.slug}")
 
       assert html =~ "Fim de semana de forró"
       assert html =~ "Básico e intermediário"
@@ -52,7 +52,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     end
 
     test "groups by day, with the weekday spelled out", ctx do
-      {:ok, _lv, html} = live(build_conn(), ~p"/programacao/#{ctx.program.slug}")
+      {:ok, _lv, html} = live(build_conn(), ~p"/programs/#{ctx.program.slug}")
 
       thursday_date = ctx.thursday.starts_at |> Brazil.to_local() |> DateTime.to_date()
       assert html =~ Brazil.strftime(thursday_date, "%A, %d de %B")
@@ -66,7 +66,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _} = Workshops.enroll(ctx.thursday, student)
 
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.program.slug}")
 
       assert html =~ "Você está inscrito"
     end
@@ -75,7 +75,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, draft} = Workshops.create_program(owner, %{title: "Ainda montando"})
 
       assert {:error, {:redirect, %{to: destination}}} =
-               live(build_conn(), ~p"/programacao/#{draft.slug}")
+               live(build_conn(), ~p"/programs/#{draft.slug}")
 
       assert destination == ~p"/study/workshops"
     end
@@ -83,7 +83,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     test "creator opens their own draft and can publish it", %{owner: owner} do
       {:ok, draft} = Workshops.create_program(owner, %{title: "Ainda montando"})
 
-      {:ok, lv, html} = live(log_in_user(build_conn(), owner), ~p"/programacao/#{draft.slug}")
+      {:ok, lv, html} = live(log_in_user(build_conn(), owner), ~p"/programs/#{draft.slug}")
       assert html =~ "Ainda é rascunho"
 
       html = render_click(lv, "publish", %{})
@@ -95,11 +95,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       draft = insert(:workshop, organizer: ctx.owner, title: "Segredo", status: :draft)
       {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, draft.id)
 
-      {:ok, _lv, html} = live(build_conn(), ~p"/programacao/#{ctx.program.slug}")
+      {:ok, _lv, html} = live(build_conn(), ~p"/programs/#{ctx.program.slug}")
       refute html =~ "Segredo"
 
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
 
       assert html =~ "Segredo"
     end
@@ -108,7 +108,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, vazia} = Workshops.create_program(owner, %{title: "Sem nada ainda"})
       {:ok, vazia} = Workshops.publish_program(owner, vazia)
 
-      {:ok, _lv, html} = live(build_conn(), ~p"/programacao/#{vazia.slug}")
+      {:ok, _lv, html} = live(build_conn(), ~p"/programs/#{vazia.slug}")
 
       assert html =~ "Nenhum workshop nesta programação ainda"
     end
@@ -132,7 +132,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
     test "page offers both options and shows the savings", ctx do
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.com_pacote.slug}")
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programs/#{ctx.com_pacote.slug}")
 
       assert html =~ "pela programação toda"
       assert html =~ "Quero a programação toda"
@@ -144,7 +144,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       student = insert(:user)
 
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.com_pacote.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.com_pacote.slug}")
 
       html = render_click(lv, "buy_package", %{})
 
@@ -155,7 +155,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     end
 
     test "Pix key stays hidden from whoever has not bought the package", ctx do
-      {:ok, _lv, html} = live(build_conn(), ~p"/programacao/#{ctx.com_pacote.slug}")
+      {:ok, _lv, html} = live(build_conn(), ~p"/programs/#{ctx.com_pacote.slug}")
 
       refute html =~ "41 98888-7777"
     end
@@ -164,7 +164,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       student = insert(:user)
 
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.com_pacote.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.com_pacote.slug}")
 
       html = render_click(lv, "buy_package", %{})
 
@@ -173,13 +173,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
     test "program without a package price shows no package", ctx do
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programs/#{ctx.program.slug}")
 
       refute html =~ "Quero a programação toda"
     end
 
     test "anonymous visitor is sent to signup", ctx do
-      {:ok, lv, _} = live(build_conn(), ~p"/programacao/#{ctx.com_pacote.slug}")
+      {:ok, lv, _} = live(build_conn(), ~p"/programs/#{ctx.com_pacote.slug}")
 
       assert {:error, {:redirect, %{to: destination}}} = render_click(lv, "buy_package", %{})
       assert destination =~ "/signup"
@@ -190,7 +190,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _} = Workshops.enroll(full_workshop, insert(:user))
 
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.com_pacote.slug}")
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programs/#{ctx.com_pacote.slug}")
 
       refute html =~ "Quero a programação toda"
       assert html =~ "lotou, então o pacote fechado não dá"
@@ -202,7 +202,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _} = Workshops.enroll_in_package(ctx.com_pacote, student)
 
       {:ok, lv, html} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.com_pacote.slug}")
+        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.com_pacote.slug}")
 
       assert html =~ "Quem levou a programação toda"
       assert html =~ student.name
@@ -217,7 +217,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _} = Workshops.enroll_in_package(ctx.com_pacote, insert(:user))
 
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.com_pacote.slug}")
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programs/#{ctx.com_pacote.slug}")
 
       refute html =~ "Quem levou a programação toda"
     end
@@ -228,7 +228,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       student = insert(:user)
 
       {:ok, lv, html} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.program.slug}")
 
       assert html =~ "Marque os workshops que você vai"
 
@@ -248,7 +248,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       student = insert(:user)
 
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.program.slug}")
 
       render_click(lv, "toggle_selection", %{"id" => ctx.thursday.id})
       html = render_click(lv, "toggle_selection", %{"id" => ctx.thursday.id})
@@ -259,7 +259,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
     test "confirming with nothing checked warns instead of pretending it worked", ctx do
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), insert(:user)), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), insert(:user)), ~p"/programs/#{ctx.program.slug}")
 
       html = render_click(lv, "confirm_enrollment", %{})
 
@@ -282,7 +282,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       student = insert(:user)
 
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.program.slug}")
 
       render_click(lv, "toggle_selection", %{"id" => full_workshop.id})
       render_click(lv, "toggle_selection", %{"id" => ctx.thursday.id})
@@ -297,7 +297,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _} = Workshops.enroll(ctx.thursday, student)
 
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.program.slug}")
 
       refute html =~ ~s(id="pick-#{ctx.thursday.id}")
       assert html =~ ~s(id="pick-#{ctx.friday.id}")
@@ -305,13 +305,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
     test "organizer gets no checklist for their own workshops", ctx do
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
 
       refute html =~ ~s(id="pick-#{ctx.thursday.id}")
     end
 
     test "anonymous visitor is sent to signup instead of crashing", ctx do
-      {:ok, lv, _} = live(build_conn(), ~p"/programacao/#{ctx.program.slug}")
+      {:ok, lv, _} = live(build_conn(), ~p"/programs/#{ctx.program.slug}")
 
       assert {:error, {:redirect, %{to: destination}}} =
                render_click(lv, "confirm_enrollment", %{})
@@ -324,7 +324,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       alheio = insert(:workshop)
 
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), student), ~p"/programs/#{ctx.program.slug}")
 
       html = render_click(lv, "toggle_selection", %{"id" => alheio.id})
 
@@ -337,7 +337,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       improvised = insert(:workshop, organizer: ctx.owner, title: "Roda improvisada")
 
       {:ok, lv, html} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
 
       assert html =~ "Roda improvisada"
 
@@ -349,7 +349,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
     test "organizer detaches one on the spot", ctx do
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
 
       render_click(lv, "detach_workshop", %{"id" => ctx.friday.id})
 
@@ -363,7 +363,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       workshop_dele = insert(:workshop, organizer: outsider)
 
       {:ok, lv, html} =
-        live(log_in_user(build_conn(), outsider), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), outsider), ~p"/programs/#{ctx.program.slug}")
 
       refute html =~ "Montar a programação"
 
@@ -374,7 +374,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     end
 
     test "anonymous visitor sending the event does not crash the page", ctx do
-      {:ok, lv, _} = live(build_conn(), ~p"/programacao/#{ctx.program.slug}")
+      {:ok, lv, _} = live(build_conn(), ~p"/programs/#{ctx.program.slug}")
 
       render_click(lv, "attach_workshop", %{"id" => ctx.thursday.id})
       render_click(lv, "detach_workshop", %{"id" => ctx.thursday.id})
@@ -385,7 +385,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
     test "made-up id breaks nothing", ctx do
       {:ok, lv, _} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
 
       render_click(lv, "attach_workshop", %{"id" => "nao-e-uuid"})
 
@@ -396,7 +396,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       fora = insert(:workshop, organizer: ctx.owner, title: "Ainda fora da programação")
 
       {:ok, lv, html} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.program.slug}")
+        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
 
       assert html =~ "Ainda fora da programação"
 
@@ -411,7 +411,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _lv, html} =
         live(
           log_in_user(build_conn(), ctx.owner),
-          ~p"/study/workshops/novo?#{[program: ctx.program.slug]}"
+          ~p"/study/workshops/new?#{[program: ctx.program.slug]}"
         )
 
       assert html =~ ctx.program.title
@@ -421,7 +421,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, lv, _} =
         live(
           log_in_user(build_conn(), ctx.owner),
-          ~p"/study/workshops/novo?#{[program: ctx.program.slug]}"
+          ~p"/study/workshops/new?#{[program: ctx.program.slug]}"
         )
 
       lv
@@ -445,7 +445,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, lv, _} =
         live(
           log_in_user(build_conn(), other),
-          ~p"/study/workshops/novo?#{[program: alheia.slug]}"
+          ~p"/study/workshops/new?#{[program: alheia.slug]}"
         )
 
       lv
@@ -469,7 +469,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       thursday: thursday,
       friday: friday
     } do
-      {:ok, lv, _} = live(log_in_user(build_conn(), owner), ~p"/study/programacoes/nova")
+      {:ok, lv, _} = live(log_in_user(build_conn(), owner), ~p"/study/programs/new")
 
       render_click(lv, "toggle_workshop", %{"id" => thursday.id})
       render_click(lv, "toggle_workshop", %{"id" => friday.id})
@@ -481,7 +481,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
                })
                |> render_submit()
 
-      assert destination =~ "/programacao/meu-fim-de-semana-"
+      assert destination =~ "/programs/meu-fim-de-semana-"
 
       new_program =
         Enum.find(Workshops.list_programs_for_owner(owner.id), &(&1.title == "Meu fim de semana"))
@@ -492,7 +492,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
     test "only lists workshops the user administers", %{owner: owner} do
       alheio = insert(:workshop, title: "Workshop de outra pessoa")
 
-      {:ok, _lv, html} = live(log_in_user(build_conn(), owner), ~p"/study/programacoes/nova")
+      {:ok, _lv, html} = live(log_in_user(build_conn(), owner), ~p"/study/programs/new")
 
       refute html =~ alheio.title
     end
@@ -501,7 +501,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, lv, _} =
         live(
           log_in_user(build_conn(), ctx.owner),
-          ~p"/study/programacoes/#{ctx.program.slug}/editar"
+          ~p"/study/programs/#{ctx.program.slug}/edit"
         )
 
       render_click(lv, "toggle_workshop", %{"id" => ctx.friday.id})
@@ -518,12 +518,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       assert {:error, {:redirect, _}} =
                live(
                  log_in_user(build_conn(), insert(:user)),
-                 ~p"/study/programacoes/#{ctx.program.slug}/editar"
+                 ~p"/study/programs/#{ctx.program.slug}/edit"
                )
     end
 
     test "empty title shows an error instead of creating", %{owner: owner} do
-      {:ok, lv, _} = live(log_in_user(build_conn(), owner), ~p"/study/programacoes/nova")
+      {:ok, lv, _} = live(log_in_user(build_conn(), owner), ~p"/study/programs/new")
 
       html =
         lv

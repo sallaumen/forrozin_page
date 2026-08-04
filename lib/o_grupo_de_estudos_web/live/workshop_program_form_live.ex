@@ -150,7 +150,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     {:noreply,
      socket
      |> put_flash(:info, "Programação salva. Agora é só compartilhar o link.")
-     |> redirect(to: ~p"/programacao/#{program.slug}")}
+     |> redirect(to: ~p"/programs/#{program.slug}")}
   end
 
   # Does not block saving: if the poster fails, the program exists and the image

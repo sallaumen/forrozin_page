@@ -97,7 +97,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
       |> String.slice(0, 60)
       |> String.trim("-")
 
-    prefix = if base == "", do: "programacao", else: base
+    prefix = if base == "", do: "program", else: base
     "#{prefix}-#{random_suffix()}"
   end
 

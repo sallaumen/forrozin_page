@@ -847,7 +847,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "Comentários"
     end
 
-    test "close_drawer fecha o painel", %{conn: conn} do
+    test "close_drawer closes the panel", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       render_hook(lv, "open_step", %{"code" => "BF"})

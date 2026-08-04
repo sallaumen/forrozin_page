@@ -23,11 +23,11 @@ end
 config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
-# Storage de objetos no Cloudflare R2, ligado pela presença dos secrets: com
-# eles, TODO upload novo (avatar, flyer, galeria) vai para o R2; sem eles, o
-# disco local continua valendo. Fora de :test de propósito: a suíte controla
-# o adapter por conta própria, e um env exportado na máquina não pode mudar
-# o comportamento dos testes.
+# Object storage on Cloudflare R2, switched on by the presence of the secrets:
+# with them, EVERY new upload (avatar, flyer, gallery) goes to R2; without them,
+# the local disk still holds. Outside :test on purpose: the suite controls the
+# adapter on its own, and an env exported on the machine must not change how the
+# tests behave.
 if System.get_env("R2_ACCOUNT_ID") && config_env() != :test do
   config :o_grupo_de_estudos, OGrupoDeEstudos.Media.ObjectStorage,
     adapter: OGrupoDeEstudos.Media.ObjectStorage.R2
@@ -42,8 +42,8 @@ if System.get_env("R2_ACCOUNT_ID") && config_env() != :test do
 end
 
 if config_env() == :prod do
-  # Volume do Fly, montado em /app/uploads (fly.toml). Explicito para nao
-  # depender de um File.dir? adivinhando o ambiente.
+  # Fly volume, mounted at /app/uploads (fly.toml). Explicit so it does not depend
+  # on a File.dir? guessing the environment.
   config :o_grupo_de_estudos, :uploads_path, System.get_env("UPLOADS_PATH", "/app/uploads")
 
   config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,

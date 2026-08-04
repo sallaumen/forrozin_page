@@ -51,31 +51,32 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Oban — filas de jobs assíncronos
+# Oban: async job queues
 config :o_grupo_de_estudos, Oban,
   repo: OGrupoDeEstudos.Repo,
-  # video: 1 de proposito. A VM tem 1 vCPU compartilhado e o ffmpeg come tudo
-  # que encontra: dois transcodes em paralelo deixam o site lento para quem
-  # esta navegando, e a fila so precisa terminar, nao correr.
+  # video: 1 on purpose. The VM has 1 shared vCPU and ffmpeg eats everything it
+  # finds: two transcodes in parallel make the site slow for whoever is browsing,
+  # and the queue only has to finish, not race.
   queues: [email: 10, tracking: 5, backup: 1, maintenance: 1, reminders: 5, video: 1],
   plugins: [
     Oban.Plugins.Pruner,
-    # Deploy no meio de um transcode deixaria o job em `executing` para sempre,
-    # e a midia presa em "processando" na tela. O Lifeline devolve para a fila.
+    # A deploy in the middle of a transcode would leave the job in `executing`
+    # forever, and the media stuck in "processing" on screen. Lifeline puts it back
+    # in the queue.
     {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)},
     {Oban.Plugins.Cron,
      crontab: [
-       # Backup completo do banco a cada hora
+       # Full database backup every hour
        {"0 * * * *", OGrupoDeEstudos.Workers.PeriodicBackup},
-       # Limpeza de notificações lidas com >90 dias (semanalmente às 03:00 UTC)
+       # Cleanup of read notifications older than 90 days (weekly at 03:00 UTC)
        {"0 3 * * 0", OGrupoDeEstudos.Workers.NotificationCleanup},
-       # 12h UTC = 9h em Brasilia. O aviso e "amanha tem workshop", entao sai
-       # de manha, com o dia inteiro de antecedencia.
+       # 12h UTC is 9h in Brazil. The notice is "there is a workshop tomorrow", so it
+       # goes out in the morning, a full day ahead.
        {"0 12 * * *", OGrupoDeEstudos.Workers.WorkshopReminder}
      ]}
   ]
 
-# Swoosh — sem api_client HTTP (usamos SMTP ou adaptador local)
+# Swoosh: no HTTP api_client (we use SMTP or the local adapter)
 config :swoosh, :api_client, false
 
 # Import environment specific config. This must remain at the bottom

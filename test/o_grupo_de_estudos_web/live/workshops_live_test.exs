@@ -257,7 +257,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
     test "creator adds a co-organizer by username", ctx do
       {:ok, lv, _} =
-        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/manage")
 
       html = render_submit(lv, "add_admin", %{"username" => ctx.partner.username})
 
@@ -267,7 +267,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
     test "unknown username warns instead of crashing", ctx do
       {:ok, lv, _} =
-        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/manage")
 
       html = render_submit(lv, "add_admin", %{"username" => "ninguem_com_esse_nome"})
 
@@ -278,7 +278,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.partner.id)
 
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, ctx.partner), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+        live(log_in_user(ctx.conn, ctx.partner), ~p"/workshops/#{ctx.workshop.slug}/manage")
 
       assert html =~ "Inscritos"
       refute html =~ ~s(id="add-admin-form")
@@ -289,7 +289,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert {:error, {:redirect, _}} =
                live(
                  log_in_user(ctx.conn, insert(:user)),
-                 ~p"/workshops/#{ctx.workshop.slug}/gerenciar"
+                 ~p"/workshops/#{ctx.workshop.slug}/manage"
                )
     end
 
@@ -297,7 +297,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.partner.id)
 
       {:ok, lv, _} =
-        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+        live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/manage")
 
       render_click(lv, "remove_admin", %{"id" => ctx.partner.id})
 
@@ -310,7 +310,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       {:ok, lv, _} =
         live(
           log_in_user(ctx.conn, ctx.partner),
-          ~p"/study/workshops/#{ctx.workshop.slug}/editar"
+          ~p"/study/workshops/#{ctx.workshop.slug}/edit"
         )
 
       assert {:error, {:redirect, _}} =
@@ -407,7 +407,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       {:ok, lv, html} =
         live(
           log_in_user(ctx.conn, ctx.owner),
-          ~p"/workshops/#{ctx.private_workshop.slug}/gerenciar"
+          ~p"/workshops/#{ctx.private_workshop.slug}/manage"
         )
 
       assert html =~ "Pedidos para entrar"
@@ -423,7 +423,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       public_workshop = published(ctx.owner, %{title: "Aberto"})
 
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, ctx.owner), ~p"/workshops/#{public_workshop.slug}/gerenciar")
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/workshops/#{public_workshop.slug}/manage")
 
       refute html =~ "Pedidos para entrar"
     end
@@ -515,7 +515,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
   end
 
   describe "liking the workshop" do
-    test "curte, conta e descurte", %{conn: conn} do
+    test "likes, counts and unlikes", %{conn: conn} do
       w = published(insert(:user), %{})
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
 
@@ -548,7 +548,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
       assert Engagement.unread_count(organizer.id) == 1
 
-      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
+      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/manage")
       assert html =~ "hero-bell"
     end
 
@@ -560,7 +560,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/notifications")
 
       assert html =~ "se inscreveu no seu workshop"
-      assert html =~ "/workshops/#{w.slug}/gerenciar"
+      assert html =~ "/workshops/#{w.slug}/manage"
     end
 
     test "workshop comment leads to the public page", %{conn: conn} do
@@ -710,7 +710,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       w = published(organizer, %{price_cents: nil})
       {:ok, _} = Workshops.enroll(w, student)
 
-      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
+      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/manage")
 
       assert html =~ "inscritos"
       assert html =~ student.name
@@ -725,7 +725,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       w = published(organizer, %{price_cents: 18_000})
       {:ok, _} = Workshops.enroll(w, student)
 
-      {:ok, lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
+      {:ok, lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/manage")
 
       assert html =~ "R$ 0"
       refute html =~ "Gratuito"
@@ -872,12 +872,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
     test "non-organizer is blocked", %{conn: conn, workshop: w, student: student} do
       assert {:error, {:redirect, %{to: "/study/workshops"}}} =
-               live(log_in_user(conn, student), ~p"/workshops/#{w.slug}/gerenciar")
+               live(log_in_user(conn, student), ~p"/workshops/#{w.slug}/manage")
     end
 
     test "not even a site admin enters the payment panel", %{conn: conn, workshop: w} do
       assert {:error, {:redirect, %{to: "/study/workshops"}}} =
-               live(log_in_user(conn, insert(:admin)), ~p"/workshops/#{w.slug}/gerenciar")
+               live(log_in_user(conn, insert(:admin)), ~p"/workshops/#{w.slug}/manage")
     end
 
     test "organizer sees enrolled users and marks payment", %{
@@ -885,7 +885,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       organizer: organizer,
       workshop: w
     } do
-      {:ok, lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
+      {:ok, lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/manage")
 
       assert html =~ "Ana Souza"
       assert html =~ "Só você vê esta tela"
@@ -907,7 +907,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       other = published(other_owner, %{title: "Outro"})
       {:ok, alheia} = Workshops.enroll(other, insert(:user))
 
-      {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
+      {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/manage")
 
       html = render_click(lv, "set_payment", %{"id" => alheia.id, "status" => "paid"})
       assert html =~ "Inscrição não encontrada"
@@ -917,7 +917,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
 
     test "cancelar preserva os inscritos", %{conn: conn, organizer: organizer, workshop: w} do
-      {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
+      {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/manage")
 
       html = render_click(lv, "cancel_workshop", %{})
 
@@ -929,7 +929,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
   describe "creating a workshop (/study/workshops/novo)" do
     test "creates and publishes", %{conn: conn} do
       user = insert(:user)
-      {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/novo")
+      {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/new")
 
       params = %{
         "title" => "Aulão de forró",
@@ -959,7 +959,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
     test "saving a draft does not publish", %{conn: conn} do
       user = insert(:user)
-      {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/novo")
+      {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/new")
 
       params = %{
         "title" => "Só um rascunho",
@@ -978,7 +978,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
     test "validation error shows a message and preserves the typed text", %{conn: conn} do
       user = insert(:user)
-      {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/novo")
+      {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/new")
 
       params = %{"title" => "", "description" => "Escrevi isso aqui", "starts_at" => ""}
 
@@ -996,7 +996,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       w = published(insert(:user))
 
       assert {:error, {:redirect, %{to: "/study/workshops"}}} =
-               live(log_in_user(conn, insert(:user)), ~p"/study/workshops/#{w.slug}/editar")
+               live(log_in_user(conn, insert(:user)), ~p"/study/workshops/#{w.slug}/edit")
     end
   end
 end
