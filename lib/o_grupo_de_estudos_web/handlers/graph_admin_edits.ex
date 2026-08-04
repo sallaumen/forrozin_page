@@ -7,7 +7,6 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphAdminEdits do
   defmacro __using__(_opts) do
     quote do
       alias OGrupoDeEstudos.{Admin, Encyclopedia}
-      alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}
       alias OGrupoDeEstudosWeb.GraphVisual.GraphData
 
       def handle_event(
@@ -28,7 +27,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphAdminEdits do
             socket
           ) do
         user = socket.assigns.current_user
-        source = StepQuery.get_by(code: src_code)
+        source = Encyclopedia.get_step_by(code: src_code)
 
         if source do
           case OGrupoDeEstudos.Suggestions.create(user, %{
@@ -83,8 +82,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphAdminEdits do
             socket
           ) do
         if socket.assigns.is_admin do
-          with source when not is_nil(source) <- StepQuery.get_by(code: source_code),
-               target when not is_nil(target) <- StepQuery.get_by(code: target_code),
+          with source when not is_nil(source) <- Encyclopedia.get_step_by(code: source_code),
+               target when not is_nil(target) <- Encyclopedia.get_step_by(code: target_code),
                {:ok, _conn} <-
                  Admin.create_connection(%{source_step_id: source.id, target_step_id: target.id}) do
             graph = Encyclopedia.build_graph()
@@ -118,7 +117,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphAdminEdits do
             socket
           ) do
         if socket.assigns.is_admin do
-          connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
+          connection =
+            Encyclopedia.get_connection_by(source_code: source_code, target_code: target_code)
 
           case connection do
             nil ->

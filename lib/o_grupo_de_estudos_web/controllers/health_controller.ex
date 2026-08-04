@@ -1,26 +1,18 @@
 defmodule OGrupoDeEstudosWeb.HealthController do
   use OGrupoDeEstudosWeb, :controller
 
-  alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Health
 
   @doc """
   Fly health check: 200 only with the database answering, otherwise 503. A
   machine stuck with a dead pool must fail the check and be recycled.
   """
   def check(conn, _params) do
-    case database_status() do
-      :ok -> send_health(conn, 200, "ok")
-      :error -> send_health(conn, 503, "database unavailable")
+    if Health.database_responsive?() do
+      send_health(conn, 200, "ok")
+    else
+      send_health(conn, 503, "database unavailable")
     end
-  end
-
-  defp database_status do
-    case Repo.query("SELECT 1", [], timeout: 4_000) do
-      {:ok, _result} -> :ok
-      {:error, _reason} -> :error
-    end
-  rescue
-    _error -> :error
   end
 
   defp send_health(conn, status, body) do

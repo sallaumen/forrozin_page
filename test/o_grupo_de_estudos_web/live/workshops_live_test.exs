@@ -510,7 +510,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       render_submit(lv, "create_reply", %{"body" => "invadindo", "parent-id" => de_fora.id})
 
       assert Engagement.list_workshop_comments(w.id) == []
-      assert Engagement.list_replies(WorkshopCommentQuery, de_fora.id) == []
+      assert Engagement.list_workshop_comment_replies(de_fora.id) == []
     end
   end
 

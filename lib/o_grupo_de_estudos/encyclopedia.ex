@@ -17,11 +17,36 @@ defmodule OGrupoDeEstudos.Encyclopedia do
     CollectionBrowser,
     ConnectionQuery,
     SectionQuery,
+    StepLinkQuery,
     StepQuery,
     TechnicalConcept
   }
 
   alias OGrupoDeEstudos.Repo
+
+  @doc "Step matching `opts`, or nil. Options are the StepQuery reducers."
+  defdelegate get_step_by(opts), to: StepQuery, as: :get_by
+
+  @doc "Steps matching `opts`. Options are the StepQuery reducers."
+  defdelegate list_steps_by(opts), to: StepQuery, as: :list_by
+
+  @doc "Section matching `opts`, or nil."
+  defdelegate get_section_by(opts), to: SectionQuery, as: :get_by
+
+  @doc "Connection matching `opts`, or nil."
+  defdelegate get_connection_by(opts), to: ConnectionQuery, as: :get_by
+
+  @doc "Connections matching `opts`."
+  defdelegate list_connections_by(opts), to: ConnectionQuery, as: :list_by
+
+  @doc "Step video link matching `opts`, or nil."
+  defdelegate get_step_link_by(opts), to: StepLinkQuery, as: :get_by
+
+  @doc "Step video links matching `opts`."
+  defdelegate list_step_links_by(opts), to: StepLinkQuery, as: :list_by
+
+  @doc "MapSet of step ids that have at least one approved link."
+  defdelegate step_ids_with_links(), to: StepLinkQuery
 
   @doc "Lists all categories ordered by label."
   defdelegate step_summaries_by_ids(ids), to: StepQuery, as: :summaries_by_ids

@@ -9,7 +9,17 @@ defmodule OGrupoDeEstudos.Admin do
   import Ecto.Query, only: [from: 2]
 
   alias OGrupoDeEstudos.Admin.ErrorLog
-  alias OGrupoDeEstudos.Encyclopedia.{Category, Connection, Section, Step, StepLink, Subsection}
+
+  alias OGrupoDeEstudos.Encyclopedia.{
+    Category,
+    Connection,
+    ConnectionQuery,
+    Section,
+    Step,
+    StepLink,
+    Subsection
+  }
+
   alias OGrupoDeEstudos.Repo
 
   @doc """
@@ -58,8 +68,17 @@ defmodule OGrupoDeEstudos.Admin do
     step |> Step.changeset(attrs) |> Repo.update()
   end
 
+  @doc """
+  Soft-deletes a step together with every connection touching it.
+
+  One transaction: a step without its edges would leave the graph pointing at
+  a hole, and the edges without the step would resurrect them on restore.
+  """
   def delete_step(%Step{} = step) do
-    step |> Ecto.Changeset.change(deleted_at: now()) |> Repo.update()
+    Repo.transact(fn ->
+      ConnectionQuery.soft_delete_by(either_step_id: step.id)
+      step |> Ecto.Changeset.change(deleted_at: now()) |> Repo.update()
+    end)
   end
 
   def create_section(attrs) do

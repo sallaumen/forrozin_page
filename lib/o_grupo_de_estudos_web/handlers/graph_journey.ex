@@ -6,14 +6,13 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphJourney do
 
   defmacro __using__(_opts) do
     quote do
-      alias OGrupoDeEstudos.Encyclopedia.StepQuery
       alias OGrupoDeEstudos.Engagement
       alias OGrupoDeEstudosWeb.GraphVisual.JourneyPlan
       alias OGrupoDeEstudosWeb.StepDrawer
 
       def handle_event("toggle_step_learned", %{"code" => code}, socket) do
         user = socket.assigns.current_user
-        step = StepQuery.get_by(code: code)
+        step = OGrupoDeEstudos.Encyclopedia.get_step_by(code: code)
 
         if step do
           Engagement.toggle_learned(user.id, step.id)

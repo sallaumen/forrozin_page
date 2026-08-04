@@ -3,7 +3,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Authorization.Policy
-  alias OGrupoDeEstudos.Encyclopedia.StepQuery
 
   alias OGrupoDeEstudosWeb.GraphVisual.{
     GraphData,
@@ -241,7 +240,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
       {:noreply, assign(socket, :expanded_replies_map, Map.delete(replies_map, comment_id))}
     else
       replies =
-        Engagement.list_replies(OGrupoDeEstudos.Engagement.Comments.StepCommentQuery, comment_id)
+        Engagement.list_step_comment_replies(comment_id)
 
       socket = assign(socket, :expanded_replies_map, Map.put(replies_map, comment_id, replies))
       {:noreply, StepDrawer.reload_comment_likes(socket)}
@@ -390,8 +389,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   defp do_create_missing_connection(socket, src_code, tgt_code) do
-    source = StepQuery.get_by(code: src_code)
-    target = StepQuery.get_by(code: tgt_code)
+    source = Encyclopedia.get_step_by(code: src_code)
+    target = Encyclopedia.get_step_by(code: tgt_code)
 
     if source && target do
       Admin.create_connection(%{source_step_id: source.id, target_step_id: target.id})

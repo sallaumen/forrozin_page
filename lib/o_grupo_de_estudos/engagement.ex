@@ -52,7 +52,10 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate create_profile_comment(user, profile_id, attrs), to: Comments
   defdelegate delete_profile_comment(user, comment), to: Comments
 
-  defdelegate list_replies(query_mod, comment_id, opts \\ []), to: Comments
+  defdelegate list_step_comment_replies(comment_id, opts \\ []), to: Comments
+  defdelegate list_sequence_comment_replies(comment_id, opts \\ []), to: Comments
+  defdelegate list_workshop_comment_replies(comment_id, opts \\ []), to: Comments
+  defdelegate list_profile_comment_replies(comment_id, opts \\ []), to: Comments
   defdelegate comment_counts_for(type, parent_ids), to: Comments
 
   @doc "Lists notifications for the given user (unread first, then newest)."

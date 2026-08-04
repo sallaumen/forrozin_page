@@ -7,12 +7,11 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite do
 
   defmacro __using__(_opts) do
     quote do
-      alias OGrupoDeEstudos.Encyclopedia.StepQuery
       alias OGrupoDeEstudos.Engagement
 
       def handle_event("toggle_step_like_graph", %{"code" => code}, socket) do
         user = socket.assigns.current_user
-        step = StepQuery.get_by(code: code)
+        step = OGrupoDeEstudos.Encyclopedia.get_step_by(code: code)
 
         if step do
           Engagement.toggle_like(user.id, "step", step.id)
@@ -29,7 +28,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite do
 
       def handle_event("toggle_step_favorite_graph", %{"code" => code}, socket) do
         user = socket.assigns.current_user
-        step = StepQuery.get_by(code: code)
+        step = OGrupoDeEstudos.Encyclopedia.get_step_by(code: code)
 
         if step do
           Engagement.toggle_favorite(user.id, "step", step.id)

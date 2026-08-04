@@ -2,7 +2,6 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
   use OGrupoDeEstudosWeb, :live_view
 
   alias OGrupoDeEstudos.{Accounts, Admin, Admin.Backup, Encyclopedia}
-  alias OGrupoDeEstudos.Encyclopedia.StepQuery
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
 
@@ -34,7 +33,12 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
 
     results =
       if String.length(term) >= 1 do
-        StepQuery.list_by(search: term, order_by: [asc: :code], limit: 8, preload: [:category])
+        Encyclopedia.list_steps_by(
+          search: term,
+          order_by: [asc: :code],
+          limit: 8,
+          preload: [:category]
+        )
       else
         []
       end
@@ -60,7 +64,12 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
 
     results =
       if String.length(term) >= 1 do
-        StepQuery.list_by(search: term, order_by: [asc: :code], limit: 8, preload: [:category])
+        Encyclopedia.list_steps_by(
+          search: term,
+          order_by: [asc: :code],
+          limit: 8,
+          preload: [:category]
+        )
       else
         []
       end

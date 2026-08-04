@@ -132,7 +132,7 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
       view |> render_submit("create_reply", %{"body" => "Reply!", "parent-id" => parent.id})
 
-      replies = Engagement.list_replies(StepCommentQuery, parent.id)
+      replies = Engagement.list_step_comment_replies(parent.id)
       assert length(replies) == 1
     end
 
