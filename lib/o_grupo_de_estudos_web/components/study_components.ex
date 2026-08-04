@@ -326,6 +326,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
 
   attr :step, :map, required: true
   attr :removable, :boolean, default: false
+  attr :learned, :boolean, default: false
   attr :remove_event, :string, default: nil
   attr :rest, :global, include: ~w(phx-value-id phx-value-note-id phx-value-step-id disabled)
 
@@ -337,14 +338,19 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     própria anotação não conseguia fazer nada com o que viu na aula. --%>
     <span
       :if={@removable}
-      class="inline-flex items-center rounded-full border border-accent-orange/25 bg-accent-orange/[0.08] text-[11px] font-semibold text-accent-orange"
+      class={[
+        "inline-flex items-center rounded-full border text-[11px] font-semibold",
+        @learned && "border-accent-green/30 bg-accent-green/[0.10] text-accent-green",
+        !@learned && "border-accent-orange/25 bg-accent-orange/[0.08] text-accent-orange"
+      ]}
     >
       <button
         type="button"
         phx-click="open_step_sheet"
         phx-value-code={@step.code}
-        class="inline-flex cursor-pointer items-center gap-1.5 rounded-l-full py-1 pl-2.5 pr-1 transition-colors hover:bg-accent-orange/10"
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-l-full py-1 pl-2.5 pr-1 transition-colors hover:brightness-95"
       >
+        <.icon :if={@learned} name="hero-check-circle-solid" class="size-3" />
         <code class="font-bold">{@step.code}</code>
         <span class="font-normal text-ink-600">{@step.name}</span>
       </button>
@@ -355,10 +361,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
         class="group cursor-pointer rounded-r-full py-1 pl-1 pr-2.5 disabled:cursor-default disabled:opacity-70"
         {@rest}
       >
-        <.icon
-          name="hero-x-mark"
-          class="size-3 text-accent-orange/60 group-hover:text-accent-orange"
-        />
+        <.icon name="hero-x-mark" class="size-3 opacity-60 group-hover:opacity-100" />
       </button>
     </span>
 
@@ -367,8 +370,13 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       type="button"
       phx-click="open_step_sheet"
       phx-value-code={@step.code}
-      class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-accent-orange/20 bg-accent-orange/10 px-2.5 py-0.5 text-[10px] text-accent-orange transition-colors hover:bg-accent-orange/20"
+      class={[
+        "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] transition-colors hover:brightness-95",
+        @learned && "border-accent-green/30 bg-accent-green/[0.12] text-accent-green",
+        !@learned && "border-accent-orange/20 bg-accent-orange/10 text-accent-orange"
+      ]}
     >
+      <.icon :if={@learned} name="hero-check-circle-solid" class="size-2.5" />
       <code class="font-bold">{@step.code}</code>
       <span class="text-ink-600">{@step.name}</span>
     </button>
@@ -397,19 +405,32 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       phx-window-keydown="close_step_sheet"
       phx-key="escape"
     >
+      <%!-- No celular é folha que sobe (o polegar alcança); no desktop vira um
+      cartão compacto, porque abrir um modal de 26rem para um gesto de um
+      clique pesa mais do que o gesto. O accent segue o estado: a folha é o
+      chip aberto, e trocar de cor no meio do caminho quebraria a ligação
+      entre o que se clicou e o que abriu. --%>
       <div
-        class="w-full max-w-[26rem] rounded-t-2xl border border-ink-200 bg-ink-50 p-5 shadow-lg sm:rounded-2xl"
+        class={[
+          "w-full rounded-t-2xl border bg-ink-50 p-4 shadow-lg sm:max-w-[20rem] sm:rounded-2xl",
+          @learned && "border-accent-green/30",
+          !@learned && "border-ink-200"
+        ]}
         phx-click-away="close_step_sheet"
       >
-        <div class="flex items-start gap-3">
-          <code class="shrink-0 rounded-lg bg-ink-900 px-2 py-1 font-bold text-[13px] text-ink-50">
+        <div class="flex items-start gap-2.5">
+          <code class={[
+            "shrink-0 rounded-md px-1.5 py-0.5 text-[12px] font-bold",
+            @learned && "bg-accent-green/15 text-accent-green",
+            !@learned && "bg-accent-orange/15 text-accent-orange"
+          ]}>
             {@step.code}
           </code>
           <div class="min-w-0 flex-1">
-            <p class="m-0 font-serif text-[17px] font-bold leading-tight text-ink-900">
+            <p class="m-0 font-serif text-[15px] font-bold leading-tight text-ink-900">
               {@step.name}
             </p>
-            <p :if={@step.note} class="m-0 mt-1 line-clamp-3 text-[12.5px] text-ink-600">
+            <p :if={@step.note} class="m-0 mt-0.5 line-clamp-2 text-[12px] leading-snug text-ink-500">
               {@step.note}
             </p>
           </div>
@@ -421,29 +442,29 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           phx-value-code={@step.code}
           aria-pressed={to_string(@learned)}
           class={[
-            "mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border px-5 py-2.5 font-serif text-[14px] font-semibold transition-colors",
+            "mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border px-4 py-2 font-serif text-[13px] font-semibold transition-colors",
             @learned && "border-accent-green/40 bg-accent-green/12 text-accent-green",
             !@learned && "border-ink-300 bg-ink-100 text-ink-700 hover:border-ink-400"
           ]}
         >
           <.icon
             name={if @learned, do: "hero-check-circle-solid", else: "hero-academic-cap"}
-            class="size-5"
+            class="size-4"
           />
           {if @learned, do: "Você já sabe este passo", else: "Já sei este passo"}
         </button>
 
-        <div class="mt-3 flex items-center justify-between">
+        <div class="mt-2 flex items-center justify-between text-[12px]">
           <.link
             navigate={~p"/steps/#{@step.code}"}
-            class="text-[12.5px] font-semibold text-accent-orange no-underline"
+            class="font-semibold text-accent-orange no-underline"
           >
             Ver o passo completo →
           </.link>
           <button
             type="button"
             phx-click="close_step_sheet"
-            class="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] text-ink-500 underline"
+            class="cursor-pointer border-0 bg-transparent p-0 text-ink-500 underline"
           >
             fechar
           </button>
@@ -522,6 +543,8 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   slot :meta
   slot :footer
 
+  attr :learned_codes, :any, default: nil
+
   def diary_card(assigns) do
     ~H"""
     <section
@@ -562,6 +585,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           <.step_pill
             :for={step <- @related_steps}
             step={step}
+            learned={sabe?(@learned_codes, step)}
             removable={!@disabled}
             remove_event={@remove_event}
             phx-value-id={step.id}
@@ -601,6 +625,8 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :remove_step_event, :string, default: "remove_history_step"
   slot :empty
 
+  attr :learned_codes, :any, default: nil
+
   def note_history(assigns) do
     ~H"""
     <section class="rounded-2xl border border-ink-200 bg-ink-50 p-5 shadow-sm">
@@ -617,6 +643,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
         <.history_note
           :for={note <- @notes}
           note={note}
+          learned_codes={@learned_codes}
           expanded={MapSet.member?(@expanded_ids, note.id)}
           editing={@editing_note_id == note.id}
           editable={@editable}
@@ -643,6 +670,8 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :add_step_event, :string, required: true
   attr :remove_step_event, :string, required: true
 
+  attr :learned_codes, :any, default: nil
+
   defp history_note(assigns) do
     assigns = assign(assigns, :long?, String.length(assigns.note.content || "") > 150)
 
@@ -655,7 +684,11 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       </div>
 
       <div :if={@note.related_steps != []} class="mt-1.5 flex flex-wrap gap-1">
-        <.step_pill :for={step <- @note.related_steps} step={step} />
+        <.step_pill
+          :for={step <- @note.related_steps}
+          step={step}
+          learned={sabe?(@learned_codes, step)}
+        />
       </div>
 
       <%= if @long? do %>
@@ -689,6 +722,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           <.step_pill
             :for={step <- @note.related_steps}
             step={step}
+            learned={sabe?(@learned_codes, step)}
             removable
             remove_event={@remove_step_event}
             phx-value-note-id={@note.id}
@@ -813,4 +847,11 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   # ── Helpers ──────────────────────────────────────────────────────────
 
   defp weekday_label(dow), do: elem(@weekday_labels, dow - 1)
+
+  # `nil` significa "a tela nao carregou o estado": melhor mostrar tudo como
+  # ainda-nao-sabido do que estourar. MapSet de codigos e o que as telas
+  # montam, porque o chip sempre tem o codigo em maos.
+  defp sabe?(nil, _step), do: false
+  defp sabe?(codigos, %{code: code}), do: MapSet.member?(codigos, code)
+  defp sabe?(_codigos, _step), do: false
 end

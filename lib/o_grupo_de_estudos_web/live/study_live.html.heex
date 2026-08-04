@@ -34,6 +34,7 @@
       <%!-- Coluna principal: diário + histórico --%>
       <div class="flex min-w-0 flex-col gap-4">
         <.diary_card
+          learned_codes={@learned_codes}
           id="personal-diary"
           eyebrow="Diário de hoje"
           title="O que rolou na prática?"
@@ -81,6 +82,7 @@
         </.diary_card>
 
         <.note_history
+          learned_codes={@learned_codes}
           notes={@personal_history}
           count_label={
             "#{length(@personal_history)} #{if length(@personal_history) == 1, do: "dia registrado", else: "dias registrados"}"
