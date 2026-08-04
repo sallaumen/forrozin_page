@@ -1,9 +1,9 @@
 import Config
 
 # Configure your database
-# Uploads FORA de priv/static de proposito: la dentro o Plug.Static principal
-# do endpoint intercepta o caminho antes do UploadsStatic e recusa o arquivo
-# por nao estar na :only dele, devolvendo 400 para todo upload em dev.
+# Uploads OUTSIDE priv/static on purpose: in there the main endpoint Plug.Static
+# intercepts the path before UploadsStatic and refuses the file for not being in
+# its :only list, returning 400 for every upload in dev.
 config :o_grupo_de_estudos, :uploads_path, Path.expand("../priv/uploads", __DIR__)
 
 config :o_grupo_de_estudos, OGrupoDeEstudos.Repo,
@@ -76,21 +76,17 @@ config :o_grupo_de_estudos, OGrupoDeEstudosWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :o_grupo_de_estudos, dev_routes: true
 
-# ---------------------------------------------------------------------------
-# Mailer
+# In dev, emails really go out through SMTP. Exception: recipients at @teste.com
+# go to the local mailbox (/dev/mailbox).
 #
-# Em dev, emails são enviados de verdade via SMTP.
-# Exceção: destinatários @teste.com vão para o mailbox local (/dev/mailbox).
+# Put the credentials in the environment before starting the server:
 #
-# Coloque as credenciais no ambiente antes de subir o servidor:
+#     export MAILER_HOST=smtp.yourdomain.com
+#     export MAILER_USER=you@email.com
+#     export MAILER_PASS=your_app_password
 #
-#   export MAILER_HOST=smtp.seudominio.com
-#   export MAILER_USER=seu@email.com
-#   export MAILER_PASS=sua_senha_de_app
-#
-# Para Gmail: gere uma "App Password" em myaccount.google.com/apppasswords
-# (precisa ter 2FA ativo). A porta 587 com TLS já funciona.
-# ---------------------------------------------------------------------------
+# For Gmail: generate an App Password at myaccount.google.com/apppasswords (it
+# needs 2FA on). Port 587 with TLS already works.
 config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: System.get_env("MAILER_HOST", "smtp.gmail.com"),
@@ -99,7 +95,7 @@ config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
   tls: :always,
   port: 587
 
-# Ativa o filtro: emails @teste.com vão pro mailbox local, não pro SMTP real.
+# Turns the filter on: @teste.com emails go to the local mailbox, not to real SMTP.
 config :o_grupo_de_estudos, :filter_test_emails, true
 
 # Do not include metadata nor timestamps in development logs

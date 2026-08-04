@@ -116,7 +116,7 @@ defmodule OGrupoDeEstudos.ProgramPackageTest do
       assert updated.payment_status == :paid
     end
 
-    test "resumo separa pacote de avulso", ctx do
+    test "summary separates package from single enrollment", ctx do
       {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.student)
       avulsa = insert(:user)
       {:ok, _} = Workshops.enroll(hd(ctx.workshops), avulsa)

@@ -167,7 +167,7 @@ defmodule OGrupoDeEstudos.AgendaTest do
     end
   end
 
-  describe "list_agenda/1 com busca" do
+  describe "list_agenda/1 with a search" do
     test "search opens the program and finds the workshop inside it", %{owner: owner} do
       dentro =
         insert(:workshop, organizer: owner, title: "Pisada nordestina", starts_at: at_day(10, 19))

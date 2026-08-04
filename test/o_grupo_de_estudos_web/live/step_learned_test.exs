@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudosWeb.StepLearnedTest do
       assert html =~ "Já sei este passo"
     end
 
-    test "marcar registra o aprendizado", ctx do
+    test "marking records the learning", ctx do
       {:ok, lv, _} = live(log_in_user(build_conn(), ctx.user), ~p"/steps/#{ctx.step.code}")
 
       html = render_click(lv, "toggle_step_learned", %{"code" => ctx.step.code})

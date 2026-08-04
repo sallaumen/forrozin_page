@@ -63,6 +63,14 @@ defmodule OGrupoDeEstudosWeb.Router do
     get "/confirm/:token", UserConfirmationController, :confirm
     get "/auto-login/:token", UserSessionController, :auto_login
 
+    # Portuguese routes kept as permanent redirects: a shared link must not 404.
+    get "/programacao/:slug", LegacyRouteController, :program
+    get "/workshops/:slug/gerenciar", LegacyRouteController, :manage_workshop
+    get "/study/workshops/novo", LegacyRouteController, :new_workshop
+    get "/study/workshops/:slug/editar", LegacyRouteController, :edit_workshop
+    get "/study/programacoes/nova", LegacyRouteController, :new_program
+    get "/study/programacoes/:slug/editar", LegacyRouteController, :edit_program
+
     live_session :public, on_mount: [{OGrupoDeEstudosWeb.UserAuth, :mount_current_user}] do
       live "/", LandingLive
       live "/about", AboutLive
@@ -81,7 +89,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     live_session :workshops_public,
       on_mount: [{OGrupoDeEstudosWeb.UserAuth, :mount_current_user}] do
       live "/workshops/:slug", WorkshopLive
-      live "/programacao/:slug", WorkshopProgramLive
+      live "/programs/:slug", WorkshopProgramLive
     end
   end
 
@@ -101,11 +109,11 @@ defmodule OGrupoDeEstudosWeb.Router do
       live "/users/:username", UserProfileLive
       live "/settings", SettingsLive
       live "/study/workshops", WorkshopsLive
-      live "/study/workshops/novo", WorkshopFormLive, :new
-      live "/study/workshops/:slug/editar", WorkshopFormLive, :edit
-      live "/study/programacoes/nova", WorkshopProgramFormLive, :new
-      live "/study/programacoes/:slug/editar", WorkshopProgramFormLive, :edit
-      live "/workshops/:slug/gerenciar", WorkshopManageLive
+      live "/study/workshops/new", WorkshopFormLive, :new
+      live "/study/workshops/:slug/edit", WorkshopFormLive, :edit
+      live "/study/programs/new", WorkshopProgramFormLive, :new
+      live "/study/programs/:slug/edit", WorkshopProgramFormLive, :edit
+      live "/workshops/:slug/manage", WorkshopManageLive
     end
 
     live_session :admin, on_mount: [{OGrupoDeEstudosWeb.UserAuth, :ensure_admin}] do

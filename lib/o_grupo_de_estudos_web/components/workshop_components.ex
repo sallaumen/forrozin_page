@@ -157,7 +157,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       </div>
 
       <.link
-        navigate={~p"/programacao/#{@program.slug}"}
+        navigate={~p"/programs/#{@program.slug}"}
         class="w-full shrink-0 rounded-full bg-accent-purple px-4 py-2 text-center font-serif text-[13px] font-semibold text-white no-underline transition-colors hover:bg-accent-purple/90 sm:w-auto"
       >
         Ver programação

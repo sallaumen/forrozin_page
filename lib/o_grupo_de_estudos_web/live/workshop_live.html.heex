@@ -65,7 +65,7 @@
       </div>
       <.link
         :if={@organizer?}
-        navigate={~p"/workshops/#{@workshop.slug}/gerenciar"}
+        navigate={~p"/workshops/#{@workshop.slug}/manage"}
         class="shrink-0 rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
       >
         Gerenciar inscritos
@@ -154,7 +154,7 @@
             --%>
             <.link
               :if={@organizer?}
-              navigate={~p"/workshops/#{@workshop.slug}/gerenciar"}
+              navigate={~p"/workshops/#{@workshop.slug}/manage"}
               class="block w-full rounded-full bg-ink-900 px-5 py-3 text-center font-serif text-[15px] font-semibold text-ink-50 no-underline"
             >
               Gerenciar inscritos

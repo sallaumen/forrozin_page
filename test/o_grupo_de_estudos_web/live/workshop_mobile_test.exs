@@ -78,7 +78,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopMobileTest do
       workshop = published(owner)
 
       {:ok, _lv, html} =
-        live(log_in_user(conn, owner), ~p"/study/workshops/#{workshop.slug}/editar")
+        live(log_in_user(conn, owner), ~p"/study/workshops/#{workshop.slug}/edit")
 
       assert html =~ "Escolher imagem"
     end
@@ -90,7 +90,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopMobileTest do
       workshop = published(owner)
       {:ok, _} = Workshops.enroll(workshop, insert(:user, name: "Maria Aluna"))
 
-      {:ok, _lv, html} = live(log_in_user(conn, owner), ~p"/workshops/#{workshop.slug}/gerenciar")
+      {:ok, _lv, html} = live(log_in_user(conn, owner), ~p"/workshops/#{workshop.slug}/manage")
 
       assert html =~ "basis-full"
       assert html =~ "Maria Aluna"
