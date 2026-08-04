@@ -50,6 +50,14 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
     |> Enum.map(& &1.code)
   end
 
+  @doc "MapSet dos ids aprendidos. Para telas que perguntam por muitos passos de uma vez."
+  @spec learned_step_ids(Ecto.UUID.t()) :: MapSet.t()
+  def learned_step_ids(user_id) do
+    user_id
+    |> LearnedStepQuery.step_ids_desc()
+    |> MapSet.new()
+  end
+
   @doc "Returns the learned Step records, most recently learned first (deleted excluded)."
   def list_learned_steps(user_id) do
     ids = LearnedStepQuery.step_ids_desc(user_id)

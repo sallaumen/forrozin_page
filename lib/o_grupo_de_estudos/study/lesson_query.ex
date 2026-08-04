@@ -9,7 +9,9 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
   import Ecto.Query
 
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Study.{Lesson, LessonDelivery}
+  alias OGrupoDeEstudos.Study.{Lesson, LessonDelivery, LessonStep, TeacherStudentLink}
+
+  @type step_row :: %{id: Ecto.UUID.t(), code: String.t(), name: String.t()}
 
   @type lesson_row :: %{
           id: Ecto.UUID.t(),
@@ -17,7 +19,8 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
           content: String.t(),
           teacher_id: Ecto.UUID.t(),
           inserted_at: DateTime.t(),
-          read_at: DateTime.t() | nil
+          read_at: DateTime.t() | nil,
+          steps: [step_row()]
         }
 
   @doc "Lições entregues ao vínculo, mais recentes primeiro, com read_at da entrega."
@@ -38,11 +41,17 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
       }
     )
     |> Repo.all()
+    |> attach_steps(& &1.id)
   end
 
   @doc "Lições do professor com contagens de entrega e leitura, mais recentes primeiro."
   @spec list_for_teacher(Ecto.UUID.t()) :: [
-          %{lesson: Lesson.t(), delivered_count: non_neg_integer(), read_count: non_neg_integer()}
+          %{
+            lesson: Lesson.t(),
+            delivered_count: non_neg_integer(),
+            read_count: non_neg_integer(),
+            steps: [step_row()]
+          }
         ]
   def list_for_teacher(teacher_id) do
     from(l in Lesson,
@@ -53,6 +62,63 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
       select: %{lesson: l, delivered_count: count(d.id), read_count: count(d.read_at)}
     )
     |> Repo.all()
+    |> attach_steps(& &1.lesson.id)
+  end
+
+  @doc "Passos vinculados a uma lição, na ordem em que o professor montou."
+  @spec steps_for_lesson(Ecto.UUID.t()) :: [step_row()]
+  def steps_for_lesson(lesson_id) do
+    [lesson_id]
+    |> steps_by_lesson_ids()
+    |> Map.get(lesson_id, [])
+  rescue
+    Ecto.Query.CastError -> []
+  end
+
+  @doc "Passos das lições dadas, agrupados por lição. Uma consulta só, sem N+1."
+  @spec steps_by_lesson_ids([Ecto.UUID.t()]) :: %{Ecto.UUID.t() => [step_row()]}
+  def steps_by_lesson_ids([]), do: %{}
+
+  def steps_by_lesson_ids(lesson_ids) when is_list(lesson_ids) do
+    from(ls in LessonStep,
+      join: s in assoc(ls, :step),
+      where: ls.lesson_id in ^lesson_ids,
+      order_by: [asc: ls.inserted_at, asc: s.code],
+      select: {ls.lesson_id, %{id: s.id, code: s.code, name: s.name}}
+    )
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+  end
+
+  @doc """
+  Passos das lições que passaram por esta pessoa, em lote.
+
+  Conta a lição recebida (chegou no diário dela) e a lição escrita por ela:
+  quem deu a aula viu o passo tanto quanto quem assistiu.
+  """
+  @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
+  def step_ids_seen_by(nil), do: MapSet.new()
+
+  def step_ids_seen_by(user_id) do
+    from(ls in LessonStep,
+      join: l in Lesson,
+      on: ls.lesson_id == l.id,
+      left_join: d in LessonDelivery,
+      on: d.lesson_id == l.id,
+      left_join: link in TeacherStudentLink,
+      on: d.teacher_student_link_id == link.id,
+      where: l.teacher_id == ^user_id or link.student_id == ^user_id,
+      select: ls.step_id,
+      distinct: true
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
+  defp attach_steps(rows, id_fun) do
+    por_licao = rows |> Enum.map(id_fun) |> steps_by_lesson_ids()
+
+    Enum.map(rows, &Map.put(&1, :steps, Map.get(por_licao, id_fun.(&1), [])))
   end
 
   @doc """

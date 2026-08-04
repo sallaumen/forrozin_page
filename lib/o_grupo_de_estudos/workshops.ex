@@ -386,6 +386,10 @@ defmodule OGrupoDeEstudos.Workshops do
   @spec workshops_where_seen(Ecto.UUID.t() | nil, Ecto.UUID.t()) :: [map()]
   defdelegate workshops_where_seen(user_id, step_id), to: WorkshopStepQuery, as: :where_user_saw
 
+  @doc "Passos que a pessoa viu em workshop, em lote (o acervo pergunta por todos de uma vez)."
+  @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
+  defdelegate step_ids_seen_by(user_id), to: WorkshopStepQuery
+
   @doc """
   Põe um passo do acervo na lista do workshop.
 

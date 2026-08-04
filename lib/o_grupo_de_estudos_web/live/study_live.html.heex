@@ -355,30 +355,58 @@
         <p :if={@lesson_error} class="m-0 mb-2 text-xs font-semibold text-accent-red">
           {@lesson_error}
         </p>
-
-        <div class="flex items-center gap-2.5">
-          <.action_button
-            type="submit"
-            tone={:primary}
-            icon="hero-paper-airplane"
-            disabled={!@editing_lesson_id && MapSet.size(@lesson_selected_ids) == 0}
-            phx-disable-with="Enviando..."
-          >
-            {cond do
-              @editing_lesson_id -> "Salvar alterações"
-              MapSet.size(@lesson_selected_ids) == 1 -> "Enviar para 1 aluno"
-              true -> "Enviar para #{MapSet.size(@lesson_selected_ids)} alunos"
-            end}
-          </.action_button>
-          <button
-            type="button"
-            phx-click="close_lesson_composer"
-            class="cursor-pointer border-0 bg-transparent p-0 text-xs font-semibold text-ink-400 hover:text-ink-700"
-          >
-            Cancelar
-          </button>
-        </div>
       </form>
+
+      <%!-- Os passos ficam FORA do <form> de propósito: o buscador do
+      `step_search` tem form próprio, e form dentro de form é HTML inválido (o
+      navegador descarta o de dentro). O botão de enviar volta a pertencer ao
+      form pelo atributo `form=`, então a ordem na tela segue natural. --%>
+      <div class="mb-3">
+        <p class="m-0 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-ink-500">
+          Passos desta lição
+        </p>
+        <div :if={@lesson_steps != []} class="mb-2 flex flex-wrap gap-1.5">
+          <.step_pill
+            :for={step <- @lesson_steps}
+            step={step}
+            removable
+            remove_event="remove_lesson_step"
+            remove_label="desta lição"
+            phx-value-step-id={step.id}
+          />
+        </div>
+        <.step_search
+          id="lesson-composer-step-search"
+          suggestions={@lesson_step_suggestions}
+          placeholder="+ Vincular passo do acervo à lição"
+          search_event="search_lesson_step"
+          add_event="add_lesson_step"
+        />
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <.action_button
+          type="submit"
+          form="lesson-composer-form"
+          tone={:primary}
+          icon="hero-paper-airplane"
+          disabled={!@editing_lesson_id && MapSet.size(@lesson_selected_ids) == 0}
+          phx-disable-with="Enviando..."
+        >
+          {cond do
+            @editing_lesson_id -> "Salvar alterações"
+            MapSet.size(@lesson_selected_ids) == 1 -> "Enviar para 1 aluno"
+            true -> "Enviar para #{MapSet.size(@lesson_selected_ids)} alunos"
+          end}
+        </.action_button>
+        <button
+          type="button"
+          phx-click="close_lesson_composer"
+          class="cursor-pointer border-0 bg-transparent p-0 text-xs font-semibold text-ink-400 hover:text-ink-700"
+        >
+          Cancelar
+        </button>
+      </div>
     </section>
 
     <%!-- Lições já enviadas --%>

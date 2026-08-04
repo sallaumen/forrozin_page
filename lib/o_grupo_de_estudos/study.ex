@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudos.Study do
     NoteQuery
   }
 
-  alias OGrupoDeEstudos.Study.{Lesson, LessonDelivery}
+  alias OGrupoDeEstudos.Study.{Lesson, LessonDelivery, LessonStep}
 
   alias Phoenix.PubSub, as: PhoenixPubSub
 
@@ -362,6 +362,8 @@ defmodule OGrupoDeEstudos.Study do
 
   defdelegate count_unread_lessons(student_id), to: LessonQuery, as: :count_unread_for_student
 
+  defdelegate lesson_steps(lesson_id), to: LessonQuery, as: :steps_for_lesson
+
   @doc """
   Cria uma lição e a entrega aos vínculos selecionados do professor.
 
@@ -380,12 +382,21 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  @doc "Edita título/conteúdo de uma lição do próprio professor."
+  @doc """
+  Edita título/conteúdo de uma lição do próprio professor.
+
+  `:step_ids` ausente não mexe nos passos (editar só o texto preserva o
+  vínculo); presente substitui a lista inteira, inclusive por vazia.
+  """
   def update_lesson(%User{id: actor_id}, %Lesson{teacher_id: actor_id} = lesson, attrs) do
     result =
-      lesson
-      |> Lesson.changeset(Map.take(attrs, [:title, :content]))
-      |> Repo.update()
+      Repo.transact(fn ->
+        with {:ok, updated} <-
+               lesson |> Lesson.changeset(Map.take(attrs, [:title, :content])) |> Repo.update() do
+          replace_lesson_steps(updated, attrs)
+          {:ok, updated}
+        end
+      end)
 
     with {:ok, updated} <- result do
       broadcast_lesson_change(updated.id)
@@ -450,9 +461,43 @@ defmodule OGrupoDeEstudos.Study do
              |> Lesson.changeset(Map.put(attrs, :teacher_id, teacher_id))
              |> Repo.insert() do
         Repo.insert_all(LessonDelivery, delivery_rows(lesson, links))
+        replace_lesson_steps(lesson, attrs)
         {:ok, lesson}
       end
     end)
+  end
+
+  # Sem a chave, os passos ficam como estão: quem edita só o texto da lição
+  # não deveria perder o vínculo que montou antes.
+  defp replace_lesson_steps(%Lesson{} = lesson, attrs) do
+    case Map.get(attrs, :step_ids) || Map.get(attrs, "step_ids") do
+      nil -> :ok
+      step_ids -> put_lesson_steps(lesson, existing_step_ids(step_ids))
+    end
+  end
+
+  defp put_lesson_steps(%Lesson{id: lesson_id}, step_ids) do
+    LessonStep
+    |> where([ls], ls.lesson_id == ^lesson_id)
+    |> Repo.delete_all()
+
+    Enum.each(step_ids, fn step_id ->
+      %LessonStep{}
+      |> LessonStep.changeset(%{lesson_id: lesson_id, step_id: step_id})
+      |> Repo.insert!()
+    end)
+  end
+
+  # Passo apagado (ou id inventado) não pode derrubar o envio da lição inteira:
+  # a chave estrangeira estouraria dentro da transação e o professor perderia
+  # o texto que escreveu. Filtra antes, mantendo a ordem que ele montou.
+  defp existing_step_ids(step_ids) do
+    ids = normalize_step_ids(step_ids)
+    encontrados = ids |> Encyclopedia.steps_by_ids() |> Map.keys() |> MapSet.new()
+
+    Enum.filter(ids, &MapSet.member?(encontrados, &1))
+  rescue
+    Ecto.Query.CastError -> []
   end
 
   defp delivery_rows(lesson, links) do
@@ -614,4 +659,15 @@ defmodule OGrupoDeEstudos.Study do
   # ── Step frequency ranking ─────────────────────────────────────────────
 
   defdelegate step_frequency_ranking(kind, id), to: NoteQuery, as: :step_frequency
+
+  @doc """
+  Passos que a pessoa viu pela área de estudos: diário e lição do professor.
+
+  É histórico, não decisão — o oposto de "aprendido", que a pessoa marca
+  quando quer. O acervo junta esta resposta com a dos workshops.
+  """
+  @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
+  def step_ids_seen_by(user_id) do
+    MapSet.union(NoteQuery.step_ids_seen_by(user_id), LessonQuery.step_ids_seen_by(user_id))
+  end
 end

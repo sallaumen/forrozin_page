@@ -12,12 +12,16 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
   attr :step, :map, required: true
   attr :current_user_id, :string, default: nil
   attr :steps_with_links, :any, default: %MapSet{}
+  attr :steps_seen_in_class, :any, default: %MapSet{}
+  attr :learned_step_ids, :any, default: %MapSet{}
   attr :step_likes, :map, default: %{liked_ids: %MapSet{}, counts: %{}}
 
   def step_item(assigns) do
     assigns =
       assign(assigns,
         has_links: MapSet.member?(assigns.steps_with_links, assigns.step.id),
+        seen_in_class: MapSet.member?(assigns.steps_seen_in_class, assigns.step.id),
+        learned: MapSet.member?(assigns.learned_step_ids, assigns.step.id),
         is_mine:
           assigns.step.suggested_by_id != nil and
             assigns.step.suggested_by_id == assigns.current_user_id
@@ -89,6 +93,20 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
             class="flex items-center justify-center w-5 h-5 rounded-full bg-accent-orange/10 text-accent-orange"
           >
             <.icon name="hero-play" class="w-3 h-3" />
+          </span>
+          <span
+            :if={@seen_in_class}
+            title="Você viu este passo em aula"
+            class="flex items-center justify-center w-5 h-5 rounded-full bg-gold-500/15 text-gold-700"
+          >
+            <.icon name="hero-eye" class="w-3 h-3" />
+          </span>
+          <span
+            :if={@learned}
+            title="Você já sabe este passo"
+            class="flex items-center justify-center w-5 h-5 rounded-full bg-accent-green/10 text-accent-green"
+          >
+            <.icon name="hero-check-circle-solid" class="w-3 h-3" />
           </span>
           <button
             phx-click="toggle_step_like"
