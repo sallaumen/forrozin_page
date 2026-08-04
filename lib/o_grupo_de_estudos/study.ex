@@ -9,7 +9,19 @@ defmodule OGrupoDeEstudos.Study do
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.PubSub
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Study.{ActiveDay, Goal, LinkError, Note, NoteStep, TeacherStudentLink}
+  alias OGrupoDeEstudos.Sequences
+  alias OGrupoDeEstudos.Sequences.CitationQuery
+
+  alias OGrupoDeEstudos.Study.{
+    ActiveDay,
+    Goal,
+    LessonSequence,
+    LinkError,
+    Note,
+    NoteSequence,
+    NoteStep,
+    TeacherStudentLink
+  }
 
   alias OGrupoDeEstudos.Study.{
     ActiveDayQuery,
@@ -575,6 +587,53 @@ defmodule OGrupoDeEstudos.Study do
       |> NoteStep.changeset(%{study_note_id: note_id, step_id: step_id})
       |> Repo.insert!()
     end)
+  end
+
+  @doc "Sequences cited by the note, oldest citation first."
+  @spec note_sequences(Ecto.UUID.t()) :: [CitationQuery.row()]
+  defdelegate note_sequences(note_id), to: CitationQuery, as: :list_for_note
+
+  @doc "Sequences cited by the lesson, oldest citation first."
+  @spec lesson_sequences(Ecto.UUID.t()) :: [CitationQuery.row()]
+  defdelegate lesson_sequences(lesson_id), to: CitationQuery, as: :list_for_lesson
+
+  @doc """
+  Replaces the sequences cited by the note, like the step chips already work.
+
+  Ids that no longer resolve are dropped instead of failing the whole write: the
+  screen may be holding a sequence its author deleted meanwhile, and losing the
+  note over that would be the worse trade.
+  """
+  @spec replace_note_sequences(Note.t(), [Ecto.UUID.t()]) :: :ok
+  def replace_note_sequences(%Note{id: note_id}, sequence_ids) do
+    replace_citations(NoteSequence, :study_note_id, note_id, sequence_ids)
+  end
+
+  @doc "Replaces the sequences cited by the lesson. Same rule as the note."
+  @spec replace_lesson_sequences(Lesson.t(), [Ecto.UUID.t()]) :: :ok
+  def replace_lesson_sequences(%Lesson{id: lesson_id}, sequence_ids) do
+    replace_citations(LessonSequence, :lesson_id, lesson_id, sequence_ids)
+  end
+
+  defp replace_citations(schema, host_field, host_id, sequence_ids) do
+    schema
+    |> where([c], field(c, ^host_field) == ^host_id)
+    |> Repo.delete_all()
+
+    sequence_ids
+    |> existing_sequence_ids()
+    |> Enum.each(fn sequence_id ->
+      schema
+      |> struct()
+      |> schema.changeset(%{host_field => host_id, :sequence_id => sequence_id})
+      |> Repo.insert!()
+    end)
+  end
+
+  defp existing_sequence_ids(sequence_ids) do
+    ids = sequence_ids |> Enum.reject(&is_nil/1) |> Enum.uniq()
+    found = Sequences.existing_sequence_ids(ids)
+    Enum.filter(ids, &(&1 in found))
   end
 
   defp delete_note_if_present(nil), do: {:ok, nil}

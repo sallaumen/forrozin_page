@@ -8,7 +8,7 @@ defmodule OGrupoDeEstudos.Sequences do
 
   import Ecto.Query
 
-  alias OGrupoDeEstudos.Encyclopedia.StepQuery
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Sequences.{Generator, Sequence, SequenceQuery, SequenceStep}
 
@@ -135,6 +135,22 @@ defmodule OGrupoDeEstudos.Sequences do
   end
 
   @doc """
+  Which of the given ids are live sequences.
+
+  Exists so a caller can drop the ids that no longer resolve instead of failing a
+  whole write over one stale reference.
+  """
+  @spec existing_sequence_ids([Ecto.UUID.t()]) :: [Ecto.UUID.t()]
+  def existing_sequence_ids([]), do: []
+
+  def existing_sequence_ids(ids) when is_list(ids) do
+    from(s in Sequence, where: s.id in ^ids, where: is_nil(s.deleted_at), select: s.id)
+    |> Repo.all()
+  rescue
+    Ecto.Query.CastError -> []
+  end
+
+  @doc """
   Fetches a sequence by id only if it is visible to the viewer: public, owned by
   the viewer, or the viewer is an admin. Returns `nil` otherwise. Guards read
   paths (deep links, favoriting) against leaking other users' private sequences.
@@ -187,7 +203,7 @@ defmodule OGrupoDeEstudos.Sequences do
   defp resolve_step_codes(step_codes) do
     steps =
       step_codes
-      |> Enum.map(&StepQuery.get_by(code: &1))
+      |> Enum.map(&Encyclopedia.get_step_by(code: &1))
       |> Enum.reject(&is_nil/1)
 
     if length(steps) == length(step_codes), do: {:ok, steps}, else: {:error, :invalid_codes}

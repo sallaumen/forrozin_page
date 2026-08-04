@@ -17,11 +17,14 @@ defmodule OGrupoDeEstudos.Workshops do
 
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Engagement.SafeDispatch
   alias OGrupoDeEstudos.Media.Storage
   alias OGrupoDeEstudos.Media.Video
   alias OGrupoDeEstudos.Repo
+  alias OGrupoDeEstudos.Sequences
+  alias OGrupoDeEstudos.Sequences.CitationQuery
   alias OGrupoDeEstudos.Workers.TranscodeWorkshopVideo
 
   alias OGrupoDeEstudos.Workshops.{
@@ -43,6 +46,7 @@ defmodule OGrupoDeEstudos.Workshops do
     WaitlistEntry,
     WaitlistQuery,
     WorkshopQuery,
+    WorkshopSequence,
     WorkshopStep,
     WorkshopStepQuery,
     WorkshopTeacher
@@ -400,7 +404,7 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   defp fetch_step(step_id) do
-    OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(id: step_id)
+    Encyclopedia.get_step_by(id: step_id)
   rescue
     Ecto.Query.CastError -> nil
   end
@@ -426,6 +430,59 @@ defmodule OGrupoDeEstudos.Workshops do
     with :ok <- ensure_admin(workshop, actor) do
       WorkshopStepQuery.delete(workshop.id, step_id)
     end
+  end
+
+  @doc "Sequences cited by this workshop, oldest citation first."
+  @spec list_sequences(Ecto.UUID.t()) :: [CitationQuery.row()]
+  defdelegate list_sequences(workshop_id), to: CitationQuery, as: :list_for_workshop
+
+  @doc """
+  Cites a sequence on the workshop page.
+
+  Admins only, and on purpose: a sequence is refined work that belongs to whoever
+  built it, and the class shows the one its teacher stands behind. A student takes
+  it home by favoriting, not by attaching another one here.
+  """
+  @spec add_sequence(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopSequence.t()} | {:error, :unauthorized | :not_found | :already_added}
+  def add_sequence(%Workshop{} = workshop, %User{} = actor, sequence_id) do
+    with :ok <- ensure_admin(workshop, actor),
+         %{id: id} <- fetch_sequence(sequence_id) do
+      insert_sequence(workshop, id)
+    else
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp fetch_sequence(sequence_id) do
+    Sequences.get_sequence(sequence_id)
+  rescue
+    Ecto.Query.CastError -> nil
+  end
+
+  defp insert_sequence(workshop, sequence_id) do
+    %WorkshopSequence{}
+    |> WorkshopSequence.changeset(%{workshop_id: workshop.id, sequence_id: sequence_id})
+    |> Repo.insert()
+    |> case do
+      {:ok, citation} -> {:ok, citation}
+      {:error, %Ecto.Changeset{}} -> {:error, :already_added}
+    end
+  end
+
+  @doc "Drops the citation. The sequence itself belongs to its author and stays."
+  @spec remove_sequence(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopSequence.t()} | {:error, :unauthorized | :not_found}
+  def remove_sequence(%Workshop{} = workshop, %User{} = actor, sequence_id) do
+    with :ok <- ensure_admin(workshop, actor) do
+      case Repo.get_by(WorkshopSequence, workshop_id: workshop.id, sequence_id: sequence_id) do
+        nil -> {:error, :not_found}
+        citation -> Repo.delete(citation)
+      end
+    end
+  rescue
+    Ecto.Query.CastError -> {:error, :not_found}
   end
 
   @media_dir "workshop_media"
