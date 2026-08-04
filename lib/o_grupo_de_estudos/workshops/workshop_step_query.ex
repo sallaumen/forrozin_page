@@ -63,4 +63,26 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopStepQuery do
   rescue
     Ecto.Query.CastError -> []
   end
+
+  @doc """
+  Step ids this user saw across workshops they attended or organized, as a
+  MapSet. Batch version of `where_user_saw/2` for the collection screen.
+  """
+  @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
+  def step_ids_seen_by(nil), do: MapSet.new()
+
+  def step_ids_seen_by(user_id) do
+    from(ws in WorkshopStep,
+      join: w in assoc(ws, :workshop),
+      left_join: e in WorkshopEnrollment,
+      on: e.workshop_id == w.id and e.user_id == ^user_id,
+      where: not is_nil(e.id) or w.organizer_id == ^user_id,
+      select: ws.step_id,
+      distinct: true
+    )
+    |> Repo.all()
+    |> MapSet.new()
+  rescue
+    Ecto.Query.CastError -> MapSet.new()
+  end
 end

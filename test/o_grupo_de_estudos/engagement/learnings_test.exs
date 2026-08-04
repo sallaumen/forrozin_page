@@ -128,6 +128,34 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
     end
   end
 
+  describe "learned_step_ids/1" do
+    test "returns the MapSet of learned step ids" do
+      user = insert(:user)
+      bf = insert(:step, code: "LNBF")
+      _other = insert(:step, code: "XX")
+
+      Engagement.toggle_learned(user.id, bf.id)
+
+      assert Engagement.learned_step_ids(user.id) == MapSet.new([bf.id])
+    end
+
+    test "returns an empty MapSet for a user with no learned steps" do
+      assert Engagement.learned_step_ids(insert(:user).id) == MapSet.new()
+    end
+
+    test "excludes soft-deleted steps, same rule as the codes projection" do
+      user = insert(:user)
+      bf = insert(:step, code: "LNBF")
+      sc = insert(:step, code: "LNSC")
+      Engagement.toggle_learned(user.id, bf.id)
+      Engagement.toggle_learned(user.id, sc.id)
+
+      bf |> Ecto.Changeset.change(deleted_at: ~U[2026-01-01 00:00:00Z]) |> Repo.update!()
+
+      assert Engagement.learned_step_ids(user.id) == MapSet.new([sc.id])
+    end
+  end
+
   describe "count_user_learned/1" do
     test "counts only the given user's learned steps" do
       user = insert(:user)

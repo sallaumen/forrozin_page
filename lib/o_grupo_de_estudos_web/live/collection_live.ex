@@ -8,7 +8,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement}
+  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Study, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
@@ -58,11 +58,17 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         categories: Encyclopedia.list_categories(),
         open_sections: Map.new(sections, fn s -> {s.id, false} end),
         steps_with_links: StepLinkQuery.step_ids_with_links(),
+        steps_seen_in_class: steps_seen_in_class(socket.assigns.current_user.id),
+        learned_step_ids: Engagement.learned_step_ids(socket.assigns.current_user.id),
         following_user_ids: Engagement.following_ids(socket.assigns.current_user.id)
       )
     else
       socket
     end
+  end
+
+  defp steps_seen_in_class(user_id) do
+    MapSet.union(Workshops.step_ids_seen_by(user_id), Study.step_ids_seen_by(user_id))
   end
 
   defp initial_assigns(admin) do
@@ -74,6 +80,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       categories: [],
       open_sections: %{},
       steps_with_links: MapSet.new(),
+      steps_seen_in_class: MapSet.new(),
+      learned_step_ids: MapSet.new(),
       step_likes: %{liked_ids: MapSet.new(), counts: %{}},
       following_user_ids: [],
       search: "",

@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudos.Study do
     NoteQuery
   }
 
-  alias OGrupoDeEstudos.Study.{Lesson, LessonDelivery}
+  alias OGrupoDeEstudos.Study.{Lesson, LessonDelivery, LessonStep}
 
   alias Phoenix.PubSub, as: PhoenixPubSub
 
@@ -362,6 +362,8 @@ defmodule OGrupoDeEstudos.Study do
 
   defdelegate count_unread_lessons(student_id), to: LessonQuery, as: :count_unread_for_student
 
+  defdelegate lesson_steps(lesson_id), to: LessonQuery, as: :steps_for_lesson
+
   @doc """
   Cria uma lição e a entrega aos vínculos selecionados do professor.
 
@@ -380,12 +382,21 @@ defmodule OGrupoDeEstudos.Study do
     end
   end
 
-  @doc "Edita título/conteúdo de uma lição do próprio professor."
+  @doc """
+  Updates title/content of the teacher's own lesson.
+
+  A missing `:step_ids` keeps the linked steps untouched; when present it
+  replaces the whole list, an empty one included.
+  """
   def update_lesson(%User{id: actor_id}, %Lesson{teacher_id: actor_id} = lesson, attrs) do
     result =
-      lesson
-      |> Lesson.changeset(Map.take(attrs, [:title, :content]))
-      |> Repo.update()
+      Repo.transact(fn ->
+        with {:ok, updated} <-
+               lesson |> Lesson.changeset(Map.take(attrs, [:title, :content])) |> Repo.update() do
+          replace_lesson_steps(updated, attrs)
+          {:ok, updated}
+        end
+      end)
 
     with {:ok, updated} <- result do
       broadcast_lesson_change(updated.id)
@@ -450,9 +461,39 @@ defmodule OGrupoDeEstudos.Study do
              |> Lesson.changeset(Map.put(attrs, :teacher_id, teacher_id))
              |> Repo.insert() do
         Repo.insert_all(LessonDelivery, delivery_rows(lesson, links))
+        replace_lesson_steps(lesson, attrs)
         {:ok, lesson}
       end
     end)
+  end
+
+  defp replace_lesson_steps(%Lesson{} = lesson, attrs) do
+    case Map.get(attrs, :step_ids) || Map.get(attrs, "step_ids") do
+      nil -> :ok
+      step_ids -> put_lesson_steps(lesson, existing_step_ids(step_ids))
+    end
+  end
+
+  defp put_lesson_steps(%Lesson{id: lesson_id}, step_ids) do
+    LessonStep
+    |> where([ls], ls.lesson_id == ^lesson_id)
+    |> Repo.delete_all()
+
+    Enum.each(step_ids, fn step_id ->
+      %LessonStep{}
+      |> LessonStep.changeset(%{lesson_id: lesson_id, step_id: step_id})
+      |> Repo.insert!()
+    end)
+  end
+
+  # Filtering first keeps a stale step id from aborting the whole insert.
+  defp existing_step_ids(step_ids) do
+    ids = normalize_step_ids(step_ids)
+    found = ids |> Encyclopedia.steps_by_ids() |> Map.keys() |> MapSet.new()
+
+    Enum.filter(ids, &MapSet.member?(found, &1))
+  rescue
+    Ecto.Query.CastError -> []
   end
 
   defp delivery_rows(lesson, links) do
@@ -614,4 +655,15 @@ defmodule OGrupoDeEstudos.Study do
   # ── Step frequency ranking ─────────────────────────────────────────────
 
   defdelegate step_frequency_ranking(kind, id), to: NoteQuery, as: :step_frequency
+
+  @doc """
+  Step ids the user saw through the study area (diary notes and lessons).
+
+  This is history, not the user's own "learned" mark; the collection merges
+  it with the workshops answer.
+  """
+  @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
+  def step_ids_seen_by(user_id) do
+    MapSet.union(NoteQuery.step_ids_seen_by(user_id), LessonQuery.step_ids_seen_by(user_id))
+  end
 end

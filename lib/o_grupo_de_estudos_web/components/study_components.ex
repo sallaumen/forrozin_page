@@ -184,9 +184,10 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :type, :string, default: "button", values: ~w(button submit)
   attr :disabled, :boolean, default: false
 
+  # `form` lets the button submit a form it is not nested inside (lesson composer).
   attr :rest, :global,
     include:
-      ~w(phx-click phx-value-id phx-value-tab phx-value-link-id navigate href data-confirm phx-disable-with)
+      ~w(phx-click phx-value-id phx-value-tab phx-value-link-id navigate href data-confirm phx-disable-with form)
 
   slot :inner_block, required: true
 
@@ -328,6 +329,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :removable, :boolean, default: false
   attr :learned, :boolean, default: false
   attr :remove_event, :string, default: nil
+  attr :remove_label, :string, default: "desta nota"
   attr :rest, :global, include: ~w(phx-value-id phx-value-note-id phx-value-step-id disabled)
 
   def step_pill(assigns) do
@@ -357,7 +359,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       <button
         type="button"
         phx-click={@remove_event}
-        aria-label={"Tirar #{@step.code} desta nota"}
+        aria-label={"Tirar #{@step.code} #{@remove_label}"}
         class="group cursor-pointer rounded-r-full py-1 pl-1 pr-2.5 disabled:cursor-default disabled:opacity-70"
         {@rest}
       >

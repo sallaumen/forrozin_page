@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudos.Study.NoteQuery do
 
   alias OGrupoDeEstudos.Encyclopedia.Step
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Study.{Note, NoteStep}
+  alias OGrupoDeEstudos.Study.{Note, NoteStep, TeacherStudentLink}
 
   @doc "Returns the personal note of a user on a date (steps preloaded), or `nil`."
   @spec get_personal(Ecto.UUID.t(), Date.t()) :: Note.t() | nil
@@ -91,6 +91,29 @@ defmodule OGrupoDeEstudos.Study.NoteQuery do
     base_frequency_query()
     |> where([_ns, n], n.teacher_student_link_id == ^link_id and n.kind == "shared")
     |> Repo.all()
+  end
+
+  @doc """
+  Step ids noted in the user's diaries (personal, and shared from either side
+  of the link), as a MapSet.
+  """
+  @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
+  def step_ids_seen_by(nil), do: MapSet.new()
+
+  def step_ids_seen_by(user_id) do
+    from(ns in NoteStep,
+      join: n in Note,
+      on: ns.study_note_id == n.id,
+      left_join: link in TeacherStudentLink,
+      on: n.teacher_student_link_id == link.id,
+      where:
+        n.owner_user_id == ^user_id or link.student_id == ^user_id or
+          link.teacher_id == ^user_id,
+      select: ns.step_id,
+      distinct: true
+    )
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   defp base_frequency_query do

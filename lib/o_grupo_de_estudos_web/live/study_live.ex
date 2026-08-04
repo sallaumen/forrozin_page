@@ -49,6 +49,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:lesson_title, "")
      |> assign(:lesson_content, "")
      |> assign(:lesson_error, nil)
+     |> assign(:lesson_steps, [])
+     |> assign(:lesson_step_suggestions, [])
      |> assign(:lesson_selected_ids, MapSet.new())
      |> assign(:active_study_tab, "personal")
      |> assign(:teacher_search, "")
@@ -317,6 +319,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
            lesson_title: "",
            lesson_content: "",
            lesson_error: nil,
+           lesson_steps: [],
+           lesson_step_suggestions: [],
            lesson_selected_ids: MapSet.new(Enum.map(socket.assigns.student_links, & &1.id))
          )}
 
@@ -327,6 +331,26 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   def handle_event("close_lesson_composer", _params, socket) do
     {:noreply, assign(socket, composing_lesson: false, lesson_error: nil)}
+  end
+
+  def handle_event("search_lesson_step", %{"term" => term}, socket) do
+    {:noreply, assign(socket, :lesson_step_suggestions, Study.search_related_steps(term))}
+  end
+
+  # Steps live in the assign until submit; the lesson row does not exist yet.
+  def handle_event("add_lesson_step", %{"step-id" => step_id}, socket) do
+    step = Enum.find(socket.assigns.lesson_step_suggestions, &(&1.id == step_id))
+
+    {:noreply,
+     socket
+     |> assign(:lesson_steps, append_unique_step(socket.assigns.lesson_steps, step))
+     |> assign(:lesson_step_suggestions, [])}
+  end
+
+  def handle_event("remove_lesson_step", %{"step-id" => step_id}, socket) do
+    remaining = Enum.reject(socket.assigns.lesson_steps, &(&1.id == step_id))
+
+    {:noreply, assign(socket, :lesson_steps, remaining)}
   end
 
   # O form inteiro é controlado: cada mudança (texto ou seleção de aluno)
@@ -355,7 +379,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
          editing_lesson_id: lesson.id,
          lesson_title: lesson.title,
          lesson_content: lesson.content,
-         lesson_error: nil
+         lesson_error: nil,
+         lesson_steps: Study.lesson_steps(lesson.id),
+         lesson_step_suggestions: []
        )}
     else
       _ -> {:noreply, socket}
@@ -414,7 +440,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   defp submit_lesson(%{assigns: %{editing_lesson_id: nil}} = socket, params) do
     user = socket.assigns.current_user
     link_ids = MapSet.to_list(socket.assigns.lesson_selected_ids)
-    attrs = %{title: params["title"] || "", content: params["content"] || ""}
+    attrs = lesson_attrs(socket, params)
 
     case Study.broadcast_lesson(user, attrs, link_ids) do
       {:ok, _lesson, delivered_count} ->
@@ -434,7 +460,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   defp submit_lesson(socket, params) do
     user = socket.assigns.current_user
-    attrs = %{title: params["title"] || "", content: params["content"] || ""}
+    attrs = lesson_attrs(socket, params)
 
     with %{} = lesson <- Study.get_lesson(socket.assigns.editing_lesson_id),
          :ok <- Policy.authorize(:manage_lesson, user, lesson),
@@ -451,6 +477,15 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
       _ ->
         {:noreply, assign(socket, :lesson_error, "Não foi possível salvar a lição.")}
     end
+  end
+
+  # Steps come from the assign: the step picker lives outside the lesson form.
+  defp lesson_attrs(socket, params) do
+    %{
+      title: params["title"] || "",
+      content: params["content"] || "",
+      step_ids: Enum.map(socket.assigns.lesson_steps, & &1.id)
+    }
   end
 
   # Erro de validação nunca pode custar o texto: o re-render volta com o que
@@ -562,5 +597,12 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   defp prepend_unique_step(steps, step) do
     [step | Enum.reject(steps, &(&1.id == step.id))]
+  end
+
+  # Lessons keep the teacher's order (append); diary notes show newest first.
+  defp append_unique_step(steps, nil), do: steps
+
+  defp append_unique_step(steps, step) do
+    Enum.reject(steps, &(&1.id == step.id)) ++ [step]
   end
 end

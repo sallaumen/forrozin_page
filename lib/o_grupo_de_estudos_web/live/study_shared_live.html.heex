@@ -146,6 +146,14 @@
                 {lesson.content}
               </p>
 
+              <div :if={lesson.steps != []} class="mt-2 flex flex-wrap gap-1">
+                <.step_pill
+                  :for={step <- lesson.steps}
+                  step={step}
+                  learned={MapSet.member?(@learned_codes, step.code)}
+                />
+              </div>
+
               <div class="mt-1.5 flex items-center gap-2">
                 <button
                   :if={lesson_long?(lesson.content)}

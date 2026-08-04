@@ -50,6 +50,19 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
     |> Enum.map(& &1.code)
   end
 
+  @doc """
+  MapSet of learned step ids (soft-deleted excluded).
+
+  Sibling of `learned_step_codes/1`, built from the same `learned_summaries/1`
+  source so the soft-delete filter never diverges between projections.
+  """
+  @spec learned_step_ids(Ecto.UUID.t()) :: MapSet.t()
+  def learned_step_ids(user_id) do
+    user_id
+    |> learned_summaries()
+    |> MapSet.new(& &1.id)
+  end
+
   @doc "Returns the learned Step records, most recently learned first (deleted excluded)."
   def list_learned_steps(user_id) do
     ids = LearnedStepQuery.step_ids_desc(user_id)

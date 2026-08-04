@@ -11,6 +11,9 @@ defmodule OGrupoDeEstudos.Study.Lesson do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias OGrupoDeEstudos.Encyclopedia.Step
+  alias OGrupoDeEstudos.Study.LessonStep
+
   @type t :: %__MODULE__{}
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -22,6 +25,11 @@ defmodule OGrupoDeEstudos.Study.Lesson do
 
     belongs_to :teacher, OGrupoDeEstudos.Accounts.User
     has_many :deliveries, OGrupoDeEstudos.Study.LessonDelivery
+    has_many :lesson_steps, LessonStep
+
+    many_to_many :related_steps, Step,
+      join_through: LessonStep,
+      join_keys: [lesson_id: :id, step_id: :id]
 
     timestamps(type: :utc_datetime_usec)
   end
