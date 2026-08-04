@@ -16,6 +16,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   alias OGrupoDeEstudosWeb.Helpers.NotificationRoutes
 
   import OGrupoDeEstudosWeb.UI.BackButton, only: [back_button: 1]
+  import OGrupoDeEstudosWeb.UI.LogoMark
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.Helpers.NotificationPresenter
@@ -91,23 +92,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             class="brand-display is-wordmark text-sm font-bold tracking-[2.8px] uppercase text-ink-50 hover:text-ink-100 no-underline inline-flex items-center"
             style="gap: 0.28em"
           >
-            <svg
+            <.logo_mark
               class="w-auto shrink-0"
               style="height: 1.6em; overflow: visible"
-              viewBox="96 76 320 384"
-              role="img"
-              aria-label="O"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g fill="currentColor">
-                <circle cx="200" cy="110" r="34" />
-                <circle cx="312" cy="110" r="34" />
-              </g>
-              <g fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round">
-                <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
-                <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
-              </g>
-            </svg>
+              label="O"
+            />
             <span>Grupo de Estudos</span>
           </.link>
         </div>
@@ -408,23 +397,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             class="brand-display is-wordmark text-sm font-bold tracking-[1px] uppercase text-ink-100 no-underline inline-flex items-center"
             style="gap: 0.28em"
           >
-            <svg
+            <.logo_mark
               class="w-auto shrink-0"
               style="height: 2.5em; overflow: visible"
-              viewBox="96 76 320 384"
-              role="img"
-              aria-label="O"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g fill="currentColor">
-                <circle cx="200" cy="110" r="34" />
-                <circle cx="312" cy="110" r="34" />
-              </g>
-              <g fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round">
-                <path d="M212.8 166.9 A140 140 0 0 0 212.8 433.1" />
-                <path d="M299.2 166.9 A140 140 0 0 1 299.2 433.1" />
-              </g>
-            </svg>
+              label="O"
+            />
             <span>Grupo de Estudos</span>
           </.link>
           <div class="flex items-center gap-2">

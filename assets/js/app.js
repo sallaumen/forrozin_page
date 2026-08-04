@@ -33,6 +33,7 @@ import OnboardingTour from "./hooks/onboarding_tour"
 import AutoDismiss from "./hooks/auto_dismiss"
 import DragReorder from "./hooks/drag_reorder"
 import {PWAInstall, PWAInstallSettings, PWANavIcon} from "./hooks/pwa"
+import dismissSplash from "./splash"
 
 // Register PWA service worker (Phase 0b)
 if ("serviceWorker" in navigator) {
@@ -61,7 +62,11 @@ const liveSocket = new LiveSocket("/live", Socket, {
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
+// On the first load the splash is what says "loading". The blue bar on top of
+// it would be noise, so it is left to the navigations that follow.
+window.addEventListener("phx:page-loading-start", info => {
+  if (info.detail.kind !== "initial") { topbar.show(300) }
+})
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
 // Clears a form after the server confirmed the submit. On purpose it does not
@@ -129,6 +134,16 @@ window.addEventListener("phx:copy_to_clipboard", (e) => {
     }
   })
 })
+
+// The splash only leaves once the page is actually ready. On a LiveView that
+// is the end of the initial join (kind: "initial"), when the data has arrived;
+// on a page served by a controller there is nothing to wait for beyond this
+// file. The listener goes in before connect() so the event cannot be missed.
+if (document.querySelector("[data-phx-main]")) {
+  window.addEventListener("phx:page-loading-stop", dismissSplash, {once: true})
+} else {
+  dismissSplash()
+}
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()

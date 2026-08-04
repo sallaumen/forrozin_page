@@ -76,6 +76,10 @@
     </script>
   </head>
   <body>
+    <div id="app-splash" role="status">
+      <.logo_mark class="app-splash-mark" viewbox="0 0 512 512" />
+      <span class="app-splash-label">Carregando</span>
+    </div>
     <.flash kind={:info} flash={@flash} />
     <.flash kind={:error} flash={@flash} />
     {@inner_content}

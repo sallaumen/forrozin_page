@@ -3,6 +3,7 @@ defmodule OGrupoDeEstudosWeb.LandingLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.UI.LogoMark
   import OGrupoDeEstudosWeb.UI.PWAInstallBanner
 
   alias OGrupoDeEstudos.Encyclopedia
