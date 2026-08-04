@@ -15,6 +15,30 @@ defmodule OGrupoDeEstudos.AccountsTest do
     city: "Curitiba"
   }
 
+  describe "normalize_all_emails/0" do
+    test "downcases mixed-case stored emails" do
+      user = insert_user_with_raw_email("mixedcase", "Tata@Example.COM")
+
+      assert {1, []} = Accounts.normalize_all_emails()
+      assert Repo.get(Accounts.User, user.id).email == "tata@example.com"
+    end
+
+    test "leaves already-lowercase emails untouched" do
+      {:ok, user} = Accounts.register_user(@valid_attrs)
+
+      assert {0, []} = Accounts.normalize_all_emails()
+      assert Repo.get(Accounts.User, user.id).email == user.email
+    end
+
+    test "skips and reports emails that collide after downcasing" do
+      {:ok, _existing} = Accounts.register_user(@valid_attrs)
+      conflicting = insert_user_with_raw_email("colidente", "NOVO@example.com")
+
+      assert {0, ["NOVO@example.com"]} = Accounts.normalize_all_emails()
+      assert Repo.get(Accounts.User, conflicting.id).email == "NOVO@example.com"
+    end
+  end
+
   describe "register_user/1" do
     test "creates unconfirmed user with a confirmation token" do
       assert {:ok, user} = Accounts.register_user(@valid_attrs)
@@ -124,6 +148,81 @@ defmodule OGrupoDeEstudos.AccountsTest do
     test "returns error with nonexistent user" do
       assert {:error, :invalid_credentials} =
                Accounts.check_credentials("naoexiste", "senhasegura123")
+    end
+
+    test "returns {:ok, user} with email as identifier", %{user: user} do
+      assert {:ok, authenticated} =
+               Accounts.check_credentials("login@example.com", "senhasegura123")
+
+      assert authenticated.id == user.id
+    end
+
+    test "returns {:ok, user} with mixed-case email input", %{user: user} do
+      assert {:ok, authenticated} =
+               Accounts.check_credentials("  Login@Example.COM ", "senhasegura123")
+
+      assert authenticated.id == user.id
+    end
+
+    test "returns error with wrong password for email identifier" do
+      assert {:error, :invalid_credentials} =
+               Accounts.check_credentials("login@example.com", "senhaerrada")
+    end
+
+    test "returns error with nonexistent email" do
+      assert {:error, :invalid_credentials} =
+               Accounts.check_credentials("nada@example.com", "senhasegura123")
+    end
+  end
+
+  describe "login_or_register_google_user/1" do
+    @google_profile %{
+      google_id: "google-sub-123",
+      email: "maria.silva@gmail.com",
+      name: "Maria Silva"
+    }
+
+    test "registers a new confirmed user with username derived from email" do
+      assert {:ok, user, :registered} = Accounts.login_or_register_google_user(@google_profile)
+
+      assert user.username == "mariasilva"
+      assert user.email == "maria.silva@gmail.com"
+      assert user.google_id == "google-sub-123"
+      assert user.confirmed_at != nil
+      assert user.password_hash != nil
+    end
+
+    test "returns the existing user on a later login with the same google id" do
+      {:ok, registered, :registered} = Accounts.login_or_register_google_user(@google_profile)
+
+      assert {:ok, user, :existing} = Accounts.login_or_register_google_user(@google_profile)
+      assert user.id == registered.id
+    end
+
+    test "links google to the existing account with the same email and confirms it" do
+      {:ok, existing} = Accounts.register_user(@valid_attrs)
+      profile = %{@google_profile | email: existing.email}
+
+      assert {:ok, user, :linked} = Accounts.login_or_register_google_user(profile)
+
+      assert user.id == existing.id
+      assert user.google_id == "google-sub-123"
+      assert user.confirmed_at != nil
+      assert user.username == existing.username
+    end
+
+    test "adds a numeric suffix when the derived username is taken" do
+      {:ok, _taken} = Accounts.register_user(%{@valid_attrs | username: "mariasilva"})
+
+      assert {:ok, user, :registered} = Accounts.login_or_register_google_user(@google_profile)
+      assert user.username == "mariasilva1"
+    end
+
+    test "falls back to a default username base when the email prefix is too short" do
+      profile = %{@google_profile | email: "ab@gmail.com"}
+
+      assert {:ok, user, :registered} = Accounts.login_or_register_google_user(profile)
+      assert String.starts_with?(user.username, "forrozeiro")
     end
   end
 
@@ -243,5 +342,14 @@ defmodule OGrupoDeEstudos.AccountsTest do
       assert admin.id in Accounts.list_admin_ids()
       refute _user.id in Accounts.list_admin_ids()
     end
+  end
+
+  defp insert_user_with_raw_email(username, raw_email) do
+    Repo.insert!(%Accounts.User{
+      username: username,
+      email: raw_email,
+      password_hash: "unused-hash",
+      invite_slug: "prof-#{username}"
+    })
   end
 end

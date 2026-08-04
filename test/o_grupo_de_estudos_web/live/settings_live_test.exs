@@ -141,4 +141,49 @@ defmodule OGrupoDeEstudosWeb.SettingsLiveTest do
       assert Accounts.get_user_by_id(user.id).is_teacher
     end
   end
+
+  describe "google account section" do
+    defp logged_in_google_user(conn) do
+      {:ok, user, :registered} =
+        Accounts.login_or_register_google_user(%{
+          google_id: "google-sub-123",
+          email: "maria.silva@gmail.com",
+          name: "Maria Silva"
+        })
+
+      {log_in_user(conn, user), user}
+    end
+
+    test "shows the completion nudge for a google user without location", %{conn: conn} do
+      {conn, _user} = logged_in_google_user(conn)
+
+      {:ok, _lv, html} = live(conn, ~p"/settings")
+
+      assert html =~ "Complete seu perfil"
+    end
+
+    test "hides the completion nudge when the profile is complete", %{conn: conn} do
+      {conn, _user} = logged_in_conn(conn)
+
+      {:ok, _lv, html} = live(conn, ~p"/settings")
+
+      refute html =~ "Complete seu perfil"
+    end
+
+    test "shows the connected badge for a google-linked account", %{conn: conn} do
+      {conn, _user} = logged_in_google_user(conn)
+
+      {:ok, _lv, html} = live(conn, ~p"/settings")
+
+      assert html =~ "Conta Google conectada"
+    end
+
+    test "shows the not connected state without a google account", %{conn: conn} do
+      {conn, _user} = logged_in_conn(conn)
+
+      {:ok, _lv, html} = live(conn, ~p"/settings")
+
+      assert html =~ "Conta Google não conectada"
+    end
+  end
 end

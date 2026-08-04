@@ -40,7 +40,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
 
       {:error, :invalid_credentials} ->
         render(conn, :new,
-          error: "Nome de usuário ou senha inválidos.",
+          error: "Usuário, e-mail ou senha inválidos.",
           teacher_invite: session_params["teacher_invite"],
           return_to: session_params["return_to"]
         )

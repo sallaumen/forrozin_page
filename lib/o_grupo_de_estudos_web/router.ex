@@ -43,6 +43,8 @@ defmodule OGrupoDeEstudosWeb.Router do
 
     get "/login", UserSessionController, :new
     post "/login", UserSessionController, :create
+    get "/auth/google", GoogleAuthController, :request
+    get "/auth/google/callback", GoogleAuthController, :callback
 
     live_session :redirect_if_authenticated,
       on_mount: [{OGrupoDeEstudosWeb.UserAuth, :redirect_if_authenticated}] do

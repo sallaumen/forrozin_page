@@ -67,6 +67,15 @@ config :o_grupo_de_estudos, OGrupoDeEstudos.Media.Video,
 # Mailer: captures emails in tests through Swoosh.TestAssertions
 config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer, adapter: Swoosh.Adapters.Test
 
+# Google sign-in: fake credentials keep the button rendered; the Mox mock
+# replaces the OAuth exchange itself.
+config :o_grupo_de_estudos, :google_oauth,
+  client_id: "test-client-id",
+  client_secret: "test-client-secret"
+
+config :o_grupo_de_estudos, OGrupoDeEstudos.Accounts.GoogleAuth,
+  adapter: OGrupoDeEstudos.Accounts.GoogleAuth.Mock
+
 # Avoid DB writes from detached processes during SQL Sandbox tests.
 config :o_grupo_de_estudos,
   env: :test,

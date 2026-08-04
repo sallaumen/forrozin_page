@@ -37,7 +37,7 @@
           Entrar
         </h2>
         <p class="text-sm text-ink-500 mb-9">
-          Acesse o acervo com seu usuário e senha.
+          Acesse o acervo com seu usuário ou e-mail e senha.
         </p>
 
         <%= if @error do %>
@@ -61,22 +61,17 @@
 
           <div class="mb-[18px]">
             <label class="block text-[11px] tracking-[1.5px] text-ink-500 uppercase mb-2">
-              Usuário
+              Usuário ou e-mail
             </label>
-            <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400 font-serif text-base select-none pointer-events-none">
-                @
-              </span>
-              <input
-                type="text"
-                name="session[username]"
-                autocomplete="username"
-                placeholder="seuusuario"
-                required
-                aria-label="Usuário"
-                class="w-full py-[13px] pl-9 pr-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
-              />
-            </div>
+            <input
+              type="text"
+              name="session[username]"
+              autocomplete="username"
+              placeholder="seuusuario ou voce@email.com"
+              required
+              aria-label="Usuário ou e-mail"
+              class="w-full py-[13px] px-4 border border-[rgba(180,120,40,0.35)] rounded bg-ink-50 text-ink-800 font-serif text-base box-border outline-none"
+            />
           </div>
 
           <div class="mb-8">
@@ -101,6 +96,16 @@
             Entrar
           </button>
         </form>
+
+        <div :if={google_auth_configured?()}>
+          <div class="flex items-center gap-3 my-6">
+            <span class="flex-1 h-px bg-[rgba(60,40,20,0.15)]"></span>
+            <span class="text-xs text-ink-400 uppercase tracking-widest">ou</span>
+            <span class="flex-1 h-px bg-[rgba(60,40,20,0.15)]"></span>
+          </div>
+
+          <.google_sign_in_button label="Entrar com o Google" teacher_invite={@teacher_invite} />
+        </div>
 
         <div class="text-center mt-4">
           <a

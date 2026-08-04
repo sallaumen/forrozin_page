@@ -55,17 +55,32 @@ defmodule OGrupoDeEstudos.Accounts do
   def email_confirmed?(_), do: false
 
   @doc """
-  Authenticates a user by username and password.
+  Authenticates a user by username or email, plus password.
+
+  An identifier containing `@` (after stripping a decorative leading `@`)
+  is treated as an email; anything else as a username.
 
   Returns `{:ok, user}` if credentials are valid,
   `{:error, :invalid_credentials}` otherwise.
 
   Always runs password verification to prevent timing attacks.
   """
-  def check_credentials(username, password) do
-    username = username |> String.trim_leading("@") |> String.downcase()
-    user = Repo.get_by(User, username: username)
-    verify_password(user, password)
+  def check_credentials(identifier, password) do
+    identifier
+    |> normalize_identifier()
+    |> find_user_by_identifier()
+    |> verify_password(password)
+  end
+
+  defp normalize_identifier(identifier) do
+    identifier |> String.trim() |> String.trim_leading("@") |> String.downcase()
+  end
+
+  defp find_user_by_identifier(identifier) do
+    case String.split(identifier, "@", parts: 2) do
+      [_local, _domain] -> Repo.get_by(User, email: identifier)
+      [username] -> Repo.get_by(User, username: username)
+    end
   end
 
   defp verify_password(nil, _password) do
@@ -81,6 +96,73 @@ defmodule OGrupoDeEstudos.Accounts do
     end
   end
 
+  @doc """
+  Logs in or registers a user coming from Google sign-in.
+
+  Resolution order: by google id (returning user), then by email (links the
+  google account to the existing user, confirming the email), then a fresh
+  registration with a username derived from the email and a random password.
+
+  Returns `{:ok, user, :existing | :linked | :registered}` or
+  `{:error, changeset}`.
+  """
+  def login_or_register_google_user(%{google_id: google_id} = profile) do
+    case Repo.get_by(User, google_id: google_id) do
+      %User{} = user -> {:ok, user, :existing}
+      nil -> link_or_register_google_user(profile)
+    end
+  end
+
+  defp link_or_register_google_user(profile) do
+    case get_user_by_email(profile.email) do
+      %User{} = user -> link_google_user(user, profile.google_id)
+      nil -> register_google_user(profile)
+    end
+  end
+
+  defp link_google_user(user, google_id) do
+    case user |> User.link_google_changeset(google_id) |> Repo.update() do
+      {:ok, linked} -> {:ok, linked, :linked}
+      error -> error
+    end
+  end
+
+  defp register_google_user(profile) do
+    attrs = %{
+      username: derive_username(profile.email),
+      email: profile.email,
+      name: profile.name,
+      google_id: profile.google_id
+    }
+
+    case %User{} |> User.google_registration_changeset(attrs) |> Repo.insert() do
+      {:ok, user} -> {:ok, user, :registered}
+      error -> error
+    end
+  end
+
+  defp derive_username(email) do
+    base = username_base(email)
+
+    [base]
+    |> Stream.concat(Stream.map(1..999, &"#{base}#{&1}"))
+    |> Enum.find(&username_available?/1)
+  end
+
+  defp username_base(email) do
+    base =
+      email
+      |> String.split("@", parts: 2)
+      |> hd()
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9_]/, "")
+      |> String.slice(0, 24)
+
+    if String.length(base) >= 3, do: base, else: "forrozeiro"
+  end
+
+  defp username_available?(username), do: get_user_by_username(username) == nil
+
   @doc "Finds a user by id. Returns `nil` if not found."
   def get_user_by_id(id) do
     Repo.get(User, id)
@@ -92,6 +174,9 @@ defmodule OGrupoDeEstudos.Accounts do
   @doc "Checks if the user has the admin role."
   def admin?(%User{role: :admin}), do: true
   def admin?(_), do: false
+
+  @doc "Whether the profile has the location data asked at signup."
+  defdelegate profile_complete?(user), to: User
 
   @doc "Returns the user's first name."
   def first_name(%User{name: name}) when is_binary(name), do: name |> String.split(" ") |> hd()
@@ -148,6 +233,36 @@ defmodule OGrupoDeEstudos.Accounts do
   end
 
   def get_user_by_email(_), do: nil
+
+  @doc """
+  Backfills stored emails to their lowercase, trimmed form.
+
+  Returns `{normalized_count, conflict_emails}`. An email whose lowercase
+  form already belongs to another user is left untouched and reported for
+  manual review.
+  """
+  def normalize_all_emails do
+    {:ok, result} =
+      Repo.transaction(fn ->
+        UserQuery.stream_mixed_case_emails()
+        |> Enum.reduce({0, []}, &normalize_stored_email/2)
+      end)
+
+    result
+  end
+
+  defp normalize_stored_email(user, {count, conflicts}) do
+    normalized = user.email |> String.trim() |> String.downcase()
+
+    case get_user_by_email(normalized) do
+      nil ->
+        user |> Ecto.Changeset.change(email: normalized) |> Repo.update!()
+        {count + 1, conflicts}
+
+      _other_user ->
+        {count, [user.email | conflicts]}
+    end
+  end
 
   @doc """
   Updates a user's password and increments the reset counter.

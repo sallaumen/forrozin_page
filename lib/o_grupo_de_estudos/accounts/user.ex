@@ -39,6 +39,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
     field :instagram, :string
     field :avatar_path, :string
     field :is_teacher, :boolean, default: false
+    field :google_id, :string
     field :invite_slug, :string
     field :last_seen_at, :utc_datetime
     field :last_login_at, :utc_datetime
@@ -62,6 +63,7 @@ defmodule OGrupoDeEstudos.Accounts.User do
     ])
     |> validate_required([:username, :email, :password, :name, :country, :city])
     |> sanitize_username()
+    |> normalize_email()
     |> validate_name_has_two_words()
     |> validate_length(:username, min: 3, max: 30)
     |> validate_format(:username, ~r/^[a-z0-9_]+$/,
@@ -78,6 +80,48 @@ defmodule OGrupoDeEstudos.Accounts.User do
     |> hash_password()
     |> put_confirmation_token()
   end
+
+  @doc """
+  Changeset for a user registered through Google sign-in.
+
+  City, state and the two-word name rule are not required here: the profile
+  is completed later, nudged from the settings page. A random password is
+  generated so password login (and recovery) keeps working as a fallback.
+  """
+  def google_registration_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username, :email, :name, :google_id])
+    |> validate_required([:username, :email, :name, :google_id])
+    |> sanitize_username()
+    |> normalize_email()
+    |> validate_length(:username, min: 3, max: 30)
+    |> validate_format(:username, ~r/^[a-z0-9_]+$/,
+      message: "use apenas letras minúsculas, números e _"
+    )
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/, message: "formato inválido")
+    |> put_invite_slug()
+    |> put_random_password()
+    |> put_confirmed_now()
+    |> unique_constraint(:username, message: "nome de usuário já existe")
+    |> unique_constraint(:email, message: "email já cadastrado")
+    |> unique_constraint(:invite_slug, message: "link de convite já existe")
+    |> unique_constraint(:google_id)
+  end
+
+  @doc "Changeset linking a Google account, confirming the email if needed."
+  def link_google_changeset(user, google_id) do
+    user
+    |> change(google_id: google_id)
+    |> put_confirmed_now()
+    |> unique_constraint(:google_id)
+  end
+
+  @doc "Whether the profile has the location data asked at signup."
+  def profile_complete?(%__MODULE__{country: "BR"} = user) do
+    filled?(user.city) and filled?(user.state)
+  end
+
+  def profile_complete?(%__MODULE__{} = user), do: filled?(user.city)
 
   @doc "Changeset for updating profile fields."
   def profile_changeset(user, attrs) do
@@ -136,6 +180,13 @@ defmodule OGrupoDeEstudos.Accounts.User do
     end
   end
 
+  defp normalize_email(changeset) do
+    case get_change(changeset, :email) do
+      nil -> changeset
+      email -> put_change(changeset, :email, email |> String.trim() |> String.downcase())
+    end
+  end
+
   defp validate_name_has_two_words(changeset) do
     case get_change(changeset, :name) do
       nil ->
@@ -176,6 +227,25 @@ defmodule OGrupoDeEstudos.Accounts.User do
         changeset
     end
   end
+
+  defp put_random_password(changeset) do
+    random_password = Base.encode64(:crypto.strong_rand_bytes(32))
+    put_change(changeset, :password_hash, Argon2.hash_pwd_salt(random_password))
+  end
+
+  defp put_confirmed_now(changeset) do
+    case get_field(changeset, :confirmed_at) do
+      nil ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+        put_change(changeset, :confirmed_at, now)
+
+      _confirmed_at ->
+        changeset
+    end
+  end
+
+  defp filled?(nil), do: false
+  defp filled?(value), do: String.trim(value) != ""
 
   defp hash_password(changeset) do
     case get_change(changeset, :password) do

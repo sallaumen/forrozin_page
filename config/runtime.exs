@@ -41,6 +41,15 @@ if System.get_env("R2_ACCOUNT_ID") && config_env() != :test do
     public_bucket: System.get_env("R2_PUBLIC_BUCKET", "ogde-public")
 end
 
+# Google sign-in stays off (button hidden) until both credentials are set.
+if config_env() != :test do
+  if google_client_id = System.get_env("GOOGLE_OAUTH_CLIENT_ID") do
+    config :o_grupo_de_estudos, :google_oauth,
+      client_id: google_client_id,
+      client_secret: System.fetch_env!("GOOGLE_OAUTH_CLIENT_SECRET")
+  end
+end
+
 if config_env() == :prod do
   # Fly volume, mounted at /app/uploads (fly.toml). Explicit so it does not depend
   # on a File.dir? guessing the environment.

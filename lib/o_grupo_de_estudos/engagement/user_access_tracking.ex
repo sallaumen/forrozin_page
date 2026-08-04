@@ -9,7 +9,7 @@ defmodule OGrupoDeEstudos.Engagement.UserAccessTracking do
   alias OGrupoDeEstudos.Workers.TrackUserLogin
 
   def track_login(%User{id: user_id}, client_info, method)
-      when method in [:password, :auto_login] do
+      when method in [:password, :auto_login, :google] do
     now =
       DateTime.utc_now()
       |> DateTime.truncate(:second)

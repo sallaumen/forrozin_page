@@ -68,6 +68,13 @@ defmodule OGrupoDeEstudos.Accounts.UserQuery do
     |> Repo.all()
   end
 
+  @doc "Streams users whose stored email is not lowercase (email backfill)."
+  @spec stream_mixed_case_emails() :: Enumerable.t()
+  def stream_mixed_case_emails do
+    from(u in User, where: u.email != fragment("lower(?)", u.email))
+    |> Repo.stream()
+  end
+
   defp base_search_query(term) do
     term_like = "%#{OGrupoDeEstudos.Search.escape_like(String.downcase(term))}%"
     where(User, [u], ilike(u.username, ^term_like) or ilike(u.name, ^term_like))
