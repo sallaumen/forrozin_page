@@ -13,6 +13,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.StudyComponents
 
+  use OGrupoDeEstudosWeb.Handlers.StepLearning
   use OGrupoDeEstudosWeb.NotificationHandlers
 
   @impl true

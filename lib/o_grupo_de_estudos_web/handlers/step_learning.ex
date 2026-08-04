@@ -13,6 +13,10 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
 
   defmacro __using__(_opts) do
     quote do
+      # A folha comeca fechada. Fica no `use` para as telas que a usam nao
+      # precisarem lembrar de inicializar o assign.
+      on_mount({unquote(__MODULE__), :folha_fechada})
+
       alias OGrupoDeEstudos.Encyclopedia.StepQuery
       alias OGrupoDeEstudos.Engagement
 
@@ -23,7 +27,23 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
           step -> {:noreply, unquote(__MODULE__).alternar(socket, step)}
         end
       end
+
+      def handle_event("open_step_sheet", %{"code" => code}, socket) do
+        {:noreply, unquote(__MODULE__).abrir_folha(socket, StepQuery.get_by(code: code))}
+      end
+
+      def handle_event("close_step_sheet", _params, socket) do
+        {:noreply, Phoenix.Component.assign(socket, step_sheet: nil, step_sheet_learned: false)}
+      end
     end
+  end
+
+  @doc false
+  def on_mount(:folha_fechada, _params, _session, socket) do
+    {:cont,
+     socket
+     |> Phoenix.Component.assign_new(:step_sheet, fn -> nil end)
+     |> Phoenix.Component.assign_new(:step_sheet_learned, fn -> false end)}
   end
 
   @doc """
@@ -40,6 +60,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
     socket
     |> atualizar_pagina(step, user_id)
     |> atualizar_drawer(step, user_id)
+    |> atualizar_folha(step, user_id)
   end
 
   defp atualizar_pagina(%{assigns: %{step_learned: _}} = socket, step, user_id) do
@@ -59,4 +80,30 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   end
 
   defp atualizar_drawer(socket, _step, _user_id), do: socket
+
+  defp atualizar_folha(%{assigns: %{step_sheet: %{id: id}}} = socket, %{id: id} = step, user_id) do
+    Phoenix.Component.assign(
+      socket,
+      :step_sheet_learned,
+      OGrupoDeEstudos.Engagement.learned?(user_id, step.id)
+    )
+  end
+
+  defp atualizar_folha(socket, _step, _user_id), do: socket
+
+  @doc """
+  Abre a folha rápida do passo.
+
+  Código que não existe simplesmente não abre nada: a folha some por vir nula,
+  e a página segue de pé.
+  """
+  def abrir_folha(socket, nil), do: socket
+
+  def abrir_folha(socket, step) do
+    Phoenix.Component.assign(socket,
+      step_sheet: step,
+      step_sheet_learned:
+        OGrupoDeEstudos.Engagement.learned?(socket.assigns.current_user.id, step.id)
+    )
+  end
 end
