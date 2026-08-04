@@ -76,19 +76,48 @@
           </div>
           <div>
             <label
-              for="workshop-ends-at"
+              for="workshop-duration"
               class="mb-1.5 block text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500"
             >
-              Quando termina
+              Quanto dura
             </label>
-            <input
-              id="workshop-ends-at"
-              type="datetime-local"
-              name="workshop[ends_at]"
-              value={@form["ends_at"]}
+            <select
+              id="workshop-duration"
+              name="workshop[duration]"
               class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800"
-            />
+            >
+              <option
+                :for={{value, label} <- duration_options()}
+                value={value}
+                selected={@form["duration"] == value}
+              >
+                {label}
+              </option>
+              <option value="custom" selected={@form["duration"] == "custom"}>
+                Outro / mais de um dia
+              </option>
+            </select>
           </div>
+        </div>
+
+        <%!-- The end date only comes back for what the list cannot say: a festival
+             across days, or an odd length. Asking it of everyone meant typing the
+             same date twice to describe a two-hour class. --%>
+        <div :if={@form["duration"] == "custom"} class="mb-4">
+          <label
+            for="workshop-ends-at"
+            class="mb-1.5 block text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500"
+          >
+            Quando termina
+            <span class="font-normal normal-case tracking-normal">(vazio = sem hora de fim)</span>
+          </label>
+          <input
+            id="workshop-ends-at"
+            type="datetime-local"
+            name="workshop[ends_at]"
+            value={@form["ends_at"]}
+            class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 sm:max-w-[50%]"
+          />
         </div>
 
         <div class="mb-4 grid gap-3 sm:grid-cols-2">

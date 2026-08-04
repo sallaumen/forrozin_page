@@ -15,6 +15,24 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.WorkshopComponents
 
+  # What a dance workshop actually lasts. Anything outside this is either an event
+  # across days or an odd length that was typed before: both fall back to the end
+  # date, which stays reachable instead of being taken away.
+  @durations [
+    {"60", "1 hora"},
+    {"90", "1h30"},
+    {"120", "2 horas"},
+    {"150", "2h30"},
+    {"180", "3 horas"},
+    {"240", "4 horas"},
+    {"300", "5 horas"},
+    {"360", "6 horas"}
+  ]
+
+  @doc "Duration options for the select, as `{value, label}`."
+  @spec duration_options() :: [{String.t(), String.t()}]
+  def duration_options, do: @durations
+
   @impl true
   def mount(params, _session, socket) do
     {:ok, mount_for(socket, socket.assigns.live_action, params)}
@@ -192,6 +210,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   defp label_for(:description), do: "Descrição"
   defp label_for(:starts_at), do: "Data de início"
   defp label_for(:ends_at), do: "Data de término"
+  defp label_for(:duration_minutes), do: "Duração"
   defp label_for(:capacity), do: "Vagas"
   defp label_for(:price_cents), do: "Preço"
   defp label_for(field), do: field |> to_string() |> String.capitalize()
@@ -202,6 +221,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "description" => "",
       "location" => "",
       "starts_at" => "",
+      "duration" => "120",
       "ends_at" => "",
       "price" => "",
       "payment_info" => "",
@@ -220,6 +240,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "description" => workshop.description,
       "location" => workshop.location || "",
       "starts_at" => datetime_input(workshop.starts_at),
+      "duration" => duration_input(workshop),
       "ends_at" => datetime_input(workshop.ends_at),
       "price" => price_input(workshop.price_cents),
       "payment_info" => workshop.payment_info || "",
@@ -234,6 +255,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "visibility" => to_string(workshop.visibility)
     }
   end
+
+  # "custom" means the select cannot say it: no end at all, an odd length, or an
+  # event across days. The end date field appears and answers for those.
+  defp duration_input(%{starts_at: %DateTime{}, ends_at: %DateTime{}} = workshop) do
+    minutes = DateTime.diff(workshop.ends_at, workshop.starts_at, :minute)
+
+    if Enum.any?(@durations, fn {value, _label} -> value == to_string(minutes) end),
+      do: to_string(minutes),
+      else: "custom"
+  end
+
+  defp duration_input(_no_end), do: "custom"
 
   # The datetime-local input works in the user timezone; the database stores UTC.
   defp datetime_input(nil), do: ""
@@ -254,6 +287,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       payment_mode: payment_mode_from(params["payment_mode"]),
       payment_phone: blank_to_nil(params["payment_phone"]),
       starts_at: parse_datetime(params["starts_at"]),
+      duration_minutes: parse_int(params["duration"]),
       ends_at: parse_datetime(params["ends_at"]),
       price_cents: parse_price(params["price"]),
       capacity: parse_int(params["capacity"]),

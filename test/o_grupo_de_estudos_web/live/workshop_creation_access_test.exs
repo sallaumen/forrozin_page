@@ -96,6 +96,52 @@ defmodule OGrupoDeEstudosWeb.WorkshopCreationAccessTest do
     end
   end
 
+  describe "how long it runs, on the form" do
+    setup %{conn: conn} do
+      %{conn: log_in_user(conn, insert(:user, is_teacher: true))}
+    end
+
+    test "the form asks how long, not when it ends", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/study/workshops/new")
+
+      assert html =~ "Quanto dura"
+      assert html =~ "2 horas"
+      refute html =~ "Quando termina"
+    end
+
+    test "picking a duration saves the end that follows from it", %{conn: conn} do
+      {:ok, lv, _} = live(conn, ~p"/study/workshops/new")
+
+      {:error, {:redirect, %{to: "/workshops/" <> slug}}} =
+        lv
+        |> form("#workshop-form", %{
+          "workshop" => %{
+            "title" => "Aulão de sacadas",
+            "description" => "Vamos dançar.",
+            "starts_at" => "2026-12-20T19:00",
+            "duration" => "90"
+          }
+        })
+        |> render_submit(%{"publish" => "true"})
+
+      workshop = Workshops.get_by_slug(slug)
+
+      assert DateTime.diff(workshop.ends_at, workshop.starts_at, :minute) == 90
+      assert Brazil.strftime(Brazil.to_local(workshop.starts_at), "%H:%M") == "19:00"
+    end
+
+    test "asking for something else brings the end date back", %{conn: conn} do
+      {:ok, lv, _} = live(conn, ~p"/study/workshops/new")
+
+      html =
+        lv
+        |> form("#workshop-form", %{"workshop" => %{"duration" => "custom"}})
+        |> render_change()
+
+      assert html =~ "Quando termina"
+    end
+  end
+
   describe "what whoever already organizes keeps" do
     test "a workshop created before the rule stays manageable by its organizer",
          %{conn: conn} do
