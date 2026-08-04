@@ -3,18 +3,10 @@ defmodule OGrupoDeEstudos.Sequences.SequenceQueryTest do
 
   alias OGrupoDeEstudos.Sequences.SequenceQuery
 
-  # ---------------------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------------------
-
   defp create_sequence(user, attrs) do
     name = Keyword.get(attrs, :name, "Sequência Teste")
     insert(:sequence, user: user, name: name)
   end
-
-  # ---------------------------------------------------------------------------
-  # list_by/1
-  # ---------------------------------------------------------------------------
 
   describe "list_by/1 with :user_id" do
     test "returns only sequences belonging to the given user" do
@@ -52,7 +44,6 @@ defmodule OGrupoDeEstudos.Sequences.SequenceQueryTest do
     test "orders by inserted_at descending by default" do
       user = insert(:user)
 
-      # Insert with different timestamps using override
       s1 = insert(:sequence, user: user, name: "Antiga", inserted_at: ~N[2026-01-01 10:00:00])
       s2 = insert(:sequence, user: user, name: "Nova", inserted_at: ~N[2026-06-01 10:00:00])
 
@@ -76,10 +67,6 @@ defmodule OGrupoDeEstudos.Sequences.SequenceQueryTest do
       assert [_] = result.sequence_steps
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # get_by/1
-  # ---------------------------------------------------------------------------
 
   describe "get_by/1 with :id" do
     test "returns the sequence with the given id" do

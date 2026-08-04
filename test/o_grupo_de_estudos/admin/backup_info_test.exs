@@ -1,16 +1,11 @@
 defmodule OGrupoDeEstudos.Admin.BackupInfoTest do
   @moduledoc """
-  Unit tests for the `backup_info/1` and `parse_backup_timestamp/1` helpers
-  added to `OGrupoDeEstudos.Admin.Backup`.
+  Unit tests for the `backup_info/1` and `parse_backup_timestamp/1` helpers.
   """
 
   use ExUnit.Case, async: true
 
   alias OGrupoDeEstudos.Admin.Backup
-
-  # ---------------------------------------------------------------------------
-  # parse_backup_timestamp/1
-  # ---------------------------------------------------------------------------
 
   describe "parse_backup_timestamp/1" do
     test "parses a well-formed backup filename" do
@@ -44,10 +39,6 @@ defmodule OGrupoDeEstudos.Admin.BackupInfoTest do
                result
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # backup_info/1
-  # ---------------------------------------------------------------------------
 
   describe "backup_info/1" do
     setup do

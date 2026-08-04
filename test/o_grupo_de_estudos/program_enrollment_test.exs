@@ -6,141 +6,141 @@ defmodule OGrupoDeEstudos.ProgramEnrollmentTest do
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Workshops
 
-  defp em(dias, hora) do
+  defp at_day(days, hour) do
     OGrupoDeEstudos.Brazil.today()
-    |> Date.add(dias)
-    |> DateTime.new!(Time.new!(hora, 0, 0), "Etc/UTC")
+    |> Date.add(days)
+    |> DateTime.new!(Time.new!(hour, 0, 0), "Etc/UTC")
     |> OGrupoDeEstudos.Brazil.to_utc()
     |> DateTime.truncate(:second)
   end
 
   setup do
-    dono = insert(:user)
-    {:ok, program} = Workshops.create_program(dono, %{title: "Dois dias"})
+    owner = insert(:user)
+    {:ok, program} = Workshops.create_program(owner, %{title: "Dois dias"})
 
-    quinta = insert(:workshop, organizer: dono, title: "Quinta", starts_at: em(7, 19))
-    sexta = insert(:workshop, organizer: dono, title: "Sexta", starts_at: em(8, 19))
-    for w <- [quinta, sexta], do: Workshops.attach_workshop(program, dono, w.id)
+    thursday = insert(:workshop, organizer: owner, title: "Quinta", starts_at: at_day(7, 19))
+    friday = insert(:workshop, organizer: owner, title: "Sexta", starts_at: at_day(8, 19))
+    for w <- [thursday, friday], do: Workshops.attach_workshop(program, owner, w.id)
 
-    %{dono: dono, program: program, quinta: quinta, sexta: sexta, aluna: insert(:user)}
+    %{owner: owner, program: program, thursday: thursday, friday: friday, student: insert(:user)}
   end
 
   describe "enroll_many/3" do
-    test "inscreve nos dois de uma vez", ctx do
-      assert {:ok, resultado} =
-               Workshops.enroll_many(ctx.program, ctx.aluna, [ctx.quinta.id, ctx.sexta.id])
+    test "enrolls in both workshops at once", ctx do
+      assert {:ok, result} =
+               Workshops.enroll_many(ctx.program, ctx.student, [ctx.thursday.id, ctx.friday.id])
 
-      assert length(resultado.enrolled) == 2
-      assert resultado.failed == []
+      assert length(result.enrolled) == 2
+      assert result.failed == []
 
-      inscritos = Workshops.enrolled_workshop_ids(ctx.aluna.id)
-      assert MapSet.member?(inscritos, ctx.quinta.id)
-      assert MapSet.member?(inscritos, ctx.sexta.id)
+      enrolled_ids = Workshops.enrolled_workshop_ids(ctx.student.id)
+      assert MapSet.member?(enrolled_ids, ctx.thursday.id)
+      assert MapSet.member?(enrolled_ids, ctx.friday.id)
     end
 
-    test "um lotado não derruba os outros", ctx do
-      lotado =
-        insert(:workshop, organizer: ctx.dono, title: "Lotado", capacity: 1, starts_at: em(9, 19))
+    test "one full workshop does not block the others", ctx do
+      full_workshop =
+        insert(:workshop,
+          organizer: ctx.owner,
+          title: "Lotado",
+          capacity: 1,
+          starts_at: at_day(9, 19)
+        )
 
-      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.dono, lotado.id)
-      {:ok, _} = Workshops.enroll(lotado, insert(:user))
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, full_workshop.id)
+      {:ok, _} = Workshops.enroll(full_workshop, insert(:user))
 
-      assert {:ok, resultado} =
-               Workshops.enroll_many(ctx.program, ctx.aluna, [
-                 ctx.quinta.id,
-                 lotado.id,
-                 ctx.sexta.id
+      assert {:ok, result} =
+               Workshops.enroll_many(ctx.program, ctx.student, [
+                 ctx.thursday.id,
+                 full_workshop.id,
+                 ctx.friday.id
                ])
 
-      # Quem marcou tres e perdeu uma vaga quer as outras duas, nao zero.
-      assert length(resultado.enrolled) == 2
-      assert [{workshop, :full}] = resultado.failed
-      assert workshop.id == lotado.id
+      assert length(result.enrolled) == 2
+      assert [{workshop, :full}] = result.failed
+      assert workshop.id == full_workshop.id
     end
 
-    test "quem já estava inscrito conta como sucesso, não como falha", ctx do
-      {:ok, _} = Workshops.enroll(ctx.quinta, ctx.aluna)
+    test "already enrolled counts as success, not as failure", ctx do
+      {:ok, _} = Workshops.enroll(ctx.thursday, ctx.student)
 
-      assert {:ok, resultado} =
-               Workshops.enroll_many(ctx.program, ctx.aluna, [ctx.quinta.id, ctx.sexta.id])
+      assert {:ok, result} =
+               Workshops.enroll_many(ctx.program, ctx.student, [ctx.thursday.id, ctx.friday.id])
 
-      # A pessoa pediu para estar inscrita nos dois, e esta.
-      assert length(resultado.enrolled) == 2
-      assert resultado.failed == []
+      assert length(result.enrolled) == 2
+      assert result.failed == []
     end
 
-    test "id de workshop de outra programação é ignorado", ctx do
+    test "ignores workshop id from another program", ctx do
       alheio = insert(:workshop)
 
-      assert {:ok, resultado} =
-               Workshops.enroll_many(ctx.program, ctx.aluna, [ctx.quinta.id, alheio.id])
+      assert {:ok, result} =
+               Workshops.enroll_many(ctx.program, ctx.student, [ctx.thursday.id, alheio.id])
 
-      assert length(resultado.enrolled) == 1
-      refute MapSet.member?(Workshops.enrolled_workshop_ids(ctx.aluna.id), alheio.id)
+      assert length(result.enrolled) == 1
+      refute MapSet.member?(Workshops.enrolled_workshop_ids(ctx.student.id), alheio.id)
     end
 
-    test "id que não é uuid não quebra", ctx do
-      assert {:ok, resultado} =
-               Workshops.enroll_many(ctx.program, ctx.aluna, ["; drop table", ctx.quinta.id])
+    test "non-uuid id does not crash", ctx do
+      assert {:ok, result} =
+               Workshops.enroll_many(ctx.program, ctx.student, ["; drop table", ctx.thursday.id])
 
-      assert length(resultado.enrolled) == 1
+      assert length(result.enrolled) == 1
     end
 
-    test "rascunho dentro da programação não aceita inscrição", ctx do
-      rascunho = insert(:workshop, organizer: ctx.dono, status: :draft, starts_at: em(9, 19))
-      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.dono, rascunho.id)
+    test "draft workshop inside the program rejects enrollment", ctx do
+      draft = insert(:workshop, organizer: ctx.owner, status: :draft, starts_at: at_day(9, 19))
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, draft.id)
 
-      # Filtrado antes de tentar: nada inscrivel foi de fato selecionado.
       assert {:error, :none_selected} =
-               Workshops.enroll_many(ctx.program, ctx.aluna, [rascunho.id])
+               Workshops.enroll_many(ctx.program, ctx.student, [draft.id])
     end
 
-    test "rascunho no meio da lista não impede os publicados", ctx do
-      rascunho = insert(:workshop, organizer: ctx.dono, status: :draft, starts_at: em(9, 19))
-      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.dono, rascunho.id)
+    test "draft in the middle of the list does not block the published ones", ctx do
+      draft = insert(:workshop, organizer: ctx.owner, status: :draft, starts_at: at_day(9, 19))
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, draft.id)
 
-      assert {:ok, resultado} =
-               Workshops.enroll_many(ctx.program, ctx.aluna, [rascunho.id, ctx.quinta.id])
+      assert {:ok, result} =
+               Workshops.enroll_many(ctx.program, ctx.student, [draft.id, ctx.thursday.id])
 
-      assert length(resultado.enrolled) == 1
+      assert length(result.enrolled) == 1
     end
 
-    test "nada marcado devolve erro próprio", ctx do
-      assert {:error, :none_selected} = Workshops.enroll_many(ctx.program, ctx.aluna, [])
+    test "empty selection returns its own error", ctx do
+      assert {:error, :none_selected} = Workshops.enroll_many(ctx.program, ctx.student, [])
     end
 
-    test "quem organiza não se inscreve no que já é dele", ctx do
-      assert {:ok, resultado} =
-               Workshops.enroll_many(ctx.program, ctx.dono, [ctx.quinta.id, ctx.sexta.id])
+    test "organizer does not enroll in their own workshops", ctx do
+      assert {:ok, result} =
+               Workshops.enroll_many(ctx.program, ctx.owner, [ctx.thursday.id, ctx.friday.id])
 
-      assert resultado.enrolled == []
-      assert length(resultado.failed) == 2
-      assert Enum.all?(resultado.failed, fn {_w, motivo} -> motivo == :organizer end)
+      assert result.enrolled == []
+      assert length(result.failed) == 2
+      assert Enum.all?(result.failed, fn {_w, reason} -> reason == :organizer end)
     end
   end
 
   describe "aviso ao organizador num lote" do
-    test "um aviso por pessoa, não um por workshop", ctx do
-      {:ok, _} = Workshops.enroll_many(ctx.program, ctx.aluna, [ctx.quinta.id, ctx.sexta.id])
+    test "notifies once per person, not once per workshop", ctx do
+      {:ok, _} = Workshops.enroll_many(ctx.program, ctx.student, [ctx.thursday.id, ctx.friday.id])
 
       avisos =
         Notification
         |> Repo.all()
-        |> Enum.filter(&(&1.user_id == ctx.dono.id and &1.action == :workshop_enrolled))
+        |> Enum.filter(&(&1.user_id == ctx.owner.id and &1.action == :workshop_enrolled))
 
-      # Sem isso, inscrever em 3 workshops enche a caixa com 3 linhas que nem
-      # colapsam, que e justamente o spam que a programacao existe para matar.
       assert length(avisos) == 1
       assert hd(avisos).group_key =~ ctx.program.id
     end
 
-    test "cada professor é avisado do workshop dele", ctx do
+    test "notifies each teacher about their own workshop", ctx do
       joana = insert(:user)
-      dela = insert(:workshop, organizer: joana, starts_at: em(9, 19))
-      {:ok, _} = Workshops.add_admin(dela, joana, ctx.dono.id)
-      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.dono, dela.id)
+      dela = insert(:workshop, organizer: joana, starts_at: at_day(9, 19))
+      {:ok, _} = Workshops.add_admin(dela, joana, ctx.owner.id)
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, dela.id)
 
-      {:ok, _} = Workshops.enroll_many(ctx.program, ctx.aluna, [ctx.quinta.id, dela.id])
+      {:ok, _} = Workshops.enroll_many(ctx.program, ctx.student, [ctx.thursday.id, dela.id])
 
       destinatarios =
         Notification
@@ -149,14 +149,14 @@ defmodule OGrupoDeEstudos.ProgramEnrollmentTest do
         |> Enum.map(& &1.user_id)
         |> MapSet.new()
 
-      assert MapSet.member?(destinatarios, ctx.dono.id)
+      assert MapSet.member?(destinatarios, ctx.owner.id)
       assert MapSet.member?(destinatarios, joana.id)
     end
 
-    test "lote sem nenhuma inscrição não avisa ninguém", ctx do
+    test "batch with no enrollment notifies nobody", ctx do
       Repo.delete_all(Notification)
 
-      {:ok, _} = Workshops.enroll_many(ctx.program, ctx.dono, [ctx.quinta.id])
+      {:ok, _} = Workshops.enroll_many(ctx.program, ctx.owner, [ctx.thursday.id])
 
       assert Repo.all(Notification) == []
     end

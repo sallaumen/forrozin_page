@@ -5,179 +5,179 @@ defmodule OGrupoDeEstudos.ProgramPackageTest do
 
   alias OGrupoDeEstudos.Workshops
 
-  defp em(dias, hora) do
+  defp at_day(days, hour) do
     OGrupoDeEstudos.Brazil.today()
-    |> Date.add(dias)
-    |> DateTime.new!(Time.new!(hora, 0, 0), "Etc/UTC")
+    |> Date.add(days)
+    |> DateTime.new!(Time.new!(hour, 0, 0), "Etc/UTC")
     |> OGrupoDeEstudos.Brazil.to_utc()
     |> DateTime.truncate(:second)
   end
 
   setup do
-    dono = insert(:user)
+    owner = insert(:user)
 
     {:ok, program} =
-      Workshops.create_program(dono, %{
+      Workshops.create_program(owner, %{
         title: "Três dias",
         price_cents: 15_000,
         payment_info: "Pix do festival"
       })
 
     workshops =
-      for {dia, preco} <- [{7, 6000}, {8, 6000}, {9, 6000}] do
-        insert(:workshop, organizer: dono, starts_at: em(dia, 19), price_cents: preco)
+      for {day, price} <- [{7, 6000}, {8, 6000}, {9, 6000}] do
+        insert(:workshop, organizer: owner, starts_at: at_day(day, 19), price_cents: price)
       end
 
-    for w <- workshops, do: Workshops.attach_workshop(program, dono, w.id)
-    {:ok, program} = Workshops.publish_program(dono, program)
+    for w <- workshops, do: Workshops.attach_workshop(program, owner, w.id)
+    {:ok, program} = Workshops.publish_program(owner, program)
 
-    %{dono: dono, program: program, workshops: workshops, aluna: insert(:user)}
+    %{owner: owner, program: program, workshops: workshops, student: insert(:user)}
   end
 
   describe "enroll_in_package/2" do
-    test "entra em todos os workshops de uma vez", ctx do
-      assert {:ok, matricula} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+    test "enrolls in every workshop of the program at once", ctx do
+      assert {:ok, matricula} = Workshops.enroll_in_package(ctx.program, ctx.student)
 
       assert matricula.payment_status == :pending
-      inscritos = Workshops.enrolled_workshop_ids(ctx.aluna.id)
-      assert Enum.all?(ctx.workshops, &MapSet.member?(inscritos, &1.id))
+      enrolled_ids = Workshops.enrolled_workshop_ids(ctx.student.id)
+      assert Enum.all?(ctx.workshops, &MapSet.member?(enrolled_ids, &1.id))
     end
 
-    test "as inscrições apontam para o pacote, então não se cobra duas vezes", ctx do
-      {:ok, matricula} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+    test "enrollments point to the package so the price is charged once", ctx do
+      {:ok, matricula} = Workshops.enroll_in_package(ctx.program, ctx.student)
 
       cobertas =
         ctx.workshops
-        |> Enum.map(&Workshops.get_enrollment(&1.id, ctx.aluna.id))
+        |> Enum.map(&Workshops.get_enrollment(&1.id, ctx.student.id))
         |> Enum.map(& &1.program_enrollment_id)
 
       assert Enum.all?(cobertas, &(&1 == matricula.id))
     end
 
-    test "programação sem preço de pacote não vende pacote", %{dono: dono, aluna: aluna} do
-      {:ok, sem_preco} = Workshops.create_program(dono, %{title: "Só avulso"})
-      w = insert(:workshop, organizer: dono, starts_at: em(7, 19))
-      {:ok, _} = Workshops.attach_workshop(sem_preco, dono, w.id)
-      {:ok, sem_preco} = Workshops.publish_program(dono, sem_preco)
+    test "program without package price does not sell a package", %{
+      owner: owner,
+      student: student
+    } do
+      {:ok, without_price} = Workshops.create_program(owner, %{title: "Só avulso"})
+      w = insert(:workshop, organizer: owner, starts_at: at_day(7, 19))
+      {:ok, _} = Workshops.attach_workshop(without_price, owner, w.id)
+      {:ok, without_price} = Workshops.publish_program(owner, without_price)
 
-      assert {:error, :no_package} = Workshops.enroll_in_package(sem_preco, aluna)
+      assert {:error, :no_package} = Workshops.enroll_in_package(without_price, student)
     end
 
-    test "uma turma lotada cancela o pacote inteiro e não deixa rastro", ctx do
-      [primeiro, _, terceiro] = ctx.workshops
-      {:ok, lotado} = Workshops.update_workshop(ctx.dono, terceiro, %{capacity: 1})
-      {:ok, _} = Workshops.enroll(lotado, insert(:user))
+    test "one full workshop cancels the whole package and leaves no trace", ctx do
+      [first, _, terceiro] = ctx.workshops
+      {:ok, full_workshop} = Workshops.update_workshop(ctx.owner, terceiro, %{capacity: 1})
+      {:ok, _} = Workshops.enroll(full_workshop, insert(:user))
 
-      # Pagou pelos tres: entrar em dois seria errado.
-      assert {:error, {:full, workshop}} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+      assert {:error, {:full, workshop}} = Workshops.enroll_in_package(ctx.program, ctx.student)
       assert workshop.id == terceiro.id
 
-      # E nao pode sobrar inscricao solta das que deram certo antes de falhar.
-      inscritos = Workshops.enrolled_workshop_ids(ctx.aluna.id)
-      refute MapSet.member?(inscritos, primeiro.id)
-      assert Workshops.list_package_enrollments(ctx.program, ctx.dono) == {:ok, []}
+      enrolled_ids = Workshops.enrolled_workshop_ids(ctx.student.id)
+      refute MapSet.member?(enrolled_ids, first.id)
+      assert Workshops.list_package_enrollments(ctx.program, ctx.owner) == {:ok, []}
     end
 
-    test "quem já comprou não compra de novo", ctx do
-      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+    test "does not sell the package twice to the same person", ctx do
+      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.student)
 
-      assert {:error, :already_enrolled} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+      assert {:error, :already_enrolled} = Workshops.enroll_in_package(ctx.program, ctx.student)
     end
 
-    test "quem organiza não compra pacote do próprio evento", ctx do
-      assert {:error, :organizer} = Workshops.enroll_in_package(ctx.program, ctx.dono)
+    test "organizer does not buy the package of their own event", ctx do
+      assert {:error, :organizer} = Workshops.enroll_in_package(ctx.program, ctx.owner)
     end
 
-    test "quem já estava avulso em um vira pacote sem duplicar inscrição", ctx do
-      [primeiro | _] = ctx.workshops
-      {:ok, _} = Workshops.enroll(primeiro, ctx.aluna)
+    test "single enrollment becomes package without duplicating the enrollment", ctx do
+      [first | _] = ctx.workshops
+      {:ok, _} = Workshops.enroll(first, ctx.student)
 
-      assert {:ok, matricula} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+      assert {:ok, matricula} = Workshops.enroll_in_package(ctx.program, ctx.student)
 
-      inscricao = Workshops.get_enrollment(primeiro.id, ctx.aluna.id)
-      assert inscricao.program_enrollment_id == matricula.id
-      assert length(Workshops.list_participants(primeiro.id)) == 1
+      enrollment = Workshops.get_enrollment(first.id, ctx.student.id)
+      assert enrollment.program_enrollment_id == matricula.id
+      assert length(Workshops.list_participants(first.id)) == 1
     end
   end
 
-  describe "painel do pacote" do
-    test "organizador vê quem comprou e marca como pago", ctx do
-      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+  describe "package dashboard" do
+    test "organizer sees the buyers and marks them as paid", ctx do
+      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.student)
 
-      assert {:ok, [linha]} = Workshops.list_package_enrollments(ctx.program, ctx.dono)
-      assert linha.name == ctx.aluna.name
-      assert linha.payment_status == :pending
+      assert {:ok, [row]} = Workshops.list_package_enrollments(ctx.program, ctx.owner)
+      assert row.name == ctx.student.name
+      assert row.payment_status == :pending
 
       assert {:ok, _} =
-               Workshops.set_package_payment(ctx.program, ctx.dono, linha.id, :paid)
+               Workshops.set_package_payment(ctx.program, ctx.owner, row.id, :paid)
 
-      assert {:ok, [atualizada]} = Workshops.list_package_enrollments(ctx.program, ctx.dono)
-      assert atualizada.payment_status == :paid
+      assert {:ok, [updated]} = Workshops.list_package_enrollments(ctx.program, ctx.owner)
+      assert updated.payment_status == :paid
     end
 
     test "resumo separa pacote de avulso", ctx do
-      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.student)
       avulsa = insert(:user)
       {:ok, _} = Workshops.enroll(hd(ctx.workshops), avulsa)
 
-      assert {:ok, resumo} = Workshops.package_summary(ctx.program, ctx.dono)
+      assert {:ok, summary} = Workshops.package_summary(ctx.program, ctx.owner)
 
-      assert resumo.packages == 1
-      assert resumo.paid == 0
-      assert resumo.revenue_cents == 0
+      assert summary.packages == 1
+      assert summary.paid == 0
+      assert summary.revenue_cents == 0
     end
 
-    test "receita do pacote conta só quem pagou", ctx do
-      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
-      {:ok, [linha]} = Workshops.list_package_enrollments(ctx.program, ctx.dono)
-      {:ok, _} = Workshops.set_package_payment(ctx.program, ctx.dono, linha.id, :paid)
+    test "package revenue counts only who paid", ctx do
+      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.student)
+      {:ok, [row]} = Workshops.list_package_enrollments(ctx.program, ctx.owner)
+      {:ok, _} = Workshops.set_package_payment(ctx.program, ctx.owner, row.id, :paid)
 
       assert {:ok, %{paid: 1, revenue_cents: 15_000}} =
-               Workshops.package_summary(ctx.program, ctx.dono)
+               Workshops.package_summary(ctx.program, ctx.owner)
     end
 
-    test "estranho não vê nem mexe no pagamento do pacote", ctx do
-      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
-      estranho = insert(:user)
+    test "outsider neither sees nor changes the package payment", ctx do
+      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.student)
+      outsider = insert(:user)
 
       assert {:error, :unauthorized} =
-               Workshops.list_package_enrollments(ctx.program, estranho)
+               Workshops.list_package_enrollments(ctx.program, outsider)
 
-      assert {:error, :unauthorized} = Workshops.package_summary(ctx.program, estranho)
+      assert {:error, :unauthorized} = Workshops.package_summary(ctx.program, outsider)
 
       assert {:error, :unauthorized} =
-               Workshops.set_package_payment(ctx.program, estranho, Ecto.UUID.generate(), :paid)
+               Workshops.set_package_payment(ctx.program, outsider, Ecto.UUID.generate(), :paid)
     end
 
-    test "co-organizador do workshop não vê o pagamento do pacote alheio", ctx do
-      # O pacote e da programacao: quem manda nele e quem criou a programacao.
-      parceiro = insert(:user)
-      {:ok, _} = Workshops.add_admin(hd(ctx.workshops), ctx.dono, parceiro.id)
+    test "workshop co-organizer does not see the package payment of another program", ctx do
+      partner = insert(:user)
+      {:ok, _} = Workshops.add_admin(hd(ctx.workshops), ctx.owner, partner.id)
 
       assert {:error, :unauthorized} =
-               Workshops.list_package_enrollments(ctx.program, parceiro)
+               Workshops.list_package_enrollments(ctx.program, partner)
     end
   end
 
-  describe "inscrição individual continua funcionando ao lado do pacote" do
-    test "avulso não ganha matrícula de pacote", ctx do
-      {:ok, _} = Workshops.enroll(hd(ctx.workshops), ctx.aluna)
+  describe "single enrollment keeps working alongside the package" do
+    test "single enrollment does not get a package membership", ctx do
+      {:ok, _} = Workshops.enroll(hd(ctx.workshops), ctx.student)
 
-      inscricao = Workshops.get_enrollment(hd(ctx.workshops).id, ctx.aluna.id)
-      assert is_nil(inscricao.program_enrollment_id)
+      enrollment = Workshops.get_enrollment(hd(ctx.workshops).id, ctx.student.id)
+      assert is_nil(enrollment.program_enrollment_id)
     end
 
-    test "o painel do workshop distingue quem está pelo pacote", ctx do
-      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.aluna)
+    test "workshop dashboard distinguishes who came through the package", ctx do
+      {:ok, _} = Workshops.enroll_in_package(ctx.program, ctx.student)
       avulsa = insert(:user)
       {:ok, _} = Workshops.enroll(hd(ctx.workshops), avulsa)
 
-      {:ok, linhas} = Workshops.list_enrollments_for_organizer(hd(ctx.workshops), ctx.dono)
+      {:ok, rows} = Workshops.list_enrollments_for_organizer(hd(ctx.workshops), ctx.owner)
 
-      pelo_pacote = Enum.find(linhas, &(&1.user.id == ctx.aluna.id))
+      pelo_pacote = Enum.find(rows, &(&1.user.id == ctx.student.id))
       assert pelo_pacote.program_enrollment_id
 
-      individual = Enum.find(linhas, &(&1.user.id == avulsa.id))
+      individual = Enum.find(rows, &(&1.user.id == avulsa.id))
       assert is_nil(individual.program_enrollment_id)
     end
   end

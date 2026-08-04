@@ -1,15 +1,4 @@
 defmodule OGrupoDeEstudos.SuggestionsTest do
-  @moduledoc """
-  TDD tests for the Suggestions context.
-
-  Each describe block covers one public function:
-  - create/2: validates all three action types + error paths
-  - approve/2: atomic apply for edit_field, create_connection, remove_connection
-  - reject/2: updates status without touching the step
-  - list_pending/1: filters by status
-  - list_by_user/2: filters by user
-  - count_pending/0: counts pending
-  """
   use OGrupoDeEstudos.DataCase, async: true
 
   alias OGrupoDeEstudos.Encyclopedia.{Connection, ConnectionQuery, Step}
@@ -21,8 +10,6 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
     step = insert(:step)
     %{user: user, admin: admin, step: step}
   end
-
-  # ── create/2 ──────────────────────────────────────────────
 
   describe "create/2" do
     test "creates a pending suggestion for edit_field", %{user: user, step: step} do
@@ -95,10 +82,8 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
     end
   end
 
-  # ── approve/2 ─────────────────────────────────────────────
-
   describe "approve/2" do
-    test "approves and applies edit_field suggestion — step name updated + last_edited_by set",
+    test "approving an edit_field suggestion updates the step name and sets last_edited_by",
          %{user: user, admin: admin, step: step} do
       {:ok, suggestion} =
         Suggestions.create(user, %{
@@ -116,14 +101,13 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
       assert approved.reviewed_by_id == admin.id
       assert approved.reviewed_at != nil
 
-      # Step should be updated
       updated_step = Repo.get!(Step, step.id)
       assert updated_step.name == "Nome Atualizado"
       assert updated_step.last_edited_by_id == user.id
       assert updated_step.last_edited_at != nil
     end
 
-    test "approves and applies create_connection suggestion — connection exists",
+    test "approving a create_connection suggestion creates the connection",
          %{user: user, admin: admin} do
       source = insert(:step)
       target = insert(:step)
@@ -138,7 +122,6 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
 
       {:ok, _approved} = Suggestions.approve(suggestion, admin)
 
-      # Connection should exist
       conn =
         ConnectionQuery.get_by(
           source_step_id: source.id,
@@ -148,7 +131,7 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
       assert conn != nil
     end
 
-    test "approves and applies remove_connection suggestion — connection soft-deleted",
+    test "approving a remove_connection suggestion soft-deletes the connection",
          %{user: user, admin: admin} do
       connection = insert(:connection)
 
@@ -162,13 +145,10 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
 
       {:ok, _approved} = Suggestions.approve(suggestion, admin)
 
-      # Connection should be soft-deleted
       deleted_conn = Repo.get(Connection, connection.id)
       assert deleted_conn.deleted_at != nil
     end
   end
-
-  # ── reject/2 ──────────────────────────────────────────────
 
   describe "reject/2" do
     test "rejects a suggestion without changing the step",
@@ -188,13 +168,10 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
       assert rejected.status == :rejected
       assert rejected.reviewed_by_id == admin.id
 
-      # Step should NOT be updated
       unchanged = Repo.get!(Step, step.id)
       assert unchanged.name == step.name
     end
   end
-
-  # ── list_pending/1 ────────────────────────────────────────
 
   describe "list_pending/1" do
     test "returns only pending suggestions", %{user: user, admin: admin, step: step} do
@@ -226,8 +203,6 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
     end
   end
 
-  # ── list_by_user/2 ───────────────────────────────────────
-
   describe "list_by_user/2" do
     test "returns suggestions filtered by user", %{user: user, step: step} do
       {:ok, _} =
@@ -257,8 +232,6 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
     end
   end
 
-  # ── count_pending/0 ──────────────────────────────────────
-
   describe "count_pending/0" do
     test "counts pending suggestions", %{user: user, step: step} do
       {:ok, _} =
@@ -274,8 +247,6 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
       assert Suggestions.count_pending() == 1
     end
   end
-
-  # ── Admin notifications on create ───────────────────────
 
   describe "admin notification on create" do
     test "notifies admins when a user creates a suggestion", %{
@@ -328,8 +299,6 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
     end
   end
 
-  # ── list_user_pending_for_step/2 ────────────────────────
-
   describe "list_user_pending_for_step/2" do
     test "returns only user's pending suggestions for the step", %{
       user: user,
@@ -346,7 +315,6 @@ defmodule OGrupoDeEstudos.SuggestionsTest do
           new_value: "Pending"
         })
 
-      # Approved suggestion (should not appear)
       {:ok, s2} =
         Suggestions.create(user, %{
           target_type: "step",

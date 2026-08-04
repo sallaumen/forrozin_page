@@ -8,15 +8,13 @@ defmodule OGrupoDeEstudosWeb.GraphDarkModeTest do
     assert css =~ ~r/--color-ink-900:\s*#f5ede4/
   end
 
-  # FOR-39 fix 1: accent-warning text precisa de override no bloco .dark {}
   test "dark mode define --color-accent-warning com contraste WCAG AA" do
     css = File.read!("assets/css/app.css")
-    # Verifica que o token existe dentro do bloco .dark {}
+
     assert css =~ ~r/\.dark\s*\{[^}]*--color-accent-warning:\s*#f0c050/s,
            "falta --color-accent-warning: #f0c050 no bloco .dark {} (contraste 7.3:1 exigido)"
   end
 
-  # FOR-39 fix 2: aba ativa do segmented control visível em dark
   test "segmented control aba ativa usa dark:bg-ink-300 para visibilidade" do
     heex = File.read!("lib/o_grupo_de_estudos_web/live/graph_visual_live.html.heex")
 
@@ -24,12 +22,7 @@ defmodule OGrupoDeEstudosWeb.GraphDarkModeTest do
            "aba ativa do segmented control precisa de dark:bg-ink-300"
   end
 
-  # Os icones de curtir/favoritar do drawer agora sao server-side (StepDetail
-  # mode :drawer, compartilhado com a Collection): o dark mode vem dos tokens
-  # ink-* no bloco .dark {}, sem logica de cor em JS para regredir.
-
-  # FOR-39 fix 4: separadores de linha visíveis em dark mode
-  test "cards de sequencia usam dark:border-ink-400/20 nos separadores" do
+  test "sequence cards use dark:border-ink-400/20 on the separators" do
     heex = File.read!("lib/o_grupo_de_estudos_web/live/graph_visual_live.html.heex")
 
     assert heex =~ "dark:border-ink-400/20",

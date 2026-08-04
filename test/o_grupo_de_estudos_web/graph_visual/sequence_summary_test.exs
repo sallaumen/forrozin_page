@@ -13,8 +13,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
   defp code(c), do: %{code: c, name: "Nome #{c}"}
   defp cat_step(category), do: %{step: %{category: category}}
 
-  # ── step_display_label/1 ──────────────────────────────────────────────
-
   describe "step_display_label/1" do
     test "formats a step map into 'CODE · NAME' with the middle-dot separator" do
       assert SequenceSummary.step_display_label(%{code: "BF", name: "Base"}) == "BF · Base"
@@ -25,8 +23,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
       assert SequenceSummary.step_display_label(step) == "IV · Inversão"
     end
   end
-
-  # ── step_display_label/2 ──────────────────────────────────────────────
 
   describe "step_display_label/2" do
     test "resolves a code present in the steps list" do
@@ -47,10 +43,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
     end
   end
 
-  # ── sequence_summary_badges/1 (takes a LIST of step maps) ──────────────
-
   describe "sequence_summary_badges/1" do
-    test "open sequence with no inner loop: count + sem loops" do
+    test "open sequence with no inner loop reports the count and no loops" do
       seq = [code("BF"), code("IV"), code("SCSP")]
       assert SequenceSummary.sequence_summary_badges(seq) == ["3 passos", "sem loops"]
     end
@@ -75,11 +69,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
              ]
     end
 
-    test "empty sequence: 0 passos + sem loops" do
+    test "empty sequence reports zero steps and no loops" do
       assert SequenceSummary.sequence_summary_badges([]) == ["0 passos", "sem loops"]
     end
 
-    test "single-step sequence: 1 passos + sem loops (no inner loop despite head==last)" do
+    test "single-step sequence reports one step and no loops despite head==last" do
       assert SequenceSummary.sequence_summary_badges([code("BF")]) == [
                "1 passos",
                "fecha no início",
@@ -88,10 +82,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
     end
   end
 
-  # ── sequence_closes_at_start?/1 (private; exercised via badges) ────────
-
   describe "sequence_closes_at_start? (via sequence_summary_badges)" do
-    test "first and last equal yields the 'fecha no início' badge" do
+    test "first and last equal yields the closing-loop badge" do
       assert "fecha no início" in SequenceSummary.sequence_summary_badges([
                code("BF"),
                code("IV"),
@@ -111,8 +103,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
       refute "fecha no início" in SequenceSummary.sequence_summary_badges([])
     end
   end
-
-  # ── sequence_has_inner_loop?/1 ────────────────────────────────────────
 
   describe "sequence_has_inner_loop?/1" do
     test "distinct open sequence has no inner loop" do
@@ -151,8 +141,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
     end
   end
 
-  # ── sequence_category_labels/1 (Sequence struct; assoc-guarded) ────────
-
   describe "sequence_category_labels/1" do
     test "returns up to three unique {name, label, color} tuples in step order" do
       a = %Category{name: "basico", label: "Básico", color: "#a"}
@@ -189,8 +177,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummaryTest do
              ]
     end
   end
-
-  # ── sequence_category_filter_label/2 ──────────────────────────────────
 
   describe "sequence_category_filter_label/2" do
     test "the 'all' sentinel returns Todas" do

@@ -1,15 +1,11 @@
 defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
   @moduledoc """
-  A galeria vista de dentro da página, com vídeo em transcode.
-
-  O que importa aqui é a aluna não ficar olhando "Processando" para sempre:
-  ela sobe o vídeo, o ffmpeg roda em outra fila, e a página tem que se
-  resolver sozinha.
+  The gallery seen from inside the page, with a video still being transcoded:
+  the page has to resolve itself instead of showing "processing" forever.
   """
 
-  # async: false — troca :uploads_path, que é config global.
+  # async: false because the test swaps :uploads_path in the global app env.
   use OGrupoDeEstudosWeb.ConnCase, async: false
-  # ConnCase nao traz os helpers de job; so o DataCase traz.
   use Oban.Testing, repo: OGrupoDeEstudos.Repo
 
   import OGrupoDeEstudos.Factory
@@ -18,45 +14,41 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
   alias OGrupoDeEstudos.Workers.TranscodeWorkshopVideo
   alias OGrupoDeEstudos.Workshops
 
-  # Poll curto: o teste espera o timer vencer de verdade, e 4s seguraria a
-  # suite inteira.
-  @intervalo_ms 60
+  @poll_interval_ms 60
 
   setup do
     dir = Path.join(System.tmp_dir!(), "galeria_lv_#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
-    anterior = Application.get_env(:o_grupo_de_estudos, :uploads_path)
+    previous = Application.get_env(:o_grupo_de_estudos, :uploads_path)
     Application.put_env(:o_grupo_de_estudos, :uploads_path, dir)
-    Application.put_env(:o_grupo_de_estudos, :recarga_galeria_ms, @intervalo_ms)
+    Application.put_env(:o_grupo_de_estudos, :recarga_galeria_ms, @poll_interval_ms)
 
     on_exit(fn ->
-      case anterior do
+      case previous do
         nil -> Application.delete_env(:o_grupo_de_estudos, :uploads_path)
-        valor -> Application.put_env(:o_grupo_de_estudos, :uploads_path, valor)
+        value -> Application.put_env(:o_grupo_de_estudos, :uploads_path, value)
       end
 
       Application.delete_env(:o_grupo_de_estudos, :recarga_galeria_ms)
       File.rm_rf!(dir)
     end)
 
-    origem = Path.join(dir, "clipe.mov")
-    File.write!(origem, :binary.copy(<<0>>, 2_000))
+    source = Path.join(dir, "clipe.mov")
+    File.write!(source, :binary.copy(<<0>>, 2_000))
 
-    dono = insert(:user)
-    aluna = insert(:user)
-    workshop = insert(:workshop, organizer: dono)
-    {:ok, _} = Workshops.enroll(workshop, aluna)
+    owner = insert(:user)
+    student = insert(:user)
+    workshop = insert(:workshop, organizer: owner)
+    {:ok, _} = Workshops.enroll(workshop, student)
 
-    %{dir: dir, origem: origem, dono: dono, aluna: aluna, workshop: workshop}
+    %{dir: dir, source: source, owner: owner, student: student, workshop: workshop}
   end
 
-  # Sobe o vídeo sem deixar o worker rodar junto, que é o estado real de quem
-  # acabou de mandar o arquivo.
-  defp video_em_transcode(ctx) do
+  defp video_being_transcoded(ctx) do
     Oban.Testing.with_testing_mode(:manual, fn ->
       {:ok, media} =
-        Workshops.add_media(ctx.workshop, ctx.aluna, %{
-          tmp_path: ctx.origem,
+        Workshops.add_media(ctx.workshop, ctx.student, %{
+          tmp_path: ctx.source,
           content_type: "video/quicktime",
           byte_size: 2_000
         })
@@ -65,26 +57,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
     end)
   end
 
-  # A trava do poll é estado do socket, não sai no HTML: é o único jeito de
-  # afirmar que não há timer duplicado voando.
-  defp agendada?(lv), do: :sys.get_state(lv.pid).socket.assigns[:recarga_agendada?] == true
+  defp reload_scheduled?(lv),
+    do: :sys.get_state(lv.pid).socket.assigns[:recarga_agendada?] == true
 
-  defp mensagens_de_recarga(lv) do
-    {:messages, fila} = Process.info(lv.pid, :messages)
-    Enum.count(fila, &(&1 == :recarregar_galeria))
+  defp reload_messages(lv) do
+    {:messages, queue} = Process.info(lv.pid, :messages)
+    Enum.count(queue, &(&1 == :recarregar_galeria))
   end
 
   @png Base.decode64!(
          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
        )
 
-  defp foto(ctx) do
-    caminho = Path.join(ctx.dir, "foto_#{System.unique_integer([:positive])}.png")
-    File.write!(caminho, @png)
+  defp photo(ctx) do
+    path = Path.join(ctx.dir, "foto_#{System.unique_integer([:positive])}.png")
+    File.write!(path, @png)
 
     {:ok, media} =
-      Workshops.add_media(ctx.workshop, ctx.aluna, %{
-        tmp_path: caminho,
+      Workshops.add_media(ctx.workshop, ctx.student, %{
+        tmp_path: path,
         content_type: "image/png",
         byte_size: byte_size(@png)
       })
@@ -92,25 +83,23 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
     media
   end
 
-  describe "vídeo enquanto o ffmpeg não terminou" do
-    test "quem está no workshop vê que o vídeo está processando", ctx do
-      video_em_transcode(ctx)
+  describe "video while ffmpeg has not finished" do
+    test "enrolled user sees that the video is processing", ctx do
+      video_being_transcoded(ctx)
 
       {:ok, _lv, html} =
-        live(log_in_user(build_conn(), ctx.aluna), ~p"/workshops/#{ctx.workshop.slug}")
+        live(log_in_user(build_conn(), ctx.student), ~p"/workshops/#{ctx.workshop.slug}")
 
       assert html =~ "Processando vídeo"
       refute html =~ "<video"
     end
 
-    test "a página se atualiza sozinha quando o transcode termina", ctx do
-      media = video_em_transcode(ctx)
+    test "page refreshes itself when the transcode finishes", ctx do
+      media = video_being_transcoded(ctx)
 
       {:ok, lv, _html} =
-        live(log_in_user(build_conn(), ctx.aluna), ~p"/workshops/#{ctx.workshop.slug}")
+        live(log_in_user(build_conn(), ctx.student), ~p"/workshops/#{ctx.workshop.slug}")
 
-      # Sem ffmpeg na suite, o worker degrada e marca como pronta: para a tela,
-      # o efeito e o mesmo de um transcode que deu certo.
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
       send(lv.pid, :recarregar_galeria)
@@ -119,45 +108,40 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
       refute render(lv) =~ "Processando vídeo"
     end
 
-    test "mexer na galeria não acumula um poll por ação", ctx do
-      # Apagar midia refaz a pagina inteira. Sem trava, quem sobe um video e
-      # depois limpa umas fotos junta um timer por clique, todos relendo a
-      # mesma galeria.
-      video_em_transcode(ctx)
-      fotos = Enum.map(1..3, fn _ -> foto(ctx) end)
+    test "using the gallery does not stack one poll per action", ctx do
+      video_being_transcoded(ctx)
+      photos = Enum.map(1..3, fn _ -> photo(ctx) end)
 
       {:ok, lv, _html} =
-        live(log_in_user(build_conn(), ctx.aluna), ~p"/workshops/#{ctx.workshop.slug}")
+        live(log_in_user(build_conn(), ctx.student), ~p"/workshops/#{ctx.workshop.slug}")
 
-      assert agendada?(lv)
+      assert reload_scheduled?(lv)
 
-      for f <- fotos, do: render_click(lv, "remove_media", %{"id" => f.id})
+      for f <- photos, do: render_click(lv, "remove_media", %{"id" => f.id})
 
-      # Suspender o processo deixa os timers vencerem sem serem consumidos, e
-      # ai da para contar quantos estavam voando de verdade.
       :sys.suspend(lv.pid)
-      Process.sleep(@intervalo_ms * 3)
-      pendentes = mensagens_de_recarga(lv)
+      Process.sleep(@poll_interval_ms * 3)
+      pendentes = reload_messages(lv)
       :sys.resume(lv.pid)
 
       assert pendentes == 1, "esperava 1 poll voando, achei #{pendentes}"
     end
 
-    test "quando não há mais vídeo processando, o poll para", ctx do
-      media = video_em_transcode(ctx)
+    test "polling stops when no video is processing anymore", ctx do
+      media = video_being_transcoded(ctx)
 
       {:ok, lv, _html} =
-        live(log_in_user(build_conn(), ctx.aluna), ~p"/workshops/#{ctx.workshop.slug}")
+        live(log_in_user(build_conn(), ctx.student), ~p"/workshops/#{ctx.workshop.slug}")
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
       send(lv.pid, :recarregar_galeria)
       _ = render(lv)
 
-      refute agendada?(lv)
+      refute reload_scheduled?(lv)
     end
 
-    test "quem não está no workshop não vê nem o aviso de processando", ctx do
-      video_em_transcode(ctx)
+    test "outsider sees neither the media nor the processing notice", ctx do
+      video_being_transcoded(ctx)
 
       {:ok, _lv, html} =
         live(log_in_user(build_conn(), insert(:user)), ~p"/workshops/#{ctx.workshop.slug}")

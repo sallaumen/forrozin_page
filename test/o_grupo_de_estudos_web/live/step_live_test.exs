@@ -239,7 +239,6 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
 
       html = render(lv)
 
-      # After submit, pending suggestions block should appear
       assert html =~ "Suas sugestões pendentes"
       assert html =~ "Nome Novo"
     end
@@ -311,7 +310,7 @@ defmodule OGrupoDeEstudosWeb.StepLiveTest do
       assert html =~ "Meu Passo v2"
     end
 
-    test "flash de erro de handle_event fica visivel no template", %{conn: conn} do
+    test "handle_event error flash stays visible in the template", %{conn: conn} do
       user = insert(:user)
       section = insert(:section)
       insert(:step, section: section, code: "FL1", name: "Passo Flash Vivo")

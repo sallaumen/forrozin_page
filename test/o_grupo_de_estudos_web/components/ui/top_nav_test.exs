@@ -20,7 +20,6 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
         })
 
       assert html =~ ~s(href="/collection")
-      # O "O" do nome agora é o símbolo da marca (svg com aria-label="O").
       assert html =~ "Grupo de Estudos"
       assert html =~ ~s(aria-label="O")
     end
@@ -37,7 +36,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
       assert html =~ ~s(data-mode="primary")
     end
 
-    test "desktop nav includes Acervo, Mapa, Sequências links" do
+    test "desktop nav includes the collection, map and sequences links" do
       html =
         render_component(&TopNav.top_nav/1, %{
           current_user: user(),

@@ -19,7 +19,7 @@ defmodule OGrupoDeEstudos.StudyTest do
     end
   end
 
-  describe "link errors are returned as %LinkError{} (domain error data)" do
+  describe "link errors are returned as %LinkError{} domain data" do
     test "accept_invite with an unknown slug -> teacher_not_found" do
       assert {:error, %LinkError{code: :teacher_not_found}} =
                Study.accept_invite(insert(:user), "nope")
@@ -164,7 +164,6 @@ defmodule OGrupoDeEstudos.StudyTest do
       Study.toggle_goal(user, g1.id)
 
       goals = Study.list_personal_goals(user.id)
-      # g2 (not completed) must come before g1 (completed)
       assert hd(goals).id == g2.id
     end
 
@@ -218,7 +217,6 @@ defmodule OGrupoDeEstudos.StudyTest do
       step2 = insert(:step, section: section, code: "RNK-B")
       today = OGrupoDeEstudos.Brazil.today()
 
-      # step1 appears in two notes, step2 in one
       {:ok, _} =
         Study.upsert_personal_note(user, today, %{
           content: "Dia 1",
@@ -278,7 +276,6 @@ defmodule OGrupoDeEstudos.StudyTest do
       teacher2 = insert(:user, is_teacher: true)
       already_linked = insert(:user, is_teacher: true)
 
-      # Create a pending link so already_linked is excluded
       {:ok, _link} = Study.accept_invite(student, already_linked.invite_slug)
 
       suggestions = Study.suggest_teachers(student, limit: 10)
@@ -295,8 +292,8 @@ defmodule OGrupoDeEstudos.StudyTest do
     end
   end
 
-  describe "active days (consistência)" do
-    test "record_active_day/2 é idempotente por (user, dia)" do
+  describe "active days" do
+    test "record_active_day/2 is idempotent per user and day" do
       user = insert(:user)
       today = Date.utc_today()
 
@@ -306,7 +303,7 @@ defmodule OGrupoDeEstudos.StudyTest do
       assert Study.active_days_between(user.id, today, today) == MapSet.new([today])
     end
 
-    test "active_days_between/3 devolve só os dias dentro do intervalo" do
+    test "active_days_between/3 returns only the days inside the range" do
       user = insert(:user)
       Study.record_active_day(user.id, ~D[2026-06-01])
       Study.record_active_day(user.id, ~D[2026-06-15])

@@ -30,7 +30,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       assert html =~ ~s(id="graph-canvas-skeleton")
       assert html =~ "Carregando o mapa"
-      # The graph is built on the connected mount: empty placeholder JSON here.
       assert html =~ ~s(data-graph="{&quot;nodes&quot;:[])
       refute html =~ "Base frontal"
     end
@@ -116,11 +115,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
     test "legend hides low-value category filters", %{conn: conn} do
       bases = insert(:category, name: "bases", label: "Bases", color: "#d4a054")
-      convencoes = insert(:category, name: "convencoes", label: "Convenções", color: "#f1c40f")
+      conventions = insert(:category, name: "convencoes", label: "Convenções", color: "#f1c40f")
       footwork = insert(:category, name: "footwork", label: "Forró Footwork", color: "#e67e22")
 
       bases_section = insert(:section, category: bases)
-      convencoes_section = insert(:section, category: convencoes)
+      convencoes_section = insert(:section, category: conventions)
       footwork_section = insert(:section, category: footwork)
 
       step_a =
@@ -131,7 +130,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
           code: "CV",
           name: "Convenção teste",
           section: convencoes_section,
-          category: convencoes
+          category: conventions
         )
 
       step_c =
@@ -228,7 +227,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "BA"
       assert html =~ "SC"
       assert html =~ ~s(id="seq-library-card-#{sequence.id}")
-      # Ver a sequência no mapa fecha o bottom-sheet de sequências.
       assert html =~ ~r/id="seq-panel"[^>]*hidden/
     end
 
@@ -562,7 +560,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       render_click(lv, "show_seq_manual", %{})
       render_click(lv, "add_manual_step", %{"code" => step_a.code, "name" => step_a.name})
       html = render_click(lv, "remove_manual_step", %{"index" => "0"})
-      # After removal the numbered list should be empty (no "1." position marker)
       refute html =~ ~r/<span[^>]*>\s*1\.\s*<\/span>/
       assert html =~ "Nenhum passo ainda"
     end
@@ -779,7 +776,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "BF · Base frontal"
     end
 
-    test "start code desconhecido mostra o erro no painel, sem resultados", %{conn: conn} do
+    test "unknown start code shows the error in the panel, with no results", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual?mode=generator")
 
       html =
@@ -799,7 +796,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
   end
 
   describe "drawer overflow prevention" do
-    test "step detail drawer does not use right: -Npx — prevents horizontal scroll", %{
+    test "step detail drawer avoids a right offset, preventing horizontal scroll", %{
       conn: conn
     } do
       {:ok, _view, html} = live(logged_in_conn(conn), ~p"/graph/visual")
@@ -817,9 +814,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     test "step detail drawer is responsive (visible on mobile) and clips overflow", %{conn: conn} do
       {:ok, _view, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
-      # Drawer unificado (mesmo StepDetail da Collection): agora aparece TAMBÉM no
-      # mobile (pra dar pra marcar como aprendido no celular), full-width via
-      # max-width 100vw, e clipa overflow horizontal. Não é mais desktop-only.
       assert html =~ ~s(id="graph-drawer")
       assert html =~ "overflow-hidden"
       assert html =~ "max-width: 100vw"
@@ -835,20 +829,18 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
-  describe "drawer unificado (StepDetail compartilhado com a Collection)" do
+  describe "drawer shared with the collection" do
     setup :setup_graph
 
-    test "open_step carrega o detalhe server-side e abre o painel", %{conn: conn} do
+    test "open_step loads the detail server-side and opens the panel", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       html = render_hook(lv, "open_step", %{"code" => "BF"})
 
-      # Painel aberto (estado server-side, nao mais HTML montado por JS).
       assert html =~ ~s(data-open="true")
       assert html =~ "translateX(0)"
       assert html =~ ~s(aria-label="Fechar painel")
 
-      # Corpo do StepDetail renderizou: os mesmos eventos/sections da Collection.
       assert html =~ ~s(phx-click="toggle_step_like")
       assert html =~ ~s(phx-click="toggle_step_favorite")
       assert html =~ "Conexões"
@@ -866,7 +858,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute html =~ ~s(aria-label="Fechar painel")
     end
 
-    test "selecionar um resultado da busca abre o mesmo painel server-side", %{conn: conn} do
+    test "picking a search result opens the same server-side panel", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       html = render_hook(lv, "select_graph_step", %{"code" => "BF"})
@@ -876,7 +868,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert_push_event(lv, "focus_graph_node", %{code: "BF"})
     end
 
-    test "limpar a busca fecha o painel", %{conn: conn} do
+    test "clearing the search closes the panel", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       render_hook(lv, "select_graph_step", %{"code" => "BF"})
@@ -895,7 +887,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       render_hook(lv, "toggle_step_like_graph", %{"code" => "BF"})
 
-      # Match the toggle push specifically (mount also pushes set_liked_steps with []).
       assert_push_event(lv, "set_liked_steps", %{codes: ["BF"]})
     end
 
@@ -908,16 +899,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
-  describe "jornada de estudos no grafo" do
+  describe "study journey on the graph" do
     setup :setup_graph
 
-    test "marcar um passo como aprendido empurra learned/fronteira/meta", %{conn: conn} do
+    test "marking a step as learned pushes learned, frontier and goal", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       render_hook(lv, "toggle_step_learned", %{"code" => "BF"})
 
-      # BF aprendido; SC (alvo de BF->SC) entra na fronteira; a proxima meta passa
-      # a ser BAL (segundo do plano-base), full_map continua false.
       assert_push_event(lv, "set_learned_steps", %{
         learned: ["BF"],
         frontier: ["SC"],
@@ -926,7 +915,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       })
     end
 
-    test "o data-graph já tagueia learned/frontier (disclosure inicial vem do JSON, não do push)",
+    test "data-graph already tags learned and frontier, so the initial disclosure comes from the JSON",
          %{conn: conn, step_a: bf} do
       user = insert(:user)
       OGrupoDeEstudos.Engagement.toggle_learned(user.id, bf.id)
@@ -943,7 +932,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert sc_node["frontier"] == true
     end
 
-    test "marcar aprendido tambem propaga o favorito para o mapa", %{conn: conn} do
+    test "marking as learned also propagates the favorite to the map", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       render_hook(lv, "toggle_step_learned", %{"code" => "BF"})
@@ -951,7 +940,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert_push_event(lv, "set_favorited_steps", %{codes: ["BF"]})
     end
 
-    test "marcar de novo desmarca (learned volta a vazio, meta volta pra BF)", %{conn: conn} do
+    test "marking again unmarks it and the goal goes back to BF", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       render_hook(lv, "toggle_step_learned", %{"code" => "BF"})
@@ -968,10 +957,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert_push_event(lv, "set_learned_steps", %{full_map: true})
     end
 
-    test "a jornada começa fechada e abre com progresso e 'pode aprender agora'", %{conn: conn} do
+    test "journey starts closed and opens with progress and what can be learned now", %{
+      conn: conn
+    } do
       {:ok, lv, html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
-      # Pill flutuante (modo estudo) sempre visível; o painel começa fechado.
       assert html =~ "Sua jornada"
       refute html =~ ~s(id="journey-drawer")
 
@@ -979,12 +969,14 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
 
       assert html =~ ~s(id="journey-drawer")
       assert html =~ "Pode aprender agora"
-      # 0 aprendidos -> frase + textinho de incentivo da primeira faixa
       assert html =~ "Começando bonito"
       assert html =~ "abre um tanto de caminho na pista"
     end
 
-    test "reset_progress zera o progresso e empurra a jornada vazia", %{conn: conn, step_a: bf} do
+    test "reset_progress zeroes the progress and pushes an empty journey", %{
+      conn: conn,
+      step_a: bf
+    } do
       user = insert(:user)
       OGrupoDeEstudos.Engagement.toggle_learned(user.id, bf.id)
 
@@ -995,7 +987,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       refute OGrupoDeEstudos.Engagement.learned?(user.id, bf.id)
     end
 
-    test "focus_step empurra focus_graph_node para centrar o passo", %{conn: conn} do
+    test "focus_step pushes focus_graph_node to center the step", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       render_hook(lv, "focus_step", %{"code" => "BF"})
@@ -1042,7 +1034,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
-  describe "graph handlers — engagement" do
+  describe "graph handlers for engagement" do
     setup :setup_graph
 
     test "toggle_step_like_graph registra e desfaz o like", %{conn: conn, step_a: step_a} do
@@ -1075,7 +1067,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert OGrupoDeEstudos.Engagement.favorited?(user.id, "step", step_a.id)
     end
 
-    test "reset_progress limpa os passos aprendidos", %{conn: conn, step_a: step_a} do
+    test "reset_progress clears the learned steps", %{conn: conn, step_a: step_a} do
       user = insert(:user)
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
 
@@ -1086,10 +1078,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
-  describe "graph handlers — sequência manual e biblioteca" do
+  describe "graph handlers for the manual sequence and the library" do
     setup :setup_graph
 
-    test "fluxo do rascunho manual salva a sequência", %{
+    test "manual draft flow saves the sequence", %{
       conn: conn,
       step_a: step_a,
       step_b: step_b
@@ -1107,7 +1099,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert length(sequence.sequence_steps) == 2
     end
 
-    test "save_manual_sequence sem nome mostra erro e não salva", %{conn: conn, step_a: step_a} do
+    test "save_manual_sequence without a name shows an error and does not save", %{
+      conn: conn,
+      step_a: step_a
+    } do
       user = insert(:user)
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
 
@@ -1119,7 +1114,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert OGrupoDeEstudos.Sequences.list_user_sequences(user.id) == []
     end
 
-    test "dono deleta a própria sequência", %{conn: conn} do
+    test "owner deletes their own sequence", %{conn: conn} do
       user = insert(:user)
       sequence = insert(:sequence, user: user)
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
@@ -1129,7 +1124,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert OGrupoDeEstudos.Sequences.get_sequence(sequence.id) == nil
     end
 
-    test "não-dono não deleta sequência alheia via evento forjado", %{conn: conn} do
+    test "non-owner does not delete someone else's sequence through a forged event", %{conn: conn} do
       user = insert(:user)
       sequence = insert(:sequence, public: true)
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
@@ -1139,7 +1134,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert OGrupoDeEstudos.Sequences.get_sequence(sequence.id)
     end
 
-    test "toggle_sequence_favorite_graph favorita a sequência", %{conn: conn} do
+    test "toggle_sequence_favorite_graph favorites the sequence", %{conn: conn} do
       user = insert(:user)
       sequence = insert(:sequence, public: true)
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
@@ -1150,10 +1145,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
-  describe "graph handlers — busca" do
+  describe "graph handlers for search" do
     setup :setup_graph
 
-    test "search_graph_step encontra por nome e clear limpa", %{conn: conn} do
+    test "search_graph_step finds by name and clear resets it", %{conn: conn} do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/graph/visual")
 
       html = render_click(lv, "search_graph_step", %{"value" => "Sacada"})
@@ -1163,7 +1158,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
     end
   end
 
-  describe "graph drawer — comentários" do
+  describe "graph drawer comments" do
     setup :setup_graph
 
     test "fluxo completo: abrir drawer, comentar, responder e curtir", %{
@@ -1189,7 +1184,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert OGrupoDeEstudos.Engagement.liked?(user.id, "step_comment", comment.id)
     end
 
-    test "like no passo pelo drawer sincroniza o estado", %{conn: conn, step_a: step_a} do
+    test "liking the step from the drawer syncs the state", %{conn: conn, step_a: step_a} do
       user = insert(:user)
       {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/graph/visual")
 

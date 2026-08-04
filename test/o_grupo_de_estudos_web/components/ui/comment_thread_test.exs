@@ -5,10 +5,6 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
 
   alias OGrupoDeEstudosWeb.UI.CommentThread
 
-  # ---------------------------------------------------------------------------
-  # Fixtures
-  # ---------------------------------------------------------------------------
-
   defp user(overrides \\ []) do
     defaults = %{id: "u1", username: "tavano"}
     Map.merge(defaults, Map.new(overrides))
@@ -58,10 +54,6 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
     Map.new(Keyword.merge(defaults, overrides))
   end
 
-  # ---------------------------------------------------------------------------
-  # Tests
-  # ---------------------------------------------------------------------------
-
   describe "comment_thread/1" do
     test "has data-ui attribute" do
       html = render_component(&CommentThread.comment_thread/1, base_assigns())
@@ -94,7 +86,6 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
 
     test "like button shows unliked state when comment not in liked_ids" do
       html = render_component(&CommentThread.comment_thread/1, base_assigns())
-      # Heroicons renders as a <span> with class "hero-heart ..."
       assert html =~ ~r/class="hero-heart [^"]*text-ink-400/
       refute html =~ "hero-heart-solid"
     end
@@ -246,8 +237,8 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
     end
   end
 
-  describe "visitante sem conta (current_user nil)" do
-    test "renderiza a thread sem quebrar" do
+  describe "anonymous visitor with current_user nil" do
+    test "renders the thread without crashing" do
       html =
         render_component(&CommentThread.comment_thread/1, base_assigns(current_user: nil))
 
@@ -255,20 +246,20 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
       assert html =~ "Ótimo passo!"
     end
 
-    test "não oferece apagar comentário para quem não está logado" do
+    test "does not offer delete to a logged-out visitor" do
       html =
         render_component(&CommentThread.comment_thread/1, base_assigns(current_user: nil))
 
       refute html =~ "delete_comment"
     end
 
-    test "autor logado continua podendo apagar o próprio comentário" do
+    test "logged-in author can still delete their own comment" do
       html = render_component(&CommentThread.comment_thread/1, base_assigns())
 
       assert html =~ "delete_comment"
     end
 
-    test "admin deslogado é impossível, mas is_admin sem usuário não quebra" do
+    test "is_admin without a user does not crash" do
       html =
         render_component(
           &CommentThread.comment_thread/1,

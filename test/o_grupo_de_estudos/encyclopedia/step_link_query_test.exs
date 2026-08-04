@@ -3,7 +3,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQueryTest do
 
   alias OGrupoDeEstudos.Encyclopedia.StepLinkQuery
 
-  describe "list_by/1 — step_id filter" do
+  describe "list_by/1 with step_id filter" do
     test "returns only links for the given step" do
       step_a = insert(:step, code: "SA")
       step_b = insert(:step, code: "SB")
@@ -19,7 +19,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQueryTest do
     end
   end
 
-  describe "list_by/1 — approved filter" do
+  describe "list_by/1 with approved filter" do
     test "returns only approved links when approved: true" do
       step = insert(:step, code: "SC")
       user = insert(:user)
@@ -49,7 +49,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQueryTest do
     end
   end
 
-  describe "list_by/1 — soft delete exclusion" do
+  describe "list_by/1 with soft delete exclusion" do
     test "excludes soft-deleted links by default" do
       step = insert(:step, code: "SE")
       user = insert(:user)
@@ -90,7 +90,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepLinkQueryTest do
     end
   end
 
-  describe "list_by/1 — pending shortcut" do
+  describe "list_by/1 with pending shortcut" do
     test "pending: true returns non-approved, non-deleted links" do
       step = insert(:step, code: "SG")
       user = insert(:user)

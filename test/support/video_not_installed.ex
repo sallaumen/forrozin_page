@@ -17,8 +17,8 @@ defmodule OGrupoDeEstudos.Media.Video.NotInstalled do
   def available?, do: false
 
   @impl true
-  def transcode(_source, _dest), do: {:error, :ffmpeg_indisponivel}
+  def transcode(_source, _dest), do: {:error, :ffmpeg_unavailable}
 
   @impl true
-  def poster(_source, _dest), do: {:error, :ffmpeg_indisponivel}
+  def poster(_source, _dest), do: {:error, :ffmpeg_unavailable}
 end

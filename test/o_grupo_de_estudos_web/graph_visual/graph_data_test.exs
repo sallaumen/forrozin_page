@@ -3,8 +3,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
 
   alias OGrupoDeEstudosWeb.GraphVisual.GraphData
 
-  # ── helpers ───────────────────────────────────────────────────────────
-
   defp mknode(code, opts \\ []) do
     %{
       code: code,
@@ -24,8 +22,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
   defp decode_nodes(json), do: Jason.decode!(json)["nodes"]
   defp decode_edges(json), do: Jason.decode!(json)["edges"]
   defp by_code(nodes, code), do: Enum.find(nodes, &(&1["id"] == code))
-
-  # ── build_json/2 ──────────────────────────────────────────────────────
 
   describe "build_json/2" do
     test "connected nodes produce 11-key maps with every field mapped" do
@@ -150,8 +146,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
     end
 
     test "multibyte note over byte cap but under grapheme cap keeps all graphemes plus ellipsis" do
-      # 200 × "ç" = 400 bytes but only 200 graphemes; byte_size > 300 triggers
-      # the slice, but String.slice(_, 0, 300) returns all 200 graphemes.
       note = String.duplicate("ç", 200)
 
       json =
@@ -172,8 +166,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
              ]
     end
   end
-
-  # ── build_orphans_json/1 ──────────────────────────────────────────────
 
   describe "build_orphans_json/1" do
     test "serializes only orphan nodes with the 4-key shape" do
@@ -216,8 +208,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
     end
   end
 
-  # ── compute_edge_spread/1 (+ spread_group, apply_bidirectional_spread) ──
-
   describe "compute_edge_spread/1" do
     defp spread_of(edges, from, to) do
       Enum.find(edges, &(&1.from == from and &1.to == to)).spread
@@ -244,7 +234,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
 
     test "four edges from same source (count=4) spread to integer values" do
       edges = [edge("A", "B"), edge("A", "C"), edge("A", "D"), edge("A", "E")]
-      # spreads are exact integers (round/1 only int-casts; spacing is a multiple of 10)
       assert GraphData.compute_edge_spread(edges) |> Enum.map(& &1.spread) == [-30, -10, 10, 30]
     end
 
@@ -266,19 +255,13 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       assert spread_of(result, "B", "A") == -20
     end
 
-    test "bidirectional rule only adjusts spread==0 edges (B->A reverse present for nonzero A->B)" do
-      # source A: 3 edges -> spreads [-20, 0, 20]; B->A makes {B,A} the reverse of the
-      # NONZERO edge A->B. The spread==0 guard is the only thing keeping A->B at -20:
-      # without it, {B,A} present + A<=B would flip A->B to +20. This pins the contract.
+    test "bidirectional rule only adjusts spread==0 edges when the reverse edge exists" do
       edges = [edge("A", "B"), edge("A", "C"), edge("A", "D"), edge("B", "A")]
       result = GraphData.compute_edge_spread(edges)
 
-      # load-bearing: nonzero edge with a present reverse stays put (guard active)
       assert spread_of(result, "A", "B") == -20
       assert spread_of(result, "A", "D") == 20
-      # A->C is spread 0 but its reverse {C,A} is absent -> unchanged
       assert spread_of(result, "A", "C") == 0
-      # B->A is spread 0 with reverse {A,B} present, B<=A false -> -20
       assert spread_of(result, "B", "A") == -20
     end
 
@@ -305,8 +288,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
                [%{from: "FOO", to: "BAR", label: "my-label", spread: 0}]
     end
   end
-
-  # ── search_graph_nodes/2 ──────────────────────────────────────────────
 
   describe "search_graph_nodes/2" do
     defp snode(code, name, category), do: %{code: code, name: name, category: category}
@@ -371,8 +352,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
     end
   end
 
-  # ── find_missing_edges/2 ──────────────────────────────────────────────
-
   describe "find_missing_edges/2" do
     test "empty step_codes returns empty" do
       assert GraphData.find_missing_edges([], [edge("A", "B")]) == []
@@ -416,8 +395,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
     end
   end
 
-  # ── build_json/3 — overlay da jornada de estudos ──────────────────────
-
   defp journey(opts) do
     %{
       learned: MapSet.new(Keyword.get(opts, :learned, [])),
@@ -426,8 +403,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
     }
   end
 
-  describe "build_json/3 jornada (tag-only; disclosure é no cliente)" do
-    test "default (sem journey) mantém o comportamento atual com flags falsas" do
+  describe "build_json/3 journey tags, with disclosure left to the client" do
+    test "keeps the current behavior with false flags when there is no journey" do
       graph = %{nodes: [mknode("BF"), mknode("SC")], edges: [edge("BF", "SC")]}
       bf = GraphData.build_json(graph, true) |> decode_nodes() |> by_code("BF")
 
@@ -436,7 +413,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       assert bf["goal"] == false
     end
 
-    test "tagueia nós aprendidos, de fronteira e a meta" do
+    test "tags learned nodes, frontier nodes and the goal" do
       graph = %{
         nodes: [mknode("BF"), mknode("SC"), mknode("IV")],
         edges: [edge("BF", "SC"), edge("BF", "IV")]
@@ -457,7 +434,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       assert by_code(nodes, "IV")["learned"] == false
     end
 
-    test "tagueia o estado das arestas (learned/frontier/hidden)" do
+    test "tags the edge state as learned, frontier or hidden" do
       graph = %{
         nodes: [mknode("BF"), mknode("SC"), mknode("IV")],
         edges: [edge("BF", "SC"), edge("SC", "IV"), edge("IV", "BF")]
@@ -476,7 +453,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       assert state.("IV", "BF") == "hidden"
     end
 
-    test "emite TODOS os nós (a revelação progressiva é aplicada no cliente)" do
+    test "emits every node, since progressive disclosure is applied on the client" do
       graph = %{
         nodes: [mknode("BF"), mknode("SC"), mknode("IV"), mknode("XX")],
         edges: [edge("BF", "SC"), edge("SC", "IV"), edge("XX", "IV")]

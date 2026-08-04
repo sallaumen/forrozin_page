@@ -3,7 +3,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.JourneyPlanTest do
 
   alias OGrupoDeEstudosWeb.GraphVisual.JourneyPlan
 
-  test "base_plan começa em BF, termina em IV e tem 12 passos" do
+  test "base_plan starts at BF, ends at IV and has 12 steps" do
     plan = JourneyPlan.base_plan()
 
     assert hd(plan) == "BF"
@@ -12,16 +12,16 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.JourneyPlanTest do
   end
 
   describe "next_goal/1" do
-    test "é o primeiro passo do plano-base ainda não aprendido" do
+    test "returns the first step of the base plan that is not learned yet" do
       assert JourneyPlan.next_goal([]) == "BF"
       assert JourneyPlan.next_goal(["BF", "BAL"]) == "BA"
     end
 
-    test "ignora ordem dos aprendidos (usa a ordem do plano)" do
+    test "ignores the order of the learned steps and follows the plan order" do
       assert JourneyPlan.next_goal(["BAL", "BF"]) == "BA"
     end
 
-    test "é nil quando todo o plano-base foi aprendido" do
+    test "returns nil when the whole base plan is learned" do
       assert JourneyPlan.next_goal(JourneyPlan.base_plan()) == nil
     end
   end

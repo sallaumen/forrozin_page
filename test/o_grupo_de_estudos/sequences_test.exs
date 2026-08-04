@@ -4,10 +4,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
   alias OGrupoDeEstudos.Sequences
   alias OGrupoDeEstudos.Sequences.Sequence
 
-  # ---------------------------------------------------------------------------
-  # create_sequence/4
-  # ---------------------------------------------------------------------------
-
   describe "create_sequence/4" do
     test "creates a sequence with the given steps in order" do
       user = insert(:user)
@@ -71,19 +67,13 @@ defmodule OGrupoDeEstudos.SequencesTest do
     test "rolls back if a sequence_step insert fails" do
       user = insert(:user)
 
-      # Pass a non-existent step_id — insert! will raise, triggering rollback
       assert_raise Ecto.InvalidChangesetError, fn ->
         Sequences.create_sequence(user.id, "Rollback Test", [Ecto.UUID.generate()])
       end
 
-      # No sequence should have been persisted
       assert Sequences.list_user_sequences(user.id) == []
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # list_user_sequences/1
-  # ---------------------------------------------------------------------------
 
   describe "list_user_sequences/1" do
     test "returns all sequences for the given user" do
@@ -127,8 +117,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
     test "returns sequence_steps ordered by position ascending" do
       user = insert(:user)
-      # Codes exclusivos deste teste: literais repetidos entre arquivos async
-      # colidem no unique index de steps.code e causam deadlock esporadico.
       step_a = insert(:step, code: "ORD2", name: "Trava")
       step_b = insert(:step, code: "ORD1", name: "Base Frontal")
       sequence = insert(:sequence, user: user)
@@ -141,10 +129,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert codes == ["ORD1", "ORD2"]
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # get_sequence/1
-  # ---------------------------------------------------------------------------
 
   describe "get_sequence/1" do
     test "returns the sequence with preloaded steps" do
@@ -211,10 +195,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # delete_sequence/1
-  # ---------------------------------------------------------------------------
-
   describe "delete_sequence/1" do
     test "soft-deletes the sequence by setting deleted_at" do
       user = insert(:user)
@@ -241,10 +221,8 @@ defmodule OGrupoDeEstudos.SequencesTest do
 
       {:ok, _} = Sequences.delete_sequence(sequence)
 
-      # Sequence no longer visible via default query
       assert is_nil(Sequences.get_sequence(sequence.id))
 
-      # sequence_steps row is NOT removed (soft delete only marks the sequence)
       count =
         OGrupoDeEstudos.Repo.aggregate(
           Ecto.Query.from(ss in OGrupoDeEstudos.Sequences.SequenceStep,
@@ -256,10 +234,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert count == 1
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # update_sequence/2
-  # ---------------------------------------------------------------------------
 
   describe "update_sequence/2" do
     test "updates the sequence name" do
@@ -289,10 +263,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert %{name: [_]} = errors_on(changeset)
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Sequence.changeset — video_url and description fields
-  # ---------------------------------------------------------------------------
 
   describe "Sequence.changeset video_url validation" do
     test "accepts a valid https URL" do
@@ -351,10 +321,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert Ecto.Changeset.get_change(changeset, :description) == "Uma descrição da sequência"
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # create_manual_sequence/2
-  # ---------------------------------------------------------------------------
 
   describe "create_manual_sequence/2" do
     test "creates a sequence from step codes in order" do
@@ -427,10 +393,6 @@ defmodule OGrupoDeEstudos.SequencesTest do
       assert sequence.sequence_steps == []
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # list_all_public_sequences/0
-  # ---------------------------------------------------------------------------
 
   describe "list_all_public_sequences/0" do
     test "returns public sequences from all users" do

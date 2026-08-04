@@ -5,8 +5,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
   alias OGrupoDeEstudos.Encyclopedia.Category
   alias OGrupoDeEstudosWeb.GraphVisual.SequenceLibrary
 
-  # ── helpers ───────────────────────────────────────────────────────────
-
   @not_loaded %Ecto.Association.NotLoaded{
     __field__: :assoc,
     __owner__: nil,
@@ -37,8 +35,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
 
   defp ms(ids), do: MapSet.new(ids)
 
-  # ── sequence_library_rank/3 ───────────────────────────────────────────
-
   describe "sequence_library_rank/3" do
     test "owned AND favorite ranks 0 (highest)" do
       assert SequenceLibrary.sequence_library_rank(seq(id: 1), ms([1]), ms([1])) == 0
@@ -61,8 +57,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
     end
   end
 
-  # ── normalize_sequence_date/1 ─────────────────────────────────────────
-
   describe "normalize_sequence_date/1" do
     test "nil normalizes to 0" do
       assert SequenceLibrary.normalize_sequence_date(nil) == 0
@@ -84,8 +78,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
       assert newer < older
     end
   end
-
-  # ── sequence_matches_origin_filter?/4 ─────────────────────────────────
 
   describe "sequence_matches_origin_filter?/4" do
     test "favorites matches only sequences in favorite_ids" do
@@ -143,8 +135,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
     end
   end
 
-  # ── sequence_matches_search?/2 (search arg is pre-normalized) ──────────
-
   describe "sequence_matches_search?/2" do
     test "matches on sequence name (text already normalized internally)" do
       assert SequenceLibrary.sequence_matches_search?(seq(name: "Inversão Básica"), "inversao")
@@ -169,8 +159,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
     end
 
     test "loaded-but-nil user does not crash (guard short-circuits on nil)" do
-      # assoc_loaded?(nil) is true, so only the `&& sequence.user` half prevents a
-      # nil deref; this pins that guard half.
       refute SequenceLibrary.sequence_matches_search?(seq(name: "X", user: nil), "tata")
     end
 
@@ -206,8 +194,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
     end
   end
 
-  # ── sequence_has_category?/2 ──────────────────────────────────────────
-
   describe "sequence_has_category?/2" do
     test "true when any loaded step category name equals the filter" do
       steps = [
@@ -242,8 +228,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceLibraryTest do
       refute SequenceLibrary.sequence_has_category?(seq(steps: []), "basico")
     end
   end
-
-  # ── filter_sequence_library/6 ─────────────────────────────────────────
 
   describe "filter_sequence_library/6" do
     test "empty search and all/all filters return all in order" do

@@ -4,7 +4,7 @@ defmodule OGrupoDeEstudosWeb.ErrorMessageTest do
   alias OGrupoDeEstudos.Study.LinkError
   alias OGrupoDeEstudosWeb.ErrorMessage
 
-  describe "to_flash/1 — teacher-student link errors" do
+  describe "to_flash/1 with teacher-student link errors" do
     test "already_connected reads warm and positive" do
       assert ErrorMessage.to_flash(LinkError.new(:already_connected)) ==
                "Vocês já estudam juntos!"
@@ -50,7 +50,7 @@ defmodule OGrupoDeEstudosWeb.ErrorMessageTest do
     end
   end
 
-  describe "to_flash/1 — cross-cutting atoms" do
+  describe "to_flash/1 with cross-cutting atoms" do
     test "rate_limited stays friendly" do
       assert ErrorMessage.to_flash(:rate_limited) =~ "Calma!"
     end

@@ -4,7 +4,7 @@ defmodule OGrupoDeEstudos.Sequences.GenerationParamsTest do
   alias OGrupoDeEstudos.Sequences.GenerationParams
 
   describe "from_raw/3" do
-    test "defaults: sem loops, comprimento 10, 3 opções, 3 visitas ao BF" do
+    test "defaults to no loops, length 10, 3 options and 3 visits to the BF" do
       params = GenerationParams.from_raw("BF", [], %{})
 
       assert params.start_code == "BF"
@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudos.Sequences.GenerationParamsTest do
       assert params.max_same_pair_loops == 1
     end
 
-    test "loop_mode light permite repetição, 2 loops por par e mínimo 8" do
+    test "light loop_mode allows repeats, 2 loops per pair and a minimum of 8" do
       params = GenerationParams.from_raw("BF", [], %{"loop_mode" => "light", "length" => "5"})
 
       assert params.allow_repeats == true
@@ -32,20 +32,20 @@ defmodule OGrupoDeEstudos.Sequences.GenerationParamsTest do
       assert params.allow_repeats == true
     end
 
-    test "checkbox allow_repeats liga repetição mesmo sem loop_mode" do
+    test "allow_repeats checkbox enables repeats even without loop_mode" do
       params = GenerationParams.from_raw("BF", [], %{"allow_repeats" => "on", "length" => "5"})
 
       assert params.allow_repeats == true
       assert params.length == 8
     end
 
-    test "sem repetição o comprimento mínimo é 4" do
+    test "minimum length is 4 without repeats" do
       params = GenerationParams.from_raw("BF", [], %{"length" => "2"})
 
       assert params.length == 4
     end
 
-    test "inteiros inválidos caem nos defaults" do
+    test "invalid integers fall back to the defaults" do
       params =
         GenerationParams.from_raw("BF", [], %{
           "length" => "abc",
@@ -58,7 +58,7 @@ defmodule OGrupoDeEstudos.Sequences.GenerationParamsTest do
       assert params.max_bf_visits == 3
     end
 
-    test "cyclic e required_codes são propagados" do
+    test "propagates cyclic and required_codes" do
       params = GenerationParams.from_raw("BF", ["SC", "IV"], %{"cyclic" => "true"})
 
       assert params.cyclic == true

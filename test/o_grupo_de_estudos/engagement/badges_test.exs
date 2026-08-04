@@ -71,7 +71,6 @@ defmodule OGrupoDeEstudos.Engagement.BadgesTest do
       end
 
       badge = Badges.primary(user.id)
-      # With 15 likes: Curador (15 threshold) is earned AND higher rank than Explorador (5)
       assert badge.key == :curador
     end
   end
@@ -176,10 +175,9 @@ defmodule OGrupoDeEstudos.Engagement.BadgesTest do
       end
     end
 
-    test "earning a lower-tier badge does not mark higher-tier badge as earned" do
+    test "earning a lower-tier badge does not mark a higher-tier badge as earned" do
       user = insert(:user)
 
-      # 5 likes — only Explorador (threshold 5) earned, not Curador (threshold 15)
       for _ <- 1..5 do
         step = insert(:step)
         Engagement.toggle_like(user.id, "step", step.id)

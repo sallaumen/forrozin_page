@@ -5,10 +5,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   alias OGrupoDeEstudos.Sequences.Generator
   alias OGrupoDeEstudos.Sequences.GeneratorError
 
-  # ---------------------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------------------
-
   defp build_linear_chain(n) when n >= 2 do
     steps =
       for i <- 0..(n - 1) do
@@ -47,13 +43,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
   end
 
   defp build_diamond_graph do
-    #   S0
-    #  / \
-    # S1   S2
-    #  \ /
-    #   S3
-    #   |
-    #   S4
     s =
       for i <- 0..4 do
         insert(:step,
@@ -76,10 +65,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
     {s, Map.new(s, &{&1.code, &1})}
   end
-
-  # ---------------------------------------------------------------------------
-  # Basic generation
-  # ---------------------------------------------------------------------------
 
   describe "basic" do
     test "returns ok tuple with sequence" do
@@ -123,10 +108,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Invalid input
-  # ---------------------------------------------------------------------------
-
   describe "invalid input" do
     test "returns a GeneratorError when start code not found" do
       assert {:error, %GeneratorError{code: :start_step_not_found} = error} =
@@ -156,10 +137,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # No repeats
-  # ---------------------------------------------------------------------------
-
   describe "allow_repeats: false" do
     test "does not repeat steps" do
       build_linear_chain(6)
@@ -177,10 +154,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       assert seqs == [] or Enum.any?(warnings, &(&1 =~ "sequências"))
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # With repeats
-  # ---------------------------------------------------------------------------
 
   describe "allow_repeats: true" do
     test "generates sequence longer than graph with repeats" do
@@ -203,19 +176,14 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       insert(:connection, source_step: s0, target_step: s1)
       insert(:connection, source_step: s1, target_step: s0)
 
-      # With max_same_pair_loops=2, length 7 is impossible even with repeats
-      # (needs 3 identical transitions but limit is 2)
-      # The relaxation may try but still fail — or produce shorter sequence
       {:ok, seqs, _warnings} =
         Generator.generate(
           base_params("L0", length: 7, count: 1, allow_repeats: true)
           |> Map.put(:max_same_pair_loops, 2)
         )
 
-      # Either no result, or a shorter relaxed result
       assert seqs == [] or length(hd(seqs)) < 7
 
-      # With max_same_pair_loops=3, length 7 works
       {:ok, [seq], _} =
         Generator.generate(
           base_params("L0", length: 7, count: 1, allow_repeats: true)
@@ -225,10 +193,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       assert Enum.map(seq, & &1.code) == ["L0", "L1", "L0", "L1", "L0", "L1", "L0"]
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Cyclic
-  # ---------------------------------------------------------------------------
 
   describe "cyclic" do
     test "cyclic sequence starts and ends at the same step" do
@@ -255,10 +219,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Required codes
-  # ---------------------------------------------------------------------------
-
   describe "required_codes" do
     test "guarantees required step appears in every sequence" do
       build_linear_chain(5)
@@ -282,7 +242,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         Generator.generate(base_params("C0", length: 6, count: 2, required_codes: ["C4"]))
 
       for seq <- seqs do
-        # Every consecutive pair must be a valid directed edge
         seq
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.each(fn [a, b] ->
@@ -335,7 +294,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
       c2_first = Enum.count(orders, fn {c2, c3} -> c2 < c3 end)
       c3_first = Enum.count(orders, fn {c2, c3} -> c3 < c2 end)
 
-      # Both orderings should appear
       assert c2_first > 0 or c3_first > 0
     end
 
@@ -347,13 +305,10 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         Generator.generate(base_params("C0", length: 6, count: 1, required_codes: ["C2"]))
 
       assert "C2" in Enum.map(seq, & &1.code)
-      # Sequence is at least target length (may be longer due to exploration)
       assert length(seq) >= 6
     end
 
     test "required step appears at varying positions across sequences" do
-      # Diamond graph has multiple paths — required step should appear
-      # at different positions when generating multiple sequences
       build_diamond_graph()
 
       {:ok, seqs, _warnings} =
@@ -369,18 +324,15 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
         |> Enum.reject(&is_nil/1)
         |> Enum.uniq()
 
-      # Should have at least some variety in position
       assert positions != []
     end
 
     test "adjusts length when path through waypoints is longer" do
-      # Chain of 8 steps — requiring C6 means min path is C0→C1→...→C6 = 7 steps
       build_linear_chain(8)
 
       {:ok, [seq], warnings} =
         Generator.generate(base_params("C0", length: 4, count: 1, required_codes: ["C6"]))
 
-      # Sequence must include C6 — length adapts
       assert "C6" in Enum.map(seq, & &1.code)
       assert length(seq) >= 7
       assert Enum.any?(warnings, &(&1 =~ "Tamanho ajustado"))
@@ -389,7 +341,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     test "warns when no path exists between required steps" do
       build_linear_chain(3)
 
-      # Disconnected step
       d0 =
         insert(:step, code: "D0", name: "Disc 0", wip: false, status: :published, approved: true)
 
@@ -426,8 +377,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
 
     test "excludes wip steps even when requested as required" do
-      # Decisão do board (2026-06-25): o gerador nunca inclui passos wip.
-      # Footwork HF-* e outros wip são restritos e ficam fora das sequências.
       {_steps, by_code} = build_linear_chain(4)
 
       wip_step =
@@ -449,10 +398,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # WIP visibility (board decision 2026-06-25: generator is public-only)
-  # ---------------------------------------------------------------------------
-
   describe "wip visibility" do
     test "never includes wip steps in free generation" do
       {_steps, by_code} = build_linear_chain(4)
@@ -466,7 +411,6 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
           approved: true
         )
 
-      # WIP sits on a path between public steps; must still never be chosen.
       insert(:connection, source_step: by_code["C1"], target_step: wip_step)
       insert(:connection, source_step: wip_step, target_step: by_code["C3"])
 
@@ -497,15 +441,10 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Count and diversity
-  # ---------------------------------------------------------------------------
-
   describe "count and diversity" do
     test "generates multiple distinct sequences with branching" do
       build_diamond_graph()
       {:ok, seqs, _} = Generator.generate(base_params("S0", length: 4, count: 10))
-      # Diamond has at least 2 paths: S0→S1→S3→S4 and S0→S2→S3→S4
       middles = seqs |> Enum.map(fn s -> Enum.at(s, 1).code end) |> Enum.uniq()
       assert length(middles) == 2
     end
@@ -524,36 +463,20 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Progressive relaxation
-  # ---------------------------------------------------------------------------
-
   describe "progressive relaxation" do
     test "relaxes constraints to meet count when possible" do
-      # Small loop: only 1 unique path without repeats
       {steps, _} = build_linear_chain(3)
       add_loop(steps)
 
-      # Request 3 sequences of length 5 without repeats — impossible
-      # But with relaxation (allow repeats), should produce more
       {:ok, seqs, _warnings} =
         Generator.generate(base_params("C0", length: 5, count: 3, cyclic: false))
 
-      # Relaxation should kick in and produce at least 1 sequence
       assert seqs != []
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Backtracking
-  # ---------------------------------------------------------------------------
-
   describe "backtracking" do
     test "finds path through bottleneck that random walk would miss" do
-      # A → B → C (dead end)
-      # A → D → E → F
-      # Without backtracking: 50% chance of hitting dead end at C
-      # With backtracking: always finds A→D→E→F
       a = insert(:step, code: "A", name: "A", wip: false, status: :published, approved: true)
       b = insert(:step, code: "B", name: "B", wip: false, status: :published, approved: true)
       c = insert(:step, code: "C", name: "C", wip: false, status: :published, approved: true)
@@ -563,12 +486,10 @@ defmodule OGrupoDeEstudos.Sequences.GeneratorTest do
 
       insert(:connection, source_step: a, target_step: b)
       insert(:connection, source_step: b, target_step: c)
-      # c is dead end — no outgoing
       insert(:connection, source_step: a, target_step: d)
       insert(:connection, source_step: d, target_step: e)
       insert(:connection, source_step: e, target_step: f)
 
-      # Should ALWAYS find the path A→D→E→F (backtracking from dead end C)
       {:ok, [seq], []} = Generator.generate(base_params("A", length: 4, count: 1))
       codes = Enum.map(seq, & &1.code)
       assert codes == ["A", "D", "E", "F"]

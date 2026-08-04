@@ -1,5 +1,4 @@
 defmodule OGrupoDeEstudos.WorkshopMediaTest do
-  # async: false — troca :uploads_path, que é config global.
   use OGrupoDeEstudos.DataCase, async: false
 
   import OGrupoDeEstudos.Factory
@@ -13,220 +12,216 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
   setup do
     dir = Path.join(System.tmp_dir!(), "media_test_#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
-    anterior = Application.get_env(:o_grupo_de_estudos, :uploads_path)
+    previous = Application.get_env(:o_grupo_de_estudos, :uploads_path)
     Application.put_env(:o_grupo_de_estudos, :uploads_path, dir)
 
     on_exit(fn ->
-      case anterior do
+      case previous do
         nil -> Application.delete_env(:o_grupo_de_estudos, :uploads_path)
-        valor -> Application.put_env(:o_grupo_de_estudos, :uploads_path, valor)
+        value -> Application.put_env(:o_grupo_de_estudos, :uploads_path, value)
       end
 
       File.rm_rf!(dir)
     end)
 
-    origem = Path.join(dir, "origem.png")
-    File.write!(origem, @png)
+    source = Path.join(dir, "origem.png")
+    File.write!(source, @png)
 
-    dono = insert(:user)
-    aluna = insert(:user)
-    workshop = insert(:workshop, organizer: dono)
-    {:ok, _} = Workshops.enroll(workshop, aluna)
+    owner = insert(:user)
+    student = insert(:user)
+    workshop = insert(:workshop, organizer: owner)
+    {:ok, _} = Workshops.enroll(workshop, student)
 
-    %{dir: dir, origem: origem, dono: dono, aluna: aluna, workshop: workshop}
+    %{dir: dir, source: source, owner: owner, student: student, workshop: workshop}
   end
 
-  defp foto(ctx),
-    do: %{tmp_path: ctx.origem, content_type: "image/png", byte_size: byte_size(@png)}
+  defp photo(ctx),
+    do: %{tmp_path: ctx.source, content_type: "image/png", byte_size: byte_size(@png)}
 
-  defp video(ctx),
-    do: %{tmp_path: ctx.origem, content_type: "video/mp4", byte_size: 5_000_000}
+  defp video_upload(ctx),
+    do: %{tmp_path: ctx.source, content_type: "video/mp4", byte_size: 5_000_000}
 
-  describe "quem pode ver a galeria" do
-    test "quem se inscreveu vê", ctx do
-      assert Workshops.can_see_media?(ctx.workshop, ctx.aluna)
+  describe "who can see the gallery" do
+    test "enrolled user sees it", ctx do
+      assert Workshops.can_see_media?(ctx.workshop, ctx.student)
     end
 
-    test "quem administra vê, mesmo sem estar inscrito", ctx do
-      assert Workshops.can_see_media?(ctx.workshop, ctx.dono)
+    test "admin sees it even without being enrolled", ctx do
+      assert Workshops.can_see_media?(ctx.workshop, ctx.owner)
 
-      parceiro = insert(:user)
-      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.dono, parceiro.id)
-      assert Workshops.can_see_media?(ctx.workshop, parceiro)
+      partner = insert(:user)
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.owner, partner.id)
+      assert Workshops.can_see_media?(ctx.workshop, partner)
     end
 
-    test "estranho logado não vê", ctx do
+    test "logged-in outsider does not see it", ctx do
       refute Workshops.can_see_media?(ctx.workshop, insert(:user))
     end
 
-    test "visitante sem conta não vê", ctx do
+    test "anonymous visitor does not see it", ctx do
       refute Workshops.can_see_media?(ctx.workshop, nil)
     end
   end
 
   describe "add_media/3" do
-    test "inscrito manda foto, e ela não nasce oficial", ctx do
-      assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
+    test "enrolled user uploads a photo and it is not official", ctx do
+      assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
 
       assert media.kind == :photo
       refute media.official
-      assert {:file, _caminho} = Workshops.serve_media(media)
+      assert {:file, _path} = Workshops.serve_media(media)
     end
 
-    test "quem administra manda mídia oficial", ctx do
-      assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.dono, foto(ctx))
+    test "admin uploads official media", ctx do
+      assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.owner, photo(ctx))
 
       assert media.official
     end
 
-    test "vídeo entra como vídeo", ctx do
-      assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, video(ctx))
+    test "video is stored as video", ctx do
+      assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, video_upload(ctx))
 
       assert media.kind == :video
     end
 
-    test "o arquivo NÃO fica na pasta pública, e mora na pasta do workshop", ctx do
-      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
+    test "file stays out of the public folder and lives in the workshop folder", ctx do
+      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
 
-      # Nada de midia paga em pasta servida pelo Plug.Static; e cada workshop
-      # tem a sua pasta, para o bucket contar a historia do app.
       refute media.storage_key =~ "avatars"
       refute media.storage_key =~ "flyers"
       assert media.storage_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.png$}
     end
 
-    test "estranho não manda mídia", ctx do
+    test "outsider does not upload media", ctx do
       assert {:error, :unauthorized} =
-               Workshops.add_media(ctx.workshop, insert(:user), foto(ctx))
+               Workshops.add_media(ctx.workshop, insert(:user), photo(ctx))
     end
 
-    test "tipo que não é imagem nem vídeo é recusado", ctx do
-      attrs = %{tmp_path: ctx.origem, content_type: "application/pdf", byte_size: 100}
+    test "content type that is neither image nor video is rejected", ctx do
+      attrs = %{tmp_path: ctx.source, content_type: "application/pdf", byte_size: 100}
 
-      assert {:error, :unsupported_type} = Workshops.add_media(ctx.workshop, ctx.aluna, attrs)
+      assert {:error, :unsupported_type} = Workshops.add_media(ctx.workshop, ctx.student, attrs)
     end
   end
 
   describe "list_media/1" do
-    test "oficial vem primeiro, depois a comunidade", ctx do
-      {:ok, _da_aluna} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
-      {:ok, do_professor} = Workshops.add_media(ctx.workshop, ctx.dono, foto(ctx))
+    test "official media comes first, then the community ones", ctx do
+      {:ok, _student_media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
+      {:ok, teacher_media} = Workshops.add_media(ctx.workshop, ctx.owner, photo(ctx))
 
-      assert [primeira, segunda] = Workshops.list_media(ctx.workshop.id)
-      assert primeira.id == do_professor.id
-      assert primeira.official
-      refute segunda.official
+      assert [first, monday] = Workshops.list_media(ctx.workshop.id)
+      assert first.id == teacher_media.id
+      assert first.official
+      refute monday.official
     end
 
-    test "apagada some da lista", ctx do
-      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
-      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
+    test "deleted media disappears from the list", ctx do
+      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
+      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.student, media.id)
 
       assert Workshops.list_media(ctx.workshop.id) == []
     end
   end
 
   describe "remove_media/3" do
-    test "quem enviou tira a sua, e o arquivo vai junto", ctx do
-      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
-      {:file, caminho} = Workshops.serve_media(media)
+    test "uploader removes their own media and the file goes with it", ctx do
+      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
+      {:file, path} = Workshops.serve_media(media)
 
-      assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
-      refute File.exists?(caminho)
+      assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.student, media.id)
+      refute File.exists?(path)
     end
 
-    test "quem administra tira a de qualquer um", ctx do
-      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
+    test "admin removes anyone's media", ctx do
+      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
 
-      assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.dono, media.id)
+      assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.owner, media.id)
     end
 
-    test "um inscrito não tira a mídia de outro", ctx do
-      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
-      outra = insert(:user)
-      {:ok, _} = Workshops.enroll(ctx.workshop, outra)
+    test "enrolled user does not remove another user's media", ctx do
+      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
+      other = insert(:user)
+      {:ok, _} = Workshops.enroll(ctx.workshop, other)
 
-      assert {:error, :unauthorized} = Workshops.remove_media(ctx.workshop, outra, media.id)
+      assert {:error, :unauthorized} = Workshops.remove_media(ctx.workshop, other, media.id)
     end
 
-    test "id de mídia de outro workshop não encontra nada", ctx do
-      alheio = insert(:workshop, organizer: ctx.dono)
-      {:ok, _} = Workshops.enroll(alheio, ctx.aluna)
-      {:ok, de_la} = Workshops.add_media(alheio, ctx.aluna, foto(ctx))
+    test "media id from another workshop finds nothing", ctx do
+      alheio = insert(:workshop, organizer: ctx.owner)
+      {:ok, _} = Workshops.enroll(alheio, ctx.student)
+      {:ok, de_la} = Workshops.add_media(alheio, ctx.student, photo(ctx))
 
-      assert {:error, :not_found} = Workshops.remove_media(ctx.workshop, ctx.aluna, de_la.id)
+      assert {:error, :not_found} = Workshops.remove_media(ctx.workshop, ctx.student, de_la.id)
     end
 
-    test "id inventado não quebra", ctx do
+    test "made-up id does not crash", ctx do
       assert {:error, :not_found} =
-               Workshops.remove_media(ctx.workshop, ctx.aluna, "nao-e-uuid")
+               Workshops.remove_media(ctx.workshop, ctx.student, "nao-e-uuid")
     end
   end
 
-  describe "cota por workshop" do
-    # O byte_size declarado no upload é o que conta para a cota, então dá para
-    # simular um workshop quase cheio sem gravar 2 GB de verdade.
-    @cota 2_147_483_648
+  describe "quota per workshop" do
+    @quota 2_147_483_648
 
-    test "workshop no limite recusa o próximo arquivo com motivo próprio", ctx do
+    test "workshop at the limit rejects the next file with its own reason", ctx do
       {:ok, _quase_cheio} =
-        Workshops.add_media(ctx.workshop, ctx.aluna, %{
-          tmp_path: ctx.origem,
+        Workshops.add_media(ctx.workshop, ctx.student, %{
+          tmp_path: ctx.source,
           content_type: "image/png",
-          byte_size: @cota - 100
+          byte_size: @quota - 100
         })
 
       assert {:error, :media_quota} =
-               Workshops.add_media(ctx.workshop, ctx.aluna, %{
-                 tmp_path: ctx.origem,
+               Workshops.add_media(ctx.workshop, ctx.student, %{
+                 tmp_path: ctx.source,
                  content_type: "image/png",
                  byte_size: 200
                })
     end
 
-    test "o que couber exatamente na cota ainda entra", ctx do
+    test "file that fits the quota exactly still goes in", ctx do
       {:ok, _} =
-        Workshops.add_media(ctx.workshop, ctx.aluna, %{
-          tmp_path: ctx.origem,
+        Workshops.add_media(ctx.workshop, ctx.student, %{
+          tmp_path: ctx.source,
           content_type: "image/png",
-          byte_size: @cota - 100
+          byte_size: @quota - 100
         })
 
       assert {:ok, _} =
-               Workshops.add_media(ctx.workshop, ctx.aluna, %{
-                 tmp_path: ctx.origem,
+               Workshops.add_media(ctx.workshop, ctx.student, %{
+                 tmp_path: ctx.source,
                  content_type: "image/png",
                  byte_size: 100
                })
     end
 
-    test "a cota é por workshop, não global", ctx do
+    test "quota is per workshop, not global", ctx do
       {:ok, _} =
-        Workshops.add_media(ctx.workshop, ctx.aluna, %{
-          tmp_path: ctx.origem,
+        Workshops.add_media(ctx.workshop, ctx.student, %{
+          tmp_path: ctx.source,
           content_type: "image/png",
-          byte_size: @cota - 100
+          byte_size: @quota - 100
         })
 
-      outro = insert(:workshop, organizer: ctx.dono)
-      {:ok, _} = Workshops.enroll(outro, ctx.aluna)
+      other = insert(:workshop, organizer: ctx.owner)
+      {:ok, _} = Workshops.enroll(other, ctx.student)
 
-      assert {:ok, _} = Workshops.add_media(outro, ctx.aluna, foto(ctx))
+      assert {:ok, _} = Workshops.add_media(other, ctx.student, photo(ctx))
     end
 
-    test "mídia apagada devolve o espaço da cota", ctx do
+    test "deleted media gives the quota space back", ctx do
       {:ok, grande} =
-        Workshops.add_media(ctx.workshop, ctx.aluna, %{
-          tmp_path: ctx.origem,
+        Workshops.add_media(ctx.workshop, ctx.student, %{
+          tmp_path: ctx.source,
           content_type: "image/png",
-          byte_size: @cota - 100
+          byte_size: @quota - 100
         })
 
-      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, grande.id)
+      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.student, grande.id)
 
       assert {:ok, _} =
-               Workshops.add_media(ctx.workshop, ctx.aluna, %{
-                 tmp_path: ctx.origem,
+               Workshops.add_media(ctx.workshop, ctx.student, %{
+                 tmp_path: ctx.source,
                  content_type: "image/png",
                  byte_size: 200
                })
@@ -235,8 +230,8 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
 
   describe "media_usage/1" do
     test "conta arquivos e bytes", ctx do
-      {:ok, _} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
-      {:ok, _} = Workshops.add_media(ctx.workshop, ctx.dono, video(ctx))
+      {:ok, _} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
+      {:ok, _} = Workshops.add_media(ctx.workshop, ctx.owner, video_upload(ctx))
 
       uso = Workshops.media_usage(ctx.workshop.id)
 
@@ -244,7 +239,7 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
       assert uso.bytes > 5_000_000
     end
 
-    test "workshop sem mídia devolve zero", ctx do
+    test "workshop with no media reports zero", ctx do
       assert %{count: 0, bytes: 0} = Workshops.media_usage(ctx.workshop.id)
     end
   end

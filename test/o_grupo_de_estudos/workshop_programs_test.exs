@@ -5,122 +5,119 @@ defmodule OGrupoDeEstudos.WorkshopProgramsTest do
 
   alias OGrupoDeEstudos.Workshops
 
-  defp em(dias, hora) do
+  defp at_day(days, hour) do
     OGrupoDeEstudos.Brazil.today()
-    |> Date.add(dias)
-    |> DateTime.new!(Time.new!(hora, 0, 0), "Etc/UTC")
+    |> Date.add(days)
+    |> DateTime.new!(Time.new!(hour, 0, 0), "Etc/UTC")
     |> OGrupoDeEstudos.Brazil.to_utc()
     |> DateTime.truncate(:second)
   end
 
   setup do
-    %{dono: insert(:user)}
+    %{owner: insert(:user)}
   end
 
   describe "create_program/2" do
-    test "cria com slug legível e sufixo", %{dono: dono} do
+    test "creates with a readable slug and a suffix", %{owner: owner} do
       assert {:ok, program} =
-               Workshops.create_program(dono, %{
+               Workshops.create_program(owner, %{
                  title: "Fim de semana de forró roots",
                  description: "Quinta e sexta.",
                  location: "Curitiba"
                })
 
-      assert program.owner_id == dono.id
+      assert program.owner_id == owner.id
       assert program.status == :draft
       assert program.slug =~ ~r/^fim-de-semana-de-forro-roots-[a-z0-9]+$/
     end
 
-    test "título é obrigatório", %{dono: dono} do
+    test "requires a title", %{owner: owner} do
       assert {:error, %Ecto.Changeset{}} =
-               Workshops.create_program(dono, %{description: "só isso"})
+               Workshops.create_program(owner, %{description: "só isso"})
     end
   end
 
   describe "attach_workshop/3" do
-    setup %{dono: dono} do
-      {:ok, program} = Workshops.create_program(dono, %{title: "Meu fim de semana"})
-      %{program: program, workshop: insert(:workshop, organizer: dono)}
+    setup %{owner: owner} do
+      {:ok, program} = Workshops.create_program(owner, %{title: "Meu fim de semana"})
+      %{program: program, workshop: insert(:workshop, organizer: owner)}
     end
 
-    test "quem administra os dois lados atacha", ctx do
-      assert {:ok, atualizado} =
-               Workshops.attach_workshop(ctx.program, ctx.dono, ctx.workshop.id)
+    test "admin of both sides attaches the workshop", ctx do
+      assert {:ok, updated} =
+               Workshops.attach_workshop(ctx.program, ctx.owner, ctx.workshop.id)
 
-      assert atualizado.program_id == ctx.program.id
+      assert updated.program_id == ctx.program.id
       assert [w] = Workshops.list_program_workshops(ctx.program)
       assert w.id == ctx.workshop.id
     end
 
-    test "co-organizador do workshop também atacha, se for dono da programação", ctx do
-      # É assim que um festival funciona: a equipe vira co-organizadora do
-      # workshop de cada professor e monta a programação.
-      parceiro = insert(:user)
-      {:ok, program_dele} = Workshops.create_program(parceiro, %{title: "Festival"})
-      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.dono, parceiro.id)
+    test "workshop co-organizer also attaches when they own the program", ctx do
+      partner = insert(:user)
+      {:ok, program_dele} = Workshops.create_program(partner, %{title: "Festival"})
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.owner, partner.id)
 
-      assert {:ok, _} = Workshops.attach_workshop(program_dele, parceiro, ctx.workshop.id)
+      assert {:ok, _} = Workshops.attach_workshop(program_dele, partner, ctx.workshop.id)
     end
 
-    test "não atacha workshop que não administra", ctx do
+    test "does not attach a workshop they do not administer", ctx do
       alheio = insert(:workshop)
 
       assert {:error, :unauthorized} =
-               Workshops.attach_workshop(ctx.program, ctx.dono, alheio.id)
+               Workshops.attach_workshop(ctx.program, ctx.owner, alheio.id)
     end
 
-    test "não atacha em programação alheia", ctx do
+    test "does not attach to someone else's program", ctx do
       assert {:error, :unauthorized} =
                Workshops.attach_workshop(ctx.program, insert(:user), ctx.workshop.id)
     end
 
-    test "id inventado não encontra nada", ctx do
+    test "made-up id finds nothing", ctx do
       assert {:error, :not_found} =
-               Workshops.attach_workshop(ctx.program, ctx.dono, Ecto.UUID.generate())
+               Workshops.attach_workshop(ctx.program, ctx.owner, Ecto.UUID.generate())
     end
 
-    test "detach solta o workshop sem apagá-lo", ctx do
-      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.dono, ctx.workshop.id)
+    test "detach releases the workshop without deleting it", ctx do
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, ctx.workshop.id)
 
-      assert {:ok, solto} = Workshops.detach_workshop(ctx.program, ctx.dono, ctx.workshop.id)
+      assert {:ok, solto} = Workshops.detach_workshop(ctx.program, ctx.owner, ctx.workshop.id)
       assert is_nil(solto.program_id)
       assert Workshops.get_workshop(ctx.workshop.id)
     end
   end
 
   describe "list_program_workshops/2" do
-    setup %{dono: dono} do
-      {:ok, program} = Workshops.create_program(dono, %{title: "Dois dias"})
+    setup %{owner: owner} do
+      {:ok, program} = Workshops.create_program(owner, %{title: "Dois dias"})
       %{program: program}
     end
 
-    test "vem em ordem de data, do mais cedo ao mais tarde", ctx do
-      sexta = insert(:workshop, organizer: ctx.dono, starts_at: em(8, 20))
-      quinta = insert(:workshop, organizer: ctx.dono, starts_at: em(7, 19))
+    test "returns workshops ordered by date, earliest first", ctx do
+      friday = insert(:workshop, organizer: ctx.owner, starts_at: at_day(8, 20))
+      thursday = insert(:workshop, organizer: ctx.owner, starts_at: at_day(7, 19))
 
-      for w <- [sexta, quinta], do: Workshops.attach_workshop(ctx.program, ctx.dono, w.id)
+      for w <- [friday, thursday], do: Workshops.attach_workshop(ctx.program, ctx.owner, w.id)
 
-      assert [primeiro, segundo] = Workshops.list_program_workshops(ctx.program)
-      assert primeiro.id == quinta.id
-      assert segundo.id == sexta.id
+      assert [first, second] = Workshops.list_program_workshops(ctx.program)
+      assert first.id == thursday.id
+      assert second.id == friday.id
     end
 
-    test "rascunho fica fora para quem só olha", ctx do
-      publicado = insert(:workshop, organizer: ctx.dono)
-      rascunho = insert(:workshop, organizer: ctx.dono, status: :draft)
+    test "draft stays out for plain visitors", ctx do
+      published = insert(:workshop, organizer: ctx.owner)
+      draft = insert(:workshop, organizer: ctx.owner, status: :draft)
 
-      for w <- [publicado, rascunho], do: Workshops.attach_workshop(ctx.program, ctx.dono, w.id)
+      for w <- [published, draft], do: Workshops.attach_workshop(ctx.program, ctx.owner, w.id)
 
-      assert [visivel] = Workshops.list_program_workshops(ctx.program)
-      assert visivel.id == publicado.id
+      assert [visible] = Workshops.list_program_workshops(ctx.program)
+      assert visible.id == published.id
 
-      # Quem administra precisa ver o próprio rascunho para poder publicar.
       assert length(Workshops.list_program_workshops(ctx.program, include_drafts: true)) == 2
     end
 
-    test "cancelado continua na lista: quem se inscreveu precisa saber", ctx do
-      cancelado = insert(:workshop, organizer: ctx.dono, status: :cancelled)
-      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.dono, cancelado.id)
+    test "cancelled stays in the list: enrolled people need to know", ctx do
+      cancelled = insert(:workshop, organizer: ctx.owner, status: :cancelled)
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, cancelled.id)
 
       assert [w] = Workshops.list_program_workshops(ctx.program)
       assert w.status == :cancelled
@@ -128,38 +125,38 @@ defmodule OGrupoDeEstudos.WorkshopProgramsTest do
   end
 
   describe "publish_program/2 e cancel_program/2" do
-    setup %{dono: dono} do
-      {:ok, program} = Workshops.create_program(dono, %{title: "Publicável"})
+    setup %{owner: owner} do
+      {:ok, program} = Workshops.create_program(owner, %{title: "Publicável"})
       %{program: program}
     end
 
     test "dono publica e cancela", ctx do
-      assert {:ok, %{status: :published}} = Workshops.publish_program(ctx.dono, ctx.program)
-      assert {:ok, %{status: :cancelled}} = Workshops.cancel_program(ctx.dono, ctx.program)
+      assert {:ok, %{status: :published}} = Workshops.publish_program(ctx.owner, ctx.program)
+      assert {:ok, %{status: :cancelled}} = Workshops.cancel_program(ctx.owner, ctx.program)
     end
 
-    test "estranho não mexe", ctx do
+    test "outsider does not change it", ctx do
       assert {:error, :unauthorized} = Workshops.publish_program(insert(:user), ctx.program)
       assert {:error, :unauthorized} = Workshops.cancel_program(insert(:user), ctx.program)
     end
   end
 
   describe "program_summaries/1" do
-    test "agrega contagem e intervalo de datas sem N+1", %{dono: dono} do
-      {:ok, program} = Workshops.create_program(dono, %{title: "Festival"})
+    test "aggregates count and date range without N+1", %{owner: owner} do
+      {:ok, program} = Workshops.create_program(owner, %{title: "Festival"})
 
-      primeiro = insert(:workshop, organizer: dono, starts_at: em(10, 14))
-      ultimo = insert(:workshop, organizer: dono, starts_at: em(12, 14))
-      for w <- [primeiro, ultimo], do: Workshops.attach_workshop(program, dono, w.id)
+      first = insert(:workshop, organizer: owner, starts_at: at_day(10, 14))
+      last = insert(:workshop, organizer: owner, starts_at: at_day(12, 14))
+      for w <- [first, last], do: Workshops.attach_workshop(program, owner, w.id)
 
-      resumo = Workshops.program_summaries([program.id]) |> Map.fetch!(program.id)
-      assert resumo.count == 2
-      assert DateTime.compare(resumo.starts_at, primeiro.starts_at) == :eq
-      assert DateTime.compare(resumo.ends_at, ultimo.starts_at) == :eq
+      summary = Workshops.program_summaries([program.id]) |> Map.fetch!(program.id)
+      assert summary.count == 2
+      assert DateTime.compare(summary.starts_at, first.starts_at) == :eq
+      assert DateTime.compare(summary.ends_at, last.starts_at) == :eq
     end
 
-    test "programação vazia não aparece no resumo", %{dono: dono} do
-      {:ok, vazia} = Workshops.create_program(dono, %{title: "Sem nada"})
+    test "empty program does not show up in the summary", %{owner: owner} do
+      {:ok, vazia} = Workshops.create_program(owner, %{title: "Sem nada"})
 
       assert Workshops.program_summaries([vazia.id]) == %{}
     end

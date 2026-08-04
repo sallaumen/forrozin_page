@@ -3,7 +3,7 @@ defmodule OGrupoDeEstudosWeb.LandingLiveTest do
 
   import Phoenix.LiveViewTest
 
-  describe "mount — public" do
+  describe "mount when public" do
     test "renders title and tagline", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/")
       assert html =~ "O Grupo de Estudos"
@@ -30,7 +30,7 @@ defmodule OGrupoDeEstudosWeb.LandingLiveTest do
     end
   end
 
-  describe "mount — authenticated" do
+  describe "mount when authenticated" do
     test "redirects to /collection when logged in", %{conn: conn} do
       user = insert(:user)
       conn = log_in_user(conn, user)

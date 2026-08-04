@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQueryTest do
     %{profile: profile, author: author}
   end
 
-  describe "list_by/1 — profile_id filter" do
+  describe "list_by/1 with profile_id filter" do
     test "returns only comments for the given profile", %{profile: profile, author: author} do
       other_profile = insert(:user)
       insert(:profile_comment, profile: profile, author: author)
@@ -27,7 +27,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQueryTest do
     end
   end
 
-  describe "list_by/1 — author_id filter" do
+  describe "list_by/1 with author_id filter" do
     test "returns only comments by the given author", %{profile: profile, author: author} do
       other_author = insert(:user)
       insert(:profile_comment, profile: profile, author: author)
@@ -39,7 +39,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQueryTest do
     end
   end
 
-  describe "list_by/1 — include_deleted filter" do
+  describe "list_by/1 with include_deleted filter" do
     test "excludes soft-deleted comments by default", %{profile: profile, author: author} do
       active = insert(:profile_comment, profile: profile, author: author)
 
@@ -75,7 +75,7 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQueryTest do
     end
   end
 
-  describe "list_by/1 — preload" do
+  describe "list_by/1 with preload" do
     test "preloads author association when requested", %{profile: profile, author: author} do
       insert(:profile_comment, profile: profile, author: author)
 
@@ -92,11 +92,10 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQueryTest do
     end
   end
 
-  describe "list_by/1 — order_by" do
+  describe "list_by/1 with order_by" do
     test "returns newest comments first by default", %{profile: profile, author: author} do
       first = insert(:profile_comment, profile: profile, author: author)
 
-      # Ensure a distinct inserted_at by advancing time
       second =
         insert(:profile_comment,
           profile: profile,

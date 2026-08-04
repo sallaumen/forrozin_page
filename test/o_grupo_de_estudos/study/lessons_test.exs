@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
   end
 
   describe "broadcast_lesson/3" do
-    test "cria a lição e entrega para os vínculos selecionados" do
+    test "creates the lesson and delivers it to the selected links" do
       {teacher, [link_a, link_b, link_c]} = teacher_with_students(3)
 
       assert {:ok, lesson, _delivered} =
@@ -39,7 +39,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert Study.list_lessons_for_link(link_c.id) == []
     end
 
-    test "ignora ids de vínculos que não pertencem ao professor" do
+    test "ignores link ids that do not belong to the teacher" do
       {teacher, [link]} = teacher_with_students(1)
       foreign_link = insert(:teacher_student_link, active: true)
 
@@ -55,7 +55,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert lesson.id
     end
 
-    test "ignora vínculos inativos do próprio professor" do
+    test "ignores inactive links of the teacher themselves" do
       {teacher, [active_link]} = teacher_with_students(1)
       inactive = insert(:teacher_student_link, teacher: teacher, active: false)
 
@@ -68,7 +68,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert Study.list_lessons_for_link(inactive.id) == []
     end
 
-    test "sem nenhum vínculo válido retorna erro e não cria a lição" do
+    test "returns an error and creates no lesson without a single valid link" do
       teacher = insert(:user, is_teacher: true)
 
       assert {:error, :no_students} =
@@ -77,7 +77,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert Study.list_lessons_for_teacher(teacher.id) == []
     end
 
-    test "valida título e conteúdo obrigatórios" do
+    test "requires title and content" do
       {teacher, [link]} = teacher_with_students(1)
 
       assert {:error, %Ecto.Changeset{} = changeset} =
@@ -86,7 +86,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert errors_on(changeset).title != []
     end
 
-    test "notifica cada aluno com a ação :lesson_shared" do
+    test "notifies each student with the :lesson_shared action" do
       {teacher, [link_a, link_b]} = teacher_with_students(2)
 
       {:ok, lesson, _delivered} =
@@ -106,7 +106,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
   end
 
   describe "list_lessons_for_link/1" do
-    test "retorna lições com read_at da entrega, mais recentes primeiro" do
+    test "returns lessons with the delivery read_at, most recent first" do
       {teacher, [link]} = teacher_with_students(1)
 
       {:ok, older, _delivered} =
@@ -123,7 +123,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
   end
 
   describe "mark_lessons_read/2" do
-    test "aluno marca as entregas do vínculo como lidas" do
+    test "student marks the deliveries of the link as read" do
       {teacher, [link]} = teacher_with_students(1)
 
       {:ok, _, _delivered} =
@@ -136,7 +136,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert {:ok, 0} = Study.mark_lessons_read(link, student, lesson_ids_of(link))
     end
 
-    test "professor não marca como lida (só o aluno do vínculo)" do
+    test "teacher does not mark as read, only the student of the link does" do
       {teacher, [link]} = teacher_with_students(1)
 
       {:ok, _, _delivered} =
@@ -148,7 +148,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
   end
 
   describe "list_lessons_for_teacher/1" do
-    test "retorna lições com contagens de entrega e leitura, sem N+1" do
+    test "returns lessons with delivery and read counts, without N+1" do
       {teacher, [link_a, link_b]} = teacher_with_students(2)
 
       {:ok, lesson, _delivered} =
@@ -167,7 +167,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
   end
 
   describe "update_lesson/3 e delete_lesson/2" do
-    test "professor edita a própria lição (uma escrita corrige todas as entregas)" do
+    test "teacher edits their own lesson and one write fixes every delivery" do
       {teacher, [link]} = teacher_with_students(1)
 
       {:ok, lesson, _delivered} =
@@ -179,7 +179,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert [%{content: "V2 corrigida"}] = Study.list_lessons_for_link(link.id)
     end
 
-    test "outro usuário não edita nem deleta" do
+    test "another user neither edits nor deletes" do
       {teacher, [link]} = teacher_with_students(1)
 
       {:ok, lesson, _delivered} =
@@ -191,7 +191,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert {:error, :unauthorized} = Study.delete_lesson(other, lesson)
     end
 
-    test "delete remove a lição e as entregas" do
+    test "delete removes the lesson and its deliveries" do
       {teacher, [link]} = teacher_with_students(1)
 
       {:ok, lesson, _delivered} =
@@ -204,7 +204,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
   end
 
   describe "links_with_unread_lessons/1" do
-    test "MapSet dos vínculos com lição não lida (batch, para a lista de professores)" do
+    test "returns a MapSet of links with an unread lesson, batched for the teacher list" do
       {teacher, [link_a, link_b]} = teacher_with_students(2)
 
       {:ok, _, _delivered} =
@@ -217,7 +217,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
   end
 
   describe "count_unread_lessons/1" do
-    test "conta entregas não lidas do aluno em todos os vínculos; zera ao ler" do
+    test "counts unread deliveries of the student across links and zeroes on read" do
       student = insert(:user)
       teacher_a = insert(:user, is_teacher: true)
       teacher_b = insert(:user, is_teacher: true)
@@ -236,18 +236,18 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert Study.count_unread_lessons(student.id) == 1
     end
 
-    test "não conta entregas de outros alunos" do
+    test "does not count deliveries of other students" do
       {teacher, [link]} = teacher_with_students(1)
       {:ok, _, 1} = Study.broadcast_lesson(teacher, %{title: "A", content: "x"}, [link.id])
-      outro = insert(:user)
+      other = insert(:user)
 
-      assert Study.count_unread_lessons(outro.id) == 0
+      assert Study.count_unread_lessons(other.id) == 0
       assert Study.count_unread_lessons(link.student_id) == 1
     end
   end
 
-  describe "achados da revisão — recibo honesto e vínculo encerrado" do
-    test "broadcast publica {:lesson_published} no tópico de cada vínculo" do
+  describe "honest receipt and closed link" do
+    test "broadcast publishes {:lesson_published} on the topic of each link" do
       {teacher, [link]} = teacher_with_students(1)
       Phoenix.PubSub.subscribe(OGrupoDeEstudos.PubSub, Study.note_topic(link.id))
 
@@ -257,7 +257,7 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert link_id == link.id
     end
 
-    test "update e delete também publicam para quem recebeu" do
+    test "update and delete also publish to whoever received it" do
       {teacher, [link]} = teacher_with_students(1)
       {:ok, lesson, 1} = Study.broadcast_lesson(teacher, %{title: "A", content: "x"}, [link.id])
 
@@ -270,19 +270,19 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert_receive {:lesson_published, _}
     end
 
-    test "mark_lessons_read é escopado: não marca lição fora da lista" do
+    test "mark_lessons_read is scoped and does not mark a lesson outside the list" do
       {teacher, [link]} = teacher_with_students(1)
-      {:ok, primeira, 1} = Study.broadcast_lesson(teacher, %{title: "1", content: "a"}, [link.id])
-      {:ok, _segunda, 1} = Study.broadcast_lesson(teacher, %{title: "2", content: "b"}, [link.id])
+      {:ok, first, 1} = Study.broadcast_lesson(teacher, %{title: "1", content: "a"}, [link.id])
+      {:ok, _second, 1} = Study.broadcast_lesson(teacher, %{title: "2", content: "b"}, [link.id])
 
-      assert {:ok, 1} = Study.mark_lessons_read(link, link.student, [primeira.id])
+      assert {:ok, 1} = Study.mark_lessons_read(link, link.student, [first.id])
 
       by_title = Map.new(Study.list_lessons_for_link(link.id), &{&1.title, &1.read_at})
       assert %DateTime{} = by_title["1"]
       assert by_title["2"] == nil
     end
 
-    test "vínculo encerrado sai do contador e do MapSet de não lidas" do
+    test "closed link leaves the counter and the unread MapSet" do
       {teacher, [link]} = teacher_with_students(1)
       {:ok, _, 1} = Study.broadcast_lesson(teacher, %{title: "A", content: "x"}, [link.id])
       student = link.student
@@ -295,11 +295,11 @@ defmodule OGrupoDeEstudos.Study.LessonsTest do
       assert Study.unread_lesson_link_ids([link.id]) == MapSet.new()
     end
 
-    test "get_lesson com id malformado retorna nil sem crash" do
+    test "get_lesson with a malformed id returns nil without crashing" do
       assert Study.get_lesson("nao-e-uuid") == nil
     end
 
-    test "notifica os dois alunos, cada um com a sua entrega" do
+    test "notifies both students, each with their own delivery" do
       {teacher, [link_a, link_b]} = teacher_with_students(2)
 
       {:ok, lesson, 2} =

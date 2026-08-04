@@ -7,7 +7,7 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSessionTest do
   alias OGrupoDeEstudos.Engagement.DeviceSession
   alias OGrupoDeEstudos.Repo
 
-  describe "changeset/2 — valid data" do
+  describe "changeset/2 with valid data" do
     test "creates a valid mobile session" do
       user = insert(:user)
 
@@ -84,7 +84,7 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSessionTest do
     end
   end
 
-  describe "changeset/2 — validation errors" do
+  describe "changeset/2 with validation errors" do
     test "requires device_type" do
       user = insert(:user)
       changeset = DeviceSession.changeset(%DeviceSession{}, %{user_id: user.id})
@@ -111,7 +111,7 @@ defmodule OGrupoDeEstudos.Engagement.DeviceSessionTest do
       assert errors_on(changeset).device_type
     end
 
-    test "rejects empty changeset — both required fields missing" do
+    test "rejects empty changeset when both required fields are missing" do
       changeset = DeviceSession.changeset(%DeviceSession{}, %{})
       refute changeset.valid?
       assert errors_on(changeset).device_type

@@ -41,7 +41,6 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLiveTest do
         )
         |> render_submit()
 
-      # Redirects to auto-login endpoint
       assert {:error, {:redirect, %{to: "/auto-login/" <> _user_id}}} = result
     end
 
@@ -89,7 +88,6 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLiveTest do
 
       assert {:error, {:redirect, %{to: "/auto-login/" <> _user_id}}} = result
 
-      # accept_invite now creates a pending link; teacher must approve before it becomes active
       student = Accounts.get_user_by_username("alunaana")
       pending = Study.list_pending_requests_for_teacher(teacher.id)
       assert Enum.any?(pending, &(&1.student_id == student.id))

@@ -1,12 +1,10 @@
 defmodule OGrupoDeEstudos.WorkshopFlyerTest do
-  # async: false — troca :uploads_path, que é config global do app.
   use OGrupoDeEstudos.DataCase, async: false
 
   import OGrupoDeEstudos.Factory
 
   alias OGrupoDeEstudos.Workshops
 
-  # 1x1 PNG de verdade: o Mogrify precisa de bytes que sejam imagem.
   @png Base.decode64!(
          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
        )
@@ -15,119 +13,119 @@ defmodule OGrupoDeEstudos.WorkshopFlyerTest do
     dir = Path.join(System.tmp_dir!(), "flyer_test_#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
 
-    anterior = Application.get_env(:o_grupo_de_estudos, :uploads_path)
+    previous = Application.get_env(:o_grupo_de_estudos, :uploads_path)
     Application.put_env(:o_grupo_de_estudos, :uploads_path, dir)
 
     on_exit(fn ->
-      case anterior do
+      case previous do
         nil -> Application.delete_env(:o_grupo_de_estudos, :uploads_path)
-        valor -> Application.put_env(:o_grupo_de_estudos, :uploads_path, valor)
+        value -> Application.put_env(:o_grupo_de_estudos, :uploads_path, value)
       end
 
       File.rm_rf!(dir)
     end)
 
-    origem = Path.join(dir, "origem.png")
-    File.write!(origem, @png)
+    source = Path.join(dir, "origem.png")
+    File.write!(source, @png)
 
-    dono = insert(:user)
-    %{dir: dir, origem: origem, dono: dono, workshop: insert(:workshop, organizer: dono)}
+    owner = insert(:user)
+    %{dir: dir, source: source, owner: owner, workshop: insert(:workshop, organizer: owner)}
   end
 
-  defp caminho_no_disco(dir, "/uploads/" <> relativo), do: Path.join(dir, relativo)
+  defp disk_path(dir, "/uploads/" <> relativo), do: Path.join(dir, relativo)
 
   describe "put_workshop_flyer/4" do
-    test "guarda o arquivo e aponta a coluna para ele", ctx do
-      assert {:ok, atualizado} =
-               Workshops.put_workshop_flyer(ctx.workshop, ctx.dono, ctx.origem, ".png")
+    test "stores the file and points the column at it", ctx do
+      assert {:ok, updated} =
+               Workshops.put_workshop_flyer(ctx.workshop, ctx.owner, ctx.source, ".png")
 
-      assert atualizado.flyer_path =~
+      assert updated.flyer_path =~
                ~r{^/uploads/flyers/workshops/#{ctx.workshop.id}/[A-Za-z0-9]+\.png$}
 
-      assert File.exists?(caminho_no_disco(ctx.dir, atualizado.flyer_path))
+      assert File.exists?(disk_path(ctx.dir, updated.flyer_path))
     end
 
-    test "a pasta organiza por workshop; o nome continua não adivinhável", ctx do
-      # O id do workshop na pasta não abre nada (rota é por slug) e deixa o
-      # bucket navegável por contexto. O que protege de varredura é o nome
-      # aleatório, e o id de quem organiza continua fora da URL.
-      {:ok, atualizado} = Workshops.put_workshop_flyer(ctx.workshop, ctx.dono, ctx.origem, ".png")
+    test "folder is scoped by workshop and the file name stays unguessable", ctx do
+      {:ok, updated} = Workshops.put_workshop_flyer(ctx.workshop, ctx.owner, ctx.source, ".png")
 
-      assert atualizado.flyer_path =~ "flyers/workshops/#{ctx.workshop.id}/"
-      refute atualizado.flyer_path =~ ctx.dono.id
+      assert updated.flyer_path =~ "flyers/workshops/#{ctx.workshop.id}/"
+      refute updated.flyer_path =~ ctx.owner.id
     end
 
-    test "trocar o flyer apaga o anterior em vez de acumular lixo", ctx do
-      {:ok, com_primeiro} =
-        Workshops.put_workshop_flyer(ctx.workshop, ctx.dono, ctx.origem, ".png")
+    test "replacing the flyer deletes the previous file instead of piling up", ctx do
+      {:ok, with_first} =
+        Workshops.put_workshop_flyer(ctx.workshop, ctx.owner, ctx.source, ".png")
 
-      primeiro = caminho_no_disco(ctx.dir, com_primeiro.flyer_path)
+      first = disk_path(ctx.dir, with_first.flyer_path)
 
-      {:ok, com_segundo} =
-        Workshops.put_workshop_flyer(com_primeiro, ctx.dono, ctx.origem, ".png")
+      {:ok, with_second} =
+        Workshops.put_workshop_flyer(with_first, ctx.owner, ctx.source, ".png")
 
-      refute File.exists?(primeiro)
-      assert File.exists?(caminho_no_disco(ctx.dir, com_segundo.flyer_path))
+      refute File.exists?(first)
+      assert File.exists?(disk_path(ctx.dir, with_second.flyer_path))
     end
 
-    test "co-organizador também põe flyer", ctx do
-      parceiro = insert(:user)
-      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.dono, parceiro.id)
+    test "co-organizer also uploads a flyer", ctx do
+      partner = insert(:user)
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.owner, partner.id)
 
-      assert {:ok, _} = Workshops.put_workshop_flyer(ctx.workshop, parceiro, ctx.origem, ".png")
+      assert {:ok, _} = Workshops.put_workshop_flyer(ctx.workshop, partner, ctx.source, ".png")
     end
 
-    test "estranho não põe flyer no workshop alheio", ctx do
+    test "outsider does not upload a flyer to someone else's workshop", ctx do
       assert {:error, :unauthorized} =
-               Workshops.put_workshop_flyer(ctx.workshop, insert(:user), ctx.origem, ".png")
+               Workshops.put_workshop_flyer(ctx.workshop, insert(:user), ctx.source, ".png")
     end
   end
 
   describe "remove_workshop_flyer/2" do
-    test "tira a referência e apaga o arquivo", ctx do
-      {:ok, com_flyer} = Workshops.put_workshop_flyer(ctx.workshop, ctx.dono, ctx.origem, ".png")
-      arquivo = caminho_no_disco(ctx.dir, com_flyer.flyer_path)
+    test "drops the reference and deletes the file", ctx do
+      {:ok, with_flyer} =
+        Workshops.put_workshop_flyer(ctx.workshop, ctx.owner, ctx.source, ".png")
 
-      assert {:ok, sem_flyer} = Workshops.remove_workshop_flyer(com_flyer, ctx.dono)
+      file = disk_path(ctx.dir, with_flyer.flyer_path)
 
-      assert is_nil(sem_flyer.flyer_path)
-      refute File.exists?(arquivo)
+      assert {:ok, without_flyer} = Workshops.remove_workshop_flyer(with_flyer, ctx.owner)
+
+      assert is_nil(without_flyer.flyer_path)
+      refute File.exists?(file)
     end
 
-    test "tirar quando não tem não quebra", ctx do
+    test "removing a flyer that does not exist does not crash", ctx do
       assert {:ok, %{flyer_path: nil}} =
-               Workshops.remove_workshop_flyer(ctx.workshop, ctx.dono)
+               Workshops.remove_workshop_flyer(ctx.workshop, ctx.owner)
     end
 
-    test "estranho não tira flyer alheio", ctx do
-      {:ok, com_flyer} = Workshops.put_workshop_flyer(ctx.workshop, ctx.dono, ctx.origem, ".png")
+    test "outsider does not remove someone else's flyer", ctx do
+      {:ok, with_flyer} =
+        Workshops.put_workshop_flyer(ctx.workshop, ctx.owner, ctx.source, ".png")
 
       assert {:error, :unauthorized} =
-               Workshops.remove_workshop_flyer(com_flyer, insert(:user))
+               Workshops.remove_workshop_flyer(with_flyer, insert(:user))
     end
   end
 
-  describe "flyer da programação" do
-    setup %{dono: dono} do
-      {:ok, program} = Workshops.create_program(dono, %{title: "Festival com cartaz"})
+  describe "program flyer" do
+    setup %{owner: owner} do
+      {:ok, program} = Workshops.create_program(owner, %{title: "Festival com cartaz"})
       %{program: program}
     end
 
-    test "dono põe e tira", ctx do
-      assert {:ok, com_flyer} =
-               Workshops.put_program_flyer(ctx.program, ctx.dono, ctx.origem, ".png")
+    test "owner uploads and removes it", ctx do
+      assert {:ok, with_flyer} =
+               Workshops.put_program_flyer(ctx.program, ctx.owner, ctx.source, ".png")
 
-      assert com_flyer.flyer_path =~ "/uploads/flyers/programas/#{ctx.program.id}/"
-      arquivo = caminho_no_disco(ctx.dir, com_flyer.flyer_path)
-      assert File.exists?(arquivo)
+      assert with_flyer.flyer_path =~ "/uploads/flyers/programas/#{ctx.program.id}/"
+      file = disk_path(ctx.dir, with_flyer.flyer_path)
+      assert File.exists?(file)
 
-      assert {:ok, %{flyer_path: nil}} = Workshops.remove_program_flyer(com_flyer, ctx.dono)
-      refute File.exists?(arquivo)
+      assert {:ok, %{flyer_path: nil}} = Workshops.remove_program_flyer(with_flyer, ctx.owner)
+      refute File.exists?(file)
     end
 
-    test "estranho não mexe", ctx do
+    test "outsider does not touch it", ctx do
       assert {:error, :unauthorized} =
-               Workshops.put_program_flyer(ctx.program, insert(:user), ctx.origem, ".png")
+               Workshops.put_program_flyer(ctx.program, insert(:user), ctx.source, ".png")
     end
   end
 end

@@ -1,13 +1,8 @@
 defmodule OGrupoDeEstudos.WorkshopTeachersTest do
   @moduledoc """
-  Quem dá a aula deixa de ser quem criou por acidente.
-
-  O formulário não tinha campo de professor: o criador virava professor por
-  omissão. Isso quebra no caso real de alguém organizar a aula de outra
-  pessoa, que é o mais comum quando se produz um evento.
-
-  Workshop de forró quase sempre é dado por duas pessoas, e professor de fora
-  nem sempre tem conta no site. As duas coisas precisam caber.
+  Teaching and organizing are separate roles: the creator is not a teacher by
+  default. A workshop takes one or two teachers, and a teacher may have no
+  account on the site.
   """
 
   use OGrupoDeEstudos.DataCase, async: true
@@ -17,116 +12,115 @@ defmodule OGrupoDeEstudos.WorkshopTeachersTest do
   alias OGrupoDeEstudos.Workshops
 
   setup do
-    dono = insert(:user, name: "Produtor do Evento")
-    %{dono: dono, workshop: insert(:workshop, organizer: dono)}
+    owner = insert(:user, name: "Produtor do Evento")
+    %{owner: owner, workshop: insert(:workshop, organizer: owner)}
   end
 
-  describe "quem dá a aula" do
-    test "com conta no site, aparece com foto e perfil", ctx do
-      professora = insert(:user, name: "Marina Costa", avatar_path: "/uploads/avatars/m/1.jpg")
+  describe "who teaches the class" do
+    test "teacher with an account comes with photo and profile", ctx do
+      teacher = insert(:user, name: "Marina Costa", avatar_path: "/uploads/avatars/m/1.jpg")
 
       assert {:ok, _} =
-               Workshops.set_teachers(ctx.workshop, ctx.dono, [%{user_id: professora.id}])
+               Workshops.set_teachers(ctx.workshop, ctx.owner, [%{user_id: teacher.id}])
 
-      assert [professor] = Workshops.list_teachers(ctx.workshop.id)
-      assert professor.name == "Marina Costa"
-      assert professor.username == professora.username
-      assert professor.avatar_path == "/uploads/avatars/m/1.jpg"
+      assert [teacher] = Workshops.list_teachers(ctx.workshop.id)
+      assert teacher.name == "Marina Costa"
+      assert teacher.username == teacher.username
+      assert teacher.avatar_path == "/uploads/avatars/m/1.jpg"
     end
 
-    test "sem conta, entra só o nome", ctx do
+    test "teacher without an account comes as a plain name", ctx do
       assert {:ok, _} =
-               Workshops.set_teachers(ctx.workshop, ctx.dono, [%{display_name: "Zé de Itaúnas"}])
+               Workshops.set_teachers(ctx.workshop, ctx.owner, [%{display_name: "Zé de Itaúnas"}])
 
-      assert [professor] = Workshops.list_teachers(ctx.workshop.id)
-      assert professor.name == "Zé de Itaúnas"
-      assert is_nil(professor.username)
+      assert [teacher] = Workshops.list_teachers(ctx.workshop.id)
+      assert teacher.name == "Zé de Itaúnas"
+      assert is_nil(teacher.username)
     end
 
-    test "o casal: dois professores, na ordem informada", ctx do
+    test "two teachers are kept in the given order", ctx do
       ela = insert(:user, name: "Marina Costa")
 
       assert {:ok, _} =
-               Workshops.set_teachers(ctx.workshop, ctx.dono, [
+               Workshops.set_teachers(ctx.workshop, ctx.owner, [
                  %{user_id: ela.id},
                  %{display_name: "Zé de Itaúnas"}
                ])
 
-      assert [primeira, segundo] = Workshops.list_teachers(ctx.workshop.id)
-      assert primeira.name == "Marina Costa"
-      assert segundo.name == "Zé de Itaúnas"
+      assert [first, second] = Workshops.list_teachers(ctx.workshop.id)
+      assert first.name == "Marina Costa"
+      assert second.name == "Zé de Itaúnas"
     end
 
-    test "mais de dois é recusado: workshop é de um ou dois", ctx do
+    test "more than two teachers is rejected", ctx do
       assert {:error, :too_many_teachers} =
-               Workshops.set_teachers(ctx.workshop, ctx.dono, [
+               Workshops.set_teachers(ctx.workshop, ctx.owner, [
                  %{display_name: "Um"},
                  %{display_name: "Dois"},
                  %{display_name: "Três"}
                ])
     end
 
-    test "quem organiza NÃO vira professor sozinho", ctx do
-      # Produzir a aula de outra pessoa é o caso real; assumir que quem criou
-      # dá a aula era o bug.
+    test "organizer does not become a teacher by default", ctx do
       assert Workshops.list_teachers(ctx.workshop.id) == []
     end
 
-    test "quem organiza pode se colocar como professor, quando é o caso", ctx do
-      assert {:ok, _} = Workshops.set_teachers(ctx.workshop, ctx.dono, [%{user_id: ctx.dono.id}])
+    test "organizer can list themselves as a teacher", ctx do
+      assert {:ok, _} =
+               Workshops.set_teachers(ctx.workshop, ctx.owner, [%{user_id: ctx.owner.id}])
 
-      assert [professor] = Workshops.list_teachers(ctx.workshop.id)
-      assert professor.name == "Produtor do Evento"
+      assert [teacher] = Workshops.list_teachers(ctx.workshop.id)
+      assert teacher.name == "Produtor do Evento"
     end
   end
 
-  describe "trocar depois" do
-    test "o nome escrito vira conta quando a pessoa se cadastra", ctx do
+  describe "changing teachers later" do
+    test "plain name becomes an account when the person signs up", ctx do
       {:ok, _} =
-        Workshops.set_teachers(ctx.workshop, ctx.dono, [%{display_name: "Zé de Itaúnas"}])
+        Workshops.set_teachers(ctx.workshop, ctx.owner, [%{display_name: "Zé de Itaúnas"}])
 
       ze = insert(:user, name: "José de Itaúnas")
 
-      assert {:ok, _} = Workshops.set_teachers(ctx.workshop, ctx.dono, [%{user_id: ze.id}])
+      assert {:ok, _} = Workshops.set_teachers(ctx.workshop, ctx.owner, [%{user_id: ze.id}])
 
-      assert [professor] = Workshops.list_teachers(ctx.workshop.id)
-      assert professor.username == ze.username
+      assert [teacher] = Workshops.list_teachers(ctx.workshop.id)
+      assert teacher.username == ze.username
     end
 
-    test "dá para tirar todo mundo", ctx do
-      {:ok, _} = Workshops.set_teachers(ctx.workshop, ctx.dono, [%{display_name: "Alguém"}])
+    test "removes every teacher", ctx do
+      {:ok, _} = Workshops.set_teachers(ctx.workshop, ctx.owner, [%{display_name: "Alguém"}])
 
-      assert {:ok, _} = Workshops.set_teachers(ctx.workshop, ctx.dono, [])
+      assert {:ok, _} = Workshops.set_teachers(ctx.workshop, ctx.owner, [])
       assert Workshops.list_teachers(ctx.workshop.id) == []
     end
 
-    test "estranho não mexe em quem dá a aula", ctx do
+    test "outsider does not change the teachers", ctx do
       assert {:error, :unauthorized} =
                Workshops.set_teachers(ctx.workshop, insert(:user), [%{display_name: "Eu"}])
     end
 
-    test "co-organizador mexe", ctx do
-      parceiro = insert(:user)
-      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.dono, parceiro.id)
+    test "co-organizer changes the teachers", ctx do
+      partner = insert(:user)
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.owner, partner.id)
 
       assert {:ok, _} =
-               Workshops.set_teachers(ctx.workshop, parceiro, [%{display_name: "Alguém"}])
+               Workshops.set_teachers(ctx.workshop, partner, [%{display_name: "Alguém"}])
     end
   end
 
-  describe "entradas que não fazem sentido" do
-    test "sem conta e sem nome não entra", ctx do
-      assert {:error, :invalid_teacher} = Workshops.set_teachers(ctx.workshop, ctx.dono, [%{}])
+  describe "entries that make no sense" do
+    test "entry with neither account nor name is rejected", ctx do
+      assert {:error, :invalid_teacher} = Workshops.set_teachers(ctx.workshop, ctx.owner, [%{}])
     end
 
-    test "nome em branco não entra", ctx do
+    test "blank name is rejected", ctx do
       assert {:error, :invalid_teacher} =
-               Workshops.set_teachers(ctx.workshop, ctx.dono, [%{display_name: "   "}])
+               Workshops.set_teachers(ctx.workshop, ctx.owner, [%{display_name: "   "}])
     end
 
-    test "conta que não existe não entra", ctx do
+    test "account that does not exist is rejected", ctx do
       assert {:error, :invalid_teacher} =
-               Workshops.set_teachers(ctx.workshop, ctx.dono, [%{user_id: Ecto.UUID.generate()}])
+               Workshops.set_teachers(ctx.workshop, ctx.owner, [%{user_id: Ecto.UUID.generate()}])
     end
   end
 end

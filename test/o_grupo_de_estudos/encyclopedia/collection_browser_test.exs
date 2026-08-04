@@ -48,7 +48,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowserTest do
     assert card.step_count == 4
     assert card.popularity_score == 11
     assert card.image_path == "/images/collection/sacada-simples.png"
-    # Featured shows top 3 core steps by likes
     assert length(card.featured_steps) == 3
   end
 
@@ -88,7 +87,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowserTest do
 
     assert details.id == section.id
     assert Enum.map(details.subsections, & &1.title) == ["Giros simples"]
-    # All 3 steps present, sorted by likes
     codes = Enum.map(details.steps, & &1.code)
     assert "GS-1" in codes
     assert "GS-2" in codes

@@ -2,11 +2,33 @@
 
 Rede social de forro roots para estudo de danca. Usada em aulas em Curitiba pelo professor Tavano (L. Tata). Qualidade premium, nao software preguicoso.
 
+## Regra rigida: codigo em ingles, sempre
+
+**Jamais escrever codigo em portugues. TUDO em ingles**: nomes de modulos, funcoes,
+variaveis, atomos, parametros, `@moduledoc`, `@doc`, `@spec`, comentarios, nomes de
+teste e `describe`, mensagens de commit de codigo, chaves de assigns, nomes de eventos
+LiveView, nomes de tabelas, colunas e indices.
+
+Ficam **em portugues** so o que o usuario le ou o dominio exige:
+
+- Textos de interface (HEEx, e-mails, mensagens de erro exibidas, flash).
+- Nomes e descricoes de passos, categorias e conexoes (conteudo do acervo).
+- Siglas do forro (IV, SCSP, HF-*), que nunca sao traduzidas.
+- O nome do projeto, `OGrupoDeEstudos` / `o_grupo_de_estudos`.
+
+Interface em portugues nao autoriza codigo em portugues. Se um identificador precisa
+descrever um termo de dominio, usa-se o equivalente em ingles (`waitlist`, nao
+`lista_de_espera`), e o texto exibido continua em portugues.
+
 ## Padroes de qualidade
 
 Seguir **todos** os principios de `~/elixir-references/` (Playbook + RFCs). Destaques criticos:
 
 - TDD obrigatorio. Testes primeiro, implementacao depois.
+- Nome de teste descreve comportamento, sem "should": `returns X when Y`, `verifies X`.
+- Comentario e ultimo recurso. Nome de funcao e de variavel explicam; comentario so
+  para o que o codigo nao consegue dizer (motivo, armadilha externa, decisao). Nunca
+  comentario dentro de corpo de teste.
 - Clean code: funcoes ate 10 linhas (max 18). Uma responsabilidade por funcao.
 - Grokking Simplicity: separar calculos (puros) de acoes (I/O). Calculos nao logam.
 - Pattern matching sobre condicionais. Multiplas clausulas sobre `if`/`case` internos.

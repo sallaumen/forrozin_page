@@ -1,15 +1,10 @@
 defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
   @moduledoc """
-  Transcode de vídeo da galeria.
-
-  O que está em jogo não é só espaço: iPhone grava HEVC, boa parte dos Android
-  mostra tela preta, e a aluna que postou não entende por que a colega não
-  consegue ver. Por isso a maior parte destes testes é sobre o arquivo que
-  sobra no fim, não sobre o comando que rodou.
+  Gallery video transcode. iPhone records HEVC and many Android players show a
+  black screen, so most of these tests are about the file left at the end, not
+  about the command that ran.
   """
 
-  # async: false — troca :uploads_path e o adapter de vídeo, que são config
-  # global.
   use OGrupoDeEstudos.DataCase, async: false
 
   import Mox
@@ -28,63 +23,59 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
   setup do
     dir = Path.join(System.tmp_dir!(), "transcode_test_#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
-    uploads_antes = Application.get_env(:o_grupo_de_estudos, :uploads_path)
-    video_antes = Application.get_env(:o_grupo_de_estudos, Video)
+    uploads_before = Application.get_env(:o_grupo_de_estudos, :uploads_path)
+    video_before = Application.get_env(:o_grupo_de_estudos, Video)
 
     Application.put_env(:o_grupo_de_estudos, :uploads_path, dir)
     Application.put_env(:o_grupo_de_estudos, Video, adapter: Video.Mock)
 
     on_exit(fn ->
-      restaurar(:uploads_path, uploads_antes)
-      restaurar(Video, video_antes)
+      restaurar(:uploads_path, uploads_before)
+      restaurar(Video, video_before)
       File.rm_rf!(dir)
     end)
 
-    origem = Path.join(dir, "origem.mov")
-    # 4 MB de "vídeo": o que importa é ser bem maior do que a saída fingida.
-    File.write!(origem, :binary.copy(<<0>>, 4_000_000))
+    source = Path.join(dir, "origem.mov")
+    File.write!(source, :binary.copy(<<0>>, 4_000_000))
 
-    dono = insert(:user)
-    aluna = insert(:user)
-    workshop = insert(:workshop, organizer: dono)
-    {:ok, _} = Workshops.enroll(workshop, aluna)
+    owner = insert(:user)
+    student = insert(:user)
+    workshop = insert(:workshop, organizer: owner)
+    {:ok, _} = Workshops.enroll(workshop, student)
 
-    %{dir: dir, origem: origem, dono: dono, aluna: aluna, workshop: workshop}
+    %{dir: dir, source: source, owner: owner, student: student, workshop: workshop}
   end
 
-  defp restaurar(chave, nil), do: Application.delete_env(:o_grupo_de_estudos, chave)
-  defp restaurar(chave, valor), do: Application.put_env(:o_grupo_de_estudos, chave, valor)
+  defp restaurar(key, nil), do: Application.delete_env(:o_grupo_de_estudos, key)
+  defp restaurar(key, value), do: Application.put_env(:o_grupo_de_estudos, key, value)
 
-  defp video(ctx),
-    do: %{tmp_path: ctx.origem, content_type: "video/quicktime", byte_size: 4_000_000}
+  defp video_upload(ctx),
+    do: %{tmp_path: ctx.source, content_type: "video/quicktime", byte_size: 4_000_000}
 
-  defp foto(ctx) do
-    caminho = Path.join(ctx.dir, "foto.png")
-    File.write!(caminho, @png)
-    %{tmp_path: caminho, content_type: "image/png", byte_size: byte_size(@png)}
+  defp photo(ctx) do
+    path = Path.join(ctx.dir, "foto.png")
+    File.write!(path, @png)
+    %{tmp_path: path, content_type: "image/png", byte_size: byte_size(@png)}
   end
 
-  # Vídeo que entra sem o worker rodar junto, para os testes do worker
-  # partirem do estado real de "acabou de subir".
-  defp subir_video(ctx) do
+  defp upload_video(ctx) do
     Oban.Testing.with_testing_mode(:manual, fn ->
-      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, video(ctx))
+      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, video_upload(ctx))
       media
     end)
   end
 
-  # ffmpeg de mentira: escreve no destino o conteúdo pedido e devolve :ok.
-  defp escrever_no_destino(conteudo) do
-    fn _origem, destino ->
-      File.write!(destino, conteudo)
+  defp write_to_destination(content) do
+    fn _source, destination ->
+      File.write!(destination, content)
       :ok
     end
   end
 
-  describe "o que acontece no upload" do
-    test "vídeo entra como processando e vai para a fila", ctx do
+  describe "what happens on upload" do
+    test "video arrives as processing and goes to the queue", ctx do
       Oban.Testing.with_testing_mode(:manual, fn ->
-        assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, video(ctx))
+        assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, video_upload(ctx))
 
         assert media.status == :processing
 
@@ -96,9 +87,9 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       end)
     end
 
-    test "foto já nasce pronta e não ocupa a fila", ctx do
+    test "photo arrives ready and does not take the queue", ctx do
       Oban.Testing.with_testing_mode(:manual, fn ->
-        assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.aluna, foto(ctx))
+        assert {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
 
         assert media.status == :ready
         refute_enqueued(worker: TranscodeWorkshopVideo)
@@ -106,72 +97,71 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
     end
   end
 
-  describe "transcode que dá certo" do
+  describe "successful transcode" do
     test "troca o arquivo, atualiza tamanho e tipo, e marca pronto", ctx do
-      media = subir_video(ctx)
-      chave_antiga = media.storage_key
+      media = upload_video(ctx)
+      old_key = media.storage_key
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, escrever_no_destino(:binary.copy(<<1>>, 800_000)))
-      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+      expect(Video.Mock, :transcode, write_to_destination(:binary.copy(<<1>>, 800_000)))
+      expect(Video.Mock, :poster, write_to_destination("jpeg-de-mentira"))
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
-      pronta = Workshops.get_media(media.id)
-      assert pronta.status == :ready
-      assert pronta.content_type == "video/mp4"
-      assert pronta.byte_size == 800_000
-      assert pronta.storage_key != chave_antiga
-      # O convertido fica na pasta do mesmo workshop, como o original.
-      assert pronta.storage_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.mp4$}
-      assert {:file, _} = Workshops.serve_media(pronta)
+      ready_media = Workshops.get_media(media.id)
+      assert ready_media.status == :ready
+      assert ready_media.content_type == "video/mp4"
+      assert ready_media.byte_size == 800_000
+      assert ready_media.storage_key != old_key
+      assert ready_media.storage_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.mp4$}
+      assert {:file, _} = Workshops.serve_media(ready_media)
     end
 
-    test "o arquivo original vai embora, senão o transcode dobraria o espaço", ctx do
-      media = subir_video(ctx)
-      {:file, caminho_antigo} = Workshops.serve_media(media)
-      assert File.exists?(caminho_antigo)
+    test "original file is dropped, otherwise the transcode would double the space", ctx do
+      media = upload_video(ctx)
+      {:file, old_path} = Workshops.serve_media(media)
+      assert File.exists?(old_path)
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, escrever_no_destino(:binary.copy(<<1>>, 800_000)))
-      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+      expect(Video.Mock, :transcode, write_to_destination(:binary.copy(<<1>>, 800_000)))
+      expect(Video.Mock, :poster, write_to_destination("jpeg-de-mentira"))
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
-      refute File.exists?(caminho_antigo)
+      refute File.exists?(old_path)
     end
 
-    test "grava o poster e ele fica em disco", ctx do
-      media = subir_video(ctx)
+    test "stores the poster and it stays on disk", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, escrever_no_destino(:binary.copy(<<1>>, 800_000)))
-      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+      expect(Video.Mock, :transcode, write_to_destination(:binary.copy(<<1>>, 800_000)))
+      expect(Video.Mock, :poster, write_to_destination("jpeg-de-mentira"))
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
-      pronta = Workshops.get_media(media.id)
-      assert pronta.poster_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.jpg$}
-      assert {:file, _} = Workshops.serve_poster(pronta)
+      ready_media = Workshops.get_media(media.id)
+      assert ready_media.poster_key =~ ~r{^workshop_media/#{ctx.workshop.id}/[A-Za-z0-9]+\.jpg$}
+      assert {:file, _} = Workshops.serve_poster(ready_media)
     end
 
-    test "não sobra arquivo temporário na área de trabalho", ctx do
-      media = subir_video(ctx)
+    test "leaves no temporary file in the work area", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, escrever_no_destino(:binary.copy(<<1>>, 800_000)))
-      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+      expect(Video.Mock, :transcode, write_to_destination(:binary.copy(<<1>>, 800_000)))
+      expect(Video.Mock, :poster, write_to_destination("jpeg-de-mentira"))
 
-      antes = temporarios()
+      earlier = temporarios()
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
-      assert temporarios() == antes
+      assert temporarios() == earlier
     end
   end
 
-  describe "degradação com elegância" do
-    test "sem ffmpeg, guarda o arquivo como veio em vez de falhar", ctx do
-      media = subir_video(ctx)
+  describe "graceful degradation" do
+    test "keeps the original file instead of failing when ffmpeg is missing", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> false end)
 
@@ -186,11 +176,14 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       assert {:file, _} = Workshops.serve_media(intacta)
     end
 
-    test "transcode que falha não perde o vídeo da aluna", ctx do
-      media = subir_video(ctx)
+    test "failed transcode does not lose the uploaded video", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, fn _origem, _destino -> {:error, {1, "codec estranho"}} end)
+
+      expect(Video.Mock, :transcode, fn _source, _destination ->
+        {:error, {1, "codec estranho"}}
+      end)
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
@@ -200,89 +193,82 @@ defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideoTest do
       assert {:file, _} = Workshops.serve_media(intacta)
     end
 
-    test "poster que falha não segura o vídeo em processando", ctx do
-      media = subir_video(ctx)
+    test "failed poster does not hold the video in processing", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, escrever_no_destino(:binary.copy(<<1>>, 800_000)))
-      expect(Video.Mock, :poster, fn _origem, _destino -> {:error, :vídeo_curto_demais} end)
+      expect(Video.Mock, :transcode, write_to_destination(:binary.copy(<<1>>, 800_000)))
+      expect(Video.Mock, :poster, fn _source, _destination -> {:error, :vídeo_curto_demais} end)
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
-      pronta = Workshops.get_media(media.id)
-      assert pronta.status == :ready
-      assert pronta.byte_size == 800_000
-      assert is_nil(pronta.poster_key)
+      ready_media = Workshops.get_media(media.id)
+      assert ready_media.status == :ready
+      assert ready_media.byte_size == 800_000
+      assert is_nil(ready_media.poster_key)
     end
 
-    test "vídeo que já foi transcodificado não roda de novo", ctx do
-      media = subir_video(ctx)
+    test "already transcoded video does not run again", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, escrever_no_destino(:binary.copy(<<1>>, 800_000)))
-      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+      expect(Video.Mock, :transcode, write_to_destination(:binary.copy(<<1>>, 800_000)))
+      expect(Video.Mock, :poster, write_to_destination("jpeg-de-mentira"))
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
-      # Segunda passada: retry do Oban ou job duplicado. Sem expect nenhum, um
-      # toque no ffmpeg estoura o verify_on_exit!.
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
     end
 
-    test "mídia apagada no meio do caminho não quebra o job", ctx do
-      media = subir_video(ctx)
-      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
+    test "media deleted halfway does not break the job", ctx do
+      media = upload_video(ctx)
+      {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.student, media.id)
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
     end
 
-    test "id que não existe não quebra o job" do
+    test "unknown id does not break the job" do
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => Ecto.UUID.generate()})
     end
   end
 
-  describe "remoção no meio do transcode" do
-    test "quem apaga durante o ffmpeg ganha: nada convertido sobra no volume", ctx do
-      media = subir_video(ctx)
+  describe "deletion during the transcode" do
+    test "deleting during ffmpeg wins and leaves nothing converted on the volume", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> true end)
 
-      expect(Video.Mock, :transcode, fn _origem, destino ->
-        # A aluna apaga enquanto o ffmpeg trabalha (ele segue com o arquivo
-        # aberto). O job não pode ressuscitar a mídia apagada nem largar o
-        # convertido órfão no volume: ninguém mais o deletaria.
-        {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
-        File.write!(destino, :binary.copy(<<1>>, 800_000))
+      expect(Video.Mock, :transcode, fn _source, destination ->
+        {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.student, media.id)
+        File.write!(destination, :binary.copy(<<1>>, 800_000))
         :ok
       end)
 
-      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+      expect(Video.Mock, :poster, write_to_destination("jpeg-de-mentira"))
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
       assert OGrupoDeEstudos.Media.ObjectStorage.list("workshop_media/") == []
 
-      apagada = Workshops.get_media(media.id)
-      refute is_nil(apagada.deleted_at)
-      # A linha apagada não ganha a chave do convertido: fica como a remoção
-      # a deixou.
-      assert apagada.storage_key == media.storage_key
+      deleted_media = Workshops.get_media(media.id)
+      refute is_nil(deleted_media.deleted_at)
+      assert deleted_media.storage_key == media.storage_key
     end
   end
 
-  describe "remoção depois do transcode" do
-    test "apagar a mídia leva o poster junto", ctx do
-      media = subir_video(ctx)
+  describe "deletion after the transcode" do
+    test "deleting the media takes the poster with it", ctx do
+      media = upload_video(ctx)
 
       expect(Video.Mock, :available?, fn -> true end)
-      expect(Video.Mock, :transcode, escrever_no_destino(:binary.copy(<<1>>, 800_000)))
-      expect(Video.Mock, :poster, escrever_no_destino("jpeg-de-mentira"))
+      expect(Video.Mock, :transcode, write_to_destination(:binary.copy(<<1>>, 800_000)))
+      expect(Video.Mock, :poster, write_to_destination("jpeg-de-mentira"))
 
       :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
-      pronta = Workshops.get_media(media.id)
-      {:file, caminho_poster} = Workshops.serve_poster(pronta)
+      ready_media = Workshops.get_media(media.id)
+      {:file, poster_path} = Workshops.serve_poster(ready_media)
 
-      assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.aluna, media.id)
-      refute File.exists?(caminho_poster)
+      assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.student, media.id)
+      refute File.exists?(poster_path)
     end
   end
 

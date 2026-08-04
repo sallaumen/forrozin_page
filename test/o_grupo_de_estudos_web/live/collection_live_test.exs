@@ -16,7 +16,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     end
   end
 
-  describe "mount — authenticated" do
+  describe "mount when authenticated" do
     test "displays titles of registered sections", %{conn: conn} do
       insert(:section, title: "Bases", position: 1)
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/collection")
@@ -34,8 +34,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     test "dead render defers heavy queries and shows a loading state", %{conn: conn} do
       insert(:section, title: "Bases Reservadas", position: 1)
 
-      # Disconnected HTTP render: the acervo loads on the connected mount, so the
-      # heavy section content must not appear yet — only the loading skeleton.
       html = logged_in_conn(conn) |> get(~p"/collection") |> html_response(200)
 
       assert html =~ ~s(id="collection-loading")
@@ -258,8 +256,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       html = render_click(lv, "filter", %{"category" => "bases"})
       assert html =~ "Seção Bases"
-      # "Seção Sacadas" text exists in suggest form dropdown, but section card should not show
-      # Check that the toggle button for section_s doesn't exist
       refute html =~ "phx-value-section_id=\"#{section_s.id}\""
     end
 
@@ -295,7 +291,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     end
   end
 
-  describe "drawer — step details" do
+  describe "drawer with step details" do
     test "opens drawer with step details on click", %{conn: conn} do
       section = insert(:section, title: "Bases", position: 1)
       insert(:step, section: section, code: "BF", name: "Base frontal", note: "Mechanical note")
@@ -313,11 +309,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
 
       html = render_click(lv, "open_step", %{"code" => "BF"})
 
-      # The drawer now shows the same detail as the page: note, connections, comments.
       assert html =~ "Mechanical note"
       assert html =~ "Conexões"
       assert html =~ "Comentários"
-      # Panel scrolls on its own and exposes an accessible close affordance.
       assert html =~ "overflow-y-auto"
       assert has_element?(lv, ~s(button[phx-click="close_drawer"][aria-label="Fechar painel"]))
     end
@@ -399,7 +393,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
     end
   end
 
-  describe "drawer — admin editing" do
+  describe "drawer with admin editing" do
     defp admin_conn(conn) do
       admin = insert(:admin)
       log_in_user(conn, admin)
@@ -462,7 +456,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       render_click(lv, "toggle_edit_mode", %{})
       render_click(lv, "open_step", %{"code" => "BF"})
       _html = render_click(lv, "delete_step_connection", %{"source" => "BF", "target" => "SC"})
-      # Drawer refreshes — SC should no longer be in connections
       html = render_click(lv, "open_step", %{"code" => "BF"})
       assert html =~ "0 saídas"
     end
@@ -488,7 +481,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
         "category" => %{"name" => "nova", "label" => "Nova Cat", "color" => "#ff0000"}
       })
 
-      # Category appears in filter bar
       html = render(lv)
       assert html =~ "Nova Cat"
     end
@@ -532,7 +524,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
       render_click(lv, "open_step", %{"code" => "SUG-2"})
       render_click(lv, "approve_step", %{"code" => "SUG-2"})
-      # Step is now approved but keeps suggested_by_id
       step = OGrupoDeEstudos.Repo.get_by!(OGrupoDeEstudos.Encyclopedia.Step, code: "SUG-2")
       assert step.approved == true
       assert step.suggested_by_id == user.id
@@ -540,19 +531,18 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
   end
 
   describe "drawer overflow prevention" do
-    test "drawer uses transform (not right: -Npx) when closed — prevents horizontal scroll", %{
-      conn: conn
-    } do
+    test "drawer uses transform instead of right offset when closed, preventing horizontal scroll",
+         %{
+           conn: conn
+         } do
       {:ok, _view, html} = live(logged_in_conn(conn), ~p"/collection")
 
-      # Drawer should NOT use negative right offset (which extends scroll width)
       refute html =~ "right: -400px",
              "drawer uses `right: -400px` which extends document scroll width; use transform: translateX(100%) instead"
 
       refute html =~ "right:-400px",
              "drawer uses `right:-400px` which extends document scroll width"
 
-      # Drawer should use transform to position off-screen when closed
       assert html =~ "translateX(100%)",
              "drawer should use transform: translateX(100%) when closed for off-screen positioning"
     end

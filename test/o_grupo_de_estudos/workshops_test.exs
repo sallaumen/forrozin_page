@@ -7,10 +7,10 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
   alias OGrupoDeEstudos.Workshops
   alias OGrupoDeEstudos.Workshops.EnrollmentQuery
 
-  defp em(dias, hora \\ 14) do
+  defp at_day(days, hour \\ 14) do
     Brazil.today()
-    |> Date.add(dias)
-    |> DateTime.new!(Time.new!(hora, 0, 0), "Etc/UTC")
+    |> Date.add(days)
+    |> DateTime.new!(Time.new!(hour, 0, 0), "Etc/UTC")
     |> Brazil.to_utc()
     |> DateTime.truncate(:second)
   end
@@ -21,15 +21,15 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
         title: "Workshop de sacadas",
         description: "Quatro horas de sacadas e conduções.",
         location: "Curitiba, Juvevê",
-        starts_at: em(7),
-        ends_at: em(7, 18)
+        starts_at: at_day(7),
+        ends_at: at_day(7, 18)
       },
       overrides
     )
   end
 
   describe "create_workshop/2" do
-    test "cria como rascunho, com slug legível e único" do
+    test "creates as draft, with a readable and unique slug" do
       organizer = insert(:user)
 
       assert {:ok, workshop} = Workshops.create_workshop(organizer, attrs())
@@ -37,54 +37,54 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
       assert workshop.organizer_id == organizer.id
       assert workshop.slug =~ ~r/^workshop-de-sacadas-[a-z0-9]+$/
 
-      {:ok, outro} = Workshops.create_workshop(organizer, attrs())
-      assert outro.slug != workshop.slug
+      {:ok, other} = Workshops.create_workshop(organizer, attrs())
+      assert other.slug != workshop.slug
     end
 
-    test "exige título, descrição e início" do
+    test "requires title, description and start" do
       organizer = insert(:user)
 
       assert {:error, changeset} =
                Workshops.create_workshop(organizer, %{title: "", description: ""})
 
-      erros = errors_on(changeset)
-      assert erros.title != []
-      assert erros.description != []
-      assert erros.starts_at != []
+      errors = errors_on(changeset)
+      assert errors.title != []
+      assert errors.description != []
+      assert errors.starts_at != []
     end
 
-    test "fim precisa ser depois do início" do
+    test "end must be after the start" do
       organizer = insert(:user)
 
       assert {:error, changeset} =
                Workshops.create_workshop(
                  organizer,
-                 attrs(%{starts_at: em(7, 18), ends_at: em(7, 9)})
+                 attrs(%{starts_at: at_day(7, 18), ends_at: at_day(7, 9)})
                )
 
       assert errors_on(changeset).ends_at != []
     end
 
-    test "qualquer usuário cria, não só professor" do
-      aluno = insert(:user, is_teacher: false)
-      assert {:ok, _} = Workshops.create_workshop(aluno, attrs())
+    test "any user creates a workshop, not only a teacher" do
+      student = insert(:user, is_teacher: false)
+      assert {:ok, _} = Workshops.create_workshop(student, attrs())
     end
   end
 
   describe "publish_workshop/2 e cancel_workshop/2" do
-    test "publicar coloca na agenda; cancelar preserva o registro" do
+    test "publishing puts it on the agenda and cancelling preserves the record" do
       organizer = insert(:user)
       {:ok, workshop} = Workshops.create_workshop(organizer, attrs())
 
-      assert {:ok, publicado} = Workshops.publish_workshop(organizer, workshop)
-      assert publicado.status == :published
+      assert {:ok, published} = Workshops.publish_workshop(organizer, workshop)
+      assert published.status == :published
 
-      assert {:ok, cancelado} = Workshops.cancel_workshop(organizer, publicado)
-      assert cancelado.status == :cancelled
+      assert {:ok, cancelled} = Workshops.cancel_workshop(organizer, published)
+      assert cancelled.status == :cancelled
       assert Workshops.get_by_slug(workshop.slug)
     end
 
-    test "outro usuário não publica nem cancela" do
+    test "another user neither publishes nor cancels" do
       organizer = insert(:user)
       intruso = insert(:user)
       {:ok, workshop} = Workshops.create_workshop(organizer, attrs())
@@ -102,7 +102,7 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
       %{organizer: organizer, workshop: workshop}
     end
 
-    test "organizador não se inscreve no próprio workshop", %{
+    test "organizer does not enroll in their own workshop", %{
       organizer: organizer,
       workshop: workshop
     } do
@@ -110,40 +110,40 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
       assert EnrollmentQuery.count(workshop.id) == 0
     end
 
-    test "inscreve e conta", %{workshop: workshop} do
-      aluno = insert(:user)
+    test "enrolls and counts", %{workshop: workshop} do
+      student = insert(:user)
 
-      assert {:ok, enrollment} = Workshops.enroll(workshop, aluno)
+      assert {:ok, enrollment} = Workshops.enroll(workshop, student)
       assert enrollment.payment_status == :pending
       assert Workshops.count_enrollments(workshop.id) == 1
     end
 
-    test "inscrever duas vezes não duplica", %{workshop: workshop} do
-      aluno = insert(:user)
-      {:ok, _} = Workshops.enroll(workshop, aluno)
+    test "enrolling twice does not duplicate", %{workshop: workshop} do
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll(workshop, student)
 
-      assert {:error, :already_enrolled} = Workshops.enroll(workshop, aluno)
+      assert {:error, :already_enrolled} = Workshops.enroll(workshop, student)
       assert Workshops.count_enrollments(workshop.id) == 1
     end
 
-    test "não dá para se inscrever em rascunho", %{organizer: organizer} do
-      {:ok, rascunho} = Workshops.create_workshop(organizer, attrs())
-      aluno = insert(:user)
+    test "cannot enroll in a draft", %{organizer: organizer} do
+      {:ok, draft} = Workshops.create_workshop(organizer, attrs())
+      student = insert(:user)
 
-      assert {:error, :not_open} = Workshops.enroll(rascunho, aluno)
+      assert {:error, :not_open} = Workshops.enroll(draft, student)
     end
 
-    test "não dá para se inscrever em workshop cancelado", %{
+    test "cannot enroll in a cancelled workshop", %{
       organizer: organizer,
       workshop: workshop
     } do
-      {:ok, cancelado} = Workshops.cancel_workshop(organizer, workshop)
-      aluno = insert(:user)
+      {:ok, cancelled} = Workshops.cancel_workshop(organizer, workshop)
+      student = insert(:user)
 
-      assert {:error, :not_open} = Workshops.enroll(cancelado, aluno)
+      assert {:error, :not_open} = Workshops.enroll(cancelled, student)
     end
 
-    test "respeita a lotação", %{organizer: organizer} do
+    test "respects the capacity", %{organizer: organizer} do
       {:ok, w} = Workshops.create_workshop(organizer, attrs(%{capacity: 1}))
       {:ok, w} = Workshops.publish_workshop(organizer, w)
 
@@ -152,35 +152,35 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
       assert Workshops.count_enrollments(w.id) == 1
     end
 
-    test "sem capacidade definida, não lota", %{workshop: workshop} do
+    test "without a capacity, never gets full", %{workshop: workshop} do
       for _ <- 1..5, do: {:ok, _} = Workshops.enroll(workshop, insert(:user))
       assert Workshops.count_enrollments(workshop.id) == 5
     end
 
-    test "cancelar a inscrição libera a vaga", %{organizer: organizer} do
+    test "cancelling an enrollment frees the seat", %{organizer: organizer} do
       {:ok, w} = Workshops.create_workshop(organizer, attrs(%{capacity: 1}))
       {:ok, w} = Workshops.publish_workshop(organizer, w)
-      aluno = insert(:user)
+      student = insert(:user)
 
-      {:ok, _} = Workshops.enroll(w, aluno)
-      assert {:ok, _} = Workshops.cancel_enrollment(w, aluno)
+      {:ok, _} = Workshops.enroll(w, student)
+      assert {:ok, _} = Workshops.cancel_enrollment(w, student)
       assert Workshops.count_enrollments(w.id) == 0
 
       assert {:ok, _} = Workshops.enroll(w, insert(:user))
     end
   end
 
-  describe "privacidade do pagamento" do
+  describe "payment privacy" do
     setup do
       organizer = insert(:user)
       {:ok, w} = Workshops.create_workshop(organizer, attrs())
       {:ok, w} = Workshops.publish_workshop(organizer, w)
-      aluno = insert(:user, name: "Ana Souza")
-      {:ok, _} = Workshops.enroll(w, aluno)
-      %{organizer: organizer, workshop: w, aluno: aluno}
+      student = insert(:user, name: "Ana Souza")
+      {:ok, _} = Workshops.enroll(w, student)
+      %{organizer: organizer, workshop: w, student: student}
     end
 
-    test "a lista pública não expõe pagamento", %{workshop: w} do
+    test "public list does not expose payment", %{workshop: w} do
       assert [participante] = Workshops.list_participants(w.id)
 
       assert Map.has_key?(participante, :name)
@@ -188,116 +188,115 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
       refute Map.has_key?(participante, :paid_at)
     end
 
-    test "só o organizador vê a lista com pagamento", %{
+    test "only the organizer sees the list with payment", %{
       organizer: organizer,
       workshop: w,
-      aluno: aluno
+      student: student
     } do
-      assert {:ok, [linha]} = Workshops.list_enrollments_for_organizer(w, organizer)
-      assert linha.payment_status == :pending
-      assert linha.user.name == "Ana Souza"
+      assert {:ok, [row]} = Workshops.list_enrollments_for_organizer(w, organizer)
+      assert row.payment_status == :pending
+      assert row.user.name == "Ana Souza"
 
-      assert {:error, :unauthorized} = Workshops.list_enrollments_for_organizer(w, aluno)
+      assert {:error, :unauthorized} = Workshops.list_enrollments_for_organizer(w, student)
     end
 
     test "organizador marca pago e desfaz", %{organizer: organizer, workshop: w} do
-      {:ok, [linha]} = Workshops.list_enrollments_for_organizer(w, organizer)
+      {:ok, [row]} = Workshops.list_enrollments_for_organizer(w, organizer)
 
-      assert {:ok, pago} = Workshops.set_payment_status(w, organizer, linha.id, :paid)
-      assert pago.payment_status == :paid
-      assert pago.paid_at
+      assert {:ok, paid_class} = Workshops.set_payment_status(w, organizer, row.id, :paid)
+      assert paid_class.payment_status == :paid
+      assert paid_class.paid_at
 
-      assert {:ok, voltou} = Workshops.set_payment_status(w, organizer, linha.id, :pending)
+      assert {:ok, voltou} = Workshops.set_payment_status(w, organizer, row.id, :pending)
       assert voltou.payment_status == :pending
       assert voltou.paid_at == nil
     end
 
-    test "quem não é organizador não mexe no pagamento", %{
+    test "non-organizer does not change the payment", %{
       organizer: organizer,
       workshop: w,
-      aluno: aluno
+      student: student
     } do
-      {:ok, [linha]} = Workshops.list_enrollments_for_organizer(w, organizer)
+      {:ok, [row]} = Workshops.list_enrollments_for_organizer(w, organizer)
 
       assert {:error, :unauthorized} =
-               Workshops.set_payment_status(w, aluno, linha.id, :paid)
+               Workshops.set_payment_status(w, student, row.id, :paid)
     end
 
-    test "organizador não marca pagamento de inscrição de outro workshop", %{
+    test "organizer does not mark payment of an enrollment from another workshop", %{
       organizer: organizer,
       workshop: w
     } do
-      outro_dono = insert(:user)
-      {:ok, outro} = Workshops.create_workshop(outro_dono, attrs())
-      {:ok, outro} = Workshops.publish_workshop(outro_dono, outro)
-      {:ok, alheia} = Workshops.enroll(outro, insert(:user))
+      other_owner = insert(:user)
+      {:ok, other} = Workshops.create_workshop(other_owner, attrs())
+      {:ok, other} = Workshops.publish_workshop(other_owner, other)
+      {:ok, alheia} = Workshops.enroll(other, insert(:user))
 
       assert {:error, :not_found} = Workshops.set_payment_status(w, organizer, alheia.id, :paid)
     end
   end
 
-  describe "list_feed/1 — agenda com filtros" do
+  describe "list_feed/1 agenda with filters" do
     setup do
       organizer = insert(:user, name: "Tavano Silva")
-      outro = insert(:user, name: "Marina Prado")
+      other = insert(:user, name: "Marina Prado")
 
-      publicar = fn dono, titulo, quando ->
+      publish = fn owner, title, starts_at ->
         {:ok, w} =
           Workshops.create_workshop(
-            dono,
-            attrs(%{title: titulo, starts_at: quando, ends_at: nil})
+            owner,
+            attrs(%{title: title, starts_at: starts_at, ends_at: nil})
           )
 
-        {:ok, w} = Workshops.publish_workshop(dono, w)
+        {:ok, w} = Workshops.publish_workshop(owner, w)
         w
       end
 
       %{
-        amanha: publicar.(organizer, "Sacadas avançadas", em(1)),
-        mes_que_vem: publicar.(outro, "Intensivo de inversão", em(40)),
-        passado: publicar.(organizer, "Roda de forró antiga", em(-10)),
+        tomorrow: publish.(organizer, "Sacadas avançadas", at_day(1)),
+        next_month: publish.(other, "Intensivo de inversão", at_day(40)),
+        past_workshop: publish.(organizer, "Roda de forró antiga", at_day(-10)),
         organizer: organizer
       }
     end
 
-    test "por padrão mostra só o que vem por aí, em ordem de data", %{
-      amanha: amanha,
-      mes_que_vem: mes
+    test "shows upcoming workshops by default, ordered by date", %{
+      tomorrow: tomorrow,
+      next_month: month
     } do
       ids = Workshops.list_feed() |> Enum.map(& &1.id)
 
-      assert ids == [amanha.id, mes.id]
+      assert ids == [tomorrow.id, month.id]
     end
 
-    test "filtro :past mostra os que já aconteceram", %{passado: passado} do
+    test "past filter shows the ones that already happened", %{past_workshop: past_workshop} do
       assert [%{id: id}] = Workshops.list_feed(period: :past)
-      assert id == passado.id
+      assert id == past_workshop.id
     end
 
-    test "filtro por semana e mês respeita o fuso", %{amanha: amanha} do
-      ids_semana = Workshops.list_feed(period: :week) |> Enum.map(& &1.id)
-      ids_mes = Workshops.list_feed(period: :month) |> Enum.map(& &1.id)
+    test "week and month filters respect the timezone", %{tomorrow: tomorrow} do
+      week_ids = Workshops.list_feed(period: :week) |> Enum.map(& &1.id)
+      month_ids = Workshops.list_feed(period: :month) |> Enum.map(& &1.id)
 
-      # amanhã cai na semana e no mês corrente (a menos de virada, tolerado aqui)
-      assert amanha.id in ids_mes or amanha.id in ids_semana
+      assert tomorrow.id in month_ids or tomorrow.id in week_ids
     end
 
-    test "busca pelo nome do workshop", %{amanha: amanha} do
+    test "searches by workshop title", %{tomorrow: tomorrow} do
       assert [%{id: id}] = Workshops.list_feed(search: "sacadas")
-      assert id == amanha.id
+      assert id == tomorrow.id
     end
 
-    test "busca pelo nome de quem organiza", %{mes_que_vem: mes} do
+    test "searches by organizer name", %{next_month: month} do
       assert [%{id: id}] = Workshops.list_feed(search: "marina")
-      assert id == mes.id
+      assert id == month.id
     end
 
-    test "rascunho e cancelado não aparecem na agenda", %{organizer: organizer} do
-      {:ok, _rascunho} = Workshops.create_workshop(organizer, attrs(%{title: "Escondido"}))
+    test "draft and cancelled do not show up on the agenda", %{organizer: organizer} do
+      {:ok, _draft} = Workshops.create_workshop(organizer, attrs(%{title: "Escondido"}))
 
-      {:ok, publicado} = Workshops.create_workshop(organizer, attrs(%{title: "Vai sumir"}))
-      {:ok, publicado} = Workshops.publish_workshop(organizer, publicado)
-      {:ok, _} = Workshops.cancel_workshop(organizer, publicado)
+      {:ok, published} = Workshops.create_workshop(organizer, attrs(%{title: "Vai sumir"}))
+      {:ok, published} = Workshops.publish_workshop(organizer, published)
+      {:ok, _} = Workshops.cancel_workshop(organizer, published)
 
       titulos = Workshops.list_feed() |> Enum.map(& &1.title)
       refute "Escondido" in titulos
@@ -306,21 +305,21 @@ defmodule OGrupoDeEstudos.WorkshopsTest do
   end
 
   describe "list_for_organizer/1 e enrolled_workshop_ids/1" do
-    test "organizador vê os próprios, inclusive rascunho" do
+    test "organizer sees their own workshops, drafts included" do
       organizer = insert(:user)
       {:ok, _} = Workshops.create_workshop(organizer, attrs(%{title: "Meu rascunho"}))
 
       assert [%{title: "Meu rascunho"}] = Workshops.list_for_organizer(organizer.id)
     end
 
-    test "ids de onde a pessoa está inscrita (batch para a lista)" do
+    test "returns ids the user is enrolled in, batched for the list" do
       organizer = insert(:user)
       {:ok, w} = Workshops.create_workshop(organizer, attrs())
       {:ok, w} = Workshops.publish_workshop(organizer, w)
-      aluno = insert(:user)
-      {:ok, _} = Workshops.enroll(w, aluno)
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll(w, student)
 
-      assert Workshops.enrolled_workshop_ids(aluno.id) == MapSet.new([w.id])
+      assert Workshops.enrolled_workshop_ids(student.id) == MapSet.new([w.id])
       assert Workshops.enrolled_workshop_ids(organizer.id) == MapSet.new()
     end
   end
