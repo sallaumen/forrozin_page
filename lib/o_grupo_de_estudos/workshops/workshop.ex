@@ -94,9 +94,9 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
   end
 
   @doc "true when the workshop only opens for whoever was invited."
-  @spec privado?(t()) :: boolean()
-  def privado?(%__MODULE__{visibility: :private}), do: true
-  def privado?(%__MODULE__{}), do: false
+  @spec private?(t()) :: boolean()
+  def private?(%__MODULE__{visibility: :private}), do: true
+  def private?(%__MODULE__{}), do: false
 
   @doc "true when the capacity was reached. With no capacity, it never fills."
   @spec full?(t(), non_neg_integer()) :: boolean()
@@ -164,25 +164,25 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
   workshop it is about: the name already goes in the message.
   """
   @spec receipt_link(t()) :: String.t() | nil
-  def receipt_link(%__MODULE__{payment_phone: telefone} = workshop) when is_binary(telefone) do
-    telefone |> so_digitos() |> com_ddi() |> montar_link(workshop)
+  def receipt_link(%__MODULE__{payment_phone: phone} = workshop) when is_binary(phone) do
+    phone |> so_digitos() |> com_ddi() |> build_link(workshop)
   end
 
   def receipt_link(%__MODULE__{}), do: nil
 
-  defp so_digitos(telefone), do: String.replace(telefone, ~r/\D/, "")
+  defp so_digitos(phone), do: String.replace(phone, ~r/\D/, "")
 
   # A Brazilian number without country code has 10 or 11 digits (area code plus
   # number). With it, 12 or 13. Anything else does not become a link: better not
   # to offer one than to offer a link that opens a chat with nobody.
   defp com_ddi(digitos) when byte_size(digitos) in [10, 11], do: "55" <> digitos
   defp com_ddi("55" <> _ = digitos) when byte_size(digitos) in [12, 13], do: digitos
-  defp com_ddi(_curto_ou_estranho), do: nil
+  defp com_ddi(_too_short_or_odd), do: nil
 
-  defp montar_link(nil, _workshop), do: nil
+  defp build_link(nil, _workshop), do: nil
 
-  defp montar_link(numero, %__MODULE__{title: titulo}) do
-    texto = URI.encode("Oi! Segue o comprovante do workshop #{titulo}.")
-    "https://wa.me/#{numero}?text=#{texto}"
+  defp build_link(number, %__MODULE__{title: title}) do
+    text = URI.encode("Oi! Segue o comprovante do workshop #{title}.")
+    "https://wa.me/#{number}?text=#{text}"
   end
 end

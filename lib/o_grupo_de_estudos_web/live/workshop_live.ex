@@ -26,7 +26,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   @comment_type "workshop_comment"
   # 4s: transcoding a 45s clip takes well over that, so the page can ask again a
   # few times without weighing anything down.
-  @recarga_galeria_ms 4_000
+  @gallery_reload_ms 4_000
 
   @impl true
   def mount(%{"slug" => slug}, _session, socket) do
@@ -69,13 +69,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   @impl true
   def handle_event("search_workshop_step", %{"term" => termo}, socket) do
-    {:noreply, assign(socket, :busca_passo, OGrupoDeEstudos.Study.search_related_steps(termo))}
+    {:noreply, assign(socket, :step_search, OGrupoDeEstudos.Study.search_related_steps(termo))}
   end
 
   def handle_event("add_workshop_step", %{"id" => step_id}, socket) do
     Workshops.add_step(socket.assigns.workshop, socket.assigns.current_user, step_id)
 
-    {:noreply, socket |> assign(:busca_passo, []) |> reload_workshop()}
+    {:noreply, socket |> assign(:step_search, []) |> reload_workshop()}
   end
 
   def handle_event("remove_workshop_step", %{"id" => step_id}, socket) do
@@ -90,13 +90,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   def handle_event("request_join", _params, socket) do
     case Workshops.request_join(socket.assigns.workshop, socket.assigns.current_user) do
-      {:ok, _pedido} ->
+      {:ok, _request} ->
         {:noreply,
          socket
          |> reload_workshop()
          |> put_flash(:info, "Pedido enviado. Quem organiza vai avaliar.")}
 
-      {:error, _motivo} ->
+      {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Não foi possível enviar o pedido.")}
     end
   end
@@ -107,13 +107,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   def handle_event("join_waitlist", _params, socket) do
     case Workshops.join_waitlist(socket.assigns.workshop, socket.assigns.current_user) do
-      {:ok, _entrada} ->
+      {:ok, _entry} ->
         {:noreply,
          socket
          |> reload_workshop()
          |> put_flash(:info, "Você entrou na lista de espera. Se abrir vaga, ela é sua.")}
 
-      {:error, _motivo} ->
+      {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Não foi possível entrar na lista.")}
     end
   end
@@ -249,11 +249,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   @impl true
-  def handle_info(:recarregar_galeria, socket) do
+  def handle_info(:reload_gallery, socket) do
     # The timer fired, so nothing is pending anymore: releasing the lock before
     # reloading lets `assign_workshop/2` schedule the next one, if there is still
     # video converting.
-    socket = assign(socket, :recarga_agendada?, false)
+    socket = assign(socket, :reload_scheduled?, false)
 
     {:noreply, assign_workshop(socket, socket.assigns.workshop)}
   end
@@ -276,27 +276,27 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
      |> put_flash(:info, "Enviado! Já está na galeria.")}
   end
 
-  defp resultado_do_envio([{:error, motivo}], socket) do
-    {:noreply, put_flash(socket, :error, erro_de_media(motivo))}
+  defp resultado_do_envio([{:error, reason}], socket) do
+    {:noreply, put_flash(socket, :error, media_error(reason))}
   end
 
   defp resultado_do_envio(_nada, socket), do: {:noreply, socket}
 
   @doc false
-  def erro_de_upload_media(:too_large), do: "Arquivo grande demais. O limite é 200 MB."
-  def erro_de_upload_media(:not_accepted), do: "Só foto (JPG, PNG, WEBP) ou vídeo (MP4, MOV)."
-  def erro_de_upload_media(:too_many_files), do: "Um arquivo por vez."
-  def erro_de_upload_media(_outro), do: "Não deu para carregar esse arquivo."
+  def media_upload_error(:too_large), do: "Arquivo grande demais. O limite é 200 MB."
+  def media_upload_error(:not_accepted), do: "Só foto (JPG, PNG, WEBP) ou vídeo (MP4, MOV)."
+  def media_upload_error(:too_many_files), do: "Um arquivo por vez."
+  def media_upload_error(_other), do: "Não deu para carregar esse arquivo."
 
-  defp erro_de_media(:storage_full),
+  defp media_error(:storage_full),
     do: "O armazenamento está no limite. Avise quem organiza antes de tentar de novo."
 
-  defp erro_de_media(:media_quota),
+  defp media_error(:media_quota),
     do: "Este workshop chegou ao limite de 2 GB em fotos e vídeos."
 
-  defp erro_de_media(:unsupported_type), do: "Só entra foto ou vídeo."
-  defp erro_de_media(:unauthorized), do: "Só quem está no workshop manda mídia."
-  defp erro_de_media(_outro), do: "Não foi possível enviar."
+  defp media_error(:unsupported_type), do: "Só entra foto ou vídeo."
+  defp media_error(:unauthorized), do: "Só quem está no workshop manda mídia."
+  defp media_error(_other), do: "Não foi possível enviar."
 
   # The rate limit cuts at 20 likes per 10s: without this the click gives no
   # answer at all and the page looks frozen.
@@ -422,38 +422,38 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:organizer?, Workshops.admin?(workshop, user))
     |> assign(:full?, Workshop.full?(workshop, length(participants)))
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
-    |> assign(:pode_ver_media?, Workshops.can_see_media?(workshop, user))
+    |> assign(:can_see_media?, Workshops.can_see_media?(workshop, user))
     |> assign(:media, media_visivel(workshop, user))
-    |> assign(:professores, professores(workshop))
-    |> assign(:passos, Workshops.list_steps(workshop.id))
-    |> assign(:busca_passo, [])
-    |> assign(:liberado?, Workshops.liberado?(workshop, user))
-    |> assign(:vitrine?, vitrine?(workshop, user))
+    |> assign(:teachers, teachers(workshop))
+    |> assign(:steps, Workshops.list_steps(workshop.id))
+    |> assign(:step_search, [])
+    |> assign(:inside_open?, Workshops.inside_open?(workshop, user))
+    |> assign(:storefront?, storefront?(workshop, user))
     |> assign(:join_status, Workshops.join_status(workshop, user))
-    |> assign(:na_fila, Workshops.waitlist_position(workshop, user))
-    |> assign(:fila_total, Workshops.waitlist_count(workshop.id))
-    |> agendar_recarga_da_galeria()
+    |> assign(:waitlist_entry, Workshops.waitlist_position(workshop, user))
+    |> assign(:waitlist_total, Workshops.waitlist_count(workshop.id))
+    |> schedule_gallery_reload()
     |> assign_workshop_likes()
   end
 
   # The storefront is the state of whoever stands outside a private workshop. A
   # public workshop is never in that state: its rules did not change.
-  defp vitrine?(%Workshop{visibility: :private} = workshop, user),
-    do: not Workshops.liberado?(workshop, user)
+  defp storefront?(%Workshop{visibility: :private} = workshop, user),
+    do: not Workshops.inside_open?(workshop, user)
 
-  defp vitrine?(%Workshop{}, _user), do: false
+  defp storefront?(%Workshop{}, _user), do: false
 
   # Who teaches is now an explicit choice of whoever organizes. With nobody chosen
   # it falls back to the organizer: the right guess in most cases, and it goes away
   # as soon as the list is filled in.
-  defp professores(workshop) do
+  defp teachers(workshop) do
     case Workshops.list_teachers(workshop.id) do
-      [] -> [do_organizador(workshop)]
+      [] -> [organizer_as_teacher(workshop)]
       escolhidos -> escolhidos
     end
   end
 
-  defp do_organizador(workshop) do
+  defp organizer_as_teacher(workshop) do
     %{
       user_id: workshop.organizer.id,
       name: workshop.organizer.name,
@@ -469,31 +469,31 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   # No PubSub: the queue has concurrency 1 and the wait is seconds, so a timer
   # that only exists while there is something to wait for is cheaper than a
   # topic, a subscribe and a broadcast.
-  defp agendar_recarga_da_galeria(socket) do
+  defp schedule_gallery_reload(socket) do
     esperando? = connected?(socket) and Enum.any?(socket.assigns.media, &processando?/1)
 
-    agendar_recarga(socket, esperando?, socket.assigns[:recarga_agendada?] || false)
+    schedule_reload(socket, esperando?, socket.assigns[:reload_scheduled?] || false)
   end
 
   # A timer is already flying: do not schedule another. `assign_workshop/2` runs
   # on every enrollment and every like, and without this lock each click would
   # stack one more poll over the same video.
-  defp agendar_recarga(socket, true, true), do: socket
+  defp schedule_reload(socket, true, true), do: socket
 
-  defp agendar_recarga(socket, true, false) do
-    Process.send_after(self(), :recarregar_galeria, intervalo_recarga())
-    assign(socket, :recarga_agendada?, true)
+  defp schedule_reload(socket, true, false) do
+    Process.send_after(self(), :reload_gallery, reload_interval())
+    assign(socket, :reload_scheduled?, true)
   end
 
-  defp agendar_recarga(socket, false, _agendada?), do: assign(socket, :recarga_agendada?, false)
+  defp schedule_reload(socket, false, _agendada?), do: assign(socket, :reload_scheduled?, false)
 
   # Configurable only so the test can wait for the timer without holding the suite.
-  defp intervalo_recarga do
-    Application.get_env(:o_grupo_de_estudos, :recarga_galeria_ms, @recarga_galeria_ms)
+  defp reload_interval do
+    Application.get_env(:o_grupo_de_estudos, :gallery_reload_ms, @gallery_reload_ms)
   end
 
   defp processando?(%{status: :processing}), do: true
-  defp processando?(_outra), do: false
+  defp processando?(_other), do: false
 
   defp assign_workshop_likes(socket) do
     workshop = socket.assigns.workshop

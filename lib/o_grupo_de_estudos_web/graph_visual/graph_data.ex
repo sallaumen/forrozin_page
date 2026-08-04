@@ -122,11 +122,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
 
     %{
       id: p.code,
-      nome: p.name,
-      categoria: if(cat, do: cat.label, else: "Outros"),
-      categoriaName: if(cat, do: cat.name, else: "outros"),
-      cor: if(cat, do: cat.color, else: "#9a7a5a"),
-      nota: truncate_note(p.note, 300),
+      name: p.name,
+      category: if(cat, do: cat.label, else: "Outros"),
+      categoryName: if(cat, do: cat.name, else: "outros"),
+      color: if(cat, do: cat.color, else: "#9a7a5a"),
+      note: truncate_note(p.note, 300),
       highlighted: p.highlighted || false,
       suggested: p.suggested_by_id != nil,
       suggested_by_id: p.suggested_by_id,
@@ -163,9 +163,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
 
         %{
           id: p.code,
-          nome: p.name,
-          categoria: if(cat, do: cat.label, else: "Outros"),
-          cor: if(cat, do: cat.color, else: "#9a7a5a")
+          name: p.name,
+          category: if(cat, do: cat.label, else: "Outros"),
+          color: if(cat, do: cat.color, else: "#9a7a5a")
         }
       end)
 

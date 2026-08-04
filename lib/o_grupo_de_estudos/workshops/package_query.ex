@@ -50,7 +50,7 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
   @doc "Quantos compraram, quantos pagaram e quanto entrou."
   @spec summary(Ecto.UUID.t(), non_neg_integer() | nil) :: map()
   def summary(program_id, price_cents) do
-    numeros =
+    numbers =
       from(e in ProgramEnrollment,
         where: e.program_id == ^program_id,
         select: %{
@@ -61,6 +61,6 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
       )
       |> Repo.one()
 
-    Map.put(numeros, :revenue_cents, numeros.paid * (price_cents || 0))
+    Map.put(numbers, :revenue_cents, numbers.paid * (price_cents || 0))
   end
 end

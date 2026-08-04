@@ -24,12 +24,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
     user = socket.assigns.current_user
 
     case Policy.authorize(:create_program, user, nil) do
-      :ok -> {:ok, permitir_flyer(prepare(socket, socket.assigns.live_action, params))}
+      :ok -> {:ok, allow_flyer(prepare(socket, socket.assigns.live_action, params))}
       {:error, _} -> {:ok, redirect(socket, to: ~p"/study/workshops")}
     end
   end
 
-  defp permitir_flyer(socket) do
+  defp allow_flyer(socket) do
     allow_upload(socket, :flyer,
       accept: ~w(.jpg .jpeg .png .webp),
       max_entries: 1,
@@ -145,7 +145,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
   defp finish(socket, program) do
     user = socket.assigns.current_user
     sync_workshops(program, user, socket.assigns.selected_ids)
-    guardar_flyer(socket, program, user)
+    store_flyer(socket, program, user)
 
     {:noreply,
      socket
@@ -155,7 +155,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
 
   # Does not block saving: if the poster fails, the program exists and the image
   # can be retried.
-  defp guardar_flyer(socket, program, user) do
+  defp store_flyer(socket, program, user) do
     consume_uploaded_entries(socket, :flyer, fn %{path: tmp_path}, entry ->
       {:ok, Workshops.put_program_flyer(program, user, tmp_path, extensao(entry))}
     end)

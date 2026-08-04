@@ -38,8 +38,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
        |> assign(:admin_form_error, nil)
        |> load_enrollments()
        |> load_co_admins()
-       |> load_pedidos()
-       |> load_fila()}
+       |> load_requests()
+       |> load_waitlist()}
     else
       {:ok,
        socket
@@ -120,13 +120,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
   def handle_event("approve_join", %{"id" => id}, socket) do
     socket.assigns.workshop
     |> Workshops.approve_join(socket.assigns.current_user, id)
-    |> responder_pedido(socket, "Entrou na turma.")
+    |> respond_to_request(socket, "Entrou na turma.")
   end
 
   def handle_event("reject_join", %{"id" => id}, socket) do
     socket.assigns.workshop
     |> Workshops.reject_join(socket.assigns.current_user, id)
-    |> responder_pedido(socket, "Pedido recusado.")
+    |> respond_to_request(socket, "Pedido recusado.")
   end
 
   def handle_event("copy_link", _params, socket) do
@@ -158,28 +158,28 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     end
   end
 
-  defp responder_pedido({:ok, _pedido}, socket, mensagem) do
+  defp respond_to_request({:ok, _request}, socket, mensagem) do
     {:noreply,
      socket
-     |> load_pedidos()
+     |> load_requests()
      |> load_enrollments()
      |> put_flash(:info, mensagem)}
   end
 
-  defp responder_pedido({:error, :full}, socket, _mensagem) do
+  defp respond_to_request({:error, :full}, socket, _mensagem) do
     {:noreply, put_flash(socket, :error, "A turma está cheia. Abra uma vaga antes de aceitar.")}
   end
 
-  defp responder_pedido({:error, _motivo}, socket, _mensagem) do
+  defp respond_to_request({:error, _reason}, socket, _mensagem) do
     {:noreply, put_flash(socket, :error, "Não foi possível responder esse pedido.")}
   end
 
-  defp load_fila(socket) do
-    assign(socket, :fila, Workshops.list_waitlist(socket.assigns.workshop.id))
+  defp load_waitlist(socket) do
+    assign(socket, :waitlist, Workshops.list_waitlist(socket.assigns.workshop.id))
   end
 
-  defp load_pedidos(socket) do
-    assign(socket, :pedidos, Workshops.list_pending_requests(socket.assigns.workshop.id))
+  defp load_requests(socket) do
+    assign(socket, :requests, Workshops.list_pending_requests(socket.assigns.workshop.id))
   end
 
   defp load_co_admins(socket) do
@@ -215,8 +215,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
 
   # The city helps the organizer recognize the person, but not everyone fills it
   # in: with no city the row simply does not mention it.
-  defp cidade_do_pedido(%{city: cidade}) when is_binary(cidade) and cidade != "",
-    do: " · #{cidade}"
+  defp request_city(%{city: city}) when is_binary(city) and city != "",
+    do: " · #{city}"
 
-  defp cidade_do_pedido(_pedido), do: ""
+  defp request_city(_request), do: ""
 end

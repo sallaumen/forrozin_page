@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
     quote do
       # The sheet starts closed. It sits in the `use` so the screens that use it do
       # not have to remember to initialize the assign.
-      on_mount({unquote(__MODULE__), :folha_fechada})
+      on_mount({unquote(__MODULE__), :closed_sheet})
 
       alias OGrupoDeEstudos.Encyclopedia.StepQuery
       alias OGrupoDeEstudos.Engagement
@@ -20,12 +20,12 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
       def handle_event("toggle_step_learned", %{"code" => code}, socket) do
         case StepQuery.get_by(code: code) do
           nil -> {:noreply, socket}
-          step -> {:noreply, unquote(__MODULE__).alternar(socket, step)}
+          step -> {:noreply, unquote(__MODULE__).toggle(socket, step)}
         end
       end
 
       def handle_event("open_step_sheet", %{"code" => code}, socket) do
-        {:noreply, unquote(__MODULE__).abrir_folha(socket, StepQuery.get_by(code: code))}
+        {:noreply, unquote(__MODULE__).open_sheet(socket, StepQuery.get_by(code: code))}
       end
 
       def handle_event("close_step_sheet", _params, socket) do
@@ -35,12 +35,12 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   end
 
   @doc false
-  def on_mount(:folha_fechada, _params, _session, socket) do
+  def on_mount(:closed_sheet, _params, _session, socket) do
     {:cont,
      socket
      |> Phoenix.Component.assign_new(:step_sheet, fn -> nil end)
      |> Phoenix.Component.assign_new(:step_sheet_learned, fn -> false end)
-     |> Phoenix.Component.assign_new(:learned_codes, fn -> codigos_sabidos(socket) end)}
+     |> Phoenix.Component.assign_new(:learned_codes, fn -> learned_codes_of(socket) end)}
   end
 
   @doc """
@@ -49,11 +49,11 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   It becomes chip color on the study and workshop screens. Reloaded on every mark:
   without that the person would mark a step, close the sheet and see the old chip.
   """
-  @spec codigos_sabidos(map()) :: MapSet.t()
-  def codigos_sabidos(%{assigns: %{current_user: %{id: id}}}),
+  @spec learned_codes_of(map()) :: MapSet.t()
+  def learned_codes_of(%{assigns: %{current_user: %{id: id}}}),
     do: MapSet.new(OGrupoDeEstudos.Engagement.learned_step_codes(id))
 
-  def codigos_sabidos(_sem_usuario), do: MapSet.new()
+  def learned_codes_of(_no_user), do: MapSet.new()
 
   @doc """
   Toggles the learning and returns the socket with the screen up to date.
@@ -61,39 +61,39 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   Marking as learned also favorites (an `Ecto.Multi` in the context), so the
   screens that show the star have to be refreshed together.
   """
-  def alternar(socket, step) do
+  def toggle(socket, step) do
     user_id = socket.assigns.current_user.id
     OGrupoDeEstudos.Engagement.toggle_learned(user_id, step.id)
 
     socket
-    |> atualizar_pagina(step, user_id)
-    |> atualizar_drawer(step, user_id)
-    |> atualizar_folha(step, user_id)
+    |> refresh_page(step, user_id)
+    |> refresh_drawer(step, user_id)
+    |> refresh_sheet(step, user_id)
     |> Phoenix.Component.assign(
       :learned_codes,
       MapSet.new(OGrupoDeEstudos.Engagement.learned_step_codes(user_id))
     )
   end
 
-  defp atualizar_pagina(%{assigns: %{step_learned: _}} = socket, step, user_id) do
+  defp refresh_page(%{assigns: %{step_learned: _}} = socket, step, user_id) do
     Phoenix.Component.assign(socket,
       step_learned: OGrupoDeEstudos.Engagement.learned?(user_id, step.id),
       step_favorited: OGrupoDeEstudos.Engagement.favorited?(user_id, "step", step.id)
     )
   end
 
-  defp atualizar_pagina(socket, _step, _user_id), do: socket
+  defp refresh_page(socket, _step, _user_id), do: socket
 
-  defp atualizar_drawer(%{assigns: %{drawer_item: %{id: id}}} = socket, %{id: id} = step, user_id) do
+  defp refresh_drawer(%{assigns: %{drawer_item: %{id: id}}} = socket, %{id: id} = step, user_id) do
     Phoenix.Component.assign(socket,
       drawer_learned: OGrupoDeEstudos.Engagement.learned?(user_id, step.id),
       drawer_favorited: OGrupoDeEstudos.Engagement.favorited?(user_id, "step", step.id)
     )
   end
 
-  defp atualizar_drawer(socket, _step, _user_id), do: socket
+  defp refresh_drawer(socket, _step, _user_id), do: socket
 
-  defp atualizar_folha(%{assigns: %{step_sheet: %{id: id}}} = socket, %{id: id} = step, user_id) do
+  defp refresh_sheet(%{assigns: %{step_sheet: %{id: id}}} = socket, %{id: id} = step, user_id) do
     Phoenix.Component.assign(
       socket,
       :step_sheet_learned,
@@ -101,7 +101,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
     )
   end
 
-  defp atualizar_folha(socket, _step, _user_id), do: socket
+  defp refresh_sheet(socket, _step, _user_id), do: socket
 
   @doc """
   Opens the quick sheet of the step.
@@ -109,9 +109,9 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   A code that does not exist simply opens nothing: the sheet stays closed by
   coming back nil, and the page keeps standing.
   """
-  def abrir_folha(socket, nil), do: socket
+  def open_sheet(socket, nil), do: socket
 
-  def abrir_folha(socket, step) do
+  def open_sheet(socket, step) do
     Phoenix.Component.assign(socket,
       step_sheet: step,
       step_sheet_learned:

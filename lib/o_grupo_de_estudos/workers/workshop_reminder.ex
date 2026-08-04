@@ -28,19 +28,19 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
     args
-    |> dia_alvo()
-    |> avisar_do_dia()
+    |> target_day()
+    |> notify_for_day()
   end
 
   # `dia` in the args serves the tests and a manual resend; without it, tomorrow.
-  defp dia_alvo(%{"dia" => iso}), do: Date.from_iso8601!(iso)
-  defp dia_alvo(_args), do: Date.add(Brazil.today(), 1)
+  defp target_day(%{"dia" => iso}), do: Date.from_iso8601!(iso)
+  defp target_day(_args), do: Date.add(Brazil.today(), 1)
 
-  defp avisar_do_dia(dia) do
+  defp notify_for_day(dia) do
     pendentes = Workshops.pending_reminders(Brazil.day_start_utc(dia), Brazil.day_end_utc(dia))
 
-    Enum.each(pendentes, &avisar/1)
-    Workshops.mark_reminded(Enum.map(pendentes, fn {inscricao, _, _} -> inscricao.id end))
+    Enum.each(pendentes, &notify/1)
+    Workshops.mark_reminded(Enum.map(pendentes, fn {enrollment, _, _} -> enrollment.id end))
 
     Logger.info("[WorkshopReminder] #{length(pendentes)} avisos para #{Date.to_iso8601(dia)}")
     :ok
@@ -48,7 +48,7 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
 
   # The actor is the organizer: the notification requires actor_id, and
   # "Tavano: tomorrow there is a workshop" reads naturally.
-  defp avisar({_inscricao, workshop, user}) do
+  defp notify({_enrollment, workshop, user}) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_workshop_reminder(workshop.organizer_id, user.id, workshop.id)
     end)

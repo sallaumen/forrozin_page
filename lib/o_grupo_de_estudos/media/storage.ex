@@ -29,18 +29,18 @@ defmodule OGrupoDeEstudos.Media.Storage do
   """
   @spec save_avatar(term(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def save_avatar(user_id, tmp_path, ext) do
-    chave = "avatars/#{user_id}/#{System.system_time(:second)}#{ext}"
+    key = "avatars/#{user_id}/#{System.system_time(:second)}#{ext}"
 
-    with :ok <- processado(tmp_path, &quadrado/2, fn tmp -> ObjectStorage.put(chave, tmp) end) do
-      limpar_avatares_antigos(user_id, chave)
-      {:ok, ObjectStorage.public_url(chave)}
+    with :ok <- processado(tmp_path, &quadrado/2, fn tmp -> ObjectStorage.put(key, tmp) end) do
+      delete_old_avatars(user_id, key)
+      {:ok, ObjectStorage.public_url(key)}
     end
   end
 
-  defp limpar_avatares_antigos(user_id, chave_atual) do
+  defp delete_old_avatars(user_id, current_key) do
     "avatars/#{user_id}/"
     |> ObjectStorage.list()
-    |> Enum.reject(&(&1 == chave_atual))
+    |> Enum.reject(&(&1 == current_key))
     |> Enum.each(&ObjectStorage.delete/1)
   end
 
@@ -52,16 +52,16 @@ defmodule OGrupoDeEstudos.Media.Storage do
   """
   @spec save_image(String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def save_image(subdir, tmp_path, ext) do
-    chave = Path.join(subdir, "#{random_key()}#{ext}")
+    key = Path.join(subdir, "#{random_key()}#{ext}")
 
-    with :ok <- processado(tmp_path, &limitado/2, fn tmp -> ObjectStorage.put(chave, tmp) end) do
-      {:ok, ObjectStorage.public_url(chave)}
+    with :ok <- processado(tmp_path, &limitado/2, fn tmp -> ObjectStorage.put(key, tmp) end) do
+      {:ok, ObjectStorage.public_url(key)}
     end
   end
 
   @doc "Deletes an image by public URL. Silent when it is already gone."
   @spec delete_image(String.t()) :: :ok | {:error, term()}
-  def delete_image("/uploads/" <> chave), do: ObjectStorage.delete(chave)
+  def delete_image("/uploads/" <> key), do: ObjectStorage.delete(key)
   def delete_image(_url_de_fora), do: :ok
 
   @doc """
@@ -72,71 +72,71 @@ defmodule OGrupoDeEstudos.Media.Storage do
   """
   @spec put_private(String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def put_private(subdir, tmp_path, ext) do
-    chave = Path.join(subdir, "#{random_key()}#{ext}")
+    key = Path.join(subdir, "#{random_key()}#{ext}")
 
-    case ObjectStorage.put(chave, tmp_path) do
-      :ok -> {:ok, chave}
-      erro -> erro
+    case ObjectStorage.put(key, tmp_path) do
+      :ok -> {:ok, key}
+      error -> error
     end
   end
 
   @doc "How to serve a private file: `{:file, path}` or `{:redirect, url}`."
   @spec serve_private(String.t()) ::
           {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
-  def serve_private(chave), do: ObjectStorage.serve(chave)
+  def serve_private(key), do: ObjectStorage.serve(key)
 
   @doc "Runs `fun` with a local path of the private file (input for ffmpeg)."
   @spec with_private_file(String.t(), (String.t() -> result)) :: {:ok, result} | {:error, term()}
         when result: term()
-  def with_private_file(chave, fun), do: ObjectStorage.with_local_file(chave, fun)
+  def with_private_file(key, fun), do: ObjectStorage.with_local_file(key, fun)
 
   @doc "Deletes a private file. Silent when it is already gone."
   @spec delete_private(String.t()) :: :ok | {:error, term()}
-  def delete_private(chave), do: ObjectStorage.delete(chave)
+  def delete_private(key), do: ObjectStorage.delete(key)
 
   @doc "Bytes livres no storage, ou `:unknown`."
   @spec free_bytes() :: non_neg_integer() | :unknown
   def free_bytes, do: ObjectStorage.free_bytes()
 
-  # Processes into its own temporary file and hands it to `guardar`, cleaning up
+  # Processes into its own temporary file and hands it to `store`, cleaning up
   # afterwards: ObjectStorage only ever sees a finished file.
-  defp processado(origem, transformar, guardar) do
+  defp processado(source, transformar, store) do
     tmp = Path.join(System.tmp_dir!(), "media_#{System.unique_integer([:positive])}")
 
     try do
-      case transformar.(origem, tmp) do
-        :ok -> guardar.(tmp)
-        erro -> erro
+      case transformar.(source, tmp) do
+        :ok -> store.(tmp)
+        error -> error
       end
     after
       File.rm(tmp)
     end
   end
 
-  defp quadrado(origem, destino) do
-    origem
+  defp quadrado(source, dest) do
+    source
     |> Mogrify.open()
     |> Mogrify.resize_to_fill("#{@avatar_size}x#{@avatar_size}")
     |> Mogrify.gravity("Center")
-    |> Mogrify.save(path: destino)
+    |> Mogrify.save(path: dest)
 
     :ok
   rescue
     # Without ImageMagick, storing the raw image beats failing the upload.
-    _e -> File.cp(origem, destino)
+    _e -> File.cp(source, dest)
   end
 
   # A flyer is a poster: keep the aspect ratio and cap the width only. Without
   # this, a 4 MB phone photo stays 4 MB on the volume.
-  defp limitado(origem, destino) do
-    origem
+  defp limitado(source, dest) do
+    source
     |> Mogrify.open()
     |> Mogrify.resize_to_limit("#{@flyer_max_width}x#{@flyer_max_width * 3}")
-    |> Mogrify.save(path: destino)
+    |> Mogrify.save(path: dest)
 
     :ok
   rescue
-    _e -> File.cp(origem, destino)
+    _e -> File.cp(source, dest)
   end
 
   defp random_key do

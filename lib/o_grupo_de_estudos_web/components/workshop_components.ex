@@ -83,8 +83,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           <.workshop_tag :if={@workshop.visibility == :private} tone={:gold}>
             <.icon name="hero-lock-closed" class="mr-1 size-3" /> Por aprovação
           </.workshop_tag>
-          <.workshop_tag :if={programa_do(@workshop)} tone={:purple}>
-            {programa_do(@workshop).title}
+          <.workshop_tag :if={program_of(@workshop)} tone={:purple}>
+            {program_of(@workshop).title}
           </.workshop_tag>
           <.workshop_tag :if={@organizer?} tone={:neutral}>Você organiza</.workshop_tag>
           <.workshop_tag :if={@enrolled? && !@organizer?} tone={:green}>
@@ -150,7 +150,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           <.workshop_tag tone={:purple}>Programação</.workshop_tag>
           <.workshop_tag :if={@owner?} tone={:neutral}>Você organiza</.workshop_tag>
           <.workshop_tag :if={@enrolled_count > 0 && !@owner?} tone={:green}>
-            {inscricao_label(@enrolled_count)}
+            {enrollment_label(@enrolled_count)}
           </.workshop_tag>
           <span class="text-[11.5px] text-ink-400">{workshop_count_label(@summary.count)}</span>
         </div>
@@ -168,12 +168,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   # In a search the workshop shows up loose even when it belongs to a program:
   # without this tag nothing on screen connects the two.
-  defp programa_do(%{program: %{title: _} = program}), do: program
-  defp programa_do(_workshop), do: nil
+  defp program_of(%{program: %{title: _} = program}), do: program
+  defp program_of(_workshop), do: nil
 
   @doc "For instance: Você está em 1 / Você está em 3"
-  def inscricao_label(1), do: "Você está em 1"
-  def inscricao_label(total), do: "Você está em #{total}"
+  def enrollment_label(1), do: "Você está em 1"
+  def enrollment_label(total), do: "Você está em #{total}"
 
   @doc "Date range of a program, from the aggregated summary."
   def program_dates(%{starts_at: inicio, ends_at: fim}) do
@@ -255,7 +255,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   attr :media, :list, required: true
   attr :current_user, :map, default: nil
-  attr :pode_apagar_tudo, :boolean, default: false
+  attr :can_delete_any, :boolean, default: false
 
   def media_gallery(assigns) do
     ~H"""
@@ -303,7 +303,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         </span>
 
         <button
-          :if={pode_apagar?(item, @current_user, @pode_apagar_tudo)}
+          :if={can_delete?(item, @current_user, @can_delete_any)}
           type="button"
           phx-click="remove_media"
           phx-value-id={item.id}
@@ -315,7 +315,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         </button>
 
         <figcaption class="flex items-center gap-1.5 px-2 py-1.5 text-[11px] text-ink-500">
-          <span class="truncate">{autor_da_media(item)}</span>
+          <span class="truncate">{media_author(item)}</span>
         </figcaption>
       </figure>
     </div>
@@ -323,22 +323,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   end
 
   defp processando?(%{kind: :video, status: :processing}), do: true
-  defp processando?(_outra), do: false
+  defp processando?(_other), do: false
 
   defp pronto?(%{kind: :video, status: :ready}), do: true
-  defp pronto?(_outra), do: false
+  defp pronto?(_other), do: false
 
   # nil becomes an absent attribute in HEEx: `poster=""` would make the browser
   # request the page itself as an image.
   defp poster_url(%{poster_key: nil}), do: nil
   defp poster_url(%{id: id}), do: ~p"/workshop-media/#{id}/poster"
 
-  defp pode_apagar?(_item, nil, _admin?), do: false
-  defp pode_apagar?(_item, _user, true), do: true
-  defp pode_apagar?(item, user, _admin?), do: item.uploaded_by_id == user.id
+  defp can_delete?(_item, nil, _admin?), do: false
+  defp can_delete?(_item, _user, true), do: true
+  defp can_delete?(item, user, _admin?), do: item.uploaded_by_id == user.id
 
-  defp autor_da_media(%{uploaded_by: %{name: nome, username: username}}), do: nome || username
-  defp autor_da_media(_item), do: "Alguém do workshop"
+  defp media_author(%{uploaded_by: %{name: name, username: username}}), do: name || username
+  defp media_author(_item), do: "Alguém do workshop"
 
   attr :program, :map, required: true
   attr :avulso_total, :integer, required: true
@@ -405,7 +405,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   attr :upload, :any, required: true
   attr :current_path, :string, default: nil
-  attr :legenda, :string, default: "Cartaz de divulgação, o mesmo que você manda no WhatsApp."
+  attr :caption, :string, default: "Cartaz de divulgação, o mesmo que você manda no WhatsApp."
 
   def flyer_field(assigns) do
     ~H"""
@@ -413,7 +413,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       <p class="mb-1 text-[12.5px] font-bold text-ink-700">
         Flyer <span class="font-normal text-ink-400">(opcional)</span>
       </p>
-      <p class="m-0 mb-2 text-[12px] leading-snug text-ink-500">{@legenda}</p>
+      <p class="m-0 mb-2 text-[12px] leading-snug text-ink-500">{@caption}</p>
 
       <div :if={@current_path} class="mb-2 flex items-start gap-3">
         <img
@@ -451,10 +451,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
       <div :for={entry <- @upload.entries}>
         <p
-          :for={erro <- upload_errors(@upload, entry)}
+          :for={error <- upload_errors(@upload, entry)}
           class="m-0 mt-1 text-[12px] font-semibold text-accent-red"
         >
-          {erro_de_upload(erro)}
+          {upload_error(error)}
         </p>
       </div>
     </div>
@@ -462,10 +462,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   end
 
   @doc false
-  def erro_de_upload(:too_large), do: "Imagem grande demais. O limite é 8 MB."
-  def erro_de_upload(:not_accepted), do: "Formato não aceito. Use JPG, PNG ou WEBP."
-  def erro_de_upload(:too_many_files), do: "Só um flyer por vez."
-  def erro_de_upload(_outro), do: "Não deu para carregar essa imagem."
+  def upload_error(:too_large), do: "Imagem grande demais. O limite é 8 MB."
+  def upload_error(:not_accepted), do: "Formato não aceito. Use JPG, PNG ou WEBP."
+  def upload_error(:too_many_files), do: "Só um flyer por vez."
+  def upload_error(_other), do: "Não deu para carregar essa imagem."
 
   @doc """
   For instance `sábado, 16 de agosto · 14h às 18h`, or `16 a 18 de agosto ·
@@ -575,10 +575,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   def payment_status_label(_status), do: "Aguardando"
 
   @doc "Percentual de vagas preenchidas, limitado a 100."
-  def vagas_percent(_enrolled, nil), do: 0
-  def vagas_percent(_enrolled, 0), do: 100
+  def seats_percent(_enrolled, nil), do: 0
+  def seats_percent(_enrolled, 0), do: 100
 
-  def vagas_percent(enrolled, capacity) do
+  def seats_percent(enrolled, capacity) do
     enrolled |> Kernel./(capacity) |> Kernel.*(100) |> round() |> min(100)
   end
 
@@ -591,7 +591,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   # When to pay is a choice; the Pix key, when there is one, comes after it.
   def payment_hint(%{payment_mode: modo} = workshop, true) when not is_nil(modo),
-    do: [quando_label(modo), chave_pix(workshop)] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
+    do: [when_label(modo), pix_key(workshop)] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
 
   def payment_hint(%{payment_info: info}, true) when is_binary(info) and info != "", do: info
 
@@ -600,11 +600,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   def payment_hint(_workshop, _reveal?), do: "O pagamento é combinado direto com quem organiza."
 
-  defp quando_label(:on_signup), do: "Pagamento na inscrição."
-  defp quando_label(:at_event), do: "Você paga na hora do evento."
+  defp when_label(:on_signup), do: "Pagamento na inscrição."
+  defp when_label(:at_event), do: "Você paga na hora do evento."
 
-  defp chave_pix(%{payment_info: info}) when is_binary(info) and info != "", do: info
-  defp chave_pix(_workshop), do: nil
+  defp pix_key(%{payment_info: info}) when is_binary(info) and info != "", do: info
+  defp pix_key(_workshop), do: nil
 
   defp first_name(nil), do: "quem organiza"
   defp first_name(name), do: name |> String.split(" ") |> List.first()
@@ -637,19 +637,19 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         <.icon name="hero-lock-closed" class="size-3.5" /> Só para quem está na turma
       </p>
 
-      <.locked_row titulo="Quem vai" legenda={legenda_de_pessoas(@enrolled_count)}>
+      <.locked_row title="Quem vai" caption={people_caption(@enrolled_count)}>
         <span :for={_ <- 1..min(max(@enrolled_count, 1), 6)} class="-ml-2 first:ml-0">
           <span class="block size-7 rounded-full border-2 border-ink-50 bg-ink-300"></span>
         </span>
       </.locked_row>
 
-      <.locked_row titulo="Fotos e vídeos" legenda="Mandadas por quem está no workshop.">
+      <.locked_row title="Fotos e vídeos" caption="Mandadas por quem está no workshop.">
         <span :for={_ <- 1..4} class="mr-1.5">
           <span class="block size-11 rounded-lg bg-ink-300"></span>
         </span>
       </.locked_row>
 
-      <.locked_row titulo="Conversa" legenda={legenda_de_conversa(@comment_count)}>
+      <.locked_row title="Conversa" caption={conversation_caption(@comment_count)}>
         <span class="block w-full">
           <span class="mb-1.5 block h-2 w-3/4 rounded-full bg-ink-300"></span>
           <span class="mb-1.5 block h-2 w-1/2 rounded-full bg-ink-300"></span>
@@ -660,33 +660,33 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
-  attr :titulo, :string, required: true
-  attr :legenda, :string, required: true
+  attr :title, :string, required: true
+  attr :caption, :string, required: true
   slot :inner_block, required: true
 
   defp locked_row(assigns) do
     ~H"""
     <div class="mb-2.5 overflow-hidden rounded-xl border border-dashed border-ink-300 bg-ink-100/70 px-4 py-3">
       <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-[1.6px] text-ink-500">
-        {@titulo}
+        {@title}
       </p>
       <div class="pointer-events-none flex select-none items-center opacity-50 blur-[4px]">
         {render_slot(@inner_block)}
       </div>
-      <p class="m-0 mt-2 text-[12.5px] text-ink-600">{@legenda}</p>
+      <p class="m-0 mt-2 text-[12.5px] text-ink-600">{@caption}</p>
     </div>
     """
   end
 
-  defp legenda_de_pessoas(0), do: "Ninguém confirmado ainda. Você pode ser a primeira pessoa."
-  defp legenda_de_pessoas(1), do: "1 pessoa confirmada. O nome aparece quando você entrar."
+  defp people_caption(0), do: "Ninguém confirmado ainda. Você pode ser a primeira pessoa."
+  defp people_caption(1), do: "1 pessoa confirmada. O nome aparece quando você entrar."
 
-  defp legenda_de_pessoas(total),
+  defp people_caption(total),
     do: "#{total} pessoas confirmadas. Os nomes aparecem quando você entrar."
 
-  defp legenda_de_conversa(0), do: "Ninguém comentou ainda."
-  defp legenda_de_conversa(1), do: "1 comentário."
-  defp legenda_de_conversa(total), do: "#{total} comentários."
+  defp conversation_caption(0), do: "Ninguém comentou ainda."
+  defp conversation_caption(1), do: "1 comentário."
+  defp conversation_caption(total), do: "#{total} comentários."
 
   @doc """
   Whether the box should offer "ask to join".
@@ -694,9 +694,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   Only on a published private workshop, for whoever does not organize it, is not
   in the class and has no pending request.
   """
-  def pede_para_entrar?(workshop, organizer?, enrolled?, status, full?)
+  def can_ask_to_join?(workshop, organizer?, enrolled?, status, full?)
 
-  def pede_para_entrar?(
+  def can_ask_to_join?(
         %Workshop{visibility: :private, status: :published},
         false,
         false,
@@ -706,7 +706,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       when status in [:none, :rejected],
       do: true
 
-  def pede_para_entrar?(_workshop, _organizer?, _enrolled?, _status, _full?), do: false
+  def can_ask_to_join?(_workshop, _organizer?, _enrolled?, _status, _full?), do: false
 
   @doc """
   Whether the box should offer the waitlist.
@@ -714,14 +714,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   Only on a full class with automatic enrollment: where the organizer approves
   each person, the extra seat is their call and there is no queue to form.
   """
-  def mostra_fila?(workshop, organizer?, enrolled?, full?, na_fila)
+  def shows_waitlist?(workshop, organizer?, enrolled?, full?, waitlist_entry)
 
-  def mostra_fila?(%Workshop{visibility: :public}, false, false, true, nil), do: true
-  def mostra_fila?(_workshop, _organizer?, _enrolled?, _full?, _na_fila), do: false
+  def shows_waitlist?(%Workshop{visibility: :public}, false, false, true, nil), do: true
+  def shows_waitlist?(_workshop, _organizer?, _enrolled?, _full?, _waitlist_entry), do: false
 
   @doc "For instance 1 pessoa na espera / 4 pessoas na espera"
-  def espera_label(1), do: "1 pessoa na espera"
-  def espera_label(total), do: "#{total} pessoas na espera"
+  def waitlist_label(1), do: "1 pessoa na espera"
+  def waitlist_label(total), do: "#{total} pessoas na espera"
 
   @doc """
   Names of whoever teaches, on a single line.
@@ -729,9 +729,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   Two teachers is the common case (almost always a couple), so the "e" between
   them is the form that reads naturally.
   """
-  def nomes_dos_professores([]), do: "quem organiza"
-  def nomes_dos_professores([um]), do: um.name || um.username
+  def teacher_names([]), do: "quem organiza"
+  def teacher_names([um]), do: um.name || um.username
 
-  def nomes_dos_professores([primeiro, segundo | _resto]),
-    do: "#{primeiro.name || primeiro.username} e #{segundo.name || segundo.username}"
+  def teacher_names([first, segundo | _resto]),
+    do: "#{first.name || first.username} e #{segundo.name || segundo.username}"
 end

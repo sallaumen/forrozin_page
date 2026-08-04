@@ -25,7 +25,7 @@ function runHybridLayout(cy) {
   // 1. Classify: BF at center, all others stay in their category
   const byCat = {}
   cy.nodes().forEach(n => {
-    const cat = n.data("categoriaName") || "outros"
+    const cat = n.data("categoryName") || "outros"
     ;(byCat[cat] = byCat[cat] || []).push(n)
   })
 
@@ -141,9 +141,9 @@ function zoneChipAlpha(zoom) {
 }
 
 // Chip "tag" da área (estilo legenda): fundo papel OPACO (limpa os fios atrás)
-// + ponto na cor da categoria + nome em texto escuro, pequeno. Desenhado na
+// + ponto na color da category + name em texto escuro, pequeno. Desenhado na
 // camada acima das arestas pra ler mesmo com o mapa cheio. `s` = escala do zoom.
-function drawZoneChip(ctx, cx, cy, label, cor, bg, text, s) {
+function drawZoneChip(ctx, cx, cy, label, color, bg, text, s) {
   const fontPx = Math.round(12 * s)
   ctx.save()
   ctx.font = `600 ${fontPx}px Georgia, "Iowan Old Style", serif`
@@ -162,12 +162,12 @@ function drawZoneChip(ctx, cx, cy, label, cor, bg, text, s) {
 
   roundRectPath(ctx, x, y, w, h, r)
   ctx.lineWidth = 1
-  ctx.strokeStyle = cor + "45"
+  ctx.strokeStyle = color + "45"
   ctx.stroke()
 
   ctx.beginPath()
   ctx.arc(x + padX + dotR, cy, dotR, 0, 2 * Math.PI)
-  ctx.fillStyle = cor
+  ctx.fillStyle = color
   ctx.fill()
 
   ctx.fillStyle = text
@@ -222,7 +222,7 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
 
   Object.entries(byCat).forEach(([cat, catNodes]) => {
     if (catNodes.length < 2) return
-    const cor = catNodes[0].data("cor") || "#9a7a5a"
+    const color = catNodes[0].data("color") || "#9a7a5a"
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     catNodes.forEach(n => {
@@ -244,16 +244,16 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
 
     bgCtx.beginPath()
     bgCtx.arc(cx, cy_, r, 0, 2 * Math.PI)
-    bgCtx.fillStyle = cor + "15"
+    bgCtx.fillStyle = color + "15"
     bgCtx.fill()
-    bgCtx.strokeStyle = cor + "35"
+    bgCtx.strokeStyle = color + "35"
     bgCtx.lineWidth = 2
     bgCtx.stroke()
 
     // Nome da área num chip pequeno e opaco, no alto do círculo (acima dos fios).
     if (fgCtx.globalAlpha > 0) {
       const chipY = cy_ - r + 15 * chipScale
-      drawZoneChip(fgCtx, cx, chipY, catNodes[0].data("categoria") || cat, cor, chipBg, chipText, chipScale)
+      drawZoneChip(fgCtx, cx, chipY, catNodes[0].data("category") || cat, color, chipBg, chipText, chipScale)
     }
   })
 }
@@ -322,7 +322,7 @@ function buildCyStyle(currentUserId) {
           if (e.data("highlighted")) return 5
           return e.degree() >= 10 ? 3 : 2
         },
-        "border-color": "data(cor)", "border-opacity": t.nodeBorderOpacity,
+        "border-color": "data(color)", "border-opacity": t.nodeBorderOpacity,
         "border-style": function(e) { return e.data("suggested") ? "dashed" : "solid" },
         "label": function(e) { return e.id() + "\n" + e.data("label") },
         "text-wrap": "wrap", "text-halign": "center", "text-valign": "center",
@@ -363,12 +363,12 @@ function buildCyStyle(currentUserId) {
       selector: "edge",
       style: {
         "width": 2.5,
-        "line-color": "data(cor)",
+        "line-color": "data(color)",
         "line-opacity": function(e) {
           const dense = e.source().degree() >= 10 || e.target().degree() >= 10
           return dense ? t.edgeOpacity * 0.85 : t.edgeOpacity
         },
-        "target-arrow-color": "data(cor)",
+        "target-arrow-color": "data(color)",
         "target-arrow-shape": "triangle",
         "source-arrow-shape": "none",
         "arrow-scale": 1.5,
@@ -385,7 +385,7 @@ function buildCyStyle(currentUserId) {
         "color": t.edgeLabelText, "text-background-color": t.edgeLabelBg,
         "text-background-opacity": 0.92, "text-background-padding": "3px",
         "text-background-shape": "roundrectangle",
-        "text-border-width": 0.8, "text-border-color": "data(cor)", "text-border-opacity": 0.6
+        "text-border-width": 0.8, "text-border-color": "data(color)", "text-border-opacity": 0.6
       }
     },
     {
@@ -410,7 +410,7 @@ function buildCyStyle(currentUserId) {
 }
 
 // Preenchimento + texto de um nó, conforme tema e estado de seleção. Selecionado
-// => laranja sólido da marca (sinal de "clicado"); senão => cor base do tema.
+// => laranja sólido da marca (sinal de "clicado"); senão => color base do tema.
 // Aplicado inline (vence o inline que o observer de tema seta nos nós), por isso
 // e chamado nos eventos select/unselect E no observer.
 function paintNodeFill(n, t, currentUserId) {
@@ -454,7 +454,7 @@ function applyCategorySpotlight(cy, categoryName) {
   if (window._seqHighlightActive) return
   cy.batch(() => {
     cy.elements().style({ opacity: 0.15 })
-    const catNodes = cy.nodes(`[categoriaName = "${categoryName}"]`)
+    const catNodes = cy.nodes(`[categoryName = "${categoryName}"]`)
     catNodes.style({ opacity: 1 })
     catNodes.connectedEdges().style({ opacity: 0.7, width: 2 })
     catNodes.connectedEdges().connectedNodes().style({ opacity: 0.6 })
@@ -464,7 +464,7 @@ function applyCategorySpotlight(cy, categoryName) {
 
 // ---------------------------------------------------------------------------
 // Journey + like styling: node borders by priority (aprendido > fronteira/meta
-// > curtido > categoria), edge colors by learned-state, and progressive reveal
+// > curtido > category), edge colors by learned-state, and progressive reveal
 // (display:none on what is neither learned nor frontier nor goal, unless the
 // "mapa completo" is on). Single source of truth for node/edge styling, so
 // learned (green) never loses to the like border (red).
@@ -523,7 +523,7 @@ function applyJourneyStyling() {
       } else {
         node.removeClass("like-active journey-learned journey-frontier")
         node.style({
-          "border-color": node.data("cor") || "#9a7a5a",
+          "border-color": node.data("color") || "#9a7a5a",
           "border-width": node.degree() >= 10 ? 3 : 2,
           "border-style": node.data("suggested") ? "dashed" : "solid"
         })
@@ -543,7 +543,7 @@ function applyJourneyStyling() {
       } else if (state === "frontier") {
         edge.style({ "line-color": t.journeyFrontier, "target-arrow-color": t.journeyFrontier, "line-style": "dashed", "line-opacity": 1, "opacity": 1, "width": 3, "arrow-scale": 1.7 })
       } else {
-        edge.style({ "line-color": edge.data("cor"), "target-arrow-color": edge.data("cor"), "line-style": "solid", "width": 2.5, "arrow-scale": 1.5 })
+        edge.style({ "line-color": edge.data("color"), "target-arrow-color": edge.data("color"), "line-style": "solid", "width": 2.5, "arrow-scale": 1.5 })
       }
     })
   })
@@ -725,11 +725,11 @@ const GraphVisual = {
 
     orphans.forEach(o => {
       const btn = document.createElement("button")
-      btn.style.cssText = `display:flex;align-items:center;gap:6px;width:100%;padding:6px 8px;margin-bottom:4px;border:1px solid ${o.cor}40;border-radius:4px;background:white;cursor:pointer;font-family:Georgia,serif;font-size:11px;color:#2c1a0e;text-align:left;`
+      btn.style.cssText = `display:flex;align-items:center;gap:6px;width:100%;padding:6px 8px;margin-bottom:4px;border:1px solid ${o.color}40;border-radius:4px;background:white;cursor:pointer;font-family:Georgia,serif;font-size:11px;color:#2c1a0e;text-align:left;`
       const dot = document.createElement("span")
-      dot.style.cssText = `width:6px;height:6px;border-radius:50%;background:${o.cor};flex-shrink:0;`
+      dot.style.cssText = `width:6px;height:6px;border-radius:50%;background:${o.color};flex-shrink:0;`
       const label = document.createElement("span")
-      label.textContent = `${o.id} — ${o.nome}`
+      label.textContent = `${o.id} — ${o.name}`
       btn.appendChild(dot)
       btn.appendChild(label)
 
@@ -770,13 +770,13 @@ const GraphVisual = {
     const nodeColorById = {}
 
     nodes.forEach(n => {
-      nodeColorById[n.id] = n.cor || "#9a7a5a"
+      nodeColorById[n.id] = n.color || "#9a7a5a"
 
       elements.push({
         data: {
-          id: n.id, label: n.nome, categoria: n.categoria,
-          categoriaName: n.categoriaName, cor: n.cor || "#9a7a5a",
-          nota: n.nota,
+          id: n.id, label: n.name, category: n.category,
+          categoryName: n.categoryName, color: n.color || "#9a7a5a",
+          note: n.note,
           highlighted: n.highlighted || false,
           suggested: n.suggested || false,
           suggestedById: n.suggested_by_id
@@ -789,7 +789,7 @@ const GraphVisual = {
         source: e.from,
         target: e.to,
         spread: e.spread || 0,
-        cor: e.to === CENTER_CODE ? "#1a1a1a" : nodeColorById[e.from] || "#9a7a5a"
+        color: e.to === CENTER_CODE ? "#1a1a1a" : nodeColorById[e.from] || "#9a7a5a"
       }
       if (e.label) d.label = e.label
       elements.push({ data: d, selectable: false })
@@ -807,7 +807,7 @@ const GraphVisual = {
     window._cyInstance = cy
     cy.edges().unselectify()
 
-    // Seleção: pinta o nó de laranja ao clicar e restaura a cor base ao soltar.
+    // Seleção: pinta o nó de laranja ao clicar e restaura a color base ao soltar.
     // Inline para vencer o inline que o observer de tema seta nos nós (robusto a
     // alternar dark mode com um nó selecionado ou a selecionar após alternar).
     cy.on("select", "node", evt => paintNodeFill(evt.target, cyTheme(), currentUserId))
@@ -845,7 +845,7 @@ const GraphVisual = {
     // Collect byCat for zone redraw
     const byCat = {}
     cy.nodes().forEach(n => {
-      const cat = n.data("categoriaName") || "outros"
+      const cat = n.data("categoryName") || "outros"
       ;(byCat[cat] = byCat[cat] || []).push(n)
     })
     setupZoneRedraw(cy, sectorCenters, byCat)
@@ -1034,7 +1034,7 @@ const GraphVisual = {
       if (!cy) return
 
       // No "Meu progresso" a maioria dos nós está escondida; o filtro de
-      // categoria só faz sentido no mapa completo (ou em edição). A legenda
+      // category só faz sentido no mapa completo (ou em edição). A legenda
       // segue como chave de cores, mas o clique não filtra aqui.
       const legendEditMode = this.el.dataset.editMode === "true"
       if (!window._fullMap && !legendEditMode) return
@@ -1260,7 +1260,7 @@ const GraphVisual = {
 
         node.style({
           opacity: 1,
-          "border-color": node.data("cor") || "#9a7a5a",
+          "border-color": node.data("color") || "#9a7a5a",
           "border-width": node.data("highlighted") ? 5 : (node.degree() >= 10 ? 3 : 2),
           "border-style": node.data("suggested") ? "dashed" : "solid",
           "background-color": suggestedByCurrentUser ? t.nodeFillSuggested : t.nodeFillNormal
@@ -1268,7 +1268,7 @@ const GraphVisual = {
       })
 
       cy.edges().forEach(edge => {
-        const color = edge.data("cor") || "#9a7a5a"
+        const color = edge.data("color") || "#9a7a5a"
 
         edge.style({
           opacity: 0.45,
@@ -1327,14 +1327,14 @@ const GraphVisual = {
         }
         node.style({
           opacity: 1,
-          "border-color": node.data("cor"),
+          "border-color": node.data("color"),
           "border-width": node.degree() >= 10 ? 3 : 2,
           "background-color": t.nodeFillNormal
         })
       })
 
       cy.edges().forEach(edge => {
-        const color = edge.data("cor") || "#9a7a5a"
+        const color = edge.data("color") || "#9a7a5a"
         edge.style({
           opacity: 0.45,
           "line-color": color,

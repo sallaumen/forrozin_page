@@ -566,7 +566,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           <.step_pill
             :for={step <- @related_steps}
             step={step}
-            learned={sabe?(@learned_codes, step)}
+            learned={knows?(@learned_codes, step)}
             removable={!@disabled}
             remove_event={@remove_event}
             phx-value-id={step.id}
@@ -666,7 +666,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
         <.step_pill
           :for={step <- @note.related_steps}
           step={step}
-          learned={sabe?(@learned_codes, step)}
+          learned={knows?(@learned_codes, step)}
         />
       </div>
 
@@ -701,7 +701,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           <.step_pill
             :for={step <- @note.related_steps}
             step={step}
-            learned={sabe?(@learned_codes, step)}
+            learned={knows?(@learned_codes, step)}
             removable
             remove_event={@remove_step_event}
             phx-value-note-id={@note.id}
@@ -824,7 +824,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   # `nil` means the screen did not load the state: better to show everything as
   # not-yet-known than to crash. A MapSet of codes is what the screens build,
   # because a chip always has the code at hand.
-  defp sabe?(nil, _step), do: false
-  defp sabe?(codigos, %{code: code}), do: MapSet.member?(codigos, code)
-  defp sabe?(_codigos, _step), do: false
+  defp knows?(nil, _step), do: false
+  defp knows?(codes, %{code: code}), do: MapSet.member?(codes, code)
+  defp knows?(_codes, _step), do: false
 end

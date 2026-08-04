@@ -98,7 +98,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     where(query, [w], is_nil(w.program_id) or w.program_id not in subquery(publicadas))
   end
 
-  defp apply_grouping(query, _outro), do: query
+  defp apply_grouping(query, _other), do: query
 
   @doc """
   Workshops the person administers, drafts and cancelled included.

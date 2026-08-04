@@ -11,18 +11,18 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
 
   @doc "Builds the day-before notice for one person and one workshop."
   def new(user, workshop) do
-    nome = user.name || user.username
+    name = user.name || user.username
     link = url(~p"/workshops/#{workshop.slug}")
 
     Email.new()
-    |> Email.to({nome, user.email})
+    |> Email.to({name, user.email})
     |> Email.from(@sender)
     |> Email.subject("Amanhã tem #{workshop.title}")
-    |> Email.html_body(html(nome, workshop, link))
-    |> Email.text_body(texto(nome, workshop, link))
+    |> Email.html_body(html(name, workshop, link))
+    |> Email.text_body(text(name, workshop, link))
   end
 
-  defp html(nome, workshop, link) do
+  defp html(name, workshop, link) do
     """
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -37,7 +37,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
               </p>
             </td></tr>
             <tr><td style="background:#faf8f4;padding:28px;border-radius:0 0 12px 12px;">
-              <p style="margin:0 0 12px;font-size:16px;color:#2b1c10;">Oi, #{nome}!</p>
+              <p style="margin:0 0 12px;font-size:16px;color:#2b1c10;">Oi, #{name}!</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a3627;">
                 Amanhã tem <strong>#{workshop.title}</strong>.
               </p>
@@ -59,9 +59,9 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
     """
   end
 
-  defp texto(nome, workshop, link) do
+  defp text(name, workshop, link) do
     """
-    Oi, #{nome}!
+    Oi, #{name}!
 
     Amanhã tem #{workshop.title}.
     #{schedule_label(workshop)}#{local(workshop)}

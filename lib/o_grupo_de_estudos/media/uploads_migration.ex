@@ -30,46 +30,46 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram}
 
-  @prefixo_publico "/uploads/"
+  @public_prefix "/uploads/"
 
   @doc "Runs the whole migration and returns a summary of what happened."
   @spec run(String.t()) :: %{
-          arquivos: non_neg_integer(),
-          falhas: list(),
+          files: non_neg_integer(),
+          failures: list(),
           reescritos: non_neg_integer()
         }
   def run(source_dir \\ default_dir()) do
-    {arquivos, falhas} = copiar_tudo(source_dir)
+    {files, failures} = copiar_tudo(source_dir)
     # Rewriting the URL of an object that failed to upload would leave an avatar
     # pointing at nothing, so any copy failure leaves the database alone. The next
     # run, with the copies healthy, completes the rewrite.
-    reescritos = if falhas == [], do: reescrever_urls(), else: 0
+    reescritos = if failures == [], do: reescrever_urls(), else: 0
 
     Logger.info(
-      "[UploadsMigration] #{arquivos} arquivos copiados, #{reescritos} URLs reescritas, " <>
-        "#{length(falhas)} falhas"
+      "[UploadsMigration] #{files} arquivos copiados, #{reescritos} URLs reescritas, " <>
+        "#{length(failures)} falhas"
     )
 
-    %{arquivos: arquivos, falhas: falhas, reescritos: reescritos}
+    %{files: files, failures: failures, reescritos: reescritos}
   end
 
   defp copiar_tudo(dir) do
-    {oks, falhas} = Enum.reduce(arquivos_relativos(dir), {0, []}, &copiar(dir, &1, &2))
-    {oks, Enum.reverse(falhas)}
+    {oks, failures} = Enum.reduce(relative_files(dir), {0, []}, &copiar(dir, &1, &2))
+    {oks, Enum.reverse(failures)}
   end
 
-  defp copiar(dir, chave, {oks, falhas}) do
-    case ObjectStorage.put(chave, Path.join(dir, chave)) do
+  defp copiar(dir, key, {oks, failures}) do
+    case ObjectStorage.put(key, Path.join(dir, key)) do
       :ok ->
-        {oks + 1, falhas}
+        {oks + 1, failures}
 
-      {:error, motivo} ->
-        Logger.warning("[UploadsMigration] falhou #{chave}: #{inspect(motivo)}")
-        {oks, [{chave, motivo} | falhas]}
+      {:error, reason} ->
+        Logger.warning("[UploadsMigration] falhou #{key}: #{inspect(reason)}")
+        {oks, [{key, reason} | failures]}
     end
   end
 
-  defp arquivos_relativos(dir) do
+  defp relative_files(dir) do
     dir
     |> Path.join("**")
     |> Path.wildcard()
@@ -90,7 +90,7 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
 
   defp reescrever(schema, campo) do
     from(r in schema,
-      where: like(field(r, ^campo), ^"#{@prefixo_publico}%"),
+      where: like(field(r, ^campo), ^"#{@public_prefix}%"),
       select: {r.id, field(r, ^campo)}
     )
     |> Repo.stream()
@@ -98,8 +98,8 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
   end
 
   defp trocar_url(schema, campo, {id, url}) do
-    nova = url |> String.replace_prefix(@prefixo_publico, "") |> ObjectStorage.public_url()
-    {1, _} = Repo.update_all(from(r in schema, where: r.id == ^id), set: [{campo, nova}])
+    created = url |> String.replace_prefix(@public_prefix, "") |> ObjectStorage.public_url()
+    {1, _} = Repo.update_all(from(r in schema, where: r.id == ^id), set: [{campo, created}])
     1
   end
 

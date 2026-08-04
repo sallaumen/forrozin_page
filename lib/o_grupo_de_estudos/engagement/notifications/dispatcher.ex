@@ -116,7 +116,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   @spec notify_workshop_join_request(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
   def notify_workshop_join_request(actor_id, organizer_id, workshop_id)
       when actor_id != organizer_id do
-    avisar_sobre_pedido(actor_id, organizer_id, workshop_id, :workshop_join_requested)
+    notify_about_request(actor_id, organizer_id, workshop_id, :workshop_join_requested)
   end
 
   def notify_workshop_join_request(_actor_id, _organizer_id, _workshop_id), do: :ok
@@ -125,7 +125,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   @spec notify_workshop_join_review(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t(), atom()) :: :ok
   def notify_workshop_join_review(actor_id, user_id, workshop_id, acao)
       when actor_id != user_id do
-    avisar_sobre_pedido(actor_id, user_id, workshop_id, acao)
+    notify_about_request(actor_id, user_id, workshop_id, acao)
   end
 
   def notify_workshop_join_review(_actor_id, _user_id, _workshop_id, _acao), do: :ok
@@ -133,12 +133,12 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   @doc "Notifies that a seat opened and the person went from the waitlist into the class."
   @spec notify_waitlist_promoted(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
   def notify_waitlist_promoted(actor_id, user_id, workshop_id) when actor_id != user_id do
-    avisar_sobre_pedido(actor_id, user_id, workshop_id, :workshop_waitlist_promoted)
+    notify_about_request(actor_id, user_id, workshop_id, :workshop_waitlist_promoted)
   end
 
   def notify_waitlist_promoted(_actor_id, _user_id, _workshop_id), do: :ok
 
-  defp avisar_sobre_pedido(actor_id, destinatario_id, workshop_id, acao) do
+  defp notify_about_request(actor_id, destinatario_id, workshop_id, acao) do
     builder = fn destinatario ->
       %{
         id: Ecto.UUID.generate(),

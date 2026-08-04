@@ -205,7 +205,7 @@
                   type="text"
                   name={"workshop[teacher_username][#{indice}]"}
                   phx-debounce="300"
-                  value={campo_de_professor(@form["teacher_username"], indice)}
+                  value={teacher_field(@form["teacher_username"], indice)}
                   placeholder={
                     if indice == 0, do: "usuário no site", else: "usuário no site (opcional)"
                   }
@@ -216,7 +216,7 @@
                   type="text"
                   name={"workshop[teacher_name][#{indice}]"}
                   phx-debounce="300"
-                  value={campo_de_professor(@form["teacher_name"], indice)}
+                  value={teacher_field(@form["teacher_name"], indice)}
                   maxlength="120"
                   placeholder="só o nome, se não tem conta"
                   class="min-w-0 flex-1 rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"

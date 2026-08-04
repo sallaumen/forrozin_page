@@ -125,7 +125,7 @@
               <input
                 :if={MapSet.member?(@selecionaveis, w.id)}
                 type="checkbox"
-                id={"escolher-#{w.id}"}
+                id={"pick-#{w.id}"}
                 checked={MapSet.member?(@selecionados, w.id)}
                 phx-click="toggle_selection"
                 phx-value-id={w.id}
@@ -155,7 +155,7 @@
         <div class="mb-3 grid grid-cols-3 gap-2.5">
           <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
             <p class="m-0 font-serif text-[19px] font-bold leading-none text-ink-900">
-              {@resumo_pacote.packages}
+              {@package_summary.packages}
             </p>
             <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
               pacotes
@@ -163,7 +163,7 @@
           </div>
           <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
             <p class="m-0 font-serif text-[19px] font-bold leading-none text-accent-green">
-              {@resumo_pacote.paid}
+              {@package_summary.paid}
             </p>
             <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
               pagaram
@@ -171,7 +171,7 @@
           </div>
           <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
             <p class="m-0 font-serif text-[19px] font-bold leading-none text-ink-900">
-              {money_label(@resumo_pacote.revenue_cents)}
+              {money_label(@package_summary.revenue_cents)}
             </p>
             <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
               recebido
@@ -189,7 +189,7 @@
               <span class="block truncate text-[13px] font-bold text-ink-900">{linha.name}</span>
               <span class="block truncate text-[11.5px] text-ink-500">@{linha.username}</span>
             </span>
-            <.workshop_tag tone={tom_do_pagamento(linha.payment_status)}>
+            <.workshop_tag tone={payment_tone(linha.payment_status)}>
               {payment_status_label(linha.payment_status)}
             </.workshop_tag>
             <button
@@ -277,7 +277,7 @@
         </div>
 
         <.link
-          navigate={~p"/study/workshops/novo?#{[programa: @program.slug]}"}
+          navigate={~p"/study/workshops/novo?#{[program: @program.slug]}"}
           class="mt-4 inline-flex items-center gap-1.5 rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white no-underline"
         >
           <.icon name="hero-plus" class="size-4" /> Criar workshop já nesta programação

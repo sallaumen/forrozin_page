@@ -91,8 +91,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
            step_likes: step_likes,
            sequence_likes: sequence_likes,
            is_own_profile: is_own_profile,
-           proximos_workshops: proximos_workshops(is_own_profile, user),
-           total_proximos: total_proximos(is_own_profile, user),
+           upcoming_workshops: upcoming_workshops(is_own_profile, user),
+           upcoming_total: upcoming_total(is_own_profile, user),
            is_admin: Accounts.admin?(current_user),
            nav_mode: if(is_own_profile, do: :primary, else: :detail),
            comments: comments,
@@ -520,11 +520,11 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   # Own profile only: publishing someone else's upcoming agenda is new exposure,
   # and "where this person will be" is not something the product offers today.
-  defp proximos_workshops(false, _user), do: []
-  defp proximos_workshops(true, user), do: Workshops.upcoming_enrollments(user.id, limit: 3)
+  defp upcoming_workshops(false, _user), do: []
+  defp upcoming_workshops(true, user), do: Workshops.upcoming_enrollments(user.id, limit: 3)
 
-  defp total_proximos(false, _user), do: 0
-  defp total_proximos(true, user), do: Workshops.count_upcoming_enrollments(user.id)
+  defp upcoming_total(false, _user), do: 0
+  defp upcoming_total(true, user), do: Workshops.count_upcoming_enrollments(user.id)
 
   defp find_study_link(current_user, profile_user) do
     Study.get_link_between(current_user.id, profile_user.id)
