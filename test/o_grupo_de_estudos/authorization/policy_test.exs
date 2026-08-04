@@ -210,9 +210,30 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
   end
 
   describe "authorize(:create_workshop | :manage_workshop, ...)" do
-    test "any logged-in user creates a workshop" do
-      assert :ok = Policy.authorize(:create_workshop, insert(:user, is_teacher: false), nil)
+    test "whoever teaches creates a workshop" do
+      assert :ok = Policy.authorize(:create_workshop, insert(:user, is_teacher: true), nil)
+    end
+
+    test "a site admin creates one too, to help set the agenda up" do
+      assert :ok = Policy.authorize(:create_workshop, insert(:admin), nil)
+    end
+
+    test "whoever only studies does not create one" do
+      assert {:error, :unauthorized} =
+               Policy.authorize(:create_workshop, insert(:user, is_teacher: false), nil)
+    end
+
+    test "a visitor is asked to log in, not told they lack permission" do
       assert {:error, :unauthenticated} = Policy.authorize(:create_workshop, nil, nil)
+    end
+
+    test "creating a program follows the same rule" do
+      assert :ok = Policy.authorize(:create_program, insert(:user, is_teacher: true), nil)
+      assert :ok = Policy.authorize(:create_program, insert(:admin), nil)
+      assert {:error, :unauthenticated} = Policy.authorize(:create_program, nil, nil)
+
+      assert {:error, :unauthorized} =
+               Policy.authorize(:create_program, insert(:user, is_teacher: false), nil)
     end
 
     test "only the organizer manages it, not even a site admin" do

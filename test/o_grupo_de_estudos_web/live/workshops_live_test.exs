@@ -929,7 +929,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
   describe "creating a workshop (/study/workshops/novo)" do
     test "creates and publishes", %{conn: conn} do
-      user = insert(:user)
+      user = insert(:user, is_teacher: true)
       {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/new")
 
       params = %{
@@ -959,7 +959,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
 
     test "saving a draft does not publish", %{conn: conn} do
-      user = insert(:user)
+      user = insert(:user, is_teacher: true)
       {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/new")
 
       params = %{
@@ -978,7 +978,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
 
     test "validation error shows a message and preserves the typed text", %{conn: conn} do
-      user = insert(:user)
+      user = insert(:user, is_teacher: true)
       {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/new")
 
       params = %{"title" => "", "description" => "Escrevi isso aqui", "starts_at" => ""}

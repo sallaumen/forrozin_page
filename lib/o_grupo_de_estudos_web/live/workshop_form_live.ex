@@ -17,13 +17,20 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
   @impl true
   def mount(params, _session, socket) do
-    user = socket.assigns.current_user
+    {:ok, mount_for(socket, socket.assigns.live_action, params)}
+  end
 
-    case Policy.authorize(:create_workshop, user, nil) do
-      :ok -> {:ok, allow_flyer(prepare(socket, socket.assigns.live_action, params))}
-      {:error, _} -> {:ok, redirect(socket, to: ~p"/study/workshops")}
+  # Only creating asks `:create_workshop`. Editing asks `:manage_workshop`, inside
+  # prepare/3: whoever organized a workshop before the rule tightened keeps editing
+  # it even without teaching, because owning it is a different question.
+  defp mount_for(socket, :new, params) do
+    case Policy.authorize(:create_workshop, socket.assigns.current_user, nil) do
+      :ok -> allow_flyer(prepare(socket, :new, params))
+      {:error, _} -> redirect(socket, to: ~p"/study/workshops")
     end
   end
+
+  defp mount_for(socket, :edit, params), do: allow_flyer(prepare(socket, :edit, params))
 
   defp allow_flyer(socket) do
     allow_upload(socket, :flyer,

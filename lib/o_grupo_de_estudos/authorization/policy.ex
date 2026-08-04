@@ -94,9 +94,12 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:manage_lesson, _, _), do: {:error, :unauthorized}
 
-  # Creating is open to any user, since a workshop is not a teacher privilege.
-  # Managing belongs to the organizer, admin included, because payment control
-  # is internal to whoever organizes.
+  # Creating belongs to whoever teaches: organizing an event is the teaching side
+  # of the app, and offering the button to every student only clutters the page
+  # for the majority who will never open a class. Whoever already organizes a
+  # workshop keeps managing it, because that is `manage_workshop` and it answers
+  # to the organizer, admin included: payment control is internal to whoever
+  # organizes.
 
   # A cancelled workshop keeps its conversation open: the organizer usually needs
   # it precisely to explain the cancellation. A draft does not, being private to
@@ -142,17 +145,23 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:view_program, _user, _program), do: {:error, :not_found}
 
-  def authorize(:create_program, %User{}, _), do: :ok
+  def authorize(:create_program, %User{is_teacher: true}, _), do: :ok
+  def authorize(:create_program, %User{role: :admin}, _), do: :ok
   def authorize(:create_program, nil, _), do: {:error, :unauthenticated}
+  def authorize(:create_program, %User{}, _), do: {:error, :unauthorized}
 
   def authorize(:manage_program, %User{id: owner_id}, %WorkshopProgram{owner_id: owner_id}),
     do: :ok
 
   def authorize(:manage_program, _, _), do: {:error, :unauthorized}
 
-  def authorize(:create_workshop, %User{}, _), do: :ok
+  def authorize(:create_workshop, %User{is_teacher: true}, _), do: :ok
+
+  def authorize(:create_workshop, %User{role: :admin}, _), do: :ok
 
   def authorize(:create_workshop, nil, _), do: {:error, :unauthenticated}
+
+  def authorize(:create_workshop, %User{}, _), do: {:error, :unauthorized}
 
   # Takes the resolved Access (which already accounts for co-organizers) or the
   # raw Workshop, which only knows the creator. The boundary passes Access
