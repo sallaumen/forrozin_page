@@ -6,10 +6,12 @@
 //
 // The host element carries `phx-hook="DragReorder"` and `data-reorder-event`; the
 // hook pushes that event with `{order: [id, id, ...]}` once the drop lands.
-// Children are marked with `data-reorder-id`.
+// Children are marked with `data-reorder-id`. `data-reorder-axis="y"` switches a
+// row of chips for a stacked list.
 //
-// Written as a hook, not inline in one screen, because the manual sequence builder
-// on the map needs the same gesture over a different list.
+// Written as a hook, not inline in one screen, because the sheet in the diary and
+// the manual builder on the map need the same gesture over lists that do not even
+// run along the same axis.
 
 // Holding beats tapping only after this long: without the delay, scrolling the
 // sheet on a phone would rip a chip out on the way past.
@@ -20,6 +22,7 @@ const SLOP_PX = 8;
 const DragReorder = {
   mounted() {
     this.reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    this.vertical = this.el.dataset.reorderAxis === "y";
     this.onPointerDown = (e) => this.maybeStart(e);
     this.el.addEventListener("pointerdown", this.onPointerDown);
     this.el.addEventListener("keydown", (e) => this.onKey(e));
@@ -122,19 +125,26 @@ const DragReorder = {
     }
   },
 
-  // Chips wrap, so comparing X alone is wrong: the finger on the second line
-  // would match the midpoint of a chip still up on the first. A chip is behind
-  // the finger only when its whole line ended above, or when the finger passed
-  // its midpoint WITHIN the same line.
+  // The first item the finger has NOT passed yet is the slot it belongs in.
   slotUnder(x, y) {
     const items = this.items();
     for (const item of items) {
-      const r = item.getBoundingClientRect();
-      const lineEndedAbove = y > r.bottom;
-      const passedInLine = y >= r.top && x > r.left + r.width / 2;
-      if (!(lineEndedAbove || passedInLine)) return item;
+      if (!this.passed(item.getBoundingClientRect(), x, y)) return item;
     }
     return items[items.length - 1];
+  },
+
+  // A stacked list is one item per line, so the midpoint on Y decides alone.
+  // Chips wrap, so comparing X alone would be wrong there: the finger on the
+  // second line would match the midpoint of a chip still up on the first. A chip
+  // is behind the finger only when its whole line ended above, or when the finger
+  // passed its midpoint WITHIN the same line.
+  passed(r, x, y) {
+    if (this.vertical) return y > r.top + r.height / 2;
+
+    const lineEndedAbove = y > r.bottom;
+    const passedInLine = y >= r.top && x > r.left + r.width / 2;
+    return lineEndedAbove || passedInLine;
   },
 
   drop() {
@@ -178,17 +188,20 @@ const DragReorder = {
   // Dragging cannot be the only way in: without this, ordering is out of reach
   // for anyone not using a mouse or a touch screen.
   onKey(e) {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    const back = this.vertical ? "ArrowUp" : "ArrowLeft";
+    const forward = this.vertical ? "ArrowDown" : "ArrowRight";
+    if (e.key !== back && e.key !== forward) return;
+
     const item = e.target.closest("[data-reorder-id]");
     if (!item) return;
 
     const items = this.items();
     const i = items.indexOf(item);
-    const j = e.key === "ArrowLeft" ? i - 1 : i + 1;
+    const j = e.key === back ? i - 1 : i + 1;
     if (j < 0 || j >= items.length) return;
 
     e.preventDefault();
-    if (e.key === "ArrowLeft") items[j].before(item);
+    if (e.key === back) items[j].before(item);
     else items[j].after(item);
     item.focus();
     this.pushOrder();

@@ -1312,37 +1312,27 @@
                   Nenhum passo ainda. Busque acima ou toque em um passo no grafo.
                 </div>
               <% else %>
-                <%= for {step, idx} <- Enum.with_index(@seq_manual_steps) do %>
-                  <div class="mb-1.5 flex items-stretch gap-2 rounded-md border border-ink-900/[0.07] bg-ink-50 p-1.5 last:mb-0">
-                    <div class="flex w-[38px] shrink-0 flex-col gap-1">
-                      <button
-                        :if={idx > 0}
-                        id={"seq-manual-move-up-#{idx}"}
-                        type="button"
-                        phx-click="move_manual_step"
-                        phx-value-index={idx}
-                        phx-value-direction="up"
-                        class="inline-flex min-h-[32px] items-center justify-center rounded border border-ink-900/10 bg-white text-ink-500 transition hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
-                        title="Mover pra cima"
-                        aria-label={"Mover #{step.code} para cima"}
-                      >
-                        <.icon name="hero-chevron-up" class="size-4" />
-                      </button>
-                      <div :if={idx == 0} class="min-h-[32px]"></div>
-                      <button
-                        :if={idx < length(@seq_manual_steps) - 1}
-                        id={"seq-manual-move-down-#{idx}"}
-                        type="button"
-                        phx-click="move_manual_step"
-                        phx-value-index={idx}
-                        phx-value-direction="down"
-                        class="inline-flex min-h-[32px] items-center justify-center rounded border border-ink-900/10 bg-white text-ink-500 transition hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
-                        title="Mover pra baixo"
-                        aria-label={"Mover #{step.code} para baixo"}
-                      >
-                        <.icon name="hero-chevron-down" class="size-4" />
-                      </button>
-                      <div :if={idx == length(@seq_manual_steps) - 1} class="min-h-[32px]"></div>
+                <%!-- Same gesture as the sheet in the diary, stacked instead of in a
+                     row: hold a step and it lifts and follows the finger, the gap
+                     slides between the others, and letting go settles it. The seta
+                     is the handle; the arrows on the keyboard do the same. --%>
+                <div
+                  id="seq-manual-track"
+                  phx-hook="DragReorder"
+                  data-reorder-axis="y"
+                  data-reorder-event="reorder_manual_steps"
+                >
+                  <div
+                    :for={{step, idx} <- Enum.with_index(@seq_manual_steps)}
+                    id={"seq-manual-step-#{step.key}"}
+                    data-reorder-id={idx}
+                    data-manual-step={step.code}
+                    tabindex="0"
+                    aria-label={"#{step.code}, posição #{idx + 1} de #{length(@seq_manual_steps)}. Setas para cima e para baixo mudam a ordem."}
+                    class="mb-1.5 flex cursor-grab touch-none items-stretch gap-2 rounded-md border border-ink-900/[0.07] bg-ink-50 p-1.5 last:mb-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
+                  >
+                    <div class="flex w-[26px] shrink-0 items-center justify-center text-ink-300">
+                      <.icon name="hero-bars-3" class="size-4" />
                     </div>
                     <div class="min-w-0 flex-1 py-1">
                       <div class="mb-1 flex items-center gap-2">
@@ -1358,6 +1348,7 @@
                     <button
                       id={"seq-manual-remove-#{idx}"}
                       type="button"
+                      data-reorder-ignore
                       phx-click="remove_manual_step"
                       phx-value-index={idx}
                       class="inline-flex min-h-[44px] min-w-[40px] shrink-0 items-center justify-center rounded-md border border-accent-red/15 bg-white text-accent-red transition hover:bg-accent-red/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
@@ -1367,7 +1358,7 @@
                       <.icon name="hero-x-mark" class="size-4" />
                     </button>
                   </div>
-                <% end %>
+                </div>
               <% end %>
             </div>
 

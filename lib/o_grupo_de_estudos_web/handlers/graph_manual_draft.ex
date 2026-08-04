@@ -14,7 +14,11 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphManualDraft do
 
         if can_manage_sequence?(socket, saved) do
           steps = Enum.sort_by(saved.sequence_steps, & &1.position)
-          manual_steps = Enum.map(steps, &%{code: &1.step.code, name: &1.step.name})
+
+          manual_steps =
+            steps
+            |> Enum.with_index(1)
+            |> Enum.map(fn {s, key} -> %{key: key, code: s.step.code, name: s.step.name} end)
 
           {:noreply,
            socket

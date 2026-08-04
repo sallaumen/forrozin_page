@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphManualSteps do
   @moduledoc """
   Macro with the step manipulation handlers of the manual builder draft in
-  GraphVisualLive: add (by click, search or selection), search and remove.
+  GraphVisualLive: add (by click, search or selection), search, remove and reorder.
   """
 
   defmacro __using__(_opts) do
@@ -75,23 +75,30 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphManualSteps do
         end
       end
 
-      def handle_event("move_manual_step", %{"index" => index_str, "direction" => dir}, socket) do
-        index = parse_index(index_str)
+      # The client sends positions, not codes: a sequence may repeat the same step,
+      # so a code would be ambiguous about which copy moved.
+      def handle_event("reorder_manual_steps", %{"order" => order}, socket) when is_list(order) do
         steps = socket.assigns.seq_manual_steps
-        new_index = if dir == "up", do: index - 1, else: index + 1
+        reordered = reorder_manual(steps, order)
 
-        if index >= 0 and new_index >= 0 and new_index < length(steps) do
-          item = Enum.at(steps, index)
-          new_steps = steps |> List.delete_at(index) |> List.insert_at(new_index, item)
-
+        if length(reordered) == length(steps) do
           {:noreply,
            socket
-           |> assign(:seq_manual_steps, new_steps)
-           |> recompute_manual_missing_edges(new_steps)
-           |> push_event("highlight_sequence", %{steps: Enum.map(new_steps, & &1.code)})}
+           |> assign(:seq_manual_steps, reordered)
+           |> recompute_manual_missing_edges(reordered)
+           |> push_event("highlight_sequence", %{steps: Enum.map(reordered, & &1.code)})}
         else
           {:noreply, socket}
         end
+      end
+
+      def handle_event("reorder_manual_steps", _bad, socket), do: {:noreply, socket}
+
+      defp reorder_manual(steps, order) do
+        order
+        |> Enum.map(&parse_index/1)
+        |> Enum.filter(&valid_index?(steps, &1))
+        |> Enum.map(&Enum.at(steps, &1))
       end
     end
   end
