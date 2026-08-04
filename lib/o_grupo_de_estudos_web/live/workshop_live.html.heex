@@ -60,13 +60,23 @@
         </h1>
         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-600">
           <span class="font-bold text-ink-900">{schedule_label(@workshop)}</span>
-          <span :if={@workshop.location}>{@workshop.location}</span>
+          <span :if={Workshop.place_line(@workshop)}>{Workshop.place_line(@workshop)}</span>
           <%!-- "com" names who teaches, not who organizes: with the two roles
                separated, crediting the class to whoever only produced it became a
                bug.
           --%>
           <span>com <b class="text-ink-900">{teacher_names(@teachers)}</b></span>
         </div>
+
+        <%!-- The full address sits with the title and not buried in the description:
+             whoever opens the page on a phone is often already on the way. --%>
+        <p
+          :if={Workshop.address_line(@workshop)}
+          class="m-0 mt-2 flex items-start gap-1.5 text-[13px] leading-snug text-ink-500"
+        >
+          <.icon name="hero-map-pin" class="mt-0.5 size-4 shrink-0 text-ink-400" />
+          {Workshop.address_line(@workshop)}
+        </p>
       </div>
       <.link
         :if={@organizer?}

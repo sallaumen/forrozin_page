@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias OGrupoDeEstudos.Brazil
   alias OGrupoDeEstudos.Workshops.WorkshopEnrollment
 
   @type t :: %__MODULE__{}
@@ -22,7 +23,16 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     field :slug, :string
     field :title, :string
     field :description, :string
+    # The name of the place ("Telhado do Tatá"), not the whole address. Rows written
+    # before the split still carry the free line, and the display falls back to it.
     field :location, :string
+    field :street, :string
+    field :street_number, :string
+    field :complement, :string
+    field :neighborhood, :string
+    field :city, :string
+    field :state, :string
+    field :postal_code, :string
     field :starts_at, :utc_datetime
     field :ends_at, :utc_datetime
     field :price_cents, :integer
@@ -56,6 +66,13 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     :title,
     :description,
     :location,
+    :street,
+    :street_number,
+    :complement,
+    :neighborhood,
+    :city,
+    :state,
+    :postal_code,
     :starts_at,
     :ends_at,
     :price_cents,
@@ -74,6 +91,9 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> update_change(:title, &trim/1)
     |> update_change(:description, &trim/1)
     |> update_change(:location, &trim/1)
+    |> trim_address()
+    |> update_change(:state, &String.upcase(trim(&1)))
+    |> validate_state()
     |> update_change(:payment_info, &trim/1)
     |> update_change(:payment_phone, &trim/1)
     |> validate_length(:payment_phone, max: 40)
@@ -81,6 +101,12 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> validate_length(:title, max: 140)
     |> validate_length(:description, max: 20_000)
     |> validate_length(:location, max: 200)
+    |> validate_length(:street, max: 200)
+    |> validate_length(:street_number, max: 20)
+    |> validate_length(:complement, max: 80)
+    |> validate_length(:neighborhood, max: 80)
+    |> validate_length(:city, max: 80)
+    |> validate_length(:postal_code, max: 20)
     |> validate_length(:payment_info, max: 200)
     |> validate_number(:price_cents, greater_than_or_equal_to: 0)
     |> validate_number(:capacity, greater_than: 0)
@@ -90,6 +116,76 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> put_slug()
     |> unique_constraint(:slug)
     |> foreign_key_constraint(:organizer_id)
+  end
+
+  @address_fields [:street, :street_number, :complement, :neighborhood, :city, :postal_code]
+
+  defp trim_address(changeset) do
+    Enum.reduce(@address_fields, changeset, &update_change(&2, &1, fn v -> trim(v) end))
+  end
+
+  # Optional, so blank passes. Anything else has to be a real state, or the address
+  # says "XX" and nobody notices until someone tries to get there.
+  defp validate_state(changeset) do
+    case get_change(changeset, :state) do
+      nil ->
+        changeset
+
+      "" ->
+        changeset
+
+      state ->
+        if Brazil.state?(state), do: changeset, else: add_error(changeset, :state, "não existe")
+    end
+  end
+
+  @doc """
+  The place and the city, which is what a card has room for.
+
+  Falls back to whatever `location` holds when nothing structured was filled: rows
+  written before the split keep the whole address in that one field.
+  """
+  @spec place_line(t()) :: String.t() | nil
+  def place_line(%__MODULE__{} = workshop) do
+    [present(workshop.location), city_state(workshop)]
+    |> compact_join(" · ")
+  end
+
+  @doc """
+  Street, number, complement, neighborhood, city and postal code, in reading order.
+
+  Returns nil when only the place name is known, so the page can stay quiet instead
+  of showing an address made of separators.
+  """
+  @spec address_line(t()) :: String.t() | nil
+  def address_line(%__MODULE__{} = workshop) do
+    [
+      compact_join(
+        [present(workshop.street), present(workshop.street_number), present(workshop.complement)],
+        ", "
+      ),
+      present(workshop.neighborhood),
+      city_state(workshop),
+      present(workshop.postal_code)
+    ]
+    |> compact_join(" · ")
+  end
+
+  defp city_state(%__MODULE__{city: nil}), do: nil
+  defp city_state(%__MODULE__{city: ""}), do: nil
+
+  defp city_state(%__MODULE__{city: city, state: state}),
+    do: compact_join([city, present(state)], ", ")
+
+  defp present(nil), do: nil
+  defp present(""), do: nil
+  defp present(value), do: value
+
+  defp compact_join(parts, separator) do
+    case parts |> Enum.reject(&is_nil/1) |> Enum.join(separator) do
+      "" -> nil
+      joined -> joined
+    end
   end
 
   @doc "Stores or removes the flyer. The path comes from the storage, never from the user."

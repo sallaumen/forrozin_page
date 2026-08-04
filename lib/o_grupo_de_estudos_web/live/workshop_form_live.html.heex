@@ -120,13 +120,22 @@
           />
         </div>
 
-        <div class="mb-4 grid gap-3 sm:grid-cols-2">
-          <div>
-            <label
-              for="workshop-location"
-              class="mb-1.5 block text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500"
-            >
-              Onde
+        <%!-- One free line turned into "Telhado do Tatá — R. Dr. Alexandre Gutierrez":
+             it reads fine to whoever wrote it and tells nobody else the city, the
+             number, or how to open it in a map. Grouped in a fieldset so eight
+             fields still read as one question: where is it. --%>
+        <fieldset class="mb-4 rounded-xl border border-ink-200 bg-ink-100/30 p-3.5">
+          <legend class="px-1 text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500">
+            Onde é
+          </legend>
+          <p class="m-0 mb-3 text-[11.5px] leading-snug text-ink-500">
+            Quem vai precisa achar o lugar. Só o nome do espaço não basta para quem
+            nunca foi.
+          </p>
+
+          <div class="mb-3">
+            <label for="workshop-location" class={label_class()}>
+              Nome do lugar
             </label>
             <input
               id="workshop-location"
@@ -134,29 +143,134 @@
               name="workshop[location]"
               phx-debounce="300"
               value={@form["location"]}
-              placeholder="Curitiba, Juvevê"
-              class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+              maxlength="200"
+              placeholder="Ex.: Telhado do Tatá"
+              class={input_class()}
             />
           </div>
-          <div>
-            <label
-              for="workshop-capacity"
-              class="mb-1.5 block text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500"
-            >
-              Vagas
-              <span class="font-normal normal-case tracking-normal">(vazio = sem limite)</span>
-            </label>
-            <input
-              id="workshop-capacity"
-              type="number"
-              min="1"
-              name="workshop[capacity]"
-              phx-debounce="300"
-              value={@form["capacity"]}
-              placeholder="50"
-              class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
-            />
+
+          <div class="mb-3 grid grid-cols-[1fr_5rem] gap-3 sm:grid-cols-[1fr_7rem]">
+            <div>
+              <label for="workshop-street" class={label_class()}>Rua</label>
+              <input
+                id="workshop-street"
+                type="text"
+                name="workshop[street]"
+                phx-debounce="300"
+                value={@form["street"]}
+                maxlength="200"
+                autocomplete="address-line1"
+                placeholder="R. Dr. Alexandre Gutierrez"
+                class={input_class()}
+              />
+            </div>
+            <div>
+              <label for="workshop-street-number" class={label_class()}>Número</label>
+              <input
+                id="workshop-street-number"
+                type="text"
+                inputmode="numeric"
+                name="workshop[street_number]"
+                phx-debounce="300"
+                value={@form["street_number"]}
+                maxlength="20"
+                placeholder="480"
+                class={input_class()}
+              />
+            </div>
           </div>
+
+          <div class="mb-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label for="workshop-complement" class={label_class()}>
+                Complemento
+                <span class="font-normal normal-case tracking-normal">(opcional)</span>
+              </label>
+              <input
+                id="workshop-complement"
+                type="text"
+                name="workshop[complement]"
+                phx-debounce="300"
+                value={@form["complement"]}
+                maxlength="80"
+                placeholder="Casa 2, fundos"
+                class={input_class()}
+              />
+            </div>
+            <div>
+              <label for="workshop-neighborhood" class={label_class()}>Bairro</label>
+              <input
+                id="workshop-neighborhood"
+                type="text"
+                name="workshop[neighborhood]"
+                phx-debounce="300"
+                value={@form["neighborhood"]}
+                maxlength="80"
+                placeholder="Água Verde"
+                class={input_class()}
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-[1fr_5rem] gap-3 sm:grid-cols-[1fr_6rem_9rem]">
+            <div>
+              <label for="workshop-city" class={label_class()}>Cidade</label>
+              <input
+                id="workshop-city"
+                type="text"
+                name="workshop[city]"
+                phx-debounce="300"
+                value={@form["city"]}
+                maxlength="80"
+                autocomplete="address-level2"
+                placeholder="Curitiba"
+                class={input_class()}
+              />
+            </div>
+            <div>
+              <label for="workshop-state" class={label_class()}>Estado</label>
+              <select id="workshop-state" name="workshop[state]" class={input_class()}>
+                <option value="" selected={@form["state"] == ""}>UF</option>
+                <option :for={uf <- state_options()} value={uf} selected={@form["state"] == uf}>
+                  {uf}
+                </option>
+              </select>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <label for="workshop-postal-code" class={label_class()}>
+                CEP <span class="font-normal normal-case tracking-normal">(opcional)</span>
+              </label>
+              <input
+                id="workshop-postal-code"
+                type="text"
+                inputmode="numeric"
+                name="workshop[postal_code]"
+                phx-debounce="300"
+                value={@form["postal_code"]}
+                maxlength="20"
+                autocomplete="postal-code"
+                placeholder="80240-090"
+                class={input_class()}
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="mb-4">
+          <label for="workshop-capacity" class={label_class()}>
+            Vagas
+            <span class="font-normal normal-case tracking-normal">(vazio = sem limite)</span>
+          </label>
+          <input
+            id="workshop-capacity"
+            type="number"
+            min="1"
+            name="workshop[capacity]"
+            phx-debounce="300"
+            value={@form["capacity"]}
+            placeholder="50"
+            class={[input_class(), "sm:max-w-[10rem]"]}
+          />
         </div>
 
         <div class="mb-4 grid gap-3 sm:grid-cols-2">

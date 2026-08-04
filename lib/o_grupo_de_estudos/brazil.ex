@@ -10,6 +10,17 @@ defmodule OGrupoDeEstudos.Brazil do
 
   @offset_seconds -3 * 3600
 
+  @states ~w(AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO)
+
+  @doc "The 26 states plus the Federal District, as uppercase abbreviations."
+  @spec states() :: [String.t()]
+  def states, do: @states
+
+  @doc "Whether the abbreviation is a Brazilian state. Case does not matter."
+  @spec state?(term()) :: boolean()
+  def state?(value) when is_binary(value), do: String.upcase(value) in @states
+  def state?(_other), do: false
+
   @doc "Returns today's date in Brazilian time (UTC-3)."
   @spec today() :: Date.t()
   def today do
