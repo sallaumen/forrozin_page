@@ -15,6 +15,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   alias OGrupoDeEstudos.Engagement.Comments.WorkshopCommentQuery
   alias OGrupoDeEstudos.Workshops.Workshop
 
+  use OGrupoDeEstudosWeb.Handlers.StepLearning
+
+  import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1]
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
@@ -65,6 +68,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   @impl true
+  def handle_event("search_workshop_step", %{"term" => termo}, socket) do
+    {:noreply, assign(socket, :busca_passo, OGrupoDeEstudos.Study.search_related_steps(termo))}
+  end
+
+  def handle_event("add_workshop_step", %{"id" => step_id}, socket) do
+    Workshops.add_step(socket.assigns.workshop, socket.assigns.current_user, step_id)
+
+    {:noreply, socket |> assign(:busca_passo, []) |> reload_workshop()}
+  end
+
+  def handle_event("remove_workshop_step", %{"id" => step_id}, socket) do
+    Workshops.remove_step(socket.assigns.workshop, socket.assigns.current_user, step_id)
+
+    {:noreply, reload_workshop(socket)}
+  end
+
   def handle_event("request_join", _params, %{assigns: %{current_user: nil}} = socket) do
     {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
   end
@@ -410,6 +429,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:pode_ver_media?, Workshops.can_see_media?(workshop, user))
     |> assign(:media, media_visivel(workshop, user))
     |> assign(:professores, professores(workshop))
+    |> assign(:passos, Workshops.list_steps(workshop.id))
+    |> assign(:busca_passo, [])
     |> assign(:liberado?, Workshops.liberado?(workshop, user))
     |> assign(:vitrine?, vitrine?(workshop, user))
     |> assign(:join_status, Workshops.join_status(workshop, user))

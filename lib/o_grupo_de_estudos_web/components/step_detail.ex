@@ -49,6 +49,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
   attr :step_like_count, :integer, default: 0
   attr :step_favorited, :boolean, default: false
   attr :step_learned, :boolean, default: false
+  attr :seen_in_workshops, :list, default: []
 
   attr :connections_out, :list, default: []
   attr :connections_in, :list, default: []
@@ -415,6 +416,24 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
           </div>
         </div>
       <% end %>
+
+      <%!-- Onde a pessoa viu este passo. É o caminho de volta: sem isto o
+      acervo fica sendo uma ilha, sem lembrar que o passo foi dado numa aula
+      que ela fez. --%>
+      <div
+        :if={@seen_in_workshops != []}
+        class="mb-6 rounded-xl border-l-[3px] border-gold-500 bg-gold-500/[0.08] px-4 py-3"
+      >
+        <p class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[1.6px] text-gold-600">
+          Você viu este passo
+        </p>
+        <p :for={visto <- @seen_in_workshops} class="m-0 text-[13px] text-ink-700">
+          em
+          <.link navigate={~p"/workshops/#{visto.slug}"} class="font-bold text-ink-900">
+            {visto.title}
+          </.link>
+        </p>
+      </div>
 
       <%!-- ───────── Conceitos relacionados ───────── --%>
       <div

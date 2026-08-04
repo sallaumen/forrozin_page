@@ -43,6 +43,8 @@ defmodule OGrupoDeEstudos.Workshops do
     WaitlistEntry,
     WaitlistQuery,
     WorkshopQuery,
+    WorkshopStep,
+    WorkshopStepQuery,
     WorkshopTeacher
   }
 
@@ -368,6 +370,68 @@ defmodule OGrupoDeEstudos.Workshops do
     |> case do
       {:ok, criado} -> {:cont, {:ok, [criado | acc]}}
       {:error, _changeset} -> {:halt, {:error, :invalid_teacher}}
+    end
+  end
+
+  # ── Passos dados no workshop ──────────────────────────────────────────
+
+  defdelegate list_steps(workshop_id), to: WorkshopStepQuery, as: :list_for_workshop
+
+  @doc """
+  Diz em que workshops ESTA pessoa viu este passo.
+
+  É o caminho de volta que faltava: o acervo era uma ilha, e nada na página do
+  passo lembrava que ele tinha sido dado numa aula que a pessoa fez.
+  """
+  @spec workshops_where_seen(Ecto.UUID.t() | nil, Ecto.UUID.t()) :: [map()]
+  defdelegate workshops_where_seen(user_id, step_id), to: WorkshopStepQuery, as: :where_user_saw
+
+  @doc """
+  Põe um passo do acervo na lista do workshop.
+
+  Só quem administra: a lista é o que a aula ofereceu, e quem deu a aula sabe
+  o que ofereceu. Curadoria por like foi considerada e descartada, porque
+  ordenar por voto resolve com muito mais peça um problema que a permissão já
+  resolve.
+  """
+  @spec add_step(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopStep.t()} | {:error, :unauthorized | :not_found | :already_added}
+  def add_step(%Workshop{} = workshop, %User{} = actor, step_id) do
+    with :ok <- ensure_admin(workshop, actor),
+         %{id: id} <- buscar_passo(step_id) do
+      inserir_passo(workshop, id)
+    else
+      nil -> {:error, :not_found}
+      {:error, motivo} -> {:error, motivo}
+    end
+  end
+
+  defp buscar_passo(step_id) do
+    OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(id: step_id)
+  rescue
+    Ecto.Query.CastError -> nil
+  end
+
+  defp inserir_passo(workshop, step_id) do
+    %WorkshopStep{}
+    |> WorkshopStep.changeset(%{
+      workshop_id: workshop.id,
+      step_id: step_id,
+      position: WorkshopStepQuery.next_position(workshop.id)
+    })
+    |> Repo.insert()
+    |> case do
+      {:ok, vinculo} -> {:ok, vinculo}
+      {:error, %Ecto.Changeset{}} -> {:error, :already_added}
+    end
+  end
+
+  @doc "Tira um passo da lista do workshop."
+  @spec remove_step(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopStep.t()} | {:error, :unauthorized | :not_found}
+  def remove_step(%Workshop{} = workshop, %User{} = actor, step_id) do
+    with :ok <- ensure_admin(workshop, actor) do
+      WorkshopStepQuery.delete(workshop.id, step_id)
     end
   end
 

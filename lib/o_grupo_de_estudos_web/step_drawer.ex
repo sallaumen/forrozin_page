@@ -77,6 +77,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
       drawer_liked: Engagement.liked?(user_id, "step", step.id),
       drawer_favorited: Engagement.favorited?(user_id, "step", step.id),
       drawer_learned: Engagement.learned?(user_id, step.id),
+      drawer_seen_in_workshops: OGrupoDeEstudos.Workshops.workshops_where_seen(user_id, step.id),
       can_edit_drawer: socket.assigns.edit_mode or step.suggested_by_id == user_id,
       expanded_step: step.id,
       expanded_comments: comments,

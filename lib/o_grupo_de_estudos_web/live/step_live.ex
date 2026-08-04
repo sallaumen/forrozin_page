@@ -68,6 +68,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         step_like_count = step.like_count
         step_favorited = Engagement.favorited?(user_id, "step", step.id)
         step_learned = Engagement.learned?(user_id, step.id)
+        vistos = OGrupoDeEstudos.Workshops.workshops_where_seen(user_id, step.id)
 
         step_image = StepDetail.resolve_step_image(step)
 
@@ -111,6 +112,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            step_like_count: step_like_count,
            step_favorited: step_favorited,
            step_learned: step_learned,
+           seen_in_workshops: vistos,
            suggesting_field: nil,
            suggestion_value: "",
            suggesting_connection: false,
