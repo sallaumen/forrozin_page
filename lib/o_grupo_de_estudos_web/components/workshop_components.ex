@@ -745,4 +745,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   @doc "Ex.: 1 pessoa na espera / 4 pessoas na espera"
   def espera_label(1), do: "1 pessoa na espera"
   def espera_label(total), do: "#{total} pessoas na espera"
+
+  @doc """
+  Nomes de quem dá a aula numa linha só.
+
+  Dois professores é o caso comum (quase sempre um casal), então o "e" entre
+  os dois é a forma que se fala, não uma vírgula.
+  """
+  def nomes_dos_professores([]), do: "quem organiza"
+  def nomes_dos_professores([um]), do: um.name || um.username
+
+  def nomes_dos_professores([primeiro, segundo | _resto]),
+    do: "#{primeiro.name || primeiro.username} e #{segundo.name || segundo.username}"
 end

@@ -426,18 +426,23 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   defp vitrine?(%Workshop{}, _user), do: false
 
-  # Quem organiza vem primeiro, co-organizadores na ordem em que entraram. A
-  # mesma forma de mapa para os dois, para a tela não saber a diferença.
+  # Quem da a aula agora e escolha explicita de quem organiza. Sem ninguem
+  # escolhido, cai no organizador: e o palpite certo na maioria dos casos, e
+  # some assim que a lista for preenchida.
   defp professores(workshop) do
-    [
-      %{
-        user_id: workshop.organizer.id,
-        name: workshop.organizer.name,
-        username: workshop.organizer.username,
-        avatar_path: workshop.organizer.avatar_path
-      }
-      | Workshops.list_co_admins(workshop)
-    ]
+    case Workshops.list_teachers(workshop.id) do
+      [] -> [do_organizador(workshop)]
+      escolhidos -> escolhidos
+    end
+  end
+
+  defp do_organizador(workshop) do
+    %{
+      user_id: workshop.organizer.id,
+      name: workshop.organizer.name,
+      username: workshop.organizer.username,
+      avatar_path: workshop.organizer.avatar_path
+    }
   end
 
   # Transcode roda em outra fila e nao tem como avisar esta pagina. Enquanto

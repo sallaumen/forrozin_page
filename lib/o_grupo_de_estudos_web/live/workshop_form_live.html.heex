@@ -189,6 +189,46 @@
         </div>
 
         <div class="mt-4">
+          <%!-- Quem dá a aula: escolha explícita, porque produzir a aula de
+          outra pessoa é o caso comum. Professor de fora nem sempre tem conta,
+          então o nome escrito também vale. --%>
+          <div class="mb-5">
+            <p class="mb-1 text-[12.5px] font-bold text-ink-700">Quem dá a aula</p>
+            <p class="m-0 mb-2 text-[11.5px] leading-snug text-ink-500">
+              Um ou dois. Quem organiza não entra sozinho: se você também dá a aula,
+              coloque seu usuário aqui.
+            </p>
+
+            <div :for={indice <- [0, 1]} class="mb-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  name={"workshop[teacher_username][#{indice}]"}
+                  phx-debounce="300"
+                  value={campo_de_professor(@form["teacher_username"], indice)}
+                  placeholder={
+                    if indice == 0, do: "usuário no site", else: "usuário no site (opcional)"
+                  }
+                  class="min-w-0 flex-1 rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+                />
+                <span class="text-[11.5px] text-ink-400">ou</span>
+                <input
+                  type="text"
+                  name={"workshop[teacher_name][#{indice}]"}
+                  phx-debounce="300"
+                  value={campo_de_professor(@form["teacher_name"], indice)}
+                  maxlength="120"
+                  placeholder="só o nome, se não tem conta"
+                  class="min-w-0 flex-1 rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+                />
+              </div>
+            </div>
+
+            <p class="m-0 mt-1 text-[11.5px] leading-snug text-ink-400">
+              Usuário que não existe é ignorado; nesse caso use o campo do nome.
+            </p>
+          </div>
+
           <%!-- Quando se paga era texto livre, e texto livre o sistema não usa:
           com a escolha, dá para mostrar o jeito certo na página e oferecer o
           atalho do comprovante. Só aparece em workshop pago. --%>

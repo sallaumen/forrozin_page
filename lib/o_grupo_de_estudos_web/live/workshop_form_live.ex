@@ -90,6 +90,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       {:ok, workshop} ->
         attach_to_program(socket.assigns[:program], user, workshop)
         workshop = guardar_flyer(socket, workshop, user)
+        guardar_professores(workshop, user, params)
         finish(socket, user, workshop, publish?)
 
       {:error, changeset} ->
@@ -102,6 +103,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
     case Workshops.update_workshop(user, workshop, to_attrs(params)) do
       {:ok, updated} ->
+        guardar_professores(updated, user, params)
         finish(socket, user, guardar_flyer(socket, updated, user), publish?)
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -197,6 +199,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "price" => "",
       "payment_info" => "",
       "payment_mode" => "",
+      "teacher_username" => [],
+      "teacher_name" => [],
       "payment_phone" => "",
       "capacity" => "",
       "visibility" => "public"
@@ -213,6 +217,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "price" => price_input(workshop.price_cents),
       "payment_info" => workshop.payment_info || "",
       "payment_mode" => to_string(workshop.payment_mode || ""),
+      "teacher_username" => Enum.map(Workshops.list_teachers(workshop.id), &(&1.username || "")),
+      "teacher_name" =>
+        Enum.map(Workshops.list_teachers(workshop.id), fn p ->
+          if p.username, do: "", else: p.name
+        end),
       "payment_phone" => workshop.payment_phone || "",
       "capacity" => if(workshop.capacity, do: to_string(workshop.capacity), else: ""),
       "visibility" => to_string(workshop.visibility)
@@ -293,4 +302,55 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   defp modo_de_pagamento("on_signup"), do: :on_signup
   defp modo_de_pagamento("at_event"), do: :at_event
   defp modo_de_pagamento(_nada), do: nil
+
+  # Professores sao gravados a parte do workshop: a lista e outra tabela, e
+  # falhar aqui nao pode desfazer o workshop que ja foi criado. Nome de
+  # usuario que nao existe simplesmente nao entra, e o resto entra.
+  defp guardar_professores(workshop, user, params) do
+    entradas =
+      [0, 1]
+      |> Enum.map(&entrada_de_professor(params, &1))
+      |> Enum.reject(&is_nil/1)
+
+    Workshops.set_teachers(workshop, user, entradas)
+  end
+
+  defp entrada_de_professor(params, indice) do
+    usuario = campo_de_lista(params["teacher_username"], indice)
+    nome = campo_de_lista(params["teacher_name"], indice)
+
+    cond do
+      usuario -> conta_por_username(usuario)
+      nome -> %{display_name: nome}
+      true -> nil
+    end
+  end
+
+  defp conta_por_username(username) do
+    case OGrupoDeEstudos.Accounts.get_user_by_username(username) do
+      nil -> nil
+      %{id: id} -> %{user_id: id}
+    end
+  end
+
+  @doc """
+  Le o campo de professor na posicao pedida.
+
+  O navegador manda `teacher_username` como lista quando o form e novo e como
+  mapa indexado por string ("0", "1") quando volta de um erro de validacao.
+  `Enum.at` num mapa devolve tupla, e tupla no template estoura na hora de
+  renderizar: o teste de erro de validacao pegou exatamente isso.
+  """
+  @spec campo_de_professor(term(), non_neg_integer()) :: String.t()
+  def campo_de_professor(valores, indice), do: campo_de_lista(valores, indice) || ""
+
+  defp campo_de_lista(nil, _indice), do: nil
+
+  defp campo_de_lista(valores, indice) when is_map(valores),
+    do: valores |> Map.get(to_string(indice)) |> blank_to_nil()
+
+  defp campo_de_lista(valores, indice) when is_list(valores),
+    do: valores |> Enum.at(indice) |> blank_to_nil()
+
+  defp campo_de_lista(_outro_formato, _indice), do: nil
 end

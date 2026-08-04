@@ -39,9 +39,11 @@ defmodule OGrupoDeEstudos.Workshops do
     WorkshopEnrollment,
     WorkshopMedia,
     WorkshopProgram,
+    TeacherQuery,
     WaitlistEntry,
     WaitlistQuery,
-    WorkshopQuery
+    WorkshopQuery,
+    WorkshopTeacher
   }
 
   # ── Leituras ──────────────────────────────────────────────────────────
@@ -287,6 +289,86 @@ defmodule OGrupoDeEstudos.Workshops do
     end)
 
     {:ok, pedido}
+  end
+
+  # ── Quem da a aula ────────────────────────────────────────────────────
+
+  defdelegate list_teachers(workshop_id), to: TeacherQuery, as: :list_for_workshop
+
+  @max_teachers 2
+
+  @doc """
+  Define quem dá a aula, substituindo a lista inteira.
+
+  Substituir em vez de acrescentar porque é assim que o formulário funciona:
+  dois lugares, preenchidos ou não. Cada entrada é `%{user_id: id}` ou
+  `%{display_name: nome}`.
+
+  Quem organiza não entra automaticamente: produzir a aula de outra pessoa é o
+  caso comum, e assumir que quem criou dá a aula era o bug.
+  """
+  @spec set_teachers(Workshop.t(), User.t(), [map()]) ::
+          {:ok, [map()]}
+          | {:error, :unauthorized | :too_many_teachers | :invalid_teacher}
+  def set_teachers(%Workshop{} = workshop, %User{} = actor, entradas) do
+    with :ok <- ensure_admin(workshop, actor),
+         :ok <- ensure_cabem(entradas),
+         {:ok, limpas} <- normalizar_professores(entradas) do
+      regravar_professores(workshop, limpas)
+    end
+  end
+
+  defp ensure_cabem(entradas) when length(entradas) <= @max_teachers, do: :ok
+  defp ensure_cabem(_demais), do: {:error, :too_many_teachers}
+
+  defp normalizar_professores(entradas) do
+    entradas
+    |> Enum.with_index(1)
+    |> Enum.reduce_while({:ok, []}, fn {entrada, posicao}, {:ok, acc} ->
+      case normalizar_professor(entrada, posicao) do
+        {:ok, limpa} -> {:cont, {:ok, [limpa | acc]}}
+        :erro -> {:halt, {:error, :invalid_teacher}}
+      end
+    end)
+    |> case do
+      {:ok, invertidas} -> {:ok, Enum.reverse(invertidas)}
+      erro -> erro
+    end
+  end
+
+  defp normalizar_professor(%{user_id: user_id}, posicao) when is_binary(user_id) do
+    case Accounts.get_user_by_id(user_id) do
+      nil -> :erro
+      %User{id: id} -> {:ok, %{user_id: id, display_name: nil, position: posicao}}
+    end
+  end
+
+  defp normalizar_professor(%{display_name: nome}, posicao) when is_binary(nome) do
+    case String.trim(nome) do
+      "" -> :erro
+      limpo -> {:ok, %{user_id: nil, display_name: limpo, position: posicao}}
+    end
+  end
+
+  defp normalizar_professor(_sem_conta_nem_nome, _posicao), do: :erro
+
+  # Apaga e regrava na mesma transacao: a lista e curta e a ordem importa, e
+  # reconciliar duas linhas custaria mais codigo do que regravar.
+  defp regravar_professores(workshop, entradas) do
+    Repo.transact(fn ->
+      TeacherQuery.delete_all(workshop.id)
+      Enum.reduce_while(entradas, {:ok, []}, &inserir_professor(&1, &2, workshop))
+    end)
+  end
+
+  defp inserir_professor(entrada, {:ok, acc}, workshop) do
+    %WorkshopTeacher{}
+    |> WorkshopTeacher.changeset(Map.put(entrada, :workshop_id, workshop.id))
+    |> Repo.insert()
+    |> case do
+      {:ok, criado} -> {:cont, {:ok, [criado | acc]}}
+      {:error, _changeset} -> {:halt, {:error, :invalid_teacher}}
+    end
   end
 
   # ── Galeria ───────────────────────────────────────────────────────────
