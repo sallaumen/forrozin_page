@@ -57,7 +57,9 @@
         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-600">
           <span class="font-bold text-ink-900">{schedule_label(@workshop)}</span>
           <span :if={@workshop.location}>{@workshop.location}</span>
-          <span>com <b class="text-ink-900">{@workshop.organizer.name}</b></span>
+          <%!-- "com" e quem da a aula, nao quem organiza: com a separacao dos
+          dois papeis, atribuir a aula a quem so produziu virou erro. --%>
+          <span>com <b class="text-ink-900">{nomes_dos_professores(@professores)}</b></span>
         </div>
       </div>
       <.link
@@ -258,8 +260,11 @@
           <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Quem dá a aula
           </p>
+          <%!-- Professor sem conta entra só com o nome: esperar o cadastro
+          existir para poder divulgar a aula travaria o mundo real por causa
+          do banco. Sem conta não há perfil, então não há link. --%>
           <.link
-            :for={professor <- @professores}
+            :for={professor <- Enum.filter(@professores, & &1.username)}
             navigate={~p"/users/#{professor.username}"}
             class="flex items-center gap-2.5 py-1 no-underline"
           >
@@ -271,6 +276,16 @@
               <span class="block truncate text-[12px] text-ink-500">@{professor.username}</span>
             </span>
           </.link>
+
+          <div
+            :for={professor <- Enum.reject(@professores, & &1.username)}
+            class="flex items-center gap-2.5 py-1"
+          >
+            <.user_avatar user={professor} size={:md} />
+            <span class="block truncate text-[13.5px] font-bold text-ink-900">
+              {professor.name}
+            </span>
+          </div>
         </div>
       </aside>
 

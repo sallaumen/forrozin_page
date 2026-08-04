@@ -57,16 +57,43 @@ defmodule OGrupoDeEstudosWeb.WorkshopTeachersTest do
       refute html =~ ~s|src=""|
     end
 
-    test "co-organizador também é professor da turma", %{conn: conn} do
+    test "co-organizador NÃO vira professor por automatismo", %{conn: conn} do
+      # Administrar e dar a aula sao papeis diferentes: quem produz o evento
+      # de outra pessoa administra sem dar aula nenhuma. Quem da a aula agora
+      # e escolha explicita.
       dono = insert(:user, name: "Tavano Silva")
-      parceira = insert(:user, name: "Marina Costa", avatar_path: "/uploads/avatars/m/2.jpg")
+      parceira = insert(:user, name: "Marina Costa")
       workshop = publicado(dono)
       {:ok, _} = Workshops.add_admin(workshop, dono, parceira.id)
 
       {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{workshop.slug}")
 
+      refute html =~ "Marina Costa"
+    end
+
+    test "quem foi escolhido como professor aparece, mesmo sem organizar", %{conn: conn} do
+      dono = insert(:user, name: "Produtor do Evento")
+      professora = insert(:user, name: "Marina Costa", avatar_path: "/uploads/avatars/m/2.jpg")
+      workshop = publicado(dono)
+      {:ok, _} = Workshops.set_teachers(workshop, dono, [%{user_id: professora.id}])
+
+      {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{workshop.slug}")
+
       assert html =~ "Marina Costa"
       assert html =~ "/uploads/avatars/m/2.jpg"
+      # E quem so produziu sai da vitrine de professores.
+      refute html =~ "Produtor do Evento"
+    end
+
+    test "professor sem conta aparece só com o nome, sem link quebrado", %{conn: conn} do
+      dono = insert(:user)
+      workshop = publicado(dono)
+      {:ok, _} = Workshops.set_teachers(workshop, dono, [%{display_name: "Zé de Itaúnas"}])
+
+      {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{workshop.slug}")
+
+      assert html =~ "Zé de Itaúnas"
+      refute html =~ ~s|href="/users/"|
     end
 
     test "o rosto leva ao perfil, que é o ponto de divulgar o professor", %{conn: conn} do
