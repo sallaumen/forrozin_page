@@ -196,6 +196,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "ends_at" => "",
       "price" => "",
       "payment_info" => "",
+      "payment_mode" => "",
+      "payment_phone" => "",
       "capacity" => "",
       "visibility" => "public"
     }
@@ -210,6 +212,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "ends_at" => datetime_input(workshop.ends_at),
       "price" => price_input(workshop.price_cents),
       "payment_info" => workshop.payment_info || "",
+      "payment_mode" => to_string(workshop.payment_mode || ""),
+      "payment_phone" => workshop.payment_phone || "",
       "capacity" => if(workshop.capacity, do: to_string(workshop.capacity), else: ""),
       "visibility" => to_string(workshop.visibility)
     }
@@ -231,6 +235,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       description: params["description"],
       location: blank_to_nil(params["location"]),
       payment_info: blank_to_nil(params["payment_info"]),
+      payment_mode: modo_de_pagamento(params["payment_mode"]),
+      payment_phone: blank_to_nil(params["payment_phone"]),
       starts_at: parse_datetime(params["starts_at"]),
       ends_at: parse_datetime(params["ends_at"]),
       price_cents: parse_price(params["price"]),
@@ -281,4 +287,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       :error -> nil
     end
   end
+
+  # Pattern matching em vez de String.to_existing_atom: valor de formulario e
+  # entrada de fora, e um atomo que ainda nao existe derrubaria a pagina.
+  defp modo_de_pagamento("on_signup"), do: :on_signup
+  defp modo_de_pagamento("at_event"), do: :at_event
+  defp modo_de_pagamento(_nada), do: nil
 end

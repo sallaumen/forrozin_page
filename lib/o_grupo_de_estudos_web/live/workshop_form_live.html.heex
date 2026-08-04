@@ -155,7 +155,7 @@
               for="workshop-payment-info"
               class="mb-1.5 block text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500"
             >
-              Como as pessoas pagam
+              Chave Pix ou instrução
             </label>
             <input
               id="workshop-payment-info"
@@ -164,7 +164,7 @@
               phx-debounce="300"
               value={@form["payment_info"]}
               maxlength="200"
-              placeholder="Pix na inscrição, dinheiro na hora..."
+              placeholder="Pix: seu@email.com"
               class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
             />
           </div>
@@ -189,6 +189,68 @@
         </div>
 
         <div class="mt-4">
+          <%!-- Quando se paga era texto livre, e texto livre o sistema não usa:
+          com a escolha, dá para mostrar o jeito certo na página e oferecer o
+          atalho do comprovante. Só aparece em workshop pago. --%>
+          <div :if={@form["price"] not in ["", nil, "0"]} class="mb-5">
+            <p class="mb-1 text-[12.5px] font-bold text-ink-700">Quando as pessoas pagam</p>
+            <div class="flex flex-col gap-1.5">
+              <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2.5">
+                <input
+                  type="radio"
+                  name="workshop[payment_mode]"
+                  value="on_signup"
+                  checked={@form["payment_mode"] == "on_signup"}
+                  class="mt-0.5 size-4 shrink-0 accent-accent-orange"
+                />
+                <span>
+                  <span class="block text-[13px] font-bold text-ink-900">Na inscrição</span>
+                  <span class="block text-[11.5px] leading-snug text-ink-500">
+                    A pessoa paga e manda o comprovante para você marcar como pago.
+                  </span>
+                </span>
+              </label>
+              <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2.5">
+                <input
+                  type="radio"
+                  name="workshop[payment_mode]"
+                  value="at_event"
+                  checked={@form["payment_mode"] == "at_event"}
+                  class="mt-0.5 size-4 shrink-0 accent-accent-orange"
+                />
+                <span>
+                  <span class="block text-[13px] font-bold text-ink-900">Na hora do evento</span>
+                  <span class="block text-[11.5px] leading-snug text-ink-500">
+                    Ninguém precisa pagar antes para garantir a vaga.
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <div :if={@form["payment_mode"] == "on_signup"} class="mt-2.5">
+              <label
+                for="workshop-payment-phone"
+                class="mb-1.5 block text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500"
+              >
+                Telefone para receber o comprovante
+              </label>
+              <input
+                id="workshop-payment-phone"
+                type="tel"
+                name="workshop[payment_phone]"
+                phx-debounce="300"
+                value={@form["payment_phone"]}
+                maxlength="40"
+                placeholder="(41) 99999-0000"
+                class="w-full rounded-lg border border-ink-200 bg-ink-100/40 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+              />
+              <p class="m-0 mt-1 text-[11.5px] leading-snug text-ink-500">
+                Vira um botão de WhatsApp para quem se inscreveu, com o nome do workshop
+                já na mensagem. Só quem está inscrito vê.
+              </p>
+            </div>
+          </div>
+
           <p class="mb-1 text-[12.5px] font-bold text-ink-700">Quem enxerga</p>
           <div class="flex flex-col gap-1.5">
             <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2.5">

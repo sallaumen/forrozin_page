@@ -96,6 +96,19 @@
             {payment_hint(@workshop, @enrolled? || @organizer?)}
           </p>
 
+          <%!-- Botão do comprovante: só para quem já está na turma, mesmo
+          critério da chave Pix. Mandar comprovante deixa de ser copiar o
+          número e escrever de que workshop se trata. --%>
+          <a
+            :if={@enrolled? && Workshop.receipt_link(@workshop)}
+            href={Workshop.receipt_link(@workshop)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border border-accent-green/40 bg-accent-green/10 px-4 py-2 font-serif text-[13px] font-semibold text-accent-green no-underline"
+          >
+            <.icon name="hero-paper-airplane" class="size-4" /> Mandar comprovante
+          </a>
+
           <%!-- Vagas, só quando o organizador definiu um limite --%>
           <div :if={@workshop.capacity} class="mt-3">
             <div class="h-1.5 w-full overflow-hidden rounded-full bg-ink-200">
