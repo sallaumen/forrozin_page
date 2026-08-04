@@ -581,3 +581,7 @@
     pending_study_count={assigns[:pending_study_count] || 0}
   />
 </div>
+
+<%!-- Folha do passo: abre por cima, para quem estava lendo a anotação
+não perder o lugar. --%>
+<.step_sheet step={@step_sheet} learned={@step_sheet_learned} />
