@@ -526,14 +526,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Engagement.count_likes("workshop", w.id) == 0
     end
 
-    test "anonymous visitor does not like it and is sent to signup", %{conn: conn} do
+    test "anonymous visitor does not like it and is sent to login", %{conn: conn} do
       w = published(insert(:user), %{})
       {:ok, lv, _} = live(conn, ~p"/workshops/#{w.slug}")
 
       assert {:error, {:redirect, %{to: destination}}} =
                render_click(lv, "toggle_workshop_like", %{})
 
-      assert destination =~ "/signup"
+      assert destination =~ "/login"
+      assert destination =~ "return_to=%2Fworkshops%2F#{w.slug}"
       assert Engagement.count_likes("workshop", w.id) == 0
     end
   end
@@ -818,14 +819,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Workshops.count_enrollments(w.id) == 0
     end
 
-    test "anonymous visitor is taken to signup when trying to enroll", %{conn: conn} do
+    test "anonymous visitor is taken to login when trying to enroll", %{conn: conn} do
       w = published(insert(:user))
 
       {:ok, lv, _} = live(conn, ~p"/workshops/#{w.slug}")
 
       assert {:error, {:redirect, %{to: destination}}} = render_click(lv, "enroll", %{})
-      assert destination =~ "/signup"
-      assert destination =~ w.slug
+      assert destination =~ "/login"
+      assert destination =~ "return_to=%2Fworkshops%2F#{w.slug}"
     end
 
     test "full workshop shows sold out and blocks enrollment", %{conn: conn} do

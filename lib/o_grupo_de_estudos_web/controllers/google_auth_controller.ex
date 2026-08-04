@@ -7,6 +7,7 @@ defmodule OGrupoDeEstudosWeb.GoogleAuthController do
   alias OGrupoDeEstudos.Accounts.GoogleAuth
   alias OGrupoDeEstudos.Engagement.UserAccessTracking
   alias OGrupoDeEstudos.Study
+  alias OGrupoDeEstudosWeb.ReturnTo
   alias OGrupoDeEstudosWeb.Tracking.ClientInfo
   alias OGrupoDeEstudosWeb.UserAuth
 
@@ -16,6 +17,7 @@ defmodule OGrupoDeEstudosWeb.GoogleAuthController do
         conn
         |> put_session(:google_auth_session_params, session_params)
         |> put_session(:google_auth_teacher_invite, params["teacher_invite"])
+        |> put_session(:google_auth_return_to, ReturnTo.safe_path(params["return_to"]))
         |> redirect(external: url)
 
       {:error, _error} ->
@@ -41,11 +43,12 @@ defmodule OGrupoDeEstudosWeb.GoogleAuthController do
   defp complete_login(conn, user, status) do
     maybe_accept_teacher_invite(user, get_session(conn, :google_auth_teacher_invite))
     UserAccessTracking.track_login(user, ClientInfo.from_conn(conn), :google)
+    return_to = get_session(conn, :google_auth_return_to)
 
     conn
     |> UserAuth.login(user)
     |> put_flash(:info, welcome_message(status, user))
-    |> redirect(to: destination(status))
+    |> redirect(to: ReturnTo.safe_path(return_to, destination(status)))
   end
 
   defp welcome_message(:registered, user) do

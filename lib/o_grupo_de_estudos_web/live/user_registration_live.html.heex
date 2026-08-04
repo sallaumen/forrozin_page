@@ -18,7 +18,7 @@
       O Grupo de Estudos
     </a>
     <a
-      href={~p"/login"}
+      href={login_path(@teacher_invite_slug, @return_to)}
       class="font-serif text-xs text-ink-400 no-underline tracking-wider"
     >
       ← Entrar
@@ -61,6 +61,7 @@
           <.google_sign_in_button
             label="Continuar com o Google"
             teacher_invite={@teacher_invite_slug}
+            return_to={@return_to}
           />
           <p class="text-xs text-ink-500 mt-2 mb-0 text-center">
             Cadastro pronto na hora, sem senha pra decorar. Você completa o perfil depois, com calma.
@@ -412,7 +413,10 @@
         </.form>
 
         <p class="text-center mt-7 text-sm text-ink-500">
-          Já tem conta? <a href={~p"/login"} class="text-gold-500 underline">Entrar</a>
+          Já tem conta?
+          <a href={login_path(@teacher_invite_slug, @return_to)} class="text-gold-500 underline">
+            Entrar
+          </a>
         </p>
       </div>
     </div>

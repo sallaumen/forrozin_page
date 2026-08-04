@@ -16,11 +16,12 @@ defmodule OGrupoDeEstudosWeb.UI.GoogleSignIn do
 
   attr :label, :string, required: true
   attr :teacher_invite, :string, default: nil
+  attr :return_to, :string, default: nil
 
   def google_sign_in_button(assigns) do
     ~H"""
     <a
-      href={google_auth_path(@teacher_invite)}
+      href={google_auth_path(@teacher_invite, @return_to)}
       class="w-full py-[13px] bg-ink-50 border border-[rgba(60,40,20,0.25)] rounded font-serif text-base text-ink-800 flex items-center justify-center gap-3 no-underline hover:bg-ink-100"
     >
       <.google_logo size={18} />
@@ -61,8 +62,14 @@ defmodule OGrupoDeEstudosWeb.UI.GoogleSignIn do
     """
   end
 
-  defp google_auth_path(teacher_invite) when teacher_invite in [nil, ""], do: ~p"/auth/google"
+  defp google_auth_path(teacher_invite, return_to) do
+    params =
+      [teacher_invite: teacher_invite, return_to: return_to]
+      |> Enum.reject(fn {_key, value} -> value in [nil, ""] end)
 
-  defp google_auth_path(teacher_invite),
-    do: ~p"/auth/google?teacher_invite=#{teacher_invite}"
+    case params do
+      [] -> ~p"/auth/google"
+      params -> ~p"/auth/google?#{params}"
+    end
+  end
 end

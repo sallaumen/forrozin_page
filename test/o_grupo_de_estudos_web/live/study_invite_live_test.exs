@@ -24,6 +24,14 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLiveTest do
       assert html =~ "Quero estudar com"
     end
 
+    test "the sign-in link keeps the teacher invite", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true, invite_slug: "prof-lia")
+
+      {:ok, _lv, html} = live(conn, ~p"/study/invite/#{teacher.invite_slug}")
+
+      assert html =~ "/login?teacher_invite=prof-lia"
+    end
+
     test "logged in user can accept the teacher invite from the page", %{conn: conn} do
       teacher = insert(:user, is_teacher: true, invite_slug: "prof-joana")
       student = insert(:user)

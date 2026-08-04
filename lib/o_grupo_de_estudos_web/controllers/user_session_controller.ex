@@ -6,6 +6,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Engagement.UserAccessTracking
   alias OGrupoDeEstudos.Study
+  alias OGrupoDeEstudosWeb.ReturnTo
   alias OGrupoDeEstudosWeb.Tracking.ClientInfo
   alias OGrupoDeEstudosWeb.UserAuth
 
@@ -13,7 +14,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
     render(conn, :new,
       error: nil,
       teacher_invite: params["teacher_invite"],
-      return_to: params["return_to"]
+      return_to: ReturnTo.safe_path(params["return_to"])
     )
   end
 
@@ -31,7 +32,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
       {:ok, user} ->
         maybe_accept_teacher_invite(user, session_params["teacher_invite"])
         UserAccessTracking.track_login(user, ClientInfo.from_conn(conn), :password)
-        redirect_to = session_params["return_to"] || ~p"/collection"
+        redirect_to = ReturnTo.safe_path(session_params["return_to"], ~p"/collection")
 
         conn
         |> UserAuth.login(user)
@@ -42,12 +43,12 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
         render(conn, :new,
           error: "Usuário, e-mail ou senha inválidos.",
           teacher_invite: session_params["teacher_invite"],
-          return_to: session_params["return_to"]
+          return_to: ReturnTo.safe_path(session_params["return_to"])
         )
     end
   end
 
-  def auto_login(conn, %{"token" => token}) do
+  def auto_login(conn, %{"token" => token} = params) do
     case Phoenix.Token.verify(OGrupoDeEstudosWeb.Endpoint, "auto_login", token, max_age: 60) do
       {:ok, user_id} ->
         case Accounts.get_user_by_id(user_id) do
@@ -59,7 +60,7 @@ defmodule OGrupoDeEstudosWeb.UserSessionController do
 
             conn
             |> UserAuth.login(user)
-            |> redirect(to: ~p"/collection")
+            |> redirect(to: ReturnTo.safe_path(params["return_to"], ~p"/collection"))
         end
 
       {:error, _reason} ->

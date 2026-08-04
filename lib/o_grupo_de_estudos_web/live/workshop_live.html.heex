@@ -13,7 +13,12 @@
     >
       O Grupo de Estudos
     </a>
-    <a href={~p"/login"} class="text-xs tracking-wider text-ink-400 no-underline">Entrar →</a>
+    <a
+      href={~p"/login?#{[return_to: ~p"/workshops/#{@workshop.slug}"]}"}
+      class="text-xs tracking-wider text-ink-400 no-underline"
+    >
+      Entrar →
+    </a>
   </header>
 
   <.top_nav
@@ -424,7 +429,12 @@
           class="mt-6 text-[13px] text-ink-500"
         >
           {people_label(@enrolled_count)} até agora.
-          <a href={~p"/login"} class="font-semibold text-accent-orange">Entre</a>
+          <a
+            href={~p"/login?#{[return_to: ~p"/workshops/#{@workshop.slug}"]}"}
+            class="font-semibold text-accent-orange"
+          >
+            Entre
+          </a>
           para ver quem vai.
         </p>
 
@@ -515,7 +525,7 @@
               </p>
               <p :if={@workshop.status != :draft} class="m-0 text-[13px] text-ink-500">
                 <.link
-                  navigate={~p"/signup?#{[workshop: @workshop.slug]}"}
+                  navigate={~p"/login?#{[return_to: ~p"/workshops/#{@workshop.slug}"]}"}
                   class="font-semibold text-accent-orange"
                 >
                   Entre para comentar

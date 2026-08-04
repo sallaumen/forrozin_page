@@ -11,7 +11,7 @@
       </.link>
       <.link
         :if={!@current_user}
-        navigate={~p"/login"}
+        navigate={~p"/login?#{[teacher_invite: @teacher.invite_slug]}"}
         class="text-sm text-ink-500 no-underline"
       >
         Entrar
