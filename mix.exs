@@ -33,7 +33,14 @@ defmodule OGrupoDeEstudos.MixProject do
     [
       mod: {OGrupoDeEstudos.Application, []},
       # :xmerl e o parser SAX do adapter R2 (ListObjectsV2).
-      extra_applications: [:logger, :runtime_tools, :xmerl]
+      #
+      # :req_s3 esta aqui por um motivo chato: em recompilacoes parciais o Mix
+      # as vezes gera o .app SEM ele na lista de applications, e ai o dialyzer
+      # passa a acusar `ReqS3.presign_url/1` como funcao inexistente. Nao afeta
+      # producao (o release monta de um _build limpo), mas custava um
+      # `touch mix.exs` a cada PR. Listar explicitamente torna deterministico;
+      # req_s3 e biblioteca sem supervisor, entao inicia-la e no-op.
+      extra_applications: [:logger, :runtime_tools, :xmerl, :req_s3]
     ]
   end
 
