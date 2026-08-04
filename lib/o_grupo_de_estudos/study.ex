@@ -239,16 +239,6 @@ defmodule OGrupoDeEstudos.Study do
   """
   defdelegate shared_note_link_ids(link_ids, date), to: NoteQuery, as: :shared_link_ids_on
 
-  def search_related_steps(term) when is_binary(term) do
-    if String.trim(term) == "" do
-      []
-    else
-      term
-      |> Encyclopedia.search_steps()
-      |> Enum.take(6)
-    end
-  end
-
   defdelegate list_personal_note_history(user_id), to: NoteQuery, as: :list_personal_history
 
   def personal_note_week_count(user_id, today \\ OGrupoDeEstudos.Brazil.today()) do

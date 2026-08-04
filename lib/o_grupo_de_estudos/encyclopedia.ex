@@ -179,25 +179,41 @@ defmodule OGrupoDeEstudos.Encyclopedia do
     end
   end
 
+  # What a suggestion list can show without running off a phone screen.
+  @suggestion_limit 8
+
   @doc """
   Searches steps by name or code (case-insensitive, partial match).
 
+  This is the one search behind every "type a step" field in the app, so a code
+  found in the diary is found on the workshop page too.
+
   Options:
   - `admin: true`: includes `wip` steps.
+  - `limit:`: how many at most. Defaults to what a dropdown can show.
 
-  By default returns only public steps.
+  A blank term returns nothing instead of the whole collection: an empty field is
+  not a request for every step there is.
   """
-  def search_steps(term, opts \\ []) do
-    admin = Keyword.get(opts, :admin, false)
+  @spec search_steps(String.t(), keyword()) :: [map()]
+  def search_steps(term, opts \\ [])
+  def search_steps(term, _opts) when not is_binary(term), do: []
 
-    base_opts = [search: term, order_by: [asc: :name]]
+  def search_steps(term, opts) do
+    case String.trim(term) do
+      "" -> []
+      trimmed -> StepQuery.list_by(search_opts(trimmed, opts))
+    end
+  end
 
-    extra_opts =
-      if admin,
+  defp search_opts(term, opts) do
+    visibility =
+      if Keyword.get(opts, :admin, false),
         do: [status: :published],
         else: [status: :published, wip: false]
 
-    StepQuery.list_by(base_opts ++ extra_opts)
+    [search: term, order_by: [asc: :name], limit: Keyword.get(opts, :limit, @suggestion_limit)] ++
+      visibility
   end
 
   @doc """

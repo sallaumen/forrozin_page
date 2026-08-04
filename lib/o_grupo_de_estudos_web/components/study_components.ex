@@ -681,12 +681,14 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           placeholder={@placeholder}
           disabled={@disabled}
           phx-debounce="200"
-          class="w-full rounded-lg border border-ink-200 bg-ink-50/80 px-3 py-2 font-serif text-xs text-ink-700 outline-none transition-colors focus:border-accent-orange/40 disabled:opacity-60"
+          class="min-h-11 w-full rounded-lg border border-ink-200 bg-ink-50/80 px-3 py-2 font-serif text-[16px] text-ink-700 outline-none transition-colors focus:border-accent-orange/40 disabled:opacity-60 sm:min-h-0 sm:text-xs"
         />
       </form>
+      <%!-- 16px on the phone: below that, iOS zooms the page the moment the field
+           takes focus. The rows clear 44px for the same reason a button does. --%>
       <div
         :if={@suggestions != []}
-        class="absolute left-0 right-0 top-[42px] z-20 overflow-hidden rounded-xl border border-ink-200 bg-ink-50 shadow-lg"
+        class="absolute left-0 right-0 top-[46px] z-20 overflow-hidden rounded-xl border border-ink-200 bg-ink-50 shadow-lg sm:top-[42px]"
       >
         <button
           :for={step <- @suggestions}
@@ -695,7 +697,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           phx-value-id={step.id}
           phx-value-step-id={step.id}
           {@rest}
-          class="flex w-full items-center justify-between gap-2 border-b border-ink-200/60 px-3 py-2.5 text-left last:border-b-0 hover:bg-ink-100"
+          class="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 border-b border-ink-200/60 px-3 py-2.5 text-left last:border-b-0 hover:bg-ink-100"
         >
           <span class="min-w-0 truncate text-xs text-ink-800">
             <code class="font-bold text-accent-orange">{step.code}</code>

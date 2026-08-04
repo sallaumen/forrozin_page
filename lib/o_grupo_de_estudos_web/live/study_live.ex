@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.StudyLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Engagement, Study}
+  alias OGrupoDeEstudos.{Accounts, Encyclopedia, Engagement, Study}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Study.LinkError
@@ -158,7 +158,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("search_personal_step", %{"term" => term}, socket) do
-    {:noreply, assign(socket, :personal_step_suggestions, Study.search_related_steps(term))}
+    {:noreply, assign(socket, :personal_step_suggestions, Encyclopedia.search_steps(term))}
   end
 
   def handle_event("add_personal_step", %{"id" => step_id}, socket) do
@@ -197,7 +197,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("search_history_step", %{"term" => term}, socket) do
-    {:noreply, assign(socket, :history_step_suggestions, Study.search_related_steps(term))}
+    {:noreply, assign(socket, :history_step_suggestions, Encyclopedia.search_steps(term))}
   end
 
   def handle_event("add_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do
@@ -355,7 +355,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("search_lesson_step", %{"term" => term}, socket) do
-    {:noreply, assign(socket, :lesson_step_suggestions, Study.search_related_steps(term))}
+    {:noreply, assign(socket, :lesson_step_suggestions, Encyclopedia.search_steps(term))}
   end
 
   # Steps live in the assign until submit; the lesson row does not exist yet.

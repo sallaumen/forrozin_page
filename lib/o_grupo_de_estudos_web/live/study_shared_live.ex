@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.StudySharedLive do
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Study}
+  alias OGrupoDeEstudos.{Accounts, Encyclopedia, Study}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
@@ -96,7 +96,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   def handle_event("save_shared_note", _params, socket), do: {:noreply, socket}
 
   def handle_event("search_shared_step", %{"term" => term}, socket) do
-    {:noreply, assign(socket, :shared_step_suggestions, Study.search_related_steps(term))}
+    {:noreply, assign(socket, :shared_step_suggestions, Encyclopedia.search_steps(term))}
   end
 
   def handle_event("add_shared_step", %{"id" => step_id}, socket) do
@@ -164,7 +164,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   end
 
   def handle_event("search_history_step", %{"term" => term}, socket) do
-    {:noreply, assign(socket, :history_step_suggestions, Study.search_related_steps(term))}
+    {:noreply, assign(socket, :history_step_suggestions, Encyclopedia.search_steps(term))}
   end
 
   def handle_event("add_history_step", %{"note-id" => note_id, "step-id" => step_id}, socket) do

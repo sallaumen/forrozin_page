@@ -60,20 +60,6 @@ defmodule OGrupoDeEstudos.StudyTest do
     end
   end
 
-  describe "search_related_steps/1" do
-    test "returns public steps by code or name" do
-      insert(:step,
-        code: "STYSC",
-        name: "Sacada simples",
-        approved: true,
-        wip: false,
-        status: :published
-      )
-
-      assert [%{code: "STYSC"} | _] = Study.search_related_steps("sac")
-    end
-  end
-
   describe "study dashboard helpers" do
     test "counts the last seven days of personal study" do
       user = insert(:user)

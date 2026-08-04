@@ -9,7 +9,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Brazil, Engagement, Sequences, Workshops}
+  alias OGrupoDeEstudos.{Accounts, Brazil, Encyclopedia, Engagement, Sequences, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Badges
   alias OGrupoDeEstudos.Workshops.Workshop
@@ -20,7 +20,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   alias OGrupoDeEstudosWeb.ChangesetErrors
   alias OGrupoDeEstudosWeb.InlineEditParams
 
-  import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1, sequence_sheet: 1]
+  import OGrupoDeEstudosWeb.StudyComponents,
+    only: [step_sheet: 1, sequence_sheet: 1, step_search: 1]
+
   import OGrupoDeEstudosWeb.UI.InlineEdit
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.TopNav
@@ -84,7 +86,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   @impl true
   def handle_event("search_workshop_step", %{"term" => term}, socket) do
-    {:noreply, assign(socket, :step_search, OGrupoDeEstudos.Study.search_related_steps(term))}
+    {:noreply, assign(socket, :step_search, Encyclopedia.search_steps(term))}
   end
 
   def handle_event("add_workshop_step", %{"id" => step_id}, socket) do
