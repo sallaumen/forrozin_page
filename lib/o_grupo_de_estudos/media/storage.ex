@@ -18,6 +18,9 @@ defmodule OGrupoDeEstudos.Media.Storage do
 
   @avatar_size 400
   @flyer_max_width 1200
+  # The square the link preview points at. Same width as the flyer cap, so the
+  # crop never upscales.
+  @og_size 1200
   @key_random_bytes 16
 
   @doc """
@@ -31,7 +34,10 @@ defmodule OGrupoDeEstudos.Media.Storage do
   def save_avatar(user_id, tmp_path, ext) do
     key = "avatars/#{user_id}/#{System.system_time(:second)}#{ext}"
 
-    with :ok <- processado(tmp_path, &quadrado/2, fn tmp -> ObjectStorage.put(key, tmp) end) do
+    with :ok <-
+           processado(tmp_path, &quadrado(&1, &2, @avatar_size), fn tmp ->
+             ObjectStorage.put(key, tmp)
+           end) do
       delete_old_avatars(user_id, key)
       {:ok, ObjectStorage.public_url(key)}
     end
@@ -59,10 +65,56 @@ defmodule OGrupoDeEstudos.Media.Storage do
     end
   end
 
-  @doc "Deletes an image by public URL. Silent when it is already gone."
+  @doc "Deletes an image by public URL, and the square derivative that shadows it."
   @spec delete_image(String.t()) :: :ok | {:error, term()}
-  def delete_image("/uploads/" <> key), do: ObjectStorage.delete(key)
+  def delete_image("/uploads/" <> key) do
+    if String.starts_with?(key, "flyers/"), do: ObjectStorage.delete(og_key(key))
+    ObjectStorage.delete(key)
+  end
+
   def delete_image(_url_de_fora), do: :ok
+
+  @doc """
+  Serves the square #{@og_size}px cut of a stored image, for the link preview.
+
+  The derivative is cut once and cached in the storage under a deterministic key,
+  so the messenger crawler pays the crop on the first share only. When the cut
+  cannot be made (original gone, ImageMagick missing), the original answers: a
+  rectangular preview beats a broken one.
+  """
+  @spec serve_og_square(String.t()) ::
+          {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
+  def serve_og_square("/uploads/" <> key) do
+    og = og_key(key)
+
+    case ensure_og_square(key, og) do
+      :ok -> ObjectStorage.serve(og)
+      _generation_failed -> ObjectStorage.serve(key)
+    end
+  end
+
+  def serve_og_square(_url_de_fora), do: {:error, :not_found}
+
+  defp ensure_og_square(key, og) do
+    if ObjectStorage.exists?(og), do: :ok, else: cut_og_square(key, og)
+  end
+
+  defp cut_og_square(key, og) do
+    case ObjectStorage.with_local_file(key, &store_og_square(&1, og)) do
+      {:ok, :ok} -> :ok
+      other -> other
+    end
+  end
+
+  defp store_og_square(source, og) do
+    processado(source, &quadrado(&1, &2, @og_size), fn tmp -> ObjectStorage.put(og, tmp) end)
+  end
+
+  # Deterministic and flat: the flyer key is already random, so the derivative
+  # inherits the unguessability, and replacing the flyer changes both keys.
+  defp og_key(key) do
+    "flyers/og/" <> (key |> String.replace_prefix("flyers/", "") |> String.replace("/", "-"))
+  end
 
   @doc """
   Stores a raw file in the private area and returns the opaque key.
@@ -113,10 +165,10 @@ defmodule OGrupoDeEstudos.Media.Storage do
     end
   end
 
-  defp quadrado(source, dest) do
+  defp quadrado(source, dest, size) do
     source
     |> Mogrify.open()
-    |> Mogrify.resize_to_fill("#{@avatar_size}x#{@avatar_size}")
+    |> Mogrify.resize_to_fill("#{size}x#{size}")
     |> Mogrify.gravity("Center")
     |> Mogrify.save(path: dest)
 
