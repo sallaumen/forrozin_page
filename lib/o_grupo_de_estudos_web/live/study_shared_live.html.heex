@@ -70,6 +70,7 @@
       <%!-- Coluna principal: nota de hoje + histórico --%>
       <div class="flex min-w-0 flex-col gap-4">
         <.diary_card
+          learned_codes={@learned_codes}
           id="shared-diary"
           title="Nota de hoje"
           description="Vocês dois escrevem aqui: o que estudaram, o que funcionou e o que vale revisar."
@@ -166,6 +167,7 @@
         </section>
 
         <.note_history
+          learned_codes={@learned_codes}
           notes={@history}
           count_label={
             "#{length(@history)} #{if length(@history) == 1, do: "aula", else: "aulas"}"

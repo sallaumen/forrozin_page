@@ -320,13 +320,30 @@
           </p>
 
           <div class="flex flex-wrap gap-2">
-            <span :for={passo <- @passos} class="inline-flex items-center">
+            <%!-- Verde claro para o que a pessoa já sabe, âmbar para o que
+            ainda não: olhar a lista da aula passa a contar algo sobre o
+            próprio aprendizado, sem abrir passo por passo. --%>
+            <span
+              :for={passo <- @passos}
+              class={[
+                "inline-flex items-center rounded-full border text-[11.5px] font-semibold",
+                MapSet.member?(@learned_codes, passo.code) &&
+                  "border-accent-green/30 bg-accent-green/[0.10] text-accent-green",
+                !MapSet.member?(@learned_codes, passo.code) &&
+                  "border-accent-orange/25 bg-accent-orange/[0.08] text-accent-orange"
+              ]}
+            >
               <button
                 type="button"
                 phx-click="open_step_sheet"
                 phx-value-code={passo.code}
-                class="inline-flex cursor-pointer items-center gap-1.5 rounded-l-full border border-r-0 border-accent-orange/25 bg-accent-orange/[0.08] py-1 pl-2.5 pr-2 text-[11.5px] font-semibold text-accent-orange transition-colors hover:bg-accent-orange/15"
+                class="inline-flex cursor-pointer items-center gap-1.5 rounded-l-full py-1 pl-2.5 pr-2 transition-colors hover:brightness-95"
               >
+                <.icon
+                  :if={MapSet.member?(@learned_codes, passo.code)}
+                  name="hero-check-circle-solid"
+                  class="size-3"
+                />
                 <code class="font-bold">{passo.code}</code>
                 <span class="font-normal text-ink-600">{passo.name}</span>
               </button>
@@ -336,18 +353,11 @@
                 phx-click="remove_workshop_step"
                 phx-value-id={passo.step_id}
                 aria-label={"Tirar #{passo.code} da lista"}
-                class="group cursor-pointer rounded-r-full border border-l-0 border-accent-orange/25 bg-accent-orange/[0.08] py-1 pl-1 pr-2.5"
+                class="group cursor-pointer rounded-r-full py-1 pl-1 pr-2.5"
               >
-                <.icon
-                  name="hero-x-mark"
-                  class="size-3 text-accent-orange/60 group-hover:text-accent-orange"
-                />
+                <.icon name="hero-x-mark" class="size-3 opacity-60 group-hover:opacity-100" />
               </button>
-              <span
-                :if={!@organizer?}
-                class="rounded-r-full border border-l-0 border-accent-orange/25 bg-accent-orange/[0.08] py-1 pr-2.5"
-              >
-              </span>
+              <span :if={!@organizer?} class="rounded-r-full py-1 pr-2"></span>
             </span>
           </div>
 

@@ -43,8 +43,22 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
     {:cont,
      socket
      |> Phoenix.Component.assign_new(:step_sheet, fn -> nil end)
-     |> Phoenix.Component.assign_new(:step_sheet_learned, fn -> false end)}
+     |> Phoenix.Component.assign_new(:step_sheet_learned, fn -> false end)
+     |> Phoenix.Component.assign_new(:learned_codes, fn -> codigos_sabidos(socket) end)}
   end
+
+  @doc """
+  Códigos dos passos que a pessoa já sabe.
+
+  Vira cor de chip nas telas de estudo e de workshop. Recarregado a cada
+  marcação: sem isso a pessoa marcaria pela folha, fecharia, e veria o chip
+  antigo sem saber se funcionou.
+  """
+  @spec codigos_sabidos(map()) :: MapSet.t()
+  def codigos_sabidos(%{assigns: %{current_user: %{id: id}}}),
+    do: MapSet.new(OGrupoDeEstudos.Engagement.learned_step_codes(id))
+
+  def codigos_sabidos(_sem_usuario), do: MapSet.new()
 
   @doc """
   Alterna o aprendizado e devolve o socket com a tela em dia.
@@ -61,6 +75,10 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
     |> atualizar_pagina(step, user_id)
     |> atualizar_drawer(step, user_id)
     |> atualizar_folha(step, user_id)
+    |> Phoenix.Component.assign(
+      :learned_codes,
+      MapSet.new(OGrupoDeEstudos.Engagement.learned_step_codes(user_id))
+    )
   end
 
   defp atualizar_pagina(%{assigns: %{step_learned: _}} = socket, step, user_id) do
