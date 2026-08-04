@@ -299,3 +299,71 @@ button:not(:disabled):active,
     transform: translate(var(--drag-x), var(--drag-y));
   }
 }
+
+/* ============================================================
+   Loading splash
+
+   After a deploy the phone has to download CSS, JS and the fonts again, and
+   meanwhile the screen sits still. With no sign of life people assume it hung
+   and close the app before it opens. The turning logo says "I am here, working"
+   — and the turn is the two dancers of the mark, not some generic spinner.
+
+   It is born invisible and only shows up at 400ms, so a fast load flashes
+   nothing. At 15s it fades itself out, in CSS, so that a JavaScript failure
+   can never leave the app locked behind a waiting screen.
+   ============================================================ */
+#app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  background-color: var(--color-ink-100);
+  opacity: 0;
+  animation:
+    app-splash-in 220ms ease-out 400ms forwards,
+    app-splash-give-up 1ms linear 15s forwards;
+}
+@keyframes app-splash-in { to { opacity: 1; } }
+@keyframes app-splash-give-up { to { opacity: 0; visibility: hidden; } }
+
+/* The orange is the logo's own, the same one as the icon installed on the home
+   screen: opening from the shortcut, the system icon turns into this mark and
+   starts spinning, with no cut in between. */
+.app-splash-mark {
+  width: 6rem;
+  height: 6rem;
+  color: #ee3f22;
+  animation: app-splash-turn 1.5s cubic-bezier(0.62, 0.02, 0.38, 1) infinite;
+  will-change: transform;
+}
+@keyframes app-splash-turn { to { transform: rotate(360deg); } }
+
+/* ink-600, not ink-500: at this size the 500 scores 3.58:1 on paper and fails
+   AA (see wcag_contrast_test). */
+.app-splash-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--color-ink-600);
+}
+
+/* Exit driven by JS (assets/js/splash.js): it freezes the current opacity
+   before zeroing it, otherwise a screen still fading in would jump. */
+#app-splash[data-leaving] {
+  animation: none;
+  transition: opacity 240ms ease;
+}
+
+/* For anyone who asked for less motion the turn goes, but the sign of life
+   stays: with nothing pulsing, a waiting screen reads as a frozen one. */
+@media (prefers-reduced-motion: reduce) {
+  .app-splash-mark {
+    animation: app-splash-breathe 1.8s ease-in-out infinite;
+  }
+}
+@keyframes app-splash-breathe { 50% { opacity: 0.4; } }

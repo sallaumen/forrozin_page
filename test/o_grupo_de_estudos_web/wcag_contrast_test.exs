@@ -3,10 +3,13 @@ defmodule OGrupoDeEstudosWeb.WcagContrastTest do
   alias OGrupoDeEstudosWeb.WcagContrast, as: W
 
   @ink_100_dark "#221511"
+  @ink_100_light "#f7f3ec"
   @ink_500 "#a08060"
   @ink_600 "#c0a080"
+  @ink_600_light "#7a5c3a"
   @ink_900_light "#f5ede4"
   @gold_500 "#e6b347"
+  @brand_orange "#ee3f22"
 
   @canvas_light "#fffef9"
   @canvas_dark "#1a120d"
@@ -36,5 +39,13 @@ defmodule OGrupoDeEstudosWeb.WcagContrastTest do
   test "accent text on a dark background passes WCAG AA" do
     assert W.ratio(@accent_orange_dark, @ink_100_dark) >= 4.5
     assert W.ratio(@accent_green_dark, @ink_100_dark) >= 4.5
+  end
+
+  test "loading splash reads in both modes" do
+    assert W.ratio(@ink_600_light, @ink_100_light) >= 4.5
+    assert W.ratio(@ink_600, @ink_100_dark) >= 4.5
+
+    assert W.ratio(@brand_orange, @ink_100_light) >= 3.0
+    assert W.ratio(@brand_orange, @ink_100_dark) >= 3.0
   end
 end

@@ -5,6 +5,8 @@ defmodule OGrupoDeEstudosWeb.Layouts do
   """
   use OGrupoDeEstudosWeb, :html
 
+  import OGrupoDeEstudosWeb.UI.LogoMark
+
   embed_templates "layouts/*"
 
   @doc """
