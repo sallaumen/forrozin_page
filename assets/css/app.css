@@ -265,3 +265,37 @@ button:not(:disabled):active,
 [role="button"]:not([aria-disabled="true"]):active {
   animation: btn-press 0.18s ease;
 }
+
+/* Arrasto para reordenar (hook DragReorder). O chip segurado vira uma cópia
+   flutuante que segue o dedo e treme de leve; o buraco que ele deixou escorrega
+   entre os outros, então o resultado aparece antes de soltar.
+
+   O tremor é de ±1 grau, não de 3: o gesto do iPhone treme forte porque é
+   brincalhão, e aqui a interface é papel e sépia. Tem que dizer "estou solto"
+   sem virar desenho animado. */
+[data-reorder-placeholder] { opacity: 0; pointer-events: none; }
+
+[data-reorder-ghost] {
+  cursor: grabbing;
+  box-shadow: 0 10px 26px -8px rgba(26, 14, 5, 0.45), 0 2px 6px rgba(26, 14, 5, 0.16);
+  animation: reorder-tremor 0.19s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes reorder-tremor {
+  from { transform: translate(var(--drag-x), var(--drag-y)) scale(1.055) rotate(-1deg); }
+  to   { transform: translate(var(--drag-x), var(--drag-y)) scale(1.055) rotate(1deg); }
+}
+[data-reorder-ghost][data-reorder-settling] {
+  animation: none;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transform: translate(var(--drag-x), var(--drag-y)) scale(1) rotate(0deg);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.2s ease;
+}
+
+/* Sem o tremor o gesto continua inteiro: o que sai é o enfeite. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reorder-ghost] {
+    animation: none;
+    transform: translate(var(--drag-x), var(--drag-y));
+  }
+}

@@ -6,6 +6,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Study.LinkError
   alias OGrupoDeEstudosWeb.ErrorMessage
+  alias OGrupoDeEstudosWeb.Handlers.SequenceSheet
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -20,6 +21,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.StepLearning
+  use OGrupoDeEstudosWeb.Handlers.SequenceSheet
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
 
@@ -118,6 +120,31 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("save_personal_note", _params, socket), do: {:noreply, socket}
+
+  def handle_event("save_sequence", _params, socket) do
+    case SequenceSheet.save_draft(socket) do
+      {:ok, sequence} ->
+        {:noreply, cite_on_today_note(socket, sequence.id, "Sequência salva e citada aqui.")}
+
+      {:error, :name_required} ->
+        {:noreply, put_flash(socket, :error, "Dê um nome para a sequência.")}
+
+      {:error, :too_short} ->
+        {:noreply, put_flash(socket, :error, "Uma sequência precisa de pelo menos dois passos.")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Não deu para salvar a sequência.")}
+    end
+  end
+
+  def handle_event("cite_sequence", %{"id" => sequence_id}, socket) do
+    {:noreply, cite_on_today_note(socket, sequence_id, "Sequência citada na anotação.")}
+  end
+
+  def handle_event("uncite_sequence", %{"id" => sequence_id}, socket) do
+    keep = Enum.reject(cited_ids(socket), &(&1 == sequence_id))
+    {:noreply, put_note_sequences(socket, keep)}
+  end
 
   def handle_event("toggle_note_expansion", %{"id" => note_id}, socket) do
     current = socket.assigns.expanded_note_ids
@@ -501,11 +528,41 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   defp lesson_sent_message(1), do: "Lição enviada para 1 aluno!"
   defp lesson_sent_message(count), do: "Lição enviada para #{count} alunos!"
 
+  # The citation lives on today's note, so writing it has to make sure the note
+  # exists first: on a day with nothing typed yet there is no row to cite from.
+  defp cite_on_today_note(socket, sequence_id, message) do
+    socket
+    |> put_note_sequences(Enum.uniq(cited_ids(socket) ++ [sequence_id]))
+    |> SequenceSheet.close()
+    |> put_flash(:info, message)
+  end
+
+  defp put_note_sequences(socket, sequence_ids) do
+    {:ok, note} =
+      Study.upsert_personal_note(socket.assigns.current_user, socket.assigns.today, %{
+        content: socket.assigns.today_note_content || "",
+        step_ids: Enum.map(socket.assigns.personal_related_steps, & &1.id),
+        sequence_ids: sequence_ids
+      })
+
+    assign(socket, :personal_note_sequences, note_sequences_of(note))
+  end
+
+  defp cited_ids(socket) do
+    socket.assigns
+    |> Map.get(:personal_note_sequences, [])
+    |> Enum.map(& &1.sequence_id)
+  end
+
+  defp note_sequences_of(nil), do: []
+  defp note_sequences_of(note), do: Study.note_sequences(note.id)
+
   defp assign_dashboard(socket, dashboard) do
     socket
     |> assign(:today_note, dashboard.today_note)
     |> assign(:today_note_content, dashboard.today_note_content)
     |> assign(:personal_related_steps, dashboard.personal_related_steps)
+    |> assign(:personal_note_sequences, note_sequences_of(dashboard.today_note))
     |> assign(:personal_history, dashboard.personal_history)
     |> assign(:weekly_note_count, dashboard.weekly_note_count)
     |> assign(:monthly_note_count, dashboard.monthly_note_count)

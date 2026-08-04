@@ -34,13 +34,13 @@ defmodule OGrupoDeEstudos.MixProject do
       mod: {OGrupoDeEstudos.Application, []},
       # :xmerl is the SAX parser of the R2 adapter (ListObjectsV2).
       #
-      # :req_s3 is here for an annoying reason: on partial recompiles Mix sometimes
-      # generates the .app WITHOUT it in the applications list, and then dialyzer
-      # starts flagging `ReqS3.presign_url/1` as a missing function. It does not
-      # affect production (the release builds from a clean _build), but it cost a
-      # `touch mix.exs` on every PR. Listing it explicitly makes it deterministic;
-      # req_s3 has no supervisor, so starting it is a no-op.
-      extra_applications: [:logger, :runtime_tools, :xmerl, :req_s3]
+      # :req_s3 and :assent are here for an annoying reason: Mix sometimes generates
+      # the .app WITHOUT them in the applications list, and then dialyzer flags
+      # `ReqS3.presign_url/1` and `Assent.Strategy.Google.callback/2` as missing
+      # functions. It does not affect production (the release builds from a clean
+      # _build), but it cost a `touch mix.exs` on every PR. Listing them explicitly
+      # makes it deterministic; neither has a supervisor, so starting them is a no-op.
+      extra_applications: [:logger, :runtime_tools, :xmerl, :req_s3, :assent]
     ]
   end
 

@@ -370,6 +370,199 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
+  attr :tab, :string, default: nil
+  attr :draft_steps, :list, default: []
+  attr :draft_name, :string, default: ""
+  attr :step_matches, :list, default: []
+  attr :mine, :list, default: []
+  attr :cited_ids, :any, default: nil
+
+  @doc """
+  The sheet that builds or cites a sequence, opened from a study screen.
+
+  Same shell as `step_sheet/1`, on purpose: the gesture of "a layer opens over
+  what I was reading" is already learned here, and a second shape would make the
+  two feel like different apps.
+  """
+  def sequence_sheet(assigns) do
+    ~H"""
+    <div
+      :if={@tab}
+      id="sequence-sheet"
+      class="fixed inset-0 z-50 flex items-end justify-center bg-ink-900/40 p-0 sm:items-center sm:p-4"
+      phx-window-keydown="close_sequence_sheet"
+      phx-key="escape"
+    >
+      <%!-- Fechar é `phx-click-away` no painel, e não `phx-click` no fundo: o
+      clique de dentro sobe até o fundo, então o botão de salvar fechava a folha
+      e limpava o rascunho antes do envio chegar ao servidor. --%>
+      <div
+        class="w-full rounded-t-2xl border border-ink-200 bg-ink-50 p-4 shadow-lg sm:max-w-[24rem] sm:rounded-2xl"
+        phx-click-away="close_sequence_sheet"
+      >
+        <div class="mx-auto mb-3 h-1 w-9 rounded-full bg-ink-200 sm:hidden"></div>
+
+        <div class="mb-3 flex gap-1.5">
+          <button
+            :for={{value, label} <- [{"new", "Nova"}, {"mine", "Minhas sequências"}]}
+            type="button"
+            phx-click="sequence_sheet_tab"
+            phx-value-tab={value}
+            class={[
+              "min-h-9 flex-1 rounded-full px-3 text-[12px] font-semibold transition",
+              @tab == value && "bg-ink-900 text-ink-50",
+              @tab != value && "border border-ink-200 text-ink-600 hover:border-gold-500"
+            ]}
+          >
+            {label}
+          </button>
+        </div>
+
+        <div :if={@tab == "new"}>
+          <%!-- A trilha é a sequência: chip, seta, chip. Segurar um chip levanta
+          uma cópia que segue o dedo e treme de leve, e o buraco escorrega entre
+          os vizinhos, então dá para ver o resultado antes de soltar. --%>
+          <p class="m-0 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-ink-500">
+            A sequência
+          </p>
+          <div
+            id="sequence-draft-track"
+            phx-hook="DragReorder"
+            data-reorder-event="sequence_draft_reorder"
+            class="flex min-h-[52px] flex-wrap items-center gap-1.5 rounded-xl border border-dashed border-ink-300 bg-gold-500/[0.04] p-2"
+          >
+            <span
+              :if={@draft_steps == []}
+              class="px-1.5 font-serif text-[12.5px] italic text-ink-400"
+            >
+              Nenhum passo ainda. Busque abaixo.
+            </span>
+            <.sequence_draft_chip
+              :for={{step, index} <- Enum.with_index(@draft_steps)}
+              step={step}
+              index={index}
+              last={index == length(@draft_steps) - 1}
+            />
+          </div>
+
+          <input
+            type="text"
+            name="step_search"
+            autocomplete="off"
+            placeholder="Adicionar passo…"
+            phx-keyup="sequence_search_step"
+            phx-debounce="200"
+            class="mt-3 min-h-10 w-full rounded-lg border border-ink-300 bg-ink-50 px-3 text-[13px] text-ink-900 placeholder:text-ink-400"
+          />
+          <div :if={@step_matches != []} class="mt-1.5 flex flex-wrap gap-1.5">
+            <button
+              :for={match <- @step_matches}
+              type="button"
+              phx-click="sequence_draft_add"
+              phx-value-code={match.code}
+              class="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-ink-300 px-3 text-[11px] font-semibold text-ink-700 transition hover:border-gold-500 hover:bg-gold-500/[0.08]"
+            >
+              <span class="font-bold text-gold-600">+</span>
+              <code class="font-bold">{match.code}</code>
+              <span class="font-medium text-ink-600">{match.name}</span>
+            </button>
+          </div>
+
+          <input
+            type="text"
+            name="name"
+            value={@draft_name}
+            placeholder="Nome da sequência"
+            phx-keyup="sequence_draft_name"
+            phx-debounce="200"
+            class="mt-2.5 min-h-10 w-full rounded-lg border border-ink-300 bg-ink-50 px-3 text-[13px] text-ink-900 placeholder:text-ink-400"
+          />
+          <%!-- Botão que dispara o evento, e não submit de formulário: o form
+          precisaria de `display: contents` para não quebrar o empilhamento, e
+          nessa combinação o clique deixa de submeter. --%>
+          <button
+            type="button"
+            phx-click="save_sequence"
+            disabled={length(@draft_steps) < 2 or String.trim(@draft_name) == ""}
+            class="mt-3 min-h-11 w-full rounded-full bg-ink-900 text-[12.5px] font-semibold text-ink-50 transition disabled:opacity-40"
+          >
+            Salvar e citar aqui
+          </button>
+        </div>
+
+        <div :if={@tab == "mine"}>
+          <p
+            :if={@mine == []}
+            class="m-0 py-6 text-center font-serif text-[13px] italic text-ink-400"
+          >
+            Você ainda não tem sequências salvas.
+          </p>
+          <ul :if={@mine != []} class="m-0 max-h-[46vh] list-none overflow-y-auto p-0">
+            <li :for={sequence <- @mine} class="border-b border-ink-200 last:border-none">
+              <button
+                type="button"
+                phx-click="cite_sequence"
+                phx-value-id={sequence.id}
+                disabled={cited?(@cited_ids, sequence.id)}
+                class="flex w-full min-h-12 items-center gap-2.5 px-1 py-2.5 text-left transition hover:bg-gold-500/[0.07] disabled:opacity-45"
+              >
+                <span class="grid size-8 shrink-0 place-items-center rounded-lg bg-gold-500/15 text-[11px] font-bold text-gold-600">
+                  →
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-[13px] font-semibold text-ink-900">
+                    {sequence.name}
+                  </span>
+                  <span class="block text-[11px] text-ink-500">
+                    {length(sequence.sequence_steps)} passos
+                  </span>
+                </span>
+                <span :if={cited?(@cited_ids, sequence.id)} class="text-[11px] text-ink-500">
+                  já citada
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp cited?(nil, _id), do: false
+  defp cited?(ids, id), do: MapSet.member?(ids, id)
+
+  attr :step, :map, required: true
+  attr :index, :integer, required: true
+  attr :last, :boolean, default: false
+
+  defp sequence_draft_chip(assigns) do
+    ~H"""
+    <span
+      data-reorder-id={@index}
+      tabindex="0"
+      role="button"
+      aria-label={"#{@step.name}, posição #{@index + 1}. Setas movem de posição."}
+      class="inline-flex min-h-[34px] cursor-grab touch-none select-none items-center gap-1.5 rounded-full border border-gold-500/45 bg-gold-500/[0.12] px-3 text-[11.5px] font-semibold text-ink-800"
+    >
+      <span class="min-w-2 text-center text-[9px] font-bold tabular-nums text-gold-600">
+        {@index + 1}
+      </span>
+      <code class="font-bold">{@step.code}</code>
+      <span class="font-medium text-ink-600">{@step.name}</span>
+      <span
+        data-reorder-ignore
+        phx-click="sequence_draft_remove"
+        phx-value-index={@index}
+        class="grid size-4 cursor-pointer place-items-center rounded-full text-[13px] leading-none text-ink-400 hover:bg-ink-200 hover:text-ink-700"
+      >
+        ×
+      </span>
+    </span>
+    <span :if={!@last} class="select-none text-[12px] text-ink-400">→</span>
+    """
+  end
+
   attr :step, :map, default: nil
   attr :learned, :boolean, default: false
 

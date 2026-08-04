@@ -77,6 +77,43 @@
                 Salvar registro
               </button>
             </div>
+            <%!-- A sequência é o que o aluno mais quer reencontrar depois, e até aqui
+          só existia dentro do mapa. O atalho traz o gesto para onde a necessidade
+          aparece: acabei de escrever a aula, e a combinação que funcionou é isto. --%>
+            <div class="mt-4 border-t border-ink-200 pt-3">
+              <p class="m-0 mb-2 text-[10px] font-semibold uppercase tracking-[0.13em] text-ink-500">
+                Sequências desta aula
+              </p>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span
+                  :for={cited <- @personal_note_sequences}
+                  class="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-gold-500/45 bg-gold-500/[0.12] px-3 text-[11.5px] font-semibold text-ink-800"
+                >
+                  <span class="text-[11px] font-bold text-gold-600">→</span>
+                  {cited.name}
+                  <span class="text-[10px] font-medium text-ink-500">
+                    {cited.step_count} {if cited.step_count == 1, do: "passo", else: "passos"}
+                  </span>
+                  <button
+                    type="button"
+                    phx-click="uncite_sequence"
+                    phx-value-id={cited.sequence_id}
+                    aria-label={"Tirar #{cited.name} da anotação"}
+                    class="grid size-4 place-items-center rounded-full text-[13px] leading-none text-ink-400 hover:bg-ink-200 hover:text-ink-700"
+                  >
+                    ×
+                  </button>
+                </span>
+                <button
+                  type="button"
+                  phx-click="open_sequence_sheet"
+                  phx-value-tab="new"
+                  class="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-dashed border-ink-300 px-3 text-[11.5px] font-semibold text-ink-600 transition hover:border-gold-500 hover:bg-gold-500/[0.06] hover:text-gold-600"
+                >
+                  <span aria-hidden="true">→</span> montar sequência
+                </button>
+              </div>
+            </div>
           </:footer>
         </.diary_card>
 
@@ -613,3 +650,11 @@
      place.
 --%>
 <.step_sheet step={@step_sheet} learned={@step_sheet_learned} />
+<.sequence_sheet
+  tab={@sequence_sheet}
+  draft_steps={@sequence_draft_steps}
+  draft_name={@sequence_draft_name}
+  step_matches={@sequence_step_matches}
+  mine={@sequence_mine}
+  cited_ids={MapSet.new(@personal_note_sequences, & &1.sequence_id)}
+/>
