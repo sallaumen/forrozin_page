@@ -12,7 +12,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram}
 
-  alias OGrupoDeEstudosWeb.{ChangesetErrors, InlineEditParams}
+  alias OGrupoDeEstudosWeb.{ChangesetErrors, InlineEditParams, Meta}
 
   import OGrupoDeEstudosWeb.UI.InlineEdit
   import OGrupoDeEstudosWeb.UI.TopNav
@@ -51,12 +51,31 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     end
   end
 
+  # The single link that goes to WhatsApp: the preview carries the program's own
+  # name, blurb and flyer instead of the site-wide card.
+  defp assign_link_preview(socket, program) do
+    socket
+    |> assign(:meta_title, "#{program.title} · O Grupo de Estudos")
+    |> assign(:meta_description, Meta.summary(program.description))
+    |> assign(:meta_url, url(~p"/programs/#{program.slug}"))
+    |> assign_flyer_image(program)
+  end
+
+  defp assign_flyer_image(socket, %{flyer_path: nil}), do: socket
+
+  defp assign_flyer_image(socket, program) do
+    socket
+    |> assign(:meta_image, url(~p"/programs/#{program.slug}/og-image"))
+    |> assign(:meta_image_size, "1200")
+  end
+
   defp assign_program(socket, program, user) do
     owner? = owner?(program, user)
     workshops = Workshops.list_program_workshops(program, include_drafts: owner?)
 
     socket
     |> assign(:page_title, program.title)
+    |> assign_link_preview(program)
     |> assign(:program, program)
     |> assign(:owner?, owner?)
     |> assign(:editing_field, nil)

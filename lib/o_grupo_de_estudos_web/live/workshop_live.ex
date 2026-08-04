@@ -19,6 +19,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   alias OGrupoDeEstudosWeb.ChangesetErrors
   alias OGrupoDeEstudosWeb.InlineEditParams
+  alias OGrupoDeEstudosWeb.Meta
 
   import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1, sequence_sheet: 1]
   import OGrupoDeEstudosWeb.UI.InlineEdit
@@ -47,6 +48,24 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   # The Policy is pure and does not query: the boundary resolves the facts first.
+  # What WhatsApp shows under the shared link: the share IS the marketing, so the
+  # card carries the class and not the site.
+  defp assign_link_preview(socket, workshop) do
+    socket
+    |> assign(:meta_title, "#{workshop.title} · O Grupo de Estudos")
+    |> assign(:meta_description, Meta.summary(workshop.description))
+    |> assign(:meta_url, url(~p"/workshops/#{workshop.slug}"))
+    |> assign_flyer_image(workshop)
+  end
+
+  defp assign_flyer_image(socket, %{flyer_path: nil}), do: socket
+
+  defp assign_flyer_image(socket, workshop) do
+    socket
+    |> assign(:meta_image, url(~p"/workshops/#{workshop.slug}/og-image"))
+    |> assign(:meta_image_size, "1200")
+  end
+
   defp workshop_access(nil, _socket), do: nil
 
   defp workshop_access(workshop, socket),
@@ -63,6 +82,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp assign_page(socket, workshop) do
     socket
     |> assign(:page_title, workshop.title)
+    |> assign_link_preview(workshop)
     |> assign(:replying_to, nil)
     |> assign(:replies_map, %{})
     # Seeded here and not in assign_workshop/2, which reruns on every reload: an

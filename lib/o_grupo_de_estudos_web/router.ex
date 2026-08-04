@@ -85,6 +85,11 @@ defmodule OGrupoDeEstudosWeb.Router do
       live "/workshops/:slug", WorkshopLive
       live "/programs/:slug", WorkshopProgramLive
     end
+
+    # The image the link preview points at. Beside the pages it describes, and
+    # outside the live_session because a crawler does not carry a session.
+    get "/workshops/:slug/og-image", OgImageController, :workshop
+    get "/programs/:slug/og-image", OgImageController, :program
   end
 
   # Routes that require authentication or the admin role, gated by live_session.
