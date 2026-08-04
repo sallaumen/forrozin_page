@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     Workshops
   }
 
-  alias OGrupoDeEstudos.Engagement.{Badges, ProfileCommentQuery}
+  alias OGrupoDeEstudos.Engagement.Badges
   alias OGrupoDeEstudos.Study.LinkError
   alias OGrupoDeEstudosWeb.ErrorMessage
 
@@ -51,11 +51,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         step_likes = Engagement.likes_map(current_user.id, "step", step_ids)
         sequence_likes = Engagement.likes_map(current_user.id, "sequence", sequence_ids)
 
-        comments =
-          ProfileCommentQuery.list_by(
-            profile_id: user.id,
-            preload: [:author]
-          )
+        comments = Engagement.list_profile_comments(user.id, [])
 
         comment_ids = Enum.map(comments, & &1.id)
         comment_likes = Engagement.likes_map(current_user.id, "profile_comment", comment_ids)
@@ -298,13 +294,12 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
   @impl true
   def handle_event("toggle_replies", %{"id" => comment_id}, socket) do
-    alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
     replies_map = socket.assigns.replies_map
 
     if Map.has_key?(replies_map, comment_id) do
       {:noreply, assign(socket, :replies_map, Map.delete(replies_map, comment_id))}
     else
-      replies = Engagement.list_replies(ProfileCommentQuery, comment_id)
+      replies = Engagement.list_profile_comment_replies(comment_id)
       {:noreply, assign(socket, :replies_map, Map.put(replies_map, comment_id, replies))}
     end
   end
@@ -466,20 +461,15 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     do: {:noreply, socket}
 
   defp reload_comments(socket, current_user) do
-    alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
     profile_user = socket.assigns.profile_user
 
-    comments =
-      ProfileCommentQuery.list_by(
-        profile_id: profile_user.id,
-        preload: [:author]
-      )
+    comments = Engagement.list_profile_comments(profile_user.id, [])
 
     replies_map =
       socket.assigns.replies_map
       |> Map.keys()
       |> Enum.reduce(%{}, fn parent_id, acc ->
-        replies = Engagement.list_replies(ProfileCommentQuery, parent_id)
+        replies = Engagement.list_profile_comment_replies(parent_id)
         Map.put(acc, parent_id, replies)
       end)
 

@@ -233,7 +233,7 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
     end
   end
 
-  describe "list_replies/3" do
+  describe "comment replies" do
     test "returns the replies of a comment", %{workshop: workshop} do
       {:ok, raiz} =
         Engagement.create_workshop_comment(insert(:user), workshop.id, %{body: "?"})
@@ -244,7 +244,7 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
           parent_workshop_comment_id: raiz.id
         })
 
-      assert [resposta] = Engagement.list_replies(WorkshopCommentQuery, raiz.id)
+      assert [resposta] = Engagement.list_workshop_comment_replies(raiz.id)
       assert resposta.body == "!"
     end
   end

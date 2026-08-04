@@ -43,8 +43,10 @@ Seguir **todos** os principios de `~/elixir-references/` (Playbook + RFCs). Dest
 ## Regras de arquitetura (em vigor desde jul/2026, PRs #139-#150)
 
 - **Triad Context/Schema/Query**: queries em modulos `*Query`, nunca direto no
-  contexto nem na camada web. `grep "Repo\.\|import Ecto.Query" lib/*_web/` deve
-  retornar vazio. Contexto delega reads (`defdelegate`) e mantem mutations.
+  contexto nem na camada web. A camada web fala SO com contexto: nada de `Repo.`,
+  `import Ecto.Query` nem chamada a modulo `*Query`. A regra e executavel:
+  `test/o_grupo_de_estudos_web/architecture_test.exs` falha se violada.
+  Contexto delega reads (`defdelegate`) e mantem mutations.
 - **Autorizacao na borda**: todo `handle_event` que muda estado passa por
   `Authorization.Policy.authorize/3` (ou `authorized?/3` para flags de UI).
   Nunca checar `is_admin`/`user_id` inline; nunca castar `:role` de params.

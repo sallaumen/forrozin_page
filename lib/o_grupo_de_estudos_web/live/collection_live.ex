@@ -11,8 +11,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Study, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser
-  alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, SectionQuery, StepLinkQuery, StepQuery}
-  alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
   alias OGrupoDeEstudosWeb.StepDrawer
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -57,7 +55,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         collection_cards: CollectionBrowser.build_sections(sections),
         categories: Encyclopedia.list_categories(),
         open_sections: Map.new(sections, fn s -> {s.id, false} end),
-        steps_with_links: StepLinkQuery.step_ids_with_links(),
+        steps_with_links: Encyclopedia.step_ids_with_links(),
         steps_seen_in_class: steps_seen_in_class(socket.assigns.current_user.id),
         learned_step_ids: Engagement.learned_step_ids(socket.assigns.current_user.id),
         following_user_ids: Engagement.following_ids(socket.assigns.current_user.id)
@@ -285,7 +283,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   end
 
   def handle_event("open_section", %{"id" => id}, socket) do
-    case SectionQuery.get_by(id: id, preload: [:category]) do
+    case Encyclopedia.get_section_by(id: id, preload: [:category]) do
       nil ->
         {:noreply, socket}
 
@@ -339,7 +337,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
       case Admin.update_section(section, params) do
         {:ok, updated} ->
-          updated = SectionQuery.get_by(id: updated.id, preload: [:category])
+          updated = Encyclopedia.get_section_by(id: updated.id, preload: [:category])
 
           {:noreply,
            socket
@@ -359,7 +357,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     if Policy.authorized?(:edit_step, socket.assigns.current_user, socket.assigns.drawer_item) and
          String.length(term) >= 1 do
       suggestions =
-        StepQuery.list_by(
+        Encyclopedia.list_steps_by(
           status: :published,
           search: term,
           order_by: [asc: :name],
@@ -391,7 +389,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         socket
       ) do
     if Policy.authorized?(:edit_step, socket.assigns.current_user, socket.assigns.drawer_item) do
-      connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
+      connection =
+        Encyclopedia.get_connection_by(source_code: source_code, target_code: target_code)
 
       if is_nil(connection) do
         {:noreply, put_flash(socket, :error, "Conexão não encontrada")}
@@ -477,7 +476,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   def handle_event("approve_step", %{"code" => code}, socket) do
     if Policy.authorized?(:approve_step, socket.assigns.current_user, socket.assigns.drawer_item) do
-      step = StepQuery.get_by(code: code)
+      step = Encyclopedia.get_step_by(code: code)
 
       if step do
         Admin.update_step(step, %{approved: true})
@@ -550,7 +549,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     if Map.has_key?(replies_map, comment_id) do
       {:noreply, assign(socket, :expanded_replies_map, Map.delete(replies_map, comment_id))}
     else
-      replies = Engagement.list_replies(StepCommentQuery, comment_id)
+      replies = Engagement.list_step_comment_replies(comment_id)
       new_map = Map.put(replies_map, comment_id, replies)
       socket = assign(socket, :expanded_replies_map, new_map)
       {:noreply, reload_expanded_likes(socket)}
@@ -656,7 +655,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   defp do_create_step_connection(socket, target_code) do
     step = socket.assigns.drawer_item
-    target = StepQuery.get_by(code: target_code)
+    target = Encyclopedia.get_step_by(code: target_code)
 
     if is_nil(target) do
       {:noreply, put_flash(socket, :error, "Passo não encontrado")}

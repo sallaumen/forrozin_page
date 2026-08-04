@@ -5,7 +5,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Suggestions}
   alias OGrupoDeEstudos.Authorization.Policy
-  alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudos.Suggestions.Suggestion
   alias OGrupoDeEstudosWeb.StepDetail
 
@@ -32,7 +31,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     case Encyclopedia.fetch_step_with_details(code, admin: admin) do
       {:ok, _} ->
         step =
-          StepQuery.get_by(
+          Encyclopedia.get_step_by(
             code: code,
             preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
           )
@@ -40,12 +39,13 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         can_edit = Policy.authorized?(:edit_step, socket.assigns.current_user, step)
 
         connections_out =
-          ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
+          Encyclopedia.list_connections_by(source_step_id: step.id, preload: [:target_step])
 
-        connections_in = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
+        connections_in =
+          Encyclopedia.list_connections_by(target_step_id: step.id, preload: [:source_step])
 
         approved_links =
-          StepLinkQuery.list_by(
+          Encyclopedia.list_step_links_by(
             step_id: step.id,
             approved: true,
             preload: [:submitted_by]
@@ -151,7 +151,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       case Admin.update_step(socket.assigns.step, params) do
         {:ok, updated} ->
           updated =
-            StepQuery.get_by(
+            Encyclopedia.get_step_by(
               code: updated.code,
               preload: [
                 :category,
@@ -179,8 +179,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     if Policy.authorized?(:delete_step, socket.assigns.current_user, socket.assigns.step) do
       step = socket.assigns.step
 
-      ConnectionQuery.soft_delete_by(either_step_id: step.id)
-
       case Admin.delete_step(step) do
         {:ok, _} ->
           {:noreply,
@@ -199,7 +197,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   def handle_event("search_connection", %{"target_code" => term}, socket) do
     if socket.assigns.can_edit and String.length(term) >= 1 do
       suggestions =
-        StepQuery.list_by(
+        Encyclopedia.list_steps_by(
           status: :published,
           search: term,
           order_by: [asc: :name],
@@ -231,7 +229,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         socket
       ) do
     if socket.assigns.can_edit do
-      connection = ConnectionQuery.get_by(source_code: source_code, target_code: target_code)
+      connection =
+        Encyclopedia.get_connection_by(source_code: source_code, target_code: target_code)
 
       if connection do
         {:ok, _} = Admin.delete_connection(connection.id)
@@ -247,7 +246,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   def handle_event("search_incoming_connection", %{"source_code" => term}, socket) do
     if socket.assigns.can_edit and String.length(term) >= 1 do
       suggestions =
-        StepQuery.list_by(
+        Encyclopedia.list_steps_by(
           search: term,
           order_by: [asc: :name],
           limit: 8,
@@ -334,7 +333,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   def handle_event("approve_step", %{"code" => code}, socket) do
     if Policy.authorized?(:approve_step, socket.assigns.current_user, socket.assigns.step) do
-      case StepQuery.get_by(code: code) do
+      case Encyclopedia.get_step_by(code: code) do
         nil ->
           {:noreply, socket}
 
@@ -413,7 +412,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     case Engagement.toggle_like(user.id, "step", step_id) do
       {:ok, _} ->
-        step = StepQuery.get_by(id: step_id)
+        step = Encyclopedia.get_step_by(id: step_id)
 
         {:noreply,
          assign(socket,
@@ -431,7 +430,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     case Engagement.toggle_favorite(user.id, "step", step_id) do
       {:ok, _} ->
-        step = StepQuery.get_by(id: step_id)
+        step = Encyclopedia.get_step_by(id: step_id)
 
         {:noreply,
          assign(socket,
@@ -512,14 +511,13 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   def handle_event("toggle_replies", %{"id" => comment_id}, socket) do
-    alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
     replies_map = socket.assigns.replies_map
 
     if Map.has_key?(replies_map, comment_id) do
       socket = assign(socket, :replies_map, Map.delete(replies_map, comment_id))
       {:noreply, reload_step_comments(socket)}
     else
-      replies = Engagement.list_replies(StepCommentQuery, comment_id)
+      replies = Engagement.list_step_comment_replies(comment_id)
       new_map = Map.put(replies_map, comment_id, replies)
       socket = assign(socket, :replies_map, new_map)
       {:noreply, reload_step_comments(socket)}
@@ -583,7 +581,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     results =
       if String.length(term) >= 1 do
-        StepQuery.list_by(
+        Encyclopedia.list_steps_by(
           status: :published,
           search: term,
           order_by: [asc: :name],
@@ -702,7 +700,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   defp do_create_outgoing_connection(socket, target_code) do
-    target = StepQuery.get_by(code: target_code)
+    target = Encyclopedia.get_step_by(code: target_code)
 
     if is_nil(target) do
       {:noreply, put_flash(socket, :error, "Passo não encontrado")}
@@ -717,7 +715,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   defp do_create_incoming_connection(socket, source_code) do
-    source = StepQuery.get_by(code: source_code)
+    source = Encyclopedia.get_step_by(code: source_code)
 
     if is_nil(source) do
       {:noreply, put_flash(socket, :error, "Passo não encontrado")}
@@ -732,8 +730,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   end
 
   defp reload_step_comments(socket) do
-    alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
-
     step = socket.assigns.step
     user = socket.assigns.current_user
 
@@ -744,7 +740,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       socket.assigns.replies_map
       |> Map.keys()
       |> Enum.reduce(%{}, fn parent_id, acc ->
-        replies = Engagement.list_replies(StepCommentQuery, parent_id)
+        replies = Engagement.list_step_comment_replies(parent_id)
         Map.put(acc, parent_id, replies)
       end)
 
@@ -768,16 +764,20 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
       {:ok, _} ->
         step =
-          StepQuery.get_by(
+          Encyclopedia.get_step_by(
             code: code,
             preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
           )
 
-        out = ConnectionQuery.list_by(source_step_id: step.id, preload: [:target_step])
-        inn = ConnectionQuery.list_by(target_step_id: step.id, preload: [:source_step])
+        out = Encyclopedia.list_connections_by(source_step_id: step.id, preload: [:target_step])
+        inn = Encyclopedia.list_connections_by(target_step_id: step.id, preload: [:source_step])
 
         approved_links =
-          StepLinkQuery.list_by(step_id: step.id, approved: true, preload: [:submitted_by])
+          Encyclopedia.list_step_links_by(
+            step_id: step.id,
+            approved: true,
+            preload: [:submitted_by]
+          )
 
         link_ids = Enum.map(approved_links, & &1.id)
         user_id = socket.assigns.current_user.id

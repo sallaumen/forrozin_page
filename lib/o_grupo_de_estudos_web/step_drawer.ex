@@ -9,8 +9,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
   import Phoenix.Component, only: [assign: 2, assign: 3]
 
   alias OGrupoDeEstudos.Engagement
-  alias OGrupoDeEstudos.Engagement.Comments.StepCommentQuery
-  alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
+  alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudosWeb.StepDetail
 
   @doc "Initial drawer assigns (for the mount of the host LiveView)."
@@ -46,12 +45,14 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
     user_id = socket.assigns.current_user.id
 
     step =
-      StepQuery.get_by(
+      Encyclopedia.get_step_by(
         code: code,
         preload: [:suggested_by, :category, :technical_concepts, :last_edited_by]
       )
 
-    links = StepLinkQuery.list_by(step_id: step.id, approved: true, preload: [:submitted_by])
+    links =
+      Encyclopedia.list_step_links_by(step_id: step.id, approved: true, preload: [:submitted_by])
+
     link_likes = Engagement.likes_map(user_id, "step_link", Enum.map(links, & &1.id))
     sorted_links = Enum.sort_by(links, fn link -> -Map.get(link_likes.counts, link.id, 0) end)
 
@@ -62,9 +63,15 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
       drawer_item: step,
       drawer_step_image: StepDetail.resolve_step_image(step),
       drawer_connections_out:
-        ConnectionQuery.list_by(source_step_id: step.id, preload: [target_step: :category]),
+        Encyclopedia.list_connections_by(
+          source_step_id: step.id,
+          preload: [target_step: :category]
+        ),
       drawer_connections_in:
-        ConnectionQuery.list_by(target_step_id: step.id, preload: [source_step: :category]),
+        Encyclopedia.list_connections_by(
+          target_step_id: step.id,
+          preload: [source_step: :category]
+        ),
       drawer_links: sorted_links,
       drawer_link_likes: link_likes,
       drawer_like_count: step.like_count,
@@ -95,7 +102,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
       socket.assigns.expanded_replies_map
       |> Map.keys()
       |> Enum.reduce(%{}, fn parent_id, acc ->
-        Map.put(acc, parent_id, Engagement.list_replies(StepCommentQuery, parent_id))
+        Map.put(acc, parent_id, Engagement.list_step_comment_replies(parent_id))
       end)
 
     reply_ids = replies_map |> Map.values() |> List.flatten() |> Enum.map(& &1.id)

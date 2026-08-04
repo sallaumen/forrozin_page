@@ -8,7 +8,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
   alias OGrupoDeEstudos.Engagement.Comments.{StepComment, StepCommentQuery}
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Engagement.Notifications.NotificationQuery
-  alias OGrupoDeEstudos.Engagement.ProfileCommentQuery
   alias OGrupoDeEstudos.Repo
 
   setup do
@@ -386,7 +385,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  describe "list_replies/3" do
+  describe "comment replies" do
     test "returns replies for a step comment", %{user: user, step: step} do
       {:ok, parent} = Engagement.create_step_comment(user, step.id, %{body: "Parent"})
       other = insert(:user)
@@ -403,7 +402,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
           parent_step_comment_id: parent.id
         })
 
-      replies = Engagement.list_replies(StepCommentQuery, parent.id)
+      replies = Engagement.list_step_comment_replies(parent.id)
       assert length(replies) == 2
       Enum.each(replies, fn r -> assert r.user != nil end)
     end
@@ -417,13 +416,13 @@ defmodule OGrupoDeEstudos.EngagementTest do
           parent_sequence_comment_id: parent.id
         })
 
-      replies = Engagement.list_replies(SequenceCommentQuery, parent.id)
+      replies = Engagement.list_sequence_comment_replies(parent.id)
       assert length(replies) == 1
     end
 
     test "returns empty list when no replies exist", %{user: user, step: step} do
       {:ok, parent} = Engagement.create_step_comment(user, step.id, %{body: "Alone"})
-      replies = Engagement.list_replies(StepCommentQuery, parent.id)
+      replies = Engagement.list_step_comment_replies(parent.id)
       assert replies == []
     end
 
@@ -438,7 +437,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
           parent_profile_comment_id: parent.id
         })
 
-      replies = Engagement.list_replies(ProfileCommentQuery, parent.id)
+      replies = Engagement.list_profile_comment_replies(parent.id)
       assert length(replies) == 1
       assert hd(replies).author != nil
     end

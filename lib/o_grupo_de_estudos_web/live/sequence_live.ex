@@ -10,7 +10,6 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
 
   alias OGrupoDeEstudos.{Accounts, Engagement, Sequences}
   alias OGrupoDeEstudos.Authorization.Policy
-  alias OGrupoDeEstudos.Engagement.Comments.SequenceCommentQuery
   alias OGrupoDeEstudosWeb.Helpers.RateLimit
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
@@ -360,7 +359,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
     if Map.has_key?(replies_map, comment_id) do
       {:noreply, assign(socket, :expanded_seq_replies_map, Map.delete(replies_map, comment_id))}
     else
-      replies = Engagement.list_replies(SequenceCommentQuery, comment_id)
+      replies = Engagement.list_sequence_comment_replies(comment_id)
       new_map = Map.put(replies_map, comment_id, replies)
       socket = assign(socket, :expanded_seq_replies_map, new_map)
       {:noreply, reload_seq_expanded_likes(socket)}
@@ -416,7 +415,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
       socket.assigns.expanded_seq_replies_map
       |> Map.keys()
       |> Enum.reduce(%{}, fn parent_id, acc ->
-        replies = Engagement.list_replies(SequenceCommentQuery, parent_id)
+        replies = Engagement.list_sequence_comment_replies(parent_id)
         Map.put(acc, parent_id, replies)
       end)
 

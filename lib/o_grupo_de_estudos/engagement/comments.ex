@@ -74,8 +74,24 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   def delete_profile_comment(user, comment),
     do: delete_comment(ProfileComment, ProfileCommentQuery, user, comment)
 
-  @doc "Lists replies for a given parent comment (`query_mod` is the Commentable impl)."
-  def list_replies(query_mod, comment_id, opts \\ []) do
+  @doc "Lists replies to a step comment, ordered by engagement."
+  def list_step_comment_replies(comment_id, opts \\ []),
+    do: list_replies(StepCommentQuery, comment_id, opts)
+
+  @doc "Lists replies to a sequence comment, ordered by engagement."
+  def list_sequence_comment_replies(comment_id, opts \\ []),
+    do: list_replies(SequenceCommentQuery, comment_id, opts)
+
+  @doc "Lists replies to a workshop comment, ordered by engagement."
+  def list_workshop_comment_replies(comment_id, opts \\ []),
+    do: list_replies(WorkshopCommentQuery, comment_id, opts)
+
+  @doc "Lists replies to a profile comment, ordered by engagement."
+  def list_profile_comment_replies(comment_id, opts \\ []),
+    do: list_replies(ProfileCommentQuery, comment_id, opts)
+
+  # `query_mod` is the Commentable impl; the typed wrappers above are the API.
+  defp list_replies(query_mod, comment_id, opts) do
     query_mod.base_query()
     |> query_mod.replies_for(comment_id)
     |> query_mod.ordered_by_engagement()

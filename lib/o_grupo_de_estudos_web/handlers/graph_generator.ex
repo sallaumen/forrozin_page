@@ -8,7 +8,6 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
   defmacro __using__(_opts) do
     quote do
       alias OGrupoDeEstudos.Sequences
-      alias OGrupoDeEstudos.Encyclopedia.StepQuery
       alias OGrupoDeEstudosWeb.GraphVisual.SequenceGenerator
 
       def handle_event("generate_sequences", params, socket) do
@@ -62,7 +61,12 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
       def handle_event("search_start_step", %{"value" => term}, socket) do
         suggestions =
           if String.length(term) >= 1 do
-            StepQuery.list_by(search: term, public_only: true, limit: 6, order_by: [asc: :code])
+            OGrupoDeEstudos.Encyclopedia.list_steps_by(
+              search: term,
+              public_only: true,
+              limit: 6,
+              order_by: [asc: :code]
+            )
             |> Enum.map(&%{code: &1.code, name: &1.name})
           else
             []
@@ -90,7 +94,12 @@ defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
           if String.length(term) >= 1 do
             already = socket.assigns.seq_required_codes
 
-            StepQuery.list_by(search: term, public_only: true, limit: 6, order_by: [asc: :code])
+            OGrupoDeEstudos.Encyclopedia.list_steps_by(
+              search: term,
+              public_only: true,
+              limit: 6,
+              order_by: [asc: :code]
+            )
             |> Enum.reject(&(&1.code in already))
             |> Enum.map(&%{code: &1.code, name: &1.name})
           else

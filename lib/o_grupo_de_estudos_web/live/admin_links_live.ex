@@ -3,8 +3,7 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Admin}
-  alias OGrupoDeEstudos.Encyclopedia.StepLinkQuery
+  alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia}
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
 
@@ -26,7 +25,7 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
   @impl true
   def handle_event("approve_link", %{"id" => id}, socket) do
     if Accounts.admin?(socket.assigns.current_user) do
-      link = StepLinkQuery.get_by(id: id, include_deleted: false)
+      link = Encyclopedia.get_step_link_by(id: id, include_deleted: false)
 
       if link do
         {:ok, _} = Admin.approve_step_link(link)
@@ -41,7 +40,7 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
 
   def handle_event("delete_link", %{"id" => id}, socket) do
     if Accounts.admin?(socket.assigns.current_user) do
-      link = StepLinkQuery.get_by(id: id, include_deleted: false)
+      link = Encyclopedia.get_step_link_by(id: id, include_deleted: false)
 
       if link do
         {:ok, _} = Admin.delete_step_link(link)
@@ -56,13 +55,13 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
 
   defp load_links(socket) do
     pending =
-      StepLinkQuery.list_by(
+      Encyclopedia.list_step_links_by(
         pending: true,
         preload: [:step, :submitted_by]
       )
 
     approved =
-      StepLinkQuery.list_by(
+      Encyclopedia.list_step_links_by(
         approved: true,
         preload: [:step, :submitted_by]
       )

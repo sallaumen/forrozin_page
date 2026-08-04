@@ -12,20 +12,22 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
       # The sheet starts closed. It sits in the `use` so the screens that use it do
       # not have to remember to initialize the assign.
       on_mount({unquote(__MODULE__), :closed_sheet})
-
-      alias OGrupoDeEstudos.Encyclopedia.StepQuery
       alias OGrupoDeEstudos.Engagement
 
       @impl true
       def handle_event("toggle_step_learned", %{"code" => code}, socket) do
-        case StepQuery.get_by(code: code) do
+        case OGrupoDeEstudos.Encyclopedia.get_step_by(code: code) do
           nil -> {:noreply, socket}
           step -> {:noreply, unquote(__MODULE__).toggle(socket, step)}
         end
       end
 
       def handle_event("open_step_sheet", %{"code" => code}, socket) do
-        {:noreply, unquote(__MODULE__).open_sheet(socket, StepQuery.get_by(code: code))}
+        {:noreply,
+         unquote(__MODULE__).open_sheet(
+           socket,
+           OGrupoDeEstudos.Encyclopedia.get_step_by(code: code)
+         )}
       end
 
       def handle_event("close_step_sheet", _params, socket) do

@@ -12,7 +12,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   alias OGrupoDeEstudos.{Accounts, Engagement, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Badges
-  alias OGrupoDeEstudos.Engagement.Comments.WorkshopCommentQuery
   alias OGrupoDeEstudos.Workshops.Workshop
 
   use OGrupoDeEstudosWeb.Handlers.StepLearning
@@ -394,7 +393,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   defp refresh_replies(replies_map) do
     Map.new(replies_map, fn {parent_id, _} ->
-      {parent_id, Engagement.list_replies(WorkshopCommentQuery, parent_id)}
+      {parent_id, Engagement.list_workshop_comment_replies(parent_id)}
     end)
   end
 
