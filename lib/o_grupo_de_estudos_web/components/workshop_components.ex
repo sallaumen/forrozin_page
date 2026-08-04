@@ -609,6 +609,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   defp first_name(nil), do: "quem organiza"
   defp first_name(name), do: name |> String.split(" ") |> List.first()
 
+  # A workshop knows how to say where it is from its own parts; a program still
+  # only has the free line.
+  defp location_suffix(%Workshop{} = workshop) do
+    case Workshop.place_line(workshop) do
+      nil -> ""
+      line -> " · #{line}"
+    end
+  end
+
   defp location_suffix(%{location: nil}), do: ""
   defp location_suffix(%{location: ""}), do: ""
   defp location_suffix(%{location: location}), do: " · #{location}"

@@ -142,6 +142,76 @@ defmodule OGrupoDeEstudosWeb.WorkshopCreationAccessTest do
     end
   end
 
+  describe "where it happens, on the form and on the page" do
+    setup %{conn: conn} do
+      %{conn: log_in_user(conn, insert(:user, is_teacher: true))}
+    end
+
+    test "the form asks for the address in parts, not in one line", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/study/workshops/new")
+
+      assert html =~ "Nome do lugar"
+      assert html =~ "Rua"
+      assert html =~ "Número"
+      assert html =~ "Bairro"
+      assert html =~ "Cidade"
+      assert html =~ "CEP"
+    end
+
+    test "the state list offers the Brazilian ones", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/study/workshops/new")
+
+      assert html =~ ~s(<option value="PR")
+      assert html =~ ~s(<option value="SP")
+    end
+
+    test "what was typed comes back assembled on the page", %{conn: conn} do
+      {:ok, lv, _} = live(conn, ~p"/study/workshops/new")
+
+      {:error, {:redirect, %{to: path}}} =
+        lv
+        |> form("#workshop-form", %{
+          "workshop" => %{
+            "title" => "Roda de forró",
+            "description" => "Vem dançar.",
+            "starts_at" => "2026-12-20T19:00",
+            "duration" => "120",
+            "location" => "Telhado do Tatá",
+            "street" => "R. Dr. Alexandre Gutierrez",
+            "street_number" => "480",
+            "neighborhood" => "Água Verde",
+            "city" => "Curitiba",
+            "state" => "PR",
+            "postal_code" => "80240-090"
+          }
+        })
+        |> render_submit(%{"publish" => "true"})
+
+      {:ok, _lv, html} = live(conn, path)
+
+      assert html =~ "Telhado do Tatá · Curitiba, PR"
+      assert html =~ "R. Dr. Alexandre Gutierrez, 480 · Água Verde · Curitiba, PR · 80240-090"
+    end
+
+    test "a workshop written before the split still shows its old line", %{conn: conn} do
+      organizer = insert(:user, is_teacher: true)
+
+      {:ok, workshop} =
+        Workshops.create_workshop(organizer, %{
+          title: "Aula antiga",
+          description: "De antes.",
+          location: "Telhado do Tatá — R. Dr. Alexandre Gutierrez",
+          starts_at: at_day(7)
+        })
+
+      {:ok, workshop} = Workshops.publish_workshop(organizer, workshop)
+
+      {:ok, _lv, html} = live(conn, ~p"/workshops/#{workshop.slug}")
+
+      assert html =~ "Telhado do Tatá — R. Dr. Alexandre Gutierrez"
+    end
+  end
+
   describe "what whoever already organizes keeps" do
     test "a workshop created before the rule stays manageable by its organizer",
          %{conn: conn} do

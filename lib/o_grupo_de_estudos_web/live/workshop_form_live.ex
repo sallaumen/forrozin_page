@@ -8,12 +8,27 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
   alias OGrupoDeEstudos.{Accounts, Brazil, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
+  alias OGrupoDeEstudos.Workshops.Workshop
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.WorkshopComponents
+
+  @doc "Brazilian states for the select."
+  @spec state_options() :: [String.t()]
+  def state_options, do: Brazil.states()
+
+  @doc "Shared field classes, so eight address inputs do not repeat the same string."
+  @spec input_class() :: String.t()
+  def input_class,
+    do:
+      "w-full rounded-lg border border-ink-200 bg-ink-50 px-3 py-2.5 font-serif text-sm text-ink-800 placeholder:text-ink-400"
+
+  @spec label_class() :: String.t()
+  def label_class,
+    do: "mb-1.5 block text-[10px] font-bold uppercase tracking-[1.3px] text-ink-500"
 
   # What a dance workshop actually lasts. Anything outside this is either an event
   # across days or an odd length that was typed before: both fall back to the end
@@ -211,6 +226,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   defp label_for(:starts_at), do: "Data de início"
   defp label_for(:ends_at), do: "Data de término"
   defp label_for(:duration_minutes), do: "Duração"
+  defp label_for(:city), do: "Cidade"
+  defp label_for(:state), do: "Estado"
+  defp label_for(:street), do: "Rua"
   defp label_for(:capacity), do: "Vagas"
   defp label_for(:price_cents), do: "Preço"
   defp label_for(field), do: field |> to_string() |> String.capitalize()
@@ -219,7 +237,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     %{
       "title" => "",
       "description" => "",
-      "location" => "",
       "starts_at" => "",
       "duration" => "120",
       "ends_at" => "",
@@ -232,13 +249,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "capacity" => "",
       "visibility" => "public"
     }
+    |> Map.merge(address_form(%Workshop{}))
   end
 
   defp form_from(workshop) do
     %{
       "title" => workshop.title,
       "description" => workshop.description,
-      "location" => workshop.location || "",
       "starts_at" => datetime_input(workshop.starts_at),
       "duration" => duration_input(workshop),
       "ends_at" => datetime_input(workshop.ends_at),
@@ -254,6 +271,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       "capacity" => if(workshop.capacity, do: to_string(workshop.capacity), else: ""),
       "visibility" => to_string(workshop.visibility)
     }
+    |> Map.merge(address_form(workshop))
+  end
+
+  @address_fields ~w(location street street_number complement neighborhood city state postal_code)a
+
+  defp address_form(workshop) do
+    Map.new(@address_fields, fn field ->
+      {to_string(field), Map.get(workshop, field) || ""}
+    end)
   end
 
   # "custom" means the select cannot say it: no end at all, an odd length, or an
@@ -282,7 +308,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     %{
       title: params["title"],
       description: params["description"],
-      location: blank_to_nil(params["location"]),
       payment_info: blank_to_nil(params["payment_info"]),
       payment_mode: payment_mode_from(params["payment_mode"]),
       payment_phone: blank_to_nil(params["payment_phone"]),
@@ -293,6 +318,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       capacity: parse_int(params["capacity"]),
       visibility: visibilidade(params["visibility"])
     }
+    |> Map.merge(address_attrs(params))
+  end
+
+  defp address_attrs(params) do
+    Map.new(@address_fields, fn field ->
+      {field, blank_to_nil(params[to_string(field)])}
+    end)
   end
 
   defp visibilidade("private"), do: :private
