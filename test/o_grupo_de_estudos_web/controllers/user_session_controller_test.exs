@@ -5,6 +5,20 @@ defmodule OGrupoDeEstudosWeb.UserSessionControllerTest do
   alias OGrupoDeEstudos.Repo
 
   describe "GET /login" do
+    test "shows the google sign-in button", %{conn: conn} do
+      conn = get(conn, ~p"/login")
+      response = html_response(conn, 200)
+
+      assert response =~ "Entrar com o Google"
+      assert response =~ "/auth/google"
+    end
+
+    test "google button carries the teacher invite along", %{conn: conn} do
+      conn = get(conn, ~p"/login?teacher_invite=prof-joana")
+
+      assert html_response(conn, 200) =~ "/auth/google?teacher_invite=prof-joana"
+    end
+
     test "renders login form", %{conn: conn} do
       conn = get(conn, ~p"/login")
       assert html_response(conn, 200) =~ "Entrar"
@@ -51,6 +65,16 @@ defmodule OGrupoDeEstudosWeb.UserSessionControllerTest do
       assert event.method == "password"
       assert event.device_type == :mobile
       assert event.browser == "Chrome"
+    end
+
+    test "logs in user with email as identifier", %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/login", %{
+          "session" => %{"username" => "logintest@example.com", "password" => "senhasegura123"}
+        })
+
+      assert redirected_to(conn) == ~p"/collection"
+      assert get_session(conn, :user_id) == user.id
     end
 
     test "displays error with invalid credentials", %{conn: conn} do

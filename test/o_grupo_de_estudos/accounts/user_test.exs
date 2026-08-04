@@ -44,6 +44,14 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
       assert errors_on(changeset).email != []
     end
 
+    test "downcases and trims email" do
+      changeset =
+        User.registration_changeset(%User{}, %{@valid_attrs | email: "  Tata@Example.COM  "})
+
+      assert changeset.valid?
+      assert get_change(changeset, :email) == "tata@example.com"
+    end
+
     test "invalid without password" do
       attrs = Map.delete(@valid_attrs, :password)
       changeset = User.registration_changeset(%User{}, attrs)
@@ -100,6 +108,92 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
 
       assert changeset.valid?
       assert get_field(changeset, :is_teacher)
+    end
+  end
+
+  describe "google_registration_changeset/2" do
+    @google_attrs %{
+      username: "tata",
+      email: "tata@gmail.com",
+      name: "Tatá Tavano",
+      google_id: "google-sub-123"
+    }
+
+    test "valid with google profile data and generates a password hash" do
+      changeset = User.google_registration_changeset(%User{}, @google_attrs)
+
+      assert changeset.valid?
+      assert get_change(changeset, :password_hash) != nil
+    end
+
+    test "marks the email as confirmed without a confirmation token" do
+      changeset = User.google_registration_changeset(%User{}, @google_attrs)
+
+      assert get_change(changeset, :confirmed_at) != nil
+      assert get_change(changeset, :confirmation_token) == nil
+    end
+
+    test "downcases and trims email" do
+      changeset =
+        User.google_registration_changeset(%User{}, %{@google_attrs | email: " Tata@Gmail.COM "})
+
+      assert get_change(changeset, :email) == "tata@gmail.com"
+    end
+
+    test "invalid without google_id" do
+      attrs = Map.delete(@google_attrs, :google_id)
+      changeset = User.google_registration_changeset(%User{}, attrs)
+
+      assert "can't be blank" in errors_on(changeset).google_id
+    end
+
+    test "valid without city, state or two-word name" do
+      changeset =
+        User.google_registration_changeset(%User{}, %{@google_attrs | name: "Tatá"})
+
+      assert changeset.valid?
+    end
+
+    test "generates invite slug from username" do
+      changeset = User.google_registration_changeset(%User{}, @google_attrs)
+
+      assert get_change(changeset, :invite_slug) == "prof-tata"
+    end
+  end
+
+  describe "link_google_changeset/2" do
+    test "sets google_id and confirms an unconfirmed user" do
+      user = %User{google_id: nil, confirmed_at: nil}
+      changeset = User.link_google_changeset(user, "google-sub-123")
+
+      assert get_change(changeset, :google_id) == "google-sub-123"
+      assert get_change(changeset, :confirmed_at) != nil
+    end
+
+    test "keeps the original confirmed_at when already confirmed" do
+      confirmed_at = ~U[2026-01-01 12:00:00Z]
+      user = %User{google_id: nil, confirmed_at: confirmed_at}
+      changeset = User.link_google_changeset(user, "google-sub-123")
+
+      assert get_field(changeset, :confirmed_at) == confirmed_at
+    end
+  end
+
+  describe "profile_complete?/1" do
+    test "returns true when brazilian user has city and state" do
+      assert User.profile_complete?(%User{country: "BR", state: "PR", city: "Curitiba"})
+    end
+
+    test "returns false when city is missing" do
+      refute User.profile_complete?(%User{country: "BR", state: "PR", city: nil})
+    end
+
+    test "returns false when state is missing for a brazilian user" do
+      refute User.profile_complete?(%User{country: "BR", state: nil, city: "Curitiba"})
+    end
+
+    test "returns true for a foreign user without state" do
+      assert User.profile_complete?(%User{country: "AR", state: nil, city: "Buenos Aires"})
     end
   end
 

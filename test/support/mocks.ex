@@ -5,3 +5,7 @@ Mox.defmock(OGrupoDeEstudos.Media.Video.Mock,
 Mox.defmock(OGrupoDeEstudos.Media.ObjectStorage.Mock,
   for: OGrupoDeEstudos.Media.ObjectStorage.Behaviour
 )
+
+Mox.defmock(OGrupoDeEstudos.Accounts.GoogleAuth.Mock,
+  for: OGrupoDeEstudos.Accounts.GoogleAuth.Behaviour
+)

@@ -57,6 +57,23 @@
           Você está entrando por um convite de professor. Depois do cadastro, a conexão já fica pronta para estudar junto.
         </div>
 
+        <div :if={google_auth_configured?()} class="mb-6">
+          <.google_sign_in_button
+            label="Continuar com o Google"
+            teacher_invite={@teacher_invite_slug}
+          />
+          <p class="text-xs text-ink-500 mt-2 mb-0 text-center">
+            Cadastro pronto na hora, sem senha pra decorar. Você completa o perfil depois, com calma.
+          </p>
+          <div class="flex items-center gap-3 mt-6">
+            <span class="flex-1 h-px bg-[rgba(60,40,20,0.15)]"></span>
+            <span class="text-xs text-ink-400 uppercase tracking-widest whitespace-nowrap">
+              ou preencha seus dados
+            </span>
+            <span class="flex-1 h-px bg-[rgba(60,40,20,0.15)]"></span>
+          </div>
+        </div>
+
         <.form
           for={@form}
           phx-submit="register"

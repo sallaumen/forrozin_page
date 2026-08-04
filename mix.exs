@@ -87,6 +87,8 @@ defmodule OGrupoDeEstudos.MixProject do
       {:bandit, "~> 1.5"},
       # Password hashing
       {:argon2_elixir, "~> 4.0"},
+      # Google sign-in (OAuth 2.0 / OpenID Connect)
+      {:assent, "~> 0.3"},
       # Mailer
       {:swoosh, "~> 1.17"},
       # SMTP adapter (needed in dev for real sending; in prod, swap for an API adapter)

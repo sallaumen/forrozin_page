@@ -9,7 +9,7 @@ defmodule OGrupoDeEstudos.Engagement.UserLoginEvent do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @methods ~w(password auto_login)
+  @methods ~w(password auto_login google)
 
   schema "user_login_events" do
     field :method, :string

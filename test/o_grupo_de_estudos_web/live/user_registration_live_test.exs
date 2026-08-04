@@ -20,6 +20,20 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLiveTest do
 
       assert {:error, {:redirect, %{to: "/collection"}}} = live(conn, ~p"/signup")
     end
+
+    test "shows the google signup option", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/signup")
+
+      assert html =~ "Continuar com o Google"
+      assert html =~ "/auth/google"
+    end
+
+    test "google button carries the teacher invite along", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true, invite_slug: "prof-joana")
+      {:ok, _lv, html} = live(conn, ~p"/signup?teacher_invite=#{teacher.invite_slug}")
+
+      assert html =~ "/auth/google?teacher_invite=prof-joana"
+    end
   end
 
   describe "user registration" do

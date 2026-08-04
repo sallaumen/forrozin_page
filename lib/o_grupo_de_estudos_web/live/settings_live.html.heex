@@ -22,6 +22,20 @@
       Configurações
     </h1>
 
+    <div
+      :if={@current_user.google_id && !Accounts.profile_complete?(@current_user)}
+      class="bg-[rgba(180,120,40,0.08)] border border-[rgba(180,120,40,0.3)] rounded-md p-5 mb-6"
+    >
+      <p class="text-sm font-bold text-ink-900 mt-0 mb-1">
+        Complete seu perfil
+      </p>
+      <p class="text-sm text-ink-700 leading-relaxed m-0">
+        Como você entrou com o Google, seu cadastro ficou pronto na hora e alguns
+        detalhes ficaram para depois. Confira seu nome de usuário e conte sua cidade
+        e estado, assim a comunidade te encontra direitinho.
+      </p>
+    </div>
+
     <%!-- Avatar preview --%>
     <div class="mb-8 flex items-center gap-5">
       <%= if @avatar_path do %>
@@ -36,8 +50,18 @@
           {String.first(@current_user.name || @current_user.username) |> String.upcase()}
         </div>
       <% end %>
-      <div class="text-sm text-ink-500">
-        Foto de perfil
+      <div>
+        <div class="text-sm text-ink-500">
+          Foto de perfil
+        </div>
+        <div class="mt-1.5 flex items-center gap-1.5 text-xs text-ink-500">
+          <.google_logo size={13} class={if !@current_user.google_id, do: "opacity-40"} />
+          <span>
+            {if @current_user.google_id,
+              do: "Conta Google conectada",
+              else: "Conta Google não conectada"}
+          </span>
+        </div>
       </div>
     </div>
 

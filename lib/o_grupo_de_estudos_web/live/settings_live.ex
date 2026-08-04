@@ -14,6 +14,7 @@ defmodule OGrupoDeEstudosWeb.SettingsLive do
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
+  import OGrupoDeEstudosWeb.UI.GoogleSignIn, only: [google_logo: 1]
   import OGrupoDeEstudosWeb.UI.TopNav
 
   use OGrupoDeEstudosWeb.NotificationHandlers

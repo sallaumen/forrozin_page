@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.UserRegistrationLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.UI.GoogleSignIn
+
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Study
 
