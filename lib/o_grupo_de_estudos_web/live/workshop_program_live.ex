@@ -12,6 +12,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram}
 
+  alias OGrupoDeEstudosWeb.{ChangesetErrors, InlineEditParams}
+
+  import OGrupoDeEstudosWeb.UI.InlineEdit
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.WorkshopComponents
 
@@ -26,6 +29,28 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     end
   end
 
+  defp open_field(socket, nil), do: socket
+
+  defp open_field(socket, field) do
+    if socket.assigns.owner? do
+      socket |> assign(:editing_field, field) |> assign(:edit_error, nil)
+    else
+      socket
+    end
+  end
+
+  defp close_field(socket), do: socket |> assign(:editing_field, nil) |> assign(:edit_error, nil)
+
+  # The slug follows the title, so the page follows the slug instead of leaving a
+  # dead address in the bar.
+  defp reload_after_edit(socket, %{slug: slug} = updated) do
+    if slug == socket.assigns.program.slug do
+      assign(socket, :program, updated)
+    else
+      push_patch(socket, to: ~p"/programs/#{slug}")
+    end
+  end
+
   defp assign_program(socket, program, user) do
     owner? = owner?(program, user)
     workshops = Workshops.list_program_workshops(program, include_drafts: owner?)
@@ -34,6 +59,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:page_title, program.title)
     |> assign(:program, program)
     |> assign(:owner?, owner?)
+    |> assign(:editing_field, nil)
+    |> assign(:edit_error, nil)
     |> assign(:is_admin, user && Accounts.admin?(user))
     |> assign(:days, group_by_day(workshops))
     |> assign(:workshop_count, length(workshops))
@@ -123,6 +150,32 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     {:ok, summary} = Workshops.package_summary(program, user)
 
     socket |> assign(:pacotes, pacotes) |> assign(:package_summary, summary)
+  end
+
+  @impl true
+  def handle_event("edit_field", %{"field" => field}, socket) do
+    {:noreply, open_field(socket, InlineEditParams.program_field(field))}
+  end
+
+  def handle_event("cancel_edit", _params, socket), do: {:noreply, close_field(socket)}
+
+  def handle_event("save_field", _params, %{assigns: %{editing_field: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_event("save_field", params, socket) do
+    field = socket.assigns.editing_field
+    attrs = InlineEditParams.attrs(socket.assigns.program, field, params)
+
+    case Workshops.update_program(socket.assigns.current_user, socket.assigns.program, attrs) do
+      {:ok, updated} ->
+        {:noreply, socket |> close_field() |> reload_after_edit(updated)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, :edit_error, ChangesetErrors.first_message(changeset))}
+
+      {:error, _unauthorized} ->
+        {:noreply, close_field(socket)}
+    end
   end
 
   @impl true

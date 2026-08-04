@@ -55,12 +55,41 @@
         <.workshop_tag :if={@workshop.visibility == :private} tone={:gold}>
           <.icon name="hero-lock-closed" class="mr-1 size-3" /> Entrada por aprovação
         </.workshop_tag>
-        <h1 class="m-0 font-serif text-[26px] font-bold tracking-tight text-ink-900 sm:text-[30px]">
-          {@workshop.title}
-        </h1>
+        <.editable
+          field={:title}
+          label="título"
+          editing={@editing_field}
+          can_edit={@organizer?}
+          value={InlineEditParams.form_value(@workshop, :title)}
+          error={@edit_error}
+        >
+          <h1 class="m-0 font-serif text-[26px] font-bold tracking-tight text-ink-900 sm:text-[30px]">
+            {@workshop.title}
+          </h1>
+        </.editable>
         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-600">
-          <span class="font-bold text-ink-900">{schedule_label(@workshop)}</span>
-          <span :if={Workshop.place_line(@workshop)}>{Workshop.place_line(@workshop)}</span>
+          <.editable
+            field={:starts_at}
+            label="quando começa"
+            type={:datetime}
+            editing={@editing_field}
+            can_edit={@organizer?}
+            value={InlineEditParams.form_value(@workshop, :starts_at)}
+            hint="A duração da aula é mantida: o fim anda junto."
+            error={@edit_error}
+          >
+            <span class="font-bold text-ink-900">{schedule_label(@workshop)}</span>
+          </.editable>
+          <.editable
+            field={:location}
+            label="nome do lugar"
+            editing={@editing_field}
+            can_edit={@organizer?}
+            value={InlineEditParams.form_value(@workshop, :location)}
+            error={@edit_error}
+          >
+            <span>{Workshop.place_line(@workshop) || "sem lugar definido"}</span>
+          </.editable>
           <%!-- "com" names who teaches, not who organizes: with the two roles
                separated, crediting the class to whoever only produced it became a
                bug.
@@ -70,13 +99,21 @@
 
         <%!-- The full address sits with the title and not buried in the description:
              whoever opens the page on a phone is often already on the way. --%>
-        <p
-          :if={Workshop.address_line(@workshop)}
-          class="m-0 mt-2 flex items-start gap-1.5 text-[13px] leading-snug text-ink-500"
+        <.editable_address
+          :if={Workshop.address_line(@workshop) || @organizer?}
+          field={:address}
+          label="endereço"
+          editing={@editing_field}
+          can_edit={@organizer?}
+          workshop={@workshop}
+          states={Brazil.states()}
+          error={@edit_error}
         >
-          <.icon name="hero-map-pin" class="mt-0.5 size-4 shrink-0 text-ink-400" />
-          {Workshop.address_line(@workshop)}
-        </p>
+          <p class="m-0 mt-2 flex items-start gap-1.5 text-[13px] leading-snug text-ink-500">
+            <.icon name="hero-map-pin" class="mt-0.5 size-4 shrink-0 text-ink-400" />
+            {Workshop.address_line(@workshop) || "endereço não preenchido"}
+          </p>
+        </.editable_address>
       </div>
       <.link
         :if={@organizer?}
@@ -314,9 +351,22 @@
       </aside>
 
       <div class="lg:order-1">
-        <div class="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800">
-          {@workshop.description}
-        </div>
+        <%!-- `whitespace-pre-line` wraps only the text: on the container it would turn
+             the newlines of the template itself into blank lines on the page. --%>
+        <.editable
+          field={:description}
+          label="descrição"
+          type={:long_text}
+          layout={:block}
+          editing={@editing_field}
+          can_edit={@organizer?}
+          value={InlineEditParams.form_value(@workshop, :description)}
+          error={@edit_error}
+        >
+          <p class="m-0 whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800">
+            {@workshop.description}
+          </p>
+        </.editable>
 
         <%!-- Storefront: whoever has not entered sees the shape of what is inside,
              never the content. Hiding it would say "there is nothing here"; showing
@@ -656,6 +706,7 @@
         </section>
       </div>
     </div>
+    <.last_updated :if={@organizer?} at={@workshop.updated_at} />
   </main>
 </div>
 
