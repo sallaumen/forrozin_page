@@ -69,8 +69,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
   defp trim(value) when is_binary(value), do: String.trim(value)
 
   @doc "Extension from the content type, to name the file in the storage."
-  @spec extensao(String.t()) :: String.t()
-  def extensao(content_type) do
+  @spec extension(String.t()) :: String.t()
+  def extension(content_type) do
     case MIME.extensions(content_type) do
       [ext | _] -> "." <> ext
       [] -> ".bin"
@@ -78,10 +78,10 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
   end
 
   @doc "Whether it is a photo or a video, from the content type."
-  @spec kind_do_tipo(String.t()) :: :photo | :video | :error
-  def kind_do_tipo("image/" <> _), do: :photo
-  def kind_do_tipo("video/" <> _), do: :video
-  def kind_do_tipo(_other), do: :error
+  @spec kind_from_content_type(String.t()) :: :photo | :video | :error
+  def kind_from_content_type("image/" <> _), do: :photo
+  def kind_from_content_type("video/" <> _), do: :video
+  def kind_from_content_type(_other), do: :error
 
   @doc """
   Status the media enters the gallery with.

@@ -123,9 +123,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   @doc "Notifies the requester that the request was answered."
   @spec notify_workshop_join_review(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t(), atom()) :: :ok
-  def notify_workshop_join_review(actor_id, user_id, workshop_id, acao)
+  def notify_workshop_join_review(actor_id, user_id, workshop_id, action_name)
       when actor_id != user_id do
-    notify_about_request(actor_id, user_id, workshop_id, acao)
+    notify_about_request(actor_id, user_id, workshop_id, action_name)
   end
 
   def notify_workshop_join_review(_actor_id, _user_id, _workshop_id, _acao), do: :ok
@@ -138,14 +138,14 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_waitlist_promoted(_actor_id, _user_id, _workshop_id), do: :ok
 
-  defp notify_about_request(actor_id, destinatario_id, workshop_id, acao) do
+  defp notify_about_request(actor_id, recipient_id, workshop_id, action_name) do
     builder = fn destinatario ->
       %{
         id: Ecto.UUID.generate(),
         user_id: destinatario,
         actor_id: actor_id,
-        action: acao,
-        group_key: "#{acao}:#{workshop_id}",
+        action: action_name,
+        group_key: "#{action_name}:#{workshop_id}",
         target_type: "workshop",
         target_id: workshop_id,
         parent_type: "workshop",
@@ -154,7 +154,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
       }
     end
 
-    insert_and_broadcast([destinatario_id], builder)
+    insert_and_broadcast([recipient_id], builder)
   end
 
   @doc """

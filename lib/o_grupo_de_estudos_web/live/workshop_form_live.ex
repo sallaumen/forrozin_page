@@ -129,7 +129,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   defp store_flyer(socket, workshop, user) do
     socket
     |> consume_uploaded_entries(:flyer, fn %{path: tmp_path}, entry ->
-      {:ok, Workshops.put_workshop_flyer(workshop, user, tmp_path, extensao(entry))}
+      {:ok, Workshops.put_workshop_flyer(workshop, user, tmp_path, extension(entry))}
     end)
     |> case do
       [{:ok, atualizado}] -> atualizado
@@ -137,7 +137,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     end
   end
 
-  defp extensao(entry) do
+  defp extension(entry) do
     [ext | _] = MIME.extensions(entry.client_type)
     "." <> ext
   end

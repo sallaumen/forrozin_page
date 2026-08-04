@@ -157,11 +157,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
   # can be retried.
   defp store_flyer(socket, program, user) do
     consume_uploaded_entries(socket, :flyer, fn %{path: tmp_path}, entry ->
-      {:ok, Workshops.put_program_flyer(program, user, tmp_path, extensao(entry))}
+      {:ok, Workshops.put_program_flyer(program, user, tmp_path, extension(entry))}
     end)
   end
 
-  defp extensao(entry) do
+  defp extension(entry) do
     [ext | _] = MIME.extensions(entry.client_type)
     "." <> ext
   end
