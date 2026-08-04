@@ -1098,7 +1098,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
       targets = Engagement.notification_targets(notifications)
 
-      assert targets.steps == %{step.id => %{code: "NT1", name: "Passo NT"}}
+      assert targets.steps == %{step.id => %{id: step.id, code: "NT1", name: "Passo NT"}}
       assert %{username: _} = targets.users[profile.id]
     end
 

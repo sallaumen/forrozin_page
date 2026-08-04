@@ -171,5 +171,13 @@ defmodule OGrupoDeEstudosWeb.LessonStepLinksTest do
       assert Engagement.learned?(ctx.aluno.id, ctx.passo.id)
       assert html =~ "Aula de sacadas"
     end
+
+    test "o chip da lição fica verde depois de marcar", ctx do
+      render_click(ctx.lv, "open_step_sheet", %{"code" => ctx.passo.code})
+      html = render_click(ctx.lv, "toggle_step_learned", %{"code" => ctx.passo.code})
+
+      # Mesmo código de cor dos chips da nota: verde é "eu sei".
+      assert html =~ "accent-green"
+    end
   end
 end

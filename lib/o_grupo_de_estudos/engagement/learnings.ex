@@ -50,12 +50,19 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
     |> Enum.map(& &1.code)
   end
 
-  @doc "MapSet dos ids aprendidos. Para telas que perguntam por muitos passos de uma vez."
+  @doc """
+  MapSet dos ids aprendidos (deletados excluídos).
+
+  Projeção-irmã de `learned_step_codes/1`, da mesma fonte
+  (`learned_summaries/1`): codes para as telas que pintam chips por código
+  (estudo, grafo), ids para as que cruzam por id (acervo). Uma fonte só,
+  para o filtro de soft-delete nunca divergir entre as duas.
+  """
   @spec learned_step_ids(Ecto.UUID.t()) :: MapSet.t()
   def learned_step_ids(user_id) do
     user_id
-    |> LearnedStepQuery.step_ids_desc()
-    |> MapSet.new()
+    |> learned_summaries()
+    |> MapSet.new(& &1.id)
   end
 
   @doc "Returns the learned Step records, most recently learned first (deleted excluded)."

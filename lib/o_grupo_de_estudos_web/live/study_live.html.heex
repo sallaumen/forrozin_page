@@ -369,6 +369,7 @@
           <.step_pill
             :for={step <- @lesson_steps}
             step={step}
+            learned={MapSet.member?(@learned_codes, step.code)}
             removable
             remove_event="remove_lesson_step"
             remove_label="desta lição"

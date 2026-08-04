@@ -149,7 +149,11 @@
               <%!-- O passo que a lição tratou vira caminho: o chip abre a folha
               com o gesto de marcar, sem tirar o aluno da lição que está lendo. --%>
               <div :if={lesson.steps != []} class="mt-2 flex flex-wrap gap-1">
-                <.step_pill :for={step <- lesson.steps} step={step} />
+                <.step_pill
+                  :for={step <- lesson.steps}
+                  step={step}
+                  learned={MapSet.member?(@learned_codes, step.code)}
+                />
               </div>
 
               <div class="mt-1.5 flex items-center gap-2">

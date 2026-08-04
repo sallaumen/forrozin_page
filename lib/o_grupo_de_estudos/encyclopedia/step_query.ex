@@ -61,14 +61,16 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
 
   @doc "Returns `%{id => %{code: code, name: name}}` for the given step ids."
   @spec summaries_by_ids([Ecto.UUID.t()]) :: %{
-          Ecto.UUID.t() => %{code: String.t(), name: String.t()}
+          Ecto.UUID.t() => %{id: Ecto.UUID.t(), code: String.t(), name: String.t()}
         }
   def summaries_by_ids([]), do: %{}
 
+  # O id vai também no valor: quem projeta com Map.values() (ex.: Learnings)
+  # não perde a chave no caminho.
   def summaries_by_ids(ids) when is_list(ids) do
     from(s in Step,
       where: s.id in ^ids and is_nil(s.deleted_at),
-      select: {s.id, %{code: s.code, name: s.name}}
+      select: {s.id, %{id: s.id, code: s.code, name: s.name}}
     )
     |> Repo.all()
     |> Map.new()
