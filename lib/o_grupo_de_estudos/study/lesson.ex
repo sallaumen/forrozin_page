@@ -1,11 +1,10 @@
 defmodule OGrupoDeEstudos.Study.Lesson do
   @moduledoc """
-  Lição escrita por um professor para a turma (ex.: conteúdo de workshop).
+  Lesson written by a teacher for the class (workshop content, for instance).
 
-  O conteúdo vive aqui, uma única vez; a entrega a cada aluno é uma
-  `LessonDelivery` ligada ao vínculo professor-aluno — assim a lição
-  aparece na página compartilhada de cada aluno e uma edição corrige
-  todas as cópias de uma vez.
+  The content lives here once; the delivery to each student is a
+  `LessonDelivery` tied to the teacher-student link, so the lesson shows up on
+  each student's shared page and one edit fixes every copy at once.
   """
 
   use Ecto.Schema

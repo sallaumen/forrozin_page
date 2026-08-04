@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Workshops.WorkshopAdmin do
   @moduledoc """
-  Co-organizador de um workshop.
+  Co-organizer of a workshop.
 
-  O criador (`Workshop.organizer_id`) não tem linha aqui: ele é dono por
-  construção. Esta tabela guarda só quem foi promovido depois.
+  The creator (`Workshop.organizer_id`) has no row here: they own it by
+  construction. This table stores only whoever was promoted afterwards.
   """
 
   use Ecto.Schema

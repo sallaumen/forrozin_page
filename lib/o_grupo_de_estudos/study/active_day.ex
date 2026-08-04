@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Study.ActiveDay do
   @moduledoc """
-  Marca que um usuário esteve ativo no app num determinado dia (qualquer página).
+  Marks that a user was active in the app on a given day (any page).
 
-  Alimenta a consistência da área de Estudos: o dia conta mesmo sem registro de
-  diário, pra incentivar o hábito de aparecer. Um registro por `(user_id, day)`.
+  Feeds the consistency count of the Study area: the day counts even without a
+  diary entry, to encourage the habit of showing up. One row per `(user_id, day)`.
   """
   use Ecto.Schema
 

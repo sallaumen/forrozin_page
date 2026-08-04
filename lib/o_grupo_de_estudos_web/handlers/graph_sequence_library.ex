@@ -1,16 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphSequenceLibrary do
   @moduledoc """
-  Macro com os handlers da biblioteca de sequências da GraphVisualLive: salvar
-  resultado, deletar, alternar views (config/library/saved/favorites), busca,
-  filtros e favoritar sequência.
-
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphSequenceLibrary`
-
-  Requer os assigns `:seq_view`, `:seq_results`, `:seq_warnings`, `:seq_saving`,
-  `:seq_library_search`, `:seq_library_origin_filter`, `:seq_library_category_filter`
-  e os helpers privados do host `parse_int/2`, `can_manage_sequence?/2`,
-  `assign_sequence_library/1`, `assign_filtered_sequence_library/1`,
-  `deactivate_manual_mode/1` e `maybe_clear_deleted_sequence/2`.
+  Macro with the sequence library handlers of GraphVisualLive: save a result,
+  delete, switch views (config, library, saved, favorites) and favorite.
   """
 
   defmacro __using__(_opts) do

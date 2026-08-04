@@ -6,7 +6,7 @@ defmodule OGrupoDeEstudos.Workshops.JoinRequestQuery do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops.JoinRequest
 
-  @doc "Pedidos esperando resposta, mais antigo primeiro (a fila de quem organiza)."
+  @doc "Requests waiting for an answer, oldest first (the organizer queue)."
   @spec list_pending(Ecto.UUID.t()) :: [map()]
   def list_pending(workshop_id), do: listar(workshop_id, :pending)
 
@@ -36,17 +36,17 @@ defmodule OGrupoDeEstudos.Workshops.JoinRequestQuery do
   defp filtrar_status(query, nil), do: query
   defp filtrar_status(query, status), do: where(query, [r], r.status == ^status)
 
-  @doc "O pedido de uma pessoa neste workshop, ou nil."
+  @doc "The request of a person in this workshop, or nil."
   @spec get(Ecto.UUID.t(), Ecto.UUID.t()) :: JoinRequest.t() | nil
   def get(workshop_id, user_id) do
     Repo.get_by(JoinRequest, workshop_id: workshop_id, user_id: user_id)
   end
 
   @doc """
-  Em que pé está o pedido: `:none`, `:pending`, `:approved` ou `:rejected`.
+  Where the request stands: `:none`, `:pending`, `:approved` or `:rejected`.
 
-  Existe para a tela decidir entre "Pedir para entrar" e "Aguardando" sem
-  carregar a linha inteira.
+  It exists so the screen can choose between "ask to join" and "waiting" without
+  loading the whole row.
   """
   @spec status(Ecto.UUID.t(), Ecto.UUID.t() | nil) :: :none | :pending | :approved | :rejected
   def status(_workshop_id, nil), do: :none
@@ -63,7 +63,7 @@ defmodule OGrupoDeEstudos.Workshops.JoinRequestQuery do
     end
   end
 
-  @doc "Quantos pedidos esperando resposta, para o contador do painel."
+  @doc "How many requests are waiting for an answer, for the panel counter."
   @spec count_pending(Ecto.UUID.t()) :: non_neg_integer()
   def count_pending(workshop_id) do
     from(r in JoinRequest, where: r.workshop_id == ^workshop_id and r.status == :pending)

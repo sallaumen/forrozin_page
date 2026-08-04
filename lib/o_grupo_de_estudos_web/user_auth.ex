@@ -1,11 +1,10 @@
 defmodule OGrupoDeEstudosWeb.UserAuth do
   @moduledoc """
-  Plug e on_mount hook para autenticação de usuários.
+  Plug and on_mount hook for user authentication.
 
-  - `fetch_current_user/2` — popula `conn.assigns.current_user` a partir da sessão.
-  - `require_authenticated_user/2` — redireciona para /entrar se não autenticado.
-  - `redirect_if_authenticated/2` — redireciona para / se já autenticado.
-  - `on_mount/4` — variantes acima para uso em LiveViews.
+  - `fetch_current_user/2` populates `conn.assigns.current_user` from the session.
+  - `require_authenticated_user/2` redirects to the login page when there is none.
+  - `on_mount/4` does the same for LiveViews.
   """
 
   use OGrupoDeEstudosWeb, :verified_routes
@@ -19,7 +18,7 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
   def init(fun), do: fun
   def call(conn, fun), do: apply(__MODULE__, fun, [conn, []])
 
-  @doc "Busca o usuário atual na sessão e atribui em `conn.assigns.current_user`."
+  @doc "Fetches the current user from the session into `conn.assigns.current_user`."
   def fetch_current_user(conn, _opts) do
     user_id = get_session(conn, :user_id)
 
@@ -31,7 +30,7 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
     assign(conn, :current_user, user)
   end
 
-  @doc "Redireciona para /entrar se o usuário não estiver autenticado."
+  @doc "Redirects to the login page when the user is not authenticated."
   def require_authenticated_user(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
@@ -44,9 +43,9 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
   end
 
   @doc """
-  Plug de conn para rotas admin (controllers e live_dashboard, onde o
-  on_mount :ensure_admin não se aplica). Não-admin volta para o mapa;
-  anônimo vai para o login.
+  Conn plug for admin routes (controllers and live_dashboard, where the
+  `:ensure_admin` on_mount does not apply). A non-admin goes back to the map; an
+  anonymous visitor goes to login.
   """
   def require_admin(conn, _opts) do
     case conn.assigns[:current_user] do
@@ -66,7 +65,7 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
     end
   end
 
-  @doc "Redireciona para / se o usuário já estiver autenticado."
+  @doc "Redirects to / when the user is already authenticated."
   def redirect_if_authenticated(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
@@ -78,11 +77,11 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
   end
 
   @doc """
-  Hook `on_mount` para LiveViews.
+  `on_mount` hook for LiveViews.
 
-  - `:mount_current_user` — popula `current_user` no socket, sem redirecionar.
-  - `:ensure_authenticated` — redireciona para /entrar se não autenticado.
-  - `:redirect_if_authenticated` — redireciona para / se já autenticado.
+  - `:mount_current_user` populates `current_user` in the socket, without redirecting.
+  - `:ensure_authenticated` redirects to login when there is no user.
+  - `:ensure_admin` redirects when the user is not an admin.
   """
   def on_mount(:mount_current_user, _params, session, socket) do
     {:cont, mount_current_user(session, socket)}
@@ -146,7 +145,7 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
     Phoenix.Component.assign(socket, current_user: user)
   end
 
-  @doc "Inicia a sessão do usuário após login bem-sucedido."
+  @doc "Starts the user session after a successful login."
   def login(conn, user) do
     conn
     |> renew_session()
@@ -154,7 +153,7 @@ defmodule OGrupoDeEstudosWeb.UserAuth do
     |> put_session(:live_socket_id, "users_sessions:#{user.id}")
   end
 
-  @doc "Encerra a sessão do usuário."
+  @doc "Ends the user session."
   def logout(conn) do
     conn
     |> renew_session()

@@ -1,31 +1,27 @@
 defmodule OGrupoDeEstudosWeb.GraphVisual.JourneyPlan do
   @moduledoc """
-  Plano-base de estudos: a sequência pedagógica dos primeiros passos (ordem
-  definida pelo professor). É a "próxima meta" enquanto o aluno não dominou
-  esses passos; depois, a recomendação passa a ser automática.
-
-  Por ora é uma constante; a fase de recomendação automática torna isto editável
-  por admin (mantendo este módulo como o default/seed).
+  Base study plan: the pedagogical sequence of the first steps (order defined by
+  the teacher). It is the "next goal" while the student has not mastered it.
   """
 
   alias OGrupoDeEstudosWeb.GraphVisual.StudyJourney
 
   @base_plan ~w(BF BAL BA GS-ME GS-CHO BL GP PI SC CA-F TR-FC IV)
 
-  @doc "Códigos do plano-base, em ordem pedagógica."
+  @doc "Codes of the base plan, in pedagogical order."
   @spec base_plan() :: [String.t()]
   def base_plan, do: @base_plan
 
-  @doc "Próxima meta: primeiro passo do plano-base ainda não aprendido (ou nil)."
+  @doc "Next goal: first step of the base plan not learned yet (or nil)."
   @spec next_goal([String.t()]) :: String.t() | nil
   def next_goal(learned_codes) do
     StudyJourney.next_goal(@base_plan, MapSet.new(learned_codes))
   end
 
   @doc """
-  Frase + textinho de incentivo conforme o número de passos aprendidos. Muda a
-  cada 10 passos (até 60+). Sempre elogia e fala do caminho à frente, nunca do
-  quanto falta. Retorna `{frase, textinho}`.
+  Headline plus encouragement text according to how many steps are learned. It
+  changes every 10 steps (up to 60+). It always praises and speaks of the road
+  ahead, never of what is missing.
   """
   @spec encouragement(non_neg_integer()) :: {String.t(), String.t()}
   def encouragement(count) when count >= 60,

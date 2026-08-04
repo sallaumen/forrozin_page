@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Workshops.WorkshopStep do
   @moduledoc """
-  Passo do acervo que foi dado num workshop.
+  Collection step that was taught in a workshop.
 
-  Quem administra monta a lista: curadoria por like foi considerada e
-  descartada, porque ordenar por voto resolve com muito mais peça um problema
-  que a permissão já resolve.
+  The admin builds the list: like-based curation was considered and dropped,
+  because ordering by vote solves, with much more machinery, a problem the
+  permission already solves.
   """
 
   use Ecto.Schema

@@ -1,18 +1,18 @@
 defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
   @moduledoc """
-  Adapter de `OGrupoDeEstudos.Media.Video.Behaviour` em cima do ffmpeg.
+  `OGrupoDeEstudos.Media.Video.Behaviour` adapter on top of ffmpeg.
 
-  Resolve dois problemas da galeria, nesta ordem de importância:
+  It solves two gallery problems, in this order of importance:
 
-  1. **Compatibilidade.** O iPhone grava HEVC por padrão, e boa parte dos
-     Android mostra tela preta. Em conteúdo pago isso vira pedido de
-     reembolso. A saída é sempre H.264 + AAC em yuv420p, que abre em tudo.
-  2. **Tamanho.** 1080p HEVC de celular ocupa perto de 50 MB por minuto. Em
-     720p H.264 cai para a casa de 10 MB por minuto.
+  1. **Compatibility.** The iPhone records HEVC by default, and many Android
+     players show a black screen. On paid content that becomes a refund request.
+     The output is always H.264 plus AAC in yuv420p, which plays everywhere.
+  2. **Size.** 1080p HEVC from a phone takes around 50 MB per minute. At 720p
+     H.264 it drops to about 10 MB per minute.
 
-  Os argumentos são montados por funções puras (`transcode_args/2` e
-  `poster_args/2`), separadas da chamada ao binário: é o que decide qualidade
-  e tamanho, e dá para testar sem ffmpeg instalado.
+  The arguments are built by pure functions (`transcode_args/2` and
+  `poster_args/2`), separate from the call to the binary: they are what decides
+  quality and size, and they can be tested without ffmpeg installed.
   """
 
   @behaviour OGrupoDeEstudos.Media.Video.Behaviour
@@ -26,11 +26,11 @@ defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
   @maxrate "2M"
   @bufsize "4M"
 
-  @doc "Se o binário do ffmpeg existe nesta máquina."
+  @doc "Whether the ffmpeg binary exists on this machine."
   @impl true
   def available?, do: not is_nil(System.find_executable("ffmpeg"))
 
-  @doc "Converte o vídeo para 720p H.264. Sobrescreve o destino."
+  @doc "Converts the video to 720p H.264. Overwrites the destination."
   @impl true
   def transcode(source, dest) do
     source
@@ -38,7 +38,7 @@ defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
     |> executar()
   end
 
-  @doc "Extrai um quadro como imagem de capa."
+  @doc "Extracts a frame as the cover image."
   @impl true
   def poster(source, dest) do
     source
@@ -47,12 +47,11 @@ defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
   end
 
   @doc """
-  Argumentos do transcode.
+  Transcode arguments.
 
-  `-vf scale` usa `min(1280, iw)` de propósito: com o box fixo em 1280 o
-  ffmpeg aumentaria um vídeo antigo de 640x480, gastando espaço para não
-  ganhar nitidez nenhuma. `force_divisible_by=2` existe porque o libx264
-  recusa dimensão ímpar.
+  `-vf scale` uses `min(1280, iw)` on purpose: with the box fixed at 1280 ffmpeg
+  would upscale an old 640x480 video, spending space for no extra sharpness.
+  `force_divisible_by=2` exists because libx264 refuses an odd dimension.
   """
   @spec transcode_args(String.t(), String.t()) :: [String.t()]
   def transcode_args(source, dest) do
@@ -87,10 +86,10 @@ defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
   end
 
   @doc """
-  Argumentos do poster.
+  Poster arguments.
 
-  `-ss` antes do `-i` é a busca barata: o ffmpeg pula no container em vez de
-  decodificar tudo até o segundo 1.
+  `-ss` before `-i` is the cheap seek: ffmpeg jumps inside the container instead
+  of decoding everything up to the first second.
   """
   @spec poster_args(String.t(), String.t()) :: [String.t()]
   def poster_args(source, dest) do

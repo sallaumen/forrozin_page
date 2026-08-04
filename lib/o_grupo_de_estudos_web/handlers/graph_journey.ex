@@ -1,15 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphJourney do
   @moduledoc """
-  Macro com os handlers da jornada de estudos no grafo: marcar um passo como
-  aprendido e alternar entre "Meu progresso" e "Explorar tudo" (mapa completo).
-
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphJourney`
-
-  Requer os assigns `:learned_codes`, `:frontier_codes`, `:next_goal`,
-  `:full_map?` e `:edges`, e os helpers privados do host: `compute_frontier/2`,
-  `learned_payload/4`, `favorited_step_codes/1` e `assign_manual_favorite_steps/1`.
-  Empurra "set_learned_steps" (com learned/frontier/goal/full_map) para o hook
-  Cytoscape recolorir e revelar/esconder; o disclosure é client-side.
+  Macro with the study journey handlers on the graph: marking a step as learned
+  and switching between "Meu progresso" and "Explorar tudo" (the full map).
   """
 
   defmacro __using__(_opts) do

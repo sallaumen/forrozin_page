@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Sequences.Generator.Dfs do
   @moduledoc """
-  Geração por DFS aleatorizada com backtracking (modo sem obrigatórios).
+  Generation by randomized DFS with backtracking (mode with no required steps).
 
-  Seleção de vizinhos ponderada (destaque, mistura de categorias,
-  fechamento cíclico, penalidade de aresta repetida, ruído) e relaxamento
-  progressivo de restrições quando a contagem alvo não é atingida.
+  Weighted neighbor selection (highlight, category mixing, cyclic closing,
+  repeated-edge penalty, noise) and progressive relaxation of the constraints when
+  the target count is not reached.
   """
 
   alias OGrupoDeEstudos.Sequences.Generator.PathFormat

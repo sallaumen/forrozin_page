@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Sequences.GenerationParams do
   @moduledoc """
-  Normaliza os params crus do form do gerador em params de domínio para
+  Normalizes the raw generator form params into domain params for
   `Sequences.Generator.generate/1`.
 
-  Cálculo puro: regras de loop_mode (repetição e loops por par), comprimento
-  mínimo (8 com repetição, 4 sem) e parsing de inteiros com defaults vivem
-  aqui, não na borda.
+  Pure calculation: the loop_mode rules (repetition and loops per pair), the
+  minimum length (8 with repetition, 4 without) and integer parsing with defaults
+  live here, not at the boundary.
   """
 
   @default_length 10
@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudos.Sequences.GenerationParams do
     }
   end
 
-  @doc "Loops permitidos no mesmo par de passos, por modo de loop."
+  @doc "Loops allowed on the same pair of steps, per loop mode."
   @spec max_same_pair_loops(String.t()) :: pos_integer()
   def max_same_pair_loops("free"), do: 3
   def max_same_pair_loops("light"), do: 2

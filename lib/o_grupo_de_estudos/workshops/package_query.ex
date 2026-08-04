@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Workshops.PackageQuery do
   @moduledoc """
-  Leituras de `ProgramEnrollment`, a matrícula no pacote.
+  Reads of `ProgramEnrollment`, the package membership.
 
-  Como em `EnrollmentQuery`, a listagem projeta os campos explicitamente: o
-  estado de pagamento é privado de quem administra, e um `select` explícito
-  impede que ele vaze por preload distraído.
+  As in `EnrollmentQuery`, the listing projects the fields explicitly: the payment
+  state is private to whoever administers, and an explicit `select` keeps it from
+  leaking through an absent-minded preload.
   """
 
   import Ecto.Query
@@ -12,7 +12,7 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops.ProgramEnrollment
 
-  @doc "Quem comprou o pacote, com dados de exibição e estado de pagamento."
+  @doc "Who bought the package, with display data and payment state."
   @spec list_for_program(Ecto.UUID.t()) :: [map()]
   def list_for_program(program_id) do
     from(e in ProgramEnrollment,
@@ -32,13 +32,13 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
     |> Repo.all()
   end
 
-  @doc "Matrícula de uma pessoa no pacote, ou `nil`."
+  @doc "Package membership of a person, or `nil`."
   @spec get_for_user(Ecto.UUID.t(), Ecto.UUID.t()) :: ProgramEnrollment.t() | nil
   def get_for_user(program_id, user_id) do
     Repo.get_by(ProgramEnrollment, program_id: program_id, user_id: user_id)
   end
 
-  @doc "Matrícula com escopo na programação: id forjado de outra não encontra nada."
+  @doc "Membership scoped to the program: a forged id from another finds nothing."
   @spec get_scoped(Ecto.UUID.t(), Ecto.UUID.t()) :: ProgramEnrollment.t() | nil
   def get_scoped(enrollment_id, program_id) do
     case Ecto.UUID.cast(enrollment_id) do

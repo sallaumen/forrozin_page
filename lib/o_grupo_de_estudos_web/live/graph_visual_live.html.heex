@@ -21,7 +21,7 @@
   <.activity_toast toast={assigns[:activity_toast]} />
   <%!-- Barra superior em duas faixas CENTRALIZADAS: controles da jornada em
   cima, busca embaixo (com modo manual à esquerda dela). Tudo centralizado e
-  com largura limitada — sem busca "gigante" e sem nada sobrepor nada. --%>
+  com largura limitada: sem busca "gigante" e sem nada sobrepor nada. --%>
   <div class="fixed left-0 right-0 top-[64px] z-30 flex flex-col items-center gap-2 px-3 font-serif">
     <%!-- Controles da jornada (esquerda): abrir o painel + alternar mapa --%>
     <div :if={@loaded?} class="flex shrink-0 items-center gap-2">
@@ -150,7 +150,7 @@
     </div>
   </div>
 
-  <%!-- Graph canvas / 3D canvas — fills remaining viewport --%>
+  <%!-- Graph canvas / 3D canvas: fills remaining viewport --%>
   <div class="flex-1 relative overflow-hidden">
     <%!-- 2D Graph --%>
     <div
@@ -167,7 +167,7 @@
     >
     </div>
 
-    <%!-- Loading skeleton — dead/HTTP render, before the WebSocket connects --%>
+    <%!-- Loading skeleton: dead/HTTP render, before the WebSocket connects --%>
     <div
       :if={!@loaded?}
       id="graph-canvas-skeleton"
@@ -311,7 +311,7 @@
       <.icon name="hero-queue-list" class="size-4" /> Sequências
     </button>
 
-    <%!-- Sequence panel — bottom sheet on all viewports (bottom-right on desktop) --%>
+    <%!-- Sequence panel: bottom sheet on all viewports (bottom-right on desktop) --%>
     <div
       id="seq-panel"
       class={[
@@ -1566,7 +1566,7 @@
       </div>
     </div>
 
-    <%!-- Orphan panel — left side, only in edit mode --%>
+    <%!-- Orphan panel: left side, only in edit mode --%>
     <div
       id="orphan-panel"
       style={"position: absolute; top: 0; left: 0; width: 240px; height: 100%; background: rgba(192,57,43,0.06); border-right: 2px solid rgba(192,57,43,0.2); z-index: 14; overflow-y: auto; padding: 16px; font-family: Georgia, serif; transition: transform 0.2s ease; transform: #{if @edit_mode, do: "translateX(0)", else: "translateX(-260px)"};"}

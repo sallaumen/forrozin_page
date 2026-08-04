@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudos.Workshops.ProgramEnrollment do
   @moduledoc """
-  Matrícula no pacote de uma programação.
+  Membership in the package of a program.
 
-  Quem compra o pacote entra em todos os workshops de uma vez, e o pagamento
-  passa a ser do conjunto: as inscrições individuais apontam para esta linha
-  em vez de cada uma ter o próprio estado de pagamento.
+  Whoever buys the package joins every workshop at once, and the payment becomes
+  the payment of the set: the individual enrollments point at this row instead of
+  each carrying its own payment state.
 
-  `payment_status` e `paid_at` são privados de quem administra, pela mesma
-  regra de `WorkshopEnrollment`.
+  `payment_status` and `paid_at` are private to whoever administers, by the same
+  rule as `WorkshopEnrollment`.
   """
 
   use Ecto.Schema
@@ -32,7 +32,7 @@ defmodule OGrupoDeEstudos.Workshops.ProgramEnrollment do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @doc "Pagamento não é castável aqui: quem muda é o organizador, pelo painel."
+  @doc "Payment is not castable here: the organizer changes it, from the panel."
   def changeset(enrollment, attrs) do
     enrollment
     |> cast(attrs, [:program_id, :user_id])
@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudos.Workshops.ProgramEnrollment do
     |> foreign_key_constraint(:user_id)
   end
 
-  @doc "Muda o estado do pagamento do pacote."
+  @doc "Changes the payment state of the package."
   def payment_changeset(enrollment, status) when status in [:pending, :paid, :waived] do
     change(enrollment, payment_status: status, paid_at: paid_at_for(status))
   end

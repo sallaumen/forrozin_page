@@ -4,8 +4,8 @@ defmodule OGrupoDeEstudosWeb.HealthController do
   alias OGrupoDeEstudos.Repo
 
   @doc """
-  Health check do Fly: 200 só com o banco respondendo, senão 503 —
-  máquina presa com pool morto deve falhar o check e ser reciclada.
+  Fly health check: 200 only with the database answering, otherwise 503. A
+  machine stuck with a dead pool must fail the check and be recycled.
   """
   def check(conn, _params) do
     case database_status() do

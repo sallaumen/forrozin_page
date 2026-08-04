@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Workshops.WaitlistEntry do
   @moduledoc """
-  Lugar na fila de espera de um workshop lotado.
+  A place in the waitlist of a full workshop.
 
-  A posição não é guardada: é a ordem de chegada (`inserted_at`). Guardar
-  número exigiria renumerar a fila inteira a cada saída, e a fila muda mais do
-  que é lida.
+  The position is not stored: it is the arrival order (`inserted_at`). Storing a
+  number would require renumbering the whole queue on every exit, and the queue
+  changes more than it is read.
   """
 
   use Ecto.Schema

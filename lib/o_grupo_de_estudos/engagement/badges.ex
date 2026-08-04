@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudos.Engagement.Badges do
   @moduledoc """
   Computes gamification badges from engagement metrics.
-  No persistence — calculated on-demand from COUNT queries.
+  No persistence: calculated on-demand from COUNT queries.
   Ordered by rank (highest first).
   """
 

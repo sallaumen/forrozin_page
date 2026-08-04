@@ -40,7 +40,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
     |> Repo.insert()
   end
 
-  @doc "Soft-deletes a profile comment (legacy signature — no authorization check)."
+  @doc "Soft-deletes a profile comment (legacy signature: no authorization check)."
   def delete_profile_comment(%ProfileComment{} = comment) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 

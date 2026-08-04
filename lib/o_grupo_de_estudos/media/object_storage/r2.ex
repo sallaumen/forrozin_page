@@ -1,21 +1,21 @@
 defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
   @moduledoc """
-  Adapter de `ObjectStorage.Behaviour` no Cloudflare R2 (API S3).
+  `ObjectStorage.Behaviour` adapter on Cloudflare R2 (S3 API).
 
-  Dois buckets, roteados pelo prefixo da chave:
+  Two buckets, routed by the key prefix:
 
-  - **público** (`avatars/`, `flyers/`): objetos com URL estável no domínio
-    público, que é o que fica gravado no banco;
-  - **privado** (todo o resto, hoje `workshop_media/`): servido por URL
-    assinada de vida curta, via `serve/1`.
+  - **public** (`avatars/`, `flyers/`): objects with a stable URL on the public
+    domain, which is what gets stored in the database;
+  - **private** (everything else, today `workshop_media/`): served through a
+    short-lived signed URL, via `serve/1`.
 
-  Upload e download são streaming por URL pré-assinada: vídeo de 200 MB não
-  passa pela RAM da VM. `free_bytes/0` é `:unknown` de propósito: R2 não tem
-  volume para encher, quem limita custo é a cota por workshop no contexto.
+  Upload and download stream through a presigned URL: a 200 MB video does not go
+  through the VM memory. `free_bytes/0` is `:unknown` on purpose: R2 has no volume
+  to fill, and what limits cost is the per-workshop quota in the context.
 
-  Config (runtime): `account_id`, `access_key_id`, `secret_access_key`,
-  `private_bucket`, `public_bucket`, `public_base_url` e, em teste,
-  `req_options` para injetar o plug do Req.Test.
+  Runtime config: `account_id`, `access_key_id`, `secret_access_key`,
+  `private_bucket`, `public_bucket`, `public_base_url` and, in test,
+  `req_options` to inject the Req.Test plug.
   """
 
   @behaviour OGrupoDeEstudos.Media.ObjectStorage.Behaviour
@@ -88,8 +88,8 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
   def public_url(key), do: "#{config!(:public_base_url)}/#{key}"
 
   @doc """
-  Redirect para URL assinada, sempre: conferir existência custaria um HEAD a
-  cada visualização, e quem chama já achou a linha no banco.
+  Redirect to a signed URL, always: checking existence would cost a HEAD on every
+  view, and the caller already found the row in the database.
   """
   @impl true
   def serve(key), do: {:redirect, presign(key, :get)}

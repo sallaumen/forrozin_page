@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudosWeb.UI.BackButton do
   @moduledoc """
-  Botão voltar para contexto de navegação detalhe no mobile.
+  Back button for the detail navigation context on mobile.
 
-  Comportamento via JS hook `BackButton`:
-  - Se `window.history.length > 1`, chama `history.back()` (volta pra
-    página de onde veio)
-  - Senão, navega para `:fallback` (default `/collection`)
+  Behavior through the `BackButton` JS hook:
+  - when `window.history.length > 1`, calls `history.back()` (back to the page it
+    came from)
+  - otherwise navigates to `:fallback` (default `/collection`)
 
-  Aceita múltiplas instâncias na mesma página via `:id`.
+  It accepts several instances on the same page through `:id`.
   """
 
   use Phoenix.Component

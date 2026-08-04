@@ -1,12 +1,12 @@
 defmodule OGrupoDeEstudos.Accounts.User do
   @moduledoc """
-  Schema de usuário da plataforma.
+  Platform user schema.
 
-  The role (`role`) defines the access level:
-  - `"user"` — access to the encyclopedia (default)
-  - `"admin"` — access to the encyclopedia + wip content + admin panel
+  The role defines the access level:
+  - `"user"` gets the encyclopedia (default)
+  - `"admin"` gets the encyclopedia plus wip content and the admin panel
 
-  Promotion to admin is done directly in the database — no interface.
+  Promotion to admin happens directly in the database, with no interface.
   """
 
   use Ecto.Schema

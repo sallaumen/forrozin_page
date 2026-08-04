@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Workshops.Access do
   @moduledoc """
-  O que uma pessoa pode fazer num workshop, resolvido de uma vez.
+  What a person can do in a workshop, resolved in one pass.
 
-  Existe porque `Authorization.Policy` é pura e não consulta o banco, mas
-  "é co-organizador?" e "está inscrito?" são fatos do banco. A borda monta
-  este struct uma vez no mount e a Policy decide em cima dele.
+  It exists because `Authorization.Policy` is pure and does not query the
+  database, but "is a co-organizer?" and "is enrolled?" are database facts. The
+  boundary builds this struct once at mount and the Policy decides over it.
   """
 
   alias OGrupoDeEstudos.Workshops.Workshop

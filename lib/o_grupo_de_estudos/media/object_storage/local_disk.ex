@@ -1,15 +1,15 @@
 defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
   @moduledoc """
-  Adapter de `ObjectStorage.Behaviour` no disco local.
+  `ObjectStorage.Behaviour` adapter on the local disk.
 
-  Em produção os bytes moram no volume do Fly (`/app/uploads`); em dev, em
-  `priv/uploads`. Só mecânica de arquivo: quem decide nome, tamanho e
-  permissão está uma camada acima.
+  In production the bytes live on the Fly volume (`/app/uploads`); in dev, in
+  `priv/uploads`. File mechanics only: naming, sizing and permission are decided
+  one layer above.
   """
 
   @behaviour OGrupoDeEstudos.Media.ObjectStorage.Behaviour
 
-  @doc "Grava o arquivo de origem na chave, criando as pastas do caminho."
+  @doc "Writes the source file at the key, creating the folders of the path."
   @impl true
   def put(key, source_path) do
     destino = path(key)
@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
     end
   end
 
-  @doc "Apaga o objeto. Silencioso quando já não existe."
+  @doc "Deletes the object. Silent when it is already gone."
   @impl true
   def delete(key) do
     case File.rm(path(key)) do
@@ -35,10 +35,10 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
   def exists?(key), do: File.exists?(path(key))
 
   @doc """
-  Chaves que começam com o prefixo, descendo em subpastas.
+  Keys starting with the prefix, walking into subfolders.
 
-  Chave é caminho plano no contrato (como num bucket): pasta não é objeto e
-  não aparece na lista.
+  A key is a flat path in the contract (as in a bucket): a folder is not an object
+  and does not show up in the list.
   """
   @impl true
   def list(prefix) do
@@ -53,11 +53,11 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
     |> Enum.filter(&String.starts_with?(&1, prefix))
   end
 
-  @doc "No disco, a URL pública é o caminho servido pelo UploadsStatic."
+  @doc "On disk, the public URL is the path served by UploadsStatic."
   @impl true
   def public_url(key), do: "/uploads/" <> key
 
-  @doc "Objeto local se serve por arquivo, direto no send_file."
+  @doc "A local object is served as a file, straight into send_file."
   @impl true
   def serve(key) do
     caminho = path(key)
@@ -65,7 +65,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
     if File.exists?(caminho), do: {:file, caminho}, else: {:error, :not_found}
   end
 
-  @doc "No disco o arquivo já é local: entrega o caminho, sem cópia nenhuma."
+  @doc "On disk the file is already local: hands over the path, with no copy."
   @impl true
   def with_local_file(key, fun) do
     case serve(key) do
@@ -75,10 +75,10 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
   end
 
   @doc """
-  Bytes livres no volume dos uploads.
+  Free bytes on the uploads volume.
 
-  Existe para a galeria recusar arquivo novo antes de o disco encher: falhar
-  com mensagem clara é melhor do que estourar ENOSPC no meio de um upload.
+  It exists so the gallery can refuse a new file before the disk fills up:
+  failing with a clear message beats blowing up with ENOSPC mid-upload.
   """
   @impl true
   def free_bytes do
@@ -113,10 +113,10 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.LocalDisk do
   defp bytes_livres(_colunas), do: :unknown
 
   @doc """
-  Caminho absoluto de uma chave NESTE adapter.
+  Absolute path of a key in THIS adapter.
 
-  Fora do behaviour de propósito: só faz sentido no disco. Testes usam para
-  afirmar presença física; código de domínio deve passar por `serve/1` ou
+  Outside the behaviour on purpose: it only makes sense on disk. Tests use it to
+  assert physical presence; domain code should go through `serve/1` or
   `with_local_file/2`.
   """
   @spec path(String.t()) :: String.t()

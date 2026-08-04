@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.UI.Textarea do
   @moduledoc """
-  Campo de texto multi-linha com label, hint, error. Mesma semântica de
-  acessibilidade do `UI.Input`.
+  Multi-line text field with a label, a hint and an error. Same accessibility
+  semantics as `UI.Input`.
   """
 
   use Phoenix.Component

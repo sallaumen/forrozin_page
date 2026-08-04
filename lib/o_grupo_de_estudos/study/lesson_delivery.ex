@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Study.LessonDelivery do
   @moduledoc """
-  Entrega de uma lição a um vínculo professor-aluno.
+  Delivery of a lesson to a teacher-student link.
 
-  `read_at` marca quando o aluno abriu a lição — alimenta o
-  "quem já leu" do professor e o badge "Nova" do aluno.
+  `read_at` marks when the student opened the lesson: it feeds the teacher's
+  "who read it" and the student's "Nova" badge.
   """
 
   use Ecto.Schema

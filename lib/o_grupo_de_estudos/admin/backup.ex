@@ -80,7 +80,7 @@ defmodule OGrupoDeEstudos.Admin.Backup do
   @doc """
   Restores data from a backup file.
 
-  Uses `on_conflict: :nothing` — idempotent, does not overwrite existing data.
+  Uses `on_conflict: :nothing`, so it is idempotent and does not overwrite data.
   Returns `:ok`.
   """
   def restore_backup!(path) do

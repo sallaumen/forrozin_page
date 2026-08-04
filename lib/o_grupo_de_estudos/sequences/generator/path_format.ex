@@ -1,19 +1,19 @@
 defmodule OGrupoDeEstudos.Sequences.Generator.PathFormat do
-  @moduledoc "Formatação pura de caminhos (ids) em step_infos para o Generator."
+  @moduledoc "Pure formatting of paths (ids) into step_infos for the Generator."
 
-  @doc "DFS constrói o caminho invertido ([último | ... | primeiro]); reverte e formata."
+  @doc "DFS builds the path reversed ([last | ... | first]); this reverses and formats it."
   def format_path(path, step_map) do
     path
     |> Enum.reverse()
     |> format_ids(step_map)
   end
 
-  @doc "Caminhos de waypoint já vêm na ordem correta."
+  @doc "Waypoint paths already come in the right order."
   def format_path_forward(path, step_map) do
     format_ids(path, step_map)
   end
 
-  @doc "Código de um passo pelo id, ou \"?\" se desconhecido."
+  @doc "Code of a step by id, or a question mark when unknown."
   def code_for(step_map, id) do
     case Map.get(step_map, id) do
       nil -> "?"

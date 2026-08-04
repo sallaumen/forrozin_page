@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudosWeb.UI.Skeleton do
   @moduledoc """
-  Placeholder animado de loading — retângulo pulsando.
+  Animated loading placeholder: a pulsing rectangle.
 
-  Decorativo: `aria-hidden=true` pra não ser lido por screen readers.
-  Use :class pra definir altura/largura.
+  Decorative: `aria-hidden=true` so screen readers skip it. Use :class to set
+  height and width.
   """
 
   use Phoenix.Component

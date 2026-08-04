@@ -5,9 +5,9 @@ defmodule OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers do
   Usage: `use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers`
 
   Provides:
-  - `toggle_bubble` — opens/closes the panel, lazy-loads data
-  - `close_bubble` — closes the panel (used by phx-click-away)
-  - `bubble_search` — searches users within the panel
+  - `toggle_bubble`: opens/closes the panel, lazy-loads data
+  - `close_bubble`: closes the panel (used by phx-click-away)
+  - `bubble_search`: searches users within the panel
 
   Requires `bubble_open`, `suggested_users`, `bubble_following_list`,
   `bubble_search`, `bubble_search_results`, `following_count`,

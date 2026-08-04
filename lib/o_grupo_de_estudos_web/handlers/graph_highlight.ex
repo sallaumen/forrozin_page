@@ -1,13 +1,8 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphHighlight do
   @moduledoc """
-  Macro com os handlers de destaque de sequência sobre o grafo da GraphVisualLive.
+  Macro with the sequence highlight handlers over the GraphVisualLive graph.
 
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphHighlight`
-
-  Requer os assigns: `:seq_active`, `:seq_active_id`, `:seq_initial_steps_json`,
-  `:seq_missing_edges`, `:seq_mobile_visible`, `:seq_results` e o helper privado
-  do host `parse_int/2`. Empurra "highlight_sequence" / "clear_highlight" para o
-  hook Cytoscape.
+  Usage: `use OGrupoDeEstudosWeb.Handlers.GraphHighlight`
   """
 
   defmacro __using__(_opts) do

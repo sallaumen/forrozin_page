@@ -1,12 +1,8 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite do
   @moduledoc """
-  Macro com os handlers de curtir/favoritar um passo direto no grafo.
+  Macro with the handlers to like and favorite a step straight from the graph.
 
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite`
-
-  Requer o assign `:liked_step_codes` e os helpers privados do host:
-  `favorited_step_codes/1` e `assign_manual_favorite_steps/1`. Empurra
-  "set_liked_steps" / "set_favorited_steps" para o hook Cytoscape.
+  Usage: `use OGrupoDeEstudosWeb.Handlers.GraphLikeFavorite`
   """
 
   defmacro __using__(_opts) do

@@ -5,11 +5,11 @@ defmodule OGrupoDeEstudosWeb.UI.UserAvatar do
 
   ## Sizes
 
-  - `:xs` — 20x20 (inline with small text, e.g. sidebar items)
-  - `:sm` — 28x28 (comment replies, compact lists)
-  - `:md` — 36x36 (comment roots, cards, standard lists)
-  - `:lg` — 48x48 (profile headers in cards, shared diary counterpart)
-  - `:xl` — 72x72 (main profile page header)
+  - `:xs`: 20x20 (inline with small text, e.g. sidebar items)
+  - `:sm`: 28x28 (comment replies, compact lists)
+  - `:md`: 36x36 (comment roots, cards, standard lists)
+  - `:lg`: 48x48 (profile headers in cards, shared diary counterpart)
+  - `:xl`: 72x72 (main profile page header)
 
   ## Usage
 

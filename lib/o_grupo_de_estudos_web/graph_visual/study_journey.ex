@@ -1,18 +1,13 @@
 defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourney do
   @moduledoc """
-  Funções puras da jornada de estudos progressiva sobre o grafo dirigido de
-  passos. Sem Repo/socket/IO: só matemática de conjuntos sobre códigos.
-
-  Direção das arestas: `{origem, destino}` significa "sabendo `origem`,
-  `destino` fica acessível" (mesma semântica do Validator/Generator). Logo a
-  fronteira ("pode aprender agora") são os destinos não-aprendidos de arestas
-  que saem de passos já aprendidos.
+  Pure functions of the progressive study journey over the directed step graph.
+  No Repo, socket or IO: only set math over codes.
   """
 
   @type code :: String.t()
   @type edge :: {code, code}
 
-  @doc "Fronteira: destinos não-aprendidos de arestas que saem de passos aprendidos."
+  @doc "Frontier: unlearned targets of edges leaving learned steps."
   @spec frontier(MapSet.t(code), [edge]) :: MapSet.t(code)
   def frontier(learned, edges) do
     for {from, to} <- edges,
@@ -23,9 +18,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourney do
   end
 
   @doc """
-  Classifica uma aresta para o disclosure progressivo: `:learned`
-  (aprendido→aprendido), `:frontier` (aprendido→não-aprendido) ou `:hidden`
-  (origem ainda não aprendida).
+  Classifies an edge for the progressive disclosure: `:learned`
+  (learned to learned), `:frontier` (learned to unlearned) or `:hidden`
+  (everything else).
   """
   @spec edge_state(MapSet.t(code), edge) :: :learned | :frontier | :hidden
   def edge_state(learned, {from, to}) do
@@ -36,21 +31,20 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourney do
     end
   end
 
-  @doc "Códigos visíveis no modo progresso: união de aprendidos e fronteira."
+  @doc "Codes visible in progress mode: the union of learned and frontier."
   @spec visible_codes(MapSet.t(code), MapSet.t(code)) :: MapSet.t(code)
   def visible_codes(learned, frontier), do: MapSet.union(learned, frontier)
 
-  @doc "Próxima meta: primeiro passo do plano-base ainda não aprendido (ou nil)."
+  @doc "Next goal: first step of the base plan not learned yet (or nil)."
   @spec next_goal([code], MapSet.t(code)) :: code | nil
   def next_goal(base_plan, learned) do
     Enum.find(base_plan, fn code -> not MapSet.member?(learned, code) end)
   end
 
   @doc """
-  Ordena as sugestões de "pode aprender agora" priorizando os passos do
-  plano-base (na ordem pedagógica) e limita a lista. Recebe os nós (mapas com
-  `:code`), o plano-base ordenado e o limite. Passos do plano-base vêm primeiro,
-  na ordem do plano; os demais mantêm a ordem recebida (sort estável).
+  Orders the "can learn now" suggestions putting the base plan steps first (in
+  pedagogical order) and caps the list. Takes the nodes (maps with code and name)
+  and returns the same shape.
   """
   @spec rank_suggestions([%{code: code}], [code], pos_integer) :: [%{code: code}]
   def rank_suggestions(nodes, base_plan, limit) do
@@ -62,10 +56,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.StudyJourney do
   end
 
   @doc """
-  Meta primária da lista exibida: o primeiro código (na ordem da lista, já
-  rankeada) que pertence ao plano-base. Derivado da própria lista visível, é
-  robusto a passos do plano-base que estejam órfãos (sem conexões) e por isso
-  ausentes da lista. Retorna `nil` se nenhum passo da lista é do plano-base.
+  Primary goal of the displayed list: the first code (in list order, already
+  ranked) that belongs to the base plan. Derived from the visible list itself.
   """
   @spec primary_goal([code], [code]) :: code | nil
   def primary_goal(codes, base_plan) do

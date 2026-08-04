@@ -48,7 +48,7 @@ defmodule OGrupoDeEstudos.Sequences do
   - `:name` (required)
   - `:description` (optional)
   - `:video_url` (optional)
-  - `:step_codes` — list of step codes in order
+  - `:step_codes`: list of step codes in order
 
   Resolves codes to step IDs, then creates the sequence in a transaction.
   Returns `{:ok, sequence}` or `{:error, changeset | :invalid_codes}`.

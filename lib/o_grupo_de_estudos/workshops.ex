@@ -1,14 +1,14 @@
 defmodule OGrupoDeEstudos.Workshops do
   @moduledoc """
-  Workshops: eventos pontuais com inscrição por link.
+  Workshops: one-off events with enrollment by link.
 
-  Deliberadamente separado de `Study`: inscrito em workshop NÃO é aluno.
-  Um professor pode ter 100 inscritos num sábado sem que isso vire vínculo
-  de estudo, que é uma relação contínua e de outra natureza.
+  Deliberately separate from `Study`: being enrolled in a workshop does NOT make
+  someone a student. A teacher can have 100 enrollments on a Saturday without any
+  of it becoming a study link, which is a continuous relationship of another kind.
 
-  Privacidade do pagamento é regra de contexto, não de template: as leituras
-  públicas passam por `EnrollmentQuery.list_participants/1`, que nem projeta
-  os campos de pagamento.
+  Payment privacy is a context rule, not a template one: public reads go through
+  `EnrollmentQuery.list_participants/1`, which does not even project the payment
+  fields.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -74,7 +74,7 @@ defmodule OGrupoDeEstudos.Workshops do
 
   defdelegate get_enrollment(workshop_id, user_id), to: EnrollmentQuery, as: :get_for_user
 
-  @doc "Cria um workshop como rascunho. Qualquer usuário pode."
+  @doc "Creates a workshop as a draft. Any user can."
   @spec create_workshop(User.t(), map()) :: {:ok, Workshop.t()} | {:error, Ecto.Changeset.t()}
   def create_workshop(%User{id: organizer_id}, attrs) do
     %Workshop{}
@@ -82,7 +82,7 @@ defmodule OGrupoDeEstudos.Workshops do
     |> Repo.insert()
   end
 
-  @doc "Edita um workshop do próprio organizador."
+  @doc "Edits a workshop of the organizer themselves."
   @spec update_workshop(User.t(), Workshop.t(), map()) ::
           {:ok, Workshop.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
   def update_workshop(%User{} = user, %Workshop{} = workshop, attrs) do
@@ -93,7 +93,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Publica: a partir daqui aparece na agenda e aceita inscrição."
+  @doc "Publishes: from here on it shows on the agenda and accepts enrollment."
   @spec publish_workshop(User.t(), Workshop.t()) ::
           {:ok, Workshop.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
   def publish_workshop(%User{} = user, %Workshop{} = workshop) do
@@ -103,8 +103,8 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Cancela preservando o registro: inscrições, quem pagou e a conversa
-  continuam existindo. Apagar de vez só faz sentido em rascunho vazio.
+  Cancels while preserving the record: enrollments, who paid and the conversation
+  keep existing. Deleting for good only makes sense for an empty draft.
   """
   @spec cancel_workshop(User.t(), Workshop.t()) ::
           {:ok, Workshop.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
@@ -115,10 +115,9 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Apaga de vez. Só rascunho, só sem ninguém inscrito, e só quem criou.
+  Deletes for good. Draft only, with nobody enrolled, and only the creator.
 
-  De propósito fora do conjunto de administradores: co-organizador administra,
-  não destrói.
+  Out of the admin set on purpose: a co-organizer administers, it does not destroy.
   """
   @spec delete_workshop(User.t(), Workshop.t()) ::
           {:ok, Workshop.t()} | {:error, :unauthorized | :not_deletable}
@@ -132,22 +131,22 @@ defmodule OGrupoDeEstudos.Workshops do
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
 
-  @doc "Fila de pedidos esperando resposta. Aceita o workshop ou só o id."
+  @doc "Queue of requests waiting for an answer. Takes the workshop or just the id."
   @spec list_pending_requests(Workshop.t() | Ecto.UUID.t()) :: [map()]
   def list_pending_requests(%Workshop{id: id}), do: JoinRequestQuery.list_pending(id)
   def list_pending_requests(workshop_id), do: JoinRequestQuery.list_pending(workshop_id)
 
-  @doc "Quantos pedidos esperando, para o contador do painel."
+  @doc "How many requests are waiting, for the panel counter."
   @spec count_pending_requests(Workshop.t() | Ecto.UUID.t()) :: non_neg_integer()
   def count_pending_requests(%Workshop{id: id}), do: JoinRequestQuery.count_pending(id)
   def count_pending_requests(workshop_id), do: JoinRequestQuery.count_pending(workshop_id)
 
   @doc """
-  Quem pode ABRIR a página do workshop.
+  Who can OPEN the workshop page.
 
-  Todo workshop publicado abre para qualquer um, inclusive o privado: esconder
-  faria a agenda parecer vazia justamente quando tem gente usando. O que se
-  protege é o interior, não a existência.
+  Every published workshop opens for anyone, private included: hiding it would
+  make the agenda look empty exactly when people are using it. What is protected
+  is the inside, not the existence.
   """
   @spec can_see_page?(Workshop.t(), User.t() | nil) :: boolean()
   def can_see_page?(%Workshop{status: status}, _user) when status in [:published, :cancelled],
@@ -157,11 +156,11 @@ defmodule OGrupoDeEstudos.Workshops do
   def can_see_page?(%Workshop{}, nil), do: false
 
   @doc """
-  Se a pessoa tem acesso ao INTERIOR: nomes de quem vai, galeria, conversa e
-  dados de pagamento.
+  Whether the person has access to the INSIDE: names of who is going, gallery,
+  conversation and payment data.
 
-  Público libera para quem tem conta. Privado exige aprovação, que vira
-  inscrição.
+  Public opens for anyone with an account. Private requires approval, which turns
+  into enrollment.
   """
   @spec liberado?(Workshop.t(), User.t() | nil) :: boolean()
   def liberado?(%Workshop{visibility: :public}, %User{}), do: true
@@ -172,7 +171,7 @@ defmodule OGrupoDeEstudos.Workshops do
     admin?(workshop, user) or not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
   end
 
-  @doc "Em que pé está o pedido desta pessoa: `:none`, `:pending`, `:approved` ou `:rejected`."
+  @doc "Where this person's request stands: `:none`, `:pending`, `:approved` or `:rejected`."
   @spec join_status(Workshop.t(), User.t() | nil) :: :none | :pending | :approved | :rejected
   def join_status(%Workshop{}, nil), do: :none
 
@@ -180,10 +179,10 @@ defmodule OGrupoDeEstudos.Workshops do
     do: JoinRequestQuery.status(workshop.id, user.id)
 
   @doc """
-  Pede para entrar num workshop privado.
+  Asks to join a private workshop.
 
-  Pedir não matricula: a vaga só existe depois do aceite. Uma recusa anterior
-  não fecha a porta, o mesmo pedido volta para a fila.
+  Asking does not enroll: the seat only exists after approval. An earlier
+  rejection does not close the door, the same request goes back to the queue.
   """
   @spec request_join(Workshop.t(), User.t() | nil) ::
           {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_private | :already_requested}
@@ -224,10 +223,10 @@ defmodule OGrupoDeEstudos.Workshops do
   defp avisar_do_pedido({:error, _changeset}, _workshop, _user), do: {:error, :already_requested}
 
   @doc """
-  Aceita o pedido e matricula de uma vez.
+  Approves the request and enrolls in one go.
 
-  Quem pediu para entrar já disse o que queria; um segundo clique para
-  confirmar seria burocracia para dizer a mesma coisa.
+  Whoever asked to join already said what they wanted; a second confirming click
+  would be bureaucracy for the same answer.
   """
   @spec approve_join(Workshop.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_found | :full | term()}
@@ -245,7 +244,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Recusa o pedido. Silencioso para a turma, e a pessoa pode pedir de novo."
+  @doc "Rejects the request. Silent for the class, and the person can ask again."
   @spec reject_join(Workshop.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_found}
   def reject_join(%Workshop{} = workshop, %User{} = actor, request_id) do
@@ -292,14 +291,13 @@ defmodule OGrupoDeEstudos.Workshops do
   @max_teachers 2
 
   @doc """
-  Define quem dá a aula, substituindo a lista inteira.
+  Sets who teaches, replacing the whole list.
 
-  Substituir em vez de acrescentar porque é assim que o formulário funciona:
-  dois lugares, preenchidos ou não. Cada entrada é `%{user_id: id}` ou
-  `%{display_name: nome}`.
+  Replacing instead of appending because that is how the form works: two slots,
+  filled or not. Each entry is `%{user_id: id}` or `%{display_name: name}`.
 
-  Quem organiza não entra automaticamente: produzir a aula de outra pessoa é o
-  caso comum, e assumir que quem criou dá a aula era o bug.
+  The organizer does not enter automatically: producing someone else's class is
+  the common case, and assuming the creator teaches was the bug.
   """
   @spec set_teachers(Workshop.t(), User.t(), [map()]) ::
           {:ok, [map()]}
@@ -368,10 +366,10 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate list_steps(workshop_id), to: WorkshopStepQuery, as: :list_for_workshop
 
   @doc """
-  Diz em que workshops ESTA pessoa viu este passo.
+  Tells in which workshops THIS person saw this step.
 
-  É o caminho de volta que faltava: o acervo era uma ilha, e nada na página do
-  passo lembrava que ele tinha sido dado numa aula que a pessoa fez.
+  It is the way back that was missing: the collection was an island, and nothing
+  on the step page recalled that it had been taught in a class the person took.
   """
   @spec workshops_where_seen(Ecto.UUID.t() | nil, Ecto.UUID.t()) :: [map()]
   defdelegate workshops_where_seen(user_id, step_id), to: WorkshopStepQuery, as: :where_user_saw
@@ -381,12 +379,12 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate step_ids_seen_by(user_id), to: WorkshopStepQuery
 
   @doc """
-  Põe um passo do acervo na lista do workshop.
+  Puts a collection step into the workshop list.
 
-  Só quem administra: a lista é o que a aula ofereceu, e quem deu a aula sabe
-  o que ofereceu. Curadoria por like foi considerada e descartada, porque
-  ordenar por voto resolve com muito mais peça um problema que a permissão já
-  resolve.
+  Admins only: the list is what the class offered, and whoever taught it knows
+  what they offered. Like-based curation was considered and dropped, because
+  ordering by vote solves, with much more machinery, a problem the permission
+  already solves.
   """
   @spec add_step(Workshop.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, WorkshopStep.t()} | {:error, :unauthorized | :not_found | :already_added}
@@ -420,7 +418,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Tira um passo da lista do workshop."
+  @doc "Removes a step from the workshop list."
   @spec remove_step(Workshop.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, WorkshopStep.t()} | {:error, :unauthorized | :not_found}
   def remove_step(%Workshop{} = workshop, %User{} = actor, step_id) do
@@ -445,10 +443,10 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate media_usage(workshop_id), to: MediaQuery, as: :usage
 
   @doc """
-  Quem pode ver a galeria: quem administra o workshop ou quem se inscreveu.
+  Who can see the gallery: whoever administers the workshop or is enrolled.
 
-  A galeria é o conteúdo pelo qual se paga, então não segue a visibilidade da
-  página: workshop público continua com a galeria fechada.
+  The gallery is the content people pay for, so it does not follow the page
+  visibility: a public workshop still keeps the gallery closed.
   """
   @spec can_see_media?(Workshop.t(), User.t() | nil) :: boolean()
   def can_see_media?(%Workshop{}, nil), do: false
@@ -458,10 +456,10 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Guarda uma foto ou vídeo na galeria.
+  Stores a photo or video in the gallery.
 
-  Só quem está no workshop manda mídia. Marca como oficial o que veio de quem
-  administra, para aparecer primeiro e com selo.
+  Only who is in the workshop uploads media. Media from an admin is marked as
+  official, so it comes first and with a badge.
   """
   @spec add_media(Workshop.t(), User.t(), map()) ::
           {:ok, WorkshopMedia.t()}
@@ -558,22 +556,22 @@ defmodule OGrupoDeEstudos.Workshops do
     {:error, erro}
   end
 
-  @doc "Como servir uma mídia: `{:file, caminho}` ou `{:redirect, url}`."
+  @doc "How to serve a media file: `{:file, path}` or `{:redirect, url}`."
   @spec serve_media(WorkshopMedia.t()) ::
           {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
   def serve_media(%WorkshopMedia{storage_key: key}), do: Storage.serve_private(key)
 
-  @doc "Como servir o poster do vídeo. Sem poster é not_found, não erro."
+  @doc "How to serve the video poster. No poster is not_found, not an error."
   @spec serve_poster(WorkshopMedia.t()) ::
           {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
   def serve_poster(%WorkshopMedia{poster_key: nil}), do: {:error, :not_found}
   def serve_poster(%WorkshopMedia{poster_key: key}), do: Storage.serve_private(key)
 
   @doc """
-  Tira uma mídia da galeria.
+  Removes a media file from the gallery.
 
-  Quem enviou tira a sua; quem administra tira qualquer uma. Some da tela na
-  hora e o arquivo vai embora junto.
+  The uploader removes their own; an admin removes any. It leaves the screen
+  right away and the file goes with it.
   """
   @spec remove_media(Workshop.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, WorkshopMedia.t()} | {:error, :unauthorized | :not_found}
@@ -611,16 +609,15 @@ defmodule OGrupoDeEstudos.Workshops do
   defp apagar_poster(key), do: Storage.delete_private(key)
 
   @doc """
-  Converte o vídeo de uma mídia para 720p H.264 e marca como pronta.
+  Converts the video of a media row to 720p H.264 and marks it as ready.
 
-  Chamada pelo `Workers.TranscodeWorkshopVideo`, nunca direto pela borda: o
-  ffmpeg leva dezenas de segundos e não cabe num `handle_event`.
+  Called by `Workers.TranscodeWorkshopVideo`, never straight from the boundary:
+  ffmpeg takes tens of seconds and does not fit in a `handle_event`.
 
-  Sempre termina em `:ready`, mesmo quando dá errado. Um vídeo preso em
-  "processando" para sempre é pior do que um vídeo grande: a aluna vê o dela
-  na galeria de qualquer jeito, e quem tem Android antigo é que talvez não
-  consiga abrir. Falhar o upload por causa disso seria trocar um problema
-  parcial por um total.
+  Always ends in `:ready`, even when it goes wrong. A video stuck in "processing"
+  forever is worse than a large video: the uploader sees theirs in the gallery
+  either way, and it is the person on an old Android who may not be able to open
+  it. Failing the upload over that would trade a partial problem for a total one.
   """
   @spec transcode_media(Ecto.UUID.t()) :: :ok | {:error, term()}
   def transcode_media(media_id) do
@@ -760,11 +757,11 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Compra o pacote: entra em TODOS os workshops publicados da programação.
+  Buys the package: joins ALL published workshops of the program.
 
-  Tudo ou nada, ao contrário da inscrição avulsa. Quem pagou pelos três dias
-  não pode acabar em dois: se uma turma lotar no meio, as inscrições já feitas
-  são desfeitas e ninguém fica meio dentro.
+  All or nothing, unlike single enrollment. Whoever paid for three days cannot
+  end up in two: if one class fills up midway, the enrollments already made are
+  undone and nobody stays halfway in.
   """
   @spec enroll_in_package(WorkshopProgram.t(), User.t()) ::
           {:ok, ProgramEnrollment.t()}
@@ -864,7 +861,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Quem comprou o pacote. Só quem criou a programação vê."
+  @doc "Who bought the package. Only the program creator sees it."
   @spec list_package_enrollments(WorkshopProgram.t(), User.t()) ::
           {:ok, [map()]} | {:error, :unauthorized}
   def list_package_enrollments(%WorkshopProgram{} = program, %User{} = user) do
@@ -881,7 +878,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Marca o pagamento do pacote."
+  @doc "Marks the package payment."
   @spec set_package_payment(WorkshopProgram.t(), User.t(), Ecto.UUID.t(), atom()) ::
           {:ok, ProgramEnrollment.t()} | {:error, :unauthorized | :not_found | term()}
   def set_package_payment(%WorkshopProgram{} = program, %User{} = user, enrollment_id, status)
@@ -896,7 +893,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Matrícula da pessoa no pacote desta programação, ou `nil`."
+  @doc "The person's membership in this program package, or `nil`."
   @spec package_enrollment(WorkshopProgram.t(), User.t() | nil) :: ProgramEnrollment.t() | nil
   def package_enrollment(%WorkshopProgram{}, nil), do: nil
 
@@ -904,15 +901,15 @@ defmodule OGrupoDeEstudos.Workshops do
     do: PackageQuery.get_for_user(program.id, user.id)
 
   @doc """
-  A agenda da comunidade, misturando workshops soltos e programações em ordem
-  de data.
+  The community agenda, mixing loose workshops and programs in date order.
 
-  Sem busca, workshop que está numa programação NÃO aparece solto: um festival
-  com quinze workshops viraria quinze linhas repetindo o mesmo nome. Com busca
-  a programação abre, senão o workshop lá dentro ficaria impossível de achar.
+  Without a search, a workshop inside a program does NOT show up loose: a festival
+  with fifteen workshops would become fifteen lines repeating the same name. With
+  a search the program opens, otherwise the workshop inside would be impossible to find.
 
-  Cada item é `%{kind: :workshop | :program, starts_at: ...}`, para a tela
-  renderizar sem precisar decidir nada.
+  Each item is `%{kind: :workshop
+   :program, starts_at: ...}`, so the screen
+  renders without having to decide anything.
   """
   @spec list_agenda(keyword()) :: [map()]
   def list_agenda(opts \\ []) do
@@ -972,10 +969,10 @@ defmodule OGrupoDeEstudos.Workshops do
   defp pasta_do_flyer(%WorkshopProgram{id: id}), do: "flyers/programas/#{id}"
 
   @doc """
-  Guarda o flyer de divulgação do workshop e apaga o anterior.
+  Stores the promotional flyer of the workshop and deletes the previous one.
 
-  Recebe o arquivo temporário do upload, não um caminho escolhido pelo
-  usuário: quem decide onde o arquivo mora é o storage.
+  Takes the temporary file from the upload, not a path chosen by the user: the
+  storage decides where the file lives.
   """
   @spec put_workshop_flyer(Workshop.t(), User.t(), String.t(), String.t()) ::
           {:ok, Workshop.t()} | {:error, :unauthorized | term()}
@@ -988,7 +985,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Tira o flyer do workshop e apaga o arquivo."
+  @doc "Removes the workshop flyer and deletes the file."
   @spec remove_workshop_flyer(Workshop.t(), User.t()) ::
           {:ok, Workshop.t()} | {:error, :unauthorized | term()}
   def remove_workshop_flyer(%Workshop{} = workshop, %User{} = user) do
@@ -999,7 +996,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Guarda o flyer da programação e apaga o anterior."
+  @doc "Stores the program flyer and deletes the previous one."
   @spec put_program_flyer(WorkshopProgram.t(), User.t(), String.t(), String.t()) ::
           {:ok, WorkshopProgram.t()} | {:error, :unauthorized | term()}
   def put_program_flyer(%WorkshopProgram{} = program, %User{} = user, tmp_path, ext) do
@@ -1011,7 +1008,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Tira o flyer da programação e apaga o arquivo."
+  @doc "Removes the program flyer and deletes the file."
   @spec remove_program_flyer(WorkshopProgram.t(), User.t()) ::
           {:ok, WorkshopProgram.t()} | {:error, :unauthorized | term()}
   def remove_program_flyer(%WorkshopProgram{} = program, %User{} = user) do
@@ -1038,12 +1035,12 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate list_programs_for_owner(owner_id), to: ProgramQuery, as: :list_for_owner
   defdelegate program_summaries(program_ids), to: ProgramQuery, as: :summaries_by_ids
 
-  @doc "Workshops da programação, do mais cedo ao mais tarde."
+  @doc "Workshops of the program, earliest to latest."
   @spec list_program_workshops(WorkshopProgram.t(), keyword()) :: [Workshop.t()]
   def list_program_workshops(%WorkshopProgram{} = program, opts \\ []),
     do: ProgramQuery.list_workshops(program.id, opts)
 
-  @doc "Cria uma programação. Qualquer pessoa com conta pode."
+  @doc "Creates a program. Anyone with an account can."
   @spec create_program(User.t(), map()) ::
           {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t()}
   def create_program(%User{id: owner_id}, attrs) do
@@ -1052,7 +1049,7 @@ defmodule OGrupoDeEstudos.Workshops do
     |> Repo.insert()
   end
 
-  @doc "Edita a programação. Só quem criou."
+  @doc "Edits the program. Creator only."
   @spec update_program(User.t(), WorkshopProgram.t(), map()) ::
           {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
   def update_program(%User{} = user, %WorkshopProgram{} = program, attrs) do
@@ -1061,7 +1058,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Publica: a partir daqui o link abre para quem não tem conta."
+  @doc "Publishes: from here on the link opens for whoever has no account."
   @spec publish_program(User.t(), WorkshopProgram.t()) ::
           {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
   def publish_program(%User{} = user, %WorkshopProgram{} = program) do
@@ -1070,7 +1067,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Cancela a programação. Os workshops dentro continuam existindo."
+  @doc "Cancels the program. The workshops inside keep existing."
   @spec cancel_program(User.t(), WorkshopProgram.t()) ::
           {:ok, WorkshopProgram.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
   def cancel_program(%User{} = user, %WorkshopProgram{} = program) do
@@ -1080,10 +1077,10 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Põe um workshop na programação.
+  Puts a workshop into the program.
 
-  Exige administrar os dois lados. É assim que um festival funciona: a equipe
-  vira co-organizadora do workshop de cada professor e monta a programação.
+  Requires administering both sides. That is how a festival works: the crew
+  becomes co-organizer of each teacher's workshop and assembles the program.
   """
   @spec attach_workshop(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, Workshop.t()} | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
@@ -1091,7 +1088,7 @@ defmodule OGrupoDeEstudos.Workshops do
     move_workshop(program, user, workshop_id, program.id)
   end
 
-  @doc "Tira o workshop da programação. Ele continua existindo, solto."
+  @doc "Removes the workshop from the program. It keeps existing, loose."
   @spec detach_workshop(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, Workshop.t()} | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
   def detach_workshop(%WorkshopProgram{} = program, %User{} = user, workshop_id) do
@@ -1112,13 +1109,13 @@ defmodule OGrupoDeEstudos.Workshops do
   defp ensure_program_owner(%WorkshopProgram{owner_id: id}, %User{id: id}), do: :ok
   defp ensure_program_owner(%WorkshopProgram{}, %User{}), do: {:error, :unauthorized}
 
-  @doc "Ids de quem administra: o criador mais os co-organizadores."
+  @doc "Ids of who administers: the creator plus the co-organizers."
   @spec admin_ids(Workshop.t()) :: [Ecto.UUID.t()]
   def admin_ids(%Workshop{} = workshop) do
     [workshop.organizer_id | AdminQuery.co_admin_ids(workshop.id)]
   end
 
-  @doc "true quando a pessoa administra o workshop (criador ou co-organizador)."
+  @doc "true when the person administers the workshop (creator or co-organizer)."
   @spec admin?(Workshop.t(), User.t() | nil) :: boolean()
   def admin?(%Workshop{}, nil), do: false
   def admin?(%Workshop{organizer_id: id}, %User{id: id}), do: true
@@ -1127,9 +1124,9 @@ defmodule OGrupoDeEstudos.Workshops do
     do: AdminQuery.co_admin?(workshop.id, user.id)
 
   @doc """
-  Resolve numa passada o que a pessoa pode fazer neste workshop.
+  Resolves in one pass what the person can do in this workshop.
 
-  A Policy é pura e não consulta o banco; este struct traz os fatos.
+  The Policy is pure and does not query the database; this struct carries the facts.
   """
   @spec access_for(Workshop.t(), User.t() | nil) :: Access.t()
   def access_for(%Workshop{} = workshop, user) do
@@ -1150,13 +1147,13 @@ defmodule OGrupoDeEstudos.Workshops do
   defp enrolled?(%Workshop{} = workshop, %User{} = user),
     do: not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
 
-  @doc "Co-organizadores com dados de exibição."
+  @doc "Co-organizers with display data."
   @spec list_co_admins(Workshop.t()) :: [map()]
   def list_co_admins(%Workshop{} = workshop), do: AdminQuery.list_co_admins(workshop.id)
 
   @doc """
-  Promove alguém a co-organizador. Só o criador promove: quem entra por
-  convite passa a ver o controle de pagamento, e essa porta é de quem criou.
+  Promotes someone to co-organizer. Only the creator promotes: whoever comes in
+  gets to see the payment control, and that door belongs to the creator.
   """
   @spec add_admin(Workshop.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, WorkshopAdmin.t()} | {:error, :unauthorized | :already_admin | :not_found}
@@ -1185,7 +1182,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Remove um co-organizador. O criador remove qualquer um; os outros só a si mesmos."
+  @doc "Removes a co-organizer. The creator removes anyone; the others only themselves."
   @spec remove_admin(Workshop.t(), User.t(), Ecto.UUID.t()) ::
           {:ok, WorkshopAdmin.t()} | {:error, :unauthorized | :cannot_remove_owner | :not_found}
   def remove_admin(%Workshop{organizer_id: id}, %User{}, id), do: {:error, :cannot_remove_owner}
@@ -1214,11 +1211,11 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Inscreve alguém num workshop publicado.
+  Enrolls someone in a published workshop.
 
-  A vaga é conferida dentro de uma transação com o workshop travado
-  (`FOR UPDATE`): o índice único impede a mesma pessoa duas vezes, mas não
-  impede duas pessoas diferentes pegarem a última vaga ao mesmo tempo.
+  The seat is checked inside a transaction with the workshop locked (`FOR UPDATE`):
+  the unique index prevents the same person twice, but not two different people
+  taking the last seat at the same time.
   """
   @spec enroll(Workshop.t(), User.t()) ::
           {:ok, WorkshopEnrollment.t()}
@@ -1231,14 +1228,14 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Inscreve numa lista de workshops da programação de uma vez.
+  Enrolls in a list of program workshops at once.
 
-  Cada workshop tem a sua transação, de propósito. Uma transação única
-  seguraria N locks e duas pessoas marcando {A,B} e {B,A} ao mesmo tempo
-  travariam uma na outra; e, pior, uma vaga que acabou faria as outras
-  inscrições sumirem junto. Quem marcou três e perdeu uma quer as outras duas.
+  Each workshop gets its own transaction, on purpose. A single transaction would
+  hold N locks, and two people picking {A,B} and {B,A} at the same time would
+  deadlock; worse, one seat running out would make the other enrollments vanish
+  too. Whoever picked three and lost one wants the other two.
 
-  Já estar inscrito conta como sucesso: a pessoa pediu para estar lá, e está.
+  Being already enrolled counts as success: the person asked to be there, and is.
   """
   @spec enroll_many(WorkshopProgram.t(), User.t(), [Ecto.UUID.t()]) ::
           {:ok, %{enrolled: [Workshop.t()], failed: [{Workshop.t(), atom()}]}}
@@ -1333,7 +1330,7 @@ defmodule OGrupoDeEstudos.Workshops do
 
   defp notify_organizers(error, _workshop, _user), do: error
 
-  @doc "Cancela a própria inscrição, liberando a vaga."
+  @doc "Cancels one's own enrollment, freeing the seat."
   @spec cancel_enrollment(Workshop.t(), User.t()) ::
           {:ok, WorkshopEnrollment.t()} | {:error, :not_found}
   def cancel_enrollment(%Workshop{} = workshop, %User{id: user_id}) do
@@ -1373,7 +1370,7 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate list_waitlist(workshop_id), to: WaitlistQuery, as: :list_for_workshop
   defdelegate waitlist_count(workshop_id), to: WaitlistQuery, as: :count
 
-  @doc "Em que lugar da fila a pessoa está, contando de 1. `nil` se não está."
+  @doc "Where in the waitlist the person is, counting from 1. `nil` when not in it."
   @spec waitlist_position(Workshop.t(), User.t() | nil) :: pos_integer() | nil
   def waitlist_position(%Workshop{}, nil), do: nil
 
@@ -1381,20 +1378,20 @@ defmodule OGrupoDeEstudos.Workshops do
     do: WaitlistQuery.position(workshop.id, user.id)
 
   @doc """
-  Se aceitar mais uma pessoa passaria do limite de vagas.
+  Whether accepting one more person would exceed the capacity.
 
-  Serve para avisar quem organiza antes de aceitar, não para barrar: em turma
-  com aceite, caber ou não caber é decisão de quem dá a aula.
+  It exists to warn the organizer before accepting, not to block: in a class with
+  approval, fitting one more is the teacher's call.
   """
   @spec passaria_do_limite?(Workshop.t()) :: boolean()
   def passaria_do_limite?(%Workshop{} = workshop),
     do: Workshop.full?(workshop, EnrollmentQuery.count(workshop.id))
 
   @doc """
-  Entra na fila de espera de uma turma lotada.
+  Joins the waitlist of a full class.
 
-  Só faz sentido com a turma cheia: com vaga sobrando a pessoa se inscreve, e
-  esperar seria pior para ela.
+  It only makes sense with the class full: with a seat left the person enrolls,
+  and waiting would be worse for them.
   """
   @spec join_waitlist(Workshop.t(), User.t() | nil) ::
           {:ok, WaitlistEntry.t()}
@@ -1429,7 +1426,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Sai da fila de espera."
+  @doc "Leaves the waitlist."
   @spec leave_waitlist(Workshop.t(), User.t() | nil) ::
           {:ok, WaitlistEntry.t()} | {:error, :not_found}
   def leave_waitlist(%Workshop{}, nil), do: {:error, :not_found}
@@ -1441,7 +1438,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Lista de inscritos COM pagamento. Só o organizador."
+  @doc "Enrollment list WITH payment. Organizer only."
   @spec list_enrollments_for_organizer(Workshop.t(), User.t()) ::
           {:ok, [WorkshopEnrollment.t()]} | {:error, :unauthorized}
   def list_enrollments_for_organizer(%Workshop{} = workshop, %User{} = user) do
@@ -1450,7 +1447,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Resumo de pagamento (inscritos, pagos, isentos). Quem administra vê."
+  @doc "Payment summary (enrolled, paid, waived). Admins see it."
   @spec payment_summary(Workshop.t(), User.t()) :: {:ok, map()} | {:error, :unauthorized}
   def payment_summary(%Workshop{} = workshop, %User{} = user) do
     with :ok <- ensure_admin(workshop, user) do
@@ -1459,10 +1456,10 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   @doc """
-  Marca o estado de pagamento de uma inscrição.
+  Marks the payment state of an enrollment.
 
-  A inscrição é buscada com escopo no workshop do organizador, então um id
-  forjado de outro evento não encontra nada.
+  The enrollment is fetched scoped to the organizer's workshop, so a forged id
+  from another event finds nothing.
   """
   @spec set_payment_status(Workshop.t(), User.t(), Ecto.UUID.t(), atom()) ::
           {:ok, WorkshopEnrollment.t()}

@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudos.Workshops.JoinRequest do
   @moduledoc """
-  Pedido para entrar num workshop privado.
+  Request to join a private workshop.
 
-  Workshop privado não é secreto: ele aparece na agenda como qualquer outro,
-  com título, data e preço à vista. O que muda é a porta. Quem quer entrar
-  pede, e quem organiza decide.
+  A private workshop is not secret: it shows on the agenda like any other, with
+  title, date and price in plain sight. What changes is the door. Whoever wants in
+  asks, and whoever organizes decides.
 
-  Aprovar já matricula: a pessoa que pediu já disse o que queria, e uma
-  segunda confirmação seria burocracia para dizer a mesma coisa.
+  Approving already enrolls: the person who asked already said what they wanted,
+  and a second confirmation would be bureaucracy for the same answer.
   """
 
   use Ecto.Schema
@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudos.Workshops.JoinRequest do
     |> foreign_key_constraint(:user_id)
   end
 
-  @doc "Resposta de quem organiza, com carimbo de quem decidiu e quando."
+  @doc "Answer from the organizer, stamped with who decided and when."
   def review_changeset(request, status, %User{id: reviewer_id}) do
     change(request, %{
       status: status,

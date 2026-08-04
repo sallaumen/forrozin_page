@@ -3,9 +3,9 @@ defmodule OGrupoDeEstudos.StartupScripts.Runner do
   Runs startup scripts on application startup.
 
   Each script module must implement the `ScriptBehaviour` behaviour:
-  - `name/0` — unique string identifier
-  - `run_once?/0` — if true, skips if already completed
-  - `run/0` — the actual script logic
+  - `name/0`: unique string identifier
+  - `run_once?/0`: if true, skips if already completed
+  - `run/0`: the actual script logic
 
   Scripts are registered in `@migrations` and run sequentially.
   Already-completed one-time scripts are skipped.

@@ -44,11 +44,12 @@ defmodule OGrupoDeEstudos.Engagement.Favorites do
   end
 
   @doc """
-  Garante (idempotente, sem rate limit) que um favorito e seu auto-like existam.
+  Ensures (idempotently, with no rate limit) that a favorite and its auto-like exist.
 
-  Usado por `Engagement.Learnings`: marcar um passo como aprendido também o
-  favorita, então a estrela aparece nas demais telas. Retorna
-  `{:ok, :favorited | :already_favorited}` ou `{:error, changeset}`.
+  Used by `Engagement.Learnings`: marking a step as learned also favorites it, so
+  the star shows up on the other screens. Returns
+  `{:ok, :favorited
+   :already_favorited}` or `{:error, changeset}`.
   """
   def ensure_favorited(user_id, favoritable_type, favoritable_id) do
     if favorited?(user_id, favoritable_type, favoritable_id) do
@@ -134,7 +135,7 @@ defmodule OGrupoDeEstudos.Engagement.Favorites do
   @doc """
   Returns the favorited entities for the given user and type.
 
-  Supports `"step"` and `"sequence"` — returns the full records.
+  Supports `"step"` and `"sequence"`: returns the full records.
   """
   def list_user_favorites(user_id, "step") do
     user_id

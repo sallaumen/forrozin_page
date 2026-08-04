@@ -1,10 +1,9 @@
 defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
   @moduledoc """
-  Painel do organizador: lista de inscritos e controle de pagamento.
+  Organizer panel: enrollment list and payment control.
 
-  Vive em rota própria de propósito. A privacidade do pagamento é garantida
-  pela topologia: este processo só existe para o organizador, e o dado nunca
-  entra no socket da página pública.
+  It lives on its own route on purpose. Payment privacy is guaranteed by the
+  context, which only projects those fields in the organizer read.
   """
 
   use OGrupoDeEstudosWeb, :live_view

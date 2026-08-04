@@ -5,7 +5,7 @@ defmodule OGrupoDeEstudosWeb.UserConfirmationController do
 
   alias OGrupoDeEstudos.Accounts
 
-  @doc "Processa o link de confirmação de email."
+  @doc "Handles the email confirmation link."
   def confirm(conn, %{"token" => token}) do
     ok =
       case Accounts.validate_confirmation_token(token) do

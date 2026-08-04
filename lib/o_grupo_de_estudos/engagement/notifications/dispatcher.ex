@@ -21,11 +21,11 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   @pubsub OGrupoDeEstudos.PubSub
 
   @doc """
-  Dispatches notification when a comment is created.
+  Dispatches a notification when a comment is created.
 
-  Resposta avisa o autor do comentario pai. Comentario raiz so avisa alguem em
-  workshop, onde existe um dono da pagina para avisar; passo, sequencia e
-  perfil seguem sem notificacao de raiz.
+  A reply notifies the author of the parent comment. A root comment only notifies
+  someone on a workshop, where there is a page owner to notify; step, sequence and
+  profile have no root notification.
   """
   def notify(:new_comment, comment, actor, query_mod) do
     {recipients, action, group_key} = comment_context(comment, actor, query_mod)
@@ -52,11 +52,11 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   end
 
   @doc """
-  Avisa o organizador de que alguem se inscreveu no workshop.
+  Notifies the organizer that someone enrolled in the workshop.
 
-  Sem copia para admin: um workshop de 100 pessoas geraria 100 x N_admins
-  linhas. O `group_key` por workshop faz o Grouper colapsar as inscricoes em
-  uma entrada so ("Fulano e mais 99 se inscreveram").
+  No copy for admins: a workshop of 100 people would generate 100 x N_admins
+  rows. The `group_key` per workshop makes the Grouper collapse the enrollments
+  into a single entry ("Fulano e mais 99 se inscreveram").
   """
   @spec notify_workshop_enrollment(Ecto.UUID.t(), [Ecto.UUID.t()], Ecto.UUID.t()) :: :ok
   def notify_workshop_enrollment(actor_id, organizer_ids, workshop_id)
@@ -82,11 +82,11 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   end
 
   @doc """
-  Avisa um organizador de que alguem se inscreveu em workshops de uma
-  programacao.
+  Notifies an organizer that someone enrolled in workshops of a program.
 
-  O `group_key` e da programacao, nao do workshop: inscrever em tres de uma vez
-  vira uma linha so na caixa de quem organiza, em vez de tres que nem colapsam.
+  The `group_key` belongs to the program, not to the workshop: enrolling in three
+  at once becomes a single line in the organizer inbox, instead of three that do
+  not even collapse.
   """
   @spec notify_program_enrollment(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) ::
           :ok
@@ -112,7 +112,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_program_enrollment(_actor_id, _organizer_id, _workshop_id, _program_id), do: :ok
 
-  @doc "Avisa quem organiza que alguem pediu para entrar no workshop privado."
+  @doc "Notifies the organizer that someone asked to join the private workshop."
   @spec notify_workshop_join_request(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
   def notify_workshop_join_request(actor_id, organizer_id, workshop_id)
       when actor_id != organizer_id do
@@ -121,7 +121,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_workshop_join_request(_actor_id, _organizer_id, _workshop_id), do: :ok
 
-  @doc "Avisa quem pediu que o pedido foi respondido."
+  @doc "Notifies the requester that the request was answered."
   @spec notify_workshop_join_review(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t(), atom()) :: :ok
   def notify_workshop_join_review(actor_id, user_id, workshop_id, acao)
       when actor_id != user_id do
@@ -130,7 +130,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
   def notify_workshop_join_review(_actor_id, _user_id, _workshop_id, _acao), do: :ok
 
-  @doc "Avisa que abriu vaga e a pessoa saiu da fila direto para a turma."
+  @doc "Notifies that a seat opened and the person went from the waitlist into the class."
   @spec notify_waitlist_promoted(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
   def notify_waitlist_promoted(actor_id, user_id, workshop_id) when actor_id != user_id do
     avisar_sobre_pedido(actor_id, user_id, workshop_id, :workshop_waitlist_promoted)
@@ -158,10 +158,10 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   end
 
   @doc """
-  Avisa alguem de que tem workshop amanha.
+  Notifies someone that there is a workshop tomorrow.
 
-  O ator e o organizador: a notificacao exige actor_id, e "Tavano: amanha tem
-  workshop com voce" le natural.
+  The actor is the organizer: the notification requires actor_id, and
+  "Tavano: amanhã tem workshop com você" reads naturally.
   """
   @spec notify_workshop_reminder(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
   def notify_workshop_reminder(organizer_id, user_id, workshop_id) do
@@ -289,7 +289,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
     end)
   end
 
-  @doc "Notifica o aluno quando o professor compartilha uma lição no vínculo."
+  @doc "Notifies the student when the teacher shares a lesson on the link."
   def notify_lesson(teacher_id, student_id, link_id, lesson_id) do
     insert_and_broadcast([student_id], fn user_id ->
       %{

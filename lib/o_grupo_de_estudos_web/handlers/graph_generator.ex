@@ -1,17 +1,8 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphGenerator do
   @moduledoc """
-  Macro com os handlers do gerador automático de sequências da GraphVisualLive.
+  Macro with the automatic sequence generator handlers of GraphVisualLive.
 
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphGenerator`
-
-  Cobre a geração (generate_sequences), o overlay de salvar resultado
-  (start/cancel_save_sequence) e os autocompletes de passo inicial / passos
-  obrigatórios. Requer os assigns `:seq_results`, `:seq_warnings`, `:seq_view`,
-  `:seq_saving`, `:seq_missing_edges`, `:seq_start_code`, `:seq_start_query`,
-  `:seq_start_suggestions`, `:seq_required_codes`, `:seq_required_search`,
-  `:seq_required_suggestions` e `:graph_search_nodes`, e os helpers privados do
-  host `parse_int/2` e `step_display_label/1`. Empurra
-  "set_start_step_input" / "clear_required_input".
+  Usage: `use OGrupoDeEstudosWeb.Handlers.GraphGenerator`
   """
 
   defmacro __using__(_opts) do

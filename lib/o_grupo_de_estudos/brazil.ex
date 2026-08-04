@@ -30,14 +30,14 @@ defmodule OGrupoDeEstudos.Brazil do
   @doc """
   Converts a Brazilian-time datetime back to UTC (the inverse of `to_local/1`).
 
-  Necessário para consultar o banco por intervalos de data: o que o usuário
-  chama de "esta semana" é um intervalo no fuso dele, e as colunas são UTC.
+  Needed to query the database by date ranges: what the user calls "this week"
+  is a range in their timezone, and the columns are UTC.
   """
   @spec to_utc(DateTime.t() | nil) :: DateTime.t() | nil
   def to_utc(nil), do: nil
   def to_utc(%DateTime{} = dt), do: DateTime.add(dt, -@offset_seconds)
 
-  @doc "Início do dia (00:00 em Brasília) da data dada, em UTC."
+  @doc "Start of the given local day (00:00 in Brazil), in UTC."
   @spec day_start_utc(Date.t()) :: DateTime.t()
   def day_start_utc(%Date{} = date) do
     date
@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudos.Brazil do
     |> to_utc()
   end
 
-  @doc "Fim do dia (23:59:59.999999 em Brasília) da data dada, em UTC."
+  @doc "End of the given local day (23:59:59.999999 in Brazil), in UTC."
   @spec day_end_utc(Date.t()) :: DateTime.t()
   def day_end_utc(%Date{} = date) do
     date
@@ -54,9 +54,9 @@ defmodule OGrupoDeEstudos.Brazil do
   end
 
   @doc """
-  Intervalo UTC `{from, to}` do período que contém `date`, no fuso de Brasília.
+  UTC range `{from, to}` of the period containing `date`, in Brazilian time.
 
-  A semana segue a convenção do app: segunda a domingo.
+  The week follows the app convention: Monday to Sunday.
   """
   @spec range_utc(:week | :month | :year, Date.t()) :: {DateTime.t(), DateTime.t()}
   def range_utc(:week, %Date{} = date) do

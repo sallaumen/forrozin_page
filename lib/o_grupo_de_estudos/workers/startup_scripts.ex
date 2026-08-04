@@ -2,11 +2,10 @@ defmodule OGrupoDeEstudos.Workers.StartupScripts do
   @moduledoc """
   Runs the startup scripts (`StartupScripts.Runner`) as an Oban job.
 
-  Substitui a Task solta com `Process.sleep/1` no boot: o job só executa
-  com Repo e Oban prontos, fica observável na tabela de jobs e tem retry.
-  A idempotência de cada script continua no ledger do Runner
-  (`data_migrations`); a unicidade curta só debounce boots simultâneos
-  de múltiplos nós.
+  It replaces the bare Task with `Process.sleep/1` at boot: the job only runs with
+  Repo and Oban ready, stays observable in the jobs table and has retry. The
+  idempotency of each script stays in the Runner ledger (`data_migrations`); the
+  short uniqueness only debounces simultaneous boots of multiple nodes.
   """
 
   use Oban.Worker,

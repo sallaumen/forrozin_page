@@ -1,14 +1,14 @@
 defmodule OGrupoDeEstudosWeb.UI.Badge do
   @moduledoc """
-  Pílula pequena pra tags, categorias, status, códigos.
+  Small pill for tags, categories, status and codes.
 
-  Variantes:
-  - `:neutral` (default) — cinza/ink
-  - `:info` — azul
-  - `:success` — verde
-  - `:warning` — laranja
-  - `:danger` — vermelho
-  - `:accent` — dourado (gold)
+  Variants:
+  - `:neutral` (default) for grey/ink
+  - `:info` for blue
+  - `:success` for green
+  - `:warning` for orange
+  - `:danger` for red
+  - `:accent` for gold
   """
 
   use Phoenix.Component

@@ -1,15 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphAdminEdits do
   @moduledoc """
-  Macro com os handlers de edição do grafo da GraphVisualLive: alternar modo de
-  edição, criar/deletar conexões (admin) e a UI de aresta faltante (admin cria,
-  qualquer usuário sugere).
-
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphAdminEdits`
-
-  As cláusulas admin preservam o gate `if socket.assigns.is_admin`. Requer o
-  assign `:edit_mode`, `:seq_suggested_edges` e os helpers privados do host
-  `assign_graph_data/3` e `do_create_missing_connection/3`. Empurra
-  "graph_updated" / "graph_error" para o hook Cytoscape.
+  Macro with the graph editing handlers of GraphVisualLive: toggling edit mode,
+  creating and deleting connections (admin) and the missing-edge UI.
   """
 
   defmacro __using__(_opts) do

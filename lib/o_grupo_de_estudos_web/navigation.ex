@@ -4,9 +4,9 @@ defmodule OGrupoDeEstudosWeb.Navigation do
   and set `@nav_mode` accordingly.
 
   Primary pages are top-level destinations (Acervo, Mapa, Comunidade,
-  Perfil próprio) — they show the bottom nav on mobile.
+  Perfil próprio): they show the bottom nav on mobile.
 
-  Detail pages are drill-downs (step detail, settings, admin) — they hide
+  Detail pages are drill-downs (step detail, settings, admin): they hide
   the bottom nav and show a back button in the top nav on mobile.
 
   Usage:
@@ -19,7 +19,7 @@ defmodule OGrupoDeEstudosWeb.Navigation do
       end
 
   For pages whose classification depends on params (e.g. user profile),
-  set `@nav_mode` manually in `mount/3` — this on_mount is optional.
+  set `@nav_mode` manually in `mount/3`: this on_mount is optional.
   """
 
   import Phoenix.Component, only: [assign: 3]

@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudos.Accounts do
   @doc """
   Registers a new user and enqueues the welcome + confirmation email.
 
-  The user is created *without* `confirmed_at` — they can use the app
+  The user is created *without* `confirmed_at`: they can use the app
   immediately, but a gentle banner reminds them to confirm. Confirmation
   only gates password-recovery; it is never blocking.
 

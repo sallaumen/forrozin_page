@@ -1,17 +1,17 @@
 defmodule OGrupoDeEstudos.Media.Storage do
   @moduledoc """
-  Serviço de mídia: política de nomes + processamento de imagem.
+  Media service: naming policy plus image processing.
 
-  Os bytes moram atrás da porta `Media.ObjectStorage` (troca de provider
-  acontece lá). Aqui mora o que NÃO muda quando o provider muda:
+  The bytes live behind the `Media.ObjectStorage` port (swapping providers happens
+  there). What lives here is what does NOT change when the provider changes:
 
-  - avatar tem o id no nome (com timestamp para furar cache) e a troca apaga
-    a versão anterior;
-  - flyer é redimensionado e ganha chave aleatória, nada previsível no nome;
-  - arquivo privado ganha chave opaca e nunca vira URL pública.
+  - an avatar carries the id in the name (with a timestamp to bust caches) and
+    replacing it deletes the previous version;
+  - a flyer is resized and gets a random key, nothing predictable in the name;
+  - a private file gets an opaque key and never becomes a public URL.
 
-  Mogrify (ImageMagick) processa imagem ANTES de guardar, com cópia crua como
-  fallback quando o binário falta.
+  Mogrify (ImageMagick) processes the image BEFORE storing, with a raw copy as
+  fallback when the binary is missing.
   """
 
   alias OGrupoDeEstudos.Media.ObjectStorage
@@ -21,11 +21,11 @@ defmodule OGrupoDeEstudos.Media.Storage do
   @key_random_bytes 16
 
   @doc """
-  Guarda o avatar quadrado (#{@avatar_size}px) e devolve a URL pública.
+  Stores the square avatar (#{@avatar_size}px) and returns the public URL.
 
-  Cada pessoa tem sua pasta (`avatars/<user_id>/`); o nome leva timestamp
-  para o navegador não mostrar avatar velho de cache, e as versões
-  anteriores da mesma pessoa vão embora junto.
+  Each person has their own folder (`avatars/<user_id>/`); the name carries a
+  timestamp so the browser does not show a stale cached avatar, and the previous
+  versions of that person go away with it.
   """
   @spec save_avatar(term(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def save_avatar(user_id, tmp_path, ext) do
@@ -45,10 +45,10 @@ defmodule OGrupoDeEstudos.Media.Storage do
   end
 
   @doc """
-  Guarda uma imagem redimensionada com chave aleatória e devolve a URL.
+  Stores a resized image under a random key and returns the URL.
 
-  Nada previsível no nome: flyer é público, e nome adivinhável deixaria
-  varrer o que os outros publicaram.
+  Nothing predictable in the name: a flyer is public, and a guessable name would
+  let someone scan what others published.
   """
   @spec save_image(String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def save_image(subdir, tmp_path, ext) do
@@ -59,16 +59,16 @@ defmodule OGrupoDeEstudos.Media.Storage do
     end
   end
 
-  @doc "Apaga uma imagem pela URL pública. Silencioso se já não existe."
+  @doc "Deletes an image by public URL. Silent when it is already gone."
   @spec delete_image(String.t()) :: :ok | {:error, term()}
   def delete_image("/uploads/" <> chave), do: ObjectStorage.delete(chave)
   def delete_image(_url_de_fora), do: :ok
 
   @doc """
-  Guarda um arquivo cru em área privada e devolve a chave opaca.
+  Stores a raw file in the private area and returns the opaque key.
 
-  Não devolve URL de propósito: quem serve é um controller que confere
-  permissão, via `serve_private/1`.
+  It does not return a URL on purpose: what serves it is a controller that checks
+  permission, through `serve_private/1`.
   """
   @spec put_private(String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def put_private(subdir, tmp_path, ext) do
@@ -80,17 +80,17 @@ defmodule OGrupoDeEstudos.Media.Storage do
     end
   end
 
-  @doc "Como servir um arquivo privado: `{:file, caminho}` ou `{:redirect, url}`."
+  @doc "How to serve a private file: `{:file, path}` or `{:redirect, url}`."
   @spec serve_private(String.t()) ::
           {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
   def serve_private(chave), do: ObjectStorage.serve(chave)
 
-  @doc "Roda `fun` com um caminho local do arquivo privado (entrada de ffmpeg)."
+  @doc "Runs `fun` with a local path of the private file (input for ffmpeg)."
   @spec with_private_file(String.t(), (String.t() -> result)) :: {:ok, result} | {:error, term()}
         when result: term()
   def with_private_file(chave, fun), do: ObjectStorage.with_local_file(chave, fun)
 
-  @doc "Apaga um arquivo privado. Silencioso se já não existe."
+  @doc "Deletes a private file. Silent when it is already gone."
   @spec delete_private(String.t()) :: :ok | {:error, term()}
   def delete_private(chave), do: ObjectStorage.delete(chave)
 

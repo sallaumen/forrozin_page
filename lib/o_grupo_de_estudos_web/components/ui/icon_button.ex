@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudosWeb.UI.IconButton do
   @moduledoc """
-  Botão que contém apenas um ícone.
+  Button that holds only an icon.
 
-  Requer `:label` (vira `aria-label` — screen readers dependem disso).
-  Tamanho fixo 44×44 (w-11 h-11) pra touch target compliance.
+  It requires `:label` (which becomes `aria-label`, and screen readers depend on
+  it). Fixed 44x44 size (w-11 h-11) for touch target compliance.
   """
 
   use Phoenix.Component

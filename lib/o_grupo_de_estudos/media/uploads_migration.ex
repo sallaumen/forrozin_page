@@ -1,23 +1,24 @@
 defmodule OGrupoDeEstudos.Media.UploadsMigration do
   @moduledoc """
-  Mudança do volume local para a porta de objetos, em duas metades:
+  Move from the local volume to the object port, in two halves:
 
-  1. copia cada arquivo do disco para `Media.ObjectStorage`, com a chave
-     relativa (que é a mesma usada pelo adapter de disco);
-  2. reescreve no banco as URLs públicas gravadas (`/uploads/...` vira a URL
-     pública do provider). Chaves privadas (galeria) não mudam: já são
-     relativas desde o começo.
+  1. copies each disk file to `Media.ObjectStorage`, under the relative key
+     (the same one the disk adapter uses);
+  2. rewrites the stored public URLs in the database (`/uploads/...` becomes the
+     provider public URL). Private keys (gallery) do not change: they have been
+     relative from the start.
 
-  Não é migration de propósito: migration só muda schema, backfill roda por
-  fora (regra do projeto). Em produção:
+  Not a migration on purpose: a migration only changes schema, a backfill runs
+  outside (project rule). In production:
 
       bin/o_grupo_de_estudos eval "OGrupoDeEstudos.Media.UploadsMigration.run()"
 
-  Idempotente: arquivo já copiado é sobrescrito com o mesmo conteúdo, e URL
-  já reescrita não começa mais com `/uploads/`, então sai do filtro.
+  Idempotent: a file already copied is overwritten with the same content, and a
+  URL already rewritten no longer starts with `/uploads/`, so it drops out of the
+  filter.
 
-  Toca schema de Accounts e Workshops de propósito, como o `Admin.Backup`:
-  módulo de operação varre o que existe, não passa pela API de domínio.
+  Touches the Accounts and Workshops schemas on purpose, like `Admin.Backup`: an
+  operations module sweeps what exists, it does not go through the domain API.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -31,7 +32,7 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
 
   @prefixo_publico "/uploads/"
 
-  @doc "Roda a migração inteira e devolve o resumo do que aconteceu."
+  @doc "Runs the whole migration and returns a summary of what happened."
   @spec run(String.t()) :: %{
           arquivos: non_neg_integer(),
           falhas: list(),

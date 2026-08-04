@@ -1,12 +1,12 @@
 defmodule OGrupoDeEstudosWeb.UI.Button do
   @moduledoc """
-  Botão primário da UI.
+  Primary UI button.
 
-  Variantes: `:primary` (padrão), `:ghost`, `:danger`.
-  Tamanhos: `:sm`, `:md` (padrão), `:lg`.
+  Variants: `:primary` (default), `:ghost`, `:danger`.
+  Sizes: `:sm`, `:md` (default), `:lg`.
 
-  Todos os tamanhos forçam `min-h-[44px]` pra touch target compliance.
-  Loading desabilita e mostra spinner.
+  Every size forces `min-h-[44px]` for touch target compliance.
+  Loading disables the button and shows a spinner.
   """
 
   use Phoenix.Component

@@ -1,12 +1,8 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphSearch do
   @moduledoc """
-  Macro com os handlers de busca de passos no grafo da GraphVisualLive.
+  Macro with the step search handlers on the GraphVisualLive graph.
 
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphSearch`
-
-  Requer os assigns: `:graph_search_query`, `:graph_search_results` e
-  `:graph_search_nodes` (lista de nós visíveis, lida na busca). Empurra
-  "focus_graph_node" / "clear_graph_focus" para o hook Cytoscape.
+  Usage: `use OGrupoDeEstudosWeb.Handlers.GraphSearch`
   """
 
   defmacro __using__(_opts) do

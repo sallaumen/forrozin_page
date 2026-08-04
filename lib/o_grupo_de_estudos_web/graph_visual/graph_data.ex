@@ -31,11 +31,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphData do
   @type raw_graph :: %{nodes: [map()], edges: [map()]}
 
   @typedoc """
-  Contexto da jornada para colorir o grafo. `learned` e `frontier` são os
-  códigos aprendidos e os da fronteira ("pode aprender agora"); `goal_code` é a
-  próxima meta a destacar. `build_json` só TAGUEIA; a revelação progressiva
-  (esconder o que não é aprendido/fronteira) é aplicada no cliente via styling.
-  O default não altera nada.
+  Journey context used to color the graph. `learned` and `frontier` are the
+  learned codes and the frontier ones ("can learn now"); `goal_code` is the next
+  goal to highlight. `build_json` only TAGS; the progressive disclosure is
+  applied on the client through styling.
   """
   @type journey :: %{
           learned: MapSet.t(String.t()),

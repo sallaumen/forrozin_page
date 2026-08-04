@@ -1,49 +1,48 @@
 defmodule OGrupoDeEstudos.Media.ObjectStorage.Behaviour do
   @moduledoc """
-  Porta de armazenamento de objetos: bytes entram e saem por chave opaca.
+  Object storage port: bytes go in and out by opaque key.
 
-  É o ÚNICO contrato que um provider externo (S3, Tigris, R2) precisa
-  implementar para o storage sair do disco local. De propósito, não sabe nada
-  de avatar, flyer ou galeria: nome de arquivo, redimensionamento e permissão
-  são política de `Media.Storage` e do domínio, e não mudam quando o provider
-  muda.
+  It is the ONLY contract an external provider (S3, Tigris, R2) has to implement
+  for the storage to leave the local disk. On purpose it knows nothing about
+  avatars, flyers or galleries: file naming, resizing and permission are policy
+  of `Media.Storage` and of the domain, and do not change when the provider does.
 
-  A chave é um caminho relativo opaco ("avatars/u1_99.jpg"). Quem chama decide
-  a chave; o adapter decide onde os bytes moram.
+  The key is an opaque relative path ("avatars/u1_99.jpg"). The caller decides the
+  key; the adapter decides where the bytes live.
   """
 
-  @doc "Grava o arquivo de origem na chave. Sobrescreve se já existir."
+  @doc "Writes the source file at the key. Overwrites when it already exists."
   @callback put(key :: String.t(), source_path :: String.t()) :: :ok | {:error, term()}
 
-  @doc "Apaga o objeto. Silencioso quando já não existe."
+  @doc "Deletes the object. Silent when it is already gone."
   @callback delete(key :: String.t()) :: :ok | {:error, term()}
 
   @callback exists?(key :: String.t()) :: boolean()
 
-  @doc "Chaves que começam com o prefixo. Para faxina (avatares antigos)."
+  @doc "Keys starting with the prefix. For cleanup (old avatars)."
   @callback list(prefix :: String.t()) :: [String.t()]
 
-  @doc "URL pública de um objeto servido sem autorização (avatar, flyer)."
+  @doc "Public URL of an object served without authorization (avatar, flyer)."
   @callback public_url(key :: String.t()) :: String.t()
 
   @doc """
-  Como servir um objeto restrito: `{:file, caminho}` para `send_file`, ou
-  `{:redirect, url}` quando o provider gera URL assinada.
+  How to serve a restricted object: `{:file, path}` for `send_file`, or
+  `{:redirect, url}` when the provider generates a signed URL.
 
-  O controller de mídia trata os dois; o adapter escolhe o que tem.
+  The media controller handles both; the adapter picks what it has.
   """
   @callback serve(key :: String.t()) ::
               {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
 
   @doc """
-  Roda `fun` com um caminho local legível do objeto (entrada de ffmpeg ou
-  Mogrify). No disco é o próprio arquivo; num provider externo, o adapter
-  baixa para um temporário e limpa depois.
+  Runs `fun` with a readable local path of the object (input for ffmpeg or
+  Mogrify). On disk it is the file itself; on an external provider the adapter
+  downloads to a temporary one and cleans up afterwards.
   """
   @callback with_local_file(key :: String.t(), fun :: (String.t() -> result)) ::
               {:ok, result} | {:error, term()}
             when result: term()
 
-  @doc "Bytes livres, ou `:unknown` quando o provider não expõe (ou nem limita)."
+  @doc "Free bytes, or `:unknown` when the provider does not expose it (or does not limit)."
   @callback free_bytes() :: non_neg_integer() | :unknown
 end

@@ -1,10 +1,9 @@
 defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   @moduledoc """
-  Leituras de `Workshop`.
+  Reads of `Workshop`.
 
-  A agenda pública combina três filtros independentes (período, busca e
-  status) sobre a mesma consulta base, no padrão de reducer de opts do
-  projeto.
+  The public agenda combines three independent filters (period, search and
+  status) over the same base query, in the project opts-reducer pattern.
   """
 
   import Ecto.Query
@@ -23,7 +22,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
           | {:limit, pos_integer()}
   @type opts :: [opt()]
 
-  @doc "Workshop por slug, com o organizador carregado."
+  @doc "Workshop by slug, with the organizer loaded."
   @spec get_by_slug(String.t()) :: Workshop.t() | nil
   def get_by_slug(slug) when is_binary(slug) do
     Workshop
@@ -32,7 +31,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     |> Repo.one()
   end
 
-  @doc "Workshop por id, com o organizador carregado."
+  @doc "Workshop by id, with the organizer loaded."
   @spec get(Ecto.UUID.t()) :: Workshop.t() | nil
   def get(id) do
     case Ecto.UUID.cast(id) do
@@ -41,7 +40,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     end
   end
 
-  @doc "Id do organizador, sem carregar o workshop inteiro."
+  @doc "Organizer id, without loading the whole workshop."
   @spec organizer_id(Ecto.UUID.t()) :: Ecto.UUID.t() | nil
   def organizer_id(workshop_id) do
     case Ecto.UUID.cast(workshop_id) do
@@ -50,7 +49,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     end
   end
 
-  @doc "Lote `id => %{slug, title}`, para montar link de notificação sem N+1."
+  @doc "Batch `id => %{slug, title}`, to build a notification link without N+1."
   @spec slugs_by_ids([Ecto.UUID.t()]) :: %{
           Ecto.UUID.t() => %{slug: String.t(), title: String.t()}
         }
@@ -66,8 +65,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   end
 
   @doc """
-  Agenda pública: só publicados, com organizador carregado.
-  Ordena por data de início (mais próximo primeiro), ou decrescente no passado.
+  Public agenda: published only, with the organizer loaded.
+  Orders by start date (nearest first), or descending in the past.
   """
   @spec list_feed(opts()) :: [Workshop.t()]
   def list_feed(opts \\ []) do
@@ -102,10 +101,10 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   defp apply_grouping(query, _outro), do: query
 
   @doc """
-  Workshops que a pessoa administra, inclusive rascunho e cancelado.
+  Workshops the person administers, drafts and cancelled included.
 
-  Inclui os que ela criou e aqueles em que foi promovida a co-organizadora:
-  senão o co-organizador não veria o workshop na própria agenda.
+  It covers the ones they created and the ones where they were promoted to
+  co-organizer: otherwise a co-organizer would not see the workshop in their own agenda.
   """
   @spec list_for_organizer(Ecto.UUID.t()) :: [Workshop.t()]
   def list_for_organizer(organizer_id) do
@@ -119,12 +118,11 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   end
 
   @doc """
-  Filtra pelo período, sobre a consulta que tiver o binding `:periodo`.
+  Filters by period, over whichever query carries the `:periodo` binding.
 
-  Publico porque a agenda de programação usa o mesmo critério: programação não
-  tem data própria, ela entra na linha do tempo pelas datas dos workshops
-  dela. Usa binding nomeado porque lá o workshop é a segunda tabela, não a
-  primeira.
+  Public because the program agenda uses the same criterion: a program has no
+  date of its own, it enters the timeline through the dates of its workshops. It
+  uses a named binding because there the workshop is the second table, not the first.
   """
   @spec in_period(Ecto.Query.t(), period(), DateTime.t()) :: Ecto.Query.t()
   def in_period(query, :upcoming, now), do: where(query, [periodo: w], w.starts_at >= ^now)

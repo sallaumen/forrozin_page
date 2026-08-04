@@ -78,7 +78,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         {:ok,
          assign(socket,
            page_title: user.name || user.username,
-           meta_title: "#{user.name || user.username} (@#{user.username}) — O Grupo de Estudos",
+           meta_title: "#{user.name || user.username} (@#{user.username}) · O Grupo de Estudos",
            meta_description:
              if(user.bio,
                do: String.slice(user.bio, 0, 160),

@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   @moduledoc """
-  Criar e editar workshop. O mesmo formulário serve aos dois casos: a
-  diferença está no `live_action` (`:new` / `:edit`) e no botão principal.
+  Creates and edits a workshop. The same form serves both cases: the difference
+  is in `live_action` (`:new` / `:edit`) and in the primary button.
   """
 
   use OGrupoDeEstudosWeb, :live_view
@@ -334,12 +334,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   end
 
   @doc """
-  Le o campo de professor na posicao pedida.
+  Reads the teacher field at the given position.
 
-  O navegador manda `teacher_username` como lista quando o form e novo e como
-  mapa indexado por string ("0", "1") quando volta de um erro de validacao.
-  `Enum.at` num mapa devolve tupla, e tupla no template estoura na hora de
-  renderizar: o teste de erro de validacao pegou exatamente isso.
+  The browser sends `teacher_username` as a list when the form is new and as a map
+  indexed by position after a validation error, so both shapes are handled.
   """
   @spec campo_de_professor(term(), non_neg_integer()) :: String.t()
   def campo_de_professor(valores, indice), do: campo_de_lista(valores, indice) || ""

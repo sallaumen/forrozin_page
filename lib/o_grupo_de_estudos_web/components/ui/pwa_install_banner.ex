@@ -1,6 +1,6 @@
 defmodule OGrupoDeEstudosWeb.UI.PWAInstallBanner do
   @moduledoc """
-  PWA install banner — elegant, on-brand bottom bar.
+  PWA install banner: elegant, on-brand bottom bar.
   Hidden in standalone mode (PWA). Dismissible per session.
   """
 

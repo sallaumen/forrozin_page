@@ -1,10 +1,9 @@
 defmodule OGrupoDeEstudosWeb.WorkshopsLive do
   @moduledoc """
-  Agenda de workshops da comunidade (aba Workshops de /study).
+  Community workshop agenda (the Workshops tab of /study).
 
-  Mora numa LiveView própria em vez de virar mais uma aba de estado dentro
-  da StudyLive: a agenda tem URL, filtros e busca próprios, e a StudyLive já
-  carrega bastante coisa.
+  It lives in its own LiveView instead of becoming one more state tab inside the
+  study page: it has its own URL, so the link can be shared.
   """
 
   use OGrupoDeEstudosWeb, :live_view
@@ -61,7 +60,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
   defp period_atom("past"), do: :past
   defp period_atom(_upcoming), do: :upcoming
 
-  @doc "Ex.: 3 workshops · 1 programação"
+  @doc "For instance 3 workshops · 1 programação"
   def contagem_da_agenda(itens) do
     {programas, workshops} = Enum.split_with(itens, &(&1.kind == :program))
 

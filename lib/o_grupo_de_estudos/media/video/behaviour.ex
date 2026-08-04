@@ -1,26 +1,26 @@
 defmodule OGrupoDeEstudos.Media.Video.Behaviour do
   @moduledoc """
-  Porta para transcodificação de vídeo.
+  Port for video transcoding.
 
-  Mesma ideia do `Media.Storage.Behaviour`: o domínio depende deste contrato,
-  não do ffmpeg. Adapters implementam; `Media.Video` delega para o configurado
-  (`FFmpeg` em dev/prod, um dublê nos testes).
+  Same idea as `Media.Storage.Behaviour`: the domain depends on this contract,
+  not on ffmpeg. Adapters implement it; `Media.Video` delegates to the configured
+  one (`FFmpeg` in dev and prod, a double in tests).
 
-  Quem chama escolhe os caminhos de origem e destino, então o adapter não fica
-  dono do ciclo de vida de arquivo temporário.
+  The caller chooses the source and destination paths, so the adapter does not own
+  the life cycle of a temporary file.
   """
 
   @doc """
-  Se dá para transcodificar nesta máquina.
+  Whether transcoding is possible on this machine.
 
-  Existe porque a galeria degrada com elegância: sem ffmpeg, o arquivo é
-  guardado como veio em vez de o upload falhar.
+  It exists because the gallery degrades gracefully: without ffmpeg the file is
+  stored as it came instead of failing the upload.
   """
   @callback available?() :: boolean()
 
-  @doc "Converte o vídeo para 720p H.264. `dest` é sobrescrito."
+  @doc "Converts the video to 720p H.264. `dest` is overwritten."
   @callback transcode(source :: String.t(), dest :: String.t()) :: :ok | {:error, term()}
 
-  @doc "Extrai um quadro do vídeo como imagem de capa."
+  @doc "Extracts a video frame as the cover image."
   @callback poster(source :: String.t(), dest :: String.t()) :: :ok | {:error, term()}
 end

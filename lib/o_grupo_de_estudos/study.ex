@@ -1,7 +1,5 @@
 defmodule OGrupoDeEstudos.Study do
-  @moduledoc """
-  Contexto da área de estudos: vínculos professor-aluno e diários.
-  """
+  @moduledoc "Study area context: teacher-student links and diaries."
 
   import Ecto.Query
 
@@ -245,7 +243,7 @@ defmodule OGrupoDeEstudos.Study do
     NoteQuery.count_personal_between(user_id, Date.add(today, -6), today)
   end
 
-  @doc "Marca o usuário como ativo no dia (idempotente). Alimenta a consistência."
+  @doc "Marks the user as active on the day (idempotent). Feeds the consistency count."
   def record_active_day(user_id, day) do
     Repo.insert(%ActiveDay{user_id: user_id, day: day},
       on_conflict: :nothing,
@@ -253,7 +251,7 @@ defmodule OGrupoDeEstudos.Study do
     )
   end
 
-  @doc "Datas (MapSet) em que o usuário esteve ativo no intervalo [from, to]."
+  @doc "Dates (MapSet) on which the user was active in the range [from, to]."
   defdelegate active_days_between(user_id, from, to), to: ActiveDayQuery, as: :days_between
 
   def list_teachers_for_student(student_id) do
@@ -357,12 +355,12 @@ defmodule OGrupoDeEstudos.Study do
   defdelegate lesson_steps(lesson_id), to: LessonQuery, as: :steps_for_lesson
 
   @doc """
-  Cria uma lição e a entrega aos vínculos selecionados do professor.
+  Creates a lesson and delivers it to the selected links of the teacher.
 
-  `link_ids` é filtrado contra os vínculos ATIVOS do próprio professor —
-  ids alheios ou inativos são ignorados. Sem nenhum vínculo válido,
-  retorna `{:error, :no_students}` e nada é criado. Notificações e
-  broadcast PubSub acontecem após o commit.
+  `link_ids` is filtered against the ACTIVE links of the teacher themselves: ids
+  belonging to others or inactive are ignored. With no valid link it returns
+  `{:error, :no_students}` and nothing is created. Notifications and the PubSub
+  broadcast happen after the commit.
   """
   def broadcast_lesson(%User{id: teacher_id}, attrs, link_ids) do
     links = deliverable_links(teacher_id, link_ids)
@@ -398,7 +396,7 @@ defmodule OGrupoDeEstudos.Study do
 
   def update_lesson(%User{}, %Lesson{}, _attrs), do: {:error, :unauthorized}
 
-  @doc "Remove uma lição do próprio professor (entregas caem em cascata)."
+  @doc "Removes a lesson of the teacher themselves (deliveries cascade)."
   def delete_lesson(%User{id: actor_id}, %Lesson{teacher_id: actor_id} = lesson) do
     link_ids = LessonQuery.delivery_link_ids(lesson.id)
 
@@ -410,7 +408,7 @@ defmodule OGrupoDeEstudos.Study do
 
   def delete_lesson(%User{}, %Lesson{}), do: {:error, :unauthorized}
 
-  @doc "Busca uma lição por id, ou nil (id malformado também é nil)."
+  @doc "Fetches a lesson by id, or nil (a malformed id is nil too)."
   def get_lesson(id) do
     case Ecto.UUID.cast(id) do
       {:ok, uuid} -> Repo.get(Lesson, uuid)
@@ -419,9 +417,9 @@ defmodule OGrupoDeEstudos.Study do
   end
 
   @doc """
-  Marca as lições dadas do vínculo como lidas — só o aluno do vínculo pode,
-  e só as lições que ele efetivamente viu na tela (escopo por ids).
-  Retorna `{:ok, count}` ou `{:error, :unauthorized}`.
+  Marks the given lessons of the link as read. Only the student of the link can,
+  and only the lessons they actually saw on screen (scoped by ids).
+  Returns `{:ok, count}` or `{:error, :unauthorized}`.
   """
   def mark_lessons_read(
         %TeacherStudentLink{student_id: student_id} = link,

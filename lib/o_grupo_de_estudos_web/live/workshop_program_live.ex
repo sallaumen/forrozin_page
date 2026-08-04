@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   @moduledoc """
-  Página pública da programação: o link único que vai para o WhatsApp.
+  Public program page: the single link that goes to WhatsApp.
 
-  Mostra os workshops agrupados por dia, no fuso de quem dança, para a pessoa
-  entender de uma olhada o que acontece na quinta e o que acontece na sexta.
+  It shows the workshops grouped by day, in the dancer's timezone, so the person
+  sees the whole thing organized and picks where to go.
   """
 
   use OGrupoDeEstudosWeb, :live_view

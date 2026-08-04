@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.UI.Card do
   @moduledoc """
-  Padrão visual de card — container de conteúdo com fundo, borda e sombra
-  suave. Usado pra passos, sequências, links etc.
+  Card visual pattern: a content container with background, border and a soft
+  shadow. Used for steps, sequences, links and so on.
   """
 
   use Phoenix.Component

@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Engagement.Learnings do
   @moduledoc """
-  Passos aprendidos (jornada de estudos). Marcar um passo como aprendido
-  registra o progresso E garante o favorito (que por sua vez garante o like),
-  então a estrela aparece nas demais telas. Desaprender preserva o favorito.
+  Learned steps (the study journey). Marking a step as learned records the
+  progress AND ensures the favorite (which in turn ensures the like), so the star
+  shows up on the other screens. Unlearning preserves the favorite.
 
-  Reaproveita a implicação favorito⇒like de `Favorites`; a fonte de verdade de
-  "é favorito" continua em `favorites`, sem duplicação.
+  Reuses the favorite-implies-like rule from `Favorites`; the source of truth for
+  "is a favorite" stays in `favorites`, with no duplication.
   """
 
   alias Ecto.Multi
@@ -13,7 +13,7 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
   alias OGrupoDeEstudos.Engagement.{Favorites, LearnedStep, LearnedStepQuery}
   alias OGrupoDeEstudos.Repo
 
-  @doc "Marca/desmarca um passo como aprendido. Retorna `{:ok, :learned | :unlearned}`."
+  @doc "Marks or unmarks a step as learned. Returns `{:ok, :learned | :unlearned}`."
   def toggle_learned(user_id, step_id) do
     if LearnedStepQuery.exists?(user_id, step_id) do
       # Delete by key is idempotent: never raises StaleEntryError under a race.
@@ -87,6 +87,6 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
     |> Map.values()
   end
 
-  @doc "Reinicia o progresso: remove TODOS os passos aprendidos do usuário (favoritos ficam)."
+  @doc "Resets the progress: removes EVERY learned step of the user (favorites stay)."
   def reset_learned(user_id), do: LearnedStepQuery.delete_all_for_user(user_id)
 end

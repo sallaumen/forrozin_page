@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   @moduledoc """
-  Leituras de `WorkshopEnrollment`.
+  Reads of `WorkshopEnrollment`.
 
-  A separação aqui é de privacidade, não de conveniência: `list_participants/1`
-  projeta explicitamente só o que pode ser público, e é a única leitura que a
-  página do workshop usa. Pagamento só sai por `list_for_organizer/1`, que o
-  contexto chama depois de autorizar o dono.
+  The split here is about privacy, not convenience: `list_participants/1`
+  explicitly projects only what can be public, and it is the only read the
+  workshop page uses. Payment only comes out through `list_for_organizer/1`,
+  which the context calls after authorizing the owner.
   """
 
   import Ecto.Query
@@ -14,11 +14,11 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopEnrollment}
 
   @doc """
-  Inscrições em workshops que acontecem no intervalo e que ainda não receberam
-  o aviso de véspera.
+  Enrollments in workshops happening within the range that have not received the
+  day-before reminder yet.
 
-  Devolve o par `{inscrição, workshop}` já com o usuário carregado, para o
-  worker montar a mensagem sem N+1.
+  Returns the `{enrollment, workshop}` pair with the user already loaded, so the
+  worker builds the message without N+1.
   """
   @spec pending_reminders(DateTime.t(), DateTime.t()) :: [{WorkshopEnrollment.t(), map()}]
   def pending_reminders(de, ate) do
@@ -34,7 +34,7 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Repo.all()
   end
 
-  @doc "Marca que o aviso saiu, para não repetir se o job rodar de novo."
+  @doc "Marks that the reminder went out, so a rerun does not repeat it."
   @spec mark_reminded([Ecto.UUID.t()]) :: {non_neg_integer(), nil}
   def mark_reminded([]), do: {0, nil}
 
@@ -46,10 +46,10 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   end
 
   @doc """
-  Próximos workshops em que a pessoa está inscrita, do mais próximo em diante.
+  Upcoming workshops the person is enrolled in, nearest first.
 
-  Workshop rolando agora ainda conta: quem está no meio do evento quer ver que
-  está nele.
+  A workshop happening right now still counts: whoever is in the middle of the
+  event wants to see that they are in it.
   """
   @spec list_upcoming_for_user(Ecto.UUID.t(), keyword()) :: [Workshop.t()]
   def list_upcoming_for_user(user_id, opts \\ []) do
@@ -68,7 +68,7 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Repo.all()
   end
 
-  @doc "Quantos workshops futuros a pessoa tem, para o \"e mais N\"."
+  @doc "How many upcoming workshops the person has, for the and-N-more label."
   @spec count_upcoming_for_user(Ecto.UUID.t()) :: non_neg_integer()
   def count_upcoming_for_user(user_id) do
     agora = DateTime.utc_now()
@@ -82,10 +82,10 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   end
 
   @doc """
-  `%{program_id => quantos}`: em quantos workshops de cada programação a
-  pessoa está inscrita.
+  `%{program_id => count}`: in how many workshops of each program the person is
+  enrolled.
 
-  Em lote de propósito: uma consulta por programação na agenda seria N+1.
+  Batched on purpose: one query per program on the agenda would be an N+1.
   """
   @spec enrolled_counts_by_program(Ecto.UUID.t() | nil, [Ecto.UUID.t()]) :: %{
           Ecto.UUID.t() => non_neg_integer()
@@ -104,7 +104,7 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Map.new()
   end
 
-  @doc "Participantes visíveis publicamente: sem nenhum campo de pagamento."
+  @doc "Publicly visible participants: without any payment field."
   @spec list_participants(Ecto.UUID.t()) :: [map()]
   def list_participants(workshop_id) do
     from(e in WorkshopEnrollment,
@@ -123,7 +123,7 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Repo.all()
   end
 
-  @doc "Lista completa do organizador, com o estado de pagamento."
+  @doc "Full organizer list, with the payment state."
   @spec list_for_organizer(Ecto.UUID.t()) :: [WorkshopEnrollment.t()]
   def list_for_organizer(workshop_id) do
     from(e in WorkshopEnrollment,
@@ -135,10 +135,10 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   end
 
   @doc """
-  Inscrição por id, restrita ao workshop dado.
+  Enrollment by id, restricted to the given workshop.
 
-  O `workshop_id` vem sempre do mount (nunca do cliente): sem esse escopo,
-  um organizador poderia marcar pagamento numa inscrição de outro evento.
+  The `workshop_id` always comes from the mount, never from the client: without
+  that scope an organizer could mark payment on an enrollment of another event.
   """
   @spec get_scoped(Ecto.UUID.t(), Ecto.UUID.t()) :: WorkshopEnrollment.t() | nil
   def get_scoped(enrollment_id, workshop_id) do
@@ -153,13 +153,13 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     end
   end
 
-  @doc "Inscrição de uma pessoa específica num workshop, ou nil."
+  @doc "Enrollment of a specific person in a workshop, or nil."
   @spec get_for_user(Ecto.UUID.t(), Ecto.UUID.t()) :: WorkshopEnrollment.t() | nil
   def get_for_user(workshop_id, user_id) do
     Repo.get_by(WorkshopEnrollment, workshop_id: workshop_id, user_id: user_id)
   end
 
-  @doc "Quantas pessoas estão inscritas."
+  @doc "How many people are enrolled."
   @spec count(Ecto.UUID.t()) :: non_neg_integer()
   def count(workshop_id) do
     WorkshopEnrollment
@@ -167,7 +167,7 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Repo.aggregate(:count)
   end
 
-  @doc "Contagem por workshop, em lote (evita N+1 na agenda)."
+  @doc "Count per workshop, batched (avoids N+1 on the agenda)."
   @spec count_by_workshop([Ecto.UUID.t()]) :: %{Ecto.UUID.t() => non_neg_integer()}
   def count_by_workshop([]), do: %{}
 
@@ -181,7 +181,7 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Map.new()
   end
 
-  @doc "Resumo de pagamento do organizador: inscritos, pagos e isentos."
+  @doc "Organizer payment summary: enrolled, paid and waived."
   @spec payment_summary(Ecto.UUID.t()) :: %{total: integer(), paid: integer(), waived: integer()}
   def payment_summary(workshop_id) do
     from(e in WorkshopEnrollment,
@@ -195,7 +195,7 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Repo.one()
   end
 
-  @doc "MapSet dos workshops em que a pessoa está inscrita."
+  @doc "MapSet of the workshops the person is enrolled in."
   @spec enrolled_workshop_ids(Ecto.UUID.t()) :: MapSet.t()
   def enrolled_workshop_ids(user_id) do
     from(e in WorkshopEnrollment,

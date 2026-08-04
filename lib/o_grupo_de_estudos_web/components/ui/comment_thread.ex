@@ -6,7 +6,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   parent. Handles soft-deleted comments (tombstone), inline reply forms, and a
   new-comment form at the bottom.
 
-  All interactive events are delegated to the parent LiveView — the component
+  All interactive events are delegated to the parent LiveView: the component
   only emits phx-click / phx-submit bindings; it owns no state.
 
   ## Comment ownership
@@ -86,7 +86,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
         badges={@badges}
       />
 
-      <%!-- Inline reply form — shown when this comment is being replied to --%>
+      <%!-- Inline reply form: shown when this comment is being replied to --%>
       <div :if={@replying_to == to_string(@comment.id)} class="ml-10">
         <.reply_form parent_id={to_string(@comment.id)} />
       </div>
@@ -106,7 +106,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
         <% end %>
       </div>
 
-      <%!-- Toggle replies link — show/hide --%>
+      <%!-- Toggle replies link: show/hide --%>
       <button
         :if={@comment.reply_count > 0}
         phx-click="toggle_replies"
@@ -202,7 +202,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             </span>
           </button>
 
-          <%!-- Reply button — only for root comments, and only for who can write --%>
+          <%!-- Reply button: only for root comments, and only for who can write --%>
           <button
             :if={@size == :root && @show_reply}
             phx-click="start_reply"
@@ -213,7 +213,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             Responder
           </button>
 
-          <%!-- Delete button — owner or admin only --%>
+          <%!-- Delete button: owner or admin only --%>
           <button
             :if={@can_delete?}
             phx-click="delete_comment"

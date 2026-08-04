@@ -1,19 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphManualDraft do
   @moduledoc """
-  Macro com os handlers do ciclo de vida do rascunho do construtor manual de
-  sequências da GraphVisualLive: abrir, editar uma sequência salva, cancelar e
-  salvar.
-
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphManualDraft`
-
-  Os handlers de manipulação de passos do rascunho ficam em
-  `OGrupoDeEstudosWeb.Handlers.GraphManualSteps`. Requer o grupo de assigns
-  `:seq_manual_*`, `:seq_view`, `:seq_editing_id`, `:seq_missing_edges` e os
-  helpers privados do host `can_manage_sequence?/2`,
-  `recompute_manual_missing_edges/2`, `assign_manual_favorite_steps/1`,
-  `reset_manual_draft/1`, `assign_sequence_library/1` e
-  `do_save_manual_sequence/6`. Empurra "set_manual_mode" / "highlight_sequence"
-  / "clear_highlight".
+  Macro with the draft life-cycle handlers of the manual sequence builder in
+  GraphVisualLive: open, edit a saved sequence, cancel and save.
   """
 
   defmacro __using__(_opts) do

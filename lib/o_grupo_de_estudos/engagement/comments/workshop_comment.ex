@@ -1,12 +1,12 @@
 defmodule OGrupoDeEstudos.Engagement.Comments.WorkshopComment do
   @moduledoc """
-  Conversa na página de um workshop.
+  Conversation on a workshop page.
 
-  Tabela própria, como as demais: o projeto generaliza comentário pelo
-  behaviour `Commentable`, não por parent polimórfico.
+  Its own table, like the others: the project generalizes comments through the
+  `Commentable` behaviour, not through a polymorphic parent.
 
-  De propósito fora de `Engagement.Metrics`: badge e estatística de perfil
-  medem contribuição ao acervo, e workshop é evento, não acervo.
+  Out of `Engagement.Metrics` on purpose: badges and profile stats measure
+  contribution to the collection, and a workshop is an event, not collection.
   """
 
   use Ecto.Schema

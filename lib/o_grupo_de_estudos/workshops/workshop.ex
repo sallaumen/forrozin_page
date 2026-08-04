@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Workshops.Workshop do
   @moduledoc """
-  Evento pontual organizado por qualquer usuário (workshop, aulão, roda).
+  One-off event organized by any user (workshop, open class, roda).
 
-  Não tem nenhuma relação com `TeacherStudentLink`: quem se inscreve num
-  workshop não vira aluno de ninguém. São conceitos diferentes de propósito.
+  It has no relation to `TeacherStudentLink`: whoever enrolls in a workshop does
+  not become anyone's student. They are different concepts on purpose.
   """
 
   use Ecto.Schema
@@ -83,7 +83,7 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> foreign_key_constraint(:organizer_id)
   end
 
-  @doc "Grava ou tira o flyer. Caminho vem do storage, nunca do usuario."
+  @doc "Stores or removes the flyer. The path comes from the storage, never from the user."
   def flyer_changeset(workshop, flyer_path) do
     change(workshop, flyer_path: flyer_path)
   end
@@ -93,17 +93,17 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     change(workshop, status: status)
   end
 
-  @doc "true quando o workshop só abre para quem foi convidado."
+  @doc "true when the workshop only opens for whoever was invited."
   @spec privado?(t()) :: boolean()
   def privado?(%__MODULE__{visibility: :private}), do: true
   def privado?(%__MODULE__{}), do: false
 
-  @doc "true quando a lotação foi atingida. Sem capacity, nunca lota."
+  @doc "true when the capacity was reached. With no capacity, it never fills."
   @spec full?(t(), non_neg_integer()) :: boolean()
   def full?(%__MODULE__{capacity: nil}, _enrolled_count), do: false
   def full?(%__MODULE__{capacity: capacity}, enrolled_count), do: enrolled_count >= capacity
 
-  @doc "true quando é gratuito (sem preço definido ou zero)."
+  @doc "true when it is free (no price set, or zero)."
   @spec free?(t()) :: boolean()
   def free?(%__MODULE__{price_cents: nil}), do: true
   def free?(%__MODULE__{price_cents: 0}), do: true
@@ -158,10 +158,10 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
   end
 
   @doc """
-  Link de WhatsApp para mandar o comprovante, ou `nil`.
+  WhatsApp link to send the receipt, or `nil`.
 
-  Mandar comprovante deixa de ser copiar o número, abrir o app e escrever de
-  que workshop se trata: o nome já vai na mensagem.
+  Sending the receipt stops being copy the number, open the app and write which
+  workshop it is about: the name already goes in the message.
   """
   @spec receipt_link(t()) :: String.t() | nil
   def receipt_link(%__MODULE__{payment_phone: telefone} = workshop) when is_binary(telefone) do

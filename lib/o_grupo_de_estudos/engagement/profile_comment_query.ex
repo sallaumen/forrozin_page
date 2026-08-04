@@ -7,11 +7,11 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
 
   ## Supported options
 
-  - `:profile_id` — filter by profile user id
-  - `:author_id` — filter by comment author id
-  - `:include_deleted` — when `true`, includes soft-deleted comments (default: `false`)
-  - `:preload` — list of associations to preload (e.g. `[:author]`)
-  - `:order_by` — Ecto order_by clause (default: `[desc: :inserted_at]`)
+  - `:profile_id`: filter by profile user id
+  - `:author_id`: filter by comment author id
+  - `:include_deleted`: when `true`, includes soft-deleted comments (default: `false`)
+  - `:preload`: list of associations to preload (e.g. `[:author]`)
+  - `:order_by`: Ecto order_by clause (default: `[desc: :inserted_at]`)
   """
 
   @behaviour OGrupoDeEstudos.Engagement.Comments.Commentable
