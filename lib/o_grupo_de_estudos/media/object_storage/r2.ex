@@ -28,11 +28,11 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
   @impl true
   def put(key, source_path) do
     if File.exists?(source_path),
-      do: enviar(key, source_path),
+      do: upload(key, source_path),
       else: {:error, :enoent}
   end
 
-  defp enviar(key, source_path) do
+  defp upload(key, source_path) do
     key
     |> presign(:put)
     |> then(
@@ -58,7 +58,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
     |> case do
       # 404 is silent as on disk: deleting what is not there is not an error.
       {:ok, %{status: 404}} -> :ok
-      outro -> como_resultado(outro)
+      other -> como_resultado(other)
     end
   end
 
@@ -66,7 +66,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
   def exists?(key) do
     case Req.head(base_req(), url: presign(key, :head)) do
       {:ok, %{status: 200}} -> true
-      _ausente_ou_erro -> false
+      _missing_or_error -> false
     end
   end
 
@@ -79,8 +79,8 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
       aws_sigv4: sigv4()
     )
     |> case do
-      {:ok, %{status: 200, body: xml}} -> chaves_do_xml(xml)
-      _erro_ou_vazio -> []
+      {:ok, %{status: 200, body: xml}} -> keys_from_xml(xml)
+      _error_or_empty -> []
     end
   end
 
@@ -113,7 +113,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
       {:ok, %{status: 200}} -> {:ok, fun.(tmp)}
       {:ok, %{status: 404}} -> {:error, :not_found}
       {:ok, %{status: status}} -> {:error, {status, :download}}
-      {:error, motivo} -> {:error, motivo}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -157,40 +157,40 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
     |> Req.new()
   end
 
-  defp config!(chave) do
+  defp config!(key) do
     :o_grupo_de_estudos
     |> Application.get_env(__MODULE__, [])
-    |> Keyword.fetch!(chave)
+    |> Keyword.fetch!(key)
   end
 
   defp como_resultado({:ok, %{status: status}}) when status in 200..299, do: :ok
   defp como_resultado({:ok, %{status: status, body: body}}), do: {:error, {status, corta(body)}}
-  defp como_resultado({:error, motivo}), do: {:error, motivo}
+  defp como_resultado({:error, reason}), do: {:error, reason}
 
   defp corta(body) when is_binary(body), do: String.slice(body, 0, 300)
   defp corta(body), do: body
 
   # Only the <Key> entries matter, and `disallow_entities` closes the XXE door.
   # Own parser on purpose: the req_s3 one is @moduledoc false, a private API.
-  defp chaves_do_xml(xml) do
+  defp keys_from_xml(xml) do
     case :xmerl_sax_parser.stream(xml, [
            :disallow_entities,
-           event_fun: &evento_sax/3,
+           event_fun: &sax_event/3,
            event_state: {:fora, []}
          ]) do
-      {:ok, {_modo, chaves}, _resto} -> Enum.reverse(chaves)
-      _xml_invalido -> []
+      {:ok, {_modo, keys}, _resto} -> Enum.reverse(keys)
+      _invalid_xml -> []
     end
   end
 
-  defp evento_sax({:startElement, _uri, ~c"Key", _qname, _attrs}, _loc, {:fora, chaves}),
-    do: {{:dentro, []}, chaves}
+  defp sax_event({:startElement, _uri, ~c"Key", _qname, _attrs}, _loc, {:fora, keys}),
+    do: {{:dentro, []}, keys}
 
-  defp evento_sax({:characters, texto}, _loc, {{:dentro, acc}, chaves}),
-    do: {{:dentro, [acc | texto]}, chaves}
+  defp sax_event({:characters, text}, _loc, {{:dentro, acc}, keys}),
+    do: {{:dentro, [acc | text]}, keys}
 
-  defp evento_sax({:endElement, _uri, ~c"Key", _qname}, _loc, {{:dentro, acc}, chaves}),
-    do: {:fora, [IO.iodata_to_binary(acc) | chaves]}
+  defp sax_event({:endElement, _uri, ~c"Key", _qname}, _loc, {{:dentro, acc}, keys}),
+    do: {:fora, [IO.iodata_to_binary(acc) | keys]}
 
-  defp evento_sax(_evento, _loc, estado), do: estado
+  defp sax_event(_event, _loc, estado), do: estado
 end

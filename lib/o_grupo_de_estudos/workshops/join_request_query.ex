@@ -17,7 +17,7 @@ defmodule OGrupoDeEstudos.Workshops.JoinRequestQuery do
   defp listar(workshop_id, status) do
     JoinRequest
     |> where([r], r.workshop_id == ^workshop_id)
-    |> filtrar_status(status)
+    |> filter_status(status)
     |> join(:inner, [r], u in assoc(r, :user), as: :pessoa)
     |> order_by([r], asc: r.inserted_at)
     |> select([r, pessoa: u], %{
@@ -33,8 +33,8 @@ defmodule OGrupoDeEstudos.Workshops.JoinRequestQuery do
     |> Repo.all()
   end
 
-  defp filtrar_status(query, nil), do: query
-  defp filtrar_status(query, status), do: where(query, [r], r.status == ^status)
+  defp filter_status(query, nil), do: query
+  defp filter_status(query, status), do: where(query, [r], r.status == ^status)
 
   @doc "The request of a person in this workshop, or nil."
   @spec get(Ecto.UUID.t(), Ecto.UUID.t()) :: JoinRequest.t() | nil

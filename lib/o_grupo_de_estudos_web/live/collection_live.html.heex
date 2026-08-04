@@ -254,26 +254,26 @@
       <div class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
         <button
           phx-click="switch_tab"
-          phx-value-tab="acervo"
+          phx-value-tab="collection"
           class={[
             "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
-            @active_tab == "acervo" && "text-ink-900 border-ink-900 font-bold",
-            @active_tab != "acervo" && "text-ink-500 border-transparent font-normal"
+            @active_tab == "collection" && "text-ink-900 border-ink-900 font-bold",
+            @active_tab != "collection" && "text-ink-500 border-transparent font-normal"
           ]}
         >
           Acervo
         </button>
         <button
           phx-click="switch_tab"
-          phx-value-tab="meus_passos"
+          phx-value-tab="my_steps"
           style={
-            if @active_tab == "meus_passos",
+            if @active_tab == "my_steps",
               do: "color: var(--color-accent-purple); border-color: var(--color-accent-purple);"
           }
           class={[
             "py-2.5 px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
-            @active_tab == "meus_passos" && "font-bold",
-            @active_tab != "meus_passos" && "text-ink-500 border-transparent font-normal"
+            @active_tab == "my_steps" && "font-bold",
+            @active_tab != "my_steps" && "text-ink-500 border-transparent font-normal"
           ]}
         >
           Meus passos
@@ -286,7 +286,7 @@
       :if={@loaded?}
       class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 pt-6 pb-20 w-full box-border"
     >
-      <%= if @active_tab == "meus_passos" do %>
+      <%= if @active_tab == "my_steps" do %>
         <%!-- Meus passos tab --%>
         <%= if @my_steps == [] do %>
           <div class="text-center py-14 px-5 text-ink-500 italic">

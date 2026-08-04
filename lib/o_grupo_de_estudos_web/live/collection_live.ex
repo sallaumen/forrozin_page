@@ -44,7 +44,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:ok, socket}
   end
 
-  # Iron Law: the heavy acervo queries run only on the connected render. The
+  # Iron Law: the heavy collection queries run only on the connected render. The
   # dead/HTTP render returns instantly with placeholders + a loading skeleton,
   # then the WebSocket mount fills the data in.
   defp load_collection_data(socket) do
@@ -105,7 +105,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       suggest_form: %{},
       suggest_error: nil,
       can_edit_drawer: false,
-      active_tab: "acervo",
+      active_tab: "collection",
       my_steps: [],
       bubble_open: false,
       bubble_tab: "following",
@@ -141,7 +141,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         {:noreply,
          socket
          |> assign(
-           active_tab: "acervo",
+           active_tab: "collection",
            search: "",
            search_results: [],
            active_section_id: section_id,
@@ -237,7 +237,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
     socket =
-      if tab == "meus_passos" do
+      if tab == "my_steps" do
         my_steps = Encyclopedia.list_user_steps(socket.assigns.current_user.id)
         assign(socket, active_tab: tab, my_steps: my_steps)
       else

@@ -37,30 +37,30 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopTeacher do
     |> update_change(:display_name, &trim/1)
     |> validate_required([:workshop_id, :position])
     |> validate_length(:display_name, max: 120)
-    |> validate_conta_ou_nome()
-    |> unique_constraint([:workshop_id, :user_id], name: :workshop_teachers_conta_unica_index)
-    |> check_constraint(:user_id, name: :conta_ou_nome)
+    |> validate_account_or_name()
+    |> unique_constraint([:workshop_id, :user_id], name: :workshop_teachers_account_or_name_index)
+    |> check_constraint(:user_id, name: :account_or_name)
   end
 
-  defp validate_conta_ou_nome(changeset) do
-    conta = get_field(changeset, :user_id)
-    nome = get_field(changeset, :display_name)
+  defp validate_account_or_name(changeset) do
+    account = get_field(changeset, :user_id)
+    name = get_field(changeset, :display_name)
 
-    case {conta, nome} do
+    case {account, name} do
       {nil, nil} -> add_error(changeset, :display_name, "informe uma conta ou um nome")
-      {conta, nome} when not is_nil(conta) and not is_nil(nome) -> so_a_conta(changeset)
+      {account, name} when not is_nil(account) and not is_nil(name) -> account_only(changeset)
       _um_dos_dois -> changeset
     end
   end
 
   # An account beats a written name: it brings photo and profile, which is the
   # point of featuring the teacher.
-  defp so_a_conta(changeset), do: put_change(changeset, :display_name, nil)
+  defp account_only(changeset), do: put_change(changeset, :display_name, nil)
 
   defp trim(nil), do: nil
 
-  defp trim(valor) do
-    case String.trim(valor) do
+  defp trim(value) do
+    case String.trim(value) do
       "" -> nil
       limpo -> limpo
     end

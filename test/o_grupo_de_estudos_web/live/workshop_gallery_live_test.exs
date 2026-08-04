@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
     File.mkdir_p!(dir)
     previous = Application.get_env(:o_grupo_de_estudos, :uploads_path)
     Application.put_env(:o_grupo_de_estudos, :uploads_path, dir)
-    Application.put_env(:o_grupo_de_estudos, :recarga_galeria_ms, @poll_interval_ms)
+    Application.put_env(:o_grupo_de_estudos, :gallery_reload_ms, @poll_interval_ms)
 
     on_exit(fn ->
       case previous do
@@ -29,7 +29,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
         value -> Application.put_env(:o_grupo_de_estudos, :uploads_path, value)
       end
 
-      Application.delete_env(:o_grupo_de_estudos, :recarga_galeria_ms)
+      Application.delete_env(:o_grupo_de_estudos, :gallery_reload_ms)
       File.rm_rf!(dir)
     end)
 
@@ -58,11 +58,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
   end
 
   defp reload_scheduled?(lv),
-    do: :sys.get_state(lv.pid).socket.assigns[:recarga_agendada?] == true
+    do: :sys.get_state(lv.pid).socket.assigns[:reload_scheduled?] == true
 
   defp reload_messages(lv) do
     {:messages, queue} = Process.info(lv.pid, :messages)
-    Enum.count(queue, &(&1 == :recarregar_galeria))
+    Enum.count(queue, &(&1 == :reload_gallery))
   end
 
   @png Base.decode64!(
@@ -102,7 +102,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
 
-      send(lv.pid, :recarregar_galeria)
+      send(lv.pid, :reload_gallery)
 
       assert render(lv) =~ "<video"
       refute render(lv) =~ "Processando vídeo"
@@ -134,7 +134,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopGalleryLiveTest do
         live(log_in_user(build_conn(), ctx.student), ~p"/workshops/#{ctx.workshop.slug}")
 
       assert :ok = perform_job(TranscodeWorkshopVideo, %{"media_id" => media.id})
-      send(lv.pid, :recarregar_galeria)
+      send(lv.pid, :reload_gallery)
       _ = render(lv)
 
       refute reload_scheduled?(lv)

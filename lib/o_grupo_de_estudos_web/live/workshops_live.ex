@@ -65,16 +65,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
     {programas, workshops} = Enum.split_with(itens, &(&1.kind == :program))
 
     [
-      rotulo(length(workshops), "workshop", "workshops"),
-      rotulo(length(programas), "programação", "programações")
+      label(length(workshops), "workshop", "workshops"),
+      label(length(programas), "programação", "programações")
     ]
     |> Enum.reject(&is_nil/1)
     |> Enum.join(" · ")
   end
 
-  defp rotulo(0, _singular, _plural), do: nil
-  defp rotulo(1, singular, _plural), do: "1 #{singular}"
-  defp rotulo(total, _singular, plural), do: "#{total} #{plural}"
+  defp label(0, _singular, _plural), do: nil
+  defp label(1, singular, _plural), do: "1 #{singular}"
+  defp label(total, _singular, plural), do: "#{total} #{plural}"
 
   @doc false
   def period_heading("upcoming"), do: "Em breve"
@@ -97,14 +97,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
       )
 
     meus = Workshops.list_for_organizer(user.id)
-    inscritos = Workshops.enrolled_workshop_ids(user.id)
+    enrolled = Workshops.enrolled_workshop_ids(user.id)
 
     socket
-    |> assign(:itens, marcar_inscricao(itens, user))
+    |> assign(:itens, mark_enrollment(itens, user))
     |> assign(:enrollment_counts, contagens(itens, meus))
-    |> assign(:enrolled_ids, inscritos)
+    |> assign(:enrolled_ids, enrolled)
     |> assign(:mine, meus)
-    |> assign(:minhas_programacoes, Workshops.list_programs_for_owner(user.id))
+    |> assign(:my_programs, Workshops.list_programs_for_owner(user.id))
   end
 
   # Counts what the screen actually renders: the "Você organiza" section shows
@@ -119,20 +119,20 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
   # Whoever enrolled in a collapsed workshop needs to see it somewhere: otherwise
   # the program card says nothing and the enrollment looks lost. Batched, or it
   # would be one query per program.
-  defp marcar_inscricao(itens, user) do
+  defp mark_enrollment(itens, user) do
     contagens =
       itens
       |> Enum.filter(&(&1.kind == :program))
       |> Enum.map(& &1.program.id)
       |> then(&Workshops.enrolled_counts_by_program(user.id, &1))
 
-    Enum.map(itens, &com_inscricao(&1, contagens))
+    Enum.map(itens, &with_enrollment(&1, contagens))
   end
 
-  defp com_inscricao(%{kind: :program} = item, contagens),
+  defp with_enrollment(%{kind: :program} = item, contagens),
     do: Map.put(item, :enrolled_count, Map.get(contagens, item.program.id, 0))
 
-  defp com_inscricao(item, _contagens), do: item
+  defp with_enrollment(item, _contagens), do: item
 
   defp ids_de_workshop(itens) do
     itens

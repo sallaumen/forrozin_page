@@ -46,11 +46,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
 
       assert bf == %{
                "id" => "BF",
-               "nome" => "Base",
-               "categoria" => "Básico",
-               "categoriaName" => "basico",
-               "cor" => "#abc",
-               "nota" => "nota curta",
+               "name" => "Base",
+               "category" => "Básico",
+               "categoryName" => "basico",
+               "color" => "#abc",
+               "note" => "nota curta",
                "highlighted" => true,
                "suggested" => false,
                "suggested_by_id" => nil,
@@ -62,7 +62,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
              }
 
       iv = by_code(nodes, "IV")
-      assert iv["nota"] == nil
+      assert iv["note"] == nil
       assert iv["highlighted"] == false
       assert iv["suggested"] == true
       assert iv["suggested_by_id"] == 7
@@ -79,9 +79,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
 
       x = decode_nodes(json) |> by_code("X")
 
-      assert x["categoria"] == "Outros"
-      assert x["categoriaName"] == "outros"
-      assert x["cor"] == "#9a7a5a"
+      assert x["category"] == "Outros"
+      assert x["categoryName"] == "outros"
+      assert x["color"] == "#9a7a5a"
       assert x["orphan"] == false
     end
 
@@ -133,7 +133,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       json =
         GraphData.build_json(%{nodes: [mknode("A", note: long)], edges: [edge("A", "A")]}, false)
 
-      assert (decode_nodes(json) |> by_code("A"))["nota"] == String.duplicate("a", 300) <> "…"
+      assert (decode_nodes(json) |> by_code("A"))["note"] == String.duplicate("a", 300) <> "…"
     end
 
     test "note exactly 300 bytes is kept unchanged" do
@@ -142,7 +142,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       json =
         GraphData.build_json(%{nodes: [mknode("A", note: exact)], edges: [edge("A", "A")]}, false)
 
-      assert (decode_nodes(json) |> by_code("A"))["nota"] == exact
+      assert (decode_nodes(json) |> by_code("A"))["note"] == exact
     end
 
     test "multibyte note over byte cap but under grapheme cap keeps all graphemes plus ellipsis" do
@@ -151,7 +151,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       json =
         GraphData.build_json(%{nodes: [mknode("A", note: note)], edges: [edge("A", "A")]}, false)
 
-      assert (decode_nodes(json) |> by_code("A"))["nota"] == note <> "…"
+      assert (decode_nodes(json) |> by_code("A"))["note"] == note <> "…"
     end
 
     test "edges carry compute_edge_spread output with from/to/label/spread" do
@@ -173,7 +173,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       json = GraphData.build_orphans_json(%{nodes: [mknode("A"), z], edges: [edge("A", "B")]})
 
       assert Jason.decode!(json) == [
-               %{"id" => "Z", "nome" => "Zeta", "categoria" => "Cat", "cor" => "#111"}
+               %{"id" => "Z", "name" => "Zeta", "category" => "Cat", "color" => "#111"}
              ]
     end
 
@@ -181,9 +181,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.GraphDataTest do
       json = GraphData.build_orphans_json(%{nodes: [mknode("O", category: nil)], edges: []})
       [o] = Jason.decode!(json)
 
-      assert o["categoria"] == "Outros"
-      assert o["cor"] == "#9a7a5a"
-      refute Map.has_key?(o, "categoriaName")
+      assert o["category"] == "Outros"
+      assert o["color"] == "#9a7a5a"
+      refute Map.has_key?(o, "categoryName")
     end
 
     test "fully connected graph returns empty list" do

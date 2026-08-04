@@ -87,9 +87,9 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       decoded = json |> String.replace("&quot;", "\"") |> Jason.decode!()
 
       bf_node = Enum.find(decoded["nodes"], &(&1["id"] == "BF"))
-      assert bf_node["nota"] == "Mechanical note here"
-      assert bf_node["categoriaName"] == "bases"
-      assert bf_node["cor"] == "#d4a054"
+      assert bf_node["note"] == "Mechanical note here"
+      assert bf_node["categoryName"] == "bases"
+      assert bf_node["color"] == "#d4a054"
 
       [edge] = decoded["edges"]
       assert Map.has_key?(edge, "spread")
@@ -110,7 +110,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       assert html =~ "graph-legend-mobile-panel"
       assert html =~ ~s(data-graph-legend-filter)
       assert html =~ "Bases"
-      refute html =~ ~r/\d+\s+passos\s+·\s+\d+\s+conexões/
+      refute html =~ ~r/\d+\s+steps\s+·\s+\d+\s+conexões/
     end
 
     test "legend hides low-value category filters", %{conn: conn} do
@@ -463,7 +463,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLiveTest do
       js = File.read!("assets/js/graph_visual.js")
 
       assert js =~ ~S/name: node.data("label") || node.id()/
-      refute js =~ ~S/name: node.data("nome") || node.id()/
+      refute js =~ ~S/name: node.data("name") || node.id()/
     end
 
     test "manual graph taps highlight outgoing options without refocusing the camera" do

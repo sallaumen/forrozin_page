@@ -403,12 +403,12 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
     if link && link.active && link.teacher_id == user.id do
       Dispatcher.notify_nudge(user, link.student_id, link.id)
-      nome = link.student.name || "seu aluno"
+      name = link.student.name || "seu aluno"
 
       {:noreply,
        socket
        |> assign(:nudged_link_ids, MapSet.put(socket.assigns.nudged_link_ids, link.id))
-       |> put_flash(:info, "Cutucada enviada para #{nome}!")}
+       |> put_flash(:info, "Cutucada enviada para #{name}!")}
     else
       {:noreply, put_flash(socket, :error, "Não foi possível enviar a cutucada.")}
     end

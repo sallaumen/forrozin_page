@@ -299,15 +299,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _lv, html} =
         live(log_in_user(build_conn(), student), ~p"/programacao/#{ctx.program.slug}")
 
-      refute html =~ ~s(id="escolher-#{ctx.thursday.id}")
-      assert html =~ ~s(id="escolher-#{ctx.friday.id}")
+      refute html =~ ~s(id="pick-#{ctx.thursday.id}")
+      assert html =~ ~s(id="pick-#{ctx.friday.id}")
     end
 
     test "organizer gets no checklist for their own workshops", ctx do
       {:ok, _lv, html} =
         live(log_in_user(build_conn(), ctx.owner), ~p"/programacao/#{ctx.program.slug}")
 
-      refute html =~ ~s(id="escolher-#{ctx.thursday.id}")
+      refute html =~ ~s(id="pick-#{ctx.thursday.id}")
     end
 
     test "anonymous visitor is sent to signup instead of crashing", ctx do
@@ -411,7 +411,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, _lv, html} =
         live(
           log_in_user(build_conn(), ctx.owner),
-          ~p"/study/workshops/novo?#{[programa: ctx.program.slug]}"
+          ~p"/study/workshops/novo?#{[program: ctx.program.slug]}"
         )
 
       assert html =~ ctx.program.title
@@ -421,7 +421,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, lv, _} =
         live(
           log_in_user(build_conn(), ctx.owner),
-          ~p"/study/workshops/novo?#{[programa: ctx.program.slug]}"
+          ~p"/study/workshops/novo?#{[program: ctx.program.slug]}"
         )
 
       lv
@@ -445,7 +445,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       {:ok, lv, _} =
         live(
           log_in_user(build_conn(), other),
-          ~p"/study/workshops/novo?#{[programa: alheia.slug]}"
+          ~p"/study/workshops/novo?#{[program: alheia.slug]}"
         )
 
       lv

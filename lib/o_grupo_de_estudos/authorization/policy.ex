@@ -118,7 +118,7 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   #
   # A PRIVATE workshop does not come through here: private is not secret, it
   # opens for anyone. Visibility changes the door (entry by approval), not the
-  # existence, and `Workshops.liberado?/2` decides the inside.
+  # existence, and `Workshops.inside_open?/2` decides the inside.
   def authorize(:view_workshop, user, %Access{workshop: workshop}),
     do: authorize(:view_workshop, user, workshop)
 

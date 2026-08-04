@@ -315,23 +315,23 @@
         Próximos workshops
       </h3>
 
-      <div :if={@proximos_workshops != []} class="flex flex-col gap-2.5">
+      <div :if={@upcoming_workshops != []} class="flex flex-col gap-2.5">
         <.workshop_card
-          :for={w <- @proximos_workshops}
+          :for={w <- @upcoming_workshops}
           id_prefix="perfil"
           workshop={w}
           enrolled?={true}
         />
       </div>
 
-      <p :if={@total_proximos > 3} class="m-0 mt-2 text-[12.5px] text-ink-500">
-        E mais {@total_proximos - 3} depois desses.
+      <p :if={@upcoming_total > 3} class="m-0 mt-2 text-[12.5px] text-ink-500">
+        E mais {@upcoming_total - 3} depois desses.
         <.link navigate={~p"/study/workshops"} class="font-semibold text-accent-orange">
           Ver a agenda
         </.link>
       </p>
 
-      <p :if={@proximos_workshops == []} class="m-0 text-[13px] text-ink-500">
+      <p :if={@upcoming_workshops == []} class="m-0 text-[13px] text-ink-500">
         Você não está inscrito em nenhum workshop ainda.
         <.link navigate={~p"/study/workshops"} class="font-semibold text-accent-orange">
           Ver a agenda

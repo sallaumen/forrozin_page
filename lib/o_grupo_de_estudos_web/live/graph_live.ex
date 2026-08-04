@@ -147,7 +147,7 @@ defmodule OGrupoDeEstudosWeb.GraphLive do
   defp load_graph(socket, %{nodes: nodes, edges: edges}) do
     graph_json =
       Jason.encode!(%{
-        nodes: Enum.map(nodes, fn p -> %{id: p.code, nome: p.name} end),
+        nodes: Enum.map(nodes, fn p -> %{id: p.code, name: p.name} end),
         edges:
           Enum.map(edges, fn c ->
             %{from: c.source_step.code, to: c.target_step.code}

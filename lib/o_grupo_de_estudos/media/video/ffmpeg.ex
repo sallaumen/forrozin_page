@@ -105,8 +105,8 @@ defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
   # arrives as a single argument, with no chance of becoming a command.
   defp executar(args) do
     case System.cmd("ffmpeg", args, stderr_to_stdout: true) do
-      {_saida, 0} -> :ok
-      {saida, codigo} -> {:error, {codigo, String.slice(saida, -500, 500)}}
+      {_output, 0} -> :ok
+      {output, code} -> {:error, {code, String.slice(output, -500, 500)}}
     end
   rescue
     e -> {:error, e}

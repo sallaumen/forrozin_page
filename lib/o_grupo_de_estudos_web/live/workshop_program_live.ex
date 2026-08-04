@@ -40,7 +40,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:enrolled_ids, enrolled_ids(user))
     |> assign(:enrollment_counts, Workshops.enrollment_counts(Enum.map(workshops, & &1.id)))
     |> assign_montagem(workshops, owner?, user)
-    |> limpar_selecao(workshops, user)
+    |> clear_selection(workshops, user)
     |> assign_pacote(program, workshops, user)
   end
 
@@ -70,13 +70,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   # Only offers a checkbox for what can be joined right now: published, with a
   # seat, and where the person is not already in.
-  defp limpar_selecao(socket, workshops, user) do
-    inscritos = socket.assigns.enrolled_ids
+  defp clear_selection(socket, workshops, user) do
+    enrolled = socket.assigns.enrolled_ids
     contagens = socket.assigns.enrollment_counts
 
     selecionaveis =
       workshops
-      |> Enum.filter(&pode_marcar?(&1, user, inscritos, contagens))
+      |> Enum.filter(&can_check?(&1, user, enrolled, contagens))
       |> MapSet.new(& &1.id)
 
     socket
@@ -84,9 +84,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:selecionados, MapSet.intersection(selecionados(socket), selecionaveis))
   end
 
-  defp pode_marcar?(workshop, user, inscritos, contagens) do
+  defp can_check?(workshop, user, enrolled, contagens) do
     workshop.status == :published and
-      not MapSet.member?(inscritos, workshop.id) and
+      not MapSet.member?(enrolled, workshop.id) and
       not Workshop.full?(workshop, Map.get(contagens, workshop.id, 0)) and
       not Workshops.admin?(workshop, user)
   end
@@ -100,7 +100,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:dentro, [])
     |> assign(:disponiveis, [])
     |> assign(:pacotes, [])
-    |> assign(:resumo_pacote, nil)
+    |> assign(:package_summary, nil)
   end
 
   defp assign_montagem(socket, workshops, true, user) do
@@ -120,9 +120,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   defp assign_pacotes(socket, user) do
     program = socket.assigns.program
     {:ok, pacotes} = Workshops.list_package_enrollments(program, user)
-    {:ok, resumo} = Workshops.package_summary(program, user)
+    {:ok, summary} = Workshops.package_summary(program, user)
 
-    socket |> assign(:pacotes, pacotes) |> assign(:resumo_pacote, resumo)
+    socket |> assign(:pacotes, pacotes) |> assign(:package_summary, summary)
   end
 
   @impl true
@@ -145,7 +145,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
       when status in ~w(pending paid waived) do
     user = socket.assigns.current_user
 
-    case Workshops.set_package_payment(socket.assigns.program, user, id, pagamento(status)) do
+    case Workshops.set_package_payment(socket.assigns.program, user, id, payment(status)) do
       {:ok, _} ->
         {:noreply,
          socket
@@ -160,7 +160,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   def handle_event("set_package_payment", _params, socket), do: {:noreply, socket}
 
   def handle_event("buy_package", _params, %{assigns: %{current_user: nil}} = socket) do
-    {:noreply, redirect(socket, to: ~p"/signup?#{[programa: socket.assigns.program.slug]}")}
+    {:noreply, redirect(socket, to: ~p"/signup?#{[program: socket.assigns.program.slug]}")}
   end
 
   def handle_event("buy_package", _params, socket) do
@@ -173,20 +173,20 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
          |> assign_program(socket.assigns.program, user)
          |> put_flash(:info, "Pronto! Você está em todos os workshops da programação.")}
 
-      {:error, motivo} ->
-        {:noreply, put_flash(socket, :error, erro_do_pacote(motivo))}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, package_error(reason))}
     end
   end
 
   def handle_event("toggle_selection", %{"id" => id}, socket) do
     case MapSet.member?(socket.assigns.selecionaveis, id) do
-      true -> {:noreply, assign(socket, :selecionados, alternar(socket.assigns.selecionados, id))}
+      true -> {:noreply, assign(socket, :selecionados, toggle(socket.assigns.selecionados, id))}
       false -> {:noreply, socket}
     end
   end
 
   def handle_event("confirm_enrollment", _params, %{assigns: %{current_user: nil}} = socket) do
-    {:noreply, redirect(socket, to: ~p"/signup?#{[programa: socket.assigns.program.slug]}")}
+    {:noreply, redirect(socket, to: ~p"/signup?#{[program: socket.assigns.program.slug]}")}
   end
 
   def handle_event("confirm_enrollment", _params, socket) do
@@ -199,7 +199,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
          socket
          |> assign(:selecionados, MapSet.new())
          |> assign_program(socket.assigns.program, user)
-         |> put_flash(tom(resultado), resumo_do_lote(resultado))}
+         |> put_flash(tone(resultado), batch_summary(resultado))}
 
       {:error, :none_selected} ->
         {:noreply, put_flash(socket, :error, "Marque pelo menos um workshop.")}
@@ -207,62 +207,62 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   end
 
   def handle_event("attach_workshop", %{"id" => id}, socket) do
-    montar(socket, id, &Workshops.attach_workshop/3, "Workshop adicionado à programação.")
+    build(socket, id, &Workshops.attach_workshop/3, "Workshop adicionado à programação.")
   end
 
   def handle_event("detach_workshop", %{"id" => id}, socket) do
-    montar(socket, id, &Workshops.detach_workshop/3, "Workshop tirado da programação.")
+    build(socket, id, &Workshops.detach_workshop/3, "Workshop tirado da programação.")
   end
 
-  defp pagamento("paid"), do: :paid
-  defp pagamento("waived"), do: :waived
-  defp pagamento(_pending), do: :pending
+  defp payment("paid"), do: :paid
+  defp payment("waived"), do: :waived
+  defp payment(_pending), do: :pending
 
-  defp erro_do_pacote({:full, workshop}),
+  defp package_error({:full, workshop}),
     do: "#{workshop.title} lotou, então o pacote não deu. Escolha os dias que ainda têm vaga."
 
-  defp erro_do_pacote(:already_enrolled), do: "Você já tem a programação toda."
-  defp erro_do_pacote(:organizer), do: "Você organiza esta programação."
-  defp erro_do_pacote(:no_package), do: "Esta programação não tem preço fechado."
-  defp erro_do_pacote(_outro), do: "Não foi possível confirmar o pacote."
+  defp package_error(:already_enrolled), do: "Você já tem a programação toda."
+  defp package_error(:organizer), do: "Você organiza esta programação."
+  defp package_error(:no_package), do: "Esta programação não tem preço fechado."
+  defp package_error(_other), do: "Não foi possível confirmar o pacote."
 
-  defp alternar(selecionados, id) do
+  defp toggle(selecionados, id) do
     case MapSet.member?(selecionados, id) do
       true -> MapSet.delete(selecionados, id)
       false -> MapSet.put(selecionados, id)
     end
   end
 
-  defp tom(%{enrolled: []}), do: :error
-  defp tom(_resultado), do: :info
+  defp tone(%{enrolled: []}), do: :error
+  defp tone(_resultado), do: :info
 
   # Names what failed: "one did not work" says neither which nor why.
-  defp resumo_do_lote(%{enrolled: [], failed: [{workshop, motivo} | _]}) do
-    "#{workshop.title} não deu: #{motivo_do_erro(motivo)}"
+  defp batch_summary(%{enrolled: [], failed: [{workshop, reason} | _]}) do
+    "#{workshop.title} não deu: #{error_reason(reason)}"
   end
 
-  defp resumo_do_lote(%{enrolled: inscritos, failed: []}) do
-    "#{confirmadas(length(inscritos))} Te vejo lá."
+  defp batch_summary(%{enrolled: enrolled, failed: []}) do
+    "#{confirmadas(length(enrolled))} Te vejo lá."
   end
 
-  defp resumo_do_lote(%{enrolled: inscritos, failed: [{workshop, motivo} | _]}) do
-    "#{confirmadas(length(inscritos))} #{workshop.title} não deu: #{motivo_do_erro(motivo)}"
+  defp batch_summary(%{enrolled: enrolled, failed: [{workshop, reason} | _]}) do
+    "#{confirmadas(length(enrolled))} #{workshop.title} não deu: #{error_reason(reason)}"
   end
 
   defp confirmadas(1), do: "1 inscrição confirmada."
   defp confirmadas(total), do: "#{total} inscrições confirmadas."
 
-  defp motivo_do_erro(:full), do: "as vagas acabaram."
-  defp motivo_do_erro(:not_open), do: "não está aberto para inscrição."
-  defp motivo_do_erro(:organizer), do: "você organiza esse."
-  defp motivo_do_erro(_outro), do: "não foi possível inscrever."
+  defp error_reason(:full), do: "as vagas acabaram."
+  defp error_reason(:not_open), do: "não está aberto para inscrição."
+  defp error_reason(:organizer), do: "você organiza esse."
+  defp error_reason(_other), do: "não foi possível inscrever."
 
   # The id comes from params on a public page: only the organizer changes it, and
   # the real authorization lives in the context, which checks both sides.
-  defp montar(%{assigns: %{owner?: false}} = socket, _id, _fun, _mensagem),
+  defp build(%{assigns: %{owner?: false}} = socket, _id, _fun, _mensagem),
     do: {:noreply, socket}
 
-  defp montar(socket, id, fun, mensagem) do
+  defp build(socket, id, fun, mensagem) do
     user = socket.assigns.current_user
 
     case fun.(socket.assigns.program, user, id) do
@@ -299,9 +299,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   end
 
   @doc false
-  def tom_do_pagamento(:paid), do: :green
-  def tom_do_pagamento(:waived), do: :neutral
-  def tom_do_pagamento(_pending), do: :orange
+  def payment_tone(:paid), do: :green
+  def payment_tone(:waived), do: :neutral
+  def payment_tone(_pending), do: :orange
 
   @doc false
   def selecao_label(0), do: "Marque os workshops que você vai."

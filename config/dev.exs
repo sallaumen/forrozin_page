@@ -100,7 +100,7 @@ config :o_grupo_de_estudos, OGrupoDeEstudos.Mailer,
   port: 587
 
 # Ativa o filtro: emails @teste.com vão pro mailbox local, não pro SMTP real.
-config :o_grupo_de_estudos, :filtrar_emails_teste, true
+config :o_grupo_de_estudos, :filter_test_emails, true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

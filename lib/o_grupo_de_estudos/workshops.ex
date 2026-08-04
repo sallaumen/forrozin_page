@@ -162,12 +162,12 @@ defmodule OGrupoDeEstudos.Workshops do
   Public opens for anyone with an account. Private requires approval, which turns
   into enrollment.
   """
-  @spec liberado?(Workshop.t(), User.t() | nil) :: boolean()
-  def liberado?(%Workshop{visibility: :public}, %User{}), do: true
-  def liberado?(%Workshop{visibility: :public}, nil), do: false
-  def liberado?(%Workshop{}, nil), do: false
+  @spec inside_open?(Workshop.t(), User.t() | nil) :: boolean()
+  def inside_open?(%Workshop{visibility: :public}, %User{}), do: true
+  def inside_open?(%Workshop{visibility: :public}, nil), do: false
+  def inside_open?(%Workshop{}, nil), do: false
 
-  def liberado?(%Workshop{} = workshop, %User{} = user) do
+  def inside_open?(%Workshop{} = workshop, %User{} = user) do
     admin?(workshop, user) or not is_nil(EnrollmentQuery.get_for_user(workshop.id, user.id))
   end
 
@@ -192,35 +192,36 @@ defmodule OGrupoDeEstudos.Workshops do
 
   def request_join(%Workshop{} = workshop, %User{} = user) do
     case JoinRequestQuery.get(workshop.id, user.id) do
-      nil -> criar_pedido(workshop, user)
-      %JoinRequest{status: :rejected} = recusado -> repetir_pedido(recusado, workshop, user)
+      nil -> create_request(workshop, user)
+      %JoinRequest{status: :rejected} = recusado -> retry_request(recusado, workshop, user)
       %JoinRequest{} -> {:error, :already_requested}
     end
   end
 
-  defp criar_pedido(workshop, user) do
+  defp create_request(workshop, user) do
     %JoinRequest{}
     |> JoinRequest.changeset(%{workshop_id: workshop.id, user_id: user.id, status: :pending})
     |> Repo.insert()
-    |> avisar_do_pedido(workshop, user)
+    |> notify_about_request(workshop, user)
   end
 
-  defp repetir_pedido(pedido, workshop, user) do
-    pedido
+  defp retry_request(request, workshop, user) do
+    request
     |> Ecto.Changeset.change(status: :pending, reviewed_at: nil, reviewed_by_id: nil)
     |> Repo.update()
-    |> avisar_do_pedido(workshop, user)
+    |> notify_about_request(workshop, user)
   end
 
-  defp avisar_do_pedido({:ok, pedido}, workshop, user) do
+  defp notify_about_request({:ok, request}, workshop, user) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_workshop_join_request(user.id, workshop.organizer_id, workshop.id)
     end)
 
-    {:ok, pedido}
+    {:ok, request}
   end
 
-  defp avisar_do_pedido({:error, _changeset}, _workshop, _user), do: {:error, :already_requested}
+  defp notify_about_request({:error, _changeset}, _workshop, _user),
+    do: {:error, :already_requested}
 
   @doc """
   Approves the request and enrolls in one go.
@@ -232,15 +233,15 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_found | :full | term()}
   def approve_join(%Workshop{} = workshop, %User{} = actor, request_id) do
     with :ok <- ensure_admin(workshop, actor),
-         %JoinRequest{} = pedido <- buscar_pedido(workshop, request_id),
-         %User{} = pessoa <- Accounts.get_user_by_id(pedido.user_id),
+         %JoinRequest{} = request <- fetch_request(workshop, request_id),
+         %User{} = pessoa <- Accounts.get_user_by_id(request.user_id),
          # `enroll_overbooking` and not `enroll`: accepting is the teacher's call, since
          # they know whether one more fits in the room. The system warns, it does not decide.
-         {:ok, _inscricao} <- enroll_overbooking(workshop, pessoa) do
-      responder(pedido, :approved, actor, workshop, :workshop_join_approved)
+         {:ok, _enrollment} <- enroll_overbooking(workshop, pessoa) do
+      respond(request, :approved, actor, workshop, :workshop_join_approved)
     else
       nil -> {:error, :not_found}
-      {:error, motivo} -> {:error, motivo}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -249,41 +250,41 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, JoinRequest.t()} | {:error, :unauthorized | :not_found}
   def reject_join(%Workshop{} = workshop, %User{} = actor, request_id) do
     with :ok <- ensure_admin(workshop, actor),
-         %JoinRequest{} = pedido <- buscar_pedido(workshop, request_id) do
-      responder(pedido, :rejected, actor, workshop, :workshop_join_rejected)
+         %JoinRequest{} = request <- fetch_request(workshop, request_id) do
+      respond(request, :rejected, actor, workshop, :workshop_join_rejected)
     else
       nil -> {:error, :not_found}
-      {:error, motivo} -> {:error, motivo}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp buscar_pedido(workshop, request_id) do
+  defp fetch_request(workshop, request_id) do
     Repo.get_by(JoinRequest, id: request_id, workshop_id: workshop.id)
   rescue
     Ecto.Query.CastError -> nil
   end
 
-  defp responder(pedido, status, actor, workshop, acao) do
-    pedido
+  defp respond(request, status, actor, workshop, acao) do
+    request
     |> JoinRequest.review_changeset(status, actor)
     |> Repo.update()
     |> case do
-      {:ok, respondido} -> avisar_da_resposta(respondido, workshop, acao)
-      erro -> erro
+      {:ok, respondido} -> notify_answer(respondido, workshop, acao)
+      error -> error
     end
   end
 
-  defp avisar_da_resposta(pedido, workshop, acao) do
+  defp notify_answer(request, workshop, acao) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_workshop_join_review(
         workshop.organizer_id,
-        pedido.user_id,
+        request.user_id,
         workshop.id,
         acao
       )
     end)
 
-    {:ok, pedido}
+    {:ok, request}
   end
 
   defdelegate list_teachers(workshop_id), to: TeacherQuery, as: :list_for_workshop
@@ -305,57 +306,57 @@ defmodule OGrupoDeEstudos.Workshops do
   def set_teachers(%Workshop{} = workshop, %User{} = actor, entradas) do
     with :ok <- ensure_admin(workshop, actor),
          :ok <- ensure_cabem(entradas),
-         {:ok, limpas} <- normalizar_professores(entradas) do
-      regravar_professores(workshop, limpas)
+         {:ok, limpas} <- normalize_teachers(entradas) do
+      rewrite_teachers(workshop, limpas)
     end
   end
 
   defp ensure_cabem(entradas) when length(entradas) <= @max_teachers, do: :ok
   defp ensure_cabem(_demais), do: {:error, :too_many_teachers}
 
-  defp normalizar_professores(entradas) do
+  defp normalize_teachers(entradas) do
     entradas
     |> Enum.with_index(1)
-    |> Enum.reduce_while({:ok, []}, fn {entrada, posicao}, {:ok, acc} ->
-      case normalizar_professor(entrada, posicao) do
+    |> Enum.reduce_while({:ok, []}, fn {entry, posicao}, {:ok, acc} ->
+      case normalize_teacher(entry, posicao) do
         {:ok, limpa} -> {:cont, {:ok, [limpa | acc]}}
-        :erro -> {:halt, {:error, :invalid_teacher}}
+        :error -> {:halt, {:error, :invalid_teacher}}
       end
     end)
     |> case do
       {:ok, invertidas} -> {:ok, Enum.reverse(invertidas)}
-      erro -> erro
+      error -> error
     end
   end
 
-  defp normalizar_professor(%{user_id: user_id}, posicao) when is_binary(user_id) do
+  defp normalize_teacher(%{user_id: user_id}, posicao) when is_binary(user_id) do
     case Accounts.get_user_by_id(user_id) do
-      nil -> :erro
+      nil -> :error
       %User{id: id} -> {:ok, %{user_id: id, display_name: nil, position: posicao}}
     end
   end
 
-  defp normalizar_professor(%{display_name: nome}, posicao) when is_binary(nome) do
-    case String.trim(nome) do
-      "" -> :erro
+  defp normalize_teacher(%{display_name: name}, posicao) when is_binary(name) do
+    case String.trim(name) do
+      "" -> :error
       limpo -> {:ok, %{user_id: nil, display_name: limpo, position: posicao}}
     end
   end
 
-  defp normalizar_professor(_sem_conta_nem_nome, _posicao), do: :erro
+  defp normalize_teacher(_neither_account_nor_name, _posicao), do: :error
 
   # Delete and rewrite in the same transaction: the list is short and the order
   # matters, and reconciling two rows would cost more code than rewriting.
-  defp regravar_professores(workshop, entradas) do
+  defp rewrite_teachers(workshop, entradas) do
     Repo.transact(fn ->
       TeacherQuery.delete_all(workshop.id)
-      Enum.reduce_while(entradas, {:ok, []}, &inserir_professor(&1, &2, workshop))
+      Enum.reduce_while(entradas, {:ok, []}, &insert_teacher(&1, &2, workshop))
     end)
   end
 
-  defp inserir_professor(entrada, {:ok, acc}, workshop) do
+  defp insert_teacher(entry, {:ok, acc}, workshop) do
     %WorkshopTeacher{}
-    |> WorkshopTeacher.changeset(Map.put(entrada, :workshop_id, workshop.id))
+    |> WorkshopTeacher.changeset(Map.put(entry, :workshop_id, workshop.id))
     |> Repo.insert()
     |> case do
       {:ok, criado} -> {:cont, {:ok, [criado | acc]}}
@@ -390,21 +391,21 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, WorkshopStep.t()} | {:error, :unauthorized | :not_found | :already_added}
   def add_step(%Workshop{} = workshop, %User{} = actor, step_id) do
     with :ok <- ensure_admin(workshop, actor),
-         %{id: id} <- buscar_passo(step_id) do
-      inserir_passo(workshop, id)
+         %{id: id} <- fetch_step(step_id) do
+      insert_step(workshop, id)
     else
       nil -> {:error, :not_found}
-      {:error, motivo} -> {:error, motivo}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp buscar_passo(step_id) do
+  defp fetch_step(step_id) do
     OGrupoDeEstudos.Encyclopedia.StepQuery.get_by(id: step_id)
   rescue
     Ecto.Query.CastError -> nil
   end
 
-  defp inserir_passo(workshop, step_id) do
+  defp insert_step(workshop, step_id) do
     %WorkshopStep{}
     |> WorkshopStep.changeset(%{
       workshop_id: workshop.id,
@@ -469,13 +470,13 @@ defmodule OGrupoDeEstudos.Workshops do
         content_type: content_type,
         byte_size: byte_size
       }) do
-    with :ok <- ensure_pode_enviar(workshop, user),
+    with :ok <- ensure_can_upload(workshop, user),
          {:ok, kind} <- ensure_tipo(content_type),
-         :ok <- ensure_cota(workshop.id, byte_size),
+         :ok <- ensure_quota(workshop.id, byte_size),
          :ok <- ensure_espaco(byte_size),
          {:ok, key} <-
            Storage.put_private(
-             pasta_da_galeria(workshop.id),
+             gallery_folder(workshop.id),
              tmp_path,
              WorkshopMedia.extensao(content_type)
            ) do
@@ -483,7 +484,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  defp ensure_pode_enviar(workshop, user) do
+  defp ensure_can_upload(workshop, user) do
     if can_see_media?(workshop, user), do: :ok, else: {:error, :unauthorized}
   end
 
@@ -494,10 +495,10 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  defp ensure_cota(workshop_id, byte_size) do
-    %{bytes: usados} = MediaQuery.usage(workshop_id)
+  defp ensure_quota(workshop_id, byte_size) do
+    %{bytes: used} = MediaQuery.usage(workshop_id)
 
-    if usados + byte_size <= @max_media_bytes_por_workshop,
+    if used + byte_size <= @max_media_bytes_por_workshop,
       do: :ok,
       else: {:error, :media_quota}
   end
@@ -505,7 +506,7 @@ defmodule OGrupoDeEstudos.Workshops do
   defp ensure_espaco(byte_size) do
     case Storage.free_bytes() do
       :unknown -> :ok
-      livres when livres - byte_size > @min_free_bytes -> :ok
+      free when free - byte_size > @min_free_bytes -> :ok
       _apertado -> {:error, :storage_full}
     end
   end
@@ -522,9 +523,9 @@ defmodule OGrupoDeEstudos.Workshops do
       official: admin?(workshop, user)
     }
 
-    case gravar_com_fila(atributos) do
+    case insert_with_job(atributos) do
       {:ok, media} -> {:ok, Repo.preload(media, :uploaded_by)}
-      {:error, motivo} -> descartar_arquivo(key, motivo)
+      {:error, reason} -> discard_file(key, reason)
     end
   end
 
@@ -532,28 +533,28 @@ defmodule OGrupoDeEstudos.Workshops do
   # with its conversion scheduled or nothing lands. Otherwise a failure to enqueue
   # would leave the row in "processing" forever with no job, and Lifeline does not
   # rescue a job that does not exist.
-  defp gravar_com_fila(atributos) do
+  defp insert_with_job(atributos) do
     Repo.transact(fn ->
       with {:ok, media} <- Repo.insert(WorkshopMedia.changeset(%WorkshopMedia{}, atributos)) do
-        enfileirado(media)
+        enqueued(media)
       end
     end)
   end
 
   # A video leaves the upload as `:processing`: the file is already stored and the
   # conversion happens later, so nobody watches a frozen progress bar while ffmpeg runs.
-  defp enfileirado(%WorkshopMedia{status: :processing, id: id} = media) do
+  defp enqueued(%WorkshopMedia{status: :processing, id: id} = media) do
     case Oban.insert(TranscodeWorkshopVideo.new(%{"media_id" => id})) do
       {:ok, _job} -> {:ok, media}
-      {:error, motivo} -> {:error, motivo}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp enfileirado(media), do: {:ok, media}
+  defp enqueued(media), do: {:ok, media}
 
-  defp descartar_arquivo(key, erro) do
+  defp discard_file(key, error) do
     Storage.delete_private(key)
-    {:error, erro}
+    {:error, error}
   end
 
   @doc "How to serve a media file: `{:file, path}` or `{:redirect, url}`."
@@ -577,36 +578,36 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, WorkshopMedia.t()} | {:error, :unauthorized | :not_found}
   def remove_media(%Workshop{} = workshop, %User{} = user, media_id) do
     with %WorkshopMedia{} = media <- MediaQuery.get_scoped(media_id, workshop.id),
-         :ok <- ensure_pode_apagar(workshop, user, media) do
-      apagar_media(media)
+         :ok <- ensure_can_delete(workshop, user, media) do
+      delete_media(media)
     else
       nil -> {:error, :not_found}
-      {:error, motivo} -> {:error, motivo}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp ensure_pode_apagar(workshop, user, media) do
+  defp ensure_can_delete(workshop, user, media) do
     if media.uploaded_by_id == user.id or admin?(workshop, user),
       do: :ok,
       else: {:error, :unauthorized}
   end
 
-  defp apagar_media(media) do
+  defp delete_media(media) do
     agora = DateTime.utc_now() |> DateTime.truncate(:second)
 
     case media |> Ecto.Changeset.change(deleted_at: agora) |> Repo.update() do
-      {:ok, apagada} ->
+      {:ok, deleted} ->
         Storage.delete_private(media.storage_key)
-        apagar_poster(media.poster_key)
-        {:ok, apagada}
+        delete_poster(media.poster_key)
+        {:ok, deleted}
 
-      erro ->
-        erro
+      error ->
+        error
     end
   end
 
-  defp apagar_poster(nil), do: :ok
-  defp apagar_poster(key), do: Storage.delete_private(key)
+  defp delete_poster(nil), do: :ok
+  defp delete_poster(key), do: Storage.delete_private(key)
 
   @doc """
   Converts the video of a media row to 720p H.264 and marks it as ready.
@@ -632,74 +633,74 @@ defmodule OGrupoDeEstudos.Workshops do
 
   defp converter(media, false) do
     Logger.warning("[Transcode] sem ffmpeg, mídia #{media.id} fica como veio")
-    marcar_pronta(media, %{})
+    mark_ready(media, %{})
   end
 
   defp converter(media, true) do
-    saida = caminho_temporario("mp4")
+    output = temp_path("mp4")
 
     try do
-      rodar_transcode(media, saida)
+      run_transcode(media, output)
     after
-      File.rm(saida)
+      File.rm(output)
     end
   end
 
   # with_private_file exists because on an external provider the original is not
   # a local file: the adapter downloads to a temporary one and ffmpeg reads from there.
-  defp rodar_transcode(media, saida) do
-    case Storage.with_private_file(media.storage_key, &Video.transcode(&1, saida)) do
-      {:ok, :ok} -> guardar_convertido(media, saida, tamanho(saida))
-      {:ok, {:error, motivo}} -> desistir(media, motivo)
-      {:error, motivo} -> desistir(media, motivo)
+  defp run_transcode(media, output) do
+    case Storage.with_private_file(media.storage_key, &Video.transcode(&1, output)) do
+      {:ok, :ok} -> store_converted(media, output, size(output))
+      {:ok, {:error, reason}} -> give_up(media, reason)
+      {:error, reason} -> give_up(media, reason)
     end
   end
 
   # An ffmpeg that exits 0 and writes an empty file exists. Storing that would
   # delete the uploaded video and put nothing in its place.
-  defp guardar_convertido(media, _saida, 0), do: desistir(media, :saida_vazia)
+  defp store_converted(media, _output, 0), do: give_up(media, :empty_output)
 
-  defp guardar_convertido(media, saida, bytes) do
-    case Storage.put_private(pasta_da_galeria(media.workshop_id), saida, ".mp4") do
-      {:ok, chave} -> trocar_arquivo(media, chave, bytes, gerar_poster(media, saida))
-      {:error, motivo} -> desistir(media, motivo)
+  defp store_converted(media, output, bytes) do
+    case Storage.put_private(gallery_folder(media.workshop_id), output, ".mp4") do
+      {:ok, key} -> replace_file(media, key, bytes, generate_poster(media, output))
+      {:error, reason} -> give_up(media, reason)
     end
   end
 
-  defp trocar_arquivo(media, chave, bytes, poster_key) do
+  defp replace_file(media, key, bytes, poster_key) do
     atributos = %{
-      storage_key: chave,
+      storage_key: key,
       content_type: "video/mp4",
       byte_size: bytes,
       poster_key: poster_key
     }
 
-    case marcar_pronta(media, atributos) do
+    case mark_ready(media, atributos) do
       :ok -> Storage.delete_private(media.storage_key)
       # Whoever deleted during the transcode wins: the converted file and the poster
       # go away instead of becoming orphans, and there is nothing to retry.
-      {:error, :apagada} -> descartar_convertido(chave, poster_key)
+      {:error, :deleted} -> discard_converted(key, poster_key)
     end
   end
 
-  defp descartar_convertido(chave, poster_key) do
-    Storage.delete_private(chave)
-    apagar_poster(poster_key)
+  defp discard_converted(key, poster_key) do
+    Storage.delete_private(key)
+    delete_poster(poster_key)
     :ok
   end
 
-  defp desistir(media, motivo) do
-    Logger.warning("[Transcode] mídia #{media.id} falhou (#{inspect(motivo)}), fica o original")
+  defp give_up(media, reason) do
+    Logger.warning("[Transcode] mídia #{media.id} falhou (#{inspect(reason)}), fica o original")
 
-    case marcar_pronta(media, %{}) do
+    case mark_ready(media, %{}) do
       :ok -> :ok
-      {:error, :apagada} -> :ok
+      {:error, :deleted} -> :ok
     end
   end
 
   # Conditioned on `deleted_at` AGAIN, not only at the job entry: ffmpeg takes
   # minutes, and a deletion in between cannot be run over.
-  defp marcar_pronta(media, atributos) do
+  defp mark_ready(media, atributos) do
     campos =
       atributos
       |> Map.put(:status, :ready)
@@ -710,49 +711,49 @@ defmodule OGrupoDeEstudos.Workshops do
 
     case Repo.update_all(viva, set: campos) do
       {1, _} -> :ok
-      {0, _} -> {:error, :apagada}
+      {0, _} -> {:error, :deleted}
     end
   end
 
   # The poster is decoration: without it the gallery shows the first frame, which
   # is usually black. Not a reason to hold the media in "processing".
-  defp gerar_poster(media, video) do
-    destino = caminho_temporario("jpg")
+  defp generate_poster(media, video) do
+    dest = temp_path("jpg")
 
     try do
-      guardar_poster(media, video, destino)
+      store_poster(media, video, dest)
     after
-      File.rm(destino)
+      File.rm(dest)
     end
   end
 
-  defp guardar_poster(media, video, destino) do
-    case Video.poster(video, destino) do
-      :ok -> chave_do_poster(media, destino)
-      {:error, _motivo} -> nil
+  defp store_poster(media, video, dest) do
+    case Video.poster(video, dest) do
+      :ok -> poster_key_for(media, dest)
+      {:error, _reason} -> nil
     end
   end
 
-  defp chave_do_poster(media, destino) do
-    case Storage.put_private(pasta_da_galeria(media.workshop_id), destino, ".jpg") do
-      {:ok, chave} -> chave
-      {:error, _motivo} -> nil
+  defp poster_key_for(media, dest) do
+    case Storage.put_private(gallery_folder(media.workshop_id), dest, ".jpg") do
+      {:ok, key} -> key
+      {:error, _reason} -> nil
     end
   end
 
   # One folder per workshop: the bucket stays browsable by context, and what
   # belongs to a workshop lives together (original, converted and poster).
-  defp pasta_da_galeria(workshop_id), do: Path.join(@media_dir, workshop_id)
+  defp gallery_folder(workshop_id), do: Path.join(@media_dir, workshop_id)
 
-  defp caminho_temporario(ext) do
-    nome = "workshop_video_#{System.unique_integer([:positive])}.#{ext}"
-    Path.join(System.tmp_dir!(), nome)
+  defp temp_path(ext) do
+    name = "workshop_video_#{System.unique_integer([:positive])}.#{ext}"
+    Path.join(System.tmp_dir!(), name)
   end
 
-  defp tamanho(caminho) do
-    case File.stat(caminho) do
+  defp size(path) do
+    case File.stat(path) do
       {:ok, %{size: bytes}} -> bytes
-      {:error, _motivo} -> 0
+      {:error, _reason} -> 0
     end
   end
 
@@ -769,9 +770,9 @@ defmodule OGrupoDeEstudos.Workshops do
              :no_package | :organizer | :already_enrolled | {:full, Workshop.t()} | term()}
   def enroll_in_package(%WorkshopProgram{} = program, %User{} = user) do
     with :ok <- ensure_package(program),
-         :ok <- ensure_nao_organiza(program, user),
-         {:ok, matricula} <- criar_matricula(program, user) do
-      cobrir_workshops(program, user, matricula)
+         :ok <- ensure_not_organizer(program, user),
+         {:ok, matricula} <- create_membership(program, user) do
+      cover_workshops(program, user, matricula)
     end
   end
 
@@ -779,12 +780,12 @@ defmodule OGrupoDeEstudos.Workshops do
     if WorkshopProgram.pacote?(program), do: :ok, else: {:error, :no_package}
   end
 
-  defp ensure_nao_organiza(%WorkshopProgram{owner_id: id}, %User{id: id}),
+  defp ensure_not_organizer(%WorkshopProgram{owner_id: id}, %User{id: id}),
     do: {:error, :organizer}
 
-  defp ensure_nao_organiza(_program, _user), do: :ok
+  defp ensure_not_organizer(_program, _user), do: :ok
 
-  defp criar_matricula(program, user) do
+  defp create_membership(program, user) do
     %ProgramEnrollment{}
     |> ProgramEnrollment.changeset(%{program_id: program.id, user_id: user.id})
     |> Repo.insert()
@@ -796,68 +797,68 @@ defmodule OGrupoDeEstudos.Workshops do
 
   # Each workshop gets its own transaction (same reason as enroll_many), and the
   # compensation undoes whatever already landed if one fails.
-  defp cobrir_workshops(program, user, matricula) do
+  defp cover_workshops(program, user, matricula) do
     workshops = ProgramQuery.list_workshops(program.id)
 
     case Enum.reduce_while(workshops, [], &cobrir_um(&1, user, matricula, &2)) do
-      {:error, motivo, criadas} -> desfazer_pacote(matricula, criadas, motivo)
+      {:error, reason, criadas} -> desfazer_pacote(matricula, criadas, reason)
       _criadas -> {:ok, matricula}
     end
   end
 
   defp cobrir_um(workshop, user, matricula, criadas) do
-    case garantir_inscricao(workshop, user, matricula) do
-      {:ok, :nova} -> {:cont, [workshop | criadas]}
+    case ensure_enrollment(workshop, user, matricula) do
+      {:ok, :created} -> {:cont, [workshop | criadas]}
       {:ok, :ja_existia} -> {:cont, criadas}
-      {:error, motivo} -> {:halt, {:error, {motivo, workshop}, criadas}}
+      {:error, reason} -> {:halt, {:error, {reason, workshop}, criadas}}
     end
   end
 
   # Whoever was already enrolled in one of the workshops moves to the package
   # without a duplicated enrollment.
-  defp garantir_inscricao(workshop, user, matricula) do
+  defp ensure_enrollment(workshop, user, matricula) do
     case EnrollmentQuery.get_for_user(workshop.id, user.id) do
       nil -> inscrever_pelo_pacote(workshop, user, matricula)
-      inscricao -> vincular_ao_pacote(inscricao, matricula)
+      enrollment -> vincular_ao_pacote(enrollment, matricula)
     end
   end
 
   defp inscrever_pelo_pacote(workshop, user, matricula) do
     case insert_enrollment_locked(workshop, user) do
-      {:ok, inscricao} ->
-        inscricao
+      {:ok, enrollment} ->
+        enrollment
         |> Ecto.Changeset.change(program_enrollment_id: matricula.id)
         |> Repo.update()
         |> case do
-          {:ok, _} -> {:ok, :nova}
-          erro -> erro
+          {:ok, _} -> {:ok, :created}
+          error -> error
         end
 
-      {:error, motivo} ->
-        {:error, motivo}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  defp vincular_ao_pacote(inscricao, matricula) do
-    inscricao
+  defp vincular_ao_pacote(enrollment, matricula) do
+    enrollment
     |> Ecto.Changeset.change(program_enrollment_id: matricula.id)
     |> Repo.update()
     |> case do
       {:ok, _} -> {:ok, :ja_existia}
-      erro -> erro
+      error -> error
     end
   end
 
-  defp desfazer_pacote(matricula, criadas, {motivo, workshop}) do
-    for w <- criadas, do: apagar_inscricao(w.id, matricula.user_id)
+  defp desfazer_pacote(matricula, criadas, {reason, workshop}) do
+    for w <- criadas, do: delete_enrollment(w.id, matricula.user_id)
     Repo.delete(matricula)
-    {:error, {motivo, workshop}}
+    {:error, {reason, workshop}}
   end
 
-  defp apagar_inscricao(workshop_id, user_id) do
+  defp delete_enrollment(workshop_id, user_id) do
     case EnrollmentQuery.get_for_user(workshop_id, user_id) do
       nil -> :ok
-      inscricao -> Repo.delete(inscricao)
+      enrollment -> Repo.delete(enrollment)
     end
   end
 
@@ -889,7 +890,7 @@ defmodule OGrupoDeEstudos.Workshops do
       matricula |> ProgramEnrollment.payment_changeset(status) |> Repo.update()
     else
       nil -> {:error, :not_found}
-      {:error, motivo} -> {:error, motivo}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -921,16 +922,16 @@ defmodule OGrupoDeEstudos.Workshops do
     opts
     |> Keyword.put(:only_loose, not buscando?)
     |> WorkshopQuery.list_feed()
-    |> sem_repetir_programa(programas)
+    |> without_repeating_program(programas)
     |> Enum.map(&item_de_workshop/1)
-    |> Enum.concat(Enum.map(programas, &item_de_programa(&1, resumos)))
-    |> ordenar_por_data(Keyword.get(opts, :period, :upcoming))
+    |> Enum.concat(Enum.map(programas, &program_item(&1, resumos)))
+    |> sort_by_date(Keyword.get(opts, :period, :upcoming))
   end
 
   # In a search the program and its workshops can match at the same time. Without
   # this the festival card would come sandwiched between its own children, and the
   # counter would announce three events where there is one.
-  defp sem_repetir_programa(workshops, programas) do
+  defp without_repeating_program(workshops, programas) do
     ja_listados = MapSet.new(programas, fn {program, _} -> program.id end)
 
     Enum.reject(workshops, &MapSet.member?(ja_listados, &1.program_id))
@@ -947,7 +948,7 @@ defmodule OGrupoDeEstudos.Workshops do
   # The period decides WHICH programs come in; the summary shown is the whole
   # festival, otherwise the card would say "3 workshops" while the program page
   # shows fifteen.
-  defp item_de_programa({program, do_periodo}, resumos) do
+  defp program_item({program, do_periodo}, resumos) do
     %{
       kind: :program,
       id: program.id,
@@ -959,14 +960,14 @@ defmodule OGrupoDeEstudos.Workshops do
 
   # In the past the agenda runs from most recent backwards: what just happened
   # matters more than what happened a year ago.
-  defp ordenar_por_data(itens, :past), do: Enum.sort_by(itens, & &1.starts_at, {:desc, DateTime})
-  defp ordenar_por_data(itens, _period), do: Enum.sort_by(itens, & &1.starts_at, DateTime)
+  defp sort_by_date(itens, :past), do: Enum.sort_by(itens, & &1.starts_at, {:desc, DateTime})
+  defp sort_by_date(itens, _period), do: Enum.sort_by(itens, & &1.starts_at, DateTime)
 
   # One folder per poster owner, workshops and programs apart. The file name stays
   # random, which is what prevents scanning; the id in the folder only organizes
   # (the route is by slug, an id opens nothing).
-  defp pasta_do_flyer(%Workshop{id: id}), do: "flyers/workshops/#{id}"
-  defp pasta_do_flyer(%WorkshopProgram{id: id}), do: "flyers/programas/#{id}"
+  defp flyer_folder(%Workshop{id: id}), do: "flyers/workshops/#{id}"
+  defp flyer_folder(%WorkshopProgram{id: id}), do: "flyers/programas/#{id}"
 
   @doc """
   Stores the promotional flyer of the workshop and deletes the previous one.
@@ -978,10 +979,10 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, Workshop.t()} | {:error, :unauthorized | term()}
   def put_workshop_flyer(%Workshop{} = workshop, %User{} = user, tmp_path, ext) do
     with :ok <- ensure_admin(workshop, user),
-         {:ok, url} <- Storage.save_image(pasta_do_flyer(workshop), tmp_path, ext) do
+         {:ok, url} <- Storage.save_image(flyer_folder(workshop), tmp_path, ext) do
       antigo = workshop.flyer_path
       resultado = workshop |> Workshop.flyer_changeset(url) |> Repo.update()
-      descartar_flyer(resultado, antigo)
+      discard_flyer(resultado, antigo)
     end
   end
 
@@ -992,7 +993,7 @@ defmodule OGrupoDeEstudos.Workshops do
     with :ok <- ensure_admin(workshop, user) do
       antigo = workshop.flyer_path
       resultado = workshop |> Workshop.flyer_changeset(nil) |> Repo.update()
-      descartar_flyer(resultado, antigo)
+      discard_flyer(resultado, antigo)
     end
   end
 
@@ -1001,10 +1002,10 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, WorkshopProgram.t()} | {:error, :unauthorized | term()}
   def put_program_flyer(%WorkshopProgram{} = program, %User{} = user, tmp_path, ext) do
     with :ok <- ensure_program_owner(program, user),
-         {:ok, url} <- Storage.save_image(pasta_do_flyer(program), tmp_path, ext) do
+         {:ok, url} <- Storage.save_image(flyer_folder(program), tmp_path, ext) do
       antigo = program.flyer_path
       resultado = program |> WorkshopProgram.flyer_changeset(url) |> Repo.update()
-      descartar_flyer(resultado, antigo)
+      discard_flyer(resultado, antigo)
     end
   end
 
@@ -1015,20 +1016,20 @@ defmodule OGrupoDeEstudos.Workshops do
     with :ok <- ensure_program_owner(program, user) do
       antigo = program.flyer_path
       resultado = program |> WorkshopProgram.flyer_changeset(nil) |> Repo.update()
-      descartar_flyer(resultado, antigo)
+      discard_flyer(resultado, antigo)
     end
   end
 
   # Only deletes the old file after the database confirms. The other way around, an
   # update error would leave the row pointing at a file that no longer exists.
-  defp descartar_flyer({:ok, _} = resultado, nil), do: resultado
+  defp discard_flyer({:ok, _} = resultado, nil), do: resultado
 
-  defp descartar_flyer({:ok, _} = resultado, antigo) do
+  defp discard_flyer({:ok, _} = resultado, antigo) do
     Storage.delete_image(antigo)
     resultado
   end
 
-  defp descartar_flyer(erro, _antigo), do: erro
+  defp discard_flyer(error, _antigo), do: error
 
   defdelegate get_program_by_slug(slug), to: ProgramQuery, as: :get_by_slug
   defdelegate get_program(id), to: ProgramQuery, as: :get
@@ -1243,17 +1244,17 @@ defmodule OGrupoDeEstudos.Workshops do
   def enroll_many(%WorkshopProgram{} = program, %User{} = user, workshop_ids) do
     case ProgramQuery.workshops_scoped(program.id, workshop_ids) do
       [] -> {:error, :none_selected}
-      workshops -> {:ok, inscrever_em_lote(program, user, workshops)}
+      workshops -> {:ok, enroll_batch(program, user, workshops)}
     end
   end
 
-  defp inscrever_em_lote(program, user, workshops) do
+  defp enroll_batch(program, user, workshops) do
     resultado =
       Enum.reduce(workshops, %{enrolled: [], failed: []}, fn workshop, acc ->
         acumular(acc, workshop, inscrever_um(workshop, user))
       end)
 
-    avisar_organizadores(resultado, program, user)
+    notify_batch_organizers(resultado, program, user)
     %{resultado | enrolled: Enum.reverse(resultado.enrolled)}
   end
 
@@ -1265,20 +1266,20 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   defp tratar_repetida({:error, :already_enrolled}), do: {:ok, :ja_estava}
-  defp tratar_repetida(outro), do: outro
+  defp tratar_repetida(other), do: other
 
   defp acumular(acc, workshop, {:ok, _}),
     do: %{acc | enrolled: [workshop | acc.enrolled]}
 
-  defp acumular(acc, workshop, {:error, motivo}),
-    do: %{acc | failed: acc.failed ++ [{workshop, motivo}]}
+  defp acumular(acc, workshop, {:error, reason}),
+    do: %{acc | failed: acc.failed ++ [{workshop, reason}]}
 
-  defp avisar_organizadores(%{enrolled: []}, _program, _user), do: :ok
+  defp notify_batch_organizers(%{enrolled: []}, _program, _user), do: :ok
 
-  defp avisar_organizadores(%{enrolled: workshops}, program, user) do
+  defp notify_batch_organizers(%{enrolled: workshops}, program, user) do
     SafeDispatch.run(fn ->
       workshops
-      |> destinatarios_do_lote(user)
+      |> batch_recipients(user)
       |> Enum.each(fn {organizer_id, workshop} ->
         Dispatcher.notify_program_enrollment(user.id, organizer_id, workshop.id, program.id)
       end)
@@ -1287,7 +1288,7 @@ defmodule OGrupoDeEstudos.Workshops do
 
   # One notice per person, even when they organize several workshops of the batch:
   # three identical lines in the inbox is the spam a program exists to kill.
-  defp destinatarios_do_lote(workshops, user) do
+  defp batch_recipients(workshops, user) do
     workshops
     |> Enum.flat_map(fn workshop -> Enum.map(admin_ids(workshop), &{&1, workshop}) end)
     |> Enum.reject(fn {organizer_id, _} -> organizer_id == user.id end)
@@ -1336,32 +1337,32 @@ defmodule OGrupoDeEstudos.Workshops do
   def cancel_enrollment(%Workshop{} = workshop, %User{id: user_id}) do
     case EnrollmentQuery.get_for_user(workshop.id, user_id) do
       nil -> {:error, :not_found}
-      enrollment -> enrollment |> Repo.delete() |> promover_da_fila(workshop)
+      enrollment -> enrollment |> Repo.delete() |> promote_from_waitlist(workshop)
     end
   end
 
   # An open seat calls whoever waited longest. One person per seat: the waitlist
   # moves one step, it does not drain.
-  defp promover_da_fila({:ok, _apagada} = resultado, workshop) do
+  defp promote_from_waitlist({:ok, _apagada} = resultado, workshop) do
     case WaitlistQuery.first_in_line(workshop.id) do
       nil -> resultado
-      entrada -> promover(entrada, workshop, resultado)
+      entry -> promote(entry, workshop, resultado)
     end
   end
 
-  defp promover_da_fila(erro, _workshop), do: erro
+  defp promote_from_waitlist(error, _workshop), do: error
 
-  defp promover(entrada, workshop, resultado) do
-    with %User{} = pessoa <- Accounts.get_user_by_id(entrada.user_id),
-         {:ok, _inscricao} <- enroll_overbooking(workshop, pessoa) do
-      Repo.delete(entrada)
-      avisar_promocao(workshop, pessoa)
+  defp promote(entry, workshop, resultado) do
+    with %User{} = pessoa <- Accounts.get_user_by_id(entry.user_id),
+         {:ok, _enrollment} <- enroll_overbooking(workshop, pessoa) do
+      Repo.delete(entry)
+      notify_promotion(workshop, pessoa)
     end
 
     resultado
   end
 
-  defp avisar_promocao(workshop, pessoa) do
+  defp notify_promotion(workshop, pessoa) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_waitlist_promoted(workshop.organizer_id, pessoa.id, workshop.id)
     end)
@@ -1400,8 +1401,8 @@ defmodule OGrupoDeEstudos.Workshops do
 
   def join_waitlist(%Workshop{} = workshop, %User{} = user) do
     with :ok <- ensure_lotado(workshop),
-         :ok <- ensure_fora_da_turma(workshop, user) do
-      inserir_na_fila(workshop, user)
+         :ok <- ensure_not_enrolled(workshop, user) do
+      insert_in_waitlist(workshop, user)
     end
   end
 
@@ -1409,19 +1410,19 @@ defmodule OGrupoDeEstudos.Workshops do
     if passaria_do_limite?(workshop), do: :ok, else: {:error, :has_room}
   end
 
-  defp ensure_fora_da_turma(workshop, user) do
+  defp ensure_not_enrolled(workshop, user) do
     case EnrollmentQuery.get_for_user(workshop.id, user.id) do
       nil -> :ok
       _ja_esta -> {:error, :already_enrolled}
     end
   end
 
-  defp inserir_na_fila(workshop, user) do
+  defp insert_in_waitlist(workshop, user) do
     %WaitlistEntry{}
     |> WaitlistEntry.changeset(%{workshop_id: workshop.id, user_id: user.id})
     |> Repo.insert()
     |> case do
-      {:ok, entrada} -> {:ok, entrada}
+      {:ok, entry} -> {:ok, entry}
       {:error, %Ecto.Changeset{}} -> {:error, :already_waiting}
     end
   end
@@ -1434,7 +1435,7 @@ defmodule OGrupoDeEstudos.Workshops do
   def leave_waitlist(%Workshop{} = workshop, %User{} = user) do
     case WaitlistQuery.get(workshop.id, user.id) do
       nil -> {:error, :not_found}
-      entrada -> Repo.delete(entrada)
+      entry -> Repo.delete(entry)
     end
   end
 

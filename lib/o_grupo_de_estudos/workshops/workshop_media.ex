@@ -81,7 +81,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
   @spec kind_do_tipo(String.t()) :: :photo | :video | :error
   def kind_do_tipo("image/" <> _), do: :photo
   def kind_do_tipo("video/" <> _), do: :video
-  def kind_do_tipo(_outro), do: :error
+  def kind_do_tipo(_other), do: :error
 
   @doc """
   Status the media enters the gallery with.

@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
   # anything outside this list would open stored XSS: a forged "image/svg+xml"
   # runs script on the site origin when opened straight from the URL. Outside the
   # list, the file goes down as a generic binary.
-  @tipos_seguros ~w(image/jpeg image/png image/webp video/mp4 video/quicktime)
+  @safe_types ~w(image/jpeg image/png image/webp video/mp4 video/quicktime)
 
   def show(conn, %{"id" => media_id}) do
     case autorizada(conn, media_id) do
@@ -25,7 +25,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
 
   def poster(conn, %{"id" => media_id}) do
     case autorizada(conn, media_id) do
-      {:ok, media} -> entregar_poster(conn, media)
+      {:ok, media} -> deliver_poster(conn, media)
       :error -> nao_encontrado(conn)
     end
   end
@@ -43,17 +43,17 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
 
   defp entregar(conn, media) do
     conn
-    |> put_resp_content_type(tipo_seguro(media.content_type), nil)
-    |> responder(Workshops.serve_media(media))
+    |> put_resp_content_type(safe_type(media.content_type), nil)
+    |> respond(Workshops.serve_media(media))
   end
 
   # The poster is a video frame: same permission as the media, otherwise the class
   # could be reconstructed in thumbnails without paying for it. Always JPEG: the
   # transcode generated it, never the uploader's browser.
-  defp entregar_poster(conn, media) do
+  defp deliver_poster(conn, media) do
     conn
     |> put_resp_content_type("image/jpeg", nil)
-    |> responder(Workshops.serve_poster(media))
+    |> respond(Workshops.serve_poster(media))
   end
 
   # The storage port decides how: a local file goes out through the kernel
@@ -63,14 +63,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
   # this path comes from `ObjectStorage.serve/1` with an opaque server-generated
   # key. User input is only the id, resolved through the database by `autorizada/2`.
   # sobelow_skip ["Traversal.SendFile"]
-  defp responder(conn, {:file, caminho}) do
-    conn |> cabecalhos_de_midia() |> send_file(200, caminho)
+  defp respond(conn, {:file, path}) do
+    conn |> media_headers() |> send_file(200, path)
   end
 
-  defp responder(conn, {:redirect, url}), do: redirect(conn, external: url)
-  defp responder(conn, {:error, :not_found}), do: nao_encontrado(conn)
+  defp respond(conn, {:redirect, url}), do: redirect(conn, external: url)
+  defp respond(conn, {:error, :not_found}), do: nao_encontrado(conn)
 
-  defp cabecalhos_de_midia(conn) do
+  defp media_headers(conn) do
     conn
     # Paid content: never in a shared cache.
     |> put_resp_header("cache-control", "private, no-store")
@@ -79,8 +79,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
 
   # No charset in any case: the file is binary, and "image/png; charset=utf-8"
   # is nonsense.
-  defp tipo_seguro(tipo) when tipo in @tipos_seguros, do: tipo
-  defp tipo_seguro(_desconfiado), do: "application/octet-stream"
+  defp safe_type(tipo) when tipo in @safe_types, do: tipo
+  defp safe_type(_untrusted), do: "application/octet-stream"
 
   defp nao_encontrado(conn), do: conn |> put_status(:not_found) |> text("Não encontrado")
 end

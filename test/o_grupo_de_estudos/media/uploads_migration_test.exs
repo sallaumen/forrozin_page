@@ -38,8 +38,8 @@ defmodule OGrupoDeEstudos.Media.UploadsMigrationTest do
 
     result = UploadsMigration.run(ctx.source)
 
-    assert result.arquivos == 2
-    assert result.falhas == []
+    assert result.files == 2
+    assert result.failures == []
   end
 
   test "rewrites avatar_path and flyer_path to the provider public URL", ctx do
@@ -81,8 +81,8 @@ defmodule OGrupoDeEstudos.Media.UploadsMigrationTest do
 
     result = UploadsMigration.run(ctx.source)
 
-    assert result.arquivos == 1
-    assert [{"workshop_media/v.mp4", :timeout}] = result.falhas
+    assert result.files == 1
+    assert [{"workshop_media/v.mp4", :timeout}] = result.failures
     assert result.reescritos == 0
     assert Repo.reload!(pessoa).avatar_path == "/uploads/avatars/u1_9.png"
   end
@@ -92,6 +92,6 @@ defmodule OGrupoDeEstudos.Media.UploadsMigrationTest do
     File.mkdir_p!(vazia)
     on_exit(fn -> File.rm_rf!(vazia) end)
 
-    assert %{arquivos: 0, falhas: []} = UploadsMigration.run(vazia)
+    assert %{files: 0, failures: []} = UploadsMigration.run(vazia)
   end
 end

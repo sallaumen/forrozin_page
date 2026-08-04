@@ -228,7 +228,7 @@
     <section :if={@workshop.visibility == :private} class="mt-8">
       <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
         Pedidos para entrar
-        <span :if={@pedidos != []} class="text-gold-600">· {length(@pedidos)} esperando</span>
+        <span :if={@requests != []} class="text-gold-600">· {length(@requests)} esperando</span>
       </h2>
       <p class="m-0 mb-3 text-[12.5px] text-ink-500">
         Este workshop aparece na agenda como qualquer outro, mas a entrada passa por você.
@@ -236,23 +236,23 @@
       </p>
 
       <div
-        :if={@pedidos != []}
+        :if={@requests != []}
         class="overflow-hidden rounded-2xl border border-ink-200 bg-ink-50"
       >
         <div
-          :for={pedido <- @pedidos}
-          id={"pedido-#{pedido.id}"}
+          :for={request <- @requests}
+          id={"pedido-#{request.id}"}
           class="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-ink-200 px-4 py-3 last:border-b-0"
         >
           <div class="flex min-w-0 flex-1 basis-full items-center gap-3 sm:basis-auto">
-            <.user_avatar user={pedido} size={:md} />
+            <.user_avatar user={request} size={:md} />
             <div class="min-w-0 flex-1">
               <p class="m-0 truncate text-[13.5px] font-bold text-ink-900">
-                {pedido.name || pedido.username}
+                {request.name || request.username}
               </p>
               <p class="m-0 truncate text-[11.5px] text-ink-500">
-                @{pedido.username}{cidade_do_pedido(pedido)} · pediu em {OGrupoDeEstudos.Brazil.format_datetime(
-                  pedido.requested_at
+                @{request.username}{request_city(request)} · pediu em {OGrupoDeEstudos.Brazil.format_datetime(
+                  request.requested_at
                 )}
               </p>
             </div>
@@ -262,7 +262,7 @@
             <button
               type="button"
               phx-click="approve_join"
-              phx-value-id={pedido.id}
+              phx-value-id={request.id}
               phx-disable-with="..."
               class="cursor-pointer rounded-full border-0 bg-accent-green px-4 py-1.5 font-serif text-[12px] font-semibold text-white"
             >
@@ -271,8 +271,8 @@
             <button
               type="button"
               phx-click="reject_join"
-              phx-value-id={pedido.id}
-              data-confirm={"Recusar o pedido de #{pedido.name || pedido.username}?"}
+              phx-value-id={request.id}
+              data-confirm={"Recusar o pedido de #{request.name || request.username}?"}
               class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-4 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
             >
               Recusar
@@ -281,7 +281,7 @@
         </div>
       </div>
 
-      <p :if={@pedidos == []} class="m-0 text-[13px] text-ink-500">
+      <p :if={@requests == []} class="m-0 text-[13px] text-ink-500">
         Nenhum pedido esperando. Quando alguém pedir para entrar, aparece aqui.
       </p>
     </section>
@@ -289,9 +289,9 @@
     <%!-- Fila de espera: a demanda reprimida em número. Fila grande é o
     sinal de que cabe abrir outra turma, e era isso que se perdia quando a
     página só dizia "esgotado". --%>
-    <section :if={@fila != []} class="mt-8">
+    <section :if={@waitlist != []} class="mt-8">
       <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-        Lista de espera <span class="text-accent-orange">· {length(@fila)} esperando</span>
+        Lista de espera <span class="text-accent-orange">· {length(@waitlist)} esperando</span>
       </h2>
       <p class="m-0 mb-3 text-[12.5px] text-ink-500">
         Gente que quis entrar e não coube. Se alguém cancelar, a primeira da fila entra
@@ -300,7 +300,7 @@
 
       <div class="overflow-hidden rounded-2xl border border-ink-200 bg-ink-50">
         <div
-          :for={{pessoa, indice} <- Enum.with_index(@fila, 1)}
+          :for={{pessoa, indice} <- Enum.with_index(@waitlist, 1)}
           class="flex items-center gap-3 border-b border-ink-200 px-4 py-2.5 last:border-b-0"
         >
           <span class="w-5 shrink-0 text-[12px] font-bold tabular-nums text-ink-400">

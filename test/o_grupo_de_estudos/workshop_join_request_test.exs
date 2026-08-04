@@ -36,16 +36,16 @@ defmodule OGrupoDeEstudos.WorkshopJoinRequestTest do
     end
 
     test "inside stays closed until approval", ctx do
-      refute Workshops.liberado?(ctx.private_workshop, ctx.student)
-      refute Workshops.liberado?(ctx.private_workshop, nil)
+      refute Workshops.inside_open?(ctx.private_workshop, ctx.student)
+      refute Workshops.inside_open?(ctx.private_workshop, nil)
     end
 
     test "public workshop is open inside for anyone with an account", ctx do
-      assert Workshops.liberado?(ctx.public_workshop, ctx.student)
+      assert Workshops.inside_open?(ctx.public_workshop, ctx.student)
     end
 
     test "admin sees the inside of their own private workshop without asking", ctx do
-      assert Workshops.liberado?(ctx.private_workshop, ctx.owner)
+      assert Workshops.inside_open?(ctx.private_workshop, ctx.owner)
     end
   end
 
@@ -64,7 +64,7 @@ defmodule OGrupoDeEstudos.WorkshopJoinRequestTest do
       {:ok, _} = Workshops.request_join(ctx.private_workshop, ctx.student)
 
       assert Workshops.count_enrollments(ctx.private_workshop.id) == 0
-      refute Workshops.liberado?(ctx.private_workshop, ctx.student)
+      refute Workshops.inside_open?(ctx.private_workshop, ctx.student)
     end
 
     test "asking twice does not duplicate the queue", ctx do
@@ -95,7 +95,7 @@ defmodule OGrupoDeEstudos.WorkshopJoinRequestTest do
       assert {:ok, _} = Workshops.approve_join(ctx.private_workshop, ctx.owner, ctx.request.id)
 
       assert Workshops.count_enrollments(ctx.private_workshop.id) == 1
-      assert Workshops.liberado?(ctx.private_workshop, ctx.student)
+      assert Workshops.inside_open?(ctx.private_workshop, ctx.student)
     end
 
     test "requester is notified of the answer", ctx do
@@ -147,7 +147,7 @@ defmodule OGrupoDeEstudos.WorkshopJoinRequestTest do
 
       assert Workshops.list_pending_requests(ctx.private_workshop) == []
       assert Workshops.count_enrollments(ctx.private_workshop.id) == 0
-      refute Workshops.liberado?(ctx.private_workshop, ctx.student)
+      refute Workshops.inside_open?(ctx.private_workshop, ctx.student)
     end
 
     test "asking again is allowed after a rejection", ctx do

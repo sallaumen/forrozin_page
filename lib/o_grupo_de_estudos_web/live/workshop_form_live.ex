@@ -20,12 +20,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     user = socket.assigns.current_user
 
     case Policy.authorize(:create_workshop, user, nil) do
-      :ok -> {:ok, permitir_flyer(prepare(socket, socket.assigns.live_action, params))}
+      :ok -> {:ok, allow_flyer(prepare(socket, socket.assigns.live_action, params))}
       {:error, _} -> {:ok, redirect(socket, to: ~p"/study/workshops")}
     end
   end
 
-  defp permitir_flyer(socket) do
+  defp allow_flyer(socket) do
     allow_upload(socket, :flyer,
       accept: ~w(.jpg .jpeg .png .webp),
       max_entries: 1,
@@ -89,8 +89,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     case Workshops.create_workshop(user, to_attrs(params)) do
       {:ok, workshop} ->
         attach_to_program(socket.assigns[:program], user, workshop)
-        workshop = guardar_flyer(socket, workshop, user)
-        guardar_professores(workshop, user, params)
+        workshop = store_flyer(socket, workshop, user)
+        store_teachers(workshop, user, params)
         finish(socket, user, workshop, publish?)
 
       {:error, changeset} ->
@@ -103,8 +103,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
     case Workshops.update_workshop(user, workshop, to_attrs(params)) do
       {:ok, updated} ->
-        guardar_professores(updated, user, params)
-        finish(socket, user, guardar_flyer(socket, updated, user), publish?)
+        store_teachers(updated, user, params)
+        finish(socket, user, store_flyer(socket, updated, user), publish?)
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, form_failed(socket, params, changeset)}
@@ -114,9 +114,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     end
   end
 
-  # `?programa=slug` makes the workshop start inside the program. It only applies
+  # `?program=slug` makes the workshop start inside the program. It only applies
   # when the person owns it: otherwise the workshop starts loose, without complaint.
-  defp program_from(%{"programa" => slug}, user) do
+  defp program_from(%{"program" => slug}, user) do
     program = Workshops.get_program_by_slug(slug)
 
     if program && Policy.authorized?(:manage_program, user, program), do: program, else: nil
@@ -126,7 +126,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
   # The upload does not block saving: if the flyer fails, the workshop exists all
   # the same and the poster can be retried later.
-  defp guardar_flyer(socket, workshop, user) do
+  defp store_flyer(socket, workshop, user) do
     socket
     |> consume_uploaded_entries(:flyer, fn %{path: tmp_path}, entry ->
       {:ok, Workshops.put_workshop_flyer(workshop, user, tmp_path, extensao(entry))}
@@ -244,7 +244,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       description: params["description"],
       location: blank_to_nil(params["location"]),
       payment_info: blank_to_nil(params["payment_info"]),
-      payment_mode: modo_de_pagamento(params["payment_mode"]),
+      payment_mode: payment_mode_from(params["payment_mode"]),
       payment_phone: blank_to_nil(params["payment_phone"]),
       starts_at: parse_datetime(params["starts_at"]),
       ends_at: parse_datetime(params["ends_at"]),
@@ -299,34 +299,34 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
   # Pattern matching instead of String.to_existing_atom: a form value is outside
   # input, and an atom that does not exist yet would bring the page down.
-  defp modo_de_pagamento("on_signup"), do: :on_signup
-  defp modo_de_pagamento("at_event"), do: :at_event
-  defp modo_de_pagamento(_nada), do: nil
+  defp payment_mode_from("on_signup"), do: :on_signup
+  defp payment_mode_from("at_event"), do: :at_event
+  defp payment_mode_from(_nada), do: nil
 
   # Teachers are written apart from the workshop: the list is another table, and
   # failing here cannot undo the workshop that was already created. A username
   # that does not exist simply does not go in, and the rest does.
-  defp guardar_professores(workshop, user, params) do
+  defp store_teachers(workshop, user, params) do
     entradas =
       [0, 1]
-      |> Enum.map(&entrada_de_professor(params, &1))
+      |> Enum.map(&teacher_entry(params, &1))
       |> Enum.reject(&is_nil/1)
 
     Workshops.set_teachers(workshop, user, entradas)
   end
 
-  defp entrada_de_professor(params, indice) do
-    usuario = campo_de_lista(params["teacher_username"], indice)
-    nome = campo_de_lista(params["teacher_name"], indice)
+  defp teacher_entry(params, indice) do
+    user = list_field(params["teacher_username"], indice)
+    name = list_field(params["teacher_name"], indice)
 
     cond do
-      usuario -> conta_por_username(usuario)
-      nome -> %{display_name: nome}
+      user -> account_by_username(user)
+      name -> %{display_name: name}
       true -> nil
     end
   end
 
-  defp conta_por_username(username) do
+  defp account_by_username(username) do
     case OGrupoDeEstudos.Accounts.get_user_by_username(username) do
       nil -> nil
       %{id: id} -> %{user_id: id}
@@ -339,16 +339,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   The browser sends `teacher_username` as a list when the form is new and as a map
   indexed by position after a validation error, so both shapes are handled.
   """
-  @spec campo_de_professor(term(), non_neg_integer()) :: String.t()
-  def campo_de_professor(valores, indice), do: campo_de_lista(valores, indice) || ""
+  @spec teacher_field(term(), non_neg_integer()) :: String.t()
+  def teacher_field(valores, indice), do: list_field(valores, indice) || ""
 
-  defp campo_de_lista(nil, _indice), do: nil
+  defp list_field(nil, _indice), do: nil
 
-  defp campo_de_lista(valores, indice) when is_map(valores),
+  defp list_field(valores, indice) when is_map(valores),
     do: valores |> Map.get(to_string(indice)) |> blank_to_nil()
 
-  defp campo_de_lista(valores, indice) when is_list(valores),
+  defp list_field(valores, indice) when is_list(valores),
     do: valores |> Enum.at(indice) |> blank_to_nil()
 
-  defp campo_de_lista(_outro_formato, _indice), do: nil
+  defp list_field(_other_format, _indice), do: nil
 end
