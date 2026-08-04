@@ -65,8 +65,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQuery do
         }
   def summaries_by_ids([]), do: %{}
 
-  # O id vai também no valor: quem projeta com Map.values() (ex.: Learnings)
-  # não perde a chave no caminho.
+  # The id is repeated in the value so Map.values/1 projections keep it.
   def summaries_by_ids(ids) when is_list(ids) do
     from(s in Step,
       where: s.id in ^ids and is_nil(s.deleted_at),

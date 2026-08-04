@@ -357,10 +357,8 @@
         </p>
       </form>
 
-      <%!-- Os passos ficam FORA do <form> de propósito: o buscador do
-      `step_search` tem form próprio, e form dentro de form é HTML inválido (o
-      navegador descarta o de dentro). O botão de enviar volta a pertencer ao
-      form pelo atributo `form=`, então a ordem na tela segue natural. --%>
+      <%!-- Outside the <form>: step_search renders its own form and nesting
+      forms is invalid HTML. The submit button reattaches via form=. --%>
       <div class="mb-3">
         <p class="m-0 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-ink-500">
           Passos desta lição

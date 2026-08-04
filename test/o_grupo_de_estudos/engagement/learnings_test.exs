@@ -129,8 +129,6 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
   end
 
   describe "learned_step_ids/1" do
-    # Projeção-irmã de learned_step_codes: mesma fonte (learned_summaries),
-    # outra chave. Codes para as telas de estudo/grafo, ids para o acervo.
     test "returns the MapSet of learned step ids" do
       user = insert(:user)
       bf = insert(:step, code: "LNBF")

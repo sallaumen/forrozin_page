@@ -146,8 +146,6 @@
                 {lesson.content}
               </p>
 
-              <%!-- O passo que a lição tratou vira caminho: o chip abre a folha
-              com o gesto de marcar, sem tirar o aluno da lição que está lendo. --%>
               <div :if={lesson.steps != []} class="mt-2 flex flex-wrap gap-1">
                 <.step_pill
                   :for={step <- lesson.steps}

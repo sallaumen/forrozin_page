@@ -1,9 +1,6 @@
 defmodule OGrupoDeEstudos.Study.LessonStep do
   @moduledoc """
-  Vínculo entre uma lição e um passo do acervo.
-
-  Mesmo molde de `NoteStep`: o passo citado na lição deixa de ser palavra
-  solta e vira caminho de volta para a folha do passo.
+  Join table between a lesson and encyclopedia steps, mirroring `NoteStep`.
   """
 
   use Ecto.Schema

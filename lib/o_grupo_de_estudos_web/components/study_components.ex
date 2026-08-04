@@ -184,9 +184,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :type, :string, default: "button", values: ~w(button submit)
   attr :disabled, :boolean, default: false
 
-  # `form` deixa o botão submeter um form do qual ele não é descendente. É como
-  # o composer de lição põe o buscador de passos (que tem form próprio) entre o
-  # texto e o botão de enviar, sem aninhar forms.
+  # `form` lets the button submit a form it is not nested inside (lesson composer).
   attr :rest, :global,
     include:
       ~w(phx-click phx-value-id phx-value-tab phx-value-link-id navigate href data-confirm phx-disable-with form)

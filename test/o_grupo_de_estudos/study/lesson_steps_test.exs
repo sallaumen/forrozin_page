@@ -1,13 +1,6 @@
 defmodule OGrupoDeEstudos.Study.LessonStepsTest do
   @moduledoc """
-  Os passos que a lição do professor tratou.
-
-  A lição nasceu com título e conteúdo e nada mais: o professor escrevia
-  "trabalhamos inversão hoje" e a palavra inversão morria ali, sem levar a
-  lugar nenhum. A nota do diário já vinculava passo desde sempre; a lição,
-  que é o material mais deliberado que o professor produz, não vinculava.
-
-  Aqui o vínculo passa a existir, no mesmo molde de `study_note_steps`.
+  Linking encyclopedia steps to a teacher's lesson, mirroring `study_note_steps`.
   """
 
   use OGrupoDeEstudos.DataCase, async: true
@@ -22,8 +15,8 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
     %{
       teacher: teacher,
       link: insert(:teacher_student_link, teacher: teacher, active: true),
-      passo: insert(:step, code: "IV", name: "Inversão base"),
-      outro: insert(:step, code: "SCSP", name: "Sacada com sacada de perna")
+      step: insert(:step, code: "IV", name: "Inversão base"),
+      other_step: insert(:step, code: "SCSP", name: "Sacada com sacada de perna")
     }
   end
 
@@ -31,12 +24,12 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
     Map.merge(%{title: "Aula de sacadas", content: "O que vimos hoje."}, attrs)
   end
 
-  describe "vincular passos ao criar a lição" do
-    test "os passos escolhidos ficam na lição", ctx do
+  describe "linking steps when creating a lesson" do
+    test "keeps the chosen steps on the lesson", ctx do
       assert {:ok, _lesson, _delivered} =
                Study.broadcast_lesson(
                  ctx.teacher,
-                 lesson_attrs(%{step_ids: [ctx.passo.id, ctx.outro.id]}),
+                 lesson_attrs(%{step_ids: [ctx.step.id, ctx.other_step.id]}),
                  [ctx.link.id]
                )
 
@@ -44,7 +37,7 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
       assert ["IV", "SCSP"] = lesson.steps |> Enum.map(& &1.code) |> Enum.sort()
     end
 
-    test "lição sem passo nenhum continua sendo lição", ctx do
+    test "a lesson without steps is still a lesson", ctx do
       assert {:ok, _lesson, _} =
                Study.broadcast_lesson(ctx.teacher, lesson_attrs(), [ctx.link.id])
 
@@ -52,19 +45,19 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
       assert lesson.steps == []
     end
 
-    test "o mesmo passo repetido entra uma vez só", ctx do
+    test "a repeated step is stored once", ctx do
       {:ok, _lesson, _} =
         Study.broadcast_lesson(
           ctx.teacher,
-          lesson_attrs(%{step_ids: [ctx.passo.id, ctx.passo.id]}),
+          lesson_attrs(%{step_ids: [ctx.step.id, ctx.step.id]}),
           [ctx.link.id]
         )
 
-      assert [%{steps: [passo]}] = Study.list_lessons_for_teacher(ctx.teacher.id)
-      assert passo.code == "IV"
+      assert [%{steps: [step]}] = Study.list_lessons_for_teacher(ctx.teacher.id)
+      assert step.code == "IV"
     end
 
-    test "passo que não existe não derruba o envio da lição", ctx do
+    test "an unknown step id does not abort the lesson", ctx do
       assert {:ok, _lesson, _} =
                Study.broadcast_lesson(
                  ctx.teacher,
@@ -76,12 +69,12 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
     end
   end
 
-  describe "os passos chegam em quem lê" do
-    test "o aluno recebe a lição com os passos", ctx do
+  describe "steps reach the reader" do
+    test "the student receives the lesson with its steps", ctx do
       {:ok, _lesson, _} =
         Study.broadcast_lesson(
           ctx.teacher,
-          lesson_attrs(%{step_ids: [ctx.passo.id]}),
+          lesson_attrs(%{step_ids: [ctx.step.id]}),
           [ctx.link.id]
         )
 
@@ -89,16 +82,16 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
       assert [%{code: "IV", name: "Inversão base"}] = lesson.steps
     end
 
-    test "cada lição carrega só os próprios passos", ctx do
+    test "each lesson carries only its own steps", ctx do
       {:ok, _, _} =
-        Study.broadcast_lesson(ctx.teacher, lesson_attrs(%{step_ids: [ctx.passo.id]}), [
+        Study.broadcast_lesson(ctx.teacher, lesson_attrs(%{step_ids: [ctx.step.id]}), [
           ctx.link.id
         ])
 
       {:ok, _, _} =
         Study.broadcast_lesson(
           ctx.teacher,
-          lesson_attrs(%{title: "Outra aula", step_ids: [ctx.outro.id]}),
+          lesson_attrs(%{title: "Outra aula", step_ids: [ctx.other_step.id]}),
           [ctx.link.id]
         )
 
@@ -111,31 +104,31 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
     end
   end
 
-  describe "editar os passos da lição" do
+  describe "editing lesson steps" do
     setup ctx do
       {:ok, lesson, _} =
         Study.broadcast_lesson(
           ctx.teacher,
-          lesson_attrs(%{step_ids: [ctx.passo.id]}),
+          lesson_attrs(%{step_ids: [ctx.step.id]}),
           [ctx.link.id]
         )
 
       Map.put(ctx, :lesson, lesson)
     end
 
-    test "trocar os passos vale para todos que receberam", ctx do
+    test "replacing steps applies to everyone who received the lesson", ctx do
       assert {:ok, _} =
                Study.update_lesson(ctx.teacher, ctx.lesson, %{
                  title: ctx.lesson.title,
                  content: ctx.lesson.content,
-                 step_ids: [ctx.outro.id]
+                 step_ids: [ctx.other_step.id]
                })
 
-      assert [%{steps: [passo]}] = Study.list_lessons_for_link(ctx.link.id)
-      assert passo.code == "SCSP"
+      assert [%{steps: [step]}] = Study.list_lessons_for_link(ctx.link.id)
+      assert step.code == "SCSP"
     end
 
-    test "editar só o texto não mexe nos passos", ctx do
+    test "editing only the text keeps the steps", ctx do
       assert {:ok, _} =
                Study.update_lesson(ctx.teacher, ctx.lesson, %{
                  title: ctx.lesson.title,
@@ -145,7 +138,7 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
       assert [%{steps: [%{code: "IV"}]}] = Study.list_lessons_for_link(ctx.link.id)
     end
 
-    test "esvaziar a lista tira todos os passos", ctx do
+    test "an empty list removes every step", ctx do
       assert {:ok, _} =
                Study.update_lesson(ctx.teacher, ctx.lesson, %{
                  title: ctx.lesson.title,
@@ -156,35 +149,35 @@ defmodule OGrupoDeEstudos.Study.LessonStepsTest do
       assert [%{steps: []}] = Study.list_lessons_for_link(ctx.link.id)
     end
 
-    test "quem não é dono da lição não troca os passos", ctx do
-      estranho = insert(:user, is_teacher: true)
+    test "only the lesson owner can change its steps", ctx do
+      stranger = insert(:user, is_teacher: true)
 
       assert {:error, :unauthorized} =
-               Study.update_lesson(estranho, ctx.lesson, %{step_ids: [ctx.outro.id]})
+               Study.update_lesson(stranger, ctx.lesson, %{step_ids: [ctx.other_step.id]})
 
       assert [%{steps: [%{code: "IV"}]}] = Study.list_lessons_for_link(ctx.link.id)
     end
 
-    test "apagar a lição leva os vínculos junto", ctx do
+    test "deleting the lesson cascades its step links", ctx do
       assert {:ok, _} = Study.delete_lesson(ctx.teacher, ctx.lesson)
 
       assert Study.list_lessons_for_teacher(ctx.teacher.id) == []
     end
   end
 
-  describe "consultar os passos de uma lição" do
-    test "devolve os passos vinculados", ctx do
+  describe "reading the steps of one lesson" do
+    test "returns the linked steps", ctx do
       {:ok, lesson, _} =
         Study.broadcast_lesson(
           ctx.teacher,
-          lesson_attrs(%{step_ids: [ctx.passo.id]}),
+          lesson_attrs(%{step_ids: [ctx.step.id]}),
           [ctx.link.id]
         )
 
       assert [%{code: "IV", name: "Inversão base"}] = Study.lesson_steps(lesson.id)
     end
 
-    test "lição sem passos devolve lista vazia", ctx do
+    test "returns an empty list for a lesson without steps", ctx do
       {:ok, lesson, _} = Study.broadcast_lesson(ctx.teacher, lesson_attrs(), [ctx.link.id])
 
       assert Study.lesson_steps(lesson.id) == []

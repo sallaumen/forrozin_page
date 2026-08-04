@@ -65,7 +65,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
     |> attach_steps(& &1.lesson.id)
   end
 
-  @doc "Passos vinculados a uma lição, na ordem em que o professor montou."
+  @doc "Steps linked to a lesson, in the order the teacher added them."
   @spec steps_for_lesson(Ecto.UUID.t()) :: [step_row()]
   def steps_for_lesson(lesson_id) do
     [lesson_id]
@@ -75,7 +75,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
     Ecto.Query.CastError -> []
   end
 
-  @doc "Passos das lições dadas, agrupados por lição. Uma consulta só, sem N+1."
+  @doc "Steps of the given lessons grouped by lesson id, in a single query."
   @spec steps_by_lesson_ids([Ecto.UUID.t()]) :: %{Ecto.UUID.t() => [step_row()]}
   def steps_by_lesson_ids([]), do: %{}
 
@@ -90,12 +90,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
   end
 
-  @doc """
-  Passos das lições que passaram por esta pessoa, em lote.
-
-  Conta a lição recebida (chegou no diário dela) e a lição escrita por ela:
-  quem deu a aula viu o passo tanto quanto quem assistiu.
-  """
+  @doc "Step ids from lessons the user received or wrote, as a MapSet."
   @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
   def step_ids_seen_by(nil), do: MapSet.new()
 
@@ -116,9 +111,9 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
   end
 
   defp attach_steps(rows, id_fun) do
-    por_licao = rows |> Enum.map(id_fun) |> steps_by_lesson_ids()
+    steps_by_lesson = rows |> Enum.map(id_fun) |> steps_by_lesson_ids()
 
-    Enum.map(rows, &Map.put(&1, :steps, Map.get(por_licao, id_fun.(&1), [])))
+    Enum.map(rows, &Map.put(&1, :steps, Map.get(steps_by_lesson, id_fun.(&1), [])))
   end
 
   @doc """

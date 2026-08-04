@@ -67,8 +67,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-  # Onde a pessoa esteve: workshop que fez, diário que escreveu, lição que
-  # recebeu. Cada contexto responde pelas próprias tabelas; o acervo só junta.
   defp steps_seen_in_class(user_id) do
     MapSet.union(Workshops.step_ids_seen_by(user_id), Study.step_ids_seen_by(user_id))
   end

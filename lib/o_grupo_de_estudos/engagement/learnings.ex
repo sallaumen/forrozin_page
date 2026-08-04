@@ -51,12 +51,10 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
   end
 
   @doc """
-  MapSet dos ids aprendidos (deletados excluídos).
+  MapSet of learned step ids (soft-deleted excluded).
 
-  Projeção-irmã de `learned_step_codes/1`, da mesma fonte
-  (`learned_summaries/1`): codes para as telas que pintam chips por código
-  (estudo, grafo), ids para as que cruzam por id (acervo). Uma fonte só,
-  para o filtro de soft-delete nunca divergir entre as duas.
+  Sibling of `learned_step_codes/1`, built from the same `learned_summaries/1`
+  source so the soft-delete filter never diverges between projections.
   """
   @spec learned_step_ids(Ecto.UUID.t()) :: MapSet.t()
   def learned_step_ids(user_id) do

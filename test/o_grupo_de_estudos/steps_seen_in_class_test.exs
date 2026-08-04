@@ -1,13 +1,8 @@
 defmodule OGrupoDeEstudos.StepsSeenInClassTest do
   @moduledoc """
-  Quais passos esta pessoa já viu numa aula.
-
-  É histórico, não decisão: "aprendido" a pessoa marca quando quer, "visto em
-  aula" é o que aconteceu com ela. Cada contexto responde pelas próprias
-  tabelas — o acervo junta as duas respostas.
-
-  A regra é a mesma em toda fonte: só conta aula de que a pessoa participou.
-  Dizer "você viu" sobre uma aula alheia seria mentira.
+  Which steps a user saw in class: workshops attended, diary notes, teacher
+  lessons. History, unlike the user's own "learned" mark — and only classes
+  the user actually took part in count.
   """
 
   use OGrupoDeEstudos.DataCase, async: true
@@ -18,87 +13,87 @@ defmodule OGrupoDeEstudos.StepsSeenInClassTest do
 
   setup do
     %{
-      passo: insert(:step, code: "IV", name: "Inversão base"),
-      outro: insert(:step, code: "SCSP", name: "Sacada com sacada de perna")
+      step: insert(:step, code: "IV", name: "Inversão base"),
+      other_step: insert(:step, code: "SCSP", name: "Sacada com sacada de perna")
     }
   end
 
-  describe "passos vistos em workshop" do
+  describe "steps seen in workshops" do
     setup ctx do
-      dono = insert(:user)
-      workshop = insert(:workshop, organizer: dono)
-      {:ok, _} = Workshops.add_step(workshop, dono, ctx.passo.id)
+      owner = insert(:user)
+      workshop = insert(:workshop, organizer: owner)
+      {:ok, _} = Workshops.add_step(workshop, owner, ctx.step.id)
 
-      ctx |> Map.put(:dono, dono) |> Map.put(:workshop, workshop)
+      ctx |> Map.put(:owner, owner) |> Map.put(:workshop, workshop)
     end
 
-    test "quem se inscreveu viu", ctx do
-      aluna = insert(:user)
-      {:ok, _} = Workshops.enroll(ctx.workshop, aluna)
+    test "an enrolled user saw the step", ctx do
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll(ctx.workshop, student)
 
-      assert MapSet.member?(Workshops.step_ids_seen_by(aluna.id), ctx.passo.id)
+      assert MapSet.member?(Workshops.step_ids_seen_by(student.id), ctx.step.id)
     end
 
-    test "quem organizou também viu", ctx do
-      assert MapSet.member?(Workshops.step_ids_seen_by(ctx.dono.id), ctx.passo.id)
+    test "the organizer saw it too", ctx do
+      assert MapSet.member?(Workshops.step_ids_seen_by(ctx.owner.id), ctx.step.id)
     end
 
-    test "quem não esteve na aula não viu", _ctx do
+    test "someone who was not in the class did not see it", _ctx do
       assert Workshops.step_ids_seen_by(insert(:user).id) == MapSet.new()
     end
 
-    test "passo que o workshop não deu não entra", ctx do
-      aluna = insert(:user)
-      {:ok, _} = Workshops.enroll(ctx.workshop, aluna)
+    test "steps the workshop did not teach are not included", ctx do
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll(ctx.workshop, student)
 
-      refute MapSet.member?(Workshops.step_ids_seen_by(aluna.id), ctx.outro.id)
+      refute MapSet.member?(Workshops.step_ids_seen_by(student.id), ctx.other_step.id)
     end
 
-    test "visitante sem conta não tem histórico" do
+    test "a visitor without an account has no history" do
       assert Workshops.step_ids_seen_by(nil) == MapSet.new()
     end
   end
 
-  describe "passos vistos em nota de estudo" do
-    test "o passo que a pessoa anotou no próprio diário", ctx do
-      aluna = insert(:user)
+  describe "steps seen in diary notes" do
+    test "a step noted in the user's own diary", ctx do
+      student = insert(:user)
 
       {:ok, _} =
-        Study.upsert_personal_note(aluna, Date.utc_today(), %{
+        Study.upsert_personal_note(student, Date.utc_today(), %{
           content: "Treinei inversão.",
-          step_ids: [ctx.passo.id]
+          step_ids: [ctx.step.id]
         })
 
-      assert MapSet.member?(Study.step_ids_seen_by(aluna.id), ctx.passo.id)
+      assert MapSet.member?(Study.step_ids_seen_by(student.id), ctx.step.id)
     end
 
-    test "o passo que o professor marcou na nota compartilhada vale para os dois", ctx do
+    test "a step on the shared note counts for both sides of the link", ctx do
       link = insert(:teacher_student_link, active: true)
 
       {:ok, _} =
         Study.upsert_shared_note(link, Date.utc_today(), %{
           content: "Aula de hoje.",
-          step_ids: [ctx.passo.id]
+          step_ids: [ctx.step.id]
         })
 
-      assert MapSet.member?(Study.step_ids_seen_by(link.student_id), ctx.passo.id)
-      assert MapSet.member?(Study.step_ids_seen_by(link.teacher_id), ctx.passo.id)
+      assert MapSet.member?(Study.step_ids_seen_by(link.student_id), ctx.step.id)
+      assert MapSet.member?(Study.step_ids_seen_by(link.teacher_id), ctx.step.id)
     end
 
-    test "a nota de outra pessoa não conta", ctx do
-      outra = insert(:user)
+    test "someone else's note does not count", ctx do
+      someone_else = insert(:user)
 
       {:ok, _} =
-        Study.upsert_personal_note(outra, Date.utc_today(), %{
+        Study.upsert_personal_note(someone_else, Date.utc_today(), %{
           content: "Treinei.",
-          step_ids: [ctx.passo.id]
+          step_ids: [ctx.step.id]
         })
 
       assert Study.step_ids_seen_by(insert(:user).id) == MapSet.new()
     end
   end
 
-  describe "passos vistos em lição do professor" do
+  describe "steps seen in teacher lessons" do
     setup ctx do
       teacher = insert(:user, is_teacher: true)
       link = insert(:teacher_student_link, teacher: teacher, active: true)
@@ -106,27 +101,27 @@ defmodule OGrupoDeEstudos.StepsSeenInClassTest do
       {:ok, _lesson, _} =
         Study.broadcast_lesson(
           teacher,
-          %{title: "Aula", content: "Texto", step_ids: [ctx.passo.id]},
+          %{title: "Aula", content: "Texto", step_ids: [ctx.step.id]},
           [link.id]
         )
 
       ctx |> Map.put(:teacher, teacher) |> Map.put(:link, link)
     end
 
-    test "o aluno que recebeu a lição viu o passo", ctx do
-      assert MapSet.member?(Study.step_ids_seen_by(ctx.link.student_id), ctx.passo.id)
+    test "the student who received the lesson saw the step", ctx do
+      assert MapSet.member?(Study.step_ids_seen_by(ctx.link.student_id), ctx.step.id)
     end
 
-    test "quem deu a aula também viu", ctx do
-      assert MapSet.member?(Study.step_ids_seen_by(ctx.teacher.id), ctx.passo.id)
+    test "the teacher who wrote it saw it too", ctx do
+      assert MapSet.member?(Study.step_ids_seen_by(ctx.teacher.id), ctx.step.id)
     end
 
-    test "quem não recebeu a lição não viu", _ctx do
+    test "someone who did not receive the lesson did not see it", _ctx do
       assert Study.step_ids_seen_by(insert(:user).id) == MapSet.new()
     end
   end
 
-  test "visitante sem conta não tem histórico de estudo" do
+  test "a visitor without an account has no study history" do
     assert Study.step_ids_seen_by(nil) == MapSet.new()
   end
 end

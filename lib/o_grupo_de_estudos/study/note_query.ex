@@ -94,10 +94,8 @@ defmodule OGrupoDeEstudos.Study.NoteQuery do
   end
 
   @doc """
-  Passos que a pessoa anotou em diário, em lote.
-
-  Conta o próprio diário e o compartilhado com o professor, dos dois lados do
-  vínculo: quem escreveu a nota da aula viu a aula tanto quanto quem a leu.
+  Step ids noted in the user's diaries (personal, and shared from either side
+  of the link), as a MapSet.
   """
   @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
   def step_ids_seen_by(nil), do: MapSet.new()

@@ -247,8 +247,6 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
   end
 
   describe "step_summaries_by_ids/1" do
-    # O summary carrega o próprio id: quem faz Map.values() (ex.: Learnings)
-    # não perde a chave no caminho.
     test "returns a map of id => %{id, code, name} for the given ids" do
       section = insert(:section)
       step_a = insert(:step, section: section, code: "SA", name: "Passo A")

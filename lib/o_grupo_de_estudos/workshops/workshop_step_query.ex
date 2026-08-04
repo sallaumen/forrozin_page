@@ -65,10 +65,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopStepQuery do
   end
 
   @doc """
-  Os passos que ESTA pessoa viu em workshop, de uma vez só.
-
-  Mesma regra do caminho de volta (esteve na aula), mas em lote: o acervo
-  pergunta por 128 passos ao abrir, e não pode fazer isso um a um.
+  Step ids this user saw across workshops they attended or organized, as a
+  MapSet. Batch version of `where_user_saw/2` for the collection screen.
   """
   @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
   def step_ids_seen_by(nil), do: MapSet.new()

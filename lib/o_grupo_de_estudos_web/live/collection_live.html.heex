@@ -525,9 +525,6 @@
                             >
                               <.icon name="hero-play" class="w-2.5 h-2.5" />
                             </span>
-                            <%!-- Visto em aula é histórico (workshop, diário,
-                            lição); aprendido é decisão da pessoa. Ícones
-                            separados porque as duas coisas não se implicam. --%>
                             <span
                               :if={MapSet.member?(@steps_seen_in_class, step.id)}
                               title="Você viu este passo em aula"

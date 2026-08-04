@@ -383,10 +383,10 @@ defmodule OGrupoDeEstudos.Study do
   end
 
   @doc """
-  Edita título/conteúdo de uma lição do próprio professor.
+  Updates title/content of the teacher's own lesson.
 
-  `:step_ids` ausente não mexe nos passos (editar só o texto preserva o
-  vínculo); presente substitui a lista inteira, inclusive por vazia.
+  A missing `:step_ids` keeps the linked steps untouched; when present it
+  replaces the whole list, an empty one included.
   """
   def update_lesson(%User{id: actor_id}, %Lesson{teacher_id: actor_id} = lesson, attrs) do
     result =
@@ -467,8 +467,6 @@ defmodule OGrupoDeEstudos.Study do
     end)
   end
 
-  # Sem a chave, os passos ficam como estão: quem edita só o texto da lição
-  # não deveria perder o vínculo que montou antes.
   defp replace_lesson_steps(%Lesson{} = lesson, attrs) do
     case Map.get(attrs, :step_ids) || Map.get(attrs, "step_ids") do
       nil -> :ok
@@ -488,14 +486,12 @@ defmodule OGrupoDeEstudos.Study do
     end)
   end
 
-  # Passo apagado (ou id inventado) não pode derrubar o envio da lição inteira:
-  # a chave estrangeira estouraria dentro da transação e o professor perderia
-  # o texto que escreveu. Filtra antes, mantendo a ordem que ele montou.
+  # Filtering first keeps a stale step id from aborting the whole insert.
   defp existing_step_ids(step_ids) do
     ids = normalize_step_ids(step_ids)
-    encontrados = ids |> Encyclopedia.steps_by_ids() |> Map.keys() |> MapSet.new()
+    found = ids |> Encyclopedia.steps_by_ids() |> Map.keys() |> MapSet.new()
 
-    Enum.filter(ids, &MapSet.member?(encontrados, &1))
+    Enum.filter(ids, &MapSet.member?(found, &1))
   rescue
     Ecto.Query.CastError -> []
   end
@@ -661,10 +657,10 @@ defmodule OGrupoDeEstudos.Study do
   defdelegate step_frequency_ranking(kind, id), to: NoteQuery, as: :step_frequency
 
   @doc """
-  Passos que a pessoa viu pela área de estudos: diário e lição do professor.
+  Step ids the user saw through the study area (diary notes and lessons).
 
-  É histórico, não decisão — o oposto de "aprendido", que a pessoa marca
-  quando quer. O acervo junta esta resposta com a dos workshops.
+  This is history, not the user's own "learned" mark; the collection merges
+  it with the workshops answer.
   """
   @spec step_ids_seen_by(Ecto.UUID.t() | nil) :: MapSet.t()
   def step_ids_seen_by(user_id) do

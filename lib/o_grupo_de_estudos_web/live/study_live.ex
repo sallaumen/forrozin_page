@@ -337,8 +337,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     {:noreply, assign(socket, :lesson_step_suggestions, Study.search_related_steps(term))}
   end
 
-  # Os passos vivem no assign até o envio: a lição só existe depois do submit,
-  # e vincular passo a uma lição que ainda não nasceu não teria onde gravar.
+  # Steps live in the assign until submit; the lesson row does not exist yet.
   def handle_event("add_lesson_step", %{"step-id" => step_id}, socket) do
     step = Enum.find(socket.assigns.lesson_step_suggestions, &(&1.id == step_id))
 
@@ -349,9 +348,9 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   end
 
   def handle_event("remove_lesson_step", %{"step-id" => step_id}, socket) do
-    restantes = Enum.reject(socket.assigns.lesson_steps, &(&1.id == step_id))
+    remaining = Enum.reject(socket.assigns.lesson_steps, &(&1.id == step_id))
 
-    {:noreply, assign(socket, :lesson_steps, restantes)}
+    {:noreply, assign(socket, :lesson_steps, remaining)}
   end
 
   # O form inteiro é controlado: cada mudança (texto ou seleção de aluno)
@@ -480,8 +479,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     end
   end
 
-  # Os passos não são campo do form (o buscador tem form próprio, e form dentro
-  # de form é HTML inválido): vêm do assign, montados chip a chip.
+  # Steps come from the assign: the step picker lives outside the lesson form.
   defp lesson_attrs(socket, params) do
     %{
       title: params["title"] || "",
@@ -601,9 +599,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     [step | Enum.reject(steps, &(&1.id == step.id))]
   end
 
-  # Na lição a ordem é a do professor: o passo novo entra no fim, como ele
-  # montou a aula. Na nota do dia o mais recente vem primeiro, que é outra
-  # leitura ("o que acabei de praticar").
+  # Lessons keep the teacher's order (append); diary notes show newest first.
   defp append_unique_step(steps, nil), do: steps
 
   defp append_unique_step(steps, step) do
