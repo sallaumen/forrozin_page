@@ -31,6 +31,7 @@ import BottomSheet from "./hooks/bottom_sheet"
 import FormPersist from "./hooks/form_persist"
 import OnboardingTour from "./hooks/onboarding_tour"
 import AutoDismiss from "./hooks/auto_dismiss"
+import DragReorder from "./hooks/drag_reorder"
 import {PWAInstall, PWAInstallSettings, PWANavIcon} from "./hooks/pwa"
 
 // Register PWA service worker (Phase 0b)
@@ -55,7 +56,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, PWANavIcon, OnboardingTour, AutoDismiss},
+  hooks: {...colocatedHooks, GraphVisual, CityAutocomplete, BackButton, BottomSheet, FormPersist, PWAInstall, PWAInstallSettings, PWANavIcon, OnboardingTour, AutoDismiss, DragReorder},
 })
 
 // Show progress bar on live navigation and form submits

@@ -543,15 +543,16 @@ defmodule OGrupoDeEstudos.Study do
   defp upsert_note(base_attrs, attrs, existing_note) do
     content = normalize_content(Map.get(attrs, :content) || Map.get(attrs, "content"))
     step_ids = normalize_step_ids(Map.get(attrs, :step_ids) || Map.get(attrs, "step_ids"))
+    sequence_ids = Map.get(attrs, :sequence_ids) || Map.get(attrs, "sequence_ids")
 
-    if blank_note?(content, step_ids) do
+    if blank_note?(content, step_ids, sequence_ids || kept_sequence_ids(existing_note)) do
       delete_note_if_present(existing_note)
     else
-      persist_note(base_attrs, content, step_ids, existing_note)
+      persist_note(base_attrs, content, step_ids, sequence_ids, existing_note)
     end
   end
 
-  defp persist_note(base_attrs, content, step_ids, existing_note) do
+  defp persist_note(base_attrs, content, step_ids, sequence_ids, existing_note) do
     note = existing_note || struct!(Note, Map.merge(base_attrs, %{content: content}))
 
     Repo.transact(fn ->
@@ -560,6 +561,7 @@ defmodule OGrupoDeEstudos.Study do
              |> Note.changeset(Map.merge(base_attrs, %{content: content}))
              |> Repo.insert_or_update() do
         replace_note_steps(saved_note, step_ids)
+        maybe_replace_note_sequences(saved_note, sequence_ids)
         {:ok, saved_note}
       end
     end)
@@ -568,6 +570,10 @@ defmodule OGrupoDeEstudos.Study do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  # nil means "leave the citations alone"; a list replaces them.
+  defp maybe_replace_note_sequences(_note, nil), do: :ok
+  defp maybe_replace_note_sequences(note, ids), do: replace_note_sequences(note, ids)
 
   @doc "Updates the linked steps on an existing note without changing the content."
   def update_note_steps(note_id, step_ids) do
@@ -667,7 +673,15 @@ defmodule OGrupoDeEstudos.Study do
 
   defp normalize_step_ids(_), do: []
 
-  defp blank_note?(content, step_ids), do: content == "" and step_ids == []
+  # A note that only cites a sequence is not blank. Without counting them, citing
+  # one on a day with nothing typed would delete the note holding the citation.
+  defp blank_note?(content, step_ids, sequence_ids),
+    do: content == "" and step_ids == [] and sequence_ids == []
+
+  defp kept_sequence_ids(nil), do: []
+
+  defp kept_sequence_ids(%Note{id: id}),
+    do: Enum.map(CitationQuery.list_for_note(id), & &1.sequence_id)
 
   defdelegate list_personal_goals(user_id), to: GoalQuery, as: :list_personal
 
