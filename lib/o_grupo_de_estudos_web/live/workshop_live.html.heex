@@ -2,7 +2,7 @@
   <.flash kind={:info} id="lv-flash-info" flash={@flash} />
   <.flash kind={:error} id="lv-flash-error" flash={@flash} />
 
-  <%!-- Visitante sem conta vê um topo simples com convite para entrar --%>
+  <%!-- An anonymous visitor gets a simple header with an invitation to sign in. --%>
   <header
     :if={is_nil(@current_user)}
     class="flex items-center justify-between bg-ink-900 px-5 py-3 text-ink-100"
@@ -45,7 +45,6 @@
       </p>
     </div>
 
-    <%!-- Cabeçalho --%>
     <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-5">
       <div class="min-w-0">
         <.workshop_tag :if={@workshop.visibility == :private} tone={:gold}>
@@ -57,8 +56,10 @@
         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-600">
           <span class="font-bold text-ink-900">{schedule_label(@workshop)}</span>
           <span :if={@workshop.location}>{@workshop.location}</span>
-          <%!-- "com" e quem da a aula, nao quem organiza: com a separacao dos
-          dois papeis, atribuir a aula a quem so produziu virou erro. --%>
+          <%!-- "com" names who teaches, not who organizes: with the two roles
+               separated, crediting the class to whoever only produced it became a
+               bug.
+          --%>
           <span>com <b class="text-ink-900">{teacher_names(@teachers)}</b></span>
         </div>
       </div>
@@ -71,12 +72,12 @@
       </.link>
     </div>
 
-    <%!-- A ordem do DOM é a do celular: cartaz, preço e inscrição antes de
-    tudo. No desktop as colunas voltam ao lugar por `order`, sem duplicar
-    markup. Sem isso a caixa cai para 79% da altura da tela pequena, depois
-    da conversa inteira. --%>
+    <%!-- DOM order is the mobile order: flyer, price and enrollment before
+         everything. On desktop the columns go back in place through `order`, with no
+         duplicated markup. Without this the box falls to 79% of the height on a
+         small screen, after the whole conversation.
+    --%>
     <div class="mt-5 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-      <%!-- Caixa de inscrição --%>
       <aside class="lg:order-2">
         <img
           :if={@workshop.flyer_path}
@@ -98,9 +99,10 @@
             {payment_hint(@workshop, @enrolled? || @organizer?)}
           </p>
 
-          <%!-- Botão do comprovante: só para quem já está na turma, mesmo
-          critério da chave Pix. Mandar comprovante deixa de ser copiar o
-          número e escrever de que workshop se trata. --%>
+          <%!-- Receipt button: only for whoever is already in the class, the same
+               criterion as the Pix key. Sending the receipt stops being copy the
+               number and write which workshop it is about.
+          --%>
           <a
             :if={@enrolled? && Workshop.receipt_link(@workshop)}
             href={Workshop.receipt_link(@workshop)}
@@ -111,7 +113,7 @@
             <.icon name="hero-paper-airplane" class="size-4" /> Mandar comprovante
           </a>
 
-          <%!-- Vagas, só quando o organizador definiu um limite --%>
+          <%!-- Seats, only when the organizer set a capacity. --%>
           <div :if={@workshop.capacity} class="mt-3">
             <div class="h-1.5 w-full overflow-hidden rounded-full bg-ink-200">
               <div
@@ -147,8 +149,9 @@
           </button>
 
           <div class="mt-4">
-            <%!-- Quem organiza já está no evento: inscrever ocuparia uma vaga
-            e apareceria na própria lista de pagamentos. --%>
+            <%!-- The organizer is already at the event: enrolling would take a seat
+                 and show up in their own payment list.
+            --%>
             <.link
               :if={@organizer?}
               navigate={~p"/workshops/#{@workshop.slug}/gerenciar"}
@@ -157,8 +160,9 @@
               Gerenciar inscritos
             </.link>
 
-            <%!-- Workshop privado troca a inscrição direta por um pedido: a
-            porta passa por quem organiza. --%>
+            <%!-- A private workshop swaps direct enrollment for a request: the door
+                 goes through the organizer.
+            --%>
             <button
               :if={can_ask_to_join?(@workshop, @organizer?, @enrolled?, @join_status, @full?)}
               type="button"
@@ -212,9 +216,10 @@
               </button>
             </div>
 
-            <%!-- Turma cheia deixa de ser beco sem saída: entra na fila. Sem
-            isso, quem tinha interesse sumia sem deixar rastro, e é justamente
-            esse número que diz se cabe abrir outra turma. --%>
+            <%!-- A full class stops being a dead end: the person joins the waitlist.
+                 Without it, whoever was interested vanished without a trace, and
+                 that number is exactly what says whether another class fits.
+            --%>
             <div :if={
               shows_waitlist?(@workshop, @organizer?, @enrolled?, @full?, @waitlist_entry)
             }>
@@ -256,15 +261,17 @@
           </div>
         </div>
 
-        <%!-- Rosto de quem dá a aula: apresenta o professor e leva ao perfil
-        dele, que é onde o nome circula. --%>
+        <%!-- The face of whoever teaches: it introduces the teacher and leads to
+             their profile, which is where the name circulates.
+        --%>
         <div class="mt-3 rounded-xl border border-ink-200 bg-ink-50/60 px-4 py-3">
           <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Quem dá a aula
           </p>
-          <%!-- Professor sem conta entra só com o nome: esperar o cadastro
-          existir para poder divulgar a aula travaria o mundo real por causa
-          do banco. Sem conta não há perfil, então não há link. --%>
+          <%!-- A teacher without an account comes in as a name only: waiting for the
+               account to exist before announcing the class would hold up the real
+               world for the database. No account means no profile, so no link.
+          --%>
           <.link
             :for={teacher <- Enum.filter(@teachers, & &1.username)}
             navigate={~p"/users/#{teacher.username}"}
@@ -291,26 +298,26 @@
         </div>
       </aside>
 
-      <%!-- Descrição --%>
       <div class="lg:order-1">
         <div class="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800">
           {@workshop.description}
         </div>
 
-        <%!-- Inscritos: nomes só para quem está logado --%>
-        <%!-- Vitrine: quem ainda não entrou vê a forma do que tem lá dentro,
-        nunca o conteúdo. Esconder diria "aqui não tem nada"; mostrar
-        entregaria o que é pago. Desfocado com a contagem por baixo diz a
-        única coisa que interessa de fora: tem gente aqui dentro. --%>
+        <%!-- Storefront: whoever has not entered sees the shape of what is inside,
+             never the content. Hiding it would say "there is nothing here"; showing
+             it would give away what is paid for. Blurred with the count underneath
+             says the only thing that matters from outside: there are people in here.
+        --%>
         <.locked_preview
           :if={@storefront?}
           enrolled_count={@enrolled_count}
           comment_count={length(@comments)}
         />
 
-        <%!-- Passos dados na aula: o elo que faltava entre o workshop e o
-        acervo. Clicar abre a folha do passo, com o gesto de marcar como
-        aprendido, sem sair daqui. --%>
+        <%!-- Steps taught in the class: the missing link between the workshop and the
+             collection. A click opens the step sheet, with the learn gesture,
+             without leaving this page.
+        --%>
         <section :if={!@storefront? && (@steps != [] || @organizer?)} class="mt-7">
           <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Passos desta aula
@@ -322,9 +329,10 @@
           </p>
 
           <div class="flex flex-wrap gap-2">
-            <%!-- Verde claro para o que a pessoa já sabe, âmbar para o que
-            ainda não: olhar a lista da aula passa a contar algo sobre o
-            próprio aprendizado, sem abrir passo por passo. --%>
+            <%!-- Light green for what the person already knows, amber for what they
+                 do not: looking at the class list now says something about their own
+                 learning, without opening step by step.
+            --%>
             <span
               :for={step <- @steps}
               class={[
@@ -363,8 +371,9 @@
             </span>
           </div>
 
-          <%!-- Só quem administra monta a lista: ela é o que a aula ofereceu,
-          e quem deu a aula sabe o que ofereceu. --%>
+          <%!-- Only an admin builds the list: it is what the class offered, and
+               whoever taught it knows what they offered.
+          --%>
           <div :if={@organizer?} class="relative mt-2.5 max-w-[22rem]">
             <input
               type="text"
@@ -419,7 +428,7 @@
           para ver quem vai.
         </p>
 
-        <%!-- Galeria: só para quem está no workshop --%>
+        <%!-- Gallery: only for whoever is in the workshop. --%>
         <section :if={!@storefront? && @can_see_media?} class="mt-8 border-t border-ink-200 pt-6">
           <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Fotos e vídeos
@@ -440,9 +449,11 @@
           </p>
 
           <form id="media-form" phx-submit="upload_media" phx-change="validate_media" class="mt-3">
-            <%!-- O input nativo fica escondido (sr-only, não display:none, que
-            tiraria o teclado do caminho) e a label vira o botão: o texto do
-            controle nativo é do navegador, e sai em inglês. --%>
+            <%!-- The native input stays hidden (sr-only, not display:none, which
+                 would take it out of the keyboard path) and the label becomes the
+                 button: the text of the native control belongs to the browser, and
+                 comes out in English.
+            --%>
             <label
               for={@uploads.media.ref}
               class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink-900 px-4 py-2 font-serif text-[12.5px] font-semibold text-ink-50"

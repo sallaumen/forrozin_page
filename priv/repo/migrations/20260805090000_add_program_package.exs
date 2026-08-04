@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.AddProgramPackage do
   use Ecto.Migration
 
-  # Preco de pacote: "os tres dias por R$150". Convive com o preco avulso de
-  # cada workshop, entao no mesmo evento pode haver quem pagou o pacote e quem
-  # paga cada dia. A inscricao no pacote agrupa as inscricoes de workshop.
+  # Package price: "the three days for R$150". It coexists with the single price of
+  # each workshop, so at the same event some people paid the package and others pay
+  # per day. The package enrollment groups the workshop enrollments.
   def change do
     alter table(:workshop_programs) do
       add :price_cents, :integer
@@ -26,7 +26,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.AddProgramPackage do
     create_if_not_exists unique_index(:program_enrollments, [:program_id, :user_id])
     create_if_not_exists index(:program_enrollments, [:user_id])
 
-    # Quando presente, o pagamento daquele workshop esta coberto pelo pacote.
+    # When present, the payment of that workshop is covered by the package.
     alter table(:workshop_enrollments) do
       add :program_enrollment_id,
           references(:program_enrollments, type: :binary_id, on_delete: :nilify_all)

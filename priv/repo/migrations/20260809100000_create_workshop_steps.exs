@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopSteps do
   use Ecto.Migration
 
-  # Nao existia relacao nenhuma entre workshop e passo do acervo: o diario era
-  # o unico lugar do app onde passo encontrava data. Quem saia de um workshop
-  # com cinco passos na cabeca nao tinha onde registrar isso.
+  # There was no relation at all between a workshop and a collection step: the diary
+  # was the only place in the app where a step met a date. Whoever left a workshop
+  # with five steps in their head had nowhere to record that.
   #
-  # Quem administra o workshop monta a lista. Curadoria por like foi
-  # considerada e descartada: ordenar por voto resolve, com muito mais peca, um
-  # problema que a permissao ja resolve.
+  # The workshop admin builds the list. Like-based curation was considered and
+  # dropped: ordering by vote solves, with much more machinery, a problem the
+  # permission already solves.
   def change do
     create table(:workshop_steps, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -22,9 +22,9 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopSteps do
     end
 
     create unique_index(:workshop_steps, [:workshop_id, :step_id])
-    # Le-se sempre por workshop, na ordem em que quem da a aula montou.
+    # It is always read by workshop, in the order the teacher built.
     create index(:workshop_steps, [:workshop_id, :position])
-    # E o caminho de volta: "onde eu vi este passo?"
+    # And the way back: "where did I see this step?"
     create index(:workshop_steps, [:step_id])
   end
 end

@@ -43,7 +43,6 @@
       </div>
     </div>
 
-    <%!-- Nova Conexão (always visible: admin-only page) --%>
     <div class="bg-ink-50 border border-ink-200 rounded-lg p-5 mb-8">
       <p class="font-sans text-xs font-bold tracking-[2px] text-ink-500 uppercase mb-4">
         Nova Conexão
@@ -150,7 +149,6 @@
         </div>
       </div>
 
-      <%!-- Rótulo + botão --%>
       <% pode_conectar = not is_nil(@source_selected) and not is_nil(@target_selected) %>
       <form
         phx-submit="create_connection"
@@ -180,10 +178,9 @@
       </form>
     </div>
 
-    <%!-- Âncora para futura visualização D3/Three.js --%>
+    <%!-- Anchor for a future D3/Three.js visualization. --%>
     <div id="graph-canvas" data-graph={@graph_json} class="hidden"></div>
 
-    <%!-- Lista de conexões --%>
     <div class="mb-4 flex items-center justify-between gap-4 flex-wrap">
       <p class="font-sans text-xs font-bold tracking-[2px] text-ink-500 uppercase">
         Conexões
@@ -217,7 +214,6 @@
               end) %>
           <%= if matches_filter do %>
             <div class="bg-ink-50 border border-ink-200 rounded-lg px-4 py-3 flex items-start gap-4 flex-wrap">
-              <%!-- Nó fonte --%>
               <div class="flex flex-col gap-0.5 min-w-[110px]">
                 <span class="font-sans text-[10px] font-bold tracking-widest text-ink-400 uppercase">
                   {if node.category, do: node.category.label, else: "—"}
@@ -231,7 +227,6 @@
                 <span class="font-sans text-xs text-ink-500">{node.name}</span>
               </div>
 
-              <%!-- Arestas de saída --%>
               <%= if edges = Map.get(@edges_by_source, node.id) do %>
                 <div class="flex items-start gap-2 flex-wrap flex-1 pt-1">
                   <span class="font-sans text-xs text-ink-400 pt-0.5">→</span>

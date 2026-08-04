@@ -1,16 +1,16 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.AddWorkshopMediaStatus do
   use Ecto.Migration
 
-  # Video entra na galeria antes de estar transcodificado: o upload responde na
-  # hora e o ffmpeg roda depois, numa fila com concurrency 1. O status diz para
-  # a tela se ja da para tocar.
+  # A video enters the gallery before it is transcoded: the upload answers right
+  # away and ffmpeg runs afterwards, in a queue with concurrency 1. The status tells
+  # the screen whether it can play yet.
   #
-  # Default 'ready' porque foto nasce pronta, e porque a linha que ja existe
-  # nao passou por transcode nenhum: nada de backfill aqui.
+  # Default 'ready' because a photo is born ready, and because the rows that already
+  # exist went through no transcode: no backfill here.
   def change do
-    # Sem indice: ninguem consulta por status. A galeria le por workshop_id, e
-    # quem reencontra transcode interrompido e o Oban.Plugins.Lifeline, que
-    # olha a propria tabela de jobs.
+    # No index: nobody queries by status. The gallery reads by workshop_id, and what
+    # finds an interrupted transcode is Oban.Plugins.Lifeline, which looks at its own
+    # jobs table.
     alter table(:workshop_media) do
       add :status, :string, null: false, default: "ready"
     end

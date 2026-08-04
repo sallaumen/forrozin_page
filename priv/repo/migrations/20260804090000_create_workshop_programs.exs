@@ -1,12 +1,12 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopPrograms do
   use Ecto.Migration
 
-  # Programacao: um punhado de workshops sob um nome so (um fim de semana,
-  # um festival). Workshop pertence a zero ou uma programacao.
+  # Program: a handful of workshops under one name (a weekend, a festival). A
+  # workshop belongs to zero or one program.
   #
-  # Sem starts_at/ends_at aqui de proposito: as datas da programacao sao o
-  # min/max dos filhos, e coluna desnormalizada mente assim que um workshop e
-  # remarcado ou cancelado.
+  # No starts_at/ends_at here on purpose: the program dates are the min and max of
+  # its children, and a denormalized column lies as soon as a workshop is
+  # rescheduled or cancelled.
   def change do
     create table(:workshop_programs, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopPrograms do
     create_if_not_exists unique_index(:workshop_programs, [:slug])
     create_if_not_exists index(:workshop_programs, [:owner_id])
 
-    # nilify_all: apagar a programacao solta os workshops, nao os destroi.
+    # nilify_all: deleting the program releases the workshops, it does not destroy them.
     alter table(:workshops) do
       add :program_id, references(:workshop_programs, type: :binary_id, on_delete: :nilify_all)
     end

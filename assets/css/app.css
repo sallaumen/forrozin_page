@@ -117,7 +117,7 @@
    de !important pra vencer o style inline. */
 @media (max-width: 767px) { .brand-sym { height: 2.5em !important; } }
 
-/* Tokens não-namespace — consumidos via var() (não geram utilities) */
+/* Non-namespace tokens: consumed through var(), they generate no utilities */
 :root {
   --duration-instant: 100ms;
   --duration-fast:    200ms;

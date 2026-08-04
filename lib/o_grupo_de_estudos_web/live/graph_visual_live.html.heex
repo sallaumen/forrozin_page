@@ -19,9 +19,10 @@
     online_count={assigns[:online_count] || 0}
   />
   <.activity_toast toast={assigns[:activity_toast]} />
-  <%!-- Barra superior em duas faixas CENTRALIZADAS: controles da jornada em
-  cima, busca embaixo (com modo manual à esquerda dela). Tudo centralizado e
-  com largura limitada: sem busca "gigante" e sem nada sobrepor nada. --%>
+  <%!-- Top bar in two CENTERED rows: journey controls above, search below (with
+       manual mode to its left). Everything centered and width-capped, so the search
+       does not become giant and nothing overlaps.
+  --%>
   <div class="fixed left-0 right-0 top-[64px] z-30 flex flex-col items-center gap-2 px-3 font-serif">
     <%!-- Controles da jornada (esquerda): abrir o painel + alternar mapa --%>
     <div :if={@loaded?} class="flex shrink-0 items-center gap-2">
@@ -73,8 +74,9 @@
       </div>
     </div>
 
-    <%!-- Faixa de baixo: modo manual (se ativo, à esquerda) + busca,
-    centralizados e com largura máxima. --%>
+    <%!-- Bottom row: manual mode (when active, on the left) plus search, centered and
+         width-capped.
+    --%>
     <div class="flex w-full items-center justify-center gap-2">
       <div
         :if={@seq_view == :manual && !@seq_mobile_visible}
@@ -181,8 +183,9 @@
       </div>
     </div>
 
-    <%!-- Jornada (SUA JORNADA): bottom-sheet no celular (mapa visível acima),
-    drawer à esquerda no desktop. --%>
+    <%!-- Journey: a bottom sheet on mobile (with the map visible above) and a left
+         drawer on desktop.
+    --%>
     <div
       :if={@loaded? && @journey_open}
       id="journey-drawer"
@@ -296,8 +299,9 @@
       </div>
     </div>
 
-    <%!-- Floating sequence sheet trigger (all viewports). No celular some quando
-    a jornada (bottom-sheet) está aberta, pra não cobrir o rodapé dela. --%>
+    <%!-- Floating sequence sheet trigger (all viewports). On mobile it disappears
+         while the journey bottom sheet is open, so it does not cover its footer.
+    --%>
     <button
       :if={!@seq_mobile_visible}
       type="button"
@@ -1651,8 +1655,9 @@
       </div>
     </div>
 
-    <%!-- Painel de detalhe do passo: StepDetail compartilhado com a Collection
-    (server-side). O clique no nó empurra open_step; o open/close é estado. --%>
+    <%!-- Step detail panel: the StepDetail shared with the collection (server-side).
+         A click on a node pushes open_step; open and close are state.
+    --%>
     <div
       id="graph-drawer"
       data-open={to_string(@drawer_open)}

@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.AddWorkshopCommentTriggers do
   use Ecto.Migration
 
-  # CREATE OR REPLACE troca o corpo INTEIRO da funcao, entao os ramos de
-  # 20260417000403 estao recolados aqui literalmente junto com o novo. O
-  # trigger likes_update_count ja aponta para esta funcao pelo nome, e por
-  # isso nao e recriado.
+  # CREATE OR REPLACE swaps the ENTIRE function body, so the branches of
+  # 20260417000403 are pasted here literally along with the new one. The
+  # likes_update_count trigger already points at this function by name, which is
+  # why it is not recreated.
   def up do
     execute("""
     CREATE OR REPLACE FUNCTION update_like_count() RETURNS TRIGGER AS $$
@@ -65,7 +65,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.AddWorkshopCommentTriggers do
     """)
   end
 
-  # Volta a funcao de like ao corpo de 20260417000403, sem o ramo de workshop.
+  # Restores the like function to the body of 20260417000403, without the workshop branch.
   def down do
     execute("DROP TRIGGER IF EXISTS workshop_comments_reply_count ON workshop_comments;")
     execute("DROP FUNCTION IF EXISTS update_workshop_comments_reply_count();")

@@ -1,14 +1,15 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.InvitesViramPedidos do
   use Ecto.Migration
 
-  # Workshop privado deixa de ser invisivel e passa a ser "entrada por
-  # aprovacao": aparece na agenda como qualquer outro, e quem quer entrar pede.
-  # A autoria da linha inverte (antes quem organiza convidava; agora a pessoa
-  # pede) e por isso a tabela muda de nome junto: continuar chamando de
-  # "convite" faria o codigo mentir.
+  # A private workshop stops being invisible and becomes "entry by approval": it
+  # shows on the agenda like any other, and whoever wants in asks. The authorship of
+  # the row flips (before the organizer invited; now the person asks) and that is
+  # why the table changes name along with it: calling it an "invite" would make the
+  # code lie.
   #
-  # Sem backfill: producao nao tem workshop nenhum, entao nao ha linha para
-  # migrar. O default 'approved' existe so para nao deixar linha de dev orfa
+  # No backfill: production has no workshop at all, so there is no row to migrate.
+  # The 'approved' default exists only so a dev row is not left without a status,
+  # since an old invite was equivalent to granted access.
   # de status, ja que convite antigo equivalia a acesso concedido.
   def change do
     rename table(:workshop_invites), to: table(:workshop_join_requests)

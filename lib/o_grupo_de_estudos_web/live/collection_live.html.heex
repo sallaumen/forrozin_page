@@ -281,7 +281,6 @@
       </div>
     </div>
 
-    <%!-- Conteúdo --%>
     <div
       :if={@loaded?}
       class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 pt-6 pb-20 w-full box-border"
@@ -342,7 +341,6 @@
                   phx-value-section_id={card.id}
                   class="group flex h-full flex-col overflow-hidden rounded-2xl border border-ink-300/50 bg-ink-50 text-left transition duration-200 hover:-translate-y-0.5 hover:border-ink-400/50 hover:shadow-[0_16px_40px_-14px_rgba(60,40,20,0.30)]"
                 >
-                  <%!-- Faixa de cor da categoria (sem imagem) --%>
                   <div
                     class="flex items-start justify-between px-4 pb-9 pt-4"
                     style={"background: linear-gradient(155deg, #{card.category_color}2e, #{card.category_color}0a 58%, transparent 92%);"}
@@ -597,7 +595,7 @@
     </div>
   </div>
 
-  <%!-- Drawer backdrop: desfoca e escurece o centro enquanto o painel está aberto --%>
+  <%!-- Drawer backdrop: blurs and darkens the center while the panel is open. --%>
   <div
     class={[
       "fixed inset-0 z-[39] bg-black/30 backdrop-blur-[3px] transition-opacity duration-200",
@@ -609,8 +607,9 @@
   >
   </div>
 
-  <%!-- Drawer: tela cheia no mobile; card flutuante (com margem e cantos
-  arredondados) em telas grandes, deixando o acervo borrado aparecer em volta. --%>
+  <%!-- Drawer: full screen on mobile; a floating card (with margin and rounded
+       corners) on large screens, letting the blurred collection show around it.
+  --%>
   <div
     class={[
       "fixed z-40 font-serif bg-ink-50 shadow-2xl transition-transform duration-200 overflow-hidden",
@@ -630,7 +629,9 @@
     </button>
 
     <div class="h-full overflow-y-auto overflow-x-hidden pb-24 md:pb-6">
-      <%!-- Mobile: barra de voltar clara no topo (PWA do iPhone não tem botão de voltar). --%>
+      <%!-- Mobile: light back bar at the top, since the iPhone PWA has no back
+           button.
+      --%>
       <button
         :if={@drawer_open}
         phx-click="close_drawer"

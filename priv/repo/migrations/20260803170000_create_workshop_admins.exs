@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopAdmins do
   use Ecto.Migration
 
-  # Co-organizadores. O `organizer_id` do workshop continua sendo o criador e
-  # dono raiz: troca-lo por linhas nesta tabela quebraria o preload(:organizer)
-  # de quatro consultas, a busca por nome de professor e a UI inteira, e ainda
-  # exigiria backfill. Aqui so entra quem foi promovido depois.
+  # Co-organizers. The workshop `organizer_id` stays the creator and root owner:
+  # swapping it for rows in this table would break the preload(:organizer) of four
+  # queries, the search by teacher name and the whole UI, and would still require
+  # a backfill. Only whoever was promoted afterwards goes in here.
   def change do
     create table(:workshop_admins, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -14,7 +14,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopAdmins do
 
       add :user_id, references(:users, type: :binary_id, on_delete: :delete_all), null: false
 
-      # Quem promoveu. Se essa conta sumir, o vinculo continua valendo.
+      # Who promoted them. If that account disappears, the link still holds.
       add :invited_by_id, references(:users, type: :binary_id, on_delete: :nilify_all)
 
       timestamps(type: :utc_datetime_usec)

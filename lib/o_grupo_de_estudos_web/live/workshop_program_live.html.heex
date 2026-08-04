@@ -10,7 +10,7 @@
     title="Programação"
   />
 
-  <%!-- Sem conta o link tem que abrir mesmo assim: ele circula no WhatsApp --%>
+  <%!-- Without an account the link still has to open: it circulates on WhatsApp. --%>
   <header :if={is_nil(@current_user)} class="bg-ink-900 px-4 py-3 text-center">
     <.link
       navigate={~p"/"}
@@ -33,8 +33,10 @@
       </p>
     </div>
 
-    <%!-- O cartaz acompanha o titulo em vez de tomar a tela: quem abre o link
-    quer saber o que tem e quando, e o flyer reforca sem atrapalhar. --%>
+    <%!-- The flyer sits next to the title instead of taking the screen: whoever opens
+         the link wants to know what there is and when, and the flyer reinforces
+         without getting in the way.
+    --%>
     <div class="flex flex-wrap items-start gap-5">
       <img
         :if={@program.flyer_path}
@@ -142,7 +144,7 @@
         </div>
       </div>
 
-      <%!-- Pacote: quem comprou e quem pagou. So quem criou ve. --%>
+      <%!-- Package: who bought and who paid. Only the creator sees it. --%>
       <section
         :if={@owner? && @tem_pacote?}
         class="mt-8 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5"
@@ -220,7 +222,7 @@
         </p>
       </section>
 
-      <%!-- Montagem: quem organiza mexe sem sair da pagina --%>
+      <%!-- Assembly: the organizer changes it without leaving the page. --%>
       <section :if={@owner?} class="mt-8 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5">
         <h2 class="m-0 text-[12.5px] font-bold text-ink-700">Montar a programação</h2>
         <p class="m-0 mt-1 mb-3 text-[12px] leading-snug text-ink-500">
@@ -284,8 +286,9 @@
         </.link>
       </section>
 
-      <%!-- Confirma tudo de uma vez: marcar nao inscreve, para um toque errado
-      no celular nao tirar ninguem de um workshop pago. --%>
+      <%!-- Confirms everything at once: checking does not enroll, so a wrong tap on a
+           phone does not pull anyone out of a paid workshop.
+      --%>
       <div
         :if={MapSet.size(@selecionaveis) > 0}
         class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ink-200 bg-ink-50 px-4 py-3"

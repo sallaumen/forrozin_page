@@ -1,12 +1,12 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.NormalizeNotificationActions do
   use Ecto.Migration
 
-  # Migration corretiva de dados (pequena, indexada — não é backfill):
-  # Notification.action vira Ecto.Enum e uma linha antiga com action fora
-  # do conjunto conhecido quebraria o load. O release_command do Fly roda
-  # migrations ANTES do rollout, então o dado fica limpo antes do código
-  # novo servir. Notificações com action desconhecido já eram inroteáveis
-  # na UI; remover é a correção.
+  # Corrective data migration (small and indexed, not a backfill):
+  # Notification.action becomes an Ecto.Enum and an old row with an action outside
+  # the known set would break the load. The Fly release_command runs migrations
+  # BEFORE the rollout, so the data is clean before the new code serves.
+  # Notifications with an unknown action were already unroutable in the UI;
+  # removing them is the fix.
 
   @known_actions ~w(replied_comment liked_comment liked_step liked_sequence
                     followed_user study_request study_accepted study_nudge
@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.NormalizeNotificationActions do
   end
 
   def down do
-    # Sem down: a remoção de linhas inroteáveis não é reversível nem precisa ser.
+    # No down: removing unroutable rows is neither reversible nor needs to be.
     :ok
   end
 end

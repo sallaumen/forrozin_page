@@ -1,15 +1,14 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopTeachers do
   use Ecto.Migration
 
-  # Quem organiza e quem da a aula eram a mesma pessoa por acidente: o
-  # formulario nao tinha campo de professor nenhum, e o criador virava
-  # professor por omissao. Isso quebra no caso real de alguem organizar a aula
-  # de outra pessoa.
+  # Organizing and teaching were the same person by accident: the form had no
+  # teacher field at all, and the creator became a teacher by omission. That breaks
+  # in the real case of someone organizing another person's class.
   #
-  # `user_id` OU `display_name`: professor de fora nem sempre tem conta, e
-  # esperar a conta existir para poder divulgar a aula seria travar o mundo
-  # real por causa do banco. Quando a conta aparecer, quem organiza troca o
-  # nome pela conta e o que ja foi divulgado nao muda de lugar.
+  # `user_id` OR `display_name`: a visiting teacher does not always have an account,
+  # and waiting for the account to exist before announcing the class would hold up
+  # the real world for the database. When the account appears, the organizer swaps
+  # the name for it and what was already announced does not move.
   def change do
     create table(:workshop_teachers, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -25,7 +24,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopTeachers do
     end
 
     create index(:workshop_teachers, [:workshop_id, :position])
-    # A mesma conta nao entra duas vezes; nome escrito nao tem como conferir.
+    # The same account does not go in twice; a written name cannot be checked.
     create unique_index(:workshop_teachers, [:workshop_id, :user_id],
              where: "user_id IS NOT NULL",
              name: :workshop_teachers_conta_unica_index

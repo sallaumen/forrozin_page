@@ -309,7 +309,7 @@
       </div>
     <% end %>
 
-    <%!-- Próximos workshops: só no próprio perfil --%>
+    <%!-- Upcoming workshops: own profile only. --%>
     <div :if={@is_own_profile} class="px-4 mb-4">
       <h3 class="text-xs font-bold text-ink-500 uppercase tracking-wider mb-3">
         Próximos workshops
@@ -392,7 +392,7 @@
         Participe para conquistar!
       </p>
 
-      <%!-- Progresso colapsavel: proprio perfil com ao menos 1 badge nao conquistado --%>
+      <%!-- Collapsible progress: own profile with at least one badge still unearned. --%>
       <details :if={@is_own_profile and Enum.any?(@badges, &(!&1.earned))} class="mt-2 group">
         <summary class="text-[10px] text-ink-400 cursor-pointer list-none
                         hover:text-ink-600 dark:hover:text-ink-500

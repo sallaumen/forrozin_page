@@ -71,7 +71,9 @@
       </p>
     </div>
 
-    <%!-- Aviso de privacidade: o organizador precisa saber que só ele vê --%>
+    <%!-- Privacy notice: the organizer needs to know they are the only one who sees
+         this.
+    --%>
     <div
       :if={@cobra?}
       class="mt-5 flex items-start gap-2.5 rounded-xl border border-gold-500/35 bg-gold-500/12 px-4 py-3"
@@ -83,8 +85,9 @@
       </p>
     </div>
 
-    <%!-- Números. Workshop gratuito não tem o que cobrar: "a receber" e
-    "recebido" só apareceriam para dizer zero. --%>
+    <%!-- Numbers. A free workshop has nothing to charge: "a receber" and "recebido"
+         would only show up to say zero.
+    --%>
     <div class={[
       "mt-5 grid gap-2.5",
       @cobra? && "grid-cols-2 sm:grid-cols-4",
@@ -134,9 +137,10 @@
         :if={@enrollments != []}
         class="overflow-hidden rounded-2xl border border-ink-200 bg-ink-50"
       >
-        <%!-- No celular a linha vira duas faixas: quem é, e o que dá para
-        fazer. Tudo junto, o nome era espremido em três linhas e os botões
-        caíam de um jeito em quem pagou e de outro em quem não pagou. --%>
+        <%!-- On mobile the row becomes two bands: who the person is, and what can be
+             done. All in one line, the name was squeezed into three lines and the
+             buttons fell one way for who paid and another for who did not.
+        --%>
         <div
           :for={enrollment <- @enrollments}
           id={"enrollment-#{enrollment.id}"}
@@ -224,7 +228,7 @@
       </.workshop_empty>
     </section>
 
-    <%!-- Fila de pedidos: só existe em workshop privado --%>
+    <%!-- Request queue: it only exists on a private workshop. --%>
     <section :if={@workshop.visibility == :private} class="mt-8">
       <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
         Pedidos para entrar
@@ -286,9 +290,10 @@
       </p>
     </section>
 
-    <%!-- Fila de espera: a demanda reprimida em número. Fila grande é o
-    sinal de que cabe abrir outra turma, e era isso que se perdia quando a
-    página só dizia "esgotado". --%>
+    <%!-- Waitlist: pent-up demand as a number. A long waitlist is the signal that
+         another class fits, and that is what was lost when the page only said "sold
+         out".
+    --%>
     <section :if={@waitlist != []} class="mt-8">
       <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
         Lista de espera <span class="text-accent-orange">· {length(@waitlist)} esperando</span>
@@ -317,7 +322,6 @@
       </div>
     </section>
 
-    <%!-- Quem organiza junto --%>
     <section class="mt-8">
       <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
         Quem organiza
@@ -396,7 +400,7 @@
       </p>
     </section>
 
-    <%!-- Cancelar (ação destrutiva, longe do resto) --%>
+    <%!-- Cancel: a destructive action, kept away from the rest. --%>
     <section
       :if={@owner? && @workshop.status != :cancelled}
       class="mt-8 border-t border-ink-200 pt-5"

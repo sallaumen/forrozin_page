@@ -1,8 +1,8 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.DropAnimationTables do
   use Ecto.Migration
 
-  # Remove as tabelas da visualização 3D de sequências (feature removida).
-  # O `down` recria a estrutura (sem dados) para reversibilidade do schema.
+  # Drops the tables of the 3D sequence visualization (feature removed).
+  # `down` recreates the structure (with no data) so the schema stays reversible.
   def up do
     drop table(:step_animations)
     drop table(:category_pose_defaults)

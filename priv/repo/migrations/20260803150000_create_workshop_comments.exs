@@ -16,8 +16,8 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopComments do
       add :parent_workshop_comment_id,
           references(:workshop_comments, type: :binary_id, on_delete: :nilify_all)
 
-      # Naive de proposito: o componente de thread mede "ha 5min" com
-      # NaiveDateTime.diff/3, igual as outras tabelas de comentario.
+      # Naive on purpose: the thread component measures "5 min ago" with
+      # NaiveDateTime.diff/3, like the other comment tables.
       timestamps()
     end
 

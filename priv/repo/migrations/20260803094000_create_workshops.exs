@@ -12,10 +12,10 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshops do
       add :location, :string
       add :starts_at, :utc_datetime, null: false
       add :ends_at, :utc_datetime
-      # nulo = gratuito; em centavos, para nunca fazer conta com float
+      # null means free; in cents, so no arithmetic ever runs on a float
       add :price_cents, :integer
       add :payment_info, :string
-      # nulo = sem limite de vagas
+      # null means no seat limit
       add :capacity, :integer
       add :status, :string, null: false, default: "draft"
 
@@ -23,8 +23,8 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshops do
     end
 
     create_if_not_exists unique_index(:workshops, [:slug])
-    # A agenda ordena e filtra por data dentro de um status; o índice composto
-    # cobre o caminho quente da listagem pública.
+    # The agenda sorts and filters by date within a status; the composite index
+    # covers the hot path of the public listing.
     create_if_not_exists index(:workshops, [:status, :starts_at])
     create_if_not_exists index(:workshops, [:organizer_id, :starts_at])
 
@@ -36,7 +36,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshops do
 
       add :user_id, references(:users, type: :binary_id, on_delete: :delete_all), null: false
 
-      # Privado do organizador: nunca sai numa query pública.
+      # Private to the organizer: it never leaves through a public query.
       add :payment_status, :string, null: false, default: "pending"
       add :paid_at, :utc_datetime
 

@@ -27,7 +27,6 @@
       {if i_am_teacher, do: "Meus alunos", else: "Meus professores"}
     </.link>
 
-    <%!-- Cabeçalho do parceiro --%>
     <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ink-200 bg-ink-50 px-4 py-3.5 shadow-sm">
       <div class="flex min-w-0 items-center gap-3">
         <.user_avatar user={@counterpart} size={:lg} />
@@ -67,7 +66,6 @@
     </div>
 
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <%!-- Coluna principal: nota de hoje + histórico --%>
       <div class="flex min-w-0 flex-col gap-4">
         <.diary_card
           learned_codes={@learned_codes}
@@ -104,7 +102,6 @@
           </:meta>
         </.diary_card>
 
-        <%!-- Lições do professor (broadcast) --%>
         <section
           :if={@lessons != []}
           id="teacher-lessons"
@@ -197,7 +194,6 @@
 
       <%!-- Sidebar --%>
       <aside class="flex min-w-0 flex-col gap-4">
-        <%!-- Card do parceiro + stats + anotação privada --%>
         <.sidebar_card>
           <div class="mb-3 flex items-center gap-3">
             <.link navigate={~p"/users/#{@counterpart.username}"} class="no-underline">
@@ -256,6 +252,7 @@
   </main>
 </div>
 
-<%!-- Folha do passo: abre por cima, para quem estava lendo a anotação
-não perder o lugar. --%>
+<%!-- Step sheet: it opens on top, so whoever was reading the note does not lose their
+     place.
+--%>
 <.step_sheet step={@step_sheet} learned={@step_sheet_learned} />
