@@ -9,7 +9,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Engagement, Sequences, Workshops}
+  alias OGrupoDeEstudos.{Accounts, Brazil, Engagement, Sequences, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Badges
   alias OGrupoDeEstudos.Workshops.Workshop
@@ -17,7 +17,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   use OGrupoDeEstudosWeb.Handlers.StepLearning
   use OGrupoDeEstudosWeb.Handlers.SequenceSheet
 
+  alias OGrupoDeEstudosWeb.ChangesetErrors
+  alias OGrupoDeEstudosWeb.InlineEditParams
+
   import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1, sequence_sheet: 1]
+  import OGrupoDeEstudosWeb.UI.InlineEdit
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
@@ -64,6 +68,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     # Seeded here and not in assign_workshop/2, which reruns on every reload: an
     # open sequence would snap shut on the first citation or favorite.
     |> assign(:open_sequence, nil)
+    |> assign(:editing_field, nil)
+    |> assign(:edit_error, nil)
     |> assign_workshop(workshop)
     |> reload_comments()
   end
@@ -91,6 +97,35 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     Workshops.remove_step(socket.assigns.workshop, socket.assigns.current_user, step_id)
 
     {:noreply, reload_workshop(socket)}
+  end
+
+  # The pencil writes one field at a time. Which fields exist is a whitelist in
+  # InlineEditParams, never the name that arrived in the event.
+  def handle_event("edit_field", %{"field" => field}, socket) do
+    {:noreply, open_field(socket, InlineEditParams.workshop_field(field))}
+  end
+
+  def handle_event("cancel_edit", _params, socket), do: {:noreply, close_field(socket)}
+
+  def handle_event("save_field", params, %{assigns: %{editing_field: nil}} = socket) do
+    _ignored = params
+    {:noreply, socket}
+  end
+
+  def handle_event("save_field", params, socket) do
+    field = socket.assigns.editing_field
+    attrs = InlineEditParams.attrs(socket.assigns.workshop, field, params)
+
+    case Workshops.update_workshop(socket.assigns.current_user, socket.assigns.workshop, attrs) do
+      {:ok, updated} ->
+        {:noreply, socket |> close_field() |> reload_after_edit(updated)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, :edit_error, ChangesetErrors.first_message(changeset))}
+
+      {:error, _unauthorized} ->
+        {:noreply, close_field(socket)}
+    end
   end
 
   def handle_event("save_sequence", _params, socket) do
@@ -575,6 +610,28 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   # The gallery is paid content: only who is in the workshop sees it.
   defp visible_media(workshop, user) do
     if Workshops.can_see_media?(workshop, user), do: Workshops.list_media(workshop.id), else: []
+  end
+
+  defp open_field(socket, nil), do: socket
+
+  defp open_field(socket, field) do
+    if socket.assigns.organizer? do
+      socket |> assign(:editing_field, field) |> assign(:edit_error, nil)
+    else
+      socket
+    end
+  end
+
+  defp close_field(socket), do: socket |> assign(:editing_field, nil) |> assign(:edit_error, nil)
+
+  # The slug can change with the title, so the page follows it instead of keeping a
+  # dead address in the bar.
+  defp reload_after_edit(socket, %{slug: slug} = updated) do
+    if slug == socket.assigns.workshop.slug do
+      assign_workshop(socket, updated)
+    else
+      push_patch(socket, to: ~p"/workshops/#{slug}")
+    end
   end
 
   defp enroll_error(:organizer), do: "Você organiza este workshop, já está dentro."

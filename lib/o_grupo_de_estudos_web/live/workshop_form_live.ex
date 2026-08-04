@@ -9,6 +9,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   alias OGrupoDeEstudos.{Accounts, Brazil, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Workshops.Workshop
+  alias OGrupoDeEstudosWeb.ChangesetErrors
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -213,13 +214,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     |> assign(:form_error, first_error(changeset))
   end
 
+  # The label and the message together, so "não pode ficar em branco" says which
+  # field it is talking about.
   defp first_error(changeset) do
-    changeset
-    |> Ecto.Changeset.traverse_errors(fn {msg, _opts} -> msg end)
-    |> Enum.map(fn {field, [msg | _]} -> "#{label_for(field)} #{msg}" end)
-    |> List.first()
-    |> Kernel.||("Confira os campos e tente de novo.")
+    case Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end) do
+      map when map == %{} -> "Confira os campos e tente de novo."
+      map -> "#{label_for(first_field(map))} #{ChangesetErrors.first_message(changeset)}"
+    end
   end
+
+  defp first_field(errors), do: errors |> Map.keys() |> List.first()
 
   defp label_for(:title), do: "Título"
   defp label_for(:description), do: "Descrição"

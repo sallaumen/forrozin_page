@@ -49,13 +49,33 @@
         <p class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-accent-purple">
           Programação
         </p>
-        <h1 class="m-0 font-serif text-[26px] font-bold leading-tight tracking-tight text-ink-900 sm:text-[30px]">
-          {@program.title}
-        </h1>
+        <.editable
+          field={:title}
+          label="nome da programação"
+          editing={@editing_field}
+          can_edit={@owner?}
+          value={InlineEditParams.form_value(@program, :title)}
+          error={@edit_error}
+        >
+          <h1 class="m-0 font-serif text-[26px] font-bold leading-tight tracking-tight text-ink-900 sm:text-[30px]">
+            {@program.title}
+          </h1>
+        </.editable>
 
         <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-500">
           <span class="font-bold text-ink-900">{program_span(@days, @workshop_count)}</span>
-          <span :if={@program.location}>{@program.location}</span>
+          <.editable
+            :if={@program.location || @owner?}
+            field={:location}
+            label="onde"
+            editing={@editing_field}
+            can_edit={@owner?}
+            value={InlineEditParams.form_value(@program, :location)}
+            hint="Uma linha de chamada. O endereço de verdade fica em cada workshop."
+            error={@edit_error}
+          >
+            <span>{@program.location || "sem lugar definido"}</span>
+          </.editable>
           <span>por <b class="text-ink-900">{@program.owner.name}</b></span>
         </div>
       </div>
@@ -79,12 +99,22 @@
       </button>
     </div>
 
-    <p
-      :if={@program.description}
-      class="mt-5 whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800"
-    >
-      {@program.description}
-    </p>
+    <div :if={@program.description || @owner?} class="mt-5">
+      <.editable
+        field={:description}
+        label="descrição"
+        type={:long_text}
+        layout={:block}
+        editing={@editing_field}
+        can_edit={@owner?}
+        value={InlineEditParams.form_value(@program, :description)}
+        error={@edit_error}
+      >
+        <p class="m-0 whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800">
+          {@program.description || "sem descrição"}
+        </p>
+      </.editable>
+    </div>
 
     <%!-- As duas formas de participar: pacote fechado ou dia a dia --%>
     <div :if={@tem_pacote?} class="mt-6 grid gap-4 sm:grid-cols-[1fr_1fr]">
@@ -322,5 +352,7 @@
         }
       />
     </section>
+
+    <.last_updated :if={@owner?} at={@program.updated_at} />
   </main>
 </div>
