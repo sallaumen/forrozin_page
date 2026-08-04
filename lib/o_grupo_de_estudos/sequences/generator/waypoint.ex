@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Sequences.Generator.Waypoint do
   @moduledoc """
-  Geração por waypoints (modo com passos obrigatórios).
+  Generation by waypoints (mode with required steps).
 
-  Hybrid explore-then-correct: para cada segmento entre waypoints, o
-  algoritmo caminha aleatoriamente pelo grafo por um "budget" de passos
-  (exploração) e depois corrige o curso via BFS até o waypoint. Isso
-  produz arestas de entrada diversas em cada passo obrigatório.
+  Hybrid explore-then-correct: for each segment between waypoints, the algorithm
+  walks the graph at random for a step budget (exploration) and then corrects
+  course through BFS up to the waypoint. That produces diverse incoming edges at
+  each required step.
   """
 
   alias OGrupoDeEstudos.Sequences.Generator.{GraphTraversal, PathFormat, Warnings}
@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Waypoint do
   @max_attempts 50
   @overgeneration_factor 5
 
-  @doc "Gera as sequências com todos os obrigatórios. Retorna {sequences, warnings}."
+  @doc "Generates the sequences with every required step. Returns {sequences, warnings}."
   def generate(ctx, params, required_ids) do
     zones = @zones |> Stream.cycle() |> Enum.take(params.count)
     scorer_opts = %{required_ids: ctx.required_ids, bf_id: ctx.bf_id}

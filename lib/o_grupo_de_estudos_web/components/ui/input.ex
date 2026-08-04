@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudosWeb.UI.Input do
   @moduledoc """
-  Input de texto com label, hint opcional e error opcional.
+  Text input with a label, an optional hint and an optional error.
 
-  Garante `<label for>` ↔ `id` pra acessibilidade, `aria-describedby` pro
-  hint/erro quando presente, `aria-invalid` quando há erro.
+  It guarantees `<label for>` matching `id` for accessibility, `aria-describedby`
+  for the hint and error when present, and `aria-invalid` when there is an error.
   """
 
   use Phoenix.Component

@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Engagement.LearnedStep do
   @moduledoc """
-  Registro de que um usuário marcou um passo como aprendido (dominado).
+  Record that a user marked a step as learned.
 
-  Espelha o padrão de `Favorite`/`Like`, mas é específico de passos (FK real
-  para `steps`). Marcar aprendido implica favoritar (ver `Engagement.Learnings`),
-  então a estrela de favorito aparece nas demais telas sem duplicar a verdade:
-  `favorites` continua sendo a fonte de "é favorito".
+  Mirrors the `Favorite` and `Like` pattern, but is specific to steps (a real FK
+  to `steps`). Marking as learned implies favoriting (see `Engagement.Learnings`),
+  so the favorite star shows up on the other screens without duplicating the
+  truth: `favorites` remains the source of "is a favorite".
   """
   use Ecto.Schema
 

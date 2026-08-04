@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudosWeb.Helpers.EngagementMessages do
   @moduledoc """
-  Mensagens de erro (PT-BR) para ações de engajamento na borda.
+  Error messages (in Portuguese, for the user) of engagement actions at the
+  boundary.
 
-  Traduz os motivos internos dos contextos (`:rate_limited`, changesets,
-  códigos de aplicação de sugestão) em texto de flash — a borda faz
-  pattern match aqui em vez de engolir `{:error, _}` em silêncio.
+  Translates the internal reasons of the contexts (`:rate_limited`, changesets,
+  error codes) into a sentence the person reads.
   """
 
-  @rate_limited "Calma! Muitas ações seguidas — espera alguns segundos."
+  @rate_limited "Calma! Muitas ações seguidas, espera alguns segundos."
 
   @spec like_error(term()) :: String.t()
   def like_error(:rate_limited), do: @rate_limited

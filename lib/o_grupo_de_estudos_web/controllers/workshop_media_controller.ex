@@ -1,12 +1,9 @@
 defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
   @moduledoc """
-  Serve a mídia da galeria só para quem pode ver.
+  Serves gallery media only to whoever may see it.
 
-  Existe porque `Plug.Static` roda antes da sessão e não tem como perguntar
-  quem é a pessoa. O arquivo mora fora da allowlist do `UploadsStatic`, então
-  este é o único caminho até ele.
-
-  `send_file` usa sendfile do kernel via Bandit: o byte não sobe para a BEAM.
+  It exists because `Plug.Static` runs before the session and has no way to ask
+  who the person is: paid content cannot be served by a static plug.
   """
 
   use OGrupoDeEstudosWeb, :controller

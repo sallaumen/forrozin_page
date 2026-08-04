@@ -1,8 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Plugs.TrackDailyActivity do
   @moduledoc """
-  Registra que o usuário logado esteve ativo hoje (ao abrir qualquer página),
-  no máximo uma vez por sessão por dia. Alimenta a consistência da área de
-  Estudos: o dia conta mesmo sem registro de diário.
+  Records that the logged-in user was active today (on opening any page), at most
+  once per session per day. Feeds the consistency count of the Study area.
   """
   import Plug.Conn
 

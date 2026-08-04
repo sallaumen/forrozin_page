@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
   @moduledoc """
-  Programação: vários workshops sob um nome só.
+  Program: several workshops under one name.
 
-  Serve para os dois tamanhos: "quinta básico, sexta avançado" e um festival
-  com quinze workshops de professores diferentes. A pessoa abre um link,
-  enxerga tudo organizado por dia e escolhe onde vai.
+  It serves both sizes: "Thursday basic, Friday advanced" and a festival with
+  fifteen workshops from different teachers. A person opens one link, sees
+  everything organized by day and picks where to go.
 
-  As datas não moram aqui: são o `min`/`max` dos workshops filhos. Coluna
-  desnormalizada mentiria assim que um workshop fosse remarcado.
+  The dates do not live here: they are the `min` and `max` of the child
+  workshops. A denormalized column would lie the moment a workshop was rescheduled.
   """
 
   use Ecto.Schema
@@ -59,12 +59,12 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopProgram do
     |> foreign_key_constraint(:owner_id)
   end
 
-  @doc "true quando existe preço fechado para o conjunto."
+  @doc "true when there is a closed price for the set."
   @spec pacote?(t()) :: boolean()
   def pacote?(%__MODULE__{price_cents: cents}) when is_integer(cents) and cents > 0, do: true
   def pacote?(%__MODULE__{}), do: false
 
-  @doc "Grava ou tira o flyer. Caminho vem do storage, nunca do usuario."
+  @doc "Stores or removes the flyer. The path comes from the storage, never from the user."
   def flyer_changeset(program, flyer_path) do
     change(program, flyer_path: flyer_path)
   end

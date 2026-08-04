@@ -2,13 +2,13 @@ defmodule OGrupoDeEstudos.Sequences.Generator do
   @moduledoc """
   Generates step sequences by traversing the directed connection graph.
 
-  Orquestrador: monta o contexto do grafo (passos públicos, adjacências,
-  alcançabilidade) e despacha para o algoritmo:
+  Orchestrator: builds the graph context (public steps, adjacency, reachability)
+  and dispatches to the algorithm:
 
-  - **`Generator.Waypoint`** (quando há required_codes): garante todos os
-    obrigatórios via caminhos BFS entre waypoints, permutando a ordem.
-  - **`Generator.Dfs`** (sem obrigatórios): DFS aleatorizada com
-    backtracking, seleção ponderada de vizinhos e relaxamento progressivo.
+  - **`Generator.Waypoint`** (when there are required_codes): guarantees every
+    required step through BFS paths between waypoints, permuting the order.
+  - **`Generator.Dfs`** (no required steps): randomized DFS with backtracking,
+    weighted neighbor selection and progressive relaxation.
   """
 
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepQuery}

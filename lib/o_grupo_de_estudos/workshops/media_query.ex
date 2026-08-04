@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Workshops.MediaQuery do
   @moduledoc """
-  Leituras de `WorkshopMedia`.
+  Reads of `WorkshopMedia`.
 
-  A ordem é fixa: oficial primeiro, depois a comunidade, cada bloco do mais
-  recente ao mais antigo. É o que o dono do produto pediu, e é o que faz o
-  vídeo do professor ser a primeira coisa que a pessoa vê.
+  The order is fixed: official first, then the community, each block from newest
+  to oldest. It is what the product owner asked for, and it is what makes the
+  teacher's video the first thing a person sees.
   """
 
   import Ecto.Query
@@ -12,7 +12,7 @@ defmodule OGrupoDeEstudos.Workshops.MediaQuery do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops.WorkshopMedia
 
-  @doc "Mídia visível do workshop, oficial primeiro."
+  @doc "Visible media of the workshop, official first."
   @spec list_for_workshop(Ecto.UUID.t()) :: [WorkshopMedia.t()]
   def list_for_workshop(workshop_id) do
     from(m in WorkshopMedia,
@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudos.Workshops.MediaQuery do
     |> Repo.all()
   end
 
-  @doc "Uma mídia com escopo no workshop: id forjado de outro não encontra nada."
+  @doc "One media scoped to the workshop: a forged id from another finds nothing."
   @spec get_scoped(Ecto.UUID.t(), Ecto.UUID.t()) :: WorkshopMedia.t() | nil
   def get_scoped(media_id, workshop_id) do
     case Ecto.UUID.cast(media_id) do
@@ -38,7 +38,7 @@ defmodule OGrupoDeEstudos.Workshops.MediaQuery do
     end
   end
 
-  @doc "Mídia por id, sem escopo. Para o controller que serve o arquivo."
+  @doc "Media by id, unscoped. For the controller that serves the file."
   @spec get(Ecto.UUID.t()) :: WorkshopMedia.t() | nil
   def get(media_id) do
     case Ecto.UUID.cast(media_id) do
@@ -47,7 +47,7 @@ defmodule OGrupoDeEstudos.Workshops.MediaQuery do
     end
   end
 
-  @doc "Quantos arquivos e quantos bytes o workshop já guarda."
+  @doc "How many files and how many bytes the workshop already stores."
   @spec usage(Ecto.UUID.t()) :: %{count: non_neg_integer(), bytes: non_neg_integer()}
   def usage(workshop_id) do
     from(m in WorkshopMedia,

@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Encyclopedia.Seeder do
   @moduledoc """
-  Seed inicial da enciclopédia de forró roots.
+  Initial seed of the forró roots encyclopedia.
 
-  Os dados (categorias, seções, subseções, passos e conceitos técnicos)
-  vivem em `priv/data/encyclopedia_seed.json`; este módulo só orquestra:
-  lê, monta os changesets e insere. Idempotente: chamadas subsequentes
-  retornam `:already_seeded` sem modificar o banco.
+  The data (categories, sections, subsections, steps and technical concepts)
+  lives in `priv/data/encyclopedia_seed.json`; this module only orchestrates:
+  reads, builds the changesets and inserts. Idempotent: later calls return
+  `:already_seeded` without touching the database.
   """
 
   alias OGrupoDeEstudos.Encyclopedia.{Category, Section, Step, Subsection, TechnicalConcept}
@@ -14,8 +14,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.Seeder do
   @seed_file Path.join(["data", "encyclopedia_seed.json"])
 
   @doc """
-  Executa o seed inicial da enciclopédia. Retorna `:ok` na primeira execução e
-  `:already_seeded` nas subsequentes — seguro chamar múltiplas vezes.
+  Runs the initial encyclopedia seed. Returns `:ok` on the first run and
+  `:already_seeded` afterwards, so it is safe to call several times.
   """
   def seed! do
     if Repo.exists?(Category) do

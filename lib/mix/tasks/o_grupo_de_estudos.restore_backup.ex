@@ -7,7 +7,7 @@ defmodule Mix.Tasks.OGrupoDeEstudos.RestoreBackup do
       # List available backups
       mix o_grupo_de_estudos.restore_backup
 
-      # Restore (on_conflict: :nothing — does not overwrite existing data)
+      # Restore (on_conflict: :nothing, does not overwrite existing data)
       mix o_grupo_de_estudos.restore_backup priv/backups/backup_20260411_130000.json
 
       # Restore from scratch (clears existing data before restoring)

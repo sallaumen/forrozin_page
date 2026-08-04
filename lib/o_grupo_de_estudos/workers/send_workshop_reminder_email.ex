@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Workers.SendWorkshopReminderEmail do
   @moduledoc """
-  Manda o email de "amanhã tem workshop".
+  Sends the "there is a workshop tomorrow" email.
 
-  Email e não push: push exige VAPID, tabela de subscription e, no iPhone, o
-  app instalado na tela inicial. Email já funciona em produção e alcança todo
-  mundo.
+  Email and not push: push requires VAPID, a subscription table and, on the
+  iPhone, the app installed on the home screen. Email already works in production
+  and reaches everyone.
   """
 
   use Oban.Worker, queue: :email, max_attempts: 3

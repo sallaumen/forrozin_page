@@ -1,6 +1,6 @@
 defmodule OGrupoDeEstudosWeb.SequenceLive do
   @moduledoc """
-  Sequences page — shows all public sequences sorted by like count,
+  Sequences page: shows all public sequences sorted by like count,
   with inline comment expansion (lazy-loaded) and YouTube embeds.
 
   Accessible to all authenticated users.

@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudosWeb.WorkshopLive do
   @moduledoc """
-  Página pública do workshop: o link que circula no WhatsApp.
+  Public workshop page: the link that circulates on WhatsApp.
 
-  Abre para quem ainda não tem conta (título, data, local, preço, descrição
-  e quantas pessoas vão). Nomes dos inscritos e a inscrição em si exigem
-  login. Nada de pagamento entra nesta LiveView — nem no socket.
+  It opens for whoever has no account yet (title, date, place, price, description
+  and who teaches). What is private lives inside: conversation, names of enrolled
+  people and the gallery.
   """
 
   use OGrupoDeEstudosWeb, :live_view

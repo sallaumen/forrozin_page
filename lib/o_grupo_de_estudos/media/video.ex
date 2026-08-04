@@ -1,32 +1,32 @@
 defmodule OGrupoDeEstudos.Media.Video do
   @moduledoc """
-  Fachada de transcodificação de vídeo.
+  Video transcoding facade.
 
-  Delega para o adapter configurado, para o domínio depender desta porta
-  (`OGrupoDeEstudos.Media.Video.Behaviour`) e não do ffmpeg. Por padrão usa
-  `OGrupoDeEstudos.Media.Video.FFmpeg`; testes trocam via:
+  Delegates to the configured adapter, so the domain depends on this port
+  (`OGrupoDeEstudos.Media.Video.Behaviour`) and not on ffmpeg. Defaults to
+  `OGrupoDeEstudos.Media.Video.FFmpeg`; tests swap it through:
 
-      config :o_grupo_de_estudos, OGrupoDeEstudos.Media.Video, adapter: AlgumMock
+      config :o_grupo_de_estudos, OGrupoDeEstudos.Media.Video, adapter: SomeMock
 
-  O adapter é resolvido em runtime, então um teste sozinho consegue trocar.
+  The adapter is resolved at runtime, so a single test can swap it.
 
-  ## Uso
+  ## Usage
 
-      Video.transcode("/tmp/upload.mov", "/tmp/saida.mp4")
+      Video.transcode("/tmp/upload.mov", "/tmp/output.mp4")
       #=> :ok
   """
 
   @default_adapter OGrupoDeEstudos.Media.Video.FFmpeg
 
-  @doc "Se dá para transcodificar nesta máquina."
+  @doc "Whether transcoding is possible on this machine."
   @spec available?() :: boolean()
   def available?, do: adapter().available?()
 
-  @doc "Converte o vídeo para 720p H.264. Devolve `:ok` ou `{:error, motivo}`."
+  @doc "Converts the video to 720p H.264. Returns `:ok` or `{:error, reason}`."
   @spec transcode(String.t(), String.t()) :: :ok | {:error, term()}
   def transcode(source, dest), do: adapter().transcode(source, dest)
 
-  @doc "Extrai um quadro do vídeo como imagem de capa."
+  @doc "Extracts a video frame as the cover image."
   @spec poster(String.t(), String.t()) :: :ok | {:error, term()}
   def poster(source, dest), do: adapter().poster(source, dest)
 

@@ -1,16 +1,16 @@
 defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
   @moduledoc """
-  Foto ou vídeo da galeria de um workshop.
+  Photo or video of a workshop gallery.
 
-  `storage_key` é opaco e mora fora da pasta pública: mídia de workshop pago é
-  restrita a quem se inscreveu, então é servida por controller que confere
-  permissão, nunca pelo `Plug.Static`.
+  `storage_key` is opaque and lives outside the public folder: media of a paid
+  workshop is restricted to whoever enrolled, so it is served by a controller that
+  checks permission, never by `Plug.Static`.
 
-  `official` marca o que veio de quem administra o workshop, e não de
-  `User.role == :admin`: oficial aqui é "de quem dá a aula".
+  `official` marks what came from whoever administers the workshop, not from
+  `User.role == :admin`: official here means "from whoever teaches".
 
-  `status` existe por causa do vídeo: o upload responde na hora e o transcode
-  roda depois, numa fila à parte. Foto nasce `:ready`.
+  `status` exists because of video: the upload answers right away and the
+  transcode runs afterwards, in a separate queue. A photo is born `:ready`.
   """
 
   use Ecto.Schema
@@ -68,7 +68,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
   defp trim(nil), do: nil
   defp trim(value) when is_binary(value), do: String.trim(value)
 
-  @doc "Extensão a partir do content type, para nomear o arquivo no storage."
+  @doc "Extension from the content type, to name the file in the storage."
   @spec extensao(String.t()) :: String.t()
   def extensao(content_type) do
     case MIME.extensions(content_type) do
@@ -77,16 +77,16 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopMedia do
     end
   end
 
-  @doc "Se é foto ou vídeo, a partir do content type."
+  @doc "Whether it is a photo or a video, from the content type."
   @spec kind_do_tipo(String.t()) :: :photo | :video | :error
   def kind_do_tipo("image/" <> _), do: :photo
   def kind_do_tipo("video/" <> _), do: :video
   def kind_do_tipo(_outro), do: :error
 
   @doc """
-  Status com que a mídia entra na galeria.
+  Status the media enters the gallery with.
 
-  Vídeo espera o transcode; foto já está no formato que o navegador abre.
+  A video waits for the transcode; a photo is already in a format the browser opens.
   """
   @spec status_inicial(:photo | :video) :: :processing | :ready
   def status_inicial(:video), do: :processing

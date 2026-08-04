@@ -1,14 +1,10 @@
 defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   @moduledoc """
-  O gesto de "já sei este passo" fora do mapa.
+  The "I already know this step" gesture outside the map.
 
-  O mapa tem o seu próprio handler (`Handlers.GraphJourney`), que além de
-  marcar precisa recalcular a fronteira da jornada e repintar o grafo. Aqui o
-  trabalho é menor: marcar e refletir na tela.
-
-  As duas telas que usam este handler mostram o mesmo componente
-  (`StepDetail`), então a atualização é a mesma nos dois casos, só muda o nome
-  do assign: a página do passo guarda em `step_*`, o drawer em `drawer_*`.
+  The map has its own handler (`Handlers.GraphJourney`), which besides marking has
+  to recompute the frontier and push it to Cytoscape. Here the screens only need
+  the mark and the color of the chip.
   """
 
   defmacro __using__(_opts) do
@@ -48,11 +44,10 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   end
 
   @doc """
-  Códigos dos passos que a pessoa já sabe.
+  Codes of the steps the person already knows.
 
-  Vira cor de chip nas telas de estudo e de workshop. Recarregado a cada
-  marcação: sem isso a pessoa marcaria pela folha, fecharia, e veria o chip
-  antigo sem saber se funcionou.
+  It becomes chip color on the study and workshop screens. Reloaded on every mark:
+  without that the person would mark a step, close the sheet and see the old chip.
   """
   @spec codigos_sabidos(map()) :: MapSet.t()
   def codigos_sabidos(%{assigns: %{current_user: %{id: id}}}),
@@ -61,11 +56,10 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   def codigos_sabidos(_sem_usuario), do: MapSet.new()
 
   @doc """
-  Alterna o aprendizado e devolve o socket com a tela em dia.
+  Toggles the learning and returns the socket with the screen up to date.
 
-  Marcar como aprendido também favorita (é um `Ecto.Multi` no contexto), então
-  o favorito é relido junto: sem isso a estrela só acenderia no próximo
-  reload, e ninguém entenderia de onde veio.
+  Marking as learned also favorites (an `Ecto.Multi` in the context), so the
+  screens that show the star have to be refreshed together.
   """
   def alternar(socket, step) do
     user_id = socket.assigns.current_user.id
@@ -110,10 +104,10 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
   defp atualizar_folha(socket, _step, _user_id), do: socket
 
   @doc """
-  Abre a folha rápida do passo.
+  Opens the quick sheet of the step.
 
-  Código que não existe simplesmente não abre nada: a folha some por vir nula,
-  e a página segue de pé.
+  A code that does not exist simply opens nothing: the sheet stays closed by
+  coming back nil, and the page keeps standing.
   """
   def abrir_folha(socket, nil), do: socket
 

@@ -29,9 +29,9 @@ defmodule OGrupoDeEstudos.Engagement.ActivityBroadcaster do
   Broadcasts an activity to all followers of the actor.
 
   ## Parameters
-  - `actor` — the user who performed the action (%User{})
-  - `action` — atom describing the action (:liked_step, :followed_user, :created_sequence)
-  - `metadata` — map with additional context (step name, target username, etc.)
+  - `actor`: the user who performed the action (%User{})
+  - `action`: atom describing the action (:liked_step, :followed_user, :created_sequence)
+  - `metadata`: map with additional context (step name, target username, etc.)
   """
   def broadcast_activity(actor, action, metadata \\ %{}) do
     follower_ids =

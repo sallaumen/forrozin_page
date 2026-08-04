@@ -1,6 +1,6 @@
 defmodule OGrupoDeEstudosWeb.UI.BottomNav do
   @moduledoc """
-  Mobile tab bar — fixed to bottom, 4 primary destinations.
+  Mobile tab bar: fixed to bottom, 4 primary destinations.
 
   Only renders visually on `md` and below (hidden on desktop via CSS).
   Active tab is determined by comparing `@current_path` prefix to each

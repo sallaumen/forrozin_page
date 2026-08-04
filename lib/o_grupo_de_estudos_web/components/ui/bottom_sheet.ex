@@ -1,26 +1,26 @@
 defmodule OGrupoDeEstudosWeb.UI.BottomSheet do
   @moduledoc """
-  Bottom sheet / modal dialog responsivo.
+  Responsive bottom sheet / modal dialog.
 
-  Mobile: desliza de baixo, ocupa até 85% da altura, handle visual pra
-  drag-down close.
-  Desktop (≥md): vira modal centralizado com overlay.
+  Mobile: slides up from the bottom, takes up to 85% of the height, with a visual
+  handle for drag-down close.
+  Desktop (>=md): becomes a centered modal with an overlay.
 
-  Base: elemento `<dialog>` nativo — traz foco trap, Escape close,
-  aria semantics prontos.
+  Base: the native `<dialog>` element, which brings focus trap, Escape close and
+  aria semantics ready.
 
-  Estado de abertura controlado via JS (`.showModal()` / `.close()`).
-  Use `Phoenix.LiveView.JS` pra disparar:
+  The open state is controlled through JS (`.showModal()` / `.close()`).
+  Use `Phoenix.LiveView.JS` to trigger it:
 
       <button phx-click={JS.dispatch("bottom-sheet:open", to: "#my-sheet")}>
         Abrir
       </button>
 
-  O hook `BottomSheet` em `assets/js/app.js` cuida de:
-  - Listener `bottom-sheet:open` → `showModal()`
-  - Listener `bottom-sheet:close` → `close()`
-  - Swipe-down em mobile → close
-  - Click no overlay → close
+  The `BottomSheet` hook in `assets/js/app.js` takes care of:
+  - the `bottom-sheet:open` listener, calling `showModal()`
+  - the `bottom-sheet:close` listener, calling `close()`
+  - swipe-down on mobile, which closes
+  - a click on the overlay, which closes
   """
 
   use Phoenix.Component

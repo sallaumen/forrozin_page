@@ -17,16 +17,16 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.NotificationQuery do
   @doc """
   Returns notifications for the given user, ordered unread-first then by newest.
 
-  O limite conta **assuntos** (`group_key`), não linhas: como o `Grouper`
-  colapsa cada assunto em uma entrada só, cortar por linha faria uma rajada
-  (um workshop com 100 inscritos) ocupar a lista inteira e esconder o resto.
-  Todas as linhas dos assuntos escolhidos vêm juntas, senão o "e mais 99"
-  seria contado por cima de uma amostra.
+  The limit counts **subjects** (`group_key`), not rows: since the `Grouper`
+  collapses each subject into a single entry, cutting by row would let one burst
+  (a workshop with 100 enrollments) take the whole list and hide the rest. Every
+  row of the chosen subjects comes along, otherwise the "and 99 more" would be
+  counted over a sample.
 
   ## Options
 
-  - `:limit` — máximo de assuntos (default 20)
-  - `:offset` — deslocamento, também em assuntos (default 0)
+  - `:limit` for the maximum number of subjects (default 20)
+  - `:offset` for the offset, also in subjects (default 0)
   """
   @spec list_for_user(Ecto.UUID.t(), opts()) :: [Notification.t()]
   def list_for_user(user_id, opts \\ []) do

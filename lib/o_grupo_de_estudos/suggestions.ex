@@ -18,9 +18,9 @@ defmodule OGrupoDeEstudos.Suggestions do
   Creates a pending suggestion authored by the given user.
 
   Accepts any of the three action types:
-  - `"edit_field"` — requires `field`, `old_value`, `new_value`
-  - `"create_connection"` — requires `new_value` in "CODE->CODE" format
-  - `"remove_connection"` — requires `old_value` with the label
+  - `"edit_field"`: requires `field`, `old_value`, `new_value`
+  - `"create_connection"`: requires `new_value` in "CODE->CODE" format
+  - `"remove_connection"`: requires `old_value` with the label
   """
   def create(user, attrs) do
     result =

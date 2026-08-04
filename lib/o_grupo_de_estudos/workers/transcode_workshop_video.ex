@@ -1,18 +1,17 @@
 defmodule OGrupoDeEstudos.Workers.TranscodeWorkshopVideo do
   @moduledoc """
-  Converte um vídeo da galeria para 720p H.264, fora do ciclo do upload.
+  Converts a gallery video to 720p H.264, outside the upload cycle.
 
-  Fila própria com `concurrency: 1` (ver `config/config.exs`): a VM tem 1 vCPU
-  compartilhado, e o ffmpeg usa tudo que encontra. Dois transcodes ao mesmo
-  tempo deixariam o site lento para quem está navegando, e a fila não tem
-  pressa nenhuma para terminar.
+  Its own queue with `concurrency: 1` (see `config/config.exs`): the VM has 1
+  shared vCPU and ffmpeg uses everything it finds. Two transcodes at once would
+  slow the site down for whoever is browsing, and the queue is in no hurry.
 
-  `max_attempts: 3` porque o que costuma falhar aqui é transitório: disco
-  cheio no meio da escrita, ou deploy no meio do job. Erro de codec não chega
-  a virar tentativa: o contexto degrada e marca a mídia como pronta.
+  `max_attempts: 3` because what usually fails here is transient: a full disk
+  mid-write, or a deploy mid-job. A codec error does not even become an attempt:
+  the context degrades and marks the media as ready.
 
-  `timeout` de 30 minutos existe para ffmpeg travado não segurar a fila para
-  sempre; com `concurrency: 1`, um job preso é a fila inteira parada.
+  A 30 minute `timeout` exists so a stuck ffmpeg does not hold the queue forever;
+  with `concurrency: 1`, one stuck job is the whole queue stopped.
   """
 
   use Oban.Worker, queue: :video, max_attempts: 3

@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   @moduledoc """
-  Blocos visuais dos workshops. Apresentacionais: recebem dados prontos e
-  emitem eventos por attr, sem consultar nada.
+  Visual blocks of the workshops. Presentational: they take ready data and emit
+  events through attrs, querying nothing.
   """
 
   use Phoenix.Component
@@ -171,11 +171,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   defp programa_do(%{program: %{title: _} = program}), do: program
   defp programa_do(_workshop), do: nil
 
-  @doc "Ex.: Você está em 1 / Você está em 3"
+  @doc "For instance: Você está em 1 / Você está em 3"
   def inscricao_label(1), do: "Você está em 1"
   def inscricao_label(total), do: "Você está em #{total}"
 
-  @doc "Intervalo de datas de uma programação, a partir do resumo agregado."
+  @doc "Date range of a program, from the aggregated summary."
   def program_dates(%{starts_at: inicio, ends_at: fim}) do
     date_span(
       Brazil.to_local(inicio) |> DateTime.to_date(),
@@ -396,7 +396,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
-  @doc "Quanto o pacote economiza contra a soma dos avulsos. Zero se não economiza."
+  @doc "How much the package saves against the sum of the single prices. Zero when it does not."
   def economia(%{price_cents: pacote}, avulso_total)
       when is_integer(pacote) and is_integer(avulso_total) and avulso_total > pacote,
       do: avulso_total - pacote
@@ -468,12 +468,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   def erro_de_upload(_outro), do: "Não deu para carregar essa imagem."
 
   @doc """
-  Ex.: `sábado, 16 de agosto · 14h às 18h`, ou `16 a 18 de agosto · começa 14h`
-  quando o workshop atravessa dias.
+  For instance `sábado, 16 de agosto · 14h às 18h`, or `16 a 18 de agosto ·
+  começa 14h` when the workshop spans days.
 
-  Quem decide se é um dia ou vários é o calendário local: um evento que vai
-  das 20h às 23h de Brasília cruza a meia-noite em UTC e continua sendo uma
-  noite só.
+  What decides between one day and several is the local calendar: an event running
+  from 20h to 23h local time crosses midnight in UTC and is still a single night.
   """
   def schedule_label(%{starts_at: starts_at, ends_at: ends_at} = workshop) do
     day_label(Brazil.to_local(starts_at), local_or_nil(ends_at), workshop)
@@ -507,20 +506,20 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   defp month_day(local), do: Brazil.strftime(local, "%d de %B")
 
-  @doc "Ex.: 14h às 18h (ou só 14h quando não tem fim)"
+  @doc "For instance 14h às 18h (or just 14h when there is no end)."
   def time_range(%{starts_at: starts_at, ends_at: nil}), do: hour_label(starts_at)
 
   def time_range(%{starts_at: starts_at, ends_at: ends_at}),
     do: "#{hour_label(starts_at)} às #{hour_label(ends_at)}"
 
-  @doc "Preço formatado, ou Gratuito."
+  @doc "Formatted price, or the free label."
   def price_label(%{price_cents: nil}), do: "Gratuito"
   def price_label(%{price_cents: 0}), do: "Gratuito"
   def price_label(%{price_cents: cents}), do: money_label(cents)
 
   @doc """
-  Valor em reais. Diferente de `price_label/1`, zero aqui é um número: no
-  painel do organizador "R$ 0 recebido" é o que aconteceu, "Gratuito" não.
+  Amount in reais. Unlike `price_label/1`, zero here is a number: on the organizer
+  panel "R$ 0 recebido" is what happened, "Gratuito" is not.
   """
   def money_label(cents) when is_integer(cents), do: reais_label(div(cents, 100), rem(cents, 100))
 
@@ -530,9 +529,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     do: "R$ #{reais},#{String.pad_leading(to_string(centavos), 2, "0")}"
 
   @doc """
-  Resumo de uma programação: quantos workshops e em que dias.
+  Summary of a program: how many workshops and on which days.
 
-  Ex.: `2 workshops · 14 e 15 de agosto`, `15 workshops · 12 a 18 de fevereiro`
+  For instance `2 workshops · 14 e 15 de agosto`, `15 workshops · 12 a 18 de fevereiro`.
   """
   def program_span([], _count), do: "Nenhum workshop ainda"
 
@@ -560,7 +559,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     if Date.diff(fim, inicio) == 1, do: "e", else: "a"
   end
 
-  @doc "Rótulo do botão de curtir: some o número quando ninguém curtiu ainda."
+  @doc "Like button label: the number disappears when nobody liked it yet."
   def like_label(true, 1), do: "Você curtiu"
   def like_label(true, count), do: "Você e mais #{count - 1}"
   def like_label(false, 0), do: "Curtir"
@@ -570,7 +569,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   def people_label(1), do: "1 inscrito"
   def people_label(count), do: "#{count} inscritos"
 
-  @doc "Rótulo do estado de pagamento (visível só para o organizador)."
+  @doc "Payment state label (visible only to the organizer)."
   def payment_status_label(:paid), do: "Pago"
   def payment_status_label(:waived), do: "Isento"
   def payment_status_label(_status), do: "Aguardando"
@@ -584,9 +583,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   end
 
   @doc """
-  Como pagar. A chave Pix costuma ser CPF ou telefone do organizador, então
-  só aparece para quem se inscreveu (`reveal?`); os outros veem o preço e a
-  informação de que o acerto é direto com quem organiza.
+  How to pay. The Pix key is usually the organizer's CPF or phone number, so it
+  only shows for whoever enrolled (`reveal?`); everyone else sees the price and
+  the instruction.
   """
   def payment_hint(workshop, reveal? \\ true)
 
@@ -625,10 +624,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   attr :comment_count, :integer, default: 0
 
   @doc """
-  O que quem está de fora vê no lugar do interior.
+  What whoever stands outside sees in place of the inside.
 
-  Mostra a forma desfocada e a contagem legível: esconder diria "aqui não tem
-  nada", e mostrar entregaria o que é pago.
+  It shows the blurred shape and a readable count: hiding it would say "there is
+  nothing here", and showing it in full would give away what only enrolled people
+  paid for.
   """
   def locked_preview(assigns) do
     ~H"""
@@ -689,13 +689,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   defp legenda_de_conversa(total), do: "#{total} comentários."
 
   @doc """
-  Se a caixa deve oferecer "Pedir para entrar".
+  Whether the box should offer "ask to join".
 
-  Só em workshop privado publicado, para quem não organiza, não está na turma
-  e não tem pedido esperando, e quando ainda há vaga.
-
-  `:rejected` também oferece: recusar não fecha a porta para sempre, e a
-  pessoa pode ter mudado de ideia ou conversado com quem organiza.
+  Only on a published private workshop, for whoever does not organize it, is not
+  in the class and has no pending request.
   """
   def pede_para_entrar?(workshop, organizer?, enrolled?, status, full?)
 
@@ -712,25 +709,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   def pede_para_entrar?(_workshop, _organizer?, _enrolled?, _status, _full?), do: false
 
   @doc """
-  Se a caixa deve oferecer a lista de espera.
+  Whether the box should offer the waitlist.
 
-  Só em turma lotada de inscrição automática: onde quem organiza aceita cada
-  pessoa, a vaga extra é decisão dela, não fila.
+  Only on a full class with automatic enrollment: where the organizer approves
+  each person, the extra seat is their call and there is no queue to form.
   """
   def mostra_fila?(workshop, organizer?, enrolled?, full?, na_fila)
 
   def mostra_fila?(%Workshop{visibility: :public}, false, false, true, nil), do: true
   def mostra_fila?(_workshop, _organizer?, _enrolled?, _full?, _na_fila), do: false
 
-  @doc "Ex.: 1 pessoa na espera / 4 pessoas na espera"
+  @doc "For instance 1 pessoa na espera / 4 pessoas na espera"
   def espera_label(1), do: "1 pessoa na espera"
   def espera_label(total), do: "#{total} pessoas na espera"
 
   @doc """
-  Nomes de quem dá a aula numa linha só.
+  Names of whoever teaches, on a single line.
 
-  Dois professores é o caso comum (quase sempre um casal), então o "e" entre
-  os dois é a forma que se fala, não uma vírgula.
+  Two teachers is the common case (almost always a couple), so the "e" between
+  them is the form that reads naturally.
   """
   def nomes_dos_professores([]), do: "quem organiza"
   def nomes_dos_professores([um]), do: um.name || um.username

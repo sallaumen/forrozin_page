@@ -1,17 +1,7 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphManualSteps do
   @moduledoc """
-  Macro com os handlers de manipulação de passos do rascunho do construtor
-  manual da GraphVisualLive: adicionar (por clique, busca ou seleção), buscar,
-  limpar busca, remover e reordenar.
-
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphManualSteps`
-
-  Par do `OGrupoDeEstudosWeb.Handlers.GraphManualDraft`. Requer os assigns
-  `:seq_manual_steps`, `:seq_manual_search`, `:seq_manual_suggestions`,
-  `:seq_manual_error`, `:graph_search_nodes` e os helpers privados do host
-  `append_manual_step/2`, `manual_step_suggestions/2`, `find_manual_step/2`,
-  `parse_index/1`, `valid_index?/2` e `recompute_manual_missing_edges/2`.
-  Empurra "highlight_sequence".
+  Macro with the step manipulation handlers of the manual builder draft in
+  GraphVisualLive: add (by click, search or selection), search and remove.
   """
 
   defmacro __using__(_opts) do

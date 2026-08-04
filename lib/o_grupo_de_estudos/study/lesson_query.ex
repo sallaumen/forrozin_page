@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Study.LessonQuery do
   @moduledoc """
-  Query module de `Lesson` e `LessonDelivery`.
+  Query module for `Lesson` and `LessonDelivery`.
 
-  Leituras do aluno são por vínculo (a lição chega via entrega); leituras
-  do professor agregam contagens de entrega/leitura sem N+1.
+  Student reads go by link (a lesson arrives through a delivery); teacher reads
+  aggregate delivery and read counts without N+1.
   """
 
   import Ecto.Query
@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
           steps: [step_row()]
         }
 
-  @doc "Lições entregues ao vínculo, mais recentes primeiro, com read_at da entrega."
+  @doc "Lessons delivered to the link, most recent first, with the delivery read_at."
   @spec list_for_link(Ecto.UUID.t()) :: [lesson_row()]
   def list_for_link(link_id) do
     from(d in LessonDelivery,
@@ -44,7 +44,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
     |> attach_steps(& &1.id)
   end
 
-  @doc "Lições do professor com contagens de entrega e leitura, mais recentes primeiro."
+  @doc "Teacher lessons with delivery and read counts, most recent first."
   @spec list_for_teacher(Ecto.UUID.t()) :: [
           %{
             lesson: Lesson.t(),
@@ -117,9 +117,9 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
   end
 
   @doc """
-  Marca como lidas as entregas do vínculo restritas às lições dadas.
-  O escopo por ids garante que só o que foi renderizado ao aluno ganha
-  read_at (recibo de leitura honesto). Retorna `{count, nil}`.
+  Marks as read the deliveries of the link, restricted to the given lessons.
+  Scoping by ids guarantees that only what was rendered to the student gets a
+  read_at (an honest read receipt). Returns `{count, nil}`.
   """
   @spec mark_read(Ecto.UUID.t(), [Ecto.UUID.t()], DateTime.t()) :: {non_neg_integer(), nil}
   def mark_read(_link_id, [], _now), do: {0, nil}
@@ -133,7 +133,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
     |> Repo.update_all(set: [read_at: now, updated_at: now])
   end
 
-  @doc "Vínculos que receberam a lição (para broadcasts de edição/exclusão)."
+  @doc "Links that received the lesson (for edit and delete broadcasts)."
   @spec delivery_link_ids(Ecto.UUID.t()) :: [Ecto.UUID.t()]
   def delivery_link_ids(lesson_id) do
     from(d in LessonDelivery,
@@ -143,7 +143,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
     |> Repo.all()
   end
 
-  @doc "Total de entregas não lidas do aluno, somando todos os seus vínculos."
+  @doc "Total unread deliveries of the student, across all their links."
   @spec count_unread_for_student(Ecto.UUID.t()) :: non_neg_integer()
   def count_unread_for_student(student_id) do
     from(d in LessonDelivery,
@@ -153,7 +153,7 @@ defmodule OGrupoDeEstudos.Study.LessonQuery do
     |> Repo.aggregate(:count)
   end
 
-  @doc "MapSet dos vínculos (entre os dados) com alguma lição não lida."
+  @doc "MapSet of the links (among the given ones) with any unread lesson."
   @spec unread_link_ids([Ecto.UUID.t()]) :: MapSet.t()
   def unread_link_ids([]), do: MapSet.new()
 

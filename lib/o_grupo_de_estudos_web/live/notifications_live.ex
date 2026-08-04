@@ -1,6 +1,6 @@
 defmodule OGrupoDeEstudosWeb.NotificationsLive do
   @moduledoc """
-  Dedicated notifications page — Instagram-style grouped display.
+  Dedicated notifications page: Instagram-style grouped display.
 
   Groups raw notifications via Grouper so that multiple actors
   performing the same action on the same target collapse into a

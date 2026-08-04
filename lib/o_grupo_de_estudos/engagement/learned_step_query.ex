@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Engagement.LearnedStepQuery do
   @moduledoc """
-  Query module do schema `LearnedStep`. Toda leitura/remoção de "aprendido" no
-  contexto Engagement passa por aqui (regra do projeto: queries em `*Query`).
+  Query module for the `LearnedStep` schema. Every "learned" read and delete in
+  the Engagement context goes through here (project rule: queries in `*Query`).
 
-  Este módulo só consulta a própria tabela; a resolução dos passos (e o filtro
-  de soft-deletados) acontece em `Learnings` via API pública da Encyclopedia.
+  This module only touches its own table; resolving the steps (and filtering out
+  soft-deleted ones) happens in `Learnings` through the Encyclopedia public API.
   """
 
   import Ecto.Query

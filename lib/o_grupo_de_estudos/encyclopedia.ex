@@ -3,7 +3,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   Read context for the dance step encyclopedia.
 
   Pure calculation module: all functions are DB queries with no side effects.
-  Step visibility is controlled here — steps with `wip: true` or
+  Step visibility is controlled here: steps with `wip: true` or
   `status: :draft` are not returned to the public.
 
   All Repo access is delegated to the Query modules (StepQuery, ConnectionQuery,
@@ -53,7 +53,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   Lists sections with steps and subsections preloaded.
 
   Options:
-  - `admin: true` — includes `wip` steps (for administrators).
+  - `admin: true`: includes `wip` steps (for administrators).
 
   By default omits `wip` and `draft` steps (public visibility).
   """
@@ -127,7 +127,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   Finds a step with full details: category, technical concepts and connections.
 
   Options:
-  - `admin: true` — includes `wip` steps.
+  - `admin: true`: includes `wip` steps.
   """
   def fetch_step_with_details(code, opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
@@ -158,7 +158,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   Searches steps by name or code (case-insensitive, partial match).
 
   Options:
-  - `admin: true` — includes `wip` steps.
+  - `admin: true`: includes `wip` steps.
 
   By default returns only public steps.
   """
@@ -179,12 +179,12 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   Returns the connection graph between steps.
 
   Returns a map with:
-  - `:nodes` — list of visible steps with `:category` preloaded, ordered by name.
-  - `:edges` — list of connections between visible steps, with `:source_step`
+  - `:nodes`: list of visible steps with `:category` preloaded, ordered by name.
+  - `:edges`: list of connections between visible steps, with `:source_step`
     and `:target_step` preloaded.
 
   Options:
-  - `admin: true` — includes `wip` steps in both nodes and edges.
+  - `admin: true`: includes `wip` steps in both nodes and edges.
   """
   def build_graph(opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
@@ -227,9 +227,9 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   Lists suggested steps filtered by approval status.
 
   Options:
-  - `filter: "pending"` — only unapproved suggestions.
-  - `filter: "approved"` — only approved suggestions.
-  - `filter: "all"` (default) — all suggestions.
+  - `filter: "pending"`: only unapproved suggestions.
+  - `filter: "approved"`: only approved suggestions.
+  - `filter: "all"` (default): all suggestions.
   """
   def list_suggested_steps_filtered(opts \\ []) do
     filter = Keyword.get(opts, :filter, "all")

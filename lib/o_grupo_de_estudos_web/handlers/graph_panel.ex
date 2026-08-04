@@ -1,12 +1,8 @@
 defmodule OGrupoDeEstudosWeb.Handlers.GraphPanel do
   @moduledoc """
-  Macro com os handlers de toggle do painel de sequências da GraphVisualLive.
+  Macro with the sequence panel toggle handlers of GraphVisualLive.
 
-  Uso: `use OGrupoDeEstudosWeb.Handlers.GraphPanel`
-
-  Requer os assigns: `:seq_panel`, `:seq_mobile_visible`, `:seq_view` e o grupo
-  `:seq_manual_*` (resetados ao abrir o painel). Requer o helper privado do host
-  `assign_sequence_library/1`. Empurra "set_manual_mode" para o hook Cytoscape.
+  Usage: `use OGrupoDeEstudosWeb.Handlers.GraphPanel`
   """
 
   defmacro __using__(_opts) do

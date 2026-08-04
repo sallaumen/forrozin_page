@@ -1,19 +1,20 @@
 defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
   @moduledoc """
-  Avisa quem tem workshop amanhã.
+  Notifies whoever has a workshop tomorrow.
 
-  Varredura diária em vez de job agendado no momento da inscrição, por três
-  motivos concretos:
+  A daily sweep instead of a job scheduled at enrollment time, for three concrete
+  reasons:
 
-  - workshop cancelado ou remarcado depois não deixa job zumbi avisando sobre
-    evento que não vai acontecer: a varredura lê o estado atual;
-  - cancelar inscrição não exige cancelar job nenhum, porque a linha some;
-  - o projeto não tem nenhum precedente de `scheduled_at` nem de
-    `Oban.cancel_job`, e em teste o Oban roda `:inline`, o que faria um job
-    agendado disparar dentro do próprio teste.
+  - a workshop cancelled or rescheduled later leaves no zombie job announcing an
+    event that will not happen: the sweep reads the current state;
+  - cancelling an enrollment requires cancelling no job, because the row is gone;
+  - the project has no precedent of `scheduled_at` nor of `Oban.cancel_job`, and
+    in test Oban runs `:inline`, which would make a scheduled job fire inside the
+    test itself.
 
-  Roda às 12h UTC, que é 9h em Brasília. A mensagem é "amanhã tem workshop",
-  nunca "em 24 horas": um workshop das 20h de sexta avisa às 9h de quinta.
+  Runs at 12h UTC, which is 9h in Brazil. The message is "there is a workshop
+  tomorrow", never "in 24 hours": a workshop at 20h on Friday is announced at 9h
+  on Thursday.
   """
 
   use Oban.Worker, queue: :reminders, max_attempts: 3

@@ -155,7 +155,7 @@
         </div>
       </div>
 
-      <%!-- Suggestion form — inside sticky controls, never scrolls away --%>
+      <%!-- Suggestion form: inside sticky controls, never scrolls away --%>
       <div class={[
         "max-w-[1600px] mx-auto mt-3 p-4 bg-accent-purple/5 border border-accent-purple/20 rounded-md",
         !@suggest_mode && "hidden"
@@ -574,7 +574,7 @@
       <% end %>
     </div>
 
-    <%!-- Loading skeleton — dead/HTTP render, before the WebSocket connects --%>
+    <%!-- Loading skeleton: dead/HTTP render, before the WebSocket connects --%>
     <div
       :if={!@loaded?}
       id="collection-loading"

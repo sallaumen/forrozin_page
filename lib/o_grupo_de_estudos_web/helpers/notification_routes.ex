@@ -3,7 +3,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
   Pure path/label resolution for notifications (raw or grouped entries).
 
   Step and profile targets come pre-batched from
-  `Engagement.notification_targets/1` — render layers never query.
+  `Engagement.notification_targets/1`: render layers never query.
   """
 
   use Phoenix.VerifiedRoutes,

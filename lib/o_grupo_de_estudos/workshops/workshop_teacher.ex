@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudos.Workshops.WorkshopTeacher do
   @moduledoc """
-  Quem dá a aula num workshop.
+  Who teaches a workshop.
 
-  Separado de quem organiza de propósito: produzir a aula de outra pessoa é o
-  caso comum, e antes o criador virava professor por omissão.
+  Separate from who organizes on purpose: producing someone else's class is the
+  common case, and before that the creator became a teacher by omission.
 
-  Ou uma conta do site, ou um nome escrito, nunca os dois: professor de fora
-  nem sempre tem cadastro, e esperar a conta existir para poder divulgar a
-  aula seria travar o mundo real por causa do banco.
+  Either a site account or a written name, never both: a visiting teacher does not
+  always have an account, and waiting for the account to exist before announcing
+  the class would hold up the real world for the database.
   """
 
   use Ecto.Schema

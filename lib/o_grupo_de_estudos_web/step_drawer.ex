@@ -1,14 +1,9 @@
 defmodule OGrupoDeEstudosWeb.StepDrawer do
   @moduledoc """
-  Estado compartilhado do painel lateral (drawer) de detalhe de um passo.
+  Shared state of the step detail side panel (drawer).
 
-  Fonte única de verdade do carregamento e dos assigns que o componente
-  `OGrupoDeEstudosWeb.StepDetail` (mode `:drawer`) consome, reusada pela
-  `CollectionLive` (acervo) e pela `GraphVisualLive` (mapa). Mantém o painel
-  idêntico nos dois lugares: mexeu aqui (ou no StepDetail), valeu nos dois.
-
-  É só montagem de assigns + I/O de leitura (sem eventos). Cada LiveView
-  hospedeiro liga seus próprios handlers, reusando estas funções.
+  Single source of truth for the loading and the assigns the `StepDetail`
+  component consumes, so CollectionLive and GraphVisualLive show the same panel.
   """
 
   import Phoenix.Component, only: [assign: 2, assign: 3]
@@ -18,7 +13,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, StepLinkQuery, StepQuery}
   alias OGrupoDeEstudosWeb.StepDetail
 
-  @doc "Assigns iniciais do drawer (para o mount do LiveView hospedeiro)."
+  @doc "Initial drawer assigns (for the mount of the host LiveView)."
   def initial_assigns do
     [
       drawer_open: false,
@@ -43,9 +38,9 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
   end
 
   @doc """
-  Carrega no socket tudo que o detalhe do passo consome: o passo + conexões,
-  links/likes e comentários. Usa `socket.assigns.edit_mode` (admin/dono) e o
-  `current_user`.
+  Loads into the socket everything the step detail consumes: the step plus
+  connections, links, likes and comments. Uses `socket.assigns.edit_mode` (admin
+  or owner) to decide what to bring.
   """
   def load_step(socket, code) do
     user_id = socket.assigns.current_user.id
@@ -88,7 +83,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
     )
   end
 
-  @doc "Recarrega os comentários (e respostas abertas) do passo em foco no drawer."
+  @doc "Reloads the comments (and open replies) of the step focused in the drawer."
   def reload_comments(socket) do
     step_id = socket.assigns.expanded_step
     user = socket.assigns.current_user
@@ -113,7 +108,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
     )
   end
 
-  @doc "Recarrega só os likes de comentários (após abrir respostas ou curtir)."
+  @doc "Reloads only the comment likes (after opening replies or liking)."
   def reload_comment_likes(socket) do
     user = socket.assigns.current_user
     comment_ids = Enum.map(socket.assigns.expanded_comments, & &1.id)
@@ -125,7 +120,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
     assign(socket, :expanded_comment_likes, comment_likes)
   end
 
-  @doc "Sincroniza like/favorito/contagem do drawer quando o passo mexido é o aberto."
+  @doc "Syncs like, favorite and count of the drawer when the touched step is the open one."
   def sync_engagement(socket, step_id) do
     case socket.assigns.drawer_item do
       %{id: ^step_id} ->
@@ -143,7 +138,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
     end
   end
 
-  @doc "Recarrega só os likes de links (após curtir um link/vídeo)."
+  @doc "Reloads only the link likes (after liking a link or video)."
   def reload_link_likes(socket) do
     user_id = socket.assigns.current_user.id
     link_ids = Enum.map(socket.assigns.drawer_links, & &1.id)

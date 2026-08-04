@@ -1,17 +1,17 @@
 defmodule OGrupoDeEstudosWeb.StepDetail do
   @moduledoc """
-  Componente único de detalhe de um passo do acervo.
+  Single detail component for a collection step.
 
-  É a fonte de verdade visual e estrutural compartilhada entre a página interna
-  (`/steps/:code`, `mode={:page}`) e o painel lateral da biblioteca
-  (`CollectionLive`, `mode={:drawer}`). Apresenta cabeçalho, engajamento
-  (curtir/favoritar), descrição técnica, conceitos, conexões compactas em chips,
-  links/vídeos e comentários.
+  It is the shared visual and structural source of truth between the inner page
+  (`/steps/:code`, `mode={:page}`) and the library side panel (`CollectionLive`,
+  `mode={:drawer}`). It renders the header, engagement (like and favorite),
+  technical description, concepts, compact connection chips, links and videos,
+  and comments.
 
-  É puramente apresentacional: recebe tudo por assigns e emite eventos
-  (`phx-click`/`phx-submit`) que o LiveView hospedeiro trata. Os recursos
-  exclusivos da página (sugestões campo a campo, gestão de links, formulário de
-  conexão de entrada, despublicar/deletar) ficam atrás de `mode == :page`.
+  It is purely presentational: it takes everything through assigns and emits
+  events (`phx-click`, `phx-submit`) the host LiveView handles. The page-only
+  features (field-by-field suggestions, link management, incoming connection form,
+  unpublish and delete) sit behind `mode == :page`.
   """
 
   use OGrupoDeEstudosWeb, :html
@@ -1083,9 +1083,10 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
   defp provider_color(_), do: "#7a5c3a"
 
   @doc """
-  Chip compacto de conexão: badge de código tingido pela categoria + nome.
-  Abre o passo (navegando em `mode={:page}` ou via `open_step` no drawer). Mostra
-  uma afordância de remover para admin/edição, ou de sugerir remoção fora de edição.
+  Compact connection chip: a code badge tinted by category plus the name. It
+  opens the step (navigating in `mode={:page}` or through `open_step` in the
+  drawer). It shows a remove affordance for admin editing, or a suggest-removal
+  one outside editing.
   """
   attr :step, :map, required: true
   attr :navigate, :boolean, default: false
@@ -1147,7 +1148,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
     """
   end
 
-  @doc "Resolve a imagem de capa de um passo, aplicando overrides por código."
+  @doc "Resolves the cover image of a step, applying the per-code overrides."
   def resolve_step_image(step) do
     case Map.get(@step_image_overrides, step.code) do
       nil -> normalize_image_path(step.image_path)
@@ -1159,7 +1160,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
   defp normalize_image_path("/" <> _ = path), do: path
   defp normalize_image_path(path), do: "/" <> path
 
-  @doc "Cor da categoria do passo, com fallback sépia."
+  @doc "Category color of the step, with a sepia fallback."
   def category_color(%{category: %{color: color}}) when is_binary(color), do: color
   def category_color(_), do: "#7f8c8d"
 

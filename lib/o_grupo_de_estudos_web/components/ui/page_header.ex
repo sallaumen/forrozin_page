@@ -1,13 +1,13 @@
 defmodule OGrupoDeEstudosWeb.UI.PageHeader do
   @moduledoc """
-  Cabeçalho padrão de página.
+  Standard page header.
 
-  Attr obrigatório: `:title`.
-  Slots opcionais:
-    - `:breadcrumb` — aparece acima do título
-    - `:actions` — aparece ao lado do título (ex: botão Editar)
+  Required attr: `:title`.
+  Optional slots:
+    - `:breadcrumb` shows above the title
+    - `:actions` shows next to the title (an edit button, for instance)
 
-  Tamanho responsivo: `text-3xl` em mobile, `text-4xl` em desktop.
+  Responsive size: `text-3xl` on mobile, `text-4xl` on desktop.
   """
 
   use Phoenix.Component

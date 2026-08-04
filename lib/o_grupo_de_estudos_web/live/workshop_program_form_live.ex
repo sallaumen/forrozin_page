@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudosWeb.WorkshopProgramFormLive do
   @moduledoc """
-  Cria e edita uma programação, e escolhe quais workshops entram nela.
+  Creates and edits a program, and picks which workshops go into it.
 
-  A lista de escolha só traz workshops que a pessoa administra: entrar numa
-  programação exige mandar nos dois lados.
+  The picker only lists workshops the person administers: joining a program
+  requires administering both sides.
   """
 
   use OGrupoDeEstudosWeb, :live_view

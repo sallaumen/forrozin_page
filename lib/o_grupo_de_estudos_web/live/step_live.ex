@@ -76,7 +76,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            step: step,
            step_image: step_image,
            page_title: step.name,
-           meta_title: "#{step.code} · #{step.name} — O Grupo de Estudos",
+           meta_title: "#{step.code} · #{step.name} · O Grupo de Estudos",
            meta_description:
              if(step.note,
                do: String.slice(step.note, 0, 160),
@@ -354,7 +354,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
           {:noreply,
            socket
            |> reload_step(socket.assigns.step.code)
-           |> put_flash(:info, "Passo desaprovado — removido do acervo público")}
+           |> put_flash(:info, "Passo desaprovado: removido do acervo público")}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Erro ao desaprovar")}

@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Mailer do
   @moduledoc """
-  Mailer da aplicação.
+  Application mailer.
 
-  Em dev, se `:filtrar_emails_teste` estiver habilitado no config, emails cujo
-  destinatário termine em `@teste.com` são desviados para o mailbox local
-  (visível em /dev/mailbox) em vez de serem enviados de verdade.
-  Todos os outros emails seguem pelo adaptador configurado.
+  In dev, when `:filtrar_emails_teste` is enabled in the config, emails whose
+  recipient ends in `@teste.com` are diverted to the local mailbox (visible at
+  /dev/mailbox) instead of actually being sent. Every other email goes through
+  the configured adapter.
   """
 
   use Swoosh.Mailer, otp_app: :o_grupo_de_estudos

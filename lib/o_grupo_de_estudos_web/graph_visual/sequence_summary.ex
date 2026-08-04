@@ -3,11 +3,11 @@ defmodule OGrupoDeEstudosWeb.GraphVisual.SequenceSummary do
   Pure presentation helpers for the sequence-library panel of `GraphVisualLive`,
   rendered directly in the co-located template:
 
-    * `sequence_summary_badges/1` — the "N passos / fecha no início / loop" chips
-    * `sequence_has_inner_loop?/1`, `sequence_closes_at_start?/1` — shape detection
-    * `sequence_category_labels/1` — up to 3 distinct `{name, label, color}` chips
-    * `sequence_category_filter_label/2` — the active category-filter button label
-    * `step_display_label/1,2` — "CODE · Name" rendering for a step or code
+    * `sequence_summary_badges/1`: the "N passos / fecha no início / loop" chips
+    * `sequence_has_inner_loop?/1`, `sequence_closes_at_start?/1`: shape detection
+    * `sequence_category_labels/1`: up to 3 distinct `{name, label, color}` chips
+    * `sequence_category_filter_label/2`: the active category-filter button label
+    * `step_display_label/1,2`: "CODE · Name" rendering for a step or code
 
   All pure; association reads use `Ecto.assoc_loaded?/1` (in-memory, no Repo).
   Imported into the LiveView so the template resolves these as bare locals.

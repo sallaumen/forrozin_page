@@ -3,11 +3,11 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
   Top navigation bar, responsive with 3 layouts.
 
   Modes (via `:nav_mode`):
-  - `:primary` — logo + horizontal nav links (desktop) / compact menu (mobile)
-  - `:detail` — back button + optional title, no main links (mobile-focused)
+  - `:primary`: logo + horizontal nav links (desktop) / compact menu (mobile)
+  - `:detail`: back button + optional title, no main links (mobile-focused)
 
   Desktop (>=md): always shows the full horizontal nav regardless of
-  nav_mode — detail mode's "back button" layout is mobile-only.
+  nav_mode: detail mode's "back button" layout is mobile-only.
   """
 
   use Phoenix.Component

@@ -6,7 +6,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopStepQuery do
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops.{WorkshopEnrollment, WorkshopStep}
 
-  @doc "Os passos do workshop, na ordem em que quem dá a aula montou."
+  @doc "The steps of the workshop, in the order the teacher set."
   @spec list_for_workshop(Ecto.UUID.t()) :: [map()]
   def list_for_workshop(workshop_id) do
     from(ws in WorkshopStep,
@@ -18,7 +18,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopStepQuery do
     |> Repo.all()
   end
 
-  @doc "Próxima posição livre, para o passo novo entrar no fim da lista."
+  @doc "Next free position, so a new step lands at the end of the list."
   @spec next_position(Ecto.UUID.t()) :: integer()
   def next_position(workshop_id) do
     from(ws in WorkshopStep,
@@ -29,7 +29,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopStepQuery do
     |> Kernel.+(1)
   end
 
-  @doc "Tira o passo do workshop. `{:error, :not_found}` quando não estava lá."
+  @doc "Removes the step from the workshop. `{:error, :not_found}` when it was not there."
   @spec delete(Ecto.UUID.t(), Ecto.UUID.t()) :: {:ok, WorkshopStep.t()} | {:error, :not_found}
   def delete(workshop_id, step_id) do
     case Repo.get_by(WorkshopStep, workshop_id: workshop_id, step_id: step_id) do
@@ -41,10 +41,10 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopStepQuery do
   end
 
   @doc """
-  Workshops onde ESTA pessoa viu este passo.
+  Workshops where THIS person saw this step.
 
-  Só conta workshop em que ela esteve (inscrita ou organizando): dizer "você
-  viu" sobre uma aula que ela não fez seria mentira.
+  It only counts a workshop they took part in (enrolled or organizing): saying
+  "you saw this" about a class they did not attend would be a lie.
   """
   @spec where_user_saw(Ecto.UUID.t() | nil, Ecto.UUID.t()) :: [map()]
   def where_user_saw(nil, _step_id), do: []

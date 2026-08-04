@@ -1,17 +1,9 @@
 defmodule OGrupoDeEstudosWeb.MediaEmbed do
   @moduledoc """
-  Resolve a URL de um link em informação de embed (cálculo puro, sem I/O).
+  Resolves a link URL into embed information (pure calculation, no IO).
 
-  Reconhece os provedores que sabemos embutir num `<iframe>` — vídeo do
-  YouTube, YouTube Shorts e posts/reels do Instagram — e devolve a URL de
-  embed, um rótulo amigável e o formato (`shape`) que a UI usa para escolher
-  o aspect ratio. O que não dá para embutir vira `:external`, ainda com um
-  rótulo (host) para o link continuar clicável.
-
-  O embed do Instagram usa o endpoint `/embed` (iframe puro), que NÃO depende
-  do `embed.js` deles — assim a CSP de scripts continua restritiva. Os hosts
-  de embed precisam estar liberados em `frame-src`
-  (ver `Plugs.ContentSecurityPolicy`).
+  It recognizes the providers we know how to embed in an `<iframe>` (YouTube
+  video and Shorts, Instagram post and reel); anything else becomes `:external`.
   """
 
   @yt_hosts ~w(www.youtube.com youtube.com m.youtube.com)
@@ -25,7 +17,7 @@ defmodule OGrupoDeEstudosWeb.MediaEmbed do
           shape: shape() | nil
         }
 
-  @doc "Resolve `url` em `t()`. Strings inválidas/`nil` viram `:external`."
+  @doc "Resolves `url` into `t()`. Invalid strings and `nil` become `:external`."
   @spec resolve(String.t() | nil) :: t()
   def resolve(url) when is_binary(url), do: url |> URI.parse() |> classify()
   def resolve(_), do: external("Link")

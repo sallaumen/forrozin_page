@@ -25,8 +25,8 @@ defmodule OGrupoDeEstudos.RateLimiter do
   Check if the action is allowed for this user.
 
   Options:
-  - `limit` — max actions in the window (default: 5)
-  - `window_seconds` — time window in seconds (default: 60)
+  - `limit`: max actions in the window (default: 5)
+  - `window_seconds`: time window in seconds (default: 60)
   """
   def check(action, user_id, opts \\ []) do
     if Application.get_env(:o_grupo_de_estudos, :env) == :test,

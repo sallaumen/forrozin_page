@@ -1,8 +1,8 @@
 defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
   @moduledoc """
-  Leituras de `WorkshopProgram`.
+  Reads of `WorkshopProgram`.
 
-  As datas da programação são agregadas dos filhos, nunca lidas de coluna.
+  The program dates are aggregated from its children, never read from a column.
   """
 
   import Ecto.Query
@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
   alias OGrupoDeEstudos.Search
   alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram, WorkshopQuery}
 
-  @doc "Programação por slug, com dono carregado."
+  @doc "Program by slug, with the owner loaded."
   @spec get_by_slug(String.t()) :: WorkshopProgram.t() | nil
   def get_by_slug(slug) when is_binary(slug) do
     WorkshopProgram
@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
     |> Repo.one()
   end
 
-  @doc "Programação por id, com dono carregado."
+  @doc "Program by id, with the owner loaded."
   @spec get(Ecto.UUID.t()) :: WorkshopProgram.t() | nil
   def get(id) do
     case Ecto.UUID.cast(id) do
@@ -30,10 +30,10 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
   end
 
   @doc """
-  Workshops da programação, do mais cedo ao mais tarde.
+  Workshops of the program, earliest to latest.
 
-  Cancelado continua na lista: quem se inscreveu precisa ver o que houve.
-  Rascunho fica de fora para quem não administra.
+  A cancelled one stays in the list: whoever enrolled needs to see what happened.
+  A draft stays out for whoever does not administer it.
   """
   @spec list_workshops(Ecto.UUID.t(), keyword()) :: [Workshop.t()]
   def list_workshops(program_id, opts \\ []) do
@@ -49,8 +49,8 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
   defp filter_visible(query, false), do: where(query, [w], w.status != :draft)
 
   @doc """
-  Só os workshops pedidos que realmente estão nesta programação e aceitam
-  inscrição. Id vindo do cliente nunca é confiado.
+  Only the requested workshops that really belong to this program and accept
+  enrollment. An id coming from the client is never trusted.
   """
   @spec workshops_scoped(Ecto.UUID.t(), [Ecto.UUID.t()]) :: [Workshop.t()]
   def workshops_scoped(_program_id, []), do: []
@@ -65,11 +65,11 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
   end
 
   @doc """
-  Programações publicadas com workshop publicado no período, já com o resumo
-  agregado (quantos e de quando a quando).
+  Published programs with a published workshop in the period, already carrying
+  the aggregated summary (how many, and from when to when).
 
-  Uma programação sem workshop publicado não aparece: ela não tem data
-  própria, então não teria onde entrar na linha do tempo.
+  A program with no published workshop does not show up: it has no date of its
+  own, so it would have nowhere to land on the timeline.
   """
   @spec list_feed(keyword()) :: [{WorkshopProgram.t(), map()}]
   def list_feed(opts \\ []) do
@@ -113,7 +113,7 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
     )
   end
 
-  @doc "Programações que a pessoa criou, mais recente primeiro."
+  @doc "Programs the person created, most recent first."
   @spec list_for_owner(Ecto.UUID.t()) :: [WorkshopProgram.t()]
   def list_for_owner(owner_id) do
     WorkshopProgram
@@ -124,10 +124,10 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
   end
 
   @doc """
-  Lote `program_id => %{count, starts_at, ends_at}`, agregado dos filhos.
+  Batch `program_id => %{count, starts_at, ends_at}`, aggregated from the children.
 
-  Evita N+1 na agenda, onde cada card de programação precisa do intervalo de
-  datas e de quantos workshops tem dentro.
+  Avoids N+1 on the agenda, where each program card needs the date range and how
+  many workshops it holds.
   """
   @spec summaries_by_ids([Ecto.UUID.t()]) :: %{Ecto.UUID.t() => map()}
   def summaries_by_ids([]), do: %{}

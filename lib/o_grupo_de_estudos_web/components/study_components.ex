@@ -1,16 +1,15 @@
 defmodule OGrupoDeEstudosWeb.StudyComponents do
   @moduledoc """
-  Function components compartilhados da área de Estudos (/study e
-  /study/shared/:id).
+  Shared function components of the Study area (/study and /study/shared/:id).
 
-  Centraliza os blocos que se repetem entre "Meu estudo", "Meus professores",
-  "Meus alunos" e o diário compartilhado: cabeçalho de seção, abas, cartão de
-  diário (nota de hoje), histórico de notas, chips de passo, cartões de
-  pessoa/estatística, consistência e estados vazios.
+  It centralizes the blocks that repeat across "Meu estudo", "Meus professores",
+  "Meus alunos" and the shared diary: section header, tabs, diary card (today's
+  note), note history, step chips, person and stat cards, consistency and empty
+  states.
 
-  Tudo é apresentacional: os eventos (`save`, `search`, `add`, `remove`, ...)
-  chegam por atributo, então cada LiveView reaproveita o mesmo markup passando
-  os seus próprios handlers (mesmo padrão de `UI.GoalsBoard`).
+  Everything is presentational: the events (`save`, `search`, `add`, `remove`, ...)
+  arrive as attributes, so each LiveView reuses the same markup passing its own
+  handlers (the same pattern as `UI.GoalsBoard`).
   """
 
   use OGrupoDeEstudosWeb, :html
@@ -375,11 +374,11 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :learned, :boolean, default: false
 
   @doc """
-  Camada com o passo e o gesto de marcar, aberta a partir de um chip da nota.
+  Layer with the step and the learn gesture, opened from a chip in the note.
 
-  Folha, e não a página inteira do passo, para a pessoa não perder de vista a
-  anotação que estava lendo. Quem quiser o passo completo (conexões, vídeos,
-  conversa) tem o link no rodapé.
+  A sheet, and not the whole step page, so the person does not lose sight of the
+  note they were reading. Whoever wants the full step (connections, videos,
+  conversation) has the link in the footer.
   """
   def step_sheet(assigns) do
     ~H"""

@@ -1,5 +1,5 @@
 defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
-  @moduledoc "Email de véspera: amanhã tem workshop."
+  @moduledoc "Day-before email: there is a workshop tomorrow."
 
   alias Swoosh.Email
 
@@ -9,7 +9,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
 
   @sender {"O Grupo de Estudos", "noreply@ogrupodeestudos.com.br"}
 
-  @doc "Monta o aviso de véspera para uma pessoa e um workshop."
+  @doc "Builds the day-before notice for one person and one workshop."
   def new(user, workshop) do
     nome = user.name || user.username
     link = url(~p"/workshops/#{workshop.slug}")

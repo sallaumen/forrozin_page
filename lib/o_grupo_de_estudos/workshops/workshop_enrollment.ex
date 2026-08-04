@@ -1,10 +1,10 @@
 defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
   @moduledoc """
-  Inscrição de uma pessoa num workshop.
+  Enrollment of a person in a workshop.
 
-  `payment_status` e `paid_at` são PRIVADOS do organizador: nenhuma consulta
-  pública projeta esses campos, e o changeset de inscrição nem os aceita —
-  quem os move é `payment_changeset/2`, chamado só pelo painel de gestão.
+  `payment_status` and `paid_at` are PRIVATE to the organizer: no public query
+  projects those fields, and the enrollment changeset does not even accept them.
+  What moves them is `payment_changeset/2`, called only by the management panel.
   """
 
   use Ecto.Schema
@@ -29,7 +29,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
     timestamps(type: :utc_datetime_usec)
   end
 
-  @doc "Inscrição: não aceita nada de pagamento, por construção."
+  @doc "Enrollment: accepts nothing about payment, by construction."
   def changeset(enrollment, attrs) do
     enrollment
     |> cast(attrs, [:workshop_id, :user_id, :program_enrollment_id])
@@ -41,7 +41,7 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
     )
   end
 
-  @doc "Controle interno de pagamento, só pelo organizador."
+  @doc "Internal payment control, organizer only."
   def payment_changeset(enrollment, status) when status in [:pending, :paid, :waived] do
     change(enrollment, payment_status: status, paid_at: paid_at_for(status))
   end

@@ -1,5 +1,5 @@
 defmodule OGrupoDeEstudos.Workshops.TeacherQuery do
-  @moduledoc "Leituras de quem dá a aula."
+  @moduledoc "Reads of who teaches a workshop."
 
   import Ecto.Query
 
@@ -7,11 +7,11 @@ defmodule OGrupoDeEstudos.Workshops.TeacherQuery do
   alias OGrupoDeEstudos.Workshops.WorkshopTeacher
 
   @doc """
-  Quem dá a aula, na ordem em que quem organiza colocou.
+  Who teaches, in the order the organizer set.
 
-  Devolve a mesma forma de mapa para conta e para nome escrito, para a tela
-  não precisar saber a diferença: quem não tem conta vem sem `username` e sem
-  foto, e é só isso que muda.
+  Returns the same map shape for an account and for a written name, so the screen
+  does not have to know the difference: whoever has no account comes without
+  `username` and without a photo, and that is all that changes.
   """
   @spec list_for_workshop(Ecto.UUID.t()) :: [map()]
   def list_for_workshop(workshop_id) do
@@ -30,14 +30,14 @@ defmodule OGrupoDeEstudos.Workshops.TeacherQuery do
     |> Repo.all()
   end
 
-  @doc "Ids de workshop em que a pessoa consta como quem dá a aula."
+  @doc "Ids of the workshops where the person is listed as a teacher."
   @spec workshop_ids_for_user(Ecto.UUID.t()) :: [Ecto.UUID.t()]
   def workshop_ids_for_user(user_id) do
     from(t in WorkshopTeacher, where: t.user_id == ^user_id, select: t.workshop_id)
     |> Repo.all()
   end
 
-  @doc "Apaga todos os professores do workshop (usado antes de regravar a lista)."
+  @doc "Deletes every teacher of the workshop (used before rewriting the list)."
   @spec delete_all(Ecto.UUID.t()) :: {non_neg_integer(), nil}
   def delete_all(workshop_id) do
     from(t in WorkshopTeacher, where: t.workshop_id == ^workshop_id) |> Repo.delete_all()

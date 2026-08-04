@@ -2,7 +2,7 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
   @moduledoc """
   Combined welcome + confirmation email sent at registration.
 
-  The user can use the app immediately — confirmation only gates
+  The user can use the app immediately: confirmation only gates
   password-recovery. The email makes this clear.
   """
 
@@ -80,16 +80,16 @@ defmodule OGrupoDeEstudosWeb.Emails.ConfirmationEmail do
               </table>
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
                 <tr><td style="padding:8px 0;font-size:13px;color:#5c3a1a;line-height:1.6;">
-                  <span style="color:#b47828;font-weight:700;">Acervo</span> — passos por categoria, com conexoes e videos
+                  <span style="color:#b47828;font-weight:700;">Acervo</span>: passos por categoria, com conexoes e videos
                 </td></tr>
                 <tr><td style="padding:8px 0;font-size:13px;color:#5c3a1a;line-height:1.6;border-top:1px solid #f0ece4;">
-                  <span style="color:#b47828;font-weight:700;">Mapa</span> — como os passos se conectam, visualmente
+                  <span style="color:#b47828;font-weight:700;">Mapa</span>: como os passos se conectam, visualmente
                 </td></tr>
                 <tr><td style="padding:8px 0;font-size:13px;color:#5c3a1a;line-height:1.6;border-top:1px solid #f0ece4;">
-                  <span style="color:#b47828;font-weight:700;">Diario</span> — anote treinos, acompanhe evolucao
+                  <span style="color:#b47828;font-weight:700;">Diario</span>: anote treinos, acompanhe evolucao
                 </td></tr>
                 <tr><td style="padding:8px 0;font-size:13px;color:#5c3a1a;line-height:1.6;border-top:1px solid #f0ece4;">
-                  <span style="color:#b47828;font-weight:700;">Comunidade</span> — siga pessoas, crie sequencias, contribua
+                  <span style="color:#b47828;font-weight:700;">Comunidade</span>: siga pessoas, crie sequencias, contribua
                 </td></tr>
               </table>
             </td></tr>
