@@ -27,6 +27,10 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     field :ends_at, :utc_datetime
     field :price_cents, :integer
     field :payment_info, :string
+    # O QUANDO virou escolha; `payment_info` ficou so com a chave Pix ou uma
+    # instrucao extra. Texto livre nao dava para o sistema usar.
+    field :payment_mode, Ecto.Enum, values: [:on_signup, :at_event]
+    field :payment_phone, :string
     field :capacity, :integer
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
     field :flyer_path, :string
@@ -50,6 +54,8 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     :ends_at,
     :price_cents,
     :payment_info,
+    :payment_mode,
+    :payment_phone,
     :capacity,
     :visibility,
     :organizer_id
@@ -62,6 +68,8 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> update_change(:description, &trim/1)
     |> update_change(:location, &trim/1)
     |> update_change(:payment_info, &trim/1)
+    |> update_change(:payment_phone, &trim/1)
+    |> validate_length(:payment_phone, max: 40)
     |> validate_required([:title, :description, :starts_at, :organizer_id])
     |> validate_length(:title, max: 140)
     |> validate_length(:description, max: 20_000)
@@ -147,5 +155,34 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     |> String.downcase()
     |> String.replace(~r/[^a-z0-9]/, "")
     |> String.slice(0, 6)
+  end
+
+  @doc """
+  Link de WhatsApp para mandar o comprovante, ou `nil`.
+
+  Mandar comprovante deixa de ser copiar o número, abrir o app e escrever de
+  que workshop se trata: o nome já vai na mensagem.
+  """
+  @spec receipt_link(t()) :: String.t() | nil
+  def receipt_link(%__MODULE__{payment_phone: telefone} = workshop) when is_binary(telefone) do
+    telefone |> so_digitos() |> com_ddi() |> montar_link(workshop)
+  end
+
+  def receipt_link(%__MODULE__{}), do: nil
+
+  defp so_digitos(telefone), do: String.replace(telefone, ~r/\D/, "")
+
+  # Número brasileiro sem DDI tem 10 ou 11 dígitos (DDD + número). Com DDI,
+  # 12 ou 13. Qualquer coisa fora disso não vira link: melhor não oferecer do
+  # que oferecer um link que abre conversa com ninguém.
+  defp com_ddi(digitos) when byte_size(digitos) in [10, 11], do: "55" <> digitos
+  defp com_ddi("55" <> _ = digitos) when byte_size(digitos) in [12, 13], do: digitos
+  defp com_ddi(_curto_ou_estranho), do: nil
+
+  defp montar_link(nil, _workshop), do: nil
+
+  defp montar_link(numero, %__MODULE__{title: titulo}) do
+    texto = URI.encode("Oi! Segue o comprovante do workshop #{titulo}.")
+    "https://wa.me/#{numero}?text=#{texto}"
   end
 end

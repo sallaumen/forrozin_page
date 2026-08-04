@@ -608,12 +608,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   """
   def payment_hint(workshop, reveal? \\ true)
 
+  # Quando se paga e uma escolha; a chave Pix, quando existe, entra depois dela.
+  def payment_hint(%{payment_mode: modo} = workshop, true) when not is_nil(modo),
+    do: [quando_label(modo), chave_pix(workshop)] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
+
   def payment_hint(%{payment_info: info}, true) when is_binary(info) and info != "", do: info
 
   def payment_hint(%{organizer: %{name: name}}, _reveal?),
     do: "O pagamento é combinado direto com #{first_name(name)}."
 
   def payment_hint(_workshop, _reveal?), do: "O pagamento é combinado direto com quem organiza."
+
+  defp quando_label(:on_signup), do: "Pagamento na inscrição."
+  defp quando_label(:at_event), do: "Você paga na hora do evento."
+
+  defp chave_pix(%{payment_info: info}) when is_binary(info) and info != "", do: info
+  defp chave_pix(_workshop), do: nil
 
   defp first_name(nil), do: "quem organiza"
   defp first_name(name), do: name |> String.split(" ") |> List.first()
