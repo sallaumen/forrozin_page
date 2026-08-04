@@ -48,6 +48,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
   attr :step_liked, :boolean, default: false
   attr :step_like_count, :integer, default: 0
   attr :step_favorited, :boolean, default: false
+  attr :step_learned, :boolean, default: false
 
   attr :connections_out, :list, default: []
   attr :connections_in, :list, default: []
@@ -255,7 +256,28 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
         </div>
       </header>
 
-      <%!-- ───────── Engajamento ───────── --%>
+      <%!-- ───────── Engajamento ─────────
+
+      "Já sei este passo" e o gesto principal: e o unico que registra progresso,
+      e ate agora so existia dentro do mapa. Curtir e favoritar continuam ali do
+      lado, discretos, porque sao gosto e organizacao, nao aprendizado. --%>
+      <button
+        phx-click="toggle_step_learned"
+        phx-value-code={@step.code}
+        aria-pressed={to_string(@step_learned)}
+        class={[
+          "mb-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border px-5 py-2.5 font-serif text-[14px] font-semibold transition-colors",
+          @step_learned && "border-accent-green/40 bg-accent-green/12 text-accent-green",
+          !@step_learned && "border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400"
+        ]}
+      >
+        <.icon
+          name={if @step_learned, do: "hero-check-circle-solid", else: "hero-academic-cap"}
+          class="w-5 h-5"
+        />
+        {if @step_learned, do: "Você já sabe este passo", else: "Já sei este passo"}
+      </button>
+
       <div class="flex items-center gap-4 mb-6">
         <button
           phx-click="toggle_step_like"

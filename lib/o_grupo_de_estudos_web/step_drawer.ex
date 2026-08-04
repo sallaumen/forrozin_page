@@ -76,6 +76,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
       connections_expanded: false,
       drawer_liked: Engagement.liked?(user_id, "step", step.id),
       drawer_favorited: Engagement.favorited?(user_id, "step", step.id),
+      drawer_learned: Engagement.learned?(user_id, step.id),
       can_edit_drawer: socket.assigns.edit_mode or step.suggested_by_id == user_id,
       expanded_step: step.id,
       expanded_comments: comments,
@@ -132,6 +133,7 @@ defmodule OGrupoDeEstudosWeb.StepDrawer do
         assign(socket,
           drawer_liked: Engagement.liked?(user_id, "step", step_id),
           drawer_favorited: Engagement.favorited?(user_id, "step", step_id),
+          drawer_learned: Engagement.learned?(user_id, step_id),
           drawer_like_count: Engagement.count_likes("step", step_id)
         )
 

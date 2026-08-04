@@ -18,6 +18,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   use OGrupoDeEstudosWeb.NotificationHandlers
   use OGrupoDeEstudosWeb.Handlers.FollowHandlers
+  use OGrupoDeEstudosWeb.Handlers.StepLearning
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
 
@@ -66,6 +67,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
         step_liked = Engagement.liked?(user_id, "step", step.id)
         step_like_count = step.like_count
         step_favorited = Engagement.favorited?(user_id, "step", step.id)
+        step_learned = Engagement.learned?(user_id, step.id)
 
         step_image = StepDetail.resolve_step_image(step)
 
@@ -108,6 +110,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            step_liked: step_liked,
            step_like_count: step_like_count,
            step_favorited: step_favorited,
+           step_learned: step_learned,
            suggesting_field: nil,
            suggestion_value: "",
            suggesting_connection: false,
@@ -441,7 +444,8 @@ defmodule OGrupoDeEstudosWeb.StepLive do
          assign(socket,
            step_liked: Engagement.liked?(user.id, "step", step_id),
            step_like_count: step.like_count,
-           step_favorited: Engagement.favorited?(user.id, "step", step_id)
+           step_favorited: Engagement.favorited?(user.id, "step", step_id),
+           step_learned: Engagement.learned?(user.id, step_id)
          )}
 
       {:error, _} ->

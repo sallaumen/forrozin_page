@@ -1,0 +1,321 @@
+<title>Plano: conectar acervo, mapa e estudos</title>
+<style>
+  :root {
+    --ink-50:#fdfbf8; --ink-100:#f7f3ec; --ink-200:#ede8df; --ink-300:#d4cabb;
+    --ink-400:#bba88a; --ink-500:#9a7a5a; --ink-600:#7a5c3a; --ink-700:#5c3a1a;
+    --ink-800:#3a2410; --ink-900:#1a0e05;
+    --gold-500:#d4a054; --gold-600:#b8893f;
+    --red:#c0392b; --orange:#e67e22; --green:#27ae60; --blue:#2980b9; --purple:#8e44ad;
+    --serif: Georgia, "Iowan Old Style", serif;
+    --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --bg: var(--ink-100); --fg: var(--ink-900); --muted: var(--ink-600); --rule: var(--ink-300);
+    --surface: var(--ink-50);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#140b04; --fg:#f2ece1; --muted:#bdab92; --rule:#42301c; --surface:#1e1409; }
+  }
+  :root[data-theme="dark"] { --bg:#140b04; --fg:#f2ece1; --muted:#bdab92; --rule:#42301c; --surface:#1e1409; }
+  :root[data-theme="light"] { --bg:#f7f3ec; --fg:#1a0e05; --muted:#7a5c3a; --rule:#d4cabb; --surface:#fdfbf8; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:3rem 1.25rem 6rem; background:var(--bg); color:var(--fg);
+    font-family:var(--serif); line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  main { max-width:56rem; margin:0 auto; }
+  .eyebrow {
+    font-family:var(--sans); font-size:.68rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.18em; color:var(--gold-600); margin:0 0 .5rem;
+  }
+  h1 { font-size:2.2rem; line-height:1.12; margin:0 0 .7rem; letter-spacing:-.02em; text-wrap:balance; }
+  .lede { font-size:1.06rem; color:var(--muted); margin:0 0 2rem; max-width:46rem; }
+  h2 {
+    font-family:var(--sans); font-size:.72rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.16em; color:var(--gold-600); margin:3.4rem 0 .3rem;
+  }
+  .h2sub { font-size:1.4rem; margin:0 0 1rem; letter-spacing:-.015em; text-wrap:balance; }
+  p.note { font-size:.95rem; color:var(--muted); max-width:46rem; }
+  p.note b, li b { color:var(--fg); }
+
+  .achado {
+    background:var(--surface); border:1px solid var(--rule); border-radius:14px;
+    padding:1rem 1.2rem; margin-bottom:.7rem;
+  }
+  .achado .q {
+    font-family:var(--sans); font-size:.66rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.12em; color:var(--muted); margin:0 0 .3rem;
+  }
+  .achado .a { margin:0; font-size:1rem; }
+  .achado .a b { color:var(--red); }
+  .achado .prova {
+    font-family:'SF Mono',Menlo,monospace; font-size:.76rem; color:var(--muted);
+    margin:.5rem 0 0; padding-top:.5rem; border-top:1px dashed var(--rule);
+  }
+
+  .tese {
+    border-left:4px solid var(--gold-500); background:rgba(212,160,84,.10);
+    border-radius:0 14px 14px 0; padding:1.2rem 1.4rem; margin:1.5rem 0 0; font-size:1.05rem;
+  }
+  .tese b { color:var(--gold-600); }
+
+  .pr {
+    background:var(--surface); border:1px solid var(--rule); border-radius:16px;
+    padding:1.2rem 1.4rem; margin-bottom:1rem;
+  }
+  .pr h3 { margin:0 0 .1rem; font-size:1.15rem; letter-spacing:-.01em; }
+  .pr .tag {
+    font-family:var(--sans); font-size:.6rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.1em; border-radius:99px; padding:.2rem .6rem; margin-left:.5rem;
+    vertical-align:middle;
+  }
+  .t-alta { background:rgba(192,57,43,.14); color:var(--red); }
+  .t-media { background:rgba(230,126,34,.15); color:var(--orange); }
+  .t-baixa { background:var(--ink-200); color:var(--ink-600); }
+  .pr .porque { color:var(--muted); font-size:.94rem; margin:.4rem 0 .8rem; }
+  .pr h4 {
+    font-family:var(--sans); font-size:.64rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.12em; color:var(--muted); margin:1rem 0 .35rem;
+  }
+  .pr ul { margin:.2rem 0; padding-left:1.1rem; font-size:.95rem; }
+  .pr li { margin-bottom:.3rem; }
+  code {
+    font-family:'SF Mono',Menlo,monospace; font-size:.83em;
+    background:var(--ink-200); border-radius:4px; padding:.08em .35em;
+  }
+  :root[data-theme="dark"] code, @media (prefers-color-scheme: dark) { }
+
+  .antes-depois { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; margin:.6rem 0 .2rem; }
+  @media (max-width:34rem){ .antes-depois { grid-template-columns:1fr; } }
+  .ad { border-radius:10px; padding:.7rem .9rem; font-size:.9rem; }
+  .ad .rot {
+    font-family:var(--sans); font-size:.6rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.1em; margin-bottom:.25rem;
+  }
+  .ad.antes { background:rgba(192,57,43,.08); border:1px solid rgba(192,57,43,.2); }
+  .ad.antes .rot { color:var(--red); }
+  .ad.depois { background:rgba(39,174,96,.09); border:1px solid rgba(39,174,96,.22); }
+  .ad.depois .rot { color:var(--green); }
+
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; margin-top:.5rem; }
+  th, td { text-align:left; padding:.5rem .7rem; border-bottom:1px solid var(--rule); vertical-align:top; }
+  th {
+    font-family:var(--sans); font-size:.62rem; text-transform:uppercase; letter-spacing:.12em;
+    color:var(--muted); font-weight:700;
+  }
+  td.sim { color:var(--green); font-weight:700; }
+  td.nao { color:var(--red); }
+
+  .decisao {
+    border:1px dashed var(--gold-500); border-radius:12px; padding:.9rem 1.1rem;
+    margin-bottom:.6rem; background:rgba(212,160,84,.06);
+  }
+  .decisao p { margin:0; font-size:.95rem; }
+  .decisao .rec { color:var(--gold-600); font-weight:700; }
+</style>
+
+<main>
+  <p class="eyebrow">Plano · Acervo × Mapa × Estudos × Workshops</p>
+  <h1>O aluno tem razão, e o problema é maior do que parece</h1>
+  <p class="lede">
+    Fui atrás da reclamação dele no navegador, clicando o caminho que ele clica.
+    O que achei não foi uma busca ruim: foi um botão que existe num lugar só, e
+    não é o lugar onde as pessoas aprendem.
+  </p>
+
+  <h2>O que eu verifiquei clicando</h2>
+  <p class="h2sub">Quatro perguntas, quatro respostas medidas na tela.</p>
+
+  <div class="achado">
+    <p class="q">O diário já deixa vincular passo?</p>
+    <p class="a">Deixa, e funciona bem. Digitei "inver" e vieram IV-CT, IV e PI-INV com botão Adicionar.</p>
+    <p class="prova">componente reaproveitável: StudyComponents.step_search/1 + step_pill/1</p>
+  </div>
+
+  <div class="achado">
+    <p class="q">Depois de vincular, dá pra marcar como aprendido dali?</p>
+    <p class="a"><b>Não.</b> O chip do passo na nota é um <code>&lt;span&gt;</code> morto: não é link, não tem ação. O único gesto disponível é remover.</p>
+    <p class="prova">chip na nota anterior → ehLink: false · ehBotao: false · phxClick: null</p>
+  </div>
+
+  <div class="achado">
+    <p class="q">A página do passo tem "marcar como aprendido"?</p>
+    <p class="a"><b>Não.</b> Nem a página <code>/steps/IV</code> nem o drawer do acervo. Os dois oferecem só curtir e favoritar.</p>
+    <p class="prova">drawer aberto → acoesDeEngajamento: ["toggle_step_like", "toggle_step_favorite"]</p>
+  </div>
+
+  <div class="achado">
+    <p class="q">Então onde fica o botão?</p>
+    <p class="a"><b>Só no Mapa.</b> <code>toggle_step_learned</code> aparece uma vez em todo o app: dentro de <code>/graph/visual</code>, no painel da jornada e no drawer do grafo.</p>
+    <p class="prova">grep no web: 1 arquivo escreve learned_steps (handlers/graph_journey.ex)</p>
+  </div>
+
+  <div class="tese">
+    <b>A tese do plano.</b> A tabela <code>learned_steps</code> existe e funciona. O que
+    falta não é o conceito, é o <b>alcance</b>: hoje, para registrar o que aprendeu
+    na aula, a pessoa tem que sair da aula, abrir o Mapa, achar o nó no grafo e
+    marcar lá. O passo que o professor escreveu na nota dela não leva a lugar nenhum.
+    Conectar as três áreas é, na prática, <b>levar esse botão para onde a pessoa já está</b>
+    e deixar o vínculo passo↔aula ser o fio que costura tudo.
+  </div>
+
+  <h2>Sequência proposta</h2>
+  <p class="h2sub">Cinco PRs. Os dois primeiros já pagam a dívida com o seu aluno.</p>
+
+  <section class="pr">
+    <h3>1 · O botão de aprendido onde a pessoa está <span class="tag t-alta">resolve a dor</span></h3>
+    <p class="porque">
+      É o menor PR do plano e o que mais muda a vida de quem usa. Não inventa
+      conceito nenhum: leva um botão que já existe para as telas onde ele faltava.
+    </p>
+
+    <div class="antes-depois">
+      <div class="ad antes">
+        <div class="rot">Hoje</div>
+        Vi um passo na aula → abro o Mapa → procuro o nó no grafo → marco
+      </div>
+      <div class="ad depois">
+        <div class="rot">Depois</div>
+        Vi um passo na aula → clico nele onde ele está → marco
+      </div>
+    </div>
+
+    <h4>Onde entra</h4>
+    <ul>
+      <li><b>No componente <code>step_detail</code></b>, que já é compartilhado pela página do passo e pelo drawer do acervo. Um lugar só, três telas resolvidas.</li>
+      <li><b>Na fileira de engajamento</b>, ao lado de curtir e favoritar, mas como ação principal: aprendido é progresso, curtir é gosto.</li>
+    </ul>
+
+    <h4>Cuidado de UX que descobri no código</h4>
+    <ul>
+      <li>Marcar como aprendido <b>já favorita automaticamente</b> (é um <code>Ecto.Multi</code> que insere o aprendizado e garante o favorito). Se os três botões ficarem lado a lado com o mesmo peso, a pessoa vê o coração acender sozinho e não entende. A solução é hierarquia visual: aprendido em destaque, favoritar discreto.</li>
+      <li>Desmarcar aprendido <b>não</b> desfavorita, de propósito. O texto do botão precisa refletir isso sem prometer o que não faz.</li>
+    </ul>
+  </section>
+
+  <section class="pr">
+    <h3>2 · O chip do passo vira porta <span class="tag t-alta">fecha o ciclo</span></h3>
+    <p class="porque">
+      Você pediu: "quando a pessoa clicar nesse passo marcado pelo professor, dar a
+      opção de marcar como aprendido". Com o PR 1 no lugar, isso vira uma ligação.
+    </p>
+
+    <h4>A decisão de desenho</h4>
+    <p class="note" style="margin:.2rem 0 .6rem">
+      O chip é pequeno demais para carregar dois alvos de toque (abrir + marcar).
+      Em vez de espremer um ✓ dentro dele, <b>o chip abre o drawer do passo</b> — o
+      mesmo drawer do acervo, que no PR 1 ganhou o botão. A pessoa não sai da
+      página, vê o passo inteiro, marca, fecha. Zero vocabulário novo.
+    </p>
+
+    <h4>Onde</h4>
+    <ul>
+      <li>Chips do diário pessoal e do diário compartilhado (<code>study_note_steps</code>, que já existe).</li>
+      <li>Depois do PR 4, os mesmos chips no workshop e na lição.</li>
+    </ul>
+  </section>
+
+  <section class="pr">
+    <h3>3 · Forma de pagamento vira lista <span class="tag t-media">seu pedido 1</span></h3>
+    <p class="porque">
+      Hoje <code>payment_info</code> é campo de texto livre, com placeholder
+      "Pix na inscrição, dinheiro na hora...". Texto livre não dá para o sistema
+      agir em cima.
+    </p>
+
+    <h4>O que entra</h4>
+    <ul>
+      <li><b>Escolha entre duas formas</b>: pagamento na inscrição, ou pagamento na hora do evento.</li>
+      <li><b>Se for na inscrição</b>, aparece o campo de telefone para receber o comprovante.</li>
+      <li>Para quem se inscreveu, o telefone vira <b>link direto de WhatsApp</b> com o nome do workshop já na mensagem. Mandar comprovante deixa de ser copiar-e-colar.</li>
+    </ul>
+
+    <h4>Privacidade, no mesmo critério do Pix</h4>
+    <p class="note" style="margin:.2rem 0 0">
+      O telefone só aparece depois da inscrição, igual à chave Pix. É o mesmo tipo
+      de dado pessoal, e a regra tem que ser a mesma para não virar exceção que
+      ninguém lembra.
+    </p>
+  </section>
+
+  <section class="pr">
+    <h3>4 · Professores do workshop, de um a dois <span class="tag t-media">seu pedido 2</span></h3>
+    <p class="porque">
+      Hoje o formulário <b>não tem campo de professor nenhum</b>: quem cria é
+      automaticamente "quem dá a aula". Isso quebra no seu caso real, que é você
+      organizar a aula de outra pessoa.
+    </p>
+
+    <h4>A separação que falta</h4>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Papel</th><th>O que faz</th><th>Precisa de conta?</th></tr></thead>
+        <tbody>
+          <tr><td><b>Quem organiza</b></td><td>cria, edita, aceita pedidos, marca pagamento</td><td class="sim">sim</td></tr>
+          <tr><td><b>Quem dá a aula</b></td><td>aparece como professor, é divulgado</td><td class="nao">não</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Como fica</h4>
+    <ul>
+      <li>Dois lugares de professor no formulário (é quase sempre um casal, como você disse).</li>
+      <li>Cada lugar aceita <b>uma conta do site</b> (com foto e link para o perfil) <b>ou só o nome escrito</b>, para quem não tem conta.</li>
+      <li>Quando a pessoa criar conta depois, você edita e troca o nome pela conta. O que já foi divulgado não muda de lugar.</li>
+      <li>O bloco "Quem dá a aula" que subiu hoje passa a ler daqui em vez de assumir quem organizou.</li>
+    </ul>
+  </section>
+
+  <section class="pr">
+    <h3>5 · Passos no workshop e na lição, e o caminho de volta <span class="tag t-media">a costura</span></h3>
+    <p class="porque">
+      Hoje <b>não existe nenhuma relação entre workshop e passo</b> no banco, e a
+      lição do professor também não liga a passo. O diário é o único lugar do app
+      onde passo encontra data.
+    </p>
+
+    <h4>Ida</h4>
+    <ul>
+      <li>Professor e inscritos podem vincular passos ao workshop, com o mesmo campo de busca do diário (você pediu "qualquer um poder linkar", e isso combina com a galeria, que já é de todo mundo).</li>
+      <li>A lição do professor ganha o mesmo campo. Hoje ela é só título e texto.</li>
+    </ul>
+
+    <h4>Volta (é aqui que o acervo deixa de ser uma ilha)</h4>
+    <ul>
+      <li>Na página do passo: <b>"você viu este passo no workshop X"</b>, com link, e "você registrou este passo em N dias de estudo".</li>
+      <li>No acervo, o ícone que você pediu. Com uma distinção que vale fazer: <b>"eu aprendi" e "vi numa aula" são coisas diferentes</b>. Um é decisão sua, o outro é histórico. Proponho o check verde para aprendido e uma marca discreta para visto em aula, na mesma fileira de ícones que já existe nos cards.</li>
+    </ul>
+  </section>
+
+  <h2>Duas decisões que quero que você tome</h2>
+  <p class="h2sub">Mudam o que eu construo, e são suas.</p>
+
+  <div class="decisao">
+    <p>
+      <b>1. Quem pode vincular passo ao workshop?</b> Você disse "qualquer um".
+      Confirmo que é qualquer inscrito, ou só quem dá a aula e quem organiza?
+      <span class="rec">Minha recomendação: qualquer inscrito</span>, igual à galeria,
+      e quem organiza pode remover o que não fizer sentido.
+    </p>
+  </div>
+
+  <div class="decisao">
+    <p>
+      <b>2. Vincular passo ao workshop marca como aprendido automaticamente?</b>
+      <span class="rec">Minha recomendação: não.</span> Ter visto na aula não é ter
+      aprendido, e o seu aluno quer justamente o gesto de marcar. Automatizar
+      encheria a jornada dele de passos que ele viu uma vez e não sabe fazer. O
+      vínculo abre a porta, o clique é dele.
+    </p>
+  </div>
+
+  <h2>O que eu faria primeiro</h2>
+  <p class="h2sub">Se for para escolher, PR 1 e 2 no mesmo dia.</p>
+  <p class="note">
+    Eles são pequenos, não dependem de nada, e resolvem a reclamação que você
+    recebeu por escrito. Os PRs 3 e 4 são pedidos seus de qualidade do workshop e
+    entram em seguida. O PR 5 é o maior e o mais bonito, mas só faz sentido depois
+    que o botão de aprendido existir nos lugares certos: sem ele, vincular passo ao
+    workshop criaria mais um chip morto, que é exatamente o problema de hoje.
+  </p>
+</main>
