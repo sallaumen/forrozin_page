@@ -393,9 +393,10 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       phx-window-keydown="close_sequence_sheet"
       phx-key="escape"
     >
-      <%!-- Fechar é `phx-click-away` no painel, e não `phx-click` no fundo: o
-      clique de dentro sobe até o fundo, então o botão de salvar fechava a folha
-      e limpava o rascunho antes do envio chegar ao servidor. --%>
+      <%!-- Closing is `phx-click-away` on the panel, not `phx-click` on the
+      backdrop: a click inside bubbles up to the backdrop, so the save button was
+      closing the sheet and dropping the draft before the event reached the
+      server. --%>
       <div
         class="w-full rounded-t-2xl border border-ink-200 bg-ink-50 p-4 shadow-lg sm:max-w-[24rem] sm:rounded-2xl"
         phx-click-away="close_sequence_sheet"
@@ -419,9 +420,10 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
         </div>
 
         <div :if={@tab == "new"}>
-          <%!-- A trilha é a sequência: chip, seta, chip. Segurar um chip levanta
-          uma cópia que segue o dedo e treme de leve, e o buraco escorrega entre
-          os vizinhos, então dá para ver o resultado antes de soltar. --%>
+          <%!-- The track is the sequence: chip, arrow, chip. Holding a chip
+          lifts a copy that follows the finger and trembles lightly, and the gap
+          it left slides between the others, so the result is visible before
+          letting go. --%>
           <p class="m-0 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-ink-500">
             A sequência
           </p>

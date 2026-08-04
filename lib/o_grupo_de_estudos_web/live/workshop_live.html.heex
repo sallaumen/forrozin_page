@@ -389,14 +389,14 @@
               class="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-ink-200 bg-ink-50 shadow-md"
             >
               <button
-                :for={sugestao <- @step_search}
+                :for={suggestion <- @step_search}
                 type="button"
                 phx-click="add_workshop_step"
-                phx-value-id={sugestao.id}
+                phx-value-id={suggestion.id}
                 class="flex w-full cursor-pointer items-center gap-2 border-0 border-b border-ink-200 bg-transparent px-3 py-2 text-left text-[13px] last:border-b-0 hover:bg-ink-100"
               >
-                <code class="font-bold text-accent-orange">{sugestao.code}</code>
-                <span class="text-ink-700">{sugestao.name}</span>
+                <code class="font-bold text-accent-orange">{suggestion.code}</code>
+                <span class="text-ink-700">{suggestion.name}</span>
               </button>
             </div>
           </div>

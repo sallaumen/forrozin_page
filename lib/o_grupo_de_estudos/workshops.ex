@@ -268,23 +268,23 @@ defmodule OGrupoDeEstudos.Workshops do
     Ecto.Query.CastError -> nil
   end
 
-  defp respond(request, status, actor, workshop, acao) do
+  defp respond(request, status, actor, workshop, action) do
     request
     |> JoinRequest.review_changeset(status, actor)
     |> Repo.update()
     |> case do
-      {:ok, respondido} -> notify_answer(respondido, workshop, acao)
+      {:ok, answered} -> notify_answer(answered, workshop, action)
       error -> error
     end
   end
 
-  defp notify_answer(request, workshop, acao) do
+  defp notify_answer(request, workshop, action) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_workshop_join_review(
         workshop.organizer_id,
         request.user_id,
         workshop.id,
-        acao
+        action
       )
     end)
 
@@ -307,22 +307,22 @@ defmodule OGrupoDeEstudos.Workshops do
   @spec set_teachers(Workshop.t(), User.t(), [map()]) ::
           {:ok, [map()]}
           | {:error, :unauthorized | :too_many_teachers | :invalid_teacher}
-  def set_teachers(%Workshop{} = workshop, %User{} = actor, entradas) do
+  def set_teachers(%Workshop{} = workshop, %User{} = actor, entries) do
     with :ok <- ensure_admin(workshop, actor),
-         :ok <- ensure_cabem(entradas),
-         {:ok, limpas} <- normalize_teachers(entradas) do
-      rewrite_teachers(workshop, limpas)
+         :ok <- ensure_fits(entries),
+         {:ok, normalized} <- normalize_teachers(entries) do
+      rewrite_teachers(workshop, normalized)
     end
   end
 
-  defp ensure_cabem(entradas) when length(entradas) <= @max_teachers, do: :ok
-  defp ensure_cabem(_demais), do: {:error, :too_many_teachers}
+  defp ensure_fits(entries) when length(entries) <= @max_teachers, do: :ok
+  defp ensure_fits(_too_many), do: {:error, :too_many_teachers}
 
-  defp normalize_teachers(entradas) do
-    entradas
+  defp normalize_teachers(entries) do
+    entries
     |> Enum.with_index(1)
-    |> Enum.reduce_while({:ok, []}, fn {entry, posicao}, {:ok, acc} ->
-      case normalize_teacher(entry, posicao) do
+    |> Enum.reduce_while({:ok, []}, fn {entry, position_index}, {:ok, acc} ->
+      case normalize_teacher(entry, position_index) do
         {:ok, limpa} -> {:cont, {:ok, [limpa | acc]}}
         :error -> {:halt, {:error, :invalid_teacher}}
       end
@@ -333,28 +333,28 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  defp normalize_teacher(%{user_id: user_id}, posicao) when is_binary(user_id) do
+  defp normalize_teacher(%{user_id: user_id}, position_index) when is_binary(user_id) do
     case Accounts.get_user_by_id(user_id) do
       nil -> :error
-      %User{id: id} -> {:ok, %{user_id: id, display_name: nil, position: posicao}}
+      %User{id: id} -> {:ok, %{user_id: id, display_name: nil, position: position_index}}
     end
   end
 
-  defp normalize_teacher(%{display_name: name}, posicao) when is_binary(name) do
+  defp normalize_teacher(%{display_name: name}, position_index) when is_binary(name) do
     case String.trim(name) do
       "" -> :error
-      limpo -> {:ok, %{user_id: nil, display_name: limpo, position: posicao}}
+      trimmed -> {:ok, %{user_id: nil, display_name: trimmed, position: position_index}}
     end
   end
 
-  defp normalize_teacher(_neither_account_nor_name, _posicao), do: :error
+  defp normalize_teacher(_neither_account_nor_name, _position_index), do: :error
 
   # Delete and rewrite in the same transaction: the list is short and the order
   # matters, and reconciling two rows would cost more code than rewriting.
-  defp rewrite_teachers(workshop, entradas) do
+  defp rewrite_teachers(workshop, entries) do
     Repo.transact(fn ->
       TeacherQuery.delete_all(workshop.id)
-      Enum.reduce_while(entradas, {:ok, []}, &insert_teacher(&1, &2, workshop))
+      Enum.reduce_while(entries, {:ok, []}, &insert_teacher(&1, &2, workshop))
     end)
   end
 
@@ -494,7 +494,7 @@ defmodule OGrupoDeEstudos.Workshops do
   # stops being a full disk and becomes cost: only enrolled users upload, but
   # nothing would stop someone dumping video after video. 2 GiB is around 3h of
   # transcoded video, room enough for real use.
-  @max_media_bytes_por_workshop 2_147_483_648
+  @max_media_bytes_per_workshop 2_147_483_648
 
   defdelegate list_media(workshop_id), to: MediaQuery, as: :list_for_workshop
   defdelegate get_media(media_id), to: MediaQuery, as: :get
@@ -528,14 +528,14 @@ defmodule OGrupoDeEstudos.Workshops do
         byte_size: byte_size
       }) do
     with :ok <- ensure_can_upload(workshop, user),
-         {:ok, kind} <- ensure_tipo(content_type),
+         {:ok, kind} <- ensure_media_kind(content_type),
          :ok <- ensure_quota(workshop.id, byte_size),
          :ok <- ensure_espaco(byte_size),
          {:ok, key} <-
            Storage.put_private(
              gallery_folder(workshop.id),
              tmp_path,
-             WorkshopMedia.extensao(content_type)
+             WorkshopMedia.extension(content_type)
            ) do
       inserir_media(workshop, user, kind, key, content_type, byte_size)
     end
@@ -545,8 +545,8 @@ defmodule OGrupoDeEstudos.Workshops do
     if can_see_media?(workshop, user), do: :ok, else: {:error, :unauthorized}
   end
 
-  defp ensure_tipo(content_type) do
-    case WorkshopMedia.kind_do_tipo(content_type) do
+  defp ensure_media_kind(content_type) do
+    case WorkshopMedia.kind_from_content_type(content_type) do
       :error -> {:error, :unsupported_type}
       kind -> {:ok, kind}
     end
@@ -555,7 +555,7 @@ defmodule OGrupoDeEstudos.Workshops do
   defp ensure_quota(workshop_id, byte_size) do
     %{bytes: used} = MediaQuery.usage(workshop_id)
 
-    if used + byte_size <= @max_media_bytes_por_workshop,
+    if used + byte_size <= @max_media_bytes_per_workshop,
       do: :ok,
       else: {:error, :media_quota}
   end
@@ -828,8 +828,8 @@ defmodule OGrupoDeEstudos.Workshops do
   def enroll_in_package(%WorkshopProgram{} = program, %User{} = user) do
     with :ok <- ensure_package(program),
          :ok <- ensure_not_organizer(program, user),
-         {:ok, matricula} <- create_membership(program, user) do
-      cover_workshops(program, user, matricula)
+         {:ok, program_enrollment} <- create_membership(program, user) do
+      cover_workshops(program, user, program_enrollment)
     end
   end
 
@@ -847,44 +847,44 @@ defmodule OGrupoDeEstudos.Workshops do
     |> ProgramEnrollment.changeset(%{program_id: program.id, user_id: user.id})
     |> Repo.insert()
     |> case do
-      {:ok, matricula} -> {:ok, matricula}
+      {:ok, program_enrollment} -> {:ok, program_enrollment}
       {:error, %Ecto.Changeset{}} -> {:error, :already_enrolled}
     end
   end
 
   # Each workshop gets its own transaction (same reason as enroll_many), and the
   # compensation undoes whatever already landed if one fails.
-  defp cover_workshops(program, user, matricula) do
+  defp cover_workshops(program, user, program_enrollment) do
     workshops = ProgramQuery.list_workshops(program.id)
 
-    case Enum.reduce_while(workshops, [], &cobrir_um(&1, user, matricula, &2)) do
-      {:error, reason, criadas} -> desfazer_pacote(matricula, criadas, reason)
-      _criadas -> {:ok, matricula}
+    case Enum.reduce_while(workshops, [], &cover_one(&1, user, program_enrollment, &2)) do
+      {:error, reason, created} -> undo_package(program_enrollment, created, reason)
+      _criadas -> {:ok, program_enrollment}
     end
   end
 
-  defp cobrir_um(workshop, user, matricula, criadas) do
-    case ensure_enrollment(workshop, user, matricula) do
-      {:ok, :created} -> {:cont, [workshop | criadas]}
-      {:ok, :ja_existia} -> {:cont, criadas}
-      {:error, reason} -> {:halt, {:error, {reason, workshop}, criadas}}
+  defp cover_one(workshop, user, program_enrollment, created) do
+    case ensure_enrollment(workshop, user, program_enrollment) do
+      {:ok, :created} -> {:cont, [workshop | created]}
+      {:ok, :already_there} -> {:cont, created}
+      {:error, reason} -> {:halt, {:error, {reason, workshop}, created}}
     end
   end
 
   # Whoever was already enrolled in one of the workshops moves to the package
   # without a duplicated enrollment.
-  defp ensure_enrollment(workshop, user, matricula) do
+  defp ensure_enrollment(workshop, user, program_enrollment) do
     case EnrollmentQuery.get_for_user(workshop.id, user.id) do
-      nil -> inscrever_pelo_pacote(workshop, user, matricula)
-      enrollment -> vincular_ao_pacote(enrollment, matricula)
+      nil -> enroll_through_package(workshop, user, program_enrollment)
+      enrollment -> link_to_package(enrollment, program_enrollment)
     end
   end
 
-  defp inscrever_pelo_pacote(workshop, user, matricula) do
+  defp enroll_through_package(workshop, user, program_enrollment) do
     case insert_enrollment_locked(workshop, user) do
       {:ok, enrollment} ->
         enrollment
-        |> Ecto.Changeset.change(program_enrollment_id: matricula.id)
+        |> Ecto.Changeset.change(program_enrollment_id: program_enrollment.id)
         |> Repo.update()
         |> case do
           {:ok, _} -> {:ok, :created}
@@ -896,19 +896,19 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  defp vincular_ao_pacote(enrollment, matricula) do
+  defp link_to_package(enrollment, program_enrollment) do
     enrollment
-    |> Ecto.Changeset.change(program_enrollment_id: matricula.id)
+    |> Ecto.Changeset.change(program_enrollment_id: program_enrollment.id)
     |> Repo.update()
     |> case do
-      {:ok, _} -> {:ok, :ja_existia}
+      {:ok, _} -> {:ok, :already_there}
       error -> error
     end
   end
 
-  defp desfazer_pacote(matricula, criadas, {reason, workshop}) do
-    for w <- criadas, do: delete_enrollment(w.id, matricula.user_id)
-    Repo.delete(matricula)
+  defp undo_package(program_enrollment, created, {reason, workshop}) do
+    for w <- created, do: delete_enrollment(w.id, program_enrollment.user_id)
+    Repo.delete(program_enrollment)
     {:error, {reason, workshop}}
   end
 
@@ -942,9 +942,9 @@ defmodule OGrupoDeEstudos.Workshops do
   def set_package_payment(%WorkshopProgram{} = program, %User{} = user, enrollment_id, status)
       when status in [:pending, :paid, :waived] do
     with :ok <- ensure_program_owner(program, user),
-         %ProgramEnrollment{} = matricula <-
+         %ProgramEnrollment{} = program_enrollment <-
            PackageQuery.get_scoped(enrollment_id, program.id) do
-      matricula |> ProgramEnrollment.payment_changeset(status) |> Repo.update()
+      program_enrollment |> ProgramEnrollment.payment_changeset(status) |> Repo.update()
     else
       nil -> {:error, :not_found}
       {:error, reason} -> {:error, reason}
@@ -971,47 +971,47 @@ defmodule OGrupoDeEstudos.Workshops do
   """
   @spec list_agenda(keyword()) :: [map()]
   def list_agenda(opts \\ []) do
-    buscando? = busca_ativa?(opts[:search])
+    searching = searching?(opts[:search])
 
-    programas = ProgramQuery.list_feed(opts)
-    resumos = ProgramQuery.summaries_by_ids(Enum.map(programas, fn {p, _} -> p.id end))
+    programs = ProgramQuery.list_feed(opts)
+    summaries = ProgramQuery.summaries_by_ids(Enum.map(programs, fn {p, _} -> p.id end))
 
     opts
-    |> Keyword.put(:only_loose, not buscando?)
+    |> Keyword.put(:only_loose, not searching)
     |> WorkshopQuery.list_feed()
-    |> without_repeating_program(programas)
-    |> Enum.map(&item_de_workshop/1)
-    |> Enum.concat(Enum.map(programas, &program_item(&1, resumos)))
+    |> without_repeating_program(programs)
+    |> Enum.map(&workshop_item/1)
+    |> Enum.concat(Enum.map(programs, &program_item(&1, summaries)))
     |> sort_by_date(Keyword.get(opts, :period, :upcoming))
   end
 
   # In a search the program and its workshops can match at the same time. Without
   # this the festival card would come sandwiched between its own children, and the
   # counter would announce three events where there is one.
-  defp without_repeating_program(workshops, programas) do
-    ja_listados = MapSet.new(programas, fn {program, _} -> program.id end)
+  defp without_repeating_program(workshops, programs) do
+    already_listed = MapSet.new(programs, fn {program, _} -> program.id end)
 
-    Enum.reject(workshops, &MapSet.member?(ja_listados, &1.program_id))
+    Enum.reject(workshops, &MapSet.member?(already_listed, &1.program_id))
   end
 
-  defp busca_ativa?(nil), do: false
-  defp busca_ativa?(""), do: false
-  defp busca_ativa?(termo), do: String.trim(termo) != ""
+  defp searching?(nil), do: false
+  defp searching?(""), do: false
+  defp searching?(term), do: String.trim(term) != ""
 
-  defp item_de_workshop(workshop) do
+  defp workshop_item(workshop) do
     %{kind: :workshop, id: workshop.id, starts_at: workshop.starts_at, workshop: workshop}
   end
 
   # The period decides WHICH programs come in; the summary shown is the whole
   # festival, otherwise the card would say "3 workshops" while the program page
   # shows fifteen.
-  defp program_item({program, do_periodo}, resumos) do
+  defp program_item({program, period}, summaries) do
     %{
       kind: :program,
       id: program.id,
-      starts_at: do_periodo.starts_at,
+      starts_at: period.starts_at,
       program: program,
-      summary: Map.get(resumos, program.id, do_periodo)
+      summary: Map.get(summaries, program.id, period)
     }
   end
 
@@ -1024,6 +1024,8 @@ defmodule OGrupoDeEstudos.Workshops do
   # random, which is what prevents scanning; the id in the folder only organizes
   # (the route is by slug, an id opens nothing).
   defp flyer_folder(%Workshop{id: id}), do: "flyers/workshops/#{id}"
+  # The folder stays in Portuguese: it is where the flyers already are on disk,
+  # and renaming it orphans every one of them.
   defp flyer_folder(%WorkshopProgram{id: id}), do: "flyers/programas/#{id}"
 
   @doc """
@@ -1037,9 +1039,9 @@ defmodule OGrupoDeEstudos.Workshops do
   def put_workshop_flyer(%Workshop{} = workshop, %User{} = user, tmp_path, ext) do
     with :ok <- ensure_admin(workshop, user),
          {:ok, url} <- Storage.save_image(flyer_folder(workshop), tmp_path, ext) do
-      antigo = workshop.flyer_path
-      resultado = workshop |> Workshop.flyer_changeset(url) |> Repo.update()
-      discard_flyer(resultado, antigo)
+      previous = workshop.flyer_path
+      result = workshop |> Workshop.flyer_changeset(url) |> Repo.update()
+      discard_flyer(result, previous)
     end
   end
 
@@ -1048,9 +1050,9 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, Workshop.t()} | {:error, :unauthorized | term()}
   def remove_workshop_flyer(%Workshop{} = workshop, %User{} = user) do
     with :ok <- ensure_admin(workshop, user) do
-      antigo = workshop.flyer_path
-      resultado = workshop |> Workshop.flyer_changeset(nil) |> Repo.update()
-      discard_flyer(resultado, antigo)
+      previous = workshop.flyer_path
+      result = workshop |> Workshop.flyer_changeset(nil) |> Repo.update()
+      discard_flyer(result, previous)
     end
   end
 
@@ -1060,9 +1062,9 @@ defmodule OGrupoDeEstudos.Workshops do
   def put_program_flyer(%WorkshopProgram{} = program, %User{} = user, tmp_path, ext) do
     with :ok <- ensure_program_owner(program, user),
          {:ok, url} <- Storage.save_image(flyer_folder(program), tmp_path, ext) do
-      antigo = program.flyer_path
-      resultado = program |> WorkshopProgram.flyer_changeset(url) |> Repo.update()
-      discard_flyer(resultado, antigo)
+      previous = program.flyer_path
+      result = program |> WorkshopProgram.flyer_changeset(url) |> Repo.update()
+      discard_flyer(result, previous)
     end
   end
 
@@ -1071,19 +1073,19 @@ defmodule OGrupoDeEstudos.Workshops do
           {:ok, WorkshopProgram.t()} | {:error, :unauthorized | term()}
   def remove_program_flyer(%WorkshopProgram{} = program, %User{} = user) do
     with :ok <- ensure_program_owner(program, user) do
-      antigo = program.flyer_path
-      resultado = program |> WorkshopProgram.flyer_changeset(nil) |> Repo.update()
-      discard_flyer(resultado, antigo)
+      previous = program.flyer_path
+      result = program |> WorkshopProgram.flyer_changeset(nil) |> Repo.update()
+      discard_flyer(result, previous)
     end
   end
 
   # Only deletes the old file after the database confirms. The other way around, an
   # update error would leave the row pointing at a file that no longer exists.
-  defp discard_flyer({:ok, _} = resultado, nil), do: resultado
+  defp discard_flyer({:ok, _} = result, nil), do: result
 
-  defp discard_flyer({:ok, _} = resultado, antigo) do
-    Storage.delete_image(antigo)
-    resultado
+  defp discard_flyer({:ok, _} = result, previous) do
+    Storage.delete_image(previous)
+    result
   end
 
   defp discard_flyer(error, _antigo), do: error
@@ -1306,29 +1308,29 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   defp enroll_batch(program, user, workshops) do
-    resultado =
+    result =
       Enum.reduce(workshops, %{enrolled: [], failed: []}, fn workshop, acc ->
-        acumular(acc, workshop, inscrever_um(workshop, user))
+        accumulate(acc, workshop, enroll_one(workshop, user))
       end)
 
-    notify_batch_organizers(resultado, program, user)
-    %{resultado | enrolled: Enum.reverse(resultado.enrolled)}
+    notify_batch_organizers(result, program, user)
+    %{result | enrolled: Enum.reverse(result.enrolled)}
   end
 
-  defp inscrever_um(workshop, user) do
+  defp enroll_one(workshop, user) do
     case admin?(workshop, user) do
       true -> {:error, :organizer}
-      false -> workshop |> insert_enrollment_locked(user) |> tratar_repetida()
+      false -> workshop |> insert_enrollment_locked(user) |> handle_repeat()
     end
   end
 
-  defp tratar_repetida({:error, :already_enrolled}), do: {:ok, :ja_estava}
-  defp tratar_repetida(other), do: other
+  defp handle_repeat({:error, :already_enrolled}), do: {:ok, :was_already_in}
+  defp handle_repeat(other), do: other
 
-  defp acumular(acc, workshop, {:ok, _}),
+  defp accumulate(acc, workshop, {:ok, _}),
     do: %{acc | enrolled: [workshop | acc.enrolled]}
 
-  defp acumular(acc, workshop, {:error, reason}),
+  defp accumulate(acc, workshop, {:error, reason}),
     do: %{acc | failed: acc.failed ++ [{workshop, reason}]}
 
   defp notify_batch_organizers(%{enrolled: []}, _program, _user), do: :ok
@@ -1400,23 +1402,23 @@ defmodule OGrupoDeEstudos.Workshops do
 
   # An open seat calls whoever waited longest. One person per seat: the waitlist
   # moves one step, it does not drain.
-  defp promote_from_waitlist({:ok, _apagada} = resultado, workshop) do
+  defp promote_from_waitlist({:ok, _apagada} = result, workshop) do
     case WaitlistQuery.first_in_line(workshop.id) do
-      nil -> resultado
-      entry -> promote(entry, workshop, resultado)
+      nil -> result
+      entry -> promote(entry, workshop, result)
     end
   end
 
   defp promote_from_waitlist(error, _workshop), do: error
 
-  defp promote(entry, workshop, resultado) do
+  defp promote(entry, workshop, result) do
     with %User{} = pessoa <- Accounts.get_user_by_id(entry.user_id),
          {:ok, _enrollment} <- enroll_overbooking(workshop, pessoa) do
       Repo.delete(entry)
       notify_promotion(workshop, pessoa)
     end
 
-    resultado
+    result
   end
 
   defp notify_promotion(workshop, pessoa) do

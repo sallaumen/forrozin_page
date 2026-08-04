@@ -31,17 +31,23 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   def mount(%{"slug" => slug}, _session, socket) do
     workshop = Workshops.get_by_slug(slug)
 
-    case Policy.authorize(:view_workshop, socket.assigns[:current_user], acesso(workshop, socket)) do
-      :ok -> {:ok, socket |> permitir_media() |> assign_page(workshop)}
+    case Policy.authorize(
+           :view_workshop,
+           socket.assigns[:current_user],
+           workshop_access(workshop, socket)
+         ) do
+      :ok -> {:ok, socket |> allow_media_uploads() |> assign_page(workshop)}
       {:error, _} -> {:ok, not_found(socket)}
     end
   end
 
   # The Policy is pure and does not query: the boundary resolves the facts first.
-  defp acesso(nil, _socket), do: nil
-  defp acesso(workshop, socket), do: Workshops.access_for(workshop, socket.assigns[:current_user])
+  defp workshop_access(nil, _socket), do: nil
 
-  defp permitir_media(socket) do
+  defp workshop_access(workshop, socket),
+    do: Workshops.access_for(workshop, socket.assigns[:current_user])
+
+  defp allow_media_uploads(socket) do
     allow_upload(socket, :media,
       accept: ~w(.jpg .jpeg .png .webp .mp4 .mov),
       max_entries: 1,
@@ -67,8 +73,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   @impl true
-  def handle_event("search_workshop_step", %{"term" => termo}, socket) do
-    {:noreply, assign(socket, :step_search, OGrupoDeEstudos.Study.search_related_steps(termo))}
+  def handle_event("search_workshop_step", %{"term" => term}, socket) do
+    {:noreply, assign(socket, :step_search, OGrupoDeEstudos.Study.search_related_steps(term))}
   end
 
   def handle_event("add_workshop_step", %{"id" => step_id}, socket) do
@@ -222,7 +228,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> consume_uploaded_entries(:media, fn %{path: tmp_path}, entry ->
       {:ok, Workshops.add_media(workshop, user, atributos_da_media(tmp_path, entry))}
     end)
-    |> resultado_do_envio(socket)
+    |> upload_result(socket)
   end
 
   def handle_event("remove_media", %{"id" => id}, socket) do
@@ -261,25 +267,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     %{tmp_path: tmp_path, content_type: entry.client_type, byte_size: entry.client_size}
   end
 
-  defp resultado_do_envio([{:ok, %{status: :processing}}], socket) do
+  defp upload_result([{:ok, %{status: :processing}}], socket) do
     {:noreply,
      socket
      |> assign_page(socket.assigns.workshop)
      |> put_flash(:info, "Enviado! O vídeo aparece na galeria assim que terminar de preparar.")}
   end
 
-  defp resultado_do_envio([{:ok, _media}], socket) do
+  defp upload_result([{:ok, _media}], socket) do
     {:noreply,
      socket
      |> assign_page(socket.assigns.workshop)
      |> put_flash(:info, "Enviado! Já está na galeria.")}
   end
 
-  defp resultado_do_envio([{:error, reason}], socket) do
+  defp upload_result([{:error, reason}], socket) do
     {:noreply, put_flash(socket, :error, media_error(reason))}
   end
 
-  defp resultado_do_envio(_nada, socket), do: {:noreply, socket}
+  defp upload_result(_nothing, socket), do: {:noreply, socket}
 
   @doc false
   def media_upload_error(:too_large), do: "Arquivo grande demais. O limite é 200 MB."
@@ -422,7 +428,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:full?, Workshop.full?(workshop, length(participants)))
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
     |> assign(:can_see_media?, Workshops.can_see_media?(workshop, user))
-    |> assign(:media, media_visivel(workshop, user))
+    |> assign(:media, visible_media(workshop, user))
     |> assign(:teachers, teachers(workshop))
     |> assign(:steps, Workshops.list_steps(workshop.id))
     |> assign(:step_search, [])
@@ -515,7 +521,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   # The gallery is paid content: only who is in the workshop sees it.
-  defp media_visivel(workshop, user) do
+  defp visible_media(workshop, user) do
     if Workshops.can_see_media?(workshop, user), do: Workshops.list_media(workshop.id), else: []
   end
 
