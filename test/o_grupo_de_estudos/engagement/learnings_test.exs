@@ -109,7 +109,7 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
       assert Enum.sort(Engagement.learned_step_codes(user.id)) == ["LNBF", "LNSC"]
     end
 
-    test "returns [] for a user with no learned steps" do
+    test "returns an empty list for a user with no learned steps" do
       assert Engagement.learned_step_codes(insert(:user).id) == []
     end
 
@@ -169,7 +169,7 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
   end
 
   describe "reset_learned/1" do
-    test "remove todos os passos aprendidos do usuário (favoritos ficam)" do
+    test "removes every learned step of the user and keeps the favorites" do
       user = insert(:user)
       bf = insert(:step)
       Engagement.toggle_learned(user.id, bf.id)
@@ -180,11 +180,10 @@ defmodule OGrupoDeEstudos.Engagement.LearningsTest do
 
       assert Engagement.count_user_learned(user.id) == 0
       assert Engagement.learned_step_codes(user.id) == []
-      # o favorito implicado pelo aprender permanece
       assert Engagement.favorited?(user.id, "step", bf.id)
     end
 
-    test "reinicia só o usuário dado" do
+    test "resets only the given user" do
       user = insert(:user)
       other = insert(:user)
       Engagement.toggle_learned(user.id, insert(:step).id)

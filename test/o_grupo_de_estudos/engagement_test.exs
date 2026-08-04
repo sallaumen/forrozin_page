@@ -18,10 +18,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     %{user: user, step: step, sequence: sequence}
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Likes (existing tests — unchanged)
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "toggle_like/3" do
     test "creates a like when none exists", %{user: user, step: step} do
       assert {:ok, :liked} = Engagement.toggle_like(user.id, "step", step.id)
@@ -34,7 +30,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       refute Engagement.liked?(user.id, "step", step.id)
     end
 
-    test "is idempotent for unlike — a second unlike is a new like", %{user: user, step: step} do
+    test "is idempotent for unlike: a second unlike is a new like", %{user: user, step: step} do
       {:ok, :liked} = Engagement.toggle_like(user.id, "step", step.id)
       {:ok, :unliked} = Engagement.toggle_like(user.id, "step", step.id)
       assert {:ok, :liked} = Engagement.toggle_like(user.id, "step", step.id)
@@ -171,10 +167,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Step comments
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "step comments" do
     test "create_step_comment/3 creates a root comment", %{user: user, step: step} do
       assert {:ok, comment} =
@@ -184,7 +176,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert comment.user_id == user.id
       assert comment.step_id == step.id
       assert is_nil(comment.parent_step_comment_id)
-      # user association should be preloaded
       assert comment.user != nil
       assert comment.user.id == user.id
     end
@@ -201,8 +192,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
       assert reply.parent_step_comment_id == parent.id
 
-      # DB trigger bumps reply_count on INSERT; our Multi also bumps it.
-      # Reload from DB to see the trigger-updated value.
       updated_parent = Repo.get!(StepComment, parent.id)
       assert updated_parent.reply_count >= 1
     end
@@ -216,12 +205,10 @@ defmodule OGrupoDeEstudos.EngagementTest do
       {:ok, c1} = Engagement.create_step_comment(user, step.id, %{body: "First"})
       {:ok, _c2} = Engagement.create_step_comment(user, step.id, %{body: "Second"})
 
-      # Like c1 to boost its like_count via DB trigger
       Engagement.toggle_like(user.id, "step_comment", c1.id)
 
       comments = Engagement.list_step_comments(step.id)
       assert length(comments) == 2
-      # c1 has like_count=1, c2 has like_count=0 → c1 comes first
       assert hd(comments).id == c1.id
     end
 
@@ -268,7 +255,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
           parent_step_comment_id: parent.id
         })
 
-      # Reload to get the updated reply_count
       parent = Repo.get!(StepComment, parent.id)
       assert {:ok, tombstoned} = Engagement.delete_step_comment(user, parent)
       assert tombstoned.body == "[comentário removido]"
@@ -302,22 +288,15 @@ defmodule OGrupoDeEstudos.EngagementTest do
           parent_step_comment_id: parent.id
         })
 
-      # reply_count should be >= 1
       parent_before = Repo.get!(StepComment, parent.id)
       assert parent_before.reply_count >= 1
 
-      # Delete the reply (author deletes own)
       assert {:ok, :deleted} = Engagement.delete_step_comment(other, reply)
 
-      # reply_count should be decremented
       parent_after = Repo.get!(StepComment, parent.id)
       assert parent_after.reply_count < parent_before.reply_count
     end
   end
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Sequence comments
-  # ══════════════════════════════════════════════════════════════════════
 
   describe "sequence comments" do
     test "create_sequence_comment/3 creates a root comment", %{user: user, sequence: sequence} do
@@ -369,11 +348,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Profile comments — backward compatibility
-  # ══════════════════════════════════════════════════════════════════════
-
-  describe "profile comments — legacy 1-arity signatures" do
+  describe "profile comments with legacy 1-arity signatures" do
     test "create_profile_comment/1 works with attrs map", %{user: user} do
       profile = insert(:user)
 
@@ -408,11 +383,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Profile comments — new generic API
-  # ══════════════════════════════════════════════════════════════════════
-
-  describe "profile comments — new typed API" do
+  describe "profile comments with the new typed API" do
     test "create_profile_comment/3 creates via generic pipeline", %{user: user} do
       profile = insert(:user)
 
@@ -422,7 +393,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert comment.body == "Via generic!"
       assert comment.author_id == user.id
       assert comment.profile_id == profile.id
-      # author association should be preloaded
       assert comment.author != nil
     end
 
@@ -451,10 +421,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Replies
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "list_replies/3" do
     test "returns replies for a step comment", %{user: user, step: step} do
       {:ok, parent} = Engagement.create_step_comment(user, step.id, %{body: "Parent"})
@@ -474,7 +440,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
 
       replies = Engagement.list_replies(StepCommentQuery, parent.id)
       assert length(replies) == 2
-      # All replies should have user preloaded
       Enum.each(replies, fn r -> assert r.user != nil end)
     end
 
@@ -514,10 +479,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Comment counts
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "comment_counts_for/2" do
     test "returns counts per step", %{user: user, step: step} do
       other_step = insert(:step)
@@ -550,7 +511,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       {:ok, _c1} = Engagement.create_step_comment(user, step.id, %{body: "Active"})
       {:ok, c2} = Engagement.create_step_comment(user, step.id, %{body: "Deleted"})
 
-      # Soft-delete c2
       c2
       |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
       |> Repo.update!()
@@ -570,10 +530,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Notifications
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "list_notifications/2" do
     test "returns notifications for a user ordered unread first", %{user: user} do
       actor = insert(:user)
@@ -584,7 +540,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       notifications = Engagement.list_notifications(user.id)
       notification_ids = Enum.map(notifications, & &1.id)
 
-      # Unread (nil read_at) should come before read
       assert List.first(notification_ids) == unread.id
       assert List.last(notification_ids) == read.id
     end
@@ -644,7 +599,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       notification = insert(:notification, user: other, actor: actor, read_at: nil)
 
       assert {:ok, :already_read} = Engagement.mark_as_read(user, notification.id)
-      # The notification should still be unread
       assert is_nil(Repo.get!(Notification, notification.id).read_at)
     end
   end
@@ -664,10 +618,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert {:ok, 0} = Engagement.mark_all_read(user)
     end
   end
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Favorites
-  # ══════════════════════════════════════════════════════════════════════
 
   describe "favorites" do
     test "toggle_favorite/3 creates favorite + auto-likes", %{user: user, step: step} do
@@ -710,10 +660,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Metrics
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "metrics" do
     test "liked_step_ids/1 returns MapSet of liked step ids", %{user: user, step: step} do
       Engagement.toggle_like(user.id, "step", step.id)
@@ -739,10 +685,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.total_likes_received(user.id) >= 1
     end
   end
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Follows
-  # ══════════════════════════════════════════════════════════════════════
 
   describe "follows" do
     test "toggle_follow/2 creates a follow", %{user: user} do
@@ -786,9 +728,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       alice = insert(:user, username: "alice", name: "Alice Silva")
       {:ok, :followed} = Engagement.toggle_follow(user.id, alice.id)
 
-      # "a%" must match a literal "a%", not expand into a wildcard matching alice
       assert Engagement.list_following(user.id, search: "a%") == []
-      # sanity: a real search still matches
       assert [%{username: "alice"}] = Engagement.list_following(user.id, search: "alice")
     end
 
@@ -837,10 +777,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # user_stats_batch
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "user_stats_batch/1" do
     test "returns step count, sequence count, and primary badge per user" do
       user1 = insert(:user)
@@ -876,10 +812,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
     end
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Follow edge cases
-  # ══════════════════════════════════════════════════════════════════════
-
   describe "follow edge cases" do
     test "triple toggle restores follow and count stays at 1", %{user: user} do
       other = insert(:user)
@@ -890,7 +822,7 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.count_following(user.id) == 1
     end
 
-    test "follow is directional — A following B does not mean B follows A", %{user: user} do
+    test "follow is directional: A following B does not mean B follows A", %{user: user} do
       other = insert(:user)
       Engagement.toggle_follow(user.id, other.id)
       assert Engagement.following?(user.id, other.id)
@@ -919,10 +851,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       refute Enum.any?(following, &(&1.id == other.id))
     end
   end
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Favorites edge cases
-  # ══════════════════════════════════════════════════════════════════════
 
   describe "favorite edge cases" do
     test "favoriting already-liked step does not create duplicate like", %{user: user, step: step} do
@@ -961,10 +889,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       assert Engagement.count_user_favorites(user.id) == 0
     end
   end
-
-  # ══════════════════════════════════════════════════════════════════════
-  # following_ids / following_ids_for
-  # ══════════════════════════════════════════════════════════════════════
 
   describe "following_ids/1" do
     test "returns MapSet of followed user IDs" do
@@ -1007,10 +931,6 @@ defmodule OGrupoDeEstudos.EngagementTest do
       refute MapSet.member?(result, not_in_scope.id)
     end
   end
-
-  # ══════════════════════════════════════════════════════════════════════
-  # suggest_users
-  # ══════════════════════════════════════════════════════════════════════
 
   describe "suggest_users/2" do
     test "returns users not yet followed, excluding self" do

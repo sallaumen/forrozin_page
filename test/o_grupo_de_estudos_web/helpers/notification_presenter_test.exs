@@ -67,7 +67,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenterTest do
     end
   end
 
-  test "lesson_shared tem frase própria" do
+  test "lesson_shared has its own sentence" do
     assert OGrupoDeEstudosWeb.Helpers.NotificationPresenter.action_text(%{
              action: :lesson_shared,
              count: 1

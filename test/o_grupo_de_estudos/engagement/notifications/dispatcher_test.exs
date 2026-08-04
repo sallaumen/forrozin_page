@@ -51,10 +51,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.DispatcherTest do
     assert Repo.aggregate(Notification, :count) == 0
   end
 
-  # ── Like notifications ──────────────────────────────────────────────
-  # Likes generate persisted notifications for the content owner (board decision
-  # 2026-06-25). The ephemeral activity toast is separate (safe_dispatch_like).
-
   test "liking a step comment notifies the comment author" do
     step = insert(:step)
     author = insert(:user)

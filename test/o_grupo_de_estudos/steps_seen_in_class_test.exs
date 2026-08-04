@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudos.StepsSeenInClassTest do
   @moduledoc """
   Which steps a user saw in class: workshops attended, diary notes, teacher
-  lessons. History, unlike the user's own "learned" mark — and only classes
+  lessons. History, unlike the user's own "learned" mark, and only classes
   the user actually took part in count.
   """
 

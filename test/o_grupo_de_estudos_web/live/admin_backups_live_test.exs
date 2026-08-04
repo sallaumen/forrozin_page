@@ -19,10 +19,6 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
     log_in_user(conn, user)
   end
 
-  # ---------------------------------------------------------------------------
-  # Access control
-  # ---------------------------------------------------------------------------
-
   describe "access control" do
     test "redirects unauthenticated user to /login", %{conn: conn} do
       assert {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/admin/backups")
@@ -39,10 +35,6 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Path traversal protection
-  # ---------------------------------------------------------------------------
-
   describe "path traversal protection" do
     test "delete_backup ignores paths outside the backup dir", %{conn: conn} do
       evil = Path.join(System.tmp_dir!(), "evil_#{System.unique_integer([:positive])}.json")
@@ -55,10 +47,6 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
       assert File.exists?(evil), "arquivo fora de priv/backups nao deve ser deletado"
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Page rendering
-  # ---------------------------------------------------------------------------
 
   describe "page rendering" do
     test "shows create backup button", %{conn: conn} do
@@ -77,16 +65,10 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
     end
 
     test "shows empty state message when no backups exist in default dir", %{conn: conn} do
-      # This test is only meaningful if the priv/backups dir is empty.
-      # We verify the page loads without error regardless.
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/admin/backups")
       assert html =~ "Backups do Sistema"
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Create backup event
-  # ---------------------------------------------------------------------------
 
   describe "create_backup event" do
     test "creates a backup and shows success flash", %{conn: conn} do
@@ -102,7 +84,6 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
     test "backup list grows after creating a backup", %{conn: conn} do
       {:ok, lv, html_before} = live(admin_conn(conn), ~p"/admin/backups")
 
-      # Count backup entries before
       count_before =
         html_before |> String.split("phx-value-path") |> length() |> then(&(&1 - 1))
 
@@ -116,10 +97,6 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
       assert count_after >= count_before
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Restore backup event
-  # ---------------------------------------------------------------------------
 
   describe "restore_backup event" do
     test "shows error flash when path is invalid", %{conn: conn} do
@@ -143,10 +120,6 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Helper functions
-  # ---------------------------------------------------------------------------
-
   describe "format_size/1" do
     test "formats bytes under 1 KB" do
       assert OGrupoDeEstudosWeb.AdminBackupsLive.format_size(512) == "512 B"
@@ -164,7 +137,6 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLiveTest do
   describe "format_timestamp/1" do
     test "formats a valid NaiveDateTime with Brazilian timezone" do
       dt = ~N[2026-04-15 12:00:00]
-      # 12:00 UTC → 09:00 BRT (UTC-3)
       assert OGrupoDeEstudosWeb.AdminBackupsLive.format_timestamp(dt) == "15/04/2026 às 09:00:00"
     end
 

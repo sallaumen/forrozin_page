@@ -3,25 +3,25 @@ defmodule OGrupoDeEstudosWeb.Helpers.EngagementMessagesTest do
 
   alias OGrupoDeEstudosWeb.Helpers.EngagementMessages
 
-  test "rate limit tem mensagem amigável em likes e favoritos" do
+  test "rate limit has a friendly message for likes and favorites" do
     assert EngagementMessages.like_error(:rate_limited) =~ "Calma"
     assert EngagementMessages.favorite_error(:rate_limited) =~ "Calma"
   end
 
-  test "erros genéricos têm mensagem específica por ação" do
+  test "generic errors have a specific message per action" do
     assert EngagementMessages.like_error(%Ecto.Changeset{}) =~ "curtida"
     assert EngagementMessages.favorite_error(:whatever) =~ "favoritar"
   end
 
-  test "anotação do professor distingue permissão de falha" do
+  test "teacher note distinguishes permission from failure" do
     assert EngagementMessages.teacher_note_error(:unauthorized) =~ "Sem permissão"
     assert EngagementMessages.teacher_note_error(%Ecto.Changeset{}) =~ "salvar a anotação"
   end
 
-  test "revisão de sugestão mapeia os códigos de aplicação" do
+  test "suggestion review maps the application codes" do
     assert EngagementMessages.suggestion_review_error(:step_not_found) =~ "não existe mais"
     assert EngagementMessages.suggestion_review_error(:steps_not_found) =~ "conexão"
     assert EngagementMessages.suggestion_review_error(:invalid_connection_format) =~ "inválido"
-    assert EngagementMessages.suggestion_review_error(:outro) =~ "aplicar"
+    assert EngagementMessages.suggestion_review_error(:other) =~ "aplicar"
   end
 end

@@ -5,10 +5,6 @@ defmodule OGrupoDeEstudos.AdminTest do
   alias OGrupoDeEstudos.Encyclopedia.{ConnectionQuery, Step, StepQuery}
   alias OGrupoDeEstudos.Repo
 
-  # ---------------------------------------------------------------------------
-  # create_connection/1
-  # ---------------------------------------------------------------------------
-
   describe "create_connection/1" do
     test "creates valid connection between two steps" do
       source = insert(:step, code: "ADBF")
@@ -71,10 +67,6 @@ defmodule OGrupoDeEstudos.AdminTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # update_connection/2
-  # ---------------------------------------------------------------------------
-
   describe "update_connection/2" do
     test "updates label of an existing connection" do
       source = insert(:step, code: "ADBF")
@@ -101,10 +93,6 @@ defmodule OGrupoDeEstudos.AdminTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # delete_connection/1
-  # ---------------------------------------------------------------------------
-
   describe "delete_connection/1" do
     test "soft-deletes an existing connection by setting deleted_at" do
       source = insert(:step, code: "ADBF")
@@ -115,7 +103,6 @@ defmodule OGrupoDeEstudos.AdminTest do
       assert deleted.id == connection.id
       assert deleted.deleted_at != nil
 
-      # Row still exists in the database
       row = OGrupoDeEstudos.Repo.get(OGrupoDeEstudos.Encyclopedia.Connection, connection.id)
       assert row != nil
       assert row.deleted_at != nil
@@ -156,7 +143,6 @@ defmodule OGrupoDeEstudos.AdminTest do
       assert {:ok, deleted} = Admin.delete_step(step)
       assert deleted.deleted_at != nil
 
-      # Row still exists in the database
       row = Repo.get(Step, step.id)
       assert row != nil
       assert row.deleted_at != nil

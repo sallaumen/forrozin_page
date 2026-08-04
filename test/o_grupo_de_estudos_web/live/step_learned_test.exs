@@ -1,13 +1,7 @@
 defmodule OGrupoDeEstudosWeb.StepLearnedTest do
   @moduledoc """
-  Marcar "já sei este passo" onde a pessoa está.
-
-  O botão existia num lugar só do app: dentro do mapa, no grafo. Quem via um
-  passo na aula tinha que sair da aula, abrir o mapa, achar o nó e marcar lá.
-  Um aluno reclamou disso por escrito, e ele tinha razão.
-
-  Agora o gesto mora no `step_detail`, que é o mesmo componente da página do
-  passo e do drawer do acervo: um lugar só, três telas resolvidas.
+  The learn gesture lives in `step_detail`, shared by the step page and the
+  collection drawer, instead of only inside the graph.
   """
 
   use OGrupoDeEstudosWeb.ConnCase, async: true
@@ -20,8 +14,8 @@ defmodule OGrupoDeEstudosWeb.StepLearnedTest do
     %{step: insert(:step, code: "IV", name: "Inversão base"), user: insert(:user)}
   end
 
-  describe "na página do passo" do
-    test "oferece o gesto de marcar", ctx do
+  describe "on the step page" do
+    test "offers the mark gesture", ctx do
       {:ok, _lv, html} = live(log_in_user(build_conn(), ctx.user), ~p"/steps/#{ctx.step.code}")
 
       assert html =~ "Já sei este passo"
@@ -36,7 +30,7 @@ defmodule OGrupoDeEstudosWeb.StepLearnedTest do
       assert html =~ "Você já sabe"
     end
 
-    test "clicar de novo desmarca: é um gesto reversível", ctx do
+    test "clicking again unmarks it, so the gesture is reversible", ctx do
       {:ok, lv, _} = live(log_in_user(build_conn(), ctx.user), ~p"/steps/#{ctx.step.code}")
 
       render_click(lv, "toggle_step_learned", %{"code" => ctx.step.code})
@@ -45,7 +39,7 @@ defmodule OGrupoDeEstudosWeb.StepLearnedTest do
       refute Engagement.learned?(ctx.user.id, ctx.step.id)
     end
 
-    test "quem já sabe vê o estado ao abrir, sem precisar clicar", ctx do
+    test "who already knows it sees the state on open, without clicking", ctx do
       {:ok, :learned} = Engagement.toggle_learned(ctx.user.id, ctx.step.id)
 
       {:ok, _lv, html} = live(log_in_user(build_conn(), ctx.user), ~p"/steps/#{ctx.step.code}")
@@ -54,8 +48,8 @@ defmodule OGrupoDeEstudosWeb.StepLearnedTest do
     end
   end
 
-  describe "no acervo, pelo drawer" do
-    test "o mesmo gesto, no mesmo componente", ctx do
+  describe "in the collection, through the drawer" do
+    test "same gesture, same component", ctx do
       {:ok, lv, _} = live(log_in_user(build_conn(), ctx.user), ~p"/collection")
 
       html = render_click(lv, "open_step", %{"code" => ctx.step.code})
@@ -66,11 +60,8 @@ defmodule OGrupoDeEstudosWeb.StepLearnedTest do
     end
   end
 
-  describe "o efeito colateral que precisa aparecer na tela" do
-    test "marcar como aprendido também favorita, e o botão de favorito acompanha", ctx do
-      # `toggle_learned` roda um Multi que garante o favorito junto. Se a tela
-      # não refletisse isso, a estrela acenderia sozinha no próximo reload e
-      # ninguém entenderia por quê.
+  describe "the side effect that has to show on screen" do
+    test "marking as learned also favorites, and the favorite button follows", ctx do
       {:ok, lv, _} = live(log_in_user(build_conn(), ctx.user), ~p"/steps/#{ctx.step.code}")
 
       html = render_click(lv, "toggle_step_learned", %{"code" => ctx.step.code})
@@ -79,20 +70,18 @@ defmodule OGrupoDeEstudosWeb.StepLearnedTest do
       assert html =~ "Favoritado"
     end
 
-    test "desmarcar aprendido NÃO desfavorita", ctx do
+    test "unmarking as learned does not unfavorite", ctx do
       {:ok, lv, _} = live(log_in_user(build_conn(), ctx.user), ~p"/steps/#{ctx.step.code}")
 
       render_click(lv, "toggle_step_learned", %{"code" => ctx.step.code})
       render_click(lv, "toggle_step_learned", %{"code" => ctx.step.code})
 
-      # Favoritar é escolha de quem favoritou: desfazer o aprendizado não pode
-      # apagar uma decisão que a pessoa tomou por outro motivo.
       assert Engagement.favorited?(ctx.user.id, "step", ctx.step.id)
     end
   end
 
-  describe "código que não existe" do
-    test "não derruba a página", ctx do
+  describe "unknown code" do
+    test "does not crash the page", ctx do
       {:ok, lv, _} = live(log_in_user(build_conn(), ctx.user), ~p"/steps/#{ctx.step.code}")
 
       assert render_click(lv, "toggle_step_learned", %{"code" => "NAO-EXISTE"})

@@ -1,15 +1,7 @@
 defmodule OGrupoDeEstudosWeb.DiaryStepSheetTest do
   @moduledoc """
-  O passo da nota de aula deixa de ser beco sem saída.
-
-  Antes, o chip do passo vinculado a uma nota era um `<span>` morto: não era
-  link, não tinha ação, e o único gesto possível era remover. A pessoa lia na
-  própria anotação o passo que viu na aula e não conseguia fazer nada com ele
-  dali.
-
-  Agora o chip abre uma folha com o passo e o gesto de marcar. Folha, e não a
-  página inteira, para a pessoa não perder de vista a anotação que estava
-  lendo.
+  The step chip in a study note opens a sheet with the step and the learn
+  gesture. A sheet and not the full page, so the note stays on screen.
   """
 
   use OGrupoDeEstudosWeb.ConnCase, async: true
@@ -19,99 +11,100 @@ defmodule OGrupoDeEstudosWeb.DiaryStepSheetTest do
   alias OGrupoDeEstudos.{Engagement, Study}
 
   setup do
-    aluna = insert(:user)
-    passo = insert(:step, code: "IV", name: "Inversão base")
+    student = insert(:user)
+    step = insert(:step, code: "IV", name: "Inversão base")
 
-    {:ok, _nota} =
-      Study.upsert_personal_note(aluna, Date.utc_today(), %{
+    {:ok, _note} =
+      Study.upsert_personal_note(student, Date.utc_today(), %{
         content: "Trabalhamos inversão hoje.",
-        step_ids: [passo.id]
+        step_ids: [step.id]
       })
 
-    %{aluna: aluna, passo: passo}
+    %{student: student, step: step}
   end
 
-  describe "no diário pessoal" do
-    test "o chip do passo é clicável, não um texto morto", ctx do
-      {:ok, _lv, html} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study")
+  describe "in the personal diary" do
+    test "step chip is clickable, not dead text", ctx do
+      {:ok, _lv, html} = live(log_in_user(build_conn(), ctx.student), ~p"/study")
 
       assert html =~ "open_step_sheet"
-      assert html =~ ctx.passo.code
+      assert html =~ ctx.step.code
     end
 
-    test "clicar abre a folha com o passo e o gesto de marcar", ctx do
-      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study")
+    test "clicking opens the sheet with the step and the mark gesture", ctx do
+      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.student), ~p"/study")
 
-      html = render_click(lv, "open_step_sheet", %{"code" => ctx.passo.code})
+      html = render_click(lv, "open_step_sheet", %{"code" => ctx.step.code})
 
       assert html =~ "Inversão base"
       assert html =~ "Já sei este passo"
     end
 
-    test "marcar dali registra o aprendizado, sem sair da anotação", ctx do
-      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study")
+    test "marking from there records the learning without leaving the note", ctx do
+      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.student), ~p"/study")
 
-      render_click(lv, "open_step_sheet", %{"code" => ctx.passo.code})
-      html = render_click(lv, "toggle_step_learned", %{"code" => ctx.passo.code})
+      render_click(lv, "open_step_sheet", %{"code" => ctx.step.code})
+      html = render_click(lv, "toggle_step_learned", %{"code" => ctx.step.code})
 
-      assert Engagement.learned?(ctx.aluna.id, ctx.passo.id)
+      assert Engagement.learned?(ctx.student.id, ctx.step.id)
       assert html =~ "Você já sabe"
-      # A anotação continua na tela: a folha é uma camada, não uma viagem.
       assert html =~ "Trabalhamos inversão hoje."
     end
 
-    test "a folha fecha", ctx do
-      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study")
+    test "the sheet closes", ctx do
+      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.student), ~p"/study")
 
-      render_click(lv, "open_step_sheet", %{"code" => ctx.passo.code})
+      render_click(lv, "open_step_sheet", %{"code" => ctx.step.code})
       html = render_click(lv, "close_step_sheet", %{})
 
       refute html =~ "Já sei este passo"
     end
 
-    test "a folha leva ao passo completo, para quem quer ver conexões e vídeos", ctx do
-      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study")
+    test "the sheet leads to the full step, for connections and videos", ctx do
+      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.student), ~p"/study")
 
-      html = render_click(lv, "open_step_sheet", %{"code" => ctx.passo.code})
+      html = render_click(lv, "open_step_sheet", %{"code" => ctx.step.code})
 
-      assert html =~ ~s|href="/steps/#{ctx.passo.code}"|
+      assert html =~ ~s|href="/steps/#{ctx.step.code}"|
     end
 
-    test "código que não existe não derruba a página", ctx do
-      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study")
+    test "unknown code does not crash the page", ctx do
+      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.student), ~p"/study")
 
       assert render_click(lv, "open_step_sheet", %{"code" => "NAO-EXISTE"})
     end
   end
 
-  describe "no diário compartilhado com o professor" do
+  describe "in the diary shared with the teacher" do
     setup ctx do
-      link = insert(:teacher_student_link, student: ctx.aluna)
+      link = insert(:teacher_student_link, student: ctx.student)
 
       {:ok, _} =
         Study.upsert_shared_note(link, Date.utc_today(), %{
           content: "Aula de hoje.",
-          step_ids: [ctx.passo.id]
+          step_ids: [ctx.step.id]
         })
 
       Map.put(ctx, :link, link)
     end
 
-    test "o passo que o professor marcou também abre", ctx do
-      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study/shared/#{ctx.link.id}")
+    test "step marked by the teacher also opens", ctx do
+      {:ok, lv, _} =
+        live(log_in_user(build_conn(), ctx.student), ~p"/study/shared/#{ctx.link.id}")
 
-      html = render_click(lv, "open_step_sheet", %{"code" => ctx.passo.code})
+      html = render_click(lv, "open_step_sheet", %{"code" => ctx.step.code})
 
       assert html =~ "Já sei este passo"
     end
 
     test "e marcar dali funciona", ctx do
-      {:ok, lv, _} = live(log_in_user(build_conn(), ctx.aluna), ~p"/study/shared/#{ctx.link.id}")
+      {:ok, lv, _} =
+        live(log_in_user(build_conn(), ctx.student), ~p"/study/shared/#{ctx.link.id}")
 
-      render_click(lv, "open_step_sheet", %{"code" => ctx.passo.code})
-      render_click(lv, "toggle_step_learned", %{"code" => ctx.passo.code})
+      render_click(lv, "open_step_sheet", %{"code" => ctx.step.code})
+      render_click(lv, "toggle_step_learned", %{"code" => ctx.step.code})
 
-      assert Engagement.learned?(ctx.aluna.id, ctx.passo.id)
+      assert Engagement.learned?(ctx.student.id, ctx.step.id)
     end
   end
 end

@@ -3,10 +3,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQueryTest do
 
   alias OGrupoDeEstudos.Encyclopedia.ConnectionQuery
 
-  # ---------------------------------------------------------------------------
-  # get_by/1
-  # ---------------------------------------------------------------------------
-
   describe "get_by/1 with :source_step_id" do
     test "returns the connection with the given source_step_id" do
       source = insert(:step, code: "BF")
@@ -48,7 +44,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQueryTest do
       target = insert(:step, code: "SC")
       insert(:connection, source_step: source, target_step: target)
 
-      # Reversed direction should not be found
       assert nil == ConnectionQuery.get_by(source_code: "SC", target_code: "BF")
     end
   end
@@ -66,10 +61,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQueryTest do
       assert result.target_step.code == "SC"
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # list_by/1
-  # ---------------------------------------------------------------------------
 
   describe "list_by/1 defaults" do
     test "returns all connections" do
@@ -157,10 +148,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.ConnectionQueryTest do
       assert result.target_step.code == "SC"
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # delete_all_by/1
-  # ---------------------------------------------------------------------------
 
   describe "delete_all_by/1 with :either_step_id" do
     test "deletes all connections where step is source or target" do

@@ -3,13 +3,13 @@ defmodule OGrupoDeEstudos.Study.GoalTest do
 
   alias OGrupoDeEstudos.Study.Goal
 
-  describe "changeset/2 — XOR de dono" do
-    test "válida com apenas owner_user_id (meta pessoal)" do
+  describe "changeset/2 owner XOR" do
+    test "valid with only owner_user_id, which is a personal goal" do
       cs = Goal.changeset(%Goal{}, %{body: "Treinar BF", owner_user_id: Ecto.UUID.generate()})
       assert cs.valid?
     end
 
-    test "válida com apenas teacher_student_link_id (meta compartilhada)" do
+    test "valid with only teacher_student_link_id, which is a shared goal" do
       cs =
         Goal.changeset(%Goal{}, %{
           body: "Treinar BF",
@@ -19,12 +19,12 @@ defmodule OGrupoDeEstudos.Study.GoalTest do
       assert cs.valid?
     end
 
-    test "inválida sem nenhum dono" do
+    test "invalid with no owner at all" do
       cs = Goal.changeset(%Goal{}, %{body: "Treinar BF"})
       refute cs.valid?
     end
 
-    test "inválida com ambos os donos" do
+    test "invalid with both owners" do
       cs =
         Goal.changeset(%Goal{}, %{
           body: "Treinar BF",

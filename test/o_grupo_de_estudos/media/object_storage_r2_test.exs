@@ -1,26 +1,22 @@
 defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
   @moduledoc """
-  Adapter R2 da porta de objetos, sem tocar a rede.
-
-  As operações HTTP passam por um plug de teste (Req.Test) que finge o R2; a
-  assinatura de URL é calculo puro e é conferida pela forma da URL. O que
-  importa: bucket certo por prefixo, streaming (nada de vídeo inteiro na RAM)
-  e URL assinada com validade curta.
+  R2 adapter of the object port, without touching the network: HTTP goes
+  through Req.Test and URL signing is checked by the shape of the URL. What
+  matters is the right bucket per prefix, streaming, and short-lived URLs.
   """
 
-  # async: false — configura o adapter via Application env, que é global.
   use ExUnit.Case, async: false
 
   alias OGrupoDeEstudos.Media.ObjectStorage.R2
 
-  @conta "conta123"
+  @account_id "conta123"
   @endpoint "https://conta123.r2.cloudflarestorage.com"
 
   setup do
     Req.Test.set_req_test_from_context(%{async: false})
 
     Application.put_env(:o_grupo_de_estudos, R2,
-      account_id: @conta,
+      account_id: @account_id,
       access_key_id: "AKIATESTE",
       secret_access_key: "segredo-de-teste",
       private_bucket: "ogde-private",
@@ -33,55 +29,53 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
 
     dir = Path.join(System.tmp_dir!(), "r2_test_#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
-    origem = Path.join(dir, "origem.mp4")
-    File.write!(origem, "bytes do video")
+    source = Path.join(dir, "origem.mp4")
+    File.write!(source, "bytes do video")
     on_exit(fn -> File.rm_rf!(dir) end)
 
-    %{dir: dir, origem: origem}
+    %{dir: dir, source: source}
   end
 
   describe "put/2" do
-    test "mídia de galeria sobe por PUT assinado no bucket privado", ctx do
+    test "gallery media goes up through a signed PUT to the private bucket", ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         assert conn.method == "PUT"
         assert conn.request_path == "/ogde-private/workshop_media/v.mp4"
         assert conn.query_params["X-Amz-Signature"]
         assert Plug.Conn.get_req_header(conn, "content-type") == ["video/mp4"]
-        # R2 recusa corpo chunked com 411: o tamanho vai explícito, mesmo
-        # com o corpo em streaming.
         assert Plug.Conn.get_req_header(conn, "content-length") == ["14"]
         {:ok, corpo, conn} = Plug.Conn.read_body(conn)
         assert corpo == "bytes do video"
         Req.Test.text(conn, "")
       end)
 
-      assert :ok = R2.put("workshop_media/v.mp4", ctx.origem)
+      assert :ok = R2.put("workshop_media/v.mp4", ctx.source)
     end
 
-    test "avatar vai para o bucket público", ctx do
+    test "avatar goes to the public bucket", ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         assert conn.request_path == "/ogde-public/avatars/u1_9.png"
         Req.Test.text(conn, "")
       end)
 
-      assert :ok = R2.put("avatars/u1_9.png", ctx.origem)
+      assert :ok = R2.put("avatars/u1_9.png", ctx.source)
     end
 
-    test "resposta que não é 2xx vira erro", ctx do
+    test "non-2xx response becomes an error", ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         conn |> Plug.Conn.put_status(403) |> Req.Test.text("AccessDenied")
       end)
 
-      assert {:error, {403, _corpo}} = R2.put("flyers/x.png", ctx.origem)
+      assert {:error, {403, _corpo}} = R2.put("flyers/x.png", ctx.source)
     end
 
-    test "origem que não existe devolve erro sem estourar", _ctx do
+    test "missing source returns an error instead of raising", _ctx do
       assert {:error, :enoent} = R2.put("flyers/x.png", "/nao/existe.png")
     end
   end
 
   describe "delete/1 e exists?/1" do
-    test "delete devolve :ok no 204", _ctx do
+    test "delete returns :ok on 204", _ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         assert conn.method == "DELETE"
         assert conn.request_path == "/ogde-private/workshop_media/v.mp4"
@@ -91,7 +85,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
       assert :ok = R2.delete("workshop_media/v.mp4")
     end
 
-    test "exists? é um HEAD", _ctx do
+    test "exists? issues a HEAD", _ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         assert conn.method == "HEAD"
         Plug.Conn.send_resp(conn, 200, "")
@@ -100,7 +94,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
       assert R2.exists?("avatars/u1.png")
     end
 
-    test "exists? de chave sem objeto é false", _ctx do
+    test "exists? returns false for a key with no object", _ctx do
       Req.Test.stub(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 404, "") end)
 
       refute R2.exists?("avatars/fantasma.png")
@@ -108,7 +102,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
   end
 
   describe "list/1" do
-    test "lista por prefixo e devolve as chaves", _ctx do
+    test "lists by prefix and returns the keys", _ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         assert conn.query_params["prefix"] == "avatars/u1_"
 
@@ -127,7 +121,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
       assert R2.list("avatars/u1_") == ["avatars/u1_1.png", "avatars/u1_2.png"]
     end
 
-    test "prefixo sem nada devolve lista vazia", _ctx do
+    test "empty prefix returns an empty list", _ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/xml")
@@ -142,37 +136,36 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
   end
 
   describe "public_url/1 e serve/1" do
-    test "URL pública sai do domínio configurado, estável para gravar no banco" do
+    test "public URL comes from the configured domain, stable enough to store" do
       assert R2.public_url("avatars/u1.png") == "https://midia.teste.dev/avatars/u1.png"
     end
 
-    test "servir mídia restrita é redirect para URL assinada de vida curta" do
+    test "serving restricted media redirects to a short-lived signed URL" do
       assert {:redirect, url} = R2.serve("workshop_media/v.mp4")
 
       assert url =~ "#{@endpoint}/ogde-private/workshop_media/v.mp4?"
       assert url =~ "X-Amz-Signature="
-      # 1 hora: o bastante para assistir, curto demais para virar link eterno.
       assert url =~ "X-Amz-Expires=3600"
     end
   end
 
   describe "with_local_file/2" do
-    test "baixa para um temporário, roda a função e limpa", _ctx do
+    test "downloads to a temporary file, runs the function and cleans up", _ctx do
       Req.Test.stub(__MODULE__, fn conn ->
         assert conn.method == "GET"
         Req.Test.text(conn, "conteudo baixado")
       end)
 
-      assert {:ok, {conteudo, caminho}} =
-               R2.with_local_file("workshop_media/v.mov", fn caminho ->
-                 {File.read!(caminho), caminho}
+      assert {:ok, {content, path}} =
+               R2.with_local_file("workshop_media/v.mov", fn path ->
+                 {File.read!(path), path}
                end)
 
-      assert conteudo == "conteudo baixado"
-      refute File.exists?(caminho)
+      assert content == "conteudo baixado"
+      refute File.exists?(path)
     end
 
-    test "objeto que não existe devolve not_found sem rodar a função", _ctx do
+    test "missing object returns not_found without running the function", _ctx do
       Req.Test.stub(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 404, "") end)
 
       assert {:error, :not_found} =
@@ -183,7 +176,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2Test do
   end
 
   describe "free_bytes/0" do
-    test "R2 não tem volume para encher: quem limita é a cota por workshop" do
+    test "R2 has no volume to fill: the workshop quota is the limit" do
       assert R2.free_bytes() == :unknown
     end
   end

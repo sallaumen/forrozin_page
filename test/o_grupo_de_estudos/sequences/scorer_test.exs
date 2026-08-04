@@ -3,8 +3,6 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
 
   alias OGrupoDeEstudos.Sequences.Scorer
 
-  # ── Helpers ──────────────────────────────────────────────────────────
-
   defp step(code, opts) do
     id = Keyword.get(opts, :id, code)
     category_id = Keyword.get(opts, :category_id, "cat-#{code}")
@@ -24,15 +22,12 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
     end)
   end
 
-  # ── score_required_position ──────────────────────────────────────────
-
   describe "score_required_position/2" do
     test "returns 0 when no required ids" do
       assert Scorer.score_required_position(seq(~w(A B C)), MapSet.new()) == 0.0
     end
 
     test "scores 1.0 when required step is exactly in the center" do
-      # 5 steps: positions 0,1,2,3,4 — center is position 2
       sequence = seq(~w(A B R C D))
       required = MapSet.new(["R"])
       score = Scorer.score_required_position(sequence, required)
@@ -61,15 +56,12 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
     end
 
     test "averages across multiple required steps" do
-      # One in center, one at edge — average should be moderate
       sequence = seq(~w(R1 A B R2 C))
       required = MapSet.new(["R1", "R2"])
       score = Scorer.score_required_position(sequence, required)
       assert score > 0.0 and score < 1.0
     end
   end
-
-  # ── score_required_spread ────────────────────────────────────────────
 
   describe "score_required_spread/2" do
     test "returns 0 with fewer than 2 required steps" do
@@ -91,8 +83,6 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
     end
   end
 
-  # ── score_bf_penalty ─────────────────────────────────────────────────
-
   describe "score_bf_penalty/2" do
     test "returns 0 when no BF id" do
       assert Scorer.score_bf_penalty(seq(~w(A B C)), nil) == 0.0
@@ -111,8 +101,6 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
       assert Scorer.score_bf_penalty(seq(~w(A B C)), "BF") == 0.0
     end
   end
-
-  # ── score_category_diversity ─────────────────────────────────────────
 
   describe "score_category_diversity/1" do
     test "returns 0 for empty sequence" do
@@ -146,8 +134,6 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
     end
   end
 
-  # ── score_repetition_penalty ─────────────────────────────────────────
-
   describe "score_repetition_penalty/1" do
     test "returns 0 when no repetitions" do
       assert Scorer.score_repetition_penalty(seq(~w(A B C D))) == 0.0
@@ -158,12 +144,9 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
     end
 
     test "counts each repeated step once" do
-      # A repeats, B repeats — 2 penalties
       assert Scorer.score_repetition_penalty(seq(~w(A B A B C))) == -2.0
     end
   end
-
-  # ── score_interesting_steps ───────────────────────────────────────────
 
   describe "score_interesting_steps/1" do
     test "returns 0 for steps with no bonuses" do
@@ -194,11 +177,8 @@ defmodule OGrupoDeEstudos.Sequences.ScorerTest do
     end
   end
 
-  # ── rank/2 ───────────────────────────────────────────────────────────
-
   describe "rank/2" do
     test "returns sequences sorted by score descending" do
-      # Sequence with required in center should rank higher than at edge
       center_seq = seq(~w(A B R C D))
       edge_seq = seq(~w(A B C D R))
 

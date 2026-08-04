@@ -58,8 +58,6 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLiveTest do
 
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/admin/links")
 
-      # Link aprovado goes to the approved section, not pending section
-      # The page renders "0 pendentes" in the pending count
       assert html =~ "Pendentes (0)"
     end
   end

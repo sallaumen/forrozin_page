@@ -4,18 +4,9 @@ defmodule OGrupoDeEstudos.Sequences.ValidatorTest do
   alias OGrupoDeEstudos.Admin
   alias OGrupoDeEstudos.Sequences.{SequenceStep, Validator}
 
-  # ---------------------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------------------
-
-  # Builds a minimal SequenceStep-like struct with step_id set
   defp make_ss(step_id, position) do
     %SequenceStep{step_id: step_id, position: position}
   end
-
-  # ---------------------------------------------------------------------------
-  # Empty input
-  # ---------------------------------------------------------------------------
 
   describe "validate/1 with empty list" do
     test "returns :valid for an empty sequence" do
@@ -23,11 +14,7 @@ defmodule OGrupoDeEstudos.Sequences.ValidatorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # :valid cases
-  # ---------------------------------------------------------------------------
-
-  describe "validate/1 — valid sequences" do
+  describe "validate/1 with valid sequences" do
     test "single active step with no connections needed" do
       step = insert(:step, code: "VLBF")
 
@@ -58,11 +45,7 @@ defmodule OGrupoDeEstudos.Sequences.ValidatorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # :deleted_step
-  # ---------------------------------------------------------------------------
-
-  describe "validate/1 — deleted step issues" do
+  describe "validate/1 with deleted step issues" do
     test "detects a soft-deleted step" do
       step = insert(:step, code: "VLBF")
       {:ok, _} = Admin.delete_step(step)
@@ -87,11 +70,7 @@ defmodule OGrupoDeEstudos.Sequences.ValidatorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # :missing_connection
-  # ---------------------------------------------------------------------------
-
-  describe "validate/1 — missing connection issues" do
+  describe "validate/1 with missing connection issues" do
     test "detects missing connection between two active steps" do
       step_a = insert(:step, code: "VLBF")
       step_b = insert(:step, code: "VLSC")
@@ -109,7 +88,6 @@ defmodule OGrupoDeEstudos.Sequences.ValidatorTest do
       step_b = insert(:step, code: "VLSC")
       step_c = insert(:step, code: "VLTR")
       {:ok, _} = Admin.create_connection(%{source_step_id: step_a.id, target_step_id: step_b.id})
-      # No connection from B → C
 
       assert {:invalid, issues} =
                Validator.validate([
@@ -122,11 +100,7 @@ defmodule OGrupoDeEstudos.Sequences.ValidatorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # :deleted_connection
-  # ---------------------------------------------------------------------------
-
-  describe "validate/1 — deleted connection issues" do
+  describe "validate/1 with deleted connection issues" do
     test "detects a soft-deleted connection between two active steps" do
       step_a = insert(:step, code: "VLBF")
       step_b = insert(:step, code: "VLSC")
@@ -145,15 +119,10 @@ defmodule OGrupoDeEstudos.Sequences.ValidatorTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Multiple issues in a single sequence
-  # ---------------------------------------------------------------------------
-
-  describe "validate/1 — multiple issues" do
+  describe "validate/1 with multiple issues" do
     test "reports both deleted step and missing connection" do
       step_a = insert(:step, code: "VLBF")
       step_b = insert(:step, code: "VLSC")
-      # No connection and step_b is deleted
       {:ok, _} = Admin.delete_step(step_b)
 
       assert {:invalid, issues} =

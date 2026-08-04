@@ -38,7 +38,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
     } do
       conn = logged_in_conn(conn, viewer)
       {:ok, _lv, html} = live(conn, ~p"/users/#{profile.username}")
-      # The circle div should be rendered with the first letter of the name
       first_letter = String.first(profile.name || profile.username) |> String.upcase()
       assert html =~ first_letter
     end
@@ -126,7 +125,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       conn = logged_in_conn(conn, viewer)
       {:ok, lv, _html} = live(conn, ~p"/users/#{profile.username}")
 
-      # Verify it renders
       assert render(lv) =~ "Meu comentário deletável"
       assert render(lv) =~ "delete_comment"
     end
@@ -235,7 +233,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
   end
 
   describe "conquistas" do
-    test "visitante: nao ve secao de progresso (CA-2.3)", %{conn: conn, viewer: viewer} do
+    test "visitor does not see the progress section", %{conn: conn, viewer: viewer} do
       profile = insert(:user)
 
       for _ <- 1..5 do
@@ -249,7 +247,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       refute html =~ "ver progresso"
     end
 
-    test "proprio perfil: ve summary de progresso quando ha badges nao conquistados", %{
+    test "own profile shows the progress summary when badges are still unearned", %{
       conn: conn,
       viewer: viewer
     } do
@@ -272,16 +270,14 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       end
     end
 
-    test "todas conquistadas: secao de progresso ausente (CA-EC-2)", %{
+    test "progress section is absent when every badge is earned", %{
       conn: conn,
       viewer: viewer
     } do
-      # Curador + Explorador: 15 likes given on steps
       for _ <- 1..15 do
         OGrupoDeEstudos.Engagement.toggle_like(viewer.id, "step", insert(:step).id)
       end
 
-      # Voz Ativa + Comentarista: 15 comments authored
       anchor = insert(:step)
 
       for i <- 1..15 do
@@ -290,7 +286,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
         })
       end
 
-      # Estrela + Popular: 25 likes received on a comment
       {:ok, comment} =
         OGrupoDeEstudos.Engagement.create_step_comment(viewer, anchor.id, %{body: "Destaque"})
 
@@ -306,7 +301,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       refute html =~ "ocultar"
     end
 
-    test "renderiza nome do badge no markup (CA-3.4)", %{conn: conn, viewer: viewer} do
+    test "renders the badge name in the markup", %{conn: conn, viewer: viewer} do
       conn = logged_in_conn(conn, viewer)
       {:ok, _lv, html} = live(conn, ~p"/users/#{viewer.username}")
 

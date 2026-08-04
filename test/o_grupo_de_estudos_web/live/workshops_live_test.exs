@@ -6,22 +6,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
   alias OGrupoDeEstudos.{Brazil, Engagement, Workshops}
   alias OGrupoDeEstudos.Engagement.Comments.WorkshopCommentQuery
 
-  defp em(dias, hora \\ 14) do
+  defp at_day(days, hour \\ 14) do
     Brazil.today()
-    |> Date.add(dias)
-    |> DateTime.new!(Time.new!(hora, 0, 0), "Etc/UTC")
+    |> Date.add(days)
+    |> DateTime.new!(Time.new!(hour, 0, 0), "Etc/UTC")
     |> Brazil.to_utc()
     |> DateTime.truncate(:second)
   end
 
-  defp publicado(organizer, overrides \\ %{}) do
+  defp published(organizer, overrides \\ %{}) do
     attrs =
       Map.merge(
         %{
           title: "Workshop de sacadas",
           description: "Conteúdo do workshop.",
           location: "Curitiba",
-          starts_at: em(7)
+          starts_at: at_day(7)
         },
         overrides
       )
@@ -36,9 +36,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert {:error, {:redirect, %{to: "/login"}}} = live(conn, ~p"/study/workshops")
     end
 
-    test "lista os workshops publicados", %{conn: conn} do
+    test "lists the published workshops", %{conn: conn} do
       organizer = insert(:user, name: "Tavano Silva")
-      publicado(organizer)
+      published(organizer)
 
       {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/study/workshops")
 
@@ -46,14 +46,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Tavano Silva"
     end
 
-    test "rascunho não aparece para os outros", %{conn: conn} do
+    test "draft does not show up for other users", %{conn: conn} do
       organizer = insert(:user)
 
       {:ok, _} =
         Workshops.create_workshop(organizer, %{
           title: "Rascunho secreto",
           description: "x",
-          starts_at: em(3)
+          starts_at: at_day(3)
         })
 
       {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/study/workshops")
@@ -61,11 +61,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       refute html =~ "Rascunho secreto"
     end
 
-    test "busca por nome do workshop e do professor", %{conn: conn} do
+    test "searches by workshop title and by teacher name", %{conn: conn} do
       tavano = insert(:user, name: "Tavano Silva")
       marina = insert(:user, name: "Marina Prado")
-      publicado(tavano, %{title: "Sacadas avançadas"})
-      publicado(marina, %{title: "Intensivo de inversão"})
+      published(tavano, %{title: "Sacadas avançadas"})
+      published(marina, %{title: "Intensivo de inversão"})
 
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/study/workshops")
 
@@ -78,10 +78,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       refute html =~ "Intensivo de inversão"
     end
 
-    test "filtro de período separa passado de futuro", %{conn: conn} do
+    test "period filter separates past from future", %{conn: conn} do
       organizer = insert(:user)
-      publicado(organizer, %{title: "Vai acontecer", starts_at: em(5)})
-      publicado(organizer, %{title: "Já rolou", starts_at: em(-5)})
+      published(organizer, %{title: "Vai acontecer", starts_at: at_day(5)})
+      published(organizer, %{title: "Já rolou", starts_at: at_day(-5)})
 
       {:ok, lv, html} = live(log_in_user(conn, insert(:user)), ~p"/study/workshops")
       assert html =~ "Vai acontecer"
@@ -91,7 +91,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Já rolou"
     end
 
-    test "período forjado é ignorado", %{conn: conn} do
+    test "forged period is ignored", %{conn: conn} do
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/study/workshops")
 
       html = render_click(lv, "filter_period", %{"period" => "drop_table"})
@@ -105,25 +105,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  defp primeira_inscricao(workshop) do
+  defp first_enrollment(workshop) do
     workshop.id
     |> OGrupoDeEstudos.Workshops.EnrollmentQuery.list_participants()
     |> hd()
     |> Map.fetch!(:id)
   end
 
-  describe "conversa na página do workshop" do
+  describe "conversation on the workshop page" do
     setup %{conn: conn} do
       organizer = insert(:user)
-      %{organizer: organizer, workshop: publicado(organizer, %{}), conn: conn}
+      %{organizer: organizer, workshop: published(organizer, %{}), conn: conn}
     end
 
-    test "visitante sem conta lê a conversa mas não vê o formulário", %{
+    test "anonymous visitor reads the conversation but sees no form", %{
       conn: conn,
       workshop: w
     } do
-      autor = insert(:user)
-      {:ok, _} = Engagement.create_workshop_comment(autor, w.id, %{body: "que horas começa?"})
+      author = insert(:user)
+      {:ok, _} = Engagement.create_workshop_comment(author, w.id, %{body: "que horas começa?"})
 
       {:ok, _lv, html} = live(conn, ~p"/workshops/#{w.slug}")
 
@@ -132,7 +132,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Entre para comentar"
     end
 
-    test "quem tem conta comenta e vê o comentário na hora", %{conn: conn, workshop: w} do
+    test "logged-in user comments and sees the comment right away", %{conn: conn, workshop: w} do
       visitante = insert(:user)
       {:ok, lv, _} = live(log_in_user(conn, visitante), ~p"/workshops/#{w.slug}")
 
@@ -143,7 +143,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert comment.user_id == visitante.id
     end
 
-    test "comentário vazio não cria linha nenhuma", %{conn: conn, workshop: w} do
+    test "empty comment creates no row", %{conn: conn, workshop: w} do
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
 
       render_submit(lv, "create_comment", %{"body" => "   "})
@@ -151,7 +151,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Engagement.list_workshop_comments(w.id) == []
     end
 
-    test "responder aparece indentado sob o comentário", %{conn: conn, workshop: w} do
+    test "reply appears indented under the comment", %{conn: conn, workshop: w} do
       {:ok, raiz} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "e o local?"})
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
 
@@ -161,7 +161,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "no Batel"
     end
 
-    test "curtir comentário conta e descurte volta", %{conn: conn, workshop: w} do
+    test "liking a comment counts and unliking takes it back", %{conn: conn, workshop: w} do
       {:ok, comment} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "boa!"})
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
 
@@ -172,11 +172,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Engagement.count_likes("workshop_comment", comment.id) == 0
     end
 
-    test "autor apaga o próprio comentário pela página", %{conn: conn, workshop: w} do
-      autor = insert(:user)
-      {:ok, comment} = Engagement.create_workshop_comment(autor, w.id, %{body: "removo isso"})
+    test "author deletes their own comment from the page", %{conn: conn, workshop: w} do
+      author = insert(:user)
+      {:ok, comment} = Engagement.create_workshop_comment(author, w.id, %{body: "removo isso"})
 
-      {:ok, lv, _} = live(log_in_user(conn, autor), ~p"/workshops/#{w.slug}")
+      {:ok, lv, _} = live(log_in_user(conn, author), ~p"/workshops/#{w.slug}")
 
       html =
         render_click(lv, "delete_comment", %{"id" => comment.id, "type" => "workshop_comment"})
@@ -185,7 +185,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Engagement.list_workshop_comments(w.id) == []
     end
 
-    test "ninguém apaga comentário alheio pela página", %{conn: conn, workshop: w} do
+    test "nobody deletes someone else's comment from the page", %{conn: conn, workshop: w} do
       {:ok, comment} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "meu"})
 
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
@@ -194,77 +194,78 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert [_ainda_la] = Engagement.list_workshop_comments(w.id)
     end
 
-    test "rascunho explica que a conversa abre ao publicar", %{conn: conn, organizer: organizer} do
-      {:ok, rascunho} =
+    test "draft explains that the conversation opens on publish", %{
+      conn: conn,
+      organizer: organizer
+    } do
+      {:ok, draft} =
         Workshops.create_workshop(organizer, %{
           title: "Ainda rascunho",
           description: "Sem publicar.",
-          starts_at: em(7)
+          starts_at: at_day(7)
         })
 
-      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{rascunho.slug}")
+      {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{draft.slug}")
 
-      # Mostrar um campo que sempre falha no envio seria pior que não mostrar.
       refute html =~ ~s(phx-submit="create_comment")
       assert html =~ "A conversa abre quando você publicar"
     end
 
-    test "visitante anônimo não vê o botão Responder", %{conn: conn, workshop: w} do
+    test "anonymous visitor does not see the reply button", %{conn: conn, workshop: w} do
       {:ok, _} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "e o local?"})
 
       {:ok, _lv, html} = live(conn, ~p"/workshops/#{w.slug}")
 
-      # Deixar clicar e jogar o texto fora no envio é pior que não oferecer.
       refute html =~ "Responder"
       assert html =~ "Entre para comentar"
     end
 
-    test "rascunho não aceita comentário", %{conn: conn, organizer: organizer} do
-      {:ok, rascunho} =
+    test "draft does not accept comments", %{conn: conn, organizer: organizer} do
+      {:ok, draft} =
         Workshops.create_workshop(organizer, %{
           title: "Ainda rascunho",
           description: "Sem publicar.",
-          starts_at: em(7)
+          starts_at: at_day(7)
         })
 
-      {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{rascunho.slug}")
+      {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{draft.slug}")
 
       render_submit(lv, "create_comment", %{"body" => "tentando"})
 
-      assert Engagement.list_workshop_comments(rascunho.id) == []
+      assert Engagement.list_workshop_comments(draft.id) == []
     end
 
-    test "workshop cancelado continua aceitando comentário", %{
+    test "cancelled workshop keeps accepting comments", %{
       conn: conn,
       organizer: organizer,
       workshop: w
     } do
-      {:ok, cancelado} = Workshops.cancel_workshop(organizer, w)
-      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{cancelado.slug}")
+      {:ok, cancelled} = Workshops.cancel_workshop(organizer, w)
+      {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{cancelled.slug}")
 
       render_submit(lv, "create_comment", %{"body" => "que pena, o que houve?"})
 
-      assert [_] = Engagement.list_workshop_comments(cancelado.id)
+      assert [_] = Engagement.list_workshop_comments(cancelled.id)
     end
   end
 
   describe "co-organizadores no painel" do
     setup %{conn: conn} do
       criador = insert(:user)
-      %{criador: criador, workshop: publicado(criador, %{}), parceiro: insert(:user), conn: conn}
+      %{criador: criador, workshop: published(criador, %{}), partner: insert(:user), conn: conn}
     end
 
-    test "criador adiciona pelo nome de usuário", ctx do
+    test "creator adds a co-organizer by username", ctx do
       {:ok, lv, _} =
         live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
 
-      html = render_submit(lv, "add_admin", %{"username" => ctx.parceiro.username})
+      html = render_submit(lv, "add_admin", %{"username" => ctx.partner.username})
 
-      assert html =~ ctx.parceiro.username
-      assert Workshops.admin?(ctx.workshop, ctx.parceiro)
+      assert html =~ ctx.partner.username
+      assert Workshops.admin?(ctx.workshop, ctx.partner)
     end
 
-    test "nome de usuário que não existe avisa em vez de quebrar", ctx do
+    test "unknown username warns instead of crashing", ctx do
       {:ok, lv, _} =
         live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
 
@@ -273,18 +274,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Não encontrei esse usuário"
     end
 
-    test "co-organizador abre o painel e vê pagamento, mas não adiciona ninguém", ctx do
-      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.parceiro.id)
+    test "co-organizer opens the panel and sees payment but adds nobody", ctx do
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.partner.id)
 
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, ctx.parceiro), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
+        live(log_in_user(ctx.conn, ctx.partner), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
 
       assert html =~ "Inscritos"
       refute html =~ ~s(id="add-admin-form")
       refute html =~ "Cancelar este workshop"
     end
 
-    test "estranho continua fora do painel", ctx do
+    test "outsider stays out of the panel", ctx do
       assert {:error, {:redirect, _}} =
                live(
                  log_in_user(ctx.conn, insert(:user)),
@@ -292,23 +293,23 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
                )
     end
 
-    test "criador remove o co-organizador", ctx do
-      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.parceiro.id)
+    test "creator removes the co-organizer", ctx do
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.partner.id)
 
       {:ok, lv, _} =
         live(log_in_user(ctx.conn, ctx.criador), ~p"/workshops/#{ctx.workshop.slug}/gerenciar")
 
-      render_click(lv, "remove_admin", %{"id" => ctx.parceiro.id})
+      render_click(lv, "remove_admin", %{"id" => ctx.partner.id})
 
-      refute Workshops.admin?(ctx.workshop, ctx.parceiro)
+      refute Workshops.admin?(ctx.workshop, ctx.partner)
     end
 
-    test "co-organizador edita o workshop pelo formulário", ctx do
-      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.parceiro.id)
+    test "co-organizer edits the workshop through the form", ctx do
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.criador, ctx.partner.id)
 
       {:ok, lv, _} =
         live(
-          log_in_user(ctx.conn, ctx.parceiro),
+          log_in_user(ctx.conn, ctx.partner),
           ~p"/study/workshops/#{ctx.workshop.slug}/editar"
         )
 
@@ -327,163 +328,170 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  describe "workshop privado: vitrine e entrada por aprovação" do
+  describe "private workshop: storefront and entry by approval" do
     setup %{conn: conn} do
-      dono = insert(:user)
-      privado = publicado(dono, %{title: "Turma fechada", visibility: :private})
-      %{dono: dono, privado: privado, conn: conn}
+      owner = insert(:user)
+      private_workshop = published(owner, %{title: "Turma fechada", visibility: :private})
+      %{owner: owner, private_workshop: private_workshop, conn: conn}
     end
 
-    test "APARECE na agenda, com selo de entrada por aprovação", ctx do
+    test "shows up on the agenda with an entry-by-approval badge", ctx do
       {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
 
       assert html =~ "Turma fechada"
       assert html =~ "Por aprovação"
     end
 
-    test "a página abre para estranho, mostrando a vitrine", ctx do
+    test "page opens for an outsider, showing the storefront", ctx do
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, insert(:user)), ~p"/workshops/#{ctx.privado.slug}")
+        live(log_in_user(ctx.conn, insert(:user)), ~p"/workshops/#{ctx.private_workshop.slug}")
 
       assert html =~ "Turma fechada"
       assert html =~ "Pedir para entrar"
     end
 
-    test "abre para visitante sem conta também", ctx do
-      {:ok, _lv, html} = live(ctx.conn, ~p"/workshops/#{ctx.privado.slug}")
+    test "page opens for an anonymous visitor too", ctx do
+      {:ok, _lv, html} = live(ctx.conn, ~p"/workshops/#{ctx.private_workshop.slug}")
 
       assert html =~ "Turma fechada"
     end
 
-    test "pedir troca o botão por um aviso de que está esperando", ctx do
-      aluna = insert(:user)
+    test "asking swaps the button for a waiting notice", ctx do
+      student = insert(:user)
 
-      {:ok, lv, _} = live(log_in_user(ctx.conn, aluna), ~p"/workshops/#{ctx.privado.slug}")
+      {:ok, lv, _} =
+        live(log_in_user(ctx.conn, student), ~p"/workshops/#{ctx.private_workshop.slug}")
+
       html = render_click(lv, "request_join", %{})
 
       assert html =~ "Seu pedido foi enviado"
       refute html =~ "Pedir para entrar"
-      assert Workshops.join_status(ctx.privado, aluna) == :pending
+      assert Workshops.join_status(ctx.private_workshop, student) == :pending
     end
 
-    test "quem ainda não entrou não vê a conversa nem quem vai", ctx do
-      aluna = insert(:user)
-      {:ok, _} = Workshops.enroll(ctx.privado, insert(:user, name: "Ja Inscrita"))
+    test "whoever has not entered sees neither the conversation nor who is going", ctx do
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll(ctx.private_workshop, insert(:user, name: "Ja Inscrita"))
 
-      {:ok, _lv, html} = live(log_in_user(ctx.conn, aluna), ~p"/workshops/#{ctx.privado.slug}")
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, student), ~p"/workshops/#{ctx.private_workshop.slug}")
 
       refute html =~ "Ja Inscrita"
       assert html =~ "Escrever comentário" == false
     end
 
-    test "depois de uma recusa, o botão de pedir volta", ctx do
-      # Recusar não fecha a porta para sempre: a pessoa pode tentar de novo
-      # (mudou de ideia, conversou com quem organiza, abriu vaga).
-      aluna = insert(:user)
-      {:ok, _} = Workshops.request_join(ctx.privado, aluna)
-      [pedido] = Workshops.list_pending_requests(ctx.privado)
-      {:ok, _} = Workshops.reject_join(ctx.privado, ctx.dono, pedido.id)
+    test "the ask button comes back after a rejection", ctx do
+      student = insert(:user)
+      {:ok, _} = Workshops.request_join(ctx.private_workshop, student)
+      [request] = Workshops.list_pending_requests(ctx.private_workshop)
+      {:ok, _} = Workshops.reject_join(ctx.private_workshop, ctx.owner, request.id)
 
-      {:ok, _lv, html} = live(log_in_user(ctx.conn, aluna), ~p"/workshops/#{ctx.privado.slug}")
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, student), ~p"/workshops/#{ctx.private_workshop.slug}")
 
       assert html =~ "Pedir para entrar"
     end
 
-    test "quem organiza abre tudo sem pedir nada", ctx do
-      {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}")
+    test "organizer opens everything without asking", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/workshops/#{ctx.private_workshop.slug}")
 
       assert html =~ "Turma fechada"
       refute html =~ "Pedir para entrar"
     end
 
-    test "o painel lista a fila e o aceite matricula", ctx do
-      aluna = insert(:user, name: "Joana Pediu")
-      {:ok, _} = Workshops.request_join(ctx.privado, aluna)
+    test "panel lists the queue and approving enrolls the person", ctx do
+      student = insert(:user, name: "Joana Pediu")
+      {:ok, _} = Workshops.request_join(ctx.private_workshop, student)
 
       {:ok, lv, html} =
-        live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{ctx.privado.slug}/gerenciar")
+        live(
+          log_in_user(ctx.conn, ctx.owner),
+          ~p"/workshops/#{ctx.private_workshop.slug}/gerenciar"
+        )
 
       assert html =~ "Pedidos para entrar"
       assert html =~ "Joana Pediu"
 
-      [pedido] = Workshops.list_pending_requests(ctx.privado)
-      render_click(lv, "approve_join", %{"id" => pedido.id})
+      [request] = Workshops.list_pending_requests(ctx.private_workshop)
+      render_click(lv, "approve_join", %{"id" => request.id})
 
-      assert MapSet.member?(Workshops.enrolled_workshop_ids(aluna.id), ctx.privado.id)
+      assert MapSet.member?(Workshops.enrolled_workshop_ids(student.id), ctx.private_workshop.id)
     end
 
-    test "workshop público não mostra fila de pedidos", ctx do
-      publico = publicado(ctx.dono, %{title: "Aberto"})
+    test "public workshop shows no request queue", ctx do
+      public_workshop = published(ctx.owner, %{title: "Aberto"})
 
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, ctx.dono), ~p"/workshops/#{publico.slug}/gerenciar")
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/workshops/#{public_workshop.slug}/gerenciar")
 
       refute html =~ "Pedidos para entrar"
     end
   end
 
-  describe "rascunho não vaza pelo link" do
+  describe "draft does not leak through the link" do
     setup %{conn: conn} do
       organizer = insert(:user)
 
-      {:ok, rascunho} =
+      {:ok, draft} =
         Workshops.create_workshop(organizer, %{
           title: "Segredo ainda",
           description: "Preço e local que ninguém deveria ver.",
-          starts_at: em(7)
+          starts_at: at_day(7)
         })
 
-      %{organizer: organizer, rascunho: rascunho, conn: conn}
+      %{organizer: organizer, draft: draft, conn: conn}
     end
 
-    test "visitante sem conta não abre", %{conn: conn, rascunho: w} do
-      assert {:error, {:redirect, %{to: destino}}} = live(conn, ~p"/workshops/#{w.slug}")
-      assert destino == ~p"/study/workshops"
+    test "anonymous visitor does not open it", %{conn: conn, draft: w} do
+      assert {:error, {:redirect, %{to: destination}}} = live(conn, ~p"/workshops/#{w.slug}")
+      assert destination == ~p"/study/workshops"
     end
 
-    test "estranho logado não abre", %{conn: conn, rascunho: w} do
+    test "logged-in outsider does not open it", %{conn: conn, draft: w} do
       assert {:error, {:redirect, _}} =
                live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
     end
 
-    test "admin do site também não abre rascunho alheio", %{conn: conn, rascunho: w} do
+    test "site admin does not open someone else's draft either", %{conn: conn, draft: w} do
       assert {:error, {:redirect, _}} =
                live(log_in_user(conn, insert(:admin)), ~p"/workshops/#{w.slug}")
     end
 
-    test "quem organiza abre normalmente", %{conn: conn, organizer: dono, rascunho: w} do
-      {:ok, _lv, html} = live(log_in_user(conn, dono), ~p"/workshops/#{w.slug}")
+    test "organizer opens it normally", %{conn: conn, organizer: owner, draft: w} do
+      {:ok, _lv, html} = live(log_in_user(conn, owner), ~p"/workshops/#{w.slug}")
 
       assert html =~ "Segredo ainda"
     end
 
-    test "a mensagem não confirma que o workshop existe", %{conn: conn, rascunho: w} do
+    test "message does not confirm that the workshop exists", %{conn: conn, draft: w} do
       conn = get(conn, ~p"/workshops/#{w.slug}")
 
-      # Mesma resposta de slug inexistente: quem sonda não descobre nada.
       inexistente = get(build_conn(), ~p"/workshops/workshop-que-nao-existe-aaaaaa")
       assert redirected_to(conn) == redirected_to(inexistente)
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "não encontrado"
     end
   end
 
-  describe "resistência a id inválido" do
+  describe "resistance to invalid ids" do
     setup %{conn: conn} do
-      %{workshop: publicado(insert(:user), %{}), conn: conn}
+      %{workshop: published(insert(:user), %{}), conn: conn}
     end
 
-    test "visitante anônimo não derruba a página com id qualquer", %{conn: conn, workshop: w} do
+    test "anonymous visitor does not crash the page with an arbitrary id", %{
+      conn: conn,
+      workshop: w
+    } do
       {:ok, lv, _} = live(conn, ~p"/workshops/#{w.slug}")
 
-      # A página é pública: qualquer um manda o evento que quiser pelo socket.
-      for evento <- ~w(toggle_replies start_reply) do
-        render_click(lv, evento, %{"id" => "; drop table"})
+      for event <- ~w(toggle_replies start_reply) do
+        render_click(lv, event, %{"id" => "; drop table"})
       end
 
       assert render(lv) =~ "Conversa"
     end
 
-    test "usuário logado não derruba a página com id qualquer", %{conn: conn, workshop: w} do
+    test "logged-in user does not crash the page with an arbitrary id", %{conn: conn, workshop: w} do
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
 
       render_click(lv, "toggle_comment_like", %{"type" => "workshop_comment", "id" => "nada"})
@@ -494,8 +502,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert render(lv) =~ "Conversa"
     end
 
-    test "resposta não se prende a comentário de outro workshop", %{conn: conn, workshop: w} do
-      alheio = publicado(insert(:user), %{title: "Outro workshop"})
+    test "reply does not attach to a comment of another workshop", %{conn: conn, workshop: w} do
+      alheio = published(insert(:user), %{title: "Outro workshop"})
       {:ok, de_fora} = Engagement.create_workshop_comment(insert(:user), alheio.id, %{body: "lá"})
 
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
@@ -506,9 +514,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  describe "curtir o workshop" do
+  describe "liking the workshop" do
     test "curte, conta e descurte", %{conn: conn} do
-      w = publicado(insert(:user), %{})
+      w = published(insert(:user), %{})
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
 
       render_click(lv, "toggle_workshop_like", %{})
@@ -518,36 +526,35 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Engagement.count_likes("workshop", w.id) == 0
     end
 
-    test "visitante sem conta não curte, vai para o cadastro", %{conn: conn} do
-      w = publicado(insert(:user), %{})
+    test "anonymous visitor does not like it and is sent to signup", %{conn: conn} do
+      w = published(insert(:user), %{})
       {:ok, lv, _} = live(conn, ~p"/workshops/#{w.slug}")
 
-      assert {:error, {:redirect, %{to: destino}}} =
+      assert {:error, {:redirect, %{to: destination}}} =
                render_click(lv, "toggle_workshop_like", %{})
 
-      assert destino =~ "/signup"
+      assert destination =~ "/signup"
       assert Engagement.count_likes("workshop", w.id) == 0
     end
   end
 
-  describe "notificação para o organizador" do
-    test "inscrição acende o contador e o link leva ao painel", %{conn: conn} do
+  describe "notification for the organizer" do
+    test "enrollment lights the counter and the link leads to the panel", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer, %{})
-      aluna = insert(:user)
+      w = published(organizer, %{})
+      student = insert(:user)
 
-      {:ok, _} = Workshops.enroll(w, aluna)
+      {:ok, _} = Workshops.enroll(w, student)
 
       assert Engagement.unread_count(organizer.id) == 1
 
-      # O painel do organizador é onde a notificação desemboca: precisa do sino.
       {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
       assert html =~ "hero-bell"
     end
 
-    test "o link da notificação de inscrição aponta para o painel", %{conn: conn} do
+    test "enrollment notification link points to the panel", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer, %{})
+      w = published(organizer, %{})
       {:ok, _} = Workshops.enroll(w, insert(:user))
 
       {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/notifications")
@@ -556,9 +563,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "/workshops/#{w.slug}/gerenciar"
     end
 
-    test "comentário no workshop leva à página pública", %{conn: conn} do
+    test "workshop comment leads to the public page", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer, %{})
+      w = published(organizer, %{})
       {:ok, _} = Engagement.create_workshop_comment(insert(:user), w.id, %{body: "e aí?"})
 
       {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/notifications")
@@ -568,21 +575,21 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  describe "agenda colapsada por programação" do
+  describe "agenda collapsed by program" do
     setup %{conn: conn} do
-      dono = insert(:user)
-      %{dono: dono, conn: conn}
+      owner = insert(:user)
+      %{owner: owner, conn: conn}
     end
 
-    test "festival vira uma linha em vez de quinze", ctx do
+    test "festival becomes one entry instead of fifteen", ctx do
       workshops =
         for i <- 1..15 do
-          publicado(ctx.dono, %{title: "Itaúnas #{i}", starts_at: em(20 + i)})
+          published(ctx.owner, %{title: "Itaúnas #{i}", starts_at: at_day(20 + i)})
         end
 
-      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival de Itaúnas"})
-      for w <- workshops, do: Workshops.attach_workshop(p, ctx.dono, w.id)
-      {:ok, p} = Workshops.publish_program(ctx.dono, p)
+      {:ok, p} = Workshops.create_program(ctx.owner, %{title: "Festival de Itaúnas"})
+      for w <- workshops, do: Workshops.attach_workshop(p, ctx.owner, w.id)
+      {:ok, p} = Workshops.publish_program(ctx.owner, p)
 
       {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
 
@@ -593,18 +600,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
 
     test "workshop solto continua na agenda", ctx do
-      solto = publicado(ctx.dono, %{title: "Aulão avulso"})
+      solto = published(ctx.owner, %{title: "Aulão avulso"})
 
       {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
 
       assert html =~ solto.title
     end
 
-    test "buscar abre a programação e acha o workshop de dentro", ctx do
-      dentro = publicado(ctx.dono, %{title: "Pisada nordestina", starts_at: em(20)})
-      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
-      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, dentro.id)
-      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+    test "search opens the program and finds the workshop inside", ctx do
+      dentro = published(ctx.owner, %{title: "Pisada nordestina", starts_at: at_day(20)})
+      {:ok, p} = Workshops.create_program(ctx.owner, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.owner, dentro.id)
+      {:ok, _} = Workshops.publish_program(ctx.owner, p)
 
       {:ok, lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
       refute html =~ "Pisada nordestina"
@@ -614,12 +621,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Pisada nordestina"
     end
 
-    test "o contador conta os dois tipos", ctx do
-      publicado(ctx.dono, %{title: "Solto"})
-      dentro = publicado(ctx.dono, %{title: "Dentro", starts_at: em(20)})
-      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
-      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, dentro.id)
-      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+    test "counter counts both kinds", ctx do
+      published(ctx.owner, %{title: "Solto"})
+      dentro = published(ctx.owner, %{title: "Dentro", starts_at: at_day(20)})
+      {:ok, p} = Workshops.create_program(ctx.owner, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.owner, dentro.id)
+      {:ok, _} = Workshops.publish_program(ctx.owner, p)
 
       {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
 
@@ -627,57 +634,54 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  describe "agenda colapsada: o que a revisão pegou" do
+  describe "collapsed agenda edge cases" do
     setup %{conn: conn} do
-      %{dono: insert(:user), conn: conn}
+      %{owner: insert(:user), conn: conn}
     end
 
-    test "workshop em programação rascunho continua na agenda", ctx do
-      w = publicado(ctx.dono, %{title: "Já anunciado no grupo"})
-      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Ainda montando"})
-      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, w.id)
+    test "workshop in a draft program stays on the agenda", ctx do
+      w = published(ctx.owner, %{title: "Já anunciado no grupo"})
+      {:ok, p} = Workshops.create_program(ctx.owner, %{title: "Ainda montando"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.owner, w.id)
 
       {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
 
-      # Sumir daqui seria pior que nao colapsar: o workshop ja circulou.
       assert html =~ "Já anunciado no grupo"
     end
 
-    test "o card de quem organiza mantém a contagem mesmo colapsado", ctx do
-      w = publicado(ctx.dono, %{title: "Com inscritos", capacity: 1, starts_at: em(20)})
+    test "organizer card keeps the count even when collapsed", ctx do
+      w = published(ctx.owner, %{title: "Com inscritos", capacity: 1, starts_at: at_day(20)})
       {:ok, _} = Workshops.enroll(w, insert(:user))
 
-      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
-      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, w.id)
-      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+      {:ok, p} = Workshops.create_program(ctx.owner, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.owner, w.id)
+      {:ok, _} = Workshops.publish_program(ctx.owner, p)
 
-      {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.dono), ~p"/study/workshops")
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.owner), ~p"/study/workshops")
 
-      # A secao "Voce organiza" ainda mostra o workshop, entao a contagem dele
-      # precisa vir junto.
       assert html =~ "1 inscrito"
       assert html =~ "Esgotado"
     end
 
-    test "quem está inscrito num workshop colapsado vê a marca no card da programação", ctx do
-      w = publicado(ctx.dono, %{title: "Dentro", starts_at: em(20)})
-      aluna = insert(:user)
-      {:ok, _} = Workshops.enroll(w, aluna)
+    test "user enrolled in a collapsed workshop sees the mark on the program card", ctx do
+      w = published(ctx.owner, %{title: "Dentro", starts_at: at_day(20)})
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll(w, student)
 
-      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival"})
-      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, w.id)
-      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+      {:ok, p} = Workshops.create_program(ctx.owner, %{title: "Festival"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.owner, w.id)
+      {:ok, _} = Workshops.publish_program(ctx.owner, p)
 
-      {:ok, _lv, html} = live(log_in_user(ctx.conn, aluna), ~p"/study/workshops")
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, student), ~p"/study/workshops")
 
       assert html =~ "Você está em 1"
     end
 
-    test "na busca, o workshop diz de que programação é", ctx do
-      dentro = publicado(ctx.dono, %{title: "Xote nordestino", starts_at: em(20)})
-      {:ok, p} = Workshops.create_program(ctx.dono, %{title: "Festival de Itaúnas"})
-      {:ok, _} = Workshops.attach_workshop(p, ctx.dono, dentro.id)
-      {:ok, _} = Workshops.publish_program(ctx.dono, p)
+    test "in a search, the workshop names the program it belongs to", ctx do
+      dentro = published(ctx.owner, %{title: "Xote nordestino", starts_at: at_day(20)})
+      {:ok, p} = Workshops.create_program(ctx.owner, %{title: "Festival de Itaúnas"})
+      {:ok, _} = Workshops.attach_workshop(p, ctx.owner, dentro.id)
+      {:ok, _} = Workshops.publish_program(ctx.owner, p)
 
       {:ok, lv, _} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
       html = render_change(lv, "search_workshops", %{"term" => "xote"})
@@ -688,77 +692,74 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
   end
 
   describe "agenda: ids de DOM" do
-    test "workshop que aparece nas duas seções não repete id", %{conn: conn} do
+    test "workshop present in both sections does not repeat its id", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer, %{})
+      w = published(organizer, %{})
 
       {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/study/workshops")
 
-      # Ele sai em "Você organiza" e também na agenda: dois ids iguais fariam
-      # o LiveView atualizar o card errado.
       assert html =~ ~s(id="organiza-#{w.id}")
       assert html =~ ~s(id="workshop-card-#{w.id}")
     end
   end
 
-  describe "painel do organizador: cobrança" do
-    test "workshop gratuito não mostra controle de pagamento", %{conn: conn} do
+  describe "organizer panel: charging" do
+    test "free workshop shows no payment control", %{conn: conn} do
       organizer = insert(:user)
-      aluna = insert(:user)
-      w = publicado(organizer, %{price_cents: nil})
-      {:ok, _} = Workshops.enroll(w, aluna)
+      student = insert(:user)
+      w = published(organizer, %{price_cents: nil})
+      {:ok, _} = Workshops.enroll(w, student)
 
       {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
 
       assert html =~ "inscritos"
-      assert html =~ aluna.name
+      assert html =~ student.name
       refute html =~ "Marcar pago"
       refute html =~ "a receber"
       refute html =~ "Aguardando"
     end
 
-    test "workshop pago mostra o total recebido em reais, zero incluso", %{conn: conn} do
+    test "paid workshop shows the total received, zero included", %{conn: conn} do
       organizer = insert(:user)
-      aluna = insert(:user)
-      w = publicado(organizer, %{price_cents: 18_000})
-      {:ok, _} = Workshops.enroll(w, aluna)
+      student = insert(:user)
+      w = published(organizer, %{price_cents: 18_000})
+      {:ok, _} = Workshops.enroll(w, student)
 
       {:ok, lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
 
-      # Ninguém pagou ainda: "R$ 0", nunca "Gratuito".
       assert html =~ "R$ 0"
       refute html =~ "Gratuito"
       assert html =~ "Marcar pago"
 
-      html = render_click(lv, "set_payment", %{"id" => primeira_inscricao(w), "status" => "paid"})
+      html = render_click(lv, "set_payment", %{"id" => first_enrollment(w), "status" => "paid"})
       assert html =~ "R$ 180"
     end
   end
 
-  describe "página pública (/workshops/:slug)" do
-    test "dados de pagamento só aparecem para quem se inscreveu", %{conn: conn} do
+  describe "public page (/workshops/:slug)" do
+    test "payment data only appears for enrolled users", %{conn: conn} do
       organizer = insert(:user)
-      aluna = insert(:user)
-      w = publicado(organizer, %{price_cents: 8000, payment_info: "Pix 41 99999-0000"})
+      student = insert(:user)
+      w = published(organizer, %{price_cents: 8000, payment_info: "Pix 41 99999-0000"})
 
       {:ok, _lv, anonimo} = live(conn, ~p"/workshops/#{w.slug}")
       refute anonimo =~ "41 99999-0000"
       assert anonimo =~ "R$ 80"
 
-      {:ok, _lv, deslogada} = live(log_in_user(conn, aluna), ~p"/workshops/#{w.slug}")
-      refute deslogada =~ "41 99999-0000"
+      {:ok, _lv, logged_out} = live(log_in_user(conn, student), ~p"/workshops/#{w.slug}")
+      refute logged_out =~ "41 99999-0000"
 
-      {:ok, _} = Workshops.enroll(w, aluna)
-      {:ok, _lv, inscrita} = live(log_in_user(conn, aluna), ~p"/workshops/#{w.slug}")
+      {:ok, _} = Workshops.enroll(w, student)
+      {:ok, _lv, inscrita} = live(log_in_user(conn, student), ~p"/workshops/#{w.slug}")
       assert inscrita =~ "41 99999-0000"
 
-      {:ok, _lv, dono} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}")
-      assert dono =~ "41 99999-0000"
+      {:ok, _lv, owner} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}")
+      assert owner =~ "41 99999-0000"
     end
 
-    test "organizador não vê botão de inscrição, e sim o de gerenciar", %{conn: conn} do
+    test "organizer sees the manage button instead of the enroll one", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer, %{})
+      w = published(organizer, %{})
 
       {:ok, _lv, html} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}")
 
@@ -766,9 +767,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Gerenciar inscritos"
     end
 
-    test "visitante sem conta vê o essencial", %{conn: conn} do
+    test "anonymous visitor sees the essentials", %{conn: conn} do
       organizer = insert(:user, name: "Tavano Silva")
-      w = publicado(organizer, %{price_cents: 8000})
+      w = published(organizer, %{price_cents: 8000})
 
       {:ok, _lv, html} = live(conn, ~p"/workshops/#{w.slug}")
 
@@ -778,11 +779,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Entrar"
     end
 
-    test "visitante sem conta não vê os nomes dos inscritos", %{conn: conn} do
+    test "anonymous visitor does not see the names of enrolled users", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer)
-      aluno = insert(:user, name: "Ana Souza")
-      {:ok, _} = Workshops.enroll(w, aluno)
+      w = published(organizer)
+      student = insert(:user, name: "Ana Souza")
+      {:ok, _} = Workshops.enroll(w, student)
 
       {:ok, _lv, html} = live(conn, ~p"/workshops/#{w.slug}")
 
@@ -790,9 +791,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "1 inscrito"
     end
 
-    test "quem está logado vê quem vai", %{conn: conn} do
+    test "logged-in user sees who is going", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer)
+      w = published(organizer)
       {:ok, _} = Workshops.enroll(w, insert(:user, name: "Ana Souza"))
 
       {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
@@ -802,10 +803,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
     test "inscrever e cancelar", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer)
-      aluno = insert(:user)
+      w = published(organizer)
+      student = insert(:user)
 
-      {:ok, lv, _} = live(log_in_user(conn, aluno), ~p"/workshops/#{w.slug}")
+      {:ok, lv, _} = live(log_in_user(conn, student), ~p"/workshops/#{w.slug}")
 
       html = render_click(lv, "enroll", %{})
       assert html =~ "Inscrição confirmada"
@@ -817,19 +818,19 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Workshops.count_enrollments(w.id) == 0
     end
 
-    test "visitante sem conta é levado ao cadastro ao tentar se inscrever", %{conn: conn} do
-      w = publicado(insert(:user))
+    test "anonymous visitor is taken to signup when trying to enroll", %{conn: conn} do
+      w = published(insert(:user))
 
       {:ok, lv, _} = live(conn, ~p"/workshops/#{w.slug}")
 
-      assert {:error, {:redirect, %{to: destino}}} = render_click(lv, "enroll", %{})
-      assert destino =~ "/signup"
-      assert destino =~ w.slug
+      assert {:error, {:redirect, %{to: destination}}} = render_click(lv, "enroll", %{})
+      assert destination =~ "/signup"
+      assert destination =~ w.slug
     end
 
-    test "lotado mostra esgotado e não deixa inscrever", %{conn: conn} do
+    test "full workshop shows sold out and blocks enrollment", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer, %{capacity: 1})
+      w = published(organizer, %{capacity: 1})
       {:ok, _} = Workshops.enroll(w, insert(:user))
 
       {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
@@ -838,18 +839,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       refute html =~ "Fazer inscrição"
     end
 
-    test "slug inexistente volta para a agenda", %{conn: conn} do
+    test "unknown slug redirects back to the agenda", %{conn: conn} do
       assert {:error, {:redirect, %{to: "/study/workshops"}}} =
                live(log_in_user(conn, insert(:user)), ~p"/workshops/nao-existe")
     end
 
-    test "a página pública nunca traz dado de pagamento", %{conn: conn} do
+    test "public page never carries payment data", %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer)
-      aluno = insert(:user)
-      {:ok, _} = Workshops.enroll(w, aluno)
-      {:ok, [linha]} = Workshops.list_enrollments_for_organizer(w, organizer)
-      {:ok, _} = Workshops.set_payment_status(w, organizer, linha.id, :paid)
+      w = published(organizer)
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll(w, student)
+      {:ok, [row]} = Workshops.list_enrollments_for_organizer(w, organizer)
+      {:ok, _} = Workshops.set_payment_status(w, organizer, row.id, :paid)
 
       {:ok, _lv, html} = live(log_in_user(conn, insert(:user)), ~p"/workshops/#{w.slug}")
 
@@ -859,27 +860,27 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  describe "painel do organizador (/workshops/:slug/gerenciar)" do
+  describe "organizer panel (/workshops/:slug/gerenciar)" do
     setup %{conn: conn} do
       organizer = insert(:user)
-      w = publicado(organizer, %{price_cents: 8000})
-      aluno = insert(:user, name: "Ana Souza")
-      {:ok, _} = Workshops.enroll(w, aluno)
+      w = published(organizer, %{price_cents: 8000})
+      student = insert(:user, name: "Ana Souza")
+      {:ok, _} = Workshops.enroll(w, student)
 
-      %{conn: conn, organizer: organizer, workshop: w, aluno: aluno}
+      %{conn: conn, organizer: organizer, workshop: w, student: student}
     end
 
-    test "quem não organiza é barrado", %{conn: conn, workshop: w, aluno: aluno} do
+    test "non-organizer is blocked", %{conn: conn, workshop: w, student: student} do
       assert {:error, {:redirect, %{to: "/study/workshops"}}} =
-               live(log_in_user(conn, aluno), ~p"/workshops/#{w.slug}/gerenciar")
+               live(log_in_user(conn, student), ~p"/workshops/#{w.slug}/gerenciar")
     end
 
-    test "nem admin entra no painel de pagamento", %{conn: conn, workshop: w} do
+    test "not even a site admin enters the payment panel", %{conn: conn, workshop: w} do
       assert {:error, {:redirect, %{to: "/study/workshops"}}} =
                live(log_in_user(conn, insert(:admin)), ~p"/workshops/#{w.slug}/gerenciar")
     end
 
-    test "organizador vê inscritos e marca pagamento", %{
+    test "organizer sees enrolled users and marks payment", %{
       conn: conn,
       organizer: organizer,
       workshop: w
@@ -890,28 +891,28 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Só você vê esta tela"
       assert html =~ "Aguardando"
 
-      {:ok, [linha]} = Workshops.list_enrollments_for_organizer(w, organizer)
-      html = render_click(lv, "set_payment", %{"id" => linha.id, "status" => "paid"})
+      {:ok, [row]} = Workshops.list_enrollments_for_organizer(w, organizer)
+      html = render_click(lv, "set_payment", %{"id" => row.id, "status" => "paid"})
 
       assert html =~ "Pagamento registrado"
       assert html =~ "R$ 80"
     end
 
-    test "id de inscrição de outro workshop não passa", %{
+    test "enrollment id from another workshop is rejected", %{
       conn: conn,
       organizer: organizer,
       workshop: w
     } do
-      outro_dono = insert(:user)
-      outro = publicado(outro_dono, %{title: "Outro"})
-      {:ok, alheia} = Workshops.enroll(outro, insert(:user))
+      other_owner = insert(:user)
+      other = published(other_owner, %{title: "Outro"})
+      {:ok, alheia} = Workshops.enroll(other, insert(:user))
 
       {:ok, lv, _} = live(log_in_user(conn, organizer), ~p"/workshops/#{w.slug}/gerenciar")
 
       html = render_click(lv, "set_payment", %{"id" => alheia.id, "status" => "paid"})
       assert html =~ "Inscrição não encontrada"
 
-      {:ok, [intacta]} = Workshops.list_enrollments_for_organizer(outro, outro_dono)
+      {:ok, [intacta]} = Workshops.list_enrollments_for_organizer(other, other_owner)
       assert intacta.payment_status == :pending
     end
 
@@ -925,8 +926,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
     end
   end
 
-  describe "criar workshop (/study/workshops/novo)" do
-    test "cria e publica", %{conn: conn} do
+  describe "creating a workshop (/study/workshops/novo)" do
+    test "creates and publishes", %{conn: conn} do
       user = insert(:user)
       {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/novo")
 
@@ -943,13 +944,12 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
       render_change(lv, "validate", %{"workshop" => params})
 
-      # Pelo form de verdade: assim o teste quebra se algum campo sumir do HTML.
-      assert {:error, {:redirect, %{to: destino}}} =
+      assert {:error, {:redirect, %{to: destination}}} =
                lv
                |> form("#workshop-form", %{"workshop" => params})
                |> render_submit(%{"publish" => "true"})
 
-      assert destino =~ "/workshops/aulao-de-forro-"
+      assert destination =~ "/workshops/aulao-de-forro-"
 
       assert [w] = Workshops.list_for_organizer(user.id)
       assert w.status == :published
@@ -957,7 +957,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert w.capacity == 50
     end
 
-    test "salvar rascunho não publica", %{conn: conn} do
+    test "saving a draft does not publish", %{conn: conn} do
       user = insert(:user)
       {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/novo")
 
@@ -976,7 +976,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert w.status == :draft
     end
 
-    test "erro de validação mostra mensagem e preserva o texto", %{conn: conn} do
+    test "validation error shows a message and preserves the typed text", %{conn: conn} do
       user = insert(:user)
       {:ok, lv, _} = live(log_in_user(conn, user), ~p"/study/workshops/novo")
 
@@ -992,8 +992,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert Workshops.list_for_organizer(user.id) == []
     end
 
-    test "outro usuário não edita workshop alheio", %{conn: conn} do
-      w = publicado(insert(:user))
+    test "another user does not edit someone else's workshop", %{conn: conn} do
+      w = published(insert(:user))
 
       assert {:error, {:redirect, %{to: "/study/workshops"}}} =
                live(log_in_user(conn, insert(:user)), ~p"/study/workshops/#{w.slug}/editar")

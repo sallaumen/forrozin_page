@@ -16,7 +16,7 @@ defmodule OGrupoDeEstudos.AccountsTest do
   }
 
   describe "register_user/1" do
-    test "creates user with valid data — unconfirmed, with confirmation token" do
+    test "creates unconfirmed user with a confirmation token" do
       assert {:ok, user} = Accounts.register_user(@valid_attrs)
 
       assert user.username == "novousuario"
@@ -185,9 +185,7 @@ defmodule OGrupoDeEstudos.AccountsTest do
     test "treats LIKE wildcards in the term as literal characters" do
       alice = insert(:user, username: "alice", name: "Alice Silva")
 
-      # "a%" must not expand into a wildcard matching alice; only a literal "a%".
       assert Accounts.search_users("a%") == []
-      # sanity: a real prefix still matches
       assert [%{id: id}] = Accounts.search_users("alice")
       assert id == alice.id
     end

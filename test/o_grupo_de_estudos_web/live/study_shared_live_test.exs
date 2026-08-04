@@ -157,7 +157,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
     end
   end
 
-  describe "expansao de notas longas no historico compartilhado" do
+  describe "expanding long notes in the shared history" do
     test "nota longa usa phx-click toggle, nao <details>", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
@@ -204,8 +204,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
     end
   end
 
-  describe "save_teacher_note — erro visível" do
-    test "aluno não salva anotação do professor e vê o motivo", %{conn: conn} do
+  describe "save_teacher_note with a visible error" do
+    test "student does not save the teacher note and sees why", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
       link = insert(:teacher_student_link, teacher: teacher, student: student)
@@ -218,8 +218,8 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
     end
   end
 
-  describe "achados da revisão — página compartilhada" do
-    test "lição chegando com a página aberta NÃO ganha recibo de leitura", %{conn: conn} do
+  describe "shared page findings" do
+    test "lesson arriving with the page open does not get a read receipt", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
       link = insert(:teacher_student_link, teacher: teacher, student: student, active: true)
@@ -241,7 +241,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       assert lesson.id
     end
 
-    test "conteúdo curto em muitas linhas ganha o botão ver mais", %{conn: conn} do
+    test "short content in many lines gets the see-more button", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
       link = insert(:teacher_student_link, teacher: teacher, student: student, active: true)

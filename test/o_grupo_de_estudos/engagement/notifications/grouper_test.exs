@@ -29,7 +29,6 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.GrouperTest do
 
     assert [entry] = Grouper.group([n1, n2])
     assert entry.count == 2
-    # Most recent actor (user2) appears first
     assert entry.actors == [user2.id, user1.id]
     assert entry.id == n2.id
   end

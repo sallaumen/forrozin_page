@@ -3,10 +3,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.SectionQueryTest do
 
   alias OGrupoDeEstudos.Encyclopedia.SectionQuery
 
-  # ---------------------------------------------------------------------------
-  # get_by/1
-  # ---------------------------------------------------------------------------
-
   describe "get_by/1 with :id" do
     test "returns the section with the given id" do
       section = insert(:section, title: "Sacadas")
@@ -29,10 +25,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.SectionQueryTest do
       assert result.category.id == cat.id
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # list_by/1
-  # ---------------------------------------------------------------------------
 
   describe "list_by/1 defaults" do
     test "returns all sections ordered by position" do

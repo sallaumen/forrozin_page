@@ -157,19 +157,19 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
   end
 
   describe "authorize(:broadcast_lesson, user, _)" do
-    test "professor pode enviar lição" do
+    test "teacher publishes a lesson" do
       teacher = insert(:user, is_teacher: true)
       assert :ok = Policy.authorize(:broadcast_lesson, teacher, nil)
     end
 
-    test "quem não é professor não pode" do
+    test "non-teacher does not publish a lesson" do
       user = insert(:user, is_teacher: false)
       assert {:error, :unauthorized} = Policy.authorize(:broadcast_lesson, user, nil)
     end
   end
 
   describe "authorize(:manage_lesson, user, lesson)" do
-    test "só o professor dono gerencia a lição" do
+    test "only the owning teacher manages the lesson" do
       teacher = insert(:user, is_teacher: true)
       other = insert(:user, is_teacher: true)
       lesson = %OGrupoDeEstudos.Study.Lesson{teacher_id: teacher.id}
@@ -180,30 +180,29 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
   end
 
   describe "authorize(:view_workshop, user, workshop)" do
-    test "publicado abre para qualquer um, inclusive sem conta" do
+    test "published workshop opens for anyone, anonymous included" do
       workshop = %Workshop{organizer_id: insert(:user).id, status: :published}
 
       assert Policy.authorize(:view_workshop, nil, workshop) == :ok
       assert Policy.authorize(:view_workshop, insert(:user), workshop) == :ok
     end
 
-    test "cancelado continua legível: quem se inscreveu precisa saber o que houve" do
+    test "cancelled workshop stays readable: enrolled people need to know what happened" do
       workshop = %Workshop{organizer_id: insert(:user).id, status: :cancelled}
 
       assert Policy.authorize(:view_workshop, nil, workshop) == :ok
     end
 
-    test "rascunho é só de quem organiza" do
-      dono = insert(:user)
-      workshop = %Workshop{organizer_id: dono.id, status: :draft}
+    test "draft belongs to the organizer alone" do
+      owner = insert(:user)
+      workshop = %Workshop{organizer_id: owner.id, status: :draft}
 
-      assert Policy.authorize(:view_workshop, dono, workshop) == :ok
+      assert Policy.authorize(:view_workshop, owner, workshop) == :ok
       assert Policy.authorize(:view_workshop, nil, workshop) == {:error, :not_found}
       assert Policy.authorize(:view_workshop, insert(:user), workshop) == {:error, :not_found}
     end
 
-    test "admin do site não entra no rascunho alheio" do
-      # Mesma regra de :manage_workshop: workshop é do organizador, não da casa.
+    test "site admin does not enter someone else's draft" do
       workshop = %Workshop{organizer_id: insert(:user).id, status: :draft}
 
       assert Policy.authorize(:view_workshop, insert(:admin), workshop) == {:error, :not_found}
@@ -211,12 +210,12 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
   end
 
   describe "authorize(:create_workshop | :manage_workshop, ...)" do
-    test "qualquer usuário logado cria workshop" do
+    test "any logged-in user creates a workshop" do
       assert :ok = Policy.authorize(:create_workshop, insert(:user, is_teacher: false), nil)
       assert {:error, :unauthenticated} = Policy.authorize(:create_workshop, nil, nil)
     end
 
-    test "só o organizador gerencia, nem admin entra" do
+    test "only the organizer manages it, not even a site admin" do
       organizer = insert(:user)
       workshop = %OGrupoDeEstudos.Workshops.Workshop{organizer_id: organizer.id}
 

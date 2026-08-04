@@ -95,29 +95,27 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
       author = insert(:user)
       bases = insert(:category, name: "bases", label: "Bases")
 
-      primeira = insert(:sequence, user: author, public: true, name: "Primeira")
-      segunda = insert(:sequence, user: author, public: true, name: "Segunda")
+      first = insert(:sequence, user: author, public: true, name: "Primeira")
+      monday = insert(:sequence, user: author, public: true, name: "Segunda")
 
       insert(:sequence_step,
-        sequence: primeira,
+        sequence: first,
         step: insert(:step, code: "AF", name: "Passo Alfa", category: bases),
         position: 1
       )
 
       insert(:sequence_step,
-        sequence: segunda,
+        sequence: monday,
         step: insert(:step, code: "BS", name: "Passo Beta", category: bases),
         position: 1
       )
 
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/sequence")
 
-      # by step name
       html = render_keyup(lv, "search_sequences", %{"term" => "Passo Beta"})
       assert html =~ "Segunda"
       refute html =~ "Primeira"
 
-      # by step code
       html = render_keyup(lv, "search_sequences", %{"term" => "AF"})
       assert html =~ "Primeira"
       refute html =~ "Segunda"
@@ -325,13 +323,11 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
     end
 
     test "empty state when no public sequences", %{conn: conn} do
-      # The setup block inserted one sequence; we just confirm the page renders
       {:ok, _lv, html} = live(logged_in_conn(conn), ~p"/sequence")
       assert html =~ "Sequências" or html =~ "sequência"
     end
 
     test "empty state shows CTA to create", %{conn: conn} do
-      # Use a fresh user/conn with no setup sequences
       conn = logged_in_conn(conn)
       {:ok, _lv, html} = live(conn, ~p"/sequence")
       assert html =~ "Gerar sequência" or html =~ "Criar a primeira sequência"

@@ -23,8 +23,8 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
     end
   end
 
-  describe "mount — admin" do
-    test "renders the Mapa de Passos title", %{conn: conn} do
+  describe "mount as admin" do
+    test "renders the map title", %{conn: conn} do
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
       assert html =~ "Mapa de Passos"
     end
@@ -54,7 +54,6 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
       assert html =~ ~s(id="graph-canvas")
       assert html =~ "data-graph"
-      # Extracts JSON from the attribute and validates it
       [_, json] = Regex.run(~r/data-graph="([^"]*)"/, html)
       decoded = json |> String.replace("&quot;", "\"") |> Jason.decode!()
       assert Map.has_key?(decoded, "nodes")
@@ -63,7 +62,7 @@ defmodule OGrupoDeEstudosWeb.GraphLiveTest do
   end
 
   describe "admin controls" do
-    test "admin sees Nova Conexão form", %{conn: conn} do
+    test "admin sees the new connection form", %{conn: conn} do
       {:ok, _lv, html} = live(admin_conn(conn), ~p"/graph")
       assert html =~ "Nova Conexão"
     end

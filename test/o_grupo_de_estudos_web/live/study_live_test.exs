@@ -45,7 +45,6 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      # Switch to students tab
       html = render_click(lv, "switch_study_tab", %{"tab" => "students"})
 
       assert html =~ "Meus alunos"
@@ -79,7 +78,6 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       teacher = insert(:user, is_teacher: true, name: "Ana", username: "ana")
       student = insert(:user, name: "Lia", username: "lia")
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
-      # Accept the pending request so the link becomes active
       {:ok, link} = Study.accept_link_request(link, teacher)
 
       assert {:ok, _note} =
@@ -197,7 +195,6 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       {:ok, link} = Study.accept_invite(student, teacher.invite_slug)
       {:ok, link} = Study.accept_link_request(link, teacher)
 
-      # Student writes in the shared diary today
       Study.upsert_shared_note(link, OGrupoDeEstudos.Brazil.today(), %{
         content: "Estudei hoje",
         step_ids: []
@@ -267,7 +264,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
     end
   end
 
-  describe "expansao de notas longas no historico pessoal" do
+  describe "expanding long notes in the personal history" do
     test "nota longa usa phx-click toggle, nao <details>", %{conn: conn} do
       user = insert(:user)
       past_date = Date.add(OGrupoDeEstudos.Brazil.today(), -1)
@@ -307,7 +304,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
   end
 
   describe "estado vazio motivante" do
-    test "exibe headline motivante quando nao ha registro hoje", %{conn: conn} do
+    test "shows a motivating headline when there is no entry today", %{conn: conn} do
       user = insert(:user)
       conn = log_in_user(conn, user)
       {:ok, _lv, html} = live(conn, ~p"/study")
@@ -315,7 +312,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert html =~ "Sem registro hoje ainda"
     end
 
-    test "oculta estado vazio quando usuario ja registrou hoje", %{conn: conn} do
+    test "hides the empty state when the user already wrote today", %{conn: conn} do
       user = insert(:user)
 
       Study.upsert_personal_note(user, OGrupoDeEstudos.Brazil.today(), %{
@@ -330,8 +327,9 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
     end
   end
 
-  describe "achados da revisão — IDOR e badge do nav" do
-    test "outro professor não edita nem exclui lição alheia via evento forjado", %{conn: conn} do
+  describe "IDOR and the nav badge" do
+    test "another teacher neither edits nor deletes someone else's lesson through a forged event",
+         %{conn: conn} do
       owner = insert(:user, is_teacher: true)
       link = insert(:teacher_student_link, teacher: owner, active: true)
 
@@ -348,7 +346,9 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert [%{content: "V1"}] = OGrupoDeEstudos.Study.list_lessons_for_link(link.id)
     end
 
-    test "bolinha do nav aparece com lição não lida e some após abrir a página", %{conn: conn} do
+    test "nav dot appears with an unread lesson and disappears after opening the page", %{
+      conn: conn
+    } do
       teacher = insert(:user, is_teacher: true)
       student = insert(:user)
       link = insert(:teacher_student_link, teacher: teacher, student: student, active: true)
@@ -366,20 +366,22 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       refute has_element?(lv3, ~s([data-badge="study-pending"]))
     end
 
-    test "professor que também é aluno vê a bolinha de lição", %{conn: conn} do
-      prof_aluno = insert(:user, is_teacher: true)
+    test "teacher who is also a student sees the lesson dot", %{conn: conn} do
+      teacher_student = insert(:user, is_teacher: true)
       mestre = insert(:user, is_teacher: true)
-      link = insert(:teacher_student_link, teacher: mestre, student: prof_aluno, active: true)
+
+      link =
+        insert(:teacher_student_link, teacher: mestre, student: teacher_student, active: true)
 
       {:ok, _, 1} =
         OGrupoDeEstudos.Study.broadcast_lesson(mestre, %{title: "A", content: "x"}, [link.id])
 
-      {:ok, lv, _} = live(log_in_user(conn, prof_aluno), ~p"/study")
+      {:ok, lv, _} = live(log_in_user(conn, teacher_student), ~p"/study")
       assert has_element?(lv, ~s([data-badge="study-pending"]), "1")
     end
   end
 
-  describe "composer de lição" do
+  describe "lesson composer" do
     setup %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       link_a = insert(:teacher_student_link, teacher: teacher, active: true)
@@ -393,7 +395,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
     defp composer_form(lv), do: element(lv, "#lesson-composer-form")
 
-    test "trocar a seleção de alunos não apaga o texto já escrito", %{
+    test "changing the student selection does not erase the typed text", %{
       lv: lv,
       link_a: link_a,
       link_b: link_b
@@ -407,7 +409,6 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
         "lesson" => Map.put(escrito, "student_ids", [link_a.id, link_b.id])
       })
 
-      # Desmarcar um aluno é uma mudança do form: o texto vai junto e sobrevive.
       html =
         render_change(composer_form(lv), %{
           "lesson" => Map.put(escrito, "student_ids", [link_a.id])
@@ -418,7 +419,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert html =~ "Enviar para 1 aluno"
     end
 
-    test "envia só para quem ficou marcado", %{
+    test "sends only to the students left checked", %{
       lv: lv,
       teacher: teacher,
       link_a: link_a,
@@ -439,7 +440,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert [%{delivered_count: 1}] = OGrupoDeEstudos.Study.list_lessons_for_teacher(teacher.id)
     end
 
-    test "sem nenhum aluno marcado mostra erro e não envia", %{lv: lv, teacher: teacher} do
+    test "shows an error and sends nothing with no student checked", %{lv: lv, teacher: teacher} do
       params = %{"title" => "Aula", "content" => "Texto", "student_ids" => []}
 
       render_change(composer_form(lv), %{"lesson" => params})
@@ -449,7 +450,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert OGrupoDeEstudos.Study.list_lessons_for_teacher(teacher.id) == []
     end
 
-    test "título vazio mostra erro e preserva o conteúdo digitado", %{lv: lv, link_a: link_a} do
+    test "empty title shows an error and preserves the typed content", %{lv: lv, link_a: link_a} do
       params = %{
         "title" => "",
         "content" => "Conteúdo que não pode sumir",
@@ -464,8 +465,8 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
     end
   end
 
-  describe "edição e exclusão de lição (feedback)" do
-    test "editar carrega a lição e salvar confirma para todos", %{conn: conn} do
+  describe "editing and deleting a lesson" do
+    test "editing loads the lesson and saving confirms it for everyone", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       link = insert(:teacher_student_link, teacher: teacher, active: true)
 
@@ -486,7 +487,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert [%{content: "V2"}] = OGrupoDeEstudos.Study.list_lessons_for_link(link.id)
     end
 
-    test "excluir confirma e some da lista", %{conn: conn} do
+    test "deleting confirms and removes it from the list", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       link = insert(:teacher_student_link, teacher: teacher, active: true)
 
@@ -504,7 +505,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
   end
 
   describe "feedback visual (flash)" do
-    test "cutucada devolve flash de confirmação no HTML", %{conn: conn} do
+    test "nudge returns a confirmation flash in the HTML", %{conn: conn} do
       teacher = insert(:user, is_teacher: true)
       link = insert(:teacher_student_link, teacher: teacher, active: true)
 

@@ -59,7 +59,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.SeederTest do
       assert step.image_path == "images/HF-CAI.jpg"
     end
 
-    test "idempotent — second call does not duplicate data" do
+    test "is idempotent: a second call does not duplicate data" do
       Seeder.seed!()
       count_before = Repo.aggregate(Step, :count)
       assert Seeder.seed!() == :already_seeded

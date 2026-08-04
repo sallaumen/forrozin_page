@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicyTest do
   end
 
   describe "call/2" do
-    test "libera os embeds (YouTube + Instagram) via frame-src (senao o navegador bloqueia o iframe)" do
+    test "allows YouTube and Instagram embeds through frame-src" do
       header = conn(:get, "/") |> ContentSecurityPolicy.call([]) |> csp()
 
       assert header =~ "frame-src"
@@ -19,10 +19,7 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicyTest do
       assert header =~ "https://www.instagram.com"
     end
 
-    test "libera video e imagem de storage externo (R2 assinado), sem abrir script" do
-      # A galeria serve video por redirect para URL assinada do R2, que e
-      # outra origem. Sem media-src o navegador cai no default-src 'self' e
-      # bloqueia o player.
+    test "allows video and image from external storage without opening script" do
       header = conn(:get, "/") |> ContentSecurityPolicy.call([]) |> csp()
 
       assert header =~ "media-src 'self' https:"
@@ -34,12 +31,11 @@ defmodule OGrupoDeEstudosWeb.Plugs.ContentSecurityPolicyTest do
 
       assert header =~ "default-src 'self'"
       assert header =~ "object-src 'none'"
-      # frame-ancestors 'none' protege contra clickjacking; nao confundir com frame-src.
       assert header =~ "frame-ancestors 'none'"
       refute header =~ "script-src 'self' 'unsafe-inline'"
     end
 
-    test "expoe o nonce para o snippet inline permitido" do
+    test "exposes the nonce for the allowed inline snippet" do
       conn = conn(:get, "/") |> ContentSecurityPolicy.call([])
 
       assert is_binary(conn.assigns.csp_nonce)

@@ -114,7 +114,6 @@ defmodule OGrupoDeEstudosWeb.SettingsLiveTest do
         })
         |> render_change()
 
-      # Not saved yet
       refute html =~ "Perfil atualizado com sucesso."
     end
 

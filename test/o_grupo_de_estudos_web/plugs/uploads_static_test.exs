@@ -1,5 +1,5 @@
 defmodule OGrupoDeEstudosWeb.Plugs.UploadsStaticTest do
-  # async: false — o teste troca :uploads_path no app env global.
+  # async: false because the test swaps :uploads_path in the global app env.
   use OGrupoDeEstudosWeb.ConnCase, async: false
 
   setup do
@@ -33,7 +33,7 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStaticTest do
     assert response(conn, 200) == "png-fake"
   end
 
-  test "flyer e publico: material de divulgacao existe para circular", %{conn: conn} do
+  test "flyer is public: promotional material exists to circulate", %{conn: conn} do
     dir = Application.get_env(:o_grupo_de_estudos, :uploads_path)
     File.mkdir_p!(Path.join(dir, "flyers"))
     File.write!(Path.join(dir, "flyers/cartaz.png"), "png-fake")
@@ -43,15 +43,13 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStaticTest do
     assert response(conn, 200) == "png-fake"
   end
 
-  test "pasta nova no volume NAO vira publica sozinha", %{conn: conn} do
+  test "a new folder in the volume does not become public on its own", %{conn: conn} do
     dir = Application.get_env(:o_grupo_de_estudos, :uploads_path)
     File.mkdir_p!(Path.join(dir, "workshops"))
     File.write!(Path.join(dir, "workshops/aula-paga.mp4"), "conteudo pago")
 
     conn = get(conn, "/uploads/workshops/aula-paga.mp4")
 
-    # Sem allowlist, qualquer diretorio novo no volume ficaria aberto na
-    # internet no instante em que o primeiro arquivo fosse gravado.
     assert conn.status == 404
   end
 

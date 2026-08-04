@@ -3,10 +3,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
 
   alias OGrupoDeEstudos.Encyclopedia.StepQuery
 
-  # ---------------------------------------------------------------------------
-  # get_by/1
-  # ---------------------------------------------------------------------------
-
   describe "get_by/1 with :code" do
     test "returns the step with the given code" do
       insert(:step, code: "BF", name: "Base frontal")
@@ -49,10 +45,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
       assert result.category.id == cat.id
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # list_by/1
-  # ---------------------------------------------------------------------------
 
   describe "list_by/1 defaults" do
     test "returns steps ordered by name by default" do
@@ -162,9 +154,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
     test "treats LIKE wildcards in the term as literal characters" do
       insert(:step, code: "BF", name: "Base frontal")
 
-      # "b%" must not expand to match every name containing "b"; only a literal "b%".
       assert StepQuery.list_by(search: "b%") == []
-      # sanity: a real prefix still matches
       assert [%{code: "BF"}] = StepQuery.list_by(search: "base")
     end
   end
@@ -232,10 +222,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.StepQueryTest do
       assert result.category.id == cat.id
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # count_by/1
-  # ---------------------------------------------------------------------------
 
   describe "count_by/1" do
     test "counts at least the steps we just inserted" do

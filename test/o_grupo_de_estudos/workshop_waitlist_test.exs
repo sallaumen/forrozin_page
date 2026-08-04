@@ -1,11 +1,8 @@
 defmodule OGrupoDeEstudos.WorkshopWaitlistTest do
   @moduledoc """
-  Turma cheia deixa de ser beco sem saída.
-
-  A regra tem um eixo só: **onde a inscrição é automática, o limite vale e
-  forma fila; onde tem gente decidindo cada entrada, dá para passar do
-  limite**. Turma cheia sem fila perdia de vista quem tinha interesse, que é
-  justamente o sinal de que cabe abrir outra turma.
+  Where enrollment is automatic the capacity holds and forms a waitlist; where
+  a human approves each entry, capacity can be exceeded. A full class with no
+  waitlist would hide the demand that justifies opening another class.
   """
 
   use OGrupoDeEstudos.DataCase, async: true
@@ -21,166 +18,161 @@ defmodule OGrupoDeEstudos.WorkshopWaitlistTest do
   end
 
   setup do
-    dono = insert(:user)
+    owner = insert(:user)
 
     %{
-      dono: dono,
-      # Uma vaga só: fica cheio com uma inscrição.
-      gratis: insert(:workshop, organizer: dono, capacity: 1, price_cents: 0),
-      pago: insert(:workshop, organizer: dono, capacity: 1, price_cents: 18_000),
-      privado: insert(:workshop, organizer: dono, capacity: 1, visibility: :private),
-      aluna: insert(:user)
+      owner: owner,
+      free_class: insert(:workshop, organizer: owner, capacity: 1, price_cents: 0),
+      paid_class: insert(:workshop, organizer: owner, capacity: 1, price_cents: 18_000),
+      private_workshop: insert(:workshop, organizer: owner, capacity: 1, visibility: :private),
+      student: insert(:user)
     }
   end
 
-  describe "turma automática: o limite vale" do
-    test "grátis lotada não aceita inscrição direta", ctx do
-      lotar(ctx.gratis)
+  describe "class without approval: the capacity holds" do
+    test "full free class does not accept direct enrollment", ctx do
+      lotar(ctx.free_class)
 
-      assert {:error, :full} = Workshops.enroll(ctx.gratis, ctx.aluna)
+      assert {:error, :full} = Workshops.enroll(ctx.free_class, ctx.student)
     end
 
-    test "paga lotada também não: ninguém paga por vaga que não existe", ctx do
-      lotar(ctx.pago)
+    test "full paid class does not either: nobody pays for a seat that does not exist", ctx do
+      lotar(ctx.paid_class)
 
-      assert {:error, :full} = Workshops.enroll(ctx.pago, ctx.aluna)
+      assert {:error, :full} = Workshops.enroll(ctx.paid_class, ctx.student)
     end
 
-    test "sem limite definido, entra todo mundo", ctx do
-      sem_limite = insert(:workshop, organizer: ctx.dono, capacity: nil)
+    test "without a capacity, everyone gets in", ctx do
+      sem_limite = insert(:workshop, organizer: ctx.owner, capacity: nil)
       lotar(sem_limite, 5)
 
-      assert {:ok, _} = Workshops.enroll(sem_limite, ctx.aluna)
+      assert {:ok, _} = Workshops.enroll(sem_limite, ctx.student)
     end
   end
 
-  describe "turma com aceite do professor: pode passar do limite" do
-    test "aprovar passa do limite em vez de recusar", ctx do
-      # Overbooking é decisão de quem dá a aula: ela sabe se cabe mais um na
-      # sala. O que o sistema não pode é decidir isso sozinho.
-      lotar(ctx.privado)
-      {:ok, _} = Workshops.request_join(ctx.privado, ctx.aluna)
-      [pedido] = Workshops.list_pending_requests(ctx.privado)
+  describe "class with teacher approval: capacity can be exceeded" do
+    test "approving exceeds the capacity instead of rejecting", ctx do
+      lotar(ctx.private_workshop)
+      {:ok, _} = Workshops.request_join(ctx.private_workshop, ctx.student)
+      [request] = Workshops.list_pending_requests(ctx.private_workshop)
 
-      assert {:ok, _} = Workshops.approve_join(ctx.privado, ctx.dono, pedido.id)
-      assert Workshops.count_enrollments(ctx.privado.id) == 2
+      assert {:ok, _} = Workshops.approve_join(ctx.private_workshop, ctx.owner, request.id)
+      assert Workshops.count_enrollments(ctx.private_workshop.id) == 2
     end
 
-    test "a página avisa quem organiza que vai passar do limite", ctx do
-      lotar(ctx.privado)
+    test "warns the organizer that approving exceeds the capacity", ctx do
+      lotar(ctx.private_workshop)
 
-      assert Workshops.passaria_do_limite?(ctx.privado)
+      assert Workshops.passaria_do_limite?(ctx.private_workshop)
     end
 
-    test "com vaga sobrando, não avisa nada", ctx do
-      refute Workshops.passaria_do_limite?(ctx.privado)
+    test "no warning while seats are left", ctx do
+      refute Workshops.passaria_do_limite?(ctx.private_workshop)
     end
   end
 
-  describe "entrar na fila" do
-    test "quem chega depois do limite entra na lista de espera", ctx do
-      lotar(ctx.gratis)
+  describe "joining the waitlist" do
+    test "whoever arrives past the capacity joins the waitlist", ctx do
+      lotar(ctx.free_class)
 
-      assert {:ok, _} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
-      assert Workshops.waitlist_position(ctx.gratis, ctx.aluna) == 1
-      assert Workshops.waitlist_count(ctx.gratis.id) == 1
+      assert {:ok, _} = Workshops.join_waitlist(ctx.free_class, ctx.student)
+      assert Workshops.waitlist_position(ctx.free_class, ctx.student) == 1
+      assert Workshops.waitlist_count(ctx.free_class.id) == 1
     end
 
-    test "a fila respeita a ordem de chegada", ctx do
-      lotar(ctx.gratis)
-      primeira = insert(:user)
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, primeira)
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
+    test "waitlist keeps arrival order", ctx do
+      lotar(ctx.free_class)
+      first = insert(:user)
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, first)
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, ctx.student)
 
-      assert Workshops.waitlist_position(ctx.gratis, primeira) == 1
-      assert Workshops.waitlist_position(ctx.gratis, ctx.aluna) == 2
+      assert Workshops.waitlist_position(ctx.free_class, first) == 1
+      assert Workshops.waitlist_position(ctx.free_class, ctx.student) == 2
     end
 
-    test "com vaga sobrando não faz sentido esperar: inscreve", ctx do
-      assert {:error, :has_room} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
+    test "enrolls instead of waiting while seats are left", ctx do
+      assert {:error, :has_room} = Workshops.join_waitlist(ctx.free_class, ctx.student)
     end
 
-    test "quem já está inscrito não entra na própria fila", ctx do
-      # A turma está cheia porque foi ela quem ocupou a última vaga: esperar
-      # por um lugar que já é seu não faz sentido nenhum.
-      {:ok, _} = Workshops.enroll(ctx.gratis, ctx.aluna)
+    test "already enrolled user does not join the waitlist", ctx do
+      {:ok, _} = Workshops.enroll(ctx.free_class, ctx.student)
 
-      assert {:error, :already_enrolled} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
+      assert {:error, :already_enrolled} = Workshops.join_waitlist(ctx.free_class, ctx.student)
     end
 
-    test "entrar duas vezes não duplica o lugar", ctx do
-      lotar(ctx.gratis)
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
+    test "joining twice does not duplicate the position", ctx do
+      lotar(ctx.free_class)
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, ctx.student)
 
-      assert {:error, :already_waiting} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
-      assert Workshops.waitlist_count(ctx.gratis.id) == 1
+      assert {:error, :already_waiting} = Workshops.join_waitlist(ctx.free_class, ctx.student)
+      assert Workshops.waitlist_count(ctx.free_class.id) == 1
     end
 
-    test "dá para desistir da fila", ctx do
-      lotar(ctx.gratis)
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
+    test "user leaves the waitlist", ctx do
+      lotar(ctx.free_class)
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, ctx.student)
 
-      assert {:ok, _} = Workshops.leave_waitlist(ctx.gratis, ctx.aluna)
-      assert is_nil(Workshops.waitlist_position(ctx.gratis, ctx.aluna))
+      assert {:ok, _} = Workshops.leave_waitlist(ctx.free_class, ctx.student)
+      assert is_nil(Workshops.waitlist_position(ctx.free_class, ctx.student))
     end
 
-    test "visitante sem conta não entra na fila", ctx do
-      lotar(ctx.gratis)
+    test "anonymous visitor does not join the waitlist", ctx do
+      lotar(ctx.free_class)
 
-      assert {:error, :unauthorized} = Workshops.join_waitlist(ctx.gratis, nil)
+      assert {:error, :unauthorized} = Workshops.join_waitlist(ctx.free_class, nil)
     end
   end
 
-  describe "a fila anda quando abre vaga" do
+  describe "the waitlist moves when a seat opens" do
     setup ctx do
       inscrita = insert(:user)
-      {:ok, _} = Workshops.enroll(ctx.gratis, inscrita)
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, ctx.aluna)
+      {:ok, _} = Workshops.enroll(ctx.free_class, inscrita)
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, ctx.student)
       Map.put(ctx, :inscrita, inscrita)
     end
 
-    test "cancelar promove quem está esperando há mais tempo", ctx do
-      {:ok, _} = Workshops.cancel_enrollment(ctx.gratis, ctx.inscrita)
+    test "cancelling promotes whoever waited longest", ctx do
+      {:ok, _} = Workshops.cancel_enrollment(ctx.free_class, ctx.inscrita)
 
-      assert MapSet.member?(Workshops.enrolled_workshop_ids(ctx.aluna.id), ctx.gratis.id)
-      assert is_nil(Workshops.waitlist_position(ctx.gratis, ctx.aluna))
+      assert MapSet.member?(Workshops.enrolled_workshop_ids(ctx.student.id), ctx.free_class.id)
+      assert is_nil(Workshops.waitlist_position(ctx.free_class, ctx.student))
     end
 
-    test "quem foi promovido é avisado: ninguém fica sabendo por acaso", ctx do
+    test "promoted user is notified instead of finding out by chance", ctx do
       Repo.delete_all(Notification)
-      {:ok, _} = Workshops.cancel_enrollment(ctx.gratis, ctx.inscrita)
+      {:ok, _} = Workshops.cancel_enrollment(ctx.free_class, ctx.inscrita)
 
-      assert [aviso] = Repo.all(from n in Notification, where: n.user_id == ^ctx.aluna.id)
+      assert [aviso] = Repo.all(from n in Notification, where: n.user_id == ^ctx.student.id)
       assert aviso.action == :workshop_waitlist_promoted
     end
 
-    test "promove UMA pessoa por vaga, não a fila inteira", ctx do
-      segunda = insert(:user)
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, segunda)
+    test "promotes one person per seat, not the whole waitlist", ctx do
+      monday = insert(:user)
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, monday)
 
-      {:ok, _} = Workshops.cancel_enrollment(ctx.gratis, ctx.inscrita)
+      {:ok, _} = Workshops.cancel_enrollment(ctx.free_class, ctx.inscrita)
 
-      assert Workshops.count_enrollments(ctx.gratis.id) == 1
-      assert Workshops.waitlist_position(ctx.gratis, segunda) == 1
+      assert Workshops.count_enrollments(ctx.free_class.id) == 1
+      assert Workshops.waitlist_position(ctx.free_class, monday) == 1
     end
 
-    test "sem ninguém esperando, cancelar só libera a vaga", ctx do
-      {:ok, _} = Workshops.leave_waitlist(ctx.gratis, ctx.aluna)
+    test "with nobody waiting, cancelling only frees the seat", ctx do
+      {:ok, _} = Workshops.leave_waitlist(ctx.free_class, ctx.student)
 
-      assert {:ok, _} = Workshops.cancel_enrollment(ctx.gratis, ctx.inscrita)
-      assert Workshops.count_enrollments(ctx.gratis.id) == 0
+      assert {:ok, _} = Workshops.cancel_enrollment(ctx.free_class, ctx.inscrita)
+      assert Workshops.count_enrollments(ctx.free_class.id) == 0
     end
   end
 
-  describe "a demanda que quem organiza enxerga" do
-    test "lista quem está esperando, em ordem", ctx do
-      lotar(ctx.gratis)
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, insert(:user, name: "Primeira Fila"))
-      {:ok, _} = Workshops.join_waitlist(ctx.gratis, insert(:user, name: "Segunda Fila"))
+  describe "the demand the organizer sees" do
+    test "lists who is waiting, in order", ctx do
+      lotar(ctx.free_class)
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, insert(:user, name: "Primeira Fila"))
+      {:ok, _} = Workshops.join_waitlist(ctx.free_class, insert(:user, name: "Segunda Fila"))
 
-      assert [primeira, segunda] = Workshops.list_waitlist(ctx.gratis.id)
-      assert primeira.name == "Primeira Fila"
-      assert segunda.name == "Segunda Fila"
+      assert [first, monday] = Workshops.list_waitlist(ctx.free_class.id)
+      assert first.name == "Primeira Fila"
+      assert monday.name == "Segunda Fila"
     end
   end
 end

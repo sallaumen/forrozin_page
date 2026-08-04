@@ -16,10 +16,6 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
     %{dir: dir}
   end
 
-  # ---------------------------------------------------------------------------
-  # create_backup!/1
-  # ---------------------------------------------------------------------------
-
   describe "create_backup!/1" do
     test "creates JSON file in the specified directory", %{dir: dir} do
       path = Backup.create_backup!(dir)
@@ -65,7 +61,6 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
     end
 
     test "removes old files keeping only the last 10", %{dir: dir} do
-      # Creates 15 fake older backup files (more than @max_backups = 10)
       for i <- 1..15 do
         name = "backup_20260101_#{String.pad_leading(to_string(i), 6, "0")}.json"
         File.write!(Path.join(dir, name), "{}")
@@ -78,13 +73,8 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # restore_backup!/1
-  # ---------------------------------------------------------------------------
-
   describe "restore_backup!/1" do
     test "inserts data into an empty database", %{dir: dir} do
-      # Creates data, generates backup, then verifies restoring is idempotent
       cat = insert(:category, name: "bases")
       section = insert(:section, category: cat)
       step_a = insert(:step, code: "BF", section: section, category: cat)
@@ -93,16 +83,14 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
 
       path = Backup.create_backup!(dir)
 
-      # Restore with data already present (on_conflict: :nothing)
       assert :ok = Backup.restore_backup!(path)
 
-      # Data must still be there
       assert Repo.aggregate(OGrupoDeEstudos.Encyclopedia.Category, :count) >= 1
       assert Repo.aggregate(OGrupoDeEstudos.Encyclopedia.Step, :count) >= 2
       assert Repo.aggregate(OGrupoDeEstudos.Encyclopedia.Connection, :count) >= 1
     end
 
-    test "idempotent — second restore does not duplicate data", %{dir: dir} do
+    test "is idempotent: a second restore does not duplicate data", %{dir: dir} do
       cat = insert(:category, name: "sacadas")
       section = insert(:section, category: cat)
       insert(:step, code: "SC", section: section, category: cat)
@@ -116,10 +104,6 @@ defmodule OGrupoDeEstudos.Admin.BackupTest do
       assert count_before == count_after
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # list_backups/1
-  # ---------------------------------------------------------------------------
 
   describe "list_backups/1" do
     test "returns empty list when there are no backups", %{dir: dir} do

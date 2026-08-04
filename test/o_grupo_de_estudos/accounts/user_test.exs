@@ -128,7 +128,7 @@ defmodule OGrupoDeEstudos.Accounts.UserTest do
     end
   end
 
-  describe "profile_changeset/2 — dark_mode" do
+  describe "profile_changeset/2 dark_mode" do
     test "accepts dark_mode true" do
       user = %User{
         name: "Tatá Tavano",

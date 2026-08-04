@@ -11,7 +11,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
     {log_in_user(conn, user), user}
   end
 
-  # `insert_all` porque e assim que o Dispatcher grava: sem changeset.
   defp notificar(user, actor, group_key, minutos_atras) do
     at =
       NaiveDateTime.utc_now()
@@ -34,15 +33,12 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
     ])
   end
 
-  describe "paginação por assunto" do
-    test "botão continua aparecendo quando um assunto tem várias linhas", %{conn: conn} do
+  describe "pagination by subject" do
+    test "button stays visible when one subject has several rows", %{conn: conn} do
       user = insert(:user)
 
-      # 21 assuntos: mais que a primeira página, então tem página 2.
       for i <- 1..21, do: notificar(user, insert(:user), "follow:#{i}", i)
 
-      # Um deles com 4 linhas: antes, isso fazia a contagem de LINHAS passar
-      # de 20 e o botão sumir, escondendo o resto do histórico para sempre.
       for _ <- 1..3, do: notificar(user, insert(:user), "follow:1", 1)
 
       {:ok, _lv, html} = live(log_in_user(conn, user), ~p"/notifications")
@@ -50,7 +46,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
       assert html =~ "Carregar mais"
     end
 
-    test "botão some quando não há mais assunto nenhum", %{conn: conn} do
+    test "button disappears when no subject is left", %{conn: conn} do
       user = insert(:user)
       for i <- 1..3, do: notificar(user, insert(:user), "follow:#{i}", i)
 
@@ -59,7 +55,7 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
       refute html =~ "Carregar mais"
     end
 
-    test "carregar mais traz os assuntos restantes", %{conn: conn} do
+    test "loading more brings the remaining subjects", %{conn: conn} do
       user = insert(:user)
       for i <- 1..25, do: notificar(user, insert(:user), "follow:#{i}", i)
 
@@ -68,7 +64,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
 
       html = render_click(lv, "load_more", %{})
 
-      # 25 assuntos: a segunda página fecha a conta e o botão sai de cena.
       refute html =~ "Carregar mais"
     end
   end
@@ -135,7 +130,6 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/notifications")
 
-      # Most recent actor is primary, plus the others, with a plural verb
       assert html =~ "Joao Lima"
       assert html =~ "e mais 1"
       assert html =~ "curtiram"

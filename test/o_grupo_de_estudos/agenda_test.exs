@@ -5,48 +5,52 @@ defmodule OGrupoDeEstudos.AgendaTest do
 
   alias OGrupoDeEstudos.{Brazil, Workshops}
 
-  defp em(dias, hora) do
+  defp at_day(days, hour) do
     Brazil.today()
-    |> Date.add(dias)
-    |> DateTime.new!(Time.new!(hora, 0, 0), "Etc/UTC")
+    |> Date.add(days)
+    |> DateTime.new!(Time.new!(hour, 0, 0), "Etc/UTC")
     |> Brazil.to_utc()
     |> DateTime.truncate(:second)
   end
 
-  defp programacao(dono, titulo, workshops) do
-    {:ok, p} = Workshops.create_program(dono, %{title: titulo})
-    for w <- workshops, do: Workshops.attach_workshop(p, dono, w.id)
-    {:ok, p} = Workshops.publish_program(dono, p)
+  defp program(owner, title, workshops) do
+    {:ok, p} = Workshops.create_program(owner, %{title: title})
+    for w <- workshops, do: Workshops.attach_workshop(p, owner, w.id)
+    {:ok, p} = Workshops.publish_program(owner, p)
     p
   end
 
   defp tipos(itens), do: Enum.map(itens, & &1.kind)
 
   setup do
-    %{dono: insert(:user, name: "Tavano Silva")}
+    %{owner: insert(:user, name: "Tavano Silva")}
   end
 
-  describe "list_agenda/1 colapsando programação" do
-    test "quinze workshops de um festival viram uma linha só", %{dono: dono} do
+  describe "list_agenda/1 collapsing programs" do
+    test "collapses fifteen workshops of a festival into a single entry", %{owner: owner} do
       workshops =
         for i <- 1..15 do
-          insert(:workshop, organizer: dono, title: "Itaúnas #{i}", starts_at: em(20 + i, 14))
+          insert(:workshop,
+            organizer: owner,
+            title: "Itaúnas #{i}",
+            starts_at: at_day(20 + i, 14)
+          )
         end
 
-      programacao(dono, "Festival de Itaúnas", workshops)
+      program(owner, "Festival de Itaúnas", workshops)
 
       itens = Workshops.list_agenda(period: :upcoming)
 
       assert tipos(itens) == [:program]
-      assert [%{program: p, summary: resumo}] = itens
+      assert [%{program: p, summary: summary}] = itens
       assert p.title == "Festival de Itaúnas"
-      assert resumo.count == 15
+      assert summary.count == 15
     end
 
-    test "workshop solto continua aparecendo sozinho", %{dono: dono} do
-      solto = insert(:workshop, organizer: dono, title: "Aulão avulso", starts_at: em(5, 19))
-      agrupado = insert(:workshop, organizer: dono, starts_at: em(10, 19))
-      programacao(dono, "Fim de semana", [agrupado])
+    test "workshop solto continua aparecendo sozinho", %{owner: owner} do
+      solto = insert(:workshop, organizer: owner, title: "Aulão avulso", starts_at: at_day(5, 19))
+      grouped = insert(:workshop, organizer: owner, starts_at: at_day(10, 19))
+      program(owner, "Fim de semana", [grouped])
 
       itens = Workshops.list_agenda(period: :upcoming)
 
@@ -54,11 +58,11 @@ defmodule OGrupoDeEstudos.AgendaTest do
       assert hd(itens).workshop.id == solto.id
     end
 
-    test "a mistura sai em ordem de data", %{dono: dono} do
-      tarde = insert(:workshop, organizer: dono, title: "Depois", starts_at: em(30, 19))
-      cedo = insert(:workshop, organizer: dono, title: "Antes", starts_at: em(2, 19))
-      do_meio = insert(:workshop, organizer: dono, starts_at: em(15, 19))
-      programacao(dono, "No meio", [do_meio])
+    test "returns programs and loose workshops ordered by date", %{owner: owner} do
+      tarde = insert(:workshop, organizer: owner, title: "Depois", starts_at: at_day(30, 19))
+      cedo = insert(:workshop, organizer: owner, title: "Antes", starts_at: at_day(2, 19))
+      do_meio = insert(:workshop, organizer: owner, starts_at: at_day(15, 19))
+      program(owner, "No meio", [do_meio])
 
       titulos =
         [period: :upcoming]
@@ -72,40 +76,37 @@ defmodule OGrupoDeEstudos.AgendaTest do
       assert do_meio.id
     end
 
-    test "programação sem workshop publicado não polui a agenda", %{dono: dono} do
-      rascunho = insert(:workshop, organizer: dono, status: :draft, starts_at: em(10, 19))
-      programacao(dono, "Só rascunho", [rascunho])
+    test "omits program with no published workshop", %{owner: owner} do
+      draft = insert(:workshop, organizer: owner, status: :draft, starts_at: at_day(10, 19))
+      program(owner, "Só rascunho", [draft])
 
       assert Workshops.list_agenda(period: :upcoming) == []
     end
 
-    test "programação em rascunho não aparece, mas o workshop dela sim", %{dono: dono} do
-      w = insert(:workshop, organizer: dono, starts_at: em(10, 19))
-      {:ok, p} = Workshops.create_program(dono, %{title: "Ainda montando"})
-      {:ok, _} = Workshops.attach_workshop(p, dono, w.id)
+    test "omits draft program but keeps its published workshop", %{owner: owner} do
+      w = insert(:workshop, organizer: owner, starts_at: at_day(10, 19))
+      {:ok, p} = Workshops.create_program(owner, %{title: "Ainda montando"})
+      {:ok, _} = Workshops.attach_workshop(p, owner, w.id)
 
-      # A programacao ainda e privada, entao quem colapsaria nao existe.
       assert [%{kind: :workshop}] = Workshops.list_agenda(period: :upcoming)
     end
 
-    test "o resumo traz o intervalo de datas do festival", %{dono: dono} do
-      primeiro = insert(:workshop, organizer: dono, starts_at: em(20, 14))
-      ultimo = insert(:workshop, organizer: dono, starts_at: em(25, 22))
-      programacao(dono, "Festival", [primeiro, ultimo])
+    test "summary carries the date range of the whole festival", %{owner: owner} do
+      first = insert(:workshop, organizer: owner, starts_at: at_day(20, 14))
+      last = insert(:workshop, organizer: owner, starts_at: at_day(25, 22))
+      program(owner, "Festival", [first, last])
 
-      assert [%{summary: resumo}] = Workshops.list_agenda(period: :upcoming)
-      assert DateTime.compare(resumo.starts_at, primeiro.starts_at) == :eq
-      assert DateTime.compare(resumo.ends_at, ultimo.starts_at) == :eq
+      assert [%{summary: summary}] = Workshops.list_agenda(period: :upcoming)
+      assert DateTime.compare(summary.starts_at, first.starts_at) == :eq
+      assert DateTime.compare(summary.ends_at, last.starts_at) == :eq
     end
   end
 
-  describe "workshop preso a programação não publicada" do
-    test "programação em rascunho não engole o workshop já anunciado", %{dono: dono} do
-      # Cenario real: o workshop ja circulou no WhatsApp, e o organizador
-      # comeca a montar uma programacao. Ate publicar, nada pode sumir.
-      w = insert(:workshop, organizer: dono, title: "Já anunciado", starts_at: em(10, 19))
-      {:ok, p} = Workshops.create_program(dono, %{title: "Ainda montando"})
-      {:ok, _} = Workshops.attach_workshop(p, dono, w.id)
+  describe "workshop attached to an unpublished program" do
+    test "draft program does not swallow an already announced workshop", %{owner: owner} do
+      w = insert(:workshop, organizer: owner, title: "Já anunciado", starts_at: at_day(10, 19))
+      {:ok, p} = Workshops.create_program(owner, %{title: "Ainda montando"})
+      {:ok, _} = Workshops.attach_workshop(p, owner, w.id)
 
       itens = Workshops.list_agenda(period: :upcoming)
 
@@ -113,117 +114,124 @@ defmodule OGrupoDeEstudos.AgendaTest do
       assert hd(itens).workshop.id == w.id
     end
 
-    test "programação cancelada devolve os workshops para a agenda", %{dono: dono} do
-      w = insert(:workshop, organizer: dono, title: "Continua de pé", starts_at: em(10, 19))
-      p = programacao(dono, "Cancelada depois", [w])
-      {:ok, _} = Workshops.cancel_program(dono, p)
+    test "cancelled program returns its workshops to the agenda", %{owner: owner} do
+      w = insert(:workshop, organizer: owner, title: "Continua de pé", starts_at: at_day(10, 19))
+      p = program(owner, "Cancelada depois", [w])
+      {:ok, _} = Workshops.cancel_program(owner, p)
 
       itens = Workshops.list_agenda(period: :upcoming)
 
-      # O workshop nao foi cancelado: so a programacao foi.
       assert tipos(itens) == [:workshop]
       assert hd(itens).workshop.id == w.id
     end
 
-    test "voltar a programação para rascunho também devolve", %{dono: dono} do
-      w = insert(:workshop, organizer: dono, starts_at: em(10, 19))
-      p = programacao(dono, "Publicada e despublicada", [w])
-      {:ok, _} = Workshops.update_program(dono, p, %{title: "Mesma"})
+    test "moving a program back to draft also returns its workshops", %{owner: owner} do
+      w = insert(:workshop, organizer: owner, starts_at: at_day(10, 19))
+      p = program(owner, "Publicada e despublicada", [w])
+      {:ok, _} = Workshops.update_program(owner, p, %{title: "Mesma"})
 
       assert [%{kind: :program}] = Workshops.list_agenda(period: :upcoming)
     end
   end
 
-  describe "list_agenda/1 com período" do
-    test "a programação entra pelo período dos workshops dela", %{dono: dono} do
-      do_ano = insert(:workshop, organizer: dono, starts_at: em(200, 19))
-      programacao(dono, "Lá longe", [do_ano])
+  describe "list_agenda/1 with period filter" do
+    test "program enters the period through the dates of its workshops", %{owner: owner} do
+      this_year = insert(:workshop, organizer: owner, starts_at: at_day(200, 19))
+      program(owner, "Lá longe", [this_year])
 
       assert Workshops.list_agenda(period: :week) == []
       assert [%{kind: :program}] = Workshops.list_agenda(period: :upcoming)
     end
 
-    test "já aconteceram traz programação passada", %{dono: dono} do
-      passado = insert(:workshop, organizer: dono, starts_at: em(-10, 19))
-      programacao(dono, "Já foi", [passado])
+    test "past filter returns programs that already happened", %{owner: owner} do
+      past_workshop = insert(:workshop, organizer: owner, starts_at: at_day(-10, 19))
+      program(owner, "Já foi", [past_workshop])
 
       assert [%{kind: :program, program: p}] = Workshops.list_agenda(period: :past)
       assert p.title == "Já foi"
     end
   end
 
-  describe "resumo da programação" do
-    test "a contagem é do festival inteiro, não só do período filtrado", %{dono: dono} do
-      desta_semana = insert(:workshop, organizer: dono, starts_at: em(2, 19))
-      de_depois = for i <- 1..4, do: insert(:workshop, organizer: dono, starts_at: em(30 + i, 19))
-      programacao(dono, "Festival longo", [desta_semana | de_depois])
+  describe "program summary" do
+    test "counts the whole festival, not only the filtered period", %{owner: owner} do
+      this_week = insert(:workshop, organizer: owner, starts_at: at_day(2, 19))
 
-      assert [%{summary: resumo}] = Workshops.list_agenda(period: :week)
+      later_one =
+        for i <- 1..4, do: insert(:workshop, organizer: owner, starts_at: at_day(30 + i, 19))
 
-      # O card diz "5 workshops" mesmo filtrando a semana: o numero e do
-      # festival, senao ele briga com o que a pagina da programacao mostra.
-      assert resumo.count == 5
+      program(owner, "Festival longo", [this_week | later_one])
+
+      assert [%{summary: summary}] = Workshops.list_agenda(period: :week)
+
+      assert summary.count == 5
     end
   end
 
   describe "list_agenda/1 com busca" do
-    test "buscar abre a programação: acha o workshop lá dentro", %{dono: dono} do
+    test "search opens the program and finds the workshop inside it", %{owner: owner} do
       dentro =
-        insert(:workshop, organizer: dono, title: "Pisada nordestina", starts_at: em(10, 19))
+        insert(:workshop, organizer: owner, title: "Pisada nordestina", starts_at: at_day(10, 19))
 
-      programacao(dono, "Festival de Itaúnas", [dentro])
+      program(owner, "Festival de Itaúnas", [dentro])
 
       itens = Workshops.list_agenda(period: :upcoming, search: "pisada")
 
-      # Sem isso, um workshop dentro de programacao ficaria impossivel de achar.
       assert tipos(itens) == [:workshop]
       assert hd(itens).workshop.id == dentro.id
     end
 
-    test "busca acha a programação pelo nome dela", %{dono: dono} do
-      dentro = insert(:workshop, organizer: dono, title: "Qualquer coisa", starts_at: em(10, 19))
-      programacao(dono, "Festival de Itaúnas", [dentro])
+    test "search finds the program by its own title", %{owner: owner} do
+      dentro =
+        insert(:workshop, organizer: owner, title: "Qualquer coisa", starts_at: at_day(10, 19))
+
+      program(owner, "Festival de Itaúnas", [dentro])
 
       itens = Workshops.list_agenda(period: :upcoming, search: "itaúnas")
 
       assert Enum.any?(itens, &(&1.kind == :program))
     end
 
-    test "busca acha a programação pelo nome de quem organiza", %{dono: dono} do
-      dentro = insert(:workshop, organizer: dono, starts_at: em(10, 19))
-      programacao(dono, "Festival", [dentro])
+    test "search finds the program by the organizer name", %{owner: owner} do
+      dentro = insert(:workshop, organizer: owner, starts_at: at_day(10, 19))
+      program(owner, "Festival", [dentro])
 
       itens = Workshops.list_agenda(period: :upcoming, search: "tavano")
 
       assert Enum.any?(itens, &(&1.kind == :program))
     end
 
-    test "busca não repete: se a programação casa, os workshops dela não vêm soltos", %{
-      dono: dono
+    test "search does not repeat: workshops of a matched program stay inside it", %{
+      owner: owner
     } do
-      manha = insert(:workshop, organizer: dono, title: "Itaúnas manhã", starts_at: em(10, 10))
-      tarde = insert(:workshop, organizer: dono, title: "Itaúnas tarde", starts_at: em(10, 15))
-      programacao(dono, "Festival de Itaúnas", [manha, tarde])
+      manha =
+        insert(:workshop, organizer: owner, title: "Itaúnas manhã", starts_at: at_day(10, 10))
+
+      tarde =
+        insert(:workshop, organizer: owner, title: "Itaúnas tarde", starts_at: at_day(10, 15))
+
+      program(owner, "Festival de Itaúnas", [manha, tarde])
 
       itens = Workshops.list_agenda(period: :upcoming, search: "itaúnas")
 
-      # Antes saia [workshop, program, workshop]: o pai ensanduichado entre os
-      # proprios filhos, e o contador anunciando tres eventos onde ha um.
       assert tipos(itens) == [:program]
     end
 
-    test "workshop cuja programação não casa vem solto, e diz de onde é", %{dono: dono} do
-      dentro = insert(:workshop, organizer: dono, title: "Xote nordestino", starts_at: em(10, 19))
-      programacao(dono, "Festival de Itaúnas", [dentro])
+    test "workshop whose program does not match comes loose and names its program", %{
+      owner: owner
+    } do
+      dentro =
+        insert(:workshop, organizer: owner, title: "Xote nordestino", starts_at: at_day(10, 19))
+
+      program(owner, "Festival de Itaúnas", [dentro])
 
       assert [item] = Workshops.list_agenda(period: :upcoming, search: "xote")
       assert item.kind == :workshop
       assert item.workshop.program.title == "Festival de Itaúnas"
     end
 
-    test "busca sem resultado devolve lista vazia", %{dono: dono} do
-      w = insert(:workshop, organizer: dono, starts_at: em(10, 19))
-      programacao(dono, "Festival", [w])
+    test "search with no match returns an empty list", %{owner: owner} do
+      w = insert(:workshop, organizer: owner, starts_at: at_day(10, 19))
+      program(owner, "Festival", [w])
 
       assert Workshops.list_agenda(period: :upcoming, search: "xilofone") == []
     end

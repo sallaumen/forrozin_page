@@ -267,7 +267,7 @@ defmodule OGrupoDeEstudos.Factory do
     }
   end
 
-  defp dias_a_frente(dias) do
-    DateTime.utc_now() |> DateTime.add(dias * 86_400, :second) |> DateTime.truncate(:second)
+  defp dias_a_frente(days) do
+    DateTime.utc_now() |> DateTime.add(days * 86_400, :second) |> DateTime.truncate(:second)
   end
 end

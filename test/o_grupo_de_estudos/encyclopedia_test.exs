@@ -3,10 +3,6 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
 
   alias OGrupoDeEstudos.Encyclopedia
 
-  # ---------------------------------------------------------------------------
-  # Categories
-  # ---------------------------------------------------------------------------
-
   describe "list_categories/0" do
     test "returns empty list when there are no categories" do
       assert Encyclopedia.list_categories() == []
@@ -32,10 +28,6 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       assert {:error, :not_found} = Encyclopedia.fetch_category_by_name("inexistente")
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Sections
-  # ---------------------------------------------------------------------------
 
   describe "list_sections/0" do
     test "returns empty list when there are no sections" do
@@ -88,10 +80,6 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       refute "BQ" in codes
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Steps
-  # ---------------------------------------------------------------------------
 
   describe "fetch_step_by_code/1" do
     test "returns the step when it exists and is public" do
@@ -150,10 +138,6 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       assert Encyclopedia.search_steps("xyzzyqwerty_inexistente") == []
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Graph
-  # ---------------------------------------------------------------------------
 
   describe "build_graph/1" do
     test "returns map with :nodes and :edges keys" do
@@ -226,10 +210,6 @@ defmodule OGrupoDeEstudos.EncyclopediaTest do
       assert "HF-SRS" in codes
     end
   end
-
-  # ---------------------------------------------------------------------------
-  # Technical Concepts
-  # ---------------------------------------------------------------------------
 
   describe "list_technical_concepts/0" do
     test "returns empty list when there are no concepts" do
