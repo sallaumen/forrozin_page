@@ -87,7 +87,7 @@
               <div class="flex flex-wrap items-center gap-1.5">
                 <span
                   :for={cited <- @personal_note_sequences}
-                  class="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-gold-500/45 bg-gold-500/[0.12] px-3 text-[11.5px] font-semibold text-ink-800"
+                  class="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-gold-500/45 bg-gold-500/[0.12] py-0.5 pl-3 pr-0.5 text-[11.5px] font-semibold text-ink-800"
                 >
                   <span class="text-[11px] font-bold text-gold-600">→</span>
                   {cited.name}
@@ -99,7 +99,7 @@
                     phx-click="uncite_sequence"
                     phx-value-id={cited.sequence_id}
                     aria-label={"Tirar #{cited.name} da anotação"}
-                    class="grid size-4 place-items-center rounded-full text-[13px] leading-none text-ink-400 hover:bg-ink-200 hover:text-ink-700"
+                    class="grid size-8 place-items-center rounded-full text-[13px] leading-none text-ink-400 hover:bg-ink-200 hover:text-ink-700"
                   >
                     ×
                   </button>
@@ -654,6 +654,7 @@
   tab={@sequence_sheet}
   draft_steps={@sequence_draft_steps}
   draft_name={@sequence_draft_name}
+  search_term={@sequence_search_term}
   step_matches={@sequence_step_matches}
   mine={@sequence_mine}
   cited_ids={MapSet.new(@personal_note_sequences, & &1.sequence_id)}

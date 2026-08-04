@@ -373,6 +373,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :tab, :string, default: nil
   attr :draft_steps, :list, default: []
   attr :draft_name, :string, default: ""
+  attr :search_term, :string, default: ""
   attr :step_matches, :list, default: []
   attr :mine, :list, default: []
   attr :cited_ids, :any, default: nil
@@ -397,8 +398,11 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       backdrop: a click inside bubbles up to the backdrop, so the save button was
       closing the sheet and dropping the draft before the event reached the
       server. --%>
+      <%!-- The panel scrolls, the page does not: on a short phone a mid-size
+      draft plus open matches is taller than the screen, and without this the
+      tabs slide up out of reach. The bottom padding clears the home bar. --%>
       <div
-        class="w-full rounded-t-2xl border border-ink-200 bg-ink-50 p-4 shadow-lg sm:max-w-[24rem] sm:rounded-2xl"
+        class="max-h-[calc(100dvh-0.75rem)] w-full overflow-y-auto overscroll-contain rounded-t-2xl border border-ink-200 bg-ink-50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg sm:max-h-[85vh] sm:max-w-[24rem] sm:rounded-2xl"
         phx-click-away="close_sequence_sheet"
       >
         <div class="mx-auto mb-3 h-1 w-9 rounded-full bg-ink-200 sm:hidden"></div>
@@ -450,6 +454,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           <input
             type="text"
             name="step_search"
+            value={@search_term}
             autocomplete="off"
             placeholder="Adicionar passo…"
             phx-keyup="sequence_search_step"
@@ -545,18 +550,20 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       tabindex="0"
       role="button"
       aria-label={"#{@step.name}, posição #{@index + 1}. Setas movem de posição."}
-      class="inline-flex min-h-[34px] cursor-grab touch-none select-none items-center gap-1.5 rounded-full border border-gold-500/45 bg-gold-500/[0.12] px-3 text-[11.5px] font-semibold text-ink-800"
+      class="inline-flex min-h-[34px] cursor-grab select-none items-center gap-1.5 rounded-full border border-gold-500/45 bg-gold-500/[0.12] py-0.5 pl-3 pr-1 text-[11.5px] font-semibold text-ink-800"
     >
       <span class="min-w-2 text-center text-[9px] font-bold tabular-nums text-gold-600">
         {@index + 1}
       </span>
       <code class="font-bold">{@step.code}</code>
       <span class="font-medium text-ink-600">{@step.name}</span>
+      <%!-- The glyph stays small; the hit area is the finger-sized box around
+      it, or removing on a phone takes three tries. --%>
       <span
         data-reorder-ignore
         phx-click="sequence_draft_remove"
         phx-value-index={@index}
-        class="grid size-4 cursor-pointer place-items-center rounded-full text-[13px] leading-none text-ink-400 hover:bg-ink-200 hover:text-ink-700"
+        class="grid size-8 cursor-pointer place-items-center rounded-full text-[13px] leading-none text-ink-400 hover:bg-ink-200 hover:text-ink-700"
       >
         ×
       </span>

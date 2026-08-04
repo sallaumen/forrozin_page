@@ -51,6 +51,40 @@ defmodule OGrupoDeEstudosWeb.SequenceSheetTest do
     end
   end
 
+  describe "the draft survives the sheet" do
+    test "switching tabs keeps the steps already picked", ctx do
+      {:ok, lv, _} = open_study(ctx)
+      render_click(lv, "open_sequence_sheet", %{"tab" => "new"})
+      render_click(lv, "sequence_draft_add", %{"code" => "BF"})
+
+      render_click(lv, "sequence_sheet_tab", %{"tab" => "mine"})
+      html = render_click(lv, "sequence_sheet_tab", %{"tab" => "new"})
+
+      assert html =~ "Base frontal"
+    end
+
+    test "reopening after closing starts clean", ctx do
+      {:ok, lv, _} = open_study(ctx)
+      render_click(lv, "open_sequence_sheet", %{"tab" => "new"})
+      render_click(lv, "sequence_draft_add", %{"code" => "BF"})
+      render_click(lv, "close_sequence_sheet", %{})
+
+      html = render_click(lv, "open_sequence_sheet", %{"tab" => "new"})
+
+      assert html =~ "Nenhum passo ainda"
+    end
+
+    test "picking a step clears the search box for the next one", ctx do
+      {:ok, lv, _} = open_study(ctx)
+      render_click(lv, "open_sequence_sheet", %{"tab" => "new"})
+      render_keyup(lv, "sequence_search_step", %{"value" => "Base"})
+
+      html = render_click(lv, "sequence_draft_add", %{"code" => "BF"})
+
+      assert html =~ ~s(name="step_search" value="")
+    end
+  end
+
   describe "building one" do
     test "searching offers steps, and picking puts them on the track", ctx do
       {:ok, lv, _} = open_study(ctx)

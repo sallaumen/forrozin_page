@@ -18,6 +18,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.SequenceSheet do
     sequence_sheet: nil,
     sequence_draft_steps: [],
     sequence_draft_name: "",
+    sequence_search_term: "",
     sequence_step_matches: [],
     sequence_mine: []
   }
@@ -35,7 +36,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.SequenceSheet do
       end
 
       def handle_event("sequence_sheet_tab", %{"tab" => tab}, socket) do
-        {:noreply, unquote(__MODULE__).open(socket, tab)}
+        {:noreply, unquote(__MODULE__).switch_tab(socket, tab)}
       end
 
       def handle_event("sequence_draft_name", %{"value" => name}, socket) do
@@ -65,20 +66,26 @@ defmodule OGrupoDeEstudosWeb.Handlers.SequenceSheet do
     {:cont, assign(socket, @closed)}
   end
 
-  @doc "Opens the sheet on the given tab, loading what that tab needs."
-  def open(socket, "mine") do
+  @doc "Opens the sheet fresh on the given tab. A new visit starts with a clean draft."
+  def open(socket, tab) do
     socket
     |> assign(@closed)
+    |> switch_tab(tab)
+  end
+
+  @doc """
+  Moves to the other tab keeping the draft intact.
+
+  Peeking at "mine" mid-draft must not cost the steps already picked: the sheet
+  resets only when it opens, never on a tab change.
+  """
+  def switch_tab(socket, "mine") do
+    socket
     |> assign(:sequence_sheet, "mine")
     |> assign(:sequence_mine, mine(socket))
   end
 
-  def open(socket, _new) do
-    socket
-    |> assign(@closed)
-    |> assign(:sequence_sheet, "new")
-    |> assign(:sequence_step_matches, [])
-  end
+  def switch_tab(socket, _new), do: assign(socket, :sequence_sheet, "new")
 
   @doc "Closes the sheet and drops the draft with it."
   def close(socket), do: assign(socket, @closed)
@@ -97,10 +104,16 @@ defmodule OGrupoDeEstudosWeb.Handlers.SequenceSheet do
       )
       |> Enum.reject(&MapSet.member?(taken, &1.code))
 
-    assign(socket, :sequence_step_matches, matches)
+    socket
+    |> assign(:sequence_search_term, term)
+    |> assign(:sequence_step_matches, matches)
   end
 
-  def search_steps(socket, _blank), do: assign(socket, :sequence_step_matches, [])
+  def search_steps(socket, _blank) do
+    socket
+    |> assign(:sequence_search_term, "")
+    |> assign(:sequence_step_matches, [])
+  end
 
   @doc "Appends a step to the draft. The same step may repeat: a sequence can revisit."
   def add_step(socket, code) do
@@ -111,6 +124,7 @@ defmodule OGrupoDeEstudosWeb.Handlers.SequenceSheet do
       step ->
         socket
         |> assign(:sequence_draft_steps, socket.assigns.sequence_draft_steps ++ [step])
+        |> assign(:sequence_search_term, "")
         |> assign(:sequence_step_matches, [])
     end
   end
