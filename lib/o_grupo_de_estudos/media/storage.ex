@@ -20,8 +20,6 @@ defmodule OGrupoDeEstudos.Media.Storage do
   @flyer_max_width 1200
   @key_random_bytes 16
 
-  # ── Avatar ───────────────────────────────────────────────────────────
-
   @doc """
   Guarda o avatar quadrado (#{@avatar_size}px) e devolve a URL pública.
 
@@ -46,8 +44,6 @@ defmodule OGrupoDeEstudos.Media.Storage do
     |> Enum.each(&ObjectStorage.delete/1)
   end
 
-  # ── Imagem pública (flyer, cartaz) ───────────────────────────────────
-
   @doc """
   Guarda uma imagem redimensionada com chave aleatória e devolve a URL.
 
@@ -67,8 +63,6 @@ defmodule OGrupoDeEstudos.Media.Storage do
   @spec delete_image(String.t()) :: :ok | {:error, term()}
   def delete_image("/uploads/" <> chave), do: ObjectStorage.delete(chave)
   def delete_image(_url_de_fora), do: :ok
-
-  # ── Arquivo privado (galeria de workshop) ────────────────────────────
 
   @doc """
   Guarda um arquivo cru em área privada e devolve a chave opaca.
@@ -104,10 +98,8 @@ defmodule OGrupoDeEstudos.Media.Storage do
   @spec free_bytes() :: non_neg_integer() | :unknown
   def free_bytes, do: ObjectStorage.free_bytes()
 
-  # ── Processamento de imagem ──────────────────────────────────────────
-
-  # Processa para um temporário próprio e entrega para `guardar`, limpando o
-  # temporário no fim: o ObjectStorage só vê arquivo pronto.
+  # Processes into its own temporary file and hands it to `guardar`, cleaning up
+  # afterwards: ObjectStorage only ever sees a finished file.
   defp processado(origem, transformar, guardar) do
     tmp = Path.join(System.tmp_dir!(), "media_#{System.unique_integer([:positive])}")
 
@@ -130,12 +122,12 @@ defmodule OGrupoDeEstudos.Media.Storage do
 
     :ok
   rescue
-    # Sem ImageMagick, vale mais guardar a imagem crua do que falhar o upload.
+    # Without ImageMagick, storing the raw image beats failing the upload.
     _e -> File.cp(origem, destino)
   end
 
-  # Flyer e cartaz: mantém a proporção e só limita a largura. Sem isso, uma
-  # foto de celular de 4 MB vira 4 MB no volume.
+  # A flyer is a poster: keep the aspect ratio and cap the width only. Without
+  # this, a 4 MB phone photo stays 4 MB on the volume.
   defp limitado(origem, destino) do
     origem
     |> Mogrify.open()

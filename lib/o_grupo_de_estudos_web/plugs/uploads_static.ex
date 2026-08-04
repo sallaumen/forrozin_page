@@ -19,11 +19,9 @@ defmodule OGrupoDeEstudosWeb.Plugs.UploadsStatic do
 
   @behaviour Plug
 
-  # Conteudo que e publico por natureza. Qualquer coisa fora daqui exige
-  # autorizacao e portanto nao passa por este plug.
-  # Flyer e material de divulgacao: existe para circular. Avatar idem. Tudo
-  # que for restrito (midia paga de workshop) fica fora daqui e passa por
-  # controller com permissao.
+  # Content that is public by nature. A flyer is promotional material and exists
+  # to circulate; an avatar likewise. Anything restricted (paid workshop media)
+  # stays out of here and goes through a controller with permission.
   @public_dirs ["avatars", "flyers"]
 
   @impl true

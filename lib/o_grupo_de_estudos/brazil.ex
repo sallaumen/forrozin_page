@@ -100,8 +100,6 @@ defmodule OGrupoDeEstudos.Brazil do
     Calendar.strftime(date_or_dt, format, pt_br_opts())
   end
 
-  # ── Portuguese locale ────────────────────────────────────────────────
-
   defp pt_br_opts do
     [
       day_of_week_names: &day_name/1,

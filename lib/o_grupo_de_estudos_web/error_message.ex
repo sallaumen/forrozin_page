@@ -36,7 +36,6 @@ defmodule OGrupoDeEstudosWeb.ErrorMessage do
 
   def flash_level(_other), do: :error
 
-  # Teacher-student link errors — warm and specific.
   defp link_error(:already_connected), do: "Vocês já estudam juntos!"
   defp link_error(:already_pending), do: "Pedido já enviado. Aguarde a resposta."
   defp link_error(:cannot_link_self), do: "Você não pode ser aluno de si mesmo."

@@ -72,8 +72,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   @impl true
   def handle_event("switch_study_tab", %{"tab" => tab}, socket) do
-    # Os dados do dashboard já estão carregados (mount + recarga após mutações);
-    # trocar de aba é só estado de UI, não precisa re-rodar as queries.
+    # The dashboard data is already loaded (mount plus reload after mutations), so
+    # switching tabs is UI state and does not re-run the queries.
     {:noreply, assign(socket, :active_study_tab, tab)}
   end
 
@@ -163,8 +163,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     {:noreply, assign_dashboard(socket, dashboard)}
   end
 
-  # ── History note step editing ─────────────────────────────────────────
-
   def handle_event("edit_history_steps", %{"note-id" => note_id}, socket) do
     current = socket.assigns.editing_history_note_id
     new_id = if current == note_id, do: nil, else: note_id
@@ -216,8 +214,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      )}
   end
 
-  # ── Goals ────────────────────────────────────────────────────────────
-
   def handle_event("create_goal", %{"body" => body}, socket) do
     user = socket.assigns.current_user
 
@@ -246,8 +242,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     {:noreply,
      assign(socket, :personal_goals, Study.list_personal_goals(socket.assigns.current_user.id))}
   end
-
-  # ── Teacher search & request ──────────────────────────────────────────
 
   def handle_event("search_teacher", %{"term" => term}, socket) do
     results = Study.search_teachers(term, socket.assigns.current_user.id)
@@ -353,8 +347,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     {:noreply, assign(socket, :lesson_steps, remaining)}
   end
 
-  # O form inteiro é controlado: cada mudança (texto ou seleção de aluno)
-  # devolve todos os campos, então re-render nenhum apaga o que foi escrito.
+  # The whole form is controlled: every change (text or student selection) sends
+  # back every field, so no re-render erases what was typed.
   def handle_event("lesson_form_changed", %{"lesson" => params}, socket) do
     {:noreply,
      socket
@@ -488,8 +482,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     }
   end
 
-  # Erro de validação nunca pode custar o texto: o re-render volta com o que
-  # o professor escreveu (params do submit, mais recentes que o assign).
+  # A validation error must never cost the text: the re-render comes back with
+  # what the teacher wrote (submit params, newer than the assign).
   defp lesson_validation_error(socket, params) do
     socket
     |> assign(:lesson_title, params["title"] || socket.assigns.lesson_title)
@@ -497,7 +491,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     |> assign(:lesson_error, "Preencha o título e o conteúdo da lição.")
   end
 
-  # Na edição o form não tem os checkboxes; preserva a seleção em vez de zerar.
+  # While editing, the form has no checkboxes: preserve the selection instead of clearing it.
   defp selected_link_ids(_params, %{assigns: %{editing_lesson_id: id}} = socket)
        when not is_nil(id),
        do: socket.assigns.lesson_selected_ids
@@ -558,8 +552,8 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     }
   end
 
-  # Consistência = dias (no intervalo relevante) em que a pessoa apareceu no app
-  # OU registrou no diário. Só visitar já conta, pra incentivar o hábito.
+  # Consistency counts days (in the relevant range) when the person showed up in
+  # the app OR wrote in the diary. Just visiting counts, to encourage the habit.
   defp consistency(user_id, today, history) do
     month_start = Date.new!(today.year, today.month, 1)
     range_start = Enum.min([Date.beginning_of_week(today), month_start], Date)
@@ -572,7 +566,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
     }
   end
 
-  # Dias da semana atual (1=segunda .. 7=domingo) presentes no conjunto de datas.
   defp weekdays_in_current_week(days, today) do
     week_start = Date.beginning_of_week(today)
     week_end = Date.end_of_week(today)

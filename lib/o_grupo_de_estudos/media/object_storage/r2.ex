@@ -21,8 +21,8 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
   @behaviour OGrupoDeEstudos.Media.ObjectStorage.Behaviour
 
   @public_prefixes ["avatars/", "flyers/"]
-  # 1 hora: o bastante para assistir um vídeo, curto demais para virar link
-  # eterno repassado fora do site.
+  # One hour: enough to watch a video, short enough not to become an eternal
+  # link passed around outside the site.
   @presign_expiry 3600
 
   @impl true
@@ -41,8 +41,8 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
         body: File.stream!(source_path, 65_536),
         headers: [
           {"content-type", MIME.from_path(key)},
-          # Corpo em streaming sairia chunked, e o R2 recusa com 411: o
-          # tamanho vai explícito, e o streaming continua.
+          # A streamed body would go out chunked and R2 rejects that with 411, so the
+          # size goes explicit while the streaming stays.
           {"content-length", Integer.to_string(File.stat!(source_path).size)}
         ]
       )
@@ -56,7 +56,7 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
     |> presign(:delete)
     |> then(&Req.delete(base_req(), url: &1))
     |> case do
-      # 404 e silencioso como no disco: apagar o que nao existe nao e erro.
+      # 404 is silent as on disk: deleting what is not there is not an error.
       {:ok, %{status: 404}} -> :ok
       outro -> como_resultado(outro)
     end
@@ -120,8 +120,6 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
   @impl true
   def free_bytes, do: :unknown
 
-  # ── Assinatura e configuração ────────────────────────────────────────
-
   defp presign(key, method) do
     ReqS3.presign_url(
       method: method,
@@ -172,10 +170,8 @@ defmodule OGrupoDeEstudos.Media.ObjectStorage.R2 do
   defp corta(body) when is_binary(body), do: String.slice(body, 0, 300)
   defp corta(body), do: body
 
-  # ── XML do ListObjectsV2 ─────────────────────────────────────────────
-
-  # Só as <Key> interessam, e `disallow_entities` fecha a porta de XXE.
-  # Parser próprio de propósito: o do req_s3 é @moduledoc false, API privada.
+  # Only the <Key> entries matter, and `disallow_entities` closes the XXE door.
+  # Own parser on purpose: the req_s3 one is @moduledoc false, a private API.
   defp chaves_do_xml(xml) do
     case :xmerl_sax_parser.stream(xml, [
            :disallow_entities,

@@ -60,13 +60,9 @@ defmodule OGrupoDeEstudos.Encyclopedia do
   def list_sections_with_steps(opts \\ []) do
     admin = Keyword.get(opts, :admin, false)
 
-    # NOTE: The local `import Ecto.Query` here is intentional. The inline
-    # query sub-expressions passed to `Repo.preload/2` use `from/2` and
-    # `dynamic/2` macros that must reference schema modules directly (e.g.
-    # `OGrupoDeEstudos.Encyclopedia.Step`). Extracting them into SectionQuery would
-    # require passing the visibility filter as an argument, which couples the
-    # query module to domain policy. Keeping them here — scoped to this
-    # function — is the pragmatic trade-off.
+    # The local `import Ecto.Query` is intentional: these preload sub-queries
+    # reference schema modules directly, and moving them to SectionQuery would make
+    # the query module take the visibility filter as an argument.
     import Ecto.Query
 
     visibility_filter =
@@ -74,8 +70,7 @@ defmodule OGrupoDeEstudos.Encyclopedia do
         do: dynamic([p], p.status == ^:published and is_nil(p.deleted_at)),
         else: dynamic([p], p.wip == false and p.status == ^:published and is_nil(p.deleted_at))
 
-    # Direct steps: only those NOT in a subsection (avoids duplicates).
-    # Official steps (no suggested_by_id) come first, community steps after.
+    # Only steps outside a subsection, so a step is not listed twice.
     direct_steps =
       from(p in OGrupoDeEstudos.Encyclopedia.Step,
         where: ^visibility_filter,
@@ -86,7 +81,6 @@ defmodule OGrupoDeEstudos.Encyclopedia do
         ]
       )
 
-    # Subsection steps: all visible steps in subsections, same ordering.
     subsection_steps =
       from(p in OGrupoDeEstudos.Encyclopedia.Step,
         where: ^visibility_filter,

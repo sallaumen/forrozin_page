@@ -113,8 +113,6 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     {:ok, socket}
   end
 
-  # ── Drawer de detalhe do passo (StepDetail compartilhado com a CollectionLive) ──
-
   @impl true
   def handle_event("open_step", %{"code" => code}, socket) do
     case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
@@ -259,10 +257,10 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     end
   end
 
-  # Iron Law: o grafo e a biblioteca de sequências (queries pesadas) só rodam
-  # no render conectado. O dead/HTTP render volta instantâneo com placeholders
-  # + skeleton sobre o canvas; o mount conectado constrói o grafo (o hook
-  # Cytoscape lê data-graph no connect).
+  # Iron Law: the graph and the sequence library (heavy queries) only run on the
+  # connected render. The dead/HTTP render returns instantly with placeholders and
+  # a skeleton over the canvas; the connected mount builds the graph (the Cytoscape
+  # hook reads data-graph on connect).
   defp load_graph_data(socket) do
     if connected?(socket) do
       user_id = socket.assigns.current_user.id
@@ -284,8 +282,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
         |> assign_manual_favorite_steps()
         |> assign_sequence_library()
 
-      # O disclosure inicial vem do JSON (data-graph já tagueia learned/frontier/
-      # goal); este push é só reforço para o estilo de likes/favoritos.
+      # The initial disclosure comes from the JSON (data-graph already tags learned,
+      # frontier and goal); this push only reinforces the like/favorite styling.
       socket
       |> push_event("set_liked_steps", %{codes: liked_codes})
       |> push_event("set_favorited_steps", %{codes: favorited_step_codes(user_id)})
@@ -298,8 +296,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     end
   end
 
-  # Fronteira ("pode aprender agora"): destinos não-aprendidos de arestas que
-  # saem de passos já aprendidos. Pura, derivada do grafo + aprendidos.
+  # Frontier ("can learn now"): unlearned targets of edges leaving already learned
+  # steps. Pure, derived from the graph plus the learned set.
   defp compute_frontier(edges, learned_codes) do
     pairs = Enum.map(edges, fn e -> {e.source_step.code, e.target_step.code} end)
 
@@ -313,7 +311,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
     %{learned: learned_codes, frontier: frontier_codes, goal: next_goal, full_map: full_map}
   end
 
-  # Contexto da jornada para o build_json taguear nós/arestas (sem filtrar).
+  # Journey context so build_json can tag nodes and edges, without filtering.
   defp build_journey(socket) do
     %{
       learned: MapSet.new(socket.assigns.learned_codes),
@@ -383,8 +381,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
-  # Contrato dos handler macros (GraphJourney, GraphLikeFavorite): o host
-  # expoe favorited_step_codes/1; a query vive no contexto Engagement.
+  # Contract of the handler macros (GraphJourney, GraphLikeFavorite): the host
+  # exposes favorited_step_codes/1, and the query lives in the Engagement context.
   defp favorited_step_codes(user_id), do: Engagement.favorited_step_codes(user_id)
 
   defp can_manage_sequence?(socket, sequence) do
@@ -596,8 +594,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   defp assign_sequence_library(socket) do
     user_id = socket.assigns.current_user.id
     saved = Sequences.list_user_sequences(user_id)
-    # Só favoritos visíveis: público ou próprio (uma sequência favoritada que
-    # depois virou privada de outro dono não pode vazar aqui).
+    # Visible favorites only, public or own: a favorited sequence that later became
+    # private under another owner must not leak here.
     favorites =
       user_id
       |> Engagement.list_user_favorites("sequence")
@@ -651,8 +649,8 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   end
 
   defp assign_graph_data(socket, graph, include_orphans) do
-    # Recomputa a fronteira a partir DESTE grafo (fonte única): vale no load e
-    # quando o admin cria/remove conexões, mantendo as tags do JSON corretas.
+    # Recomputes the frontier from THIS graph (single source): it holds on load and
+    # when an admin creates or removes connections, keeping the JSON tags correct.
     socket =
       assign(socket, :frontier_codes, compute_frontier(graph.edges, socket.assigns.learned_codes))
 

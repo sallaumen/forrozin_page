@@ -449,7 +449,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   def handle_event("create_suggested_step", %{"step" => step_params}, socket) do
     user = socket.assigns.current_user
 
-    # Auto-fill category from selected section
     attrs =
       step_params
       |> Map.put("suggested_by_id", user.id)
@@ -497,8 +496,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       {:noreply, socket}
     end
   end
-
-  # ── Comentários do passo em foco no drawer (assigns expanded_*) ──
 
   def handle_event("create_comment", %{"body" => body}, socket) do
     user = socket.assigns.current_user
@@ -715,8 +712,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
-  # Carrega o detalhe do passo no drawer (passo + conexões, links/likes e
-  # comentários). Fonte única em StepDrawer, compartilhada com a GraphVisualLive.
+  # Loads the step detail for the drawer (step plus connections, links, likes and
+  # comments). Single source in StepDrawer, shared with GraphVisualLive.
   defp load_drawer_step(socket, code), do: StepDrawer.load_step(socket, code)
 
   defp sync_drawer_engagement(socket, step_id), do: StepDrawer.sync_engagement(socket, step_id)

@@ -73,9 +73,9 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   def list_feed(opts \\ []) do
     period = Keyword.get(opts, :period, :upcoming)
 
-    # Privado entra na agenda junto com o resto: ele não é secreto, só tem a
-    # entrada por aprovação. Esconder faria a comunidade parecer vazia
-    # justamente quando tem workshop rolando.
+    # A private workshop enters the agenda with the rest: it is not secret, it just
+    # has entry by approval. Hiding it would make the community look empty exactly
+    # when there is a workshop happening.
     from(w in Workshop, as: :periodo)
     |> where([w], w.status == :published)
     |> in_period(period, Keyword.get(opts, :now, DateTime.utc_now()))
@@ -87,12 +87,12 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     |> Repo.all()
   end
 
-  # Workshop dentro de programacao nao aparece solto na agenda: um festival
-  # com quinze workshops viraria quinze linhas repetindo o mesmo nome.
+  # A workshop inside a program does not show up loose on the agenda: a festival
+  # with fifteen workshops would become fifteen lines repeating the same name.
   #
-  # So colapsa quando a programacao esta PUBLICADA. Enquanto ela e rascunho (ou
-  # depois de cancelada) ninguem ve o card dela, entao esconder o workshop faria
-  # sumir da agenda algo que ja tinha sido anunciado.
+  # It only collapses while the program is PUBLISHED. While it is a draft (or
+  # after it is cancelled) nobody sees its card, so hiding the workshop would drop
+  # something already announced off the agenda.
   defp apply_grouping(query, true) do
     publicadas = from(p in WorkshopProgram, where: p.status == :published, select: p.id)
 
@@ -118,8 +118,6 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     |> Repo.all()
   end
 
-  # ── filtros ───────────────────────────────────────────────────────────
-
   @doc """
   Filtra pelo período, sobre a consulta que tiver o binding `:periodo`.
 
@@ -135,8 +133,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
   def in_period(query, period, now) when period in [:week, :month, :year] do
     {from, to} = Brazil.range_utc(period, now |> Brazil.to_local() |> DateTime.to_date())
 
-    # Sobreposição de intervalos, não só o início: um workshop que começa em
-    # 30/01 e termina em 02/02 pertence aos dois meses.
+    # Interval overlap, not just the start: a workshop that begins on 30/01 and ends
+    # on 02/02 belongs to both months.
     where(
       query,
       [periodo: w],

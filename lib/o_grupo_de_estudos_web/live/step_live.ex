@@ -59,7 +59,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
             -Map.get(link_likes.counts, link.id, 0)
           end)
 
-        # Load step comments
         step_comments = Engagement.list_step_comments(step.id)
         step_comment_ids = Enum.map(step_comments, & &1.id)
         step_comment_likes = Engagement.likes_map(user_id, "step_comment", step_comment_ids)
@@ -180,7 +179,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     if Policy.authorized?(:delete_step, socket.assigns.current_user, socket.assigns.step) do
       step = socket.assigns.step
 
-      # Soft-delete all connections first (cascade)
       ConnectionQuery.soft_delete_by(either_step_id: step.id)
 
       case Admin.delete_step(step) do
@@ -246,8 +244,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     end
   end
 
-  # --- Incoming connections ---
-
   def handle_event("search_incoming_connection", %{"source_code" => term}, socket) do
     if socket.assigns.can_edit and String.length(term) >= 1 do
       suggestions =
@@ -275,8 +271,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       {:noreply, socket}
     end
   end
-
-  # --- Link editing ---
 
   def handle_event("start_edit_link", %{"link-id" => link_id}, socket) do
     link = Enum.find(socket.assigns.approved_links, &(&1.id == link_id))
@@ -337,8 +331,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       {:noreply, socket}
     end
   end
-
-  # --- Approve / unapprove step ---
 
   def handle_event("approve_step", %{"code" => code}, socket) do
     if Policy.authorized?(:approve_step, socket.assigns.current_user, socket.assigns.step) do
@@ -401,7 +393,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     case Engagement.toggle_like(user_id, "step_link", link_id) do
       {:ok, _} ->
-        # Reload link likes and re-sort
         link_ids = Enum.map(socket.assigns.approved_links, & &1.id)
         link_likes = Engagement.likes_map(user_id, "step_link", link_ids)
 
@@ -461,8 +452,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
     {:noreply, assign(socket, expanded_link: expanded)}
   end
-
-  # --- Comments ---
 
   def handle_event("create_comment", %{"body" => body}, socket) do
     user = socket.assigns.current_user
@@ -533,7 +522,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       replies = Engagement.list_replies(StepCommentQuery, comment_id)
       new_map = Map.put(replies_map, comment_id, replies)
       socket = assign(socket, :replies_map, new_map)
-      # Reload likes to include reply IDs
       {:noreply, reload_step_comments(socket)}
     end
   end
@@ -546,8 +534,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
       _ -> {:noreply, put_flash(socket, :error, "Sem permissão.")}
     end
   end
-
-  # -- Suggestion handlers --
 
   def handle_event("start_suggest", %{"field" => field}, socket) do
     case Suggestion.field_atom(field) do
@@ -754,7 +740,6 @@ defmodule OGrupoDeEstudosWeb.StepLive do
     comments = Engagement.list_step_comments(step.id)
     comment_ids = Enum.map(comments, & &1.id)
 
-    # Refresh expanded replies from DB (so like_count updates)
     replies_map =
       socket.assigns.replies_map
       |> Map.keys()

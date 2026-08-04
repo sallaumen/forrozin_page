@@ -48,8 +48,6 @@ defmodule OGrupoDeEstudos.Workshops do
     WorkshopTeacher
   }
 
-  # ── Leituras ──────────────────────────────────────────────────────────
-
   defdelegate list_feed(opts \\ []), to: WorkshopQuery
   defdelegate list_for_organizer(organizer_id), to: WorkshopQuery
   defdelegate get_by_slug(slug), to: WorkshopQuery
@@ -75,8 +73,6 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate mark_reminded(enrollment_ids), to: EnrollmentQuery
 
   defdelegate get_enrollment(workshop_id, user_id), to: EnrollmentQuery, as: :get_for_user
-
-  # ── Ciclo de vida do workshop ─────────────────────────────────────────
 
   @doc "Cria um workshop como rascunho. Qualquer usuário pode."
   @spec create_workshop(User.t(), map()) :: {:ok, Workshop.t()} | {:error, Ecto.Changeset.t()}
@@ -135,8 +131,6 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   def delete_workshop(%User{}, %Workshop{}), do: {:error, :unauthorized}
-
-  # ── Pedido de entrada (workshop privado) ──────────────────────────────
 
   @doc "Fila de pedidos esperando resposta. Aceita o workshop ou só o id."
   @spec list_pending_requests(Workshop.t() | Ecto.UUID.t()) :: [map()]
@@ -241,8 +235,8 @@ defmodule OGrupoDeEstudos.Workshops do
     with :ok <- ensure_admin(workshop, actor),
          %JoinRequest{} = pedido <- buscar_pedido(workshop, request_id),
          %User{} = pessoa <- Accounts.get_user_by_id(pedido.user_id),
-         # `enroll_overbooking` e nao `enroll`: aceitar e decisao de quem da a
-         # aula, que sabe se cabe mais um na sala. O sistema avisa, nao decide.
+         # `enroll_overbooking` and not `enroll`: accepting is the teacher's call, since
+         # they know whether one more fits in the room. The system warns, it does not decide.
          {:ok, _inscricao} <- enroll_overbooking(workshop, pessoa) do
       responder(pedido, :approved, actor, workshop, :workshop_join_approved)
     else
@@ -292,8 +286,6 @@ defmodule OGrupoDeEstudos.Workshops do
 
     {:ok, pedido}
   end
-
-  # ── Quem da a aula ────────────────────────────────────────────────────
 
   defdelegate list_teachers(workshop_id), to: TeacherQuery, as: :list_for_workshop
 
@@ -354,8 +346,8 @@ defmodule OGrupoDeEstudos.Workshops do
 
   defp normalizar_professor(_sem_conta_nem_nome, _posicao), do: :erro
 
-  # Apaga e regrava na mesma transacao: a lista e curta e a ordem importa, e
-  # reconciliar duas linhas custaria mais codigo do que regravar.
+  # Delete and rewrite in the same transaction: the list is short and the order
+  # matters, and reconciling two rows would cost more code than rewriting.
   defp regravar_professores(workshop, entradas) do
     Repo.transact(fn ->
       TeacherQuery.delete_all(workshop.id)
@@ -372,8 +364,6 @@ defmodule OGrupoDeEstudos.Workshops do
       {:error, _changeset} -> {:halt, {:error, :invalid_teacher}}
     end
   end
-
-  # ── Passos dados no workshop ──────────────────────────────────────────
 
   defdelegate list_steps(workshop_id), to: WorkshopStepQuery, as: :list_for_workshop
 
@@ -439,17 +429,15 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # ── Galeria ───────────────────────────────────────────────────────────
-
   @media_dir "workshop_media"
-  # Recusa upload novo com menos de 1 GB livre. Sem isso o volume enche e o
-  # proximo upload estoura ENOSPC no meio, sem mensagem que ajude ninguem.
-  # No R2 nao se aplica: free_bytes devolve :unknown e quem limita e a cota.
+  # Refuses a new upload with less than 1 GB free. Without this the volume fills
+  # and the next upload blows up mid-write with ENOSPC and no useful message.
+  # On R2 it does not apply: free_bytes returns :unknown and the quota is the limit.
   @min_free_bytes 1_073_741_824
-  # 2 GiB de midia por workshop. Com storage praticamente ilimitado (R2), o
-  # risco deixa de ser disco cheio e vira custo: so inscritos mandam midia,
-  # mas nada impediria alguem de despejar video atras de video. 2 GiB dao
-  # ~3h de video transcodificado, folga para uso real.
+  # 2 GiB of media per workshop. With practically unlimited storage (R2) the risk
+  # stops being a full disk and becomes cost: only enrolled users upload, but
+  # nothing would stop someone dumping video after video. 2 GiB is around 3h of
+  # transcoded video, room enough for real use.
   @max_media_bytes_por_workshop 2_147_483_648
 
   defdelegate list_media(workshop_id), to: MediaQuery, as: :list_for_workshop
@@ -542,10 +530,10 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Mídia e job de transcode entram na MESMA transação: ou o vídeo entra com
-  # a conversão agendada, ou nada entra. Sem isso, uma falha ao enfileirar
-  # deixaria a linha em "processando" para sempre, sem job nenhum, e o
-  # Lifeline não resgata job que não existe.
+  # Media and transcode job go in the SAME transaction: either the video lands
+  # with its conversion scheduled or nothing lands. Otherwise a failure to enqueue
+  # would leave the row in "processing" forever with no job, and Lifeline does not
+  # rescue a job that does not exist.
   defp gravar_com_fila(atributos) do
     Repo.transact(fn ->
       with {:ok, media} <- Repo.insert(WorkshopMedia.changeset(%WorkshopMedia{}, atributos)) do
@@ -554,9 +542,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end)
   end
 
-  # Vídeo sai do upload em `:processing`: o arquivo já está salvo e a conversão
-  # acontece depois, para a aluna não ficar olhando a barra parada enquanto o
-  # ffmpeg roda.
+  # A video leaves the upload as `:processing`: the file is already stored and the
+  # conversion happens later, so nobody watches a frozen progress bar while ffmpeg runs.
   defp enfileirado(%WorkshopMedia{status: :processing, id: id} = media) do
     case Oban.insert(TranscodeWorkshopVideo.new(%{"media_id" => id})) do
       {:ok, _job} -> {:ok, media}
@@ -623,8 +610,6 @@ defmodule OGrupoDeEstudos.Workshops do
   defp apagar_poster(nil), do: :ok
   defp apagar_poster(key), do: Storage.delete_private(key)
 
-  # ── Transcode de vídeo ────────────────────────────────────────────────
-
   @doc """
   Converte o vídeo de uma mídia para 720p H.264 e marca como pronta.
 
@@ -663,8 +648,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # O with_private_file existe porque num provider externo o original não é
-  # arquivo local: o adapter baixa para um temporário e o ffmpeg lê de lá.
+  # with_private_file exists because on an external provider the original is not
+  # a local file: the adapter downloads to a temporary one and ffmpeg reads from there.
   defp rodar_transcode(media, saida) do
     case Storage.with_private_file(media.storage_key, &Video.transcode(&1, saida)) do
       {:ok, :ok} -> guardar_convertido(media, saida, tamanho(saida))
@@ -673,8 +658,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # ffmpeg que sai com 0 mas escreve arquivo vazio existe. Guardar isso
-  # apagaria o vídeo da aluna e trocaria por nada.
+  # An ffmpeg that exits 0 and writes an empty file exists. Storing that would
+  # delete the uploaded video and put nothing in its place.
   defp guardar_convertido(media, _saida, 0), do: desistir(media, :saida_vazia)
 
   defp guardar_convertido(media, saida, bytes) do
@@ -694,8 +679,8 @@ defmodule OGrupoDeEstudos.Workshops do
 
     case marcar_pronta(media, atributos) do
       :ok -> Storage.delete_private(media.storage_key)
-      # Quem apagou durante o transcode ganhou: o convertido e o poster vão
-      # embora em vez de virarem órfãos, e não há nada para tentar de novo.
+      # Whoever deleted during the transcode wins: the converted file and the poster
+      # go away instead of becoming orphans, and there is nothing to retry.
       {:error, :apagada} -> descartar_convertido(chave, poster_key)
     end
   end
@@ -715,8 +700,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Condicionado a `deleted_at` DE NOVO, não só na entrada do job: o ffmpeg
-  # leva minutos, e uma remoção nesse meio tempo não pode ser atropelada.
+  # Conditioned on `deleted_at` AGAIN, not only at the job entry: ffmpeg takes
+  # minutes, and a deletion in between cannot be run over.
   defp marcar_pronta(media, atributos) do
     campos =
       atributos
@@ -732,8 +717,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Poster é enfeite: sem ele a galeria mostra o primeiro quadro do vídeo, que
-  # costuma ser preto. Não é motivo para segurar a mídia em "processando".
+  # The poster is decoration: without it the gallery shows the first frame, which
+  # is usually black. Not a reason to hold the media in "processing".
   defp gerar_poster(media, video) do
     destino = caminho_temporario("jpg")
 
@@ -758,8 +743,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Uma pasta por workshop: o bucket fica navegável por contexto, e o que é
-  # de um workshop mora junto (original, convertido e poster).
+  # One folder per workshop: the bucket stays browsable by context, and what
+  # belongs to a workshop lives together (original, converted and poster).
   defp pasta_da_galeria(workshop_id), do: Path.join(@media_dir, workshop_id)
 
   defp caminho_temporario(ext) do
@@ -773,8 +758,6 @@ defmodule OGrupoDeEstudos.Workshops do
       {:error, _motivo} -> 0
     end
   end
-
-  # ── Pacote da programação ─────────────────────────────────────────────
 
   @doc """
   Compra o pacote: entra em TODOS os workshops publicados da programação.
@@ -814,8 +797,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Cada workshop tem a sua transacao (mesmo motivo de enroll_many), e a
-  # compensacao desfaz o que ja entrou se algum falhar.
+  # Each workshop gets its own transaction (same reason as enroll_many), and the
+  # compensation undoes whatever already landed if one fails.
   defp cobrir_workshops(program, user, matricula) do
     workshops = ProgramQuery.list_workshops(program.id)
 
@@ -833,8 +816,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Quem ja estava avulso num dos workshops passa a estar pelo pacote, sem
-  # inscricao duplicada.
+  # Whoever was already enrolled in one of the workshops moves to the package
+  # without a duplicated enrollment.
   defp garantir_inscricao(workshop, user, matricula) do
     case EnrollmentQuery.get_for_user(workshop.id, user.id) do
       nil -> inscrever_pelo_pacote(workshop, user, matricula)
@@ -920,8 +903,6 @@ defmodule OGrupoDeEstudos.Workshops do
   def package_enrollment(%WorkshopProgram{} = program, %User{} = user),
     do: PackageQuery.get_for_user(program.id, user.id)
 
-  # ── Agenda ────────────────────────────────────────────────────────────
-
   @doc """
   A agenda da comunidade, misturando workshops soltos e programações em ordem
   de data.
@@ -949,9 +930,9 @@ defmodule OGrupoDeEstudos.Workshops do
     |> ordenar_por_data(Keyword.get(opts, :period, :upcoming))
   end
 
-  # Na busca a programacao e os workshops dela podem casar ao mesmo tempo. Sem
-  # isso o card do festival sairia ensanduichado entre os proprios filhos, e o
-  # contador anunciaria tres eventos onde existe um.
+  # In a search the program and its workshops can match at the same time. Without
+  # this the festival card would come sandwiched between its own children, and the
+  # counter would announce three events where there is one.
   defp sem_repetir_programa(workshops, programas) do
     ja_listados = MapSet.new(programas, fn {program, _} -> program.id end)
 
@@ -966,9 +947,9 @@ defmodule OGrupoDeEstudos.Workshops do
     %{kind: :workshop, id: workshop.id, starts_at: workshop.starts_at, workshop: workshop}
   end
 
-  # O periodo decide QUAIS programacoes entram; o resumo mostrado e o do
-  # festival inteiro, senao o card diria "3 workshops" enquanto a pagina da
-  # programacao mostra quinze.
+  # The period decides WHICH programs come in; the summary shown is the whole
+  # festival, otherwise the card would say "3 workshops" while the program page
+  # shows fifteen.
   defp item_de_programa({program, do_periodo}, resumos) do
     %{
       kind: :program,
@@ -979,16 +960,14 @@ defmodule OGrupoDeEstudos.Workshops do
     }
   end
 
-  # No passado a agenda vai do mais recente para tras: o que acabou de
-  # acontecer interessa mais que o de um ano atras.
+  # In the past the agenda runs from most recent backwards: what just happened
+  # matters more than what happened a year ago.
   defp ordenar_por_data(itens, :past), do: Enum.sort_by(itens, & &1.starts_at, {:desc, DateTime})
   defp ordenar_por_data(itens, _period), do: Enum.sort_by(itens, & &1.starts_at, DateTime)
 
-  # ── Flyer ─────────────────────────────────────────────────────────────
-
-  # Uma pasta por dono do cartaz: workshops e programações separados, cada um
-  # com a sua. O nome do arquivo continua aleatório, que é o que impede
-  # varredura; o id na pasta só organiza (rota é por slug, id não abre nada).
+  # One folder per poster owner, workshops and programs apart. The file name stays
+  # random, which is what prevents scanning; the id in the folder only organizes
+  # (the route is by slug, an id opens nothing).
   defp pasta_do_flyer(%Workshop{id: id}), do: "flyers/workshops/#{id}"
   defp pasta_do_flyer(%WorkshopProgram{id: id}), do: "flyers/programas/#{id}"
 
@@ -1043,8 +1022,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # So apaga o arquivo antigo depois que o banco confirmou. Ao contrario, um
-  # erro de update deixaria a linha apontando para arquivo que nao existe mais.
+  # Only deletes the old file after the database confirms. The other way around, an
+  # update error would leave the row pointing at a file that no longer exists.
   defp descartar_flyer({:ok, _} = resultado, nil), do: resultado
 
   defp descartar_flyer({:ok, _} = resultado, antigo) do
@@ -1053,8 +1032,6 @@ defmodule OGrupoDeEstudos.Workshops do
   end
 
   defp descartar_flyer(erro, _antigo), do: erro
-
-  # ── Programação ───────────────────────────────────────────────────────
 
   defdelegate get_program_by_slug(slug), to: ProgramQuery, as: :get_by_slug
   defdelegate get_program(id), to: ProgramQuery, as: :get
@@ -1134,8 +1111,6 @@ defmodule OGrupoDeEstudos.Workshops do
 
   defp ensure_program_owner(%WorkshopProgram{owner_id: id}, %User{id: id}), do: :ok
   defp ensure_program_owner(%WorkshopProgram{}, %User{}), do: {:error, :unauthorized}
-
-  # ── Administradores ───────────────────────────────────────────────────
 
   @doc "Ids de quem administra: o criador mais os co-organizadores."
   @spec admin_ids(Workshop.t()) :: [Ecto.UUID.t()]
@@ -1238,8 +1213,6 @@ defmodule OGrupoDeEstudos.Workshops do
     if user_id in admin_ids(workshop), do: {:error, :already_admin}, else: :ok
   end
 
-  # ── Inscrição ─────────────────────────────────────────────────────────
-
   @doc """
   Inscreve alguém num workshop publicado.
 
@@ -1315,8 +1288,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end)
   end
 
-  # Um aviso por pessoa, mesmo que ela organize varios workshops do lote:
-  # tres linhas iguais na caixa e o spam que a programacao existe para matar.
+  # One notice per person, even when they organize several workshops of the batch:
+  # three identical lines in the inbox is the spam a program exists to kill.
   defp destinatarios_do_lote(workshops, user) do
     workshops
     |> Enum.flat_map(fn workshop -> Enum.map(admin_ids(workshop), &{&1, workshop}) end)
@@ -1334,10 +1307,10 @@ defmodule OGrupoDeEstudos.Workshops do
     end)
   end
 
-  # Inscricao que ignora o limite de vagas, e SO ela. Existe para os dois
-  # caminhos em que alguem ja decidiu que a pessoa entra: o aceite de quem da
-  # a aula, e a promocao da fila para uma vaga que acabou de abrir. O caminho
-  # normal continua barrando, senao o limite nao valeria nada.
+  # Enrollment that ignores the capacity, and ONLY it. It exists for the two paths
+  # where someone already decided the person gets in: the teacher approving, and
+  # the promotion from the waitlist into a seat that just opened. The normal path
+  # keeps blocking, otherwise the capacity would mean nothing.
   defp enroll_overbooking(workshop, user) do
     Repo.transact(fn ->
       with {:ok, locked} <- lock_workshop(workshop.id),
@@ -1348,8 +1321,8 @@ defmodule OGrupoDeEstudos.Workshops do
     |> notify_organizers(workshop, user)
   end
 
-  # Fora da transacao de proposito: broadcast nao faz rollback, entao um erro
-  # tardio deixaria o organizador com aviso de uma inscricao inexistente.
+  # Outside the transaction on purpose: a broadcast does not roll back, so a late
+  # error would leave the organizer notified of an enrollment that does not exist.
   defp notify_organizers({:ok, _enrollment} = result, workshop, user) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_workshop_enrollment(user.id, admin_ids(workshop), workshop.id)
@@ -1370,8 +1343,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Vaga aberta chama quem espera ha mais tempo. Uma pessoa por vaga: a fila
-  # anda um passo, nao esvazia.
+  # An open seat calls whoever waited longest. One person per seat: the waitlist
+  # moves one step, it does not drain.
   defp promover_da_fila({:ok, _apagada} = resultado, workshop) do
     case WaitlistQuery.first_in_line(workshop.id) do
       nil -> resultado
@@ -1396,8 +1369,6 @@ defmodule OGrupoDeEstudos.Workshops do
       Dispatcher.notify_waitlist_promoted(workshop.organizer_id, pessoa.id, workshop.id)
     end)
   end
-
-  # ── Lista de espera ───────────────────────────────────────────────────
 
   defdelegate list_waitlist(workshop_id), to: WaitlistQuery, as: :list_for_workshop
   defdelegate waitlist_count(workshop_id), to: WaitlistQuery, as: :count
@@ -1470,8 +1441,6 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # ── Gestão do organizador (privado) ───────────────────────────────────
-
   @doc "Lista de inscritos COM pagamento. Só o organizador."
   @spec list_enrollments_for_organizer(Workshop.t(), User.t()) ::
           {:ok, [WorkshopEnrollment.t()]} | {:error, :unauthorized}
@@ -1513,8 +1482,6 @@ defmodule OGrupoDeEstudos.Workshops do
   def set_payment_status(%Workshop{}, %User{}, _enrollment_id, _status),
     do: {:error, :unauthorized}
 
-  # ── Privado ───────────────────────────────────────────────────────────
-
   defp lock_workshop(workshop_id) do
     query = from(w in Workshop, where: w.id == ^workshop_id, lock: "FOR UPDATE")
 
@@ -1550,7 +1517,7 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  # Aceita chaves atom ou string vindas do form, sem atomizar input.
+  # Takes atom or string keys coming from the form, without atomizing input.
   defp normalize(attrs) when is_map(attrs) do
     Map.new(attrs, fn
       {k, v} when is_binary(k) -> {String.to_existing_atom(k), v}

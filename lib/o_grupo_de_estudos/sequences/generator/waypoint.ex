@@ -137,13 +137,12 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Waypoint do
   defp zone_budget_split(:middle), do: {0.50, 0.50}
   defp zone_budget_split(:end), do: {0.85, 0.15}
 
-  # Trim path to target_length without cutting required steps
   defp trim_to_target(path, target_length, _required_ids) when length(path) <= target_length do
     path
   end
 
   defp trim_to_target(path, target_length, required_ids) do
-    # Find the latest required step position — can't trim before that
+    # The path cannot be trimmed before the last required step.
     max_required_pos =
       path
       |> Enum.with_index()
@@ -211,7 +210,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Waypoint do
   defp distribute_budget(0, n), do: List.duplicate(0, n)
 
   defp distribute_budget(extra, n) do
-    # Distribute `extra` steps randomly across `n` segments
     slots = for _ <- 1..extra, do: :rand.uniform(n) - 1
 
     base = List.duplicate(0, n)
@@ -240,7 +238,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Waypoint do
     end
   end
 
-  # Extends path to target_length by random walk from the last node.
   defp pad_path(path, target_length, _ctx) when length(path) >= target_length, do: path
 
   defp pad_path(path, target_length, ctx) do
@@ -250,8 +247,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Waypoint do
     tail_trimmed = if length(tail) > 1, do: tl(tail), else: []
     path ++ tail_trimmed
   end
-
-  # ── Permutation helpers ──────────────────────────────────────────────
 
   defp shuffled_permutations(list, count) when length(list) <= 6 do
     perms = all_permutations(list) |> Enum.shuffle()

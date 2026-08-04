@@ -68,8 +68,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     {:noreply, assign(socket, :form, Map.merge(socket.assigns.form, params))}
   end
 
-  # Os dois botões submetem o mesmo form e se distinguem pelo name/value: assim
-  # os campos vêm do DOM, sem depender do assign que o phx-change sincroniza.
+  # Both buttons submit the same form and differ by name/value, so the fields come
+  # from the DOM instead of depending on the assign that phx-change syncs.
   def handle_event("remove_flyer", _params, socket) do
     user = socket.assigns.current_user
 
@@ -114,8 +114,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     end
   end
 
-  # `?programa=slug` faz o workshop nascer ja dentro da programacao. So vale
-  # se a pessoa e dona dela: senao o workshop nasce solto, sem reclamar.
+  # `?programa=slug` makes the workshop start inside the program. It only applies
+  # when the person owns it: otherwise the workshop starts loose, without complaint.
   defp program_from(%{"programa" => slug}, user) do
     program = Workshops.get_program_by_slug(slug)
 
@@ -124,8 +124,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
   defp program_from(_params, _user), do: nil
 
-  # O upload nao bloqueia o salvamento: se o flyer falhar, o workshop existe
-  # do mesmo jeito e a pessoa tenta o cartaz de novo depois.
+  # The upload does not block saving: if the flyer fails, the workshop exists all
+  # the same and the poster can be retried later.
   defp guardar_flyer(socket, workshop, user) do
     socket
     |> consume_uploaded_entries(:flyer, fn %{path: tmp_path}, entry ->
@@ -228,7 +228,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     }
   end
 
-  # O input datetime-local trabalha no fuso do usuário; o banco guarda UTC.
+  # The datetime-local input works in the user timezone; the database stores UTC.
   defp datetime_input(nil), do: ""
 
   defp datetime_input(datetime) do
@@ -297,15 +297,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
     end
   end
 
-  # Pattern matching em vez de String.to_existing_atom: valor de formulario e
-  # entrada de fora, e um atomo que ainda nao existe derrubaria a pagina.
+  # Pattern matching instead of String.to_existing_atom: a form value is outside
+  # input, and an atom that does not exist yet would bring the page down.
   defp modo_de_pagamento("on_signup"), do: :on_signup
   defp modo_de_pagamento("at_event"), do: :at_event
   defp modo_de_pagamento(_nada), do: nil
 
-  # Professores sao gravados a parte do workshop: a lista e outra tabela, e
-  # falhar aqui nao pode desfazer o workshop que ja foi criado. Nome de
-  # usuario que nao existe simplesmente nao entra, e o resto entra.
+  # Teachers are written apart from the workshop: the list is another table, and
+  # failing here cannot undo the workshop that was already created. A username
+  # that does not exist simply does not go in, and the rest does.
   defp guardar_professores(workshop, user, params) do
     entradas =
       [0, 1]

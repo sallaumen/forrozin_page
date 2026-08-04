@@ -214,8 +214,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
 
   def revenue_label(_summary, _workshop), do: "—"
 
-  # Cidade ajuda quem organiza a reconhecer a pessoa, mas nem todo mundo
-  # preenche: sem cidade a linha simplesmente não menciona.
+  # The city helps the organizer recognize the person, but not everyone fills it
+  # in: with no city the row simply does not mention it.
   defp cidade_do_pedido(%{city: cidade}) when is_binary(cidade) and cidade != "",
     do: " · #{cidade}"
 

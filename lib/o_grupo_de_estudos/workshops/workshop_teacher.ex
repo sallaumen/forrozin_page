@@ -53,8 +53,8 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopTeacher do
     end
   end
 
-  # Conta ganha do nome escrito: ela traz foto e perfil, que é o ponto de
-  # divulgar o professor.
+  # An account beats a written name: it brings photo and profile, which is the
+  # point of featuring the teacher.
   defp so_a_conta(changeset), do: put_change(changeset, :display_name, nil)
 
   defp trim(nil), do: nil

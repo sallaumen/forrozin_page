@@ -39,9 +39,9 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
         }
   def run(source_dir \\ default_dir()) do
     {arquivos, falhas} = copiar_tudo(source_dir)
-    # Reescrever URL de objeto que não subiu deixaria avatar quebrado
-    # apontando para o nada: com qualquer falha de cópia, o banco não muda.
-    # A próxima rodada, com as cópias sãs, completa a reescrita.
+    # Rewriting the URL of an object that failed to upload would leave an avatar
+    # pointing at nothing, so any copy failure leaves the database alone. The next
+    # run, with the copies healthy, completes the rewrite.
     reescritos = if falhas == [], do: reescrever_urls(), else: 0
 
     Logger.info(
@@ -51,8 +51,6 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
 
     %{arquivos: arquivos, falhas: falhas, reescritos: reescritos}
   end
-
-  # ── Arquivos ─────────────────────────────────────────────────────────
 
   defp copiar_tudo(dir) do
     {oks, falhas} = Enum.reduce(arquivos_relativos(dir), {0, []}, &copiar(dir, &1, &2))
@@ -77,8 +75,6 @@ defmodule OGrupoDeEstudos.Media.UploadsMigration do
     |> Enum.filter(&File.regular?/1)
     |> Enum.map(&Path.relative_to(&1, dir))
   end
-
-  # ── URLs no banco ────────────────────────────────────────────────────
 
   defp reescrever_urls do
     {:ok, total} =

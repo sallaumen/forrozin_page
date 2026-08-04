@@ -1,7 +1,7 @@
 defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
   @moduledoc false
 
-  # Mapped by section CODE (stable, won't change if title is renamed)
+  # Keyed by section code, which survives a title rename.
   @section_image_overrides %{
     "B" => "/images/collection/base.png",
     "SC" => "/images/collection/sacada-simples.png",
@@ -15,7 +15,7 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
     "G" => "/images/collection/giro-simples.png"
   }
 
-  # Mapped by step CODE (stable)
+  # Keyed by step code, which survives a name rename.
   @step_image_overrides %{
     "SC" => "/images/collection/sacada-simples.png",
     "SC-E" => "/images/collection/sacada-esquerda.png",
@@ -62,8 +62,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
   defp build_section_details(section) do
     visible_steps = normalize_steps(flatten_visible_steps(section))
 
-    # All steps sorted by likes, each appears once.
-    # Steps with image_path render as image cards, others as text cards.
     all_sorted =
       visible_steps
       |> Enum.sort_by(&{-(&1.like_count || 0), &1.name})
@@ -99,7 +97,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
   end
 
   defp featured_steps(steps) do
-    # Prioritize core steps (non-HF) over footwork variants
     {core, footwork} = Enum.split_with(steps, fn s -> not String.starts_with?(s.code, "HF-") end)
 
     core_sorted = Enum.sort_by(core, &{-(&1.like_count || 0), &1.name})
@@ -119,7 +116,6 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
         image_path -> %{step | image_path: image_path}
       end
 
-    # Ensure image_path starts with / for proper URL resolution
     case step.image_path do
       nil -> step
       "/" <> _ -> step

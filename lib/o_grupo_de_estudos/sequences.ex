@@ -161,8 +161,6 @@ defmodule OGrupoDeEstudos.Sequences do
     |> Repo.update()
   end
 
-  # ── Private helpers ─────────────────────────────────────────
-
   @doc "Returns the owner id of a sequence, or nil (lightweight, no preloads)."
   def sequence_owner_id(sequence_id) do
     case SequenceQuery.get_by(id: sequence_id) do

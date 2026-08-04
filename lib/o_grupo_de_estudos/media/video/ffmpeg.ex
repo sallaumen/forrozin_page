@@ -17,11 +17,11 @@ defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
 
   @behaviour OGrupoDeEstudos.Media.Video.Behaviour
 
-  # Lado maior do quadro. Paisagem sai 1280x720, retrato sai 720x1280: os dois
-  # sao "720p" no lado curto, que e o que importa para quem filma em pe.
+  # Longest side of the frame. Landscape becomes 1280x720 and portrait 720x1280:
+  # both are "720p" on the short side, which is what matters for phone video.
   @max_dimension 1280
-  # 26 e transparente o bastante para video de dança e derruba o arquivo. O
-  # maxrate segura o pior caso: passo rapido com muita textura estoura o CRF.
+  # 26 is transparent enough for dance video and cuts the file down. maxrate
+  # holds the worst case: a fast step with heavy texture blows past the CRF.
   @crf "26"
   @maxrate "2M"
   @bufsize "4M"
@@ -102,8 +102,8 @@ defmodule OGrupoDeEstudos.Media.Video.FFmpeg do
       ":force_original_aspect_ratio=decrease:force_divisible_by=2"
   end
 
-  # System.cmd nao passa por shell: caminho com espaco ou ponto e virgula chega
-  # como um argumento so, sem chance de virar comando.
+  # System.cmd does not go through a shell: a path with a space or a semicolon
+  # arrives as a single argument, with no chance of becoming a command.
   defp executar(args) do
     case System.cmd("ffmpeg", args, stderr_to_stdout: true) do
       {_saida, 0} -> :ok

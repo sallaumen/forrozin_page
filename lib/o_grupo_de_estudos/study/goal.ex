@@ -26,8 +26,8 @@ defmodule OGrupoDeEstudos.Study.Goal do
     |> validate_owner_xor()
   end
 
-  # Uma meta pertence a exatamente um dono: o aluno (pessoal) ou o vínculo
-  # professor-aluno (compartilhada), nunca ambos nem nenhum.
+  # A goal belongs to exactly one owner: the student (personal) or the
+  # teacher-student link (shared), never both and never neither.
   defp validate_owner_xor(changeset) do
     owner = get_field(changeset, :owner_user_id)
     link = get_field(changeset, :teacher_student_link_id)

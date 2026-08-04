@@ -32,54 +32,36 @@ defmodule OGrupoDeEstudos.Engagement do
   alias OGrupoDeEstudos.Sequences
   alias OGrupoDeEstudos.Workshops
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Likes (delegated to Engagement.Likes)
-  # ══════════════════════════════════════════════════════════════════════
-
   defdelegate toggle_like(user_id, likeable_type, likeable_id), to: Likes
   defdelegate liked?(user_id, likeable_type, likeable_id), to: Likes
   defdelegate count_likes(likeable_type, likeable_id), to: Likes
   defdelegate likes_map(user_id, likeable_type, likeable_ids), to: Likes
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Comments (delegated to Engagement.Comments)
-  # ══════════════════════════════════════════════════════════════════════
-
-  # Profile comments — backward-compatible 1-arity signatures
   defdelegate list_profile_comments(opts), to: Comments
   defdelegate create_profile_comment(attrs), to: Comments
   defdelegate delete_profile_comment(comment), to: Comments
 
-  # Step comments
   defdelegate list_step_comments(step_id, opts \\ []), to: Comments
   defdelegate create_step_comment(user, step_id, attrs), to: Comments
   defdelegate delete_step_comment(user, comment), to: Comments
   defdelegate get_step_comment(id), to: Comments
 
-  # Sequence comments
   defdelegate list_sequence_comments(sequence_id, opts \\ []), to: Comments
   defdelegate create_sequence_comment(user, sequence_id, attrs), to: Comments
   defdelegate delete_sequence_comment(user, comment), to: Comments
   defdelegate get_sequence_comment(id), to: Comments
 
-  # Workshop comments
   defdelegate list_workshop_comments(workshop_id, opts \\ []), to: Comments
   defdelegate create_workshop_comment(user, workshop_id, attrs), to: Comments
   defdelegate delete_workshop_comment(user, comment), to: Comments
   defdelegate get_workshop_comment(id), to: Comments
 
-  # Profile comments — new typed API (2+arity)
   defdelegate list_profile_comments(profile_id, opts), to: Comments
   defdelegate create_profile_comment(user, profile_id, attrs), to: Comments
   defdelegate delete_profile_comment(user, comment), to: Comments
 
-  # Replies and batch counts
   defdelegate list_replies(query_mod, comment_id, opts \\ []), to: Comments
   defdelegate comment_counts_for(type, parent_ids), to: Comments
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Notifications
-  # ══════════════════════════════════════════════════════════════════════
 
   @doc "Lists notifications for the given user (unread first, then newest)."
   def list_notifications(user_id, opts \\ []) do
@@ -141,10 +123,6 @@ defmodule OGrupoDeEstudos.Engagement do
 
   defp now_second, do: DateTime.utc_now() |> DateTime.truncate(:second)
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Follows (delegated to Engagement.Follows)
-  # ══════════════════════════════════════════════════════════════════════
-
   defdelegate toggle_follow(follower_id, followed_id), to: Follows
   defdelegate suggest_users(current_user, opts \\ []), to: Follows
   defdelegate following?(follower_id, followed_id), to: Follows
@@ -156,20 +134,12 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate following_ids_reverse(user_id), to: Follows
   defdelegate following_ids_for(user_id, target_ids), to: Follows
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Favorites (delegated to Engagement.Favorites)
-  # ══════════════════════════════════════════════════════════════════════
-
   defdelegate toggle_favorite(user_id, favoritable_type, favoritable_id), to: Favorites
   defdelegate favorited?(user_id, favoritable_type, favoritable_id), to: Favorites
   defdelegate favorites_map(user_id, favoritable_type, favoritable_ids), to: Favorites
   defdelegate list_user_favorites(user_id, type), to: Favorites
   defdelegate count_user_favorites(user_id), to: Favorites
   defdelegate favorited_step_codes(user_id), to: Favorites, as: :step_codes_for
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Learnings (jornada de estudos — delegated to Engagement.Learnings)
-  # ══════════════════════════════════════════════════════════════════════
 
   defdelegate toggle_learned(user_id, step_id), to: Learnings
   defdelegate learned?(user_id, step_id), to: Learnings
@@ -178,10 +148,6 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate list_learned_steps(user_id), to: Learnings
   defdelegate count_user_learned(user_id), to: Learnings
   defdelegate reset_learned(user_id), to: Learnings
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Batch stats
-  # ══════════════════════════════════════════════════════════════════════
 
   @doc """
   Batch-loads step count, sequence count, and primary badge for a list of user IDs.
@@ -204,10 +170,6 @@ defmodule OGrupoDeEstudos.Engagement do
     end)
   end
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Metrics (read-only; delegated to Engagement.Metrics)
-  # ══════════════════════════════════════════════════════════════════════
-
   defdelegate liked_step_ids(user_id), to: Metrics
   defdelegate liked_step_codes(user_id), to: Metrics
   defdelegate count_likes_given(user_id, likeable_type), to: Metrics
@@ -216,10 +178,6 @@ defmodule OGrupoDeEstudos.Engagement do
   defdelegate count_likes_given_batch(user_ids, likeable_type), to: Metrics
   defdelegate count_comments_authored_batch(user_ids), to: Metrics
   defdelegate total_likes_received_batch(user_ids), to: Metrics
-
-  # ══════════════════════════════════════════════════════════════════════
-  # Device sessions
-  # ══════════════════════════════════════════════════════════════════════
 
   @doc "Persists a device session captured at the web boundary."
   def track_device_session(attrs) do

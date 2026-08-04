@@ -22,10 +22,6 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   import OGrupoDeEstudosWeb.CoreComponents, only: [icon: 1]
   import OGrupoDeEstudosWeb.UI.UserAvatar
 
-  # ---------------------------------------------------------------------------
-  # Attrs
-  # ---------------------------------------------------------------------------
-
   attr :comments, :list, required: true
   attr :current_user, :map, default: nil
   attr :likes_map, :map, required: true
@@ -34,16 +30,12 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :replying_to, :string, default: nil
   attr :replies_map, :map, default: %{}
   attr :is_admin, :boolean, default: false
-  # `%{user_id => badge}` pre-calculado pelo host. Vazio cai no calculo por
-  # comentario, que e um N+1 e so sobrevive por compatibilidade.
+  # `%{user_id => badge}` precomputed by the host. Empty falls back to the
+  # per-comment calculation, which is an N+1 kept only for compatibility.
   attr :badges, :map, default: %{}
-  # Pagina publica: visitante sem conta le a conversa, mas nao escreve.
+  # Public page: an anonymous visitor reads the conversation but does not write.
   attr :show_form, :boolean, default: true
   slot :form_placeholder
-
-  # ---------------------------------------------------------------------------
-  # Public API
-  # ---------------------------------------------------------------------------
 
   def comment_thread(assigns) do
     ~H"""
@@ -69,10 +61,6 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
     </div>
     """
   end
-
-  # ---------------------------------------------------------------------------
-  # Private sub-components
-  # ---------------------------------------------------------------------------
 
   attr :comment, :map, required: true
   attr :current_user, :map, default: nil
@@ -295,12 +283,8 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
     """
   end
 
-  # ---------------------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------------------
-
-  # Host que passa `badges` evita uma consulta por comentario renderizado. Sem
-  # o mapa, cai no calculo individual (comportamento historico).
+  # A host passing `badges` avoids one query per rendered comment. Without the
+  # map it falls back to the individual calculation (historical behavior).
   defp badge_for(_badges, nil, _user_id), do: nil
 
   defp badge_for(badges, _user, user_id) when is_map_key(badges, user_id),
@@ -330,7 +314,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
 
   defp liked?(_likes_map, _comment_id), do: false
 
-  # Visitante sem conta não apaga nada — e a página não pode quebrar por isso.
+  # An anonymous visitor deletes nothing, and the page cannot break over it.
   defp can_delete?(_comment, nil, _is_admin), do: false
 
   defp can_delete?(comment, current_user, is_admin) do

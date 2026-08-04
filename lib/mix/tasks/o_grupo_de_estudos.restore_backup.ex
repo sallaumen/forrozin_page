@@ -57,7 +57,7 @@ defmodule Mix.Tasks.OGrupoDeEstudos.RestoreBackup do
   defp clear_tables! do
     repo = OGrupoDeEstudos.Repo
 
-    # Reverse order of FK constraints
+    # Reverse order of the FK constraints.
     repo.query!("DELETE FROM concept_steps")
     repo.query!("DELETE FROM step_connections")
     repo.delete_all(OGrupoDeEstudos.Encyclopedia.Step)

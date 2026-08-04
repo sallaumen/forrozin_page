@@ -47,8 +47,6 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
     |> maybe_preload(Keyword.get(opts, :preload, []))
   end
 
-  # --- Commentable behaviour ---
-
   @impl true
   @spec base_query() :: Ecto.Query.t()
   def base_query, do: from(c in ProfileComment, where: is_nil(c.deleted_at))
@@ -90,8 +88,6 @@ defmodule OGrupoDeEstudos.Engagement.ProfileCommentQuery do
   @impl true
   @spec user_field() :: atom()
   def user_field, do: :author_id
-
-  # --- private reducers ---
 
   defp apply_filters(query, opts) do
     Enum.reduce(opts, query, &apply_filter/2)

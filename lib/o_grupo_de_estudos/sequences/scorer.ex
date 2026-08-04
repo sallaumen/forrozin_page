@@ -17,7 +17,6 @@ defmodule OGrupoDeEstudos.Sequences.Scorer do
   @weight_repetition_penalty 1.0
   @weight_interesting_steps 1.5
 
-  # Steps that make sequences more interesting — bonus per occurrence
   @step_bonuses %{
     "GP" => 0.8,
     "GP-D" => 0.6,
@@ -61,8 +60,6 @@ defmodule OGrupoDeEstudos.Sequences.Scorer do
       interesting_steps: score_interesting_steps(seq) * @weight_interesting_steps
     }
   end
-
-  # ── Individual criteria ──────────────────────────────────────────────
 
   @doc """
   Scores how close required steps are to the center of the sequence.

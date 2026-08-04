@@ -1,6 +1,4 @@
 defmodule OGrupoDeEstudos.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   @moduledoc false
 
   use Application
@@ -24,12 +22,9 @@ defmodule OGrupoDeEstudos.Application do
       OGrupoDeEstudosWeb.Endpoint
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: OGrupoDeEstudos.Supervisor]
     result = Supervisor.start_link(children, opts)
 
-    # Install error logger after Repo is up
     if Application.get_env(:o_grupo_de_estudos, :persist_error_logs, true) do
       ErrorLogger.install()
     end
@@ -41,8 +36,8 @@ defmodule OGrupoDeEstudos.Application do
     result
   end
 
-  # Startup scripts rodam como job Oban (observavel, com retry), nao como
-  # Task solta com sleep. Falha ao enfileirar nao pode derrubar o boot.
+  # Startup work runs as an Oban job (observable, with retry) instead of a bare
+  # Task with sleep. Failing to enqueue must not bring the boot down.
   defp enqueue_startup_scripts do
     case StartupScripts.enqueue() do
       {:ok, _job} ->
@@ -54,8 +49,6 @@ defmodule OGrupoDeEstudos.Application do
     end
   end
 
-  # Tell Phoenix to update the endpoint configuration
-  # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
     OGrupoDeEstudosWeb.Endpoint.config_change(changed, removed)

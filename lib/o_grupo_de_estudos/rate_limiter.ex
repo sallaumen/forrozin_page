@@ -29,7 +29,6 @@ defmodule OGrupoDeEstudos.RateLimiter do
   - `window_seconds` — time window in seconds (default: 60)
   """
   def check(action, user_id, opts \\ []) do
-    # Disabled in test environment
     if Application.get_env(:o_grupo_de_estudos, :env) == :test,
       do: :ok,
       else: do_check(action, user_id, opts)
@@ -42,7 +41,6 @@ defmodule OGrupoDeEstudos.RateLimiter do
     now = System.monotonic_time(:second)
     cutoff = now - window
 
-    # Get existing entries, filter expired
     entries =
       case :ets.lookup(@table, key) do
         [{^key, timestamps}] -> Enum.filter(timestamps, &(&1 > cutoff))
@@ -56,8 +54,6 @@ defmodule OGrupoDeEstudos.RateLimiter do
       :ok
     end
   end
-
-  # ── GenServer callbacks ──────────────────────────────────────────────
 
   @impl true
   def init(_) do

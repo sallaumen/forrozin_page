@@ -62,7 +62,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
         is_own_profile = current_user.id == user.id
 
-        # Stats
         total_likes = Engagement.total_likes_received(user.id)
         total_favorites = Engagement.count_user_favorites(user.id)
         total_sequences = length(sequences)
@@ -73,7 +72,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         is_following =
           if is_own_profile, do: false, else: Engagement.following?(current_user.id, user.id)
 
-        # Badges
         badges = Badges.compute(user.id)
         primary_badge = Enum.find(badges, & &1.earned)
 
@@ -386,7 +384,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     {:noreply, assign(socket, favorite_sub_tab: tab)}
   end
 
-  # Student requests teacher OR teacher invites student
   def handle_event("request_study", params, socket) do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
@@ -395,7 +392,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     handle_study_result(result, socket, profile)
   end
 
-  # Accept pending request directly from profile
   def handle_event("accept_study", _params, socket) do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
@@ -438,8 +434,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
       {:noreply, socket}
     end
   end
-
-  # --- helpers ---
 
   defp resolve_study_request(current, %{is_teacher: true} = profile, "student"),
     do: Study.request_teacher_link(current, profile.id)
@@ -524,8 +518,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     end
   end
 
-  # So no proprio perfil: publicar a agenda futura de outra pessoa e exposicao
-  # nova, e "onde fulano vai estar" nao e informacao que o produto oferece hoje.
+  # Own profile only: publishing someone else's upcoming agenda is new exposure,
+  # and "where this person will be" is not something the product offers today.
   defp proximos_workshops(false, _user), do: []
   defp proximos_workshops(true, user), do: Workshops.upcoming_enrollments(user.id, limit: 3)
 

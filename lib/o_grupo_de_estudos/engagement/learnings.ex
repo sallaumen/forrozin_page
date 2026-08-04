@@ -16,7 +16,7 @@ defmodule OGrupoDeEstudos.Engagement.Learnings do
   @doc "Marca/desmarca um passo como aprendido. Retorna `{:ok, :learned | :unlearned}`."
   def toggle_learned(user_id, step_id) do
     if LearnedStepQuery.exists?(user_id, step_id) do
-      # delete idempotente por chave: nunca levanta StaleEntryError sob corrida.
+      # Delete by key is idempotent: never raises StaleEntryError under a race.
       LearnedStepQuery.delete(user_id, step_id)
       {:ok, :unlearned}
     else

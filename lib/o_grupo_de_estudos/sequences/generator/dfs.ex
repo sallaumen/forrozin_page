@@ -11,7 +11,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Dfs do
 
   @max_attempts 50
 
-  # Weight constants
   @weight_base 1.0
   @weight_highlighted 2.0
   @weight_required 4.0
@@ -73,8 +72,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Dfs do
     end)
   end
 
-  # ── Batch generation ─────────────────────────────────────────────────
-
   defp generate_batch(ctx, params, count, used_edges) do
     max_bf = batch_max_bf(ctx, params)
 
@@ -104,8 +101,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Dfs do
     |> Enum.reduce(existing, fn [a, b], set -> MapSet.put(set, {a.id, b.id}) end)
   end
 
-  # ── Single sequence generation (DFS with backtracking) ──────────────
-
   defp generate_one(ctx, params, max_bf, used_edges) do
     Enum.reduce_while(1..@max_attempts, nil, fn _, _acc ->
       case dfs_walk([ctx.start_id], initial_state(ctx, params, max_bf, used_edges), ctx) do
@@ -129,8 +124,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Dfs do
       recent_categories: []
     }
   end
-
-  # ── DFS with backtracking ───────────────────────────────────────────
 
   defp dfs_walk(path, state, ctx) when length(path) == state.target_length do
     if state.cyclic do
@@ -187,8 +180,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Dfs do
 
     [cat | state.recent_categories] |> Enum.take(3)
   end
-
-  # ── Neighbor scoring ────────────────────────────────────────────────
 
   defp score_neighbor(n, current, state, ctx, steps_remaining) do
     step = Map.get(ctx.step_map, n)
@@ -252,8 +243,6 @@ defmodule OGrupoDeEstudos.Sequences.Generator.Dfs do
   end
 
   defp noise, do: :rand.uniform() * @weight_noise_max
-
-  # ── Neighbor filtering ──────────────────────────────────────────────
 
   defp filter_neighbors(neighbors, current, state, ctx, steps_remaining) do
     Enum.filter(neighbors, fn n ->

@@ -24,8 +24,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   import OGrupoDeEstudosWeb.WorkshopComponents
 
   @comment_type "workshop_comment"
-  # 4s: o transcode de um clipe de 45s leva bem mais do que isso, entao a
-  # pagina pode perguntar de novo algumas vezes sem pesar.
+  # 4s: transcoding a 45s clip takes well over that, so the page can ask again a
+  # few times without weighing anything down.
   @recarga_galeria_ms 4_000
 
   @impl true
@@ -38,7 +38,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     end
   end
 
-  # A Policy e pura e nao consulta o banco: a borda resolve os fatos antes.
+  # The Policy is pure and does not query: the boundary resolves the facts first.
   defp acesso(nil, _socket), do: nil
   defp acesso(workshop, socket), do: Workshops.access_for(workshop, socket.assigns[:current_user])
 
@@ -59,8 +59,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> reload_comments()
   end
 
-  # Mesma resposta de slug inexistente: um "sem permissao" confirmaria que o
-  # workshop existe naquele endereco.
+  # Same answer as an unknown slug: a "no permission" would confirm the workshop
+  # exists at that address.
   defp not_found(socket) do
     socket
     |> put_flash(:error, "Workshop não encontrado.")
@@ -125,7 +125,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   end
 
   def handle_event("enroll", _params, %{assigns: %{current_user: nil}} = socket) do
-    # Sem conta: guarda para onde voltar e manda para o cadastro.
+    # No account: remembers where to come back to and sends to signup.
     {:noreply, redirect(socket, to: ~p"/signup?#{[workshop: socket.assigns.workshop.slug]}")}
   end
 
@@ -160,8 +160,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     end
   end
 
-  # ── Conversa ────────────────────────────────────────────────────────
-
   def handle_event("create_comment", %{"body" => body}, socket) do
     comment(socket, %{body: String.trim(body)}, "new-comment-form")
   end
@@ -178,8 +176,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
          %{} <- socket.assigns.current_user do
       {:noreply, assign(socket, :replying_to, id)}
     else
-      # Sem conta o formulario nem abre: melhor do que deixar escrever e
-      # jogar o texto fora no envio.
+      # Without an account the form does not even open, which beats letting someone
+      # write and throwing the text away on submit.
       nil -> {:noreply, to_signup(socket)}
       :error -> {:noreply, socket}
     end
@@ -252,9 +250,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   @impl true
   def handle_info(:recarregar_galeria, socket) do
-    # O timer disparou, então não há mais nenhum pendente: liberar a trava
-    # antes de reler deixa `assign_workshop/2` agendar o próximo, se ainda
-    # houver vídeo convertendo.
+    # The timer fired, so nothing is pending anymore: releasing the lock before
+    # reloading lets `assign_workshop/2` schedule the next one, if there is still
+    # video converting.
     socket = assign(socket, :recarga_agendada?, false)
 
     {:noreply, assign_workshop(socket, socket.assigns.workshop)}
@@ -300,8 +298,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp erro_de_media(:unauthorized), do: "Só quem está no workshop manda mídia."
   defp erro_de_media(_outro), do: "Não foi possível enviar."
 
-  # O rate limit corta em 20 likes por 10s: sem isso o clique nao dá resposta
-  # nenhuma e a pessoa acha que a pagina travou.
+  # The rate limit cuts at 20 likes per 10s: without this the click gives no
+  # answer at all and the page looks frozen.
   defp toggle_like(socket, user, type, id, reload) do
     case Engagement.toggle_like(user.id, type, id) do
       {:ok, _} -> {:noreply, reload.(socket)}
@@ -312,8 +310,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp like_error(:rate_limited), do: "Calma lá! Espere alguns segundos antes de curtir de novo."
   defp like_error(_reason), do: "Não foi possível registrar sua curtida."
 
-  # Id vem de params numa pagina publica: pode ser lixo, ou o id de um
-  # comentario de outro workshop. So aceita o que esta nesta conversa.
+  # The id comes from params on a public page: it can be garbage, or the id of a
+  # comment from another workshop. Only what belongs to this conversation is accepted.
   defp comment_of_this_workshop(socket, comment_id) do
     known =
       socket.assigns.comments
@@ -323,8 +321,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     if comment_id in known, do: {:ok, comment_id}, else: :error
   end
 
-  # Abre as respostas do pai: quem acabou de responder precisa ver o que
-  # escreveu, sem ter que clicar em "ver respostas".
+  # Opens the replies of the parent: whoever just replied needs to see what they
+  # wrote, without having to click "see replies".
   defp reply(socket, body, parent_id) do
     socket
     |> assign(:replies_map, Map.put_new(socket.assigns.replies_map, parent_id, []))
@@ -342,7 +340,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
     with :ok <- Policy.authorize(:comment_workshop, user, workshop),
          {:ok, _comment} <- Engagement.create_workshop_comment(user, workshop.id, attrs) do
-      # Limpa o campo so agora: recusa do servidor preserva o texto digitado.
+      # Clears the field only now: a server refusal preserves the typed text.
       {:noreply,
        socket
        |> assign(:replying_to, nil)
@@ -371,8 +369,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     end
   end
 
-  # Recarrega comentarios e respostas abertas. De proposito NAO recarrega o
-  # workshop: a lista de participantes pode ter 100 linhas.
+  # Reloads comments and open replies. On purpose does NOT reload the workshop:
+  # the participant list can have 100 rows.
   defp reload_comments(socket) do
     comments = Engagement.list_workshop_comments(socket.assigns.workshop.id)
     replies_map = refresh_replies(socket.assigns.replies_map)
@@ -384,8 +382,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:comment_badges, badges(comments, replies_map))
   end
 
-  # Em lote: a thread e publica e o calculo por comentario seria um N+1 aberto
-  # a qualquer visitante com o link.
+  # Batched: the thread is public and the per-comment calculation would be an N+1
+  # open to any visitor with the link.
   defp badges(comments, replies_map) do
     comments
     |> Enum.concat(replies_map |> Map.values() |> List.flatten())
@@ -410,8 +408,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp reply_ids(replies_map) do
     replies_map |> Map.values() |> List.flatten() |> Enum.map(& &1.id)
   end
-
-  # ── Workshop ────────────────────────────────────────────────────────
 
   defp assign_workshop(socket, workshop) do
     user = socket.assigns[:current_user]
@@ -440,16 +436,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign_workshop_likes()
   end
 
-  # Vitrine e o estado de quem esta do lado de fora de um workshop privado.
-  # Workshop publico nunca esta em vitrine: as regras dele nao mudaram.
+  # The storefront is the state of whoever stands outside a private workshop. A
+  # public workshop is never in that state: its rules did not change.
   defp vitrine?(%Workshop{visibility: :private} = workshop, user),
     do: not Workshops.liberado?(workshop, user)
 
   defp vitrine?(%Workshop{}, _user), do: false
 
-  # Quem da a aula agora e escolha explicita de quem organiza. Sem ninguem
-  # escolhido, cai no organizador: e o palpite certo na maioria dos casos, e
-  # some assim que a lista for preenchida.
+  # Who teaches is now an explicit choice of whoever organizes. With nobody chosen
+  # it falls back to the organizer: the right guess in most cases, and it goes away
+  # as soon as the list is filled in.
   defp professores(workshop) do
     case Workshops.list_teachers(workshop.id) do
       [] -> [do_organizador(workshop)]
@@ -466,22 +462,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     }
   end
 
-  # Transcode roda em outra fila e nao tem como avisar esta pagina. Enquanto
-  # houver video convertendo, a galeria se relê sozinha: sem isso a aluna manda
-  # o video e fica olhando "Processando" ate lembrar de dar F5.
+  # The transcode runs in another queue and cannot notify this page. While there
+  # is video converting, the gallery reloads itself: without this the uploader
+  # stares at "Processando" until they remember to hit F5.
   #
-  # Nada de PubSub: a fila tem concurrency 1 e a espera e de segundos, entao
-  # um timer que so existe enquanto ha o que esperar sai mais barato do que
-  # topico, subscribe e broadcast.
+  # No PubSub: the queue has concurrency 1 and the wait is seconds, so a timer
+  # that only exists while there is something to wait for is cheaper than a
+  # topic, a subscribe and a broadcast.
   defp agendar_recarga_da_galeria(socket) do
     esperando? = connected?(socket) and Enum.any?(socket.assigns.media, &processando?/1)
 
     agendar_recarga(socket, esperando?, socket.assigns[:recarga_agendada?] || false)
   end
 
-  # Já tem timer voando: não agenda outro. `assign_workshop/2` roda a cada
-  # inscrição e a cada like, e sem esta trava cada clique somaria mais um poll
-  # em cima do mesmo vídeo.
+  # A timer is already flying: do not schedule another. `assign_workshop/2` runs
+  # on every enrollment and every like, and without this lock each click would
+  # stack one more poll over the same video.
   defp agendar_recarga(socket, true, true), do: socket
 
   defp agendar_recarga(socket, true, false) do
@@ -491,7 +487,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   defp agendar_recarga(socket, false, _agendada?), do: assign(socket, :recarga_agendada?, false)
 
-  # Configurável só para o teste conseguir esperar o timer sem segurar a suíte.
+  # Configurable only so the test can wait for the timer without holding the suite.
   defp intervalo_recarga do
     Application.get_env(:o_grupo_de_estudos, :recarga_galeria_ms, @recarga_galeria_ms)
   end
@@ -519,7 +515,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     assign_workshop(socket, Workshops.get_by_slug(socket.assigns.workshop.slug))
   end
 
-  # Galeria e conteudo pelo qual se paga: so quem esta no workshop ve.
+  # The gallery is paid content: only who is in the workshop sees it.
   defp media_visivel(workshop, user) do
     if Workshops.can_see_media?(workshop, user), do: Workshops.list_media(workshop.id), else: []
   end

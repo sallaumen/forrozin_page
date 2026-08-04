@@ -13,8 +13,8 @@ defmodule OGrupoDeEstudosWeb.Handlers.StepLearning do
 
   defmacro __using__(_opts) do
     quote do
-      # A folha comeca fechada. Fica no `use` para as telas que a usam nao
-      # precisarem lembrar de inicializar o assign.
+      # The sheet starts closed. It sits in the `use` so the screens that use it do
+      # not have to remember to initialize the assign.
       on_mount({unquote(__MODULE__), :folha_fechada})
 
       alias OGrupoDeEstudos.Encyclopedia.StepQuery

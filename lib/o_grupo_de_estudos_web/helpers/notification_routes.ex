@@ -42,7 +42,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
     end
   end
 
-  # Inscricao leva para o painel: quem organiza quer ver a lista.
+  # An enrollment leads to the panel: the organizer wants to see the list.
   def path(%{action: :workshop_enrolled, parent_id: id}, %{workshops: workshops}),
     do: workshop_path(workshops[id], "/gerenciar")
 

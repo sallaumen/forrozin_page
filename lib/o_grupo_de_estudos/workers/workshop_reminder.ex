@@ -31,7 +31,7 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
     |> avisar_do_dia()
   end
 
-  # `dia` nos args serve aos testes e a um reenvio manual; sem ele, amanhã.
+  # `dia` in the args serves the tests and a manual resend; without it, tomorrow.
   defp dia_alvo(%{"dia" => iso}), do: Date.from_iso8601!(iso)
   defp dia_alvo(_args), do: Date.add(Brazil.today(), 1)
 
@@ -45,8 +45,8 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
     :ok
   end
 
-  # O ator e o organizador: a notificacao exige actor_id e "Tavano: amanha tem
-  # workshop" le natural.
+  # The actor is the organizer: the notification requires actor_id, and
+  # "Tavano: tomorrow there is a workshop" reads naturally.
   defp avisar({_inscricao, workshop, user}) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_workshop_reminder(workshop.organizer_id, user.id, workshop.id)

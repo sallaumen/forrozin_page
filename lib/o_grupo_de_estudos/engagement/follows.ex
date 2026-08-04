@@ -78,8 +78,8 @@ defmodule OGrupoDeEstudos.Engagement.Follows do
     my_followed_ids =
       from(f in Follow, where: f.follower_id == ^current_user.id, select: f.followed_id)
 
-    # Friends of friends: people followed by users I follow, ranked by how
-    # many mutual connections recommend them.
+    # Friends of friends: people followed by users I follow, ranked by how many
+    # mutual connections recommend them.
     fof_query =
       from(f2 in Follow,
         where: f2.follower_id in subquery(my_followed_ids),
@@ -99,7 +99,6 @@ defmodule OGrupoDeEstudos.Engagement.Follows do
       |> Repo.all()
       |> sort_by_fof_rank(fof_results)
     else
-      # Not enough friends-of-friends — fill with city/activity fallback
       already_excluded = [current_user.id | fof_ids]
       remaining = limit - length(fof_ids)
 

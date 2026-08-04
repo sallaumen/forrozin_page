@@ -61,8 +61,8 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
     assign(socket, :backups, backups)
   end
 
-  # Reconstroi o caminho dentro do diretorio de backups a partir do basename,
-  # neutralizando path traversal: nunca confia no caminho enviado pelo cliente.
+  # Rebuilds the path inside the backups directory from the basename, defusing
+  # path traversal: the path sent by the client is never trusted.
   defp safe_backup_path(path) do
     safe = Path.join(Backup.default_dir(), Path.basename(path))
 

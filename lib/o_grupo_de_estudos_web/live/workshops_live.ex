@@ -53,8 +53,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
     {:noreply, socket |> assign(:search, "") |> load_feed()}
   end
 
-  # Pattern matching em vez de String.to_existing_atom: em dev o módulo de
-  # query pode nem ter sido carregado ainda, e aí o atom não existe.
+  # Pattern matching instead of String.to_existing_atom: in dev the query module
+  # may not have been loaded yet, and then the atom does not exist.
   defp period_atom("week"), do: :week
   defp period_atom("month"), do: :month
   defp period_atom("year"), do: :year
@@ -108,18 +108,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
     |> assign(:minhas_programacoes, Workshops.list_programs_for_owner(user.id))
   end
 
-  # Conta o que a tela realmente renderiza: a secao "Voce organiza" mostra
-  # workshops que o colapso tirou da agenda, e sem eles o card perdia o numero
-  # de inscritos e a tag de esgotado.
+  # Counts what the screen actually renders: the "Você organiza" section shows
+  # workshops the collapse took off the agenda, and without them the card lost the
+  # enrolled count and the sold-out tag.
   defp contagens(itens, meus) do
     (ids_de_workshop(itens) ++ Enum.map(meus, & &1.id))
     |> Enum.uniq()
     |> Workshops.enrollment_counts()
   end
 
-  # Quem se inscreveu num workshop que foi colapsado precisa ver isso em algum
-  # lugar: senao o card da programacao nao diz nada e parece que a inscricao
-  # sumiu. Em lote, senao seria uma consulta por programacao.
+  # Whoever enrolled in a collapsed workshop needs to see it somewhere: otherwise
+  # the program card says nothing and the enrollment looks lost. Batched, or it
+  # would be one query per program.
   defp marcar_inscricao(itens, user) do
     contagens =
       itens

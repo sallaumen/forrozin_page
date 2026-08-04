@@ -13,10 +13,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
 
   alias OGrupoDeEstudos.Workshops
 
-  # O content_type gravado na linha veio do navegador de quem subiu o arquivo.
-  # Servir qualquer coisa fora desta lista abriria XSS armazenado: um
-  # "image/svg+xml" forjado executa script na origem do site quando aberto
-  # direto pela URL. Fora da lista, o arquivo desce como binario generico.
+  # The content_type stored on the row came from the uploader's browser. Serving
+  # anything outside this list would open stored XSS: a forged "image/svg+xml"
+  # runs script on the site origin when opened straight from the URL. Outside the
+  # list, the file goes down as a generic binary.
   @tipos_seguros ~w(image/jpeg image/png image/webp video/mp4 video/quicktime)
 
   def show(conn, %{"id" => media_id}) do
@@ -50,22 +50,21 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
     |> responder(Workshops.serve_media(media))
   end
 
-  # O poster e um quadro do video: mesma permissao da midia, senao daria para
-  # reconstruir a aula em thumbnails sem pagar por ela. Sempre JPEG: quem o
-  # gerou foi o transcode, nunca o navegador de quem subiu.
+  # The poster is a video frame: same permission as the media, otherwise the class
+  # could be reconstructed in thumbnails without paying for it. Always JPEG: the
+  # transcode generated it, never the uploader's browser.
   defp entregar_poster(conn, media) do
     conn
     |> put_resp_content_type("image/jpeg", nil)
     |> responder(Workshops.serve_poster(media))
   end
 
-  # A porta de storage decide o como: arquivo local sai por sendfile do
-  # kernel; provider externo sai por URL assinada de vida curta.
+  # The storage port decides how: a local file goes out through the kernel
+  # sendfile; an external provider goes out as a short-lived signed URL.
   #
-  # O skip e falso-positivo do sobelow: ele marca qualquer variavel no
-  # send_file, mas este caminho vem de `ObjectStorage.serve/1` com chave
-  # opaca gerada pelo servidor. Input de usuario e so o id, resolvido por
-  # `autorizada/2` via banco.
+  # The skip is a sobelow false positive: it flags any variable in send_file, but
+  # this path comes from `ObjectStorage.serve/1` with an opaque server-generated
+  # key. User input is only the id, resolved through the database by `autorizada/2`.
   # sobelow_skip ["Traversal.SendFile"]
   defp responder(conn, {:file, caminho}) do
     conn |> cabecalhos_de_midia() |> send_file(200, caminho)
@@ -76,13 +75,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopMediaController do
 
   defp cabecalhos_de_midia(conn) do
     conn
-    # Conteudo pago: nunca em cache compartilhado.
+    # Paid content: never in a shared cache.
     |> put_resp_header("cache-control", "private, no-store")
     |> put_resp_header("x-content-type-options", "nosniff")
   end
 
-  # Sem charset em nenhum caso: o arquivo e binario, e "image/png;
-  # charset=utf-8" e besteira.
+  # No charset in any case: the file is binary, and "image/png; charset=utf-8"
+  # is nonsense.
   defp tipo_seguro(tipo) when tipo in @tipos_seguros, do: tipo
   defp tipo_seguro(_desconfiado), do: "application/octet-stream"
 

@@ -53,7 +53,7 @@ defmodule OGrupoDeEstudos.Workers.TrackUserLogin do
   defp parse_occurred_at(occurred_at) do
     case DateTime.from_iso8601(occurred_at) do
       {:ok, datetime, _offset} -> DateTime.truncate(datetime, :second)
-      # Jobs enfileirados antes do deploy carregam iso8601 naive (sem Z).
+      # Jobs enqueued before the deploy carry naive iso8601, with no Z.
       {:error, :missing_offset} -> parse_naive_occurred_at(occurred_at)
       {:error, _reason} -> parse_occurred_at(nil)
     end

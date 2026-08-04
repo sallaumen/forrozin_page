@@ -24,12 +24,11 @@ defmodule OGrupoDeEstudosWeb.Router do
     plug :accepts, ["json"]
   end
 
-  # Health check — no SSL redirect, no auth, just 200 OK
+  # Health check: no SSL redirect, no auth, just 200 OK.
   scope "/healthz" do
     get "/", OGrupoDeEstudosWeb.HealthController, :check
   end
 
-  # Sitemap — public, no auth
   scope "/" do
     get "/sitemap.xml", OGrupoDeEstudosWeb.SitemapController, :index
   end
@@ -38,7 +37,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     plug OGrupoDeEstudosWeb.UserAuth, :redirect_if_authenticated
   end
 
-  # Autenticação — redireciona para /collection se já logado
+  # Redirects to /collection when already logged in.
   scope "/", OGrupoDeEstudosWeb do
     pipe_through [:browser, :redirect_if_authenticated]
 
@@ -51,12 +50,12 @@ defmodule OGrupoDeEstudosWeb.Router do
     end
   end
 
-  # Rotas públicas — current_user é opcional (carregado, sem redirecionar)
+  # Public routes: current_user is optional, loaded without redirecting.
   scope "/", OGrupoDeEstudosWeb do
     pipe_through :browser
 
-    # Midia de workshop: passa pela sessao de proposito, o arquivo e restrito.
-    # A capa do video tem a mesma trava: e um quadro do conteudo pago.
+    # Workshop media goes through the session on purpose, since the file is
+    # restricted. The video poster has the same lock: it is a frame of paid content.
     get "/workshop-media/:id", WorkshopMediaController, :show
     get "/workshop-media/:id/poster", WorkshopMediaController, :poster
 
@@ -73,9 +72,9 @@ defmodule OGrupoDeEstudosWeb.Router do
     end
   end
 
-  # Workshop é divulgado por link (WhatsApp): a página abre para quem ainda não
-  # tem conta. O que é privado (conversa, nomes dos inscritos, gestão) fica
-  # atrás de login dentro da própria LiveView.
+  # A workshop is shared by link (WhatsApp), so the page opens for whoever has no
+  # account yet. What is private (conversation, enrolled names, management) stays
+  # behind login inside the LiveView itself.
   scope "/", OGrupoDeEstudosWeb do
     pipe_through :browser
 
@@ -86,7 +85,7 @@ defmodule OGrupoDeEstudosWeb.Router do
     end
   end
 
-  # Rotas que exigem autenticação e/ou papel admin (gating no router via live_session)
+  # Routes that require authentication or the admin role, gated by live_session.
   scope "/", OGrupoDeEstudosWeb do
     pipe_through :browser
 
@@ -118,8 +117,8 @@ defmodule OGrupoDeEstudosWeb.Router do
     end
   end
 
-  # Rotas admin de conn (controller/dashboard): o gate e o plug require_admin,
-  # ja que on_mount de live_session nao cobre requests HTTP comuns.
+  # Admin conn routes (controller/dashboard): the gate is the require_admin plug,
+  # since a live_session on_mount does not cover plain HTTP requests.
   scope "/admin", OGrupoDeEstudosWeb do
     pipe_through [:browser, :require_admin]
 

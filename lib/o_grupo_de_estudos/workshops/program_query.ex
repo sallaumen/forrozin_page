@@ -140,8 +140,8 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
         w.program_id,
         %{
           count: count(w.id),
-          # type/2 obrigatorio: o Ecto perde o tipo no agregado e devolveria
-          # NaiveDateTime, que nao casa com o resto do codigo (utc_datetime).
+          # type/2 is required: Ecto loses the type in the aggregate and would return
+          # NaiveDateTime, which does not match the rest of the code (utc_datetime).
           starts_at: type(min(w.starts_at), :utc_datetime),
           ends_at: type(max(coalesce(w.ends_at, w.starts_at)), :utc_datetime)
         }
