@@ -1,11 +1,11 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopMedia do
   use Ecto.Migration
 
-  # Galeria do workshop: foto e video de quem esteve la.
+  # Workshop gallery: photos and video from whoever was there.
   #
-  # storage_key e opaco e NAO fica na pasta publica: midia de workshop pago e
-  # restrita a quem se inscreveu, entao e servida por controller com permissao,
-  # nunca pelo Plug.Static.
+  # storage_key is opaque and does NOT sit in the public folder: media of a paid
+  # workshop is restricted to whoever enrolled, so it is served by a controller with
+  # permission, never by Plug.Static.
   def change do
     create table(:workshop_media, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -20,7 +20,7 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopMedia do
       add :content_type, :string, null: false
       add :byte_size, :integer, null: false
       add :poster_key, :string
-      # Midia de quem administra o workshop aparece primeiro, marcada.
+      # Media from a workshop admin comes first, marked.
       add :official, :boolean, null: false, default: false
       add :caption, :string
       add :deleted_at, :utc_datetime

@@ -1,8 +1,8 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.AddFlyers do
   use Ecto.Migration
 
-  # Flyer de divulgacao. Guarda so o caminho publico: o arquivo mora no
-  # storage, que hoje e o volume e amanha pode ser outro adapter.
+  # Promotional flyer. It stores only the public path: the file lives in the
+  # storage, which today is the volume and tomorrow may be another adapter.
   def change do
     alter table(:workshops) do
       add :flyer_path, :string

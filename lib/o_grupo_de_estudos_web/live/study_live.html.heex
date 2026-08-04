@@ -31,7 +31,6 @@
     class="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-4 py-5 pb-24 md:pb-10 sm:px-6 lg:px-8 2xl:max-w-[1536px]"
   >
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
-      <%!-- Coluna principal: diário + histórico --%>
       <div class="flex min-w-0 flex-col gap-4">
         <.diary_card
           learned_codes={@learned_codes}
@@ -106,7 +105,6 @@
         </.note_history>
       </div>
 
-      <%!-- Sidebar: consistência + metas + ranking --%>
       <aside class="flex min-w-0 flex-col gap-4">
         <.consistency_card
           monthly_count={@monthly_note_count}
@@ -282,7 +280,6 @@
       </:action>
     </.section_intro>
 
-    <%!-- Estatísticas --%>
     <div class="mb-4 grid grid-cols-3 gap-3">
       <.stat_card value={length(@student_links)} label="alunos" />
       <.stat_card value={@students_wrote_today} label="escreveram hoje" tone={:success} />
@@ -294,7 +291,6 @@
       />
     </div>
 
-    <%!-- Composer de lição (broadcast para a turma) --%>
     <section
       :if={@composing_lesson}
       id="lesson-composer"
@@ -310,8 +306,10 @@
             "Escreva uma vez e envie para os alunos selecionados. A lição chega no diário compartilhado de cada um."}
       </p>
 
-      <%!-- phx-change no form inteiro: marcar/desmarcar aluno envia os campos de
-           texto junto, então o que já foi escrito nunca se perde no re-render. --%>
+      <%!-- phx-change on the whole form: checking or unchecking a student sends the
+           text fields along, so what was already typed is never lost on the re-
+           render.
+      --%>
       <form id="lesson-composer-form" phx-change="lesson_form_changed" phx-submit="send_lesson">
         <input
           type="text"
@@ -408,7 +406,6 @@
       </div>
     </section>
 
-    <%!-- Lições já enviadas --%>
     <section
       :if={@teacher_lessons != []}
       class="mb-4 rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm"
@@ -535,8 +532,9 @@
           href={~p"/users/#{link.student.username}"}
         >
           <:actions>
-            <%!-- Depois de cutucar, o próprio botão confirma: o toast some, o
-                 estado fica. Evita cutucar duas vezes sem querer. --%>
+            <%!-- After a nudge the button itself confirms: the toast goes away, the
+                 state stays. It avoids nudging twice by accident.
+            --%>
             <span
               :if={
                 !MapSet.member?(@wrote_today_ids, link.id) &&
@@ -611,6 +609,7 @@
   />
 </div>
 
-<%!-- Folha do passo: abre por cima, para quem estava lendo a anotação
-não perder o lugar. --%>
+<%!-- Step sheet: it opens on top, so whoever was reading the note does not lose their
+     place.
+--%>
 <.step_sheet step={@step_sheet} learned={@step_sheet_learned} />

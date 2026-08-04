@@ -63,9 +63,9 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
-// Limpa um formulario depois que o servidor confirmou o envio. De proposito
-// nao limpa no submit: se o servidor recusar (rate limit, validacao), o texto
-// da pessoa continua la.
+// Clears a form after the server confirmed the submit. On purpose it does not
+// clear on submit: if the server refuses (rate limit, validation), the typed
+// text stays there.
 window.addEventListener("phx:form:clear", (event) => {
   const form = document.getElementById(event.detail.id)
   if (form) { form.reset() }
@@ -138,9 +138,9 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
-// iOS Safari só dispara :active (usado no flash tátil de botões, ver app.css)
-// quando a página tem um listener de touch. Um listener vazio global resolve,
-// sem handler inline (CSP-safe).
+// iOS Safari only fires :active (used for the tactile button flash, see
+// app.css) when the page has a touch listener. One empty global listener solves
+// it, with no inline handler (CSP-safe).
 document.addEventListener("touchstart", () => {}, {passive: true})
 
 // The lines below enable quality of life phoenix_live_reload

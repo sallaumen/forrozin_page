@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.AddWorkshopVisibility do
   use Ecto.Migration
 
-  # Publico vs privado. Coluna separada de status de proposito: status e ciclo
-  # de vida (rascunho, publicado, cancelado), visibilidade e quem enxerga. Um
-  # workshop privado precisa aceitar inscricao e conversa normalmente.
+  # Public versus private. A separate column from status on purpose: status is the
+  # life cycle (draft, published, cancelled), visibility is who can see. A private
+  # workshop still has to accept enrollment and conversation normally.
   def change do
     alter table(:workshops) do
       add :visibility, :string, null: false, default: "public"

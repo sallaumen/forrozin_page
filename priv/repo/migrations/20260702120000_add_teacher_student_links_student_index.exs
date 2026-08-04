@@ -1,8 +1,8 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.AddTeacherStudentLinksStudentIndex do
   use Ecto.Migration
 
-  # Index build sem lock de escrita na tabela (concurrently exige rodar
-  # fora de transacao DDL).
+  # Index build with no write lock on the table (concurrently has to run outside
+  # a DDL transaction).
   @disable_ddl_transaction true
   @disable_migration_lock true
 

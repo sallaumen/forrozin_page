@@ -1,9 +1,9 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.AddEnrollmentRemindedAt do
   use Ecto.Migration
 
-  # Marca de que o aviso de vespera ja saiu. Roda duas vezes no mesmo dia e
-  # ninguem recebe duas. Coluna em vez de unique do Oban porque e dado
-  # inspecionavel: da para responder "por que fulano nao recebeu?".
+  # Mark that the day-before reminder already went out. Run twice on the same day
+  # and nobody gets two. A column instead of an Oban unique because it is
+  # inspectable data: it can answer "why did this person not receive it?".
   def change do
     alter table(:workshop_enrollments) do
       add :reminded_at, :utc_datetime

@@ -189,9 +189,10 @@
         </div>
 
         <div class="mt-4">
-          <%!-- Quem dá a aula: escolha explícita, porque produzir a aula de
-          outra pessoa é o caso comum. Professor de fora nem sempre tem conta,
-          então o nome escrito também vale. --%>
+          <%!-- Who teaches is an explicit choice, because producing someone else's
+               class is the common case. A visiting teacher does not always have an
+               account, so a written name counts too.
+          --%>
           <div class="mb-5">
             <p class="mb-1 text-[12.5px] font-bold text-ink-700">Quem dá a aula</p>
             <p class="m-0 mb-2 text-[11.5px] leading-snug text-ink-500">
@@ -229,9 +230,10 @@
             </p>
           </div>
 
-          <%!-- Quando se paga era texto livre, e texto livre o sistema não usa:
-          com a escolha, dá para mostrar o jeito certo na página e oferecer o
-          atalho do comprovante. Só aparece em workshop pago. --%>
+          <%!-- When payment happens used to be free text, and free text is nothing
+               the system can use: with a choice, the page can show the right way to
+               pay and offer the receipt shortcut. Only shows on a paid workshop.
+          --%>
           <div :if={@form["price"] not in ["", nil, "0"]} class="mb-5">
             <p class="mb-1 text-[12.5px] font-bold text-ink-700">Quando as pessoas pagam</p>
             <div class="flex flex-col gap-1.5">

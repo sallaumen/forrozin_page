@@ -1,14 +1,13 @@
 defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopWaitlist do
   use Ecto.Migration
 
-  # Turma cheia deixa de ser beco sem saida: quem chega depois do limite entra
-  # numa fila, e quem organiza passa a enxergar a demanda reprimida (fila
-  # grande e sinal de que cabe abrir outra turma).
+  # A full class stops being a dead end: whoever arrives past the capacity joins a
+  # waitlist, and the organizer starts seeing the pent-up demand (a long waitlist is
+  # the signal that another class fits).
   #
-  # Tabela propria, e nao um status em workshop_enrollments, de proposito:
-  # dezenas de consultas contam inscritos, e uma linha "esperando" convivendo
-  # com as inscricoes de verdade faria toda contagem mentir ate a ultima delas
-  # ser corrigida.
+  # Its own table, and not a status in workshop_enrollments, on purpose: dozens of
+  # queries count enrolled people, and a "waiting" row living among the real
+  # enrollments would make every count lie until the last one was fixed.
   def change do
     create table(:workshop_waitlist_entries, primary_key: false) do
       add :id, :binary_id, primary_key: true
@@ -21,8 +20,8 @@ defmodule OGrupoDeEstudos.Repo.Migrations.CreateWorkshopWaitlist do
       timestamps(type: :utc_datetime_usec)
     end
 
-    # A ordem da fila e a ordem de chegada: sem posicao guardada, que exigiria
-    # renumerar todo mundo a cada saida.
+    # The waitlist order is the arrival order: no stored position, which would require
+    # renumbering everyone on every exit.
     create unique_index(:workshop_waitlist_entries, [:workshop_id, :user_id])
     create index(:workshop_waitlist_entries, [:workshop_id, :inserted_at])
   end

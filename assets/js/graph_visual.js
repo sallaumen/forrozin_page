@@ -124,25 +124,25 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-// Escala do chip conforme o zoom do mapa. No zoom-out o chip é PROPORCIONAL
-// como os blocos (linear em zoom: encolhe junto com o mapa, sem piso — pedido
-// do professor); no zoom-in suaviza (raiz quadrada) pra não virar cartaz, com
-// teto em 1.3. O min() troca de regime sozinho em zoom ≈ 0.36 (1.67z = √z).
+// Chip scale follows the map zoom. Zooming out keeps the chip PROPORTIONAL to
+// the blocks (linear in zoom: it shrinks with the map, with no floor); zooming
+// in eases off (square root) so it does not become a poster, capped at 1.3. The
+// min() switches regime on its own around zoom 0.36 (1.67z = sqrt(z)).
 function zoneChipScale(zoom) {
   return Math.min(1.67 * zoom, Math.sqrt(zoom), 1.3)
 }
 
-// No zoom-out extremo (círculos minúsculos) os nomes só empilhariam uns sobre
-// os outros: desvanecem suavemente em vez de poluir. A faixa fica ABAIXO do
-// zoom natural de "fit" (celular ~0.17, desktop ~0.3), então a visão padrão
-// sempre mostra os rótulos; só o pinch-out além dela os esconde.
+// At extreme zoom-out (tiny circles) the names would only pile on top of each
+// other, so they fade out instead of cluttering. The band sits BELOW the natural
+// "fit" zoom (phone ~0.17, desktop ~0.3), so the default view always shows the
+// labels; only a pinch-out past it hides them.
 function zoneChipAlpha(zoom) {
   return Math.max(0, Math.min((zoom - 0.09) / 0.05, 1))
 }
 
-// Chip "tag" da área (estilo legenda): fundo papel OPACO (limpa os fios atrás)
-// + ponto na color da category + name em texto escuro, pequeno. Desenhado na
-// camada acima das arestas pra ler mesmo com o mapa cheio. `s` = escala do zoom.
+// Area "tag" chip (legend style): OPAQUE paper background (it clears the wires
+// behind), a dot in the category color and the name in small dark text. Drawn on
+// the layer above the edges so it reads even with a full map. `s` is the zoom scale.
 function drawZoneChip(ctx, cx, cy, label, color, bg, text, s) {
   const fontPx = Math.round(12 * s)
   ctx.save()
@@ -186,13 +186,13 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
 
   const w = container.offsetWidth
   const h = container.offsetHeight
-  // Buffer em pixels FÍSICOS (devicePixelRatio) com tamanho CSS em lógicos:
-  // sem isso, telas retina (celular = DPR 2-3) esticam o canvas e tudo sai
-  // borrado ("baixa definição").
+  // Buffer in PHYSICAL pixels (devicePixelRatio) with the CSS size in logical
+  // ones: without this, retina screens (phone = DPR 2-3) stretch the canvas and
+  // everything comes out blurry.
   const dpr = window.devicePixelRatio || 1
 
-  // Duas camadas: círculos ATRÁS do grafo (fundo translúcido) e os rótulos
-  // ACIMA das arestas (chips opacos, z-index 1), pra ler mesmo com o mapa cheio.
+  // Two layers: circles BEHIND the graph (translucent background) and the labels
+  // ABOVE the edges (opaque chips, z-index 1), so they read on a full map.
   const bg = document.createElement("canvas")
   bg.className = "zone-canvas"
   bg.width = w * dpr
@@ -215,7 +215,7 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
   const chipBg = root.getPropertyValue("--color-ink-50").trim() || "#fdfbf8"
   const chipText = root.getPropertyValue("--color-ink-900").trim() || "#1a0e05"
 
-  // Rótulos acompanham o zoom (escala + fade no zoom-out extremo).
+  // Labels follow the zoom (scale plus fade at extreme zoom-out).
   const zoom = cy.zoom()
   const chipScale = zoneChipScale(zoom)
   fgCtx.globalAlpha = zoneChipAlpha(zoom)
@@ -250,7 +250,7 @@ function drawCategoryZones(cy, sectorCenters, byCat) {
     bgCtx.lineWidth = 2
     bgCtx.stroke()
 
-    // Nome da área num chip pequeno e opaco, no alto do círculo (acima dos fios).
+    // Area name in a small opaque chip at the top of the circle, above the wires.
     if (fgCtx.globalAlpha > 0) {
       const chipY = cy_ - r + 15 * chipScale
       drawZoneChip(fgCtx, cx, chipY, catNodes[0].data("category") || cat, color, chipBg, chipText, chipScale)
@@ -337,10 +337,10 @@ function buildCyStyle(currentUserId) {
       }
     },
     {
-      // Nó clicado: preenchimento no laranja PADRÃO do sistema (--color-accent-
-      // orange) + halo dourado (overlay, não conflita com a borda inline da
-      // jornada) como contorno elegante. O preenchimento (set inline por
-      // paintNodeFill nos eventos select) é o sinal principal de "selecionado".
+      // Clicked node: fill in the system orange (--color-accent-orange) plus a
+      // gold halo (an overlay, so it does not fight the inline journey border).
+      // The fill (set inline by paintNodeFill on the select events) is the main
+      // "selected" signal.
       selector: "node:selected",
       style: {
         "background-color": t.selectFill,
@@ -409,10 +409,10 @@ function buildCyStyle(currentUserId) {
   ]
 }
 
-// Preenchimento + texto de um nó, conforme tema e estado de seleção. Selecionado
-// => laranja sólido da marca (sinal de "clicado"); senão => color base do tema.
-// Aplicado inline (vence o inline que o observer de tema seta nos nós), por isso
-// e chamado nos eventos select/unselect E no observer.
+// Fill and text of a node, by theme and selection state. Selected means the
+// solid brand orange (the "clicked" signal); otherwise the base theme color.
+// Applied inline (it beats the inline the theme observer sets on the nodes),
+// which is why it is called on select/unselect AND in the observer.
 function paintNodeFill(n, t, currentUserId) {
   if (n.selected()) {
     n.style({ "background-color": t.selectFill, "background-opacity": 1, "color": t.selectText })
@@ -473,19 +473,19 @@ function applyJourneyStyling() {
   const cy = window._cyInstance
   if (!cy) return
 
-  // Antes do primeiro push da jornada (set_learned_steps), mostra tudo sem overlay.
+  // Before the first journey push (set_learned_steps), show everything with no overlay.
   const learned = window._learnedStepCodes
   if (!learned) return
 
-  // Overlays (highlight de sequência, modo manual) são donos temporários da
-  // visão e revelam o que precisam; não mexer aqui — o clear deles reaplica a
-  // jornada chamando applyJourneyStyling de novo.
+  // Overlays (sequence highlight, manual mode) temporarily own the view and
+  // reveal what they need; do not touch that here, since clearing them reapplies
+  // the journey by calling applyJourneyStyling again.
   if (window._seqHighlightActive || window._manualMode) return
 
   const frontier = window._frontierStepCodes || new Set()
   const goal = window._goalStepCode
-  // Modo de edição (admin) sempre mostra o grafo inteiro para poder editar
-  // conexões, independente da revelação progressiva.
+  // Edit mode (admin) always shows the whole graph so connections can be edited,
+  // regardless of the progressive disclosure.
   const editMode = document.getElementById("graph-canvas")?.dataset.editMode === "true"
   const fullMap = window._fullMap === true || editMode
   const liked = window._likedStepCodes || new Set()
@@ -537,8 +537,8 @@ function applyJourneyStyling() {
       edge.style("display", fullMap || state !== "hidden" ? "element" : "none")
 
       if (state === "learned") {
-        // Conexões entre passos já conhecidos: o "caminho dominado", bem
-        // destacado (grosso, verde sólido, seta maior, opaco).
+        // Connections between steps already known: the "mastered path", clearly
+        // highlighted (thick, solid green, bigger arrow, opaque).
         edge.style({ "line-color": t.journeyLearned, "target-arrow-color": t.journeyLearned, "line-style": "solid", "line-opacity": 1, "opacity": 1, "width": 5, "arrow-scale": 2.2 })
       } else if (state === "frontier") {
         edge.style({ "line-color": t.journeyFrontier, "target-arrow-color": t.journeyFrontier, "line-style": "dashed", "line-opacity": 1, "opacity": 1, "width": 3, "arrow-scale": 1.7 })
@@ -620,9 +620,9 @@ const GraphVisual = {
       if (input) input.value = ""
     })
 
-    // Manual mode toggle. O builder manual constrói a sequência clicando nós, e
-    // nó display:none não recebe clique — então o modo manual revela o grafo
-    // inteiro (e applyJourneyStyling sai cedo enquanto _manualMode está ativo).
+    // Manual mode toggle. The manual builder builds the sequence by clicking
+    // nodes, and a display:none node takes no click, so manual mode reveals the
+    // whole graph (and applyJourneyStyling returns early while _manualMode is on).
     this.handleEvent("set_manual_mode", ({ active }) => {
       this._manualMode = active
       window._manualMode = active
@@ -647,8 +647,8 @@ const GraphVisual = {
       window._favoritedStepCodes = new Set(codes)
     })
 
-    // Jornada de estudos: aprendidos (verde), fronteira/meta (laranja) e
-    // revelação progressiva. Recolore + mostra/esconde sem reconstruir o grafo.
+    // Study journey: learned (green), frontier and goal (orange), and the
+    // progressive disclosure. Recolors and shows/hides without rebuilding the graph.
     this.handleEvent("set_learned_steps", ({ learned, frontier, goal, full_map }) => {
       window._learnedStepCodes = new Set(learned)
       window._frontierStepCodes = new Set(frontier)
@@ -657,15 +657,15 @@ const GraphVisual = {
       applyJourneyStyling()
     })
 
-    // Drawer do StepDetail (server-side): centrar/destacar o nó ao abrir (clique
-    // no nó ou num chip de conexão) e limpar o destaque ao fechar.
+    // StepDetail drawer (server-side): center and highlight the node on open (a
+    // click on the node or on a connection chip) and clear it on close.
     this.handleEvent("center_node", ({ code }) => {
       const cy = this._cy
       if (!cy) return
       const node = cy.getElementById(code)
       if (node.length > 0) {
-        // Revela o nó (um chip do drawer pode apontar para um passo escondido
-        // no modo progressivo); o fechar do drawer reaplica a jornada.
+        // Reveals the node (a drawer chip can point at a step hidden in
+        // progressive mode); closing the drawer reapplies the journey.
         node.closedNeighborhood().style("display", "element")
         cy.animate({ center: { eles: node }, duration: 300 })
         node.select()
@@ -807,19 +807,20 @@ const GraphVisual = {
     window._cyInstance = cy
     cy.edges().unselectify()
 
-    // Seleção: pinta o nó de laranja ao clicar e restaura a color base ao soltar.
-    // Inline para vencer o inline que o observer de tema seta nos nós (robusto a
-    // alternar dark mode com um nó selecionado ou a selecionar após alternar).
+    // Selection: paints the node orange on click and restores the base color on
+    // release. Inline so it beats the inline the theme observer sets on the nodes
+    // (holds up when dark mode is toggled with a node selected, and vice versa).
     cy.on("select", "node", evt => paintNodeFill(evt.target, cyTheme(), currentUserId))
     cy.on("unselect", "node", evt => paintNodeFill(evt.target, cyTheme(), currentUserId))
 
     // ── Hybrid layout: hubs at center + per-category Cola ──
     const sectorCenters = runHybridLayout(cy)
 
-    // Estado da jornada vem do PRÓPRIO JSON (data-graph já tagueia
-    // learned/frontier/goal), não do push set_learned_steps: o push é racy no
-    // mount conectado e, quando perdido, o disclosure não aplicava e o mapa
-    // inteiro aparecia no "Meu progresso". O push fica só para updates ao vivo.
+    // The journey state comes from the JSON itself (data-graph already tags
+    // learned/frontier/goal), not from the set_learned_steps push: the push is
+    // racy on the connected mount and, when lost, the disclosure did not apply
+    // and the whole map showed up in "Meu progresso". The push is for live
+    // updates only.
     window._learnedStepCodes = new Set(nodes.filter(n => n.learned).map(n => n.id))
     window._frontierStepCodes = new Set(nodes.filter(n => n.frontier).map(n => n.id))
     const goalNode = nodes.find(n => n.goal)
@@ -1033,9 +1034,9 @@ const GraphVisual = {
       const cy = this._cy
       if (!cy) return
 
-      // No "Meu progresso" a maioria dos nós está escondida; o filtro de
-      // category só faz sentido no mapa completo (ou em edição). A legenda
-      // segue como chave de cores, mas o clique não filtra aqui.
+      // In "Meu progresso" most nodes are hidden, so the category filter only
+      // makes sense on the full map (or in edit mode). The legend stays as a
+      // color key, but a click does not filter here.
       const legendEditMode = this.el.dataset.editMode === "true"
       if (!window._fullMap && !legendEditMode) return
 
@@ -1133,13 +1134,13 @@ const GraphVisual = {
     })
 
     cy.batch(() => {
-      // Sequência sobrepõe a revelação progressiva: mostra tudo para o caminho
-      // aparecer mesmo fora do "meu progresso". O clear reaplica a jornada.
+      // A sequence overrides the progressive disclosure: it shows everything so
+      // the path appears even outside "meu progresso". Clearing reapplies the journey.
       cy.elements().style("display", "element")
 
-      // 2. Fade everything + zera larguras da jornada para o caminho da
-      // sequência ser o mais destacado (senão arestas aprendidas em 5 ficariam
-      // mais grossas que o caminho em 4).
+      // 2. Fade everything and zero the journey widths so the sequence path is
+      // the most highlighted (otherwise learned edges at 5 would be thicker than
+      // the path at 4).
       cy.elements().style({ opacity: 0.12 })
       cy.edges().style({ "width": 1.5, "arrow-scale": 1.5 })
 
@@ -1374,15 +1375,15 @@ const GraphVisual = {
 
     clearSpotlight(cy)
     cy.nodes().unselect()
-    // Revela o nó buscado e a vizinhança mesmo em "Meu progresso" (a busca é uma
-    // ação deliberada de "me mostre este passo"); o clear reaplica a jornada.
+    // Reveals the searched node and its neighborhood even in "Meu progresso" (a
+    // search is a deliberate "show me this step"); clearing reapplies the journey.
     node.closedNeighborhood().style("display", "element")
     node.select()
     applySpotlight(cy, node)
 
-    // Só quando vem da lista da jornada (close_journey): minimiza o painel (no
-    // celular cobre o mapa; no desktop o drawer da esquerda disputa a tela) pra
-    // o passo aparecer no mapa cheio. A busca passa false (não fecha a jornada).
+    // Only when it comes from the journey list (close_journey): minimizes the
+    // panel (on a phone it covers the map; on desktop the left drawer competes
+    // for the screen) so the step shows on the full map. Search passes false.
     if (closeJourney && document.getElementById("journey-drawer")) {
       this.pushEvent("toggle_journey", {})
     }
