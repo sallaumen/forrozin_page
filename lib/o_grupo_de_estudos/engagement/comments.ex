@@ -4,8 +4,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   behaviour: each type delegates to its `*Query` module while sharing creation
   (with notification dispatch), soft-delete (tombstone vs. hard-delete by reply
   count), listing, replies, and batch counts.
-
-  ProfileComment keeps backward-compatible 1-arity signatures for UserProfileLive.
   """
 
   import Ecto.Query
@@ -27,27 +25,6 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   alias OGrupoDeEstudos.Repo
 
   @tombstone_body "[comentário removido]"
-
-  @doc "Returns active (non-deleted) comments on a user's profile, newest first."
-  def list_profile_comments(opts) when is_list(opts) do
-    ProfileCommentQuery.list_by(opts)
-  end
-
-  @doc "Posts a new comment on a user's profile (legacy raw-attrs signature)."
-  def create_profile_comment(attrs) when is_map(attrs) do
-    %ProfileComment{}
-    |> ProfileComment.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc "Soft-deletes a profile comment (legacy signature: no authorization check)."
-  def delete_profile_comment(%ProfileComment{} = comment) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-    comment
-    |> Ecto.Changeset.change(deleted_at: now)
-    |> Repo.update()
-  end
 
   @doc "Lists root step comments for the given step, ordered by engagement."
   def list_step_comments(step_id, opts \\ []),

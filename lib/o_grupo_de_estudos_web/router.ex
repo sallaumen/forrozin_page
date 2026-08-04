@@ -63,14 +63,6 @@ defmodule OGrupoDeEstudosWeb.Router do
     get "/confirm/:token", UserConfirmationController, :confirm
     get "/auto-login/:token", UserSessionController, :auto_login
 
-    # Portuguese routes kept as permanent redirects: a shared link must not 404.
-    get "/programacao/:slug", LegacyRouteController, :program
-    get "/workshops/:slug/gerenciar", LegacyRouteController, :manage_workshop
-    get "/study/workshops/novo", LegacyRouteController, :new_workshop
-    get "/study/workshops/:slug/editar", LegacyRouteController, :edit_workshop
-    get "/study/programacoes/nova", LegacyRouteController, :new_program
-    get "/study/programacoes/:slug/editar", LegacyRouteController, :edit_program
-
     live_session :public, on_mount: [{OGrupoDeEstudosWeb.UserAuth, :mount_current_user}] do
       live "/", LandingLive
       live "/about", AboutLive

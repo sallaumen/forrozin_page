@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
 
   import Phoenix.LiveViewTest
 
+  alias OGrupoDeEstudos.Engagement
+
   defp logged_in_conn(conn, user) do
     log_in_user(conn, user)
   end
@@ -204,31 +206,14 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
     } do
       conn = logged_in_conn(conn, viewer)
 
-      OGrupoDeEstudos.Engagement.create_profile_comment(%{
-        body: "To be deleted",
-        author_id: viewer.id,
-        profile_id: profile.id
-      })
+      {:ok, comment} =
+        Engagement.create_profile_comment(viewer, profile.id, %{body: "To be deleted"})
 
       {:ok, view, _html} = live(conn, ~p"/users/#{profile.username}")
 
-      comments =
-        OGrupoDeEstudos.Engagement.list_profile_comments(
-          profile_id: profile.id,
-          preload: [:author]
-        )
-
-      comment = hd(comments)
-
       view |> render_click("delete_comment", %{"id" => comment.id})
 
-      remaining =
-        OGrupoDeEstudos.Engagement.list_profile_comments(
-          profile_id: profile.id,
-          preload: [:author]
-        )
-
-      assert remaining == []
+      assert Engagement.list_profile_comments(profile.id, []) == []
     end
   end
 
