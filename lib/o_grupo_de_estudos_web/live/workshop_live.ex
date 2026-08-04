@@ -9,14 +9,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
-  alias OGrupoDeEstudos.{Accounts, Engagement, Workshops}
+  alias OGrupoDeEstudos.{Accounts, Engagement, Sequences, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Badges
   alias OGrupoDeEstudos.Workshops.Workshop
 
   use OGrupoDeEstudosWeb.Handlers.StepLearning
+  use OGrupoDeEstudosWeb.Handlers.SequenceSheet
 
-  import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1]
+  import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1, sequence_sheet: 1]
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
@@ -60,6 +61,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:page_title, workshop.title)
     |> assign(:replying_to, nil)
     |> assign(:replies_map, %{})
+    # Seeded here and not in assign_workshop/2, which reruns on every reload: an
+    # open sequence would snap shut on the first citation or favorite.
+    |> assign(:open_sequence, nil)
     |> assign_workshop(workshop)
     |> reload_comments()
   end
@@ -87,6 +91,43 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     Workshops.remove_step(socket.assigns.workshop, socket.assigns.current_user, step_id)
 
     {:noreply, reload_workshop(socket)}
+  end
+
+  def handle_event("save_sequence", _params, socket) do
+    case OGrupoDeEstudosWeb.Handlers.SequenceSheet.save_draft(socket) do
+      {:ok, sequence} ->
+        {:noreply, cite(socket, sequence.id, "Sequência salva e citada na aula.")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, draft_error(reason))}
+    end
+  end
+
+  def handle_event("cite_sequence", %{"id" => sequence_id}, socket) do
+    {:noreply, cite(socket, sequence_id, "Sequência citada na aula.")}
+  end
+
+  def handle_event("uncite_sequence", %{"id" => sequence_id}, socket) do
+    Workshops.remove_sequence(socket.assigns.workshop, socket.assigns.current_user, sequence_id)
+
+    {:noreply, reload_workshop(socket)}
+  end
+
+  # Opening in place, and not on the sequence page: whoever is reading the class
+  # wants to see the combination without losing the page they are on.
+  def handle_event("toggle_sequence_steps", %{"id" => sequence_id}, socket) do
+    {:noreply, assign(socket, :open_sequence, next_open_sequence(socket, sequence_id))}
+  end
+
+  def handle_event("toggle_sequence_favorite", _params, %{assigns: %{current_user: nil}} = socket) do
+    {:noreply, redirect(socket, to: ~p"/signup")}
+  end
+
+  def handle_event("toggle_sequence_favorite", %{"id" => sequence_id}, socket) do
+    user = socket.assigns.current_user
+    Engagement.toggle_favorite(user.id, "sequence", sequence_id)
+
+    {:noreply, assign_sequence_favorites(socket)}
   end
 
   def handle_event("request_join", _params, %{assigns: %{current_user: nil}} = socket) do
@@ -432,6 +473,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:teachers, teachers(workshop))
     |> assign(:steps, Workshops.list_steps(workshop.id))
     |> assign(:step_search, [])
+    |> assign(:workshop_sequences, Workshops.list_sequences(workshop.id))
+    |> assign_sequence_favorites()
     |> assign(:inside_open?, Workshops.inside_open?(workshop, user))
     |> assign(:storefront?, storefront?(workshop, user))
     |> assign(:join_status, Workshops.join_status(workshop, user))
@@ -529,4 +572,44 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp enroll_error(:full), do: "As vagas acabaram."
   defp enroll_error(:not_open), do: "Este workshop não está aberto para inscrição."
   defp enroll_error(:already_enrolled), do: "Você já está inscrito."
+
+  # Citing closes the sheet: the sheet asked one thing and the answer is on the
+  # page now.
+  defp cite(socket, sequence_id, message) do
+    case Workshops.add_sequence(socket.assigns.workshop, socket.assigns.current_user, sequence_id) do
+      {:ok, _citation} ->
+        socket
+        |> OGrupoDeEstudosWeb.Handlers.SequenceSheet.close()
+        |> reload_workshop()
+        |> put_flash(:info, message)
+
+      {:error, reason} ->
+        put_flash(socket, :error, cite_error(reason))
+    end
+  end
+
+  defp cite_error(:unauthorized), do: "Só quem organiza cita sequência nesta aula."
+  defp cite_error(:already_added), do: "Essa sequência já está aqui."
+  defp cite_error(_other), do: "Não deu para citar essa sequência."
+
+  defp draft_error(:name_required), do: "Dê um nome para a sequência."
+  defp draft_error(:too_short), do: "Uma sequência precisa de pelo menos dois passos."
+  defp draft_error(_other), do: "Não deu para salvar a sequência."
+
+  defp next_open_sequence(%{assigns: %{open_sequence: %{id: id}}}, id), do: nil
+  defp next_open_sequence(_socket, sequence_id), do: Sequences.get_sequence(sequence_id)
+
+  # A MapSet, because that is what favorites_map/3 returns despite the name.
+  defp assign_sequence_favorites(%{assigns: %{current_user: nil}} = socket),
+    do: assign(socket, :sequence_favorites, MapSet.new())
+
+  defp assign_sequence_favorites(socket) do
+    ids = Enum.map(socket.assigns.workshop_sequences, & &1.sequence_id)
+
+    assign(
+      socket,
+      :sequence_favorites,
+      Engagement.favorites_map(socket.assigns.current_user.id, "sequence", ids)
+    )
+  end
 end

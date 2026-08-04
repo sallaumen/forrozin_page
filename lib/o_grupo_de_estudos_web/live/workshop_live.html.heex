@@ -402,6 +402,115 @@
           </div>
         </section>
 
+        <%!-- The step list is not a sequence: a class teaches one or two names and
+             the combination is a separate thing. Whoever teaches cites the refined
+             one here; whoever attends takes it home by favoriting.
+        --%>
+        <section
+          :if={!@storefront? && (@workshop_sequences != [] || @organizer?)}
+          class="mt-7"
+        >
+          <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+            Sequências desta aula
+          </h2>
+
+          <p :if={@workshop_sequences == []} class="m-0 mb-2 text-[13px] text-ink-500">
+            Nenhuma sequência ainda. Monte a combinação que você deu para quem esteve
+            aqui levar pra casa.
+          </p>
+
+          <div class="flex flex-col gap-2">
+            <div
+              :for={cited <- @workshop_sequences}
+              class="rounded-xl border border-gold-500/35 bg-gold-500/[0.07]"
+            >
+              <div class="flex items-center gap-1 px-1.5 py-1">
+                <button
+                  type="button"
+                  phx-click="toggle_sequence_steps"
+                  phx-value-id={cited.sequence_id}
+                  aria-expanded={
+                    to_string(@open_sequence && @open_sequence.id == cited.sequence_id)
+                  }
+                  class="flex min-h-9 flex-1 cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-[13px] font-semibold text-ink-800 hover:bg-gold-500/[0.10]"
+                >
+                  <span class="text-[11px] font-bold text-gold-600">→</span>
+                  {cited.name}
+                  <span class="text-[10.5px] font-medium text-ink-500">
+                    {cited.step_count} {if cited.step_count == 1, do: "passo", else: "passos"}
+                  </span>
+                </button>
+
+                <button
+                  :if={@current_user}
+                  type="button"
+                  phx-click="toggle_sequence_favorite"
+                  phx-value-id={cited.sequence_id}
+                  aria-label={"Favoritar #{cited.name}"}
+                  class="grid size-9 cursor-pointer place-items-center rounded-lg text-ink-400 hover:bg-gold-500/[0.10] hover:text-gold-600"
+                >
+                  <.icon
+                    name={
+                      if MapSet.member?(@sequence_favorites, cited.sequence_id),
+                        do: "hero-heart-solid",
+                        else: "hero-heart"
+                    }
+                    class={[
+                      "size-4",
+                      MapSet.member?(@sequence_favorites, cited.sequence_id) && "text-gold-600"
+                    ]}
+                  />
+                </button>
+
+                <button
+                  :if={@organizer?}
+                  type="button"
+                  phx-click="uncite_sequence"
+                  phx-value-id={cited.sequence_id}
+                  aria-label={"Tirar #{cited.name} desta aula"}
+                  class="grid size-9 cursor-pointer place-items-center rounded-lg text-ink-400 hover:bg-gold-500/[0.10] hover:text-ink-700"
+                >
+                  <.icon name="hero-x-mark" class="size-3.5" />
+                </button>
+              </div>
+
+              <div
+                :if={@open_sequence && @open_sequence.id == cited.sequence_id}
+                class="flex flex-wrap items-center gap-1.5 border-t border-gold-500/25 px-3 py-2.5"
+              >
+                <span
+                  :for={{sequence_step, index} <- Enum.with_index(@open_sequence.sequence_steps)}
+                  data-sequence-step={sequence_step.step.code}
+                  class="inline-flex items-center gap-1.5 text-[12px]"
+                >
+                  <span :if={index > 0} class="text-[11px] font-bold text-gold-600">→</span>
+                  <code class="font-bold text-accent-orange">{sequence_step.step.code}</code>
+                  <span class="text-ink-600">{sequence_step.step.name}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div :if={@organizer?} class="mt-2.5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              phx-click="open_sequence_sheet"
+              phx-value-tab="new"
+              class="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-ink-300 px-3.5 text-[12.5px] font-semibold text-ink-600 transition hover:border-gold-500 hover:bg-gold-500/[0.06] hover:text-gold-600"
+            >
+              <span aria-hidden="true">→</span> montar sequência
+            </button>
+            <button
+              type="button"
+              phx-click="open_sequence_sheet"
+              phx-value-tab="mine"
+              class="inline-flex min-h-9 cursor-pointer items-center rounded-full border border-ink-200 px-3.5 text-[12.5px] font-semibold text-ink-600 transition hover:border-gold-500 hover:text-gold-600"
+            >
+              citar uma minha
+            </button>
+          </div>
+        </section>
+
         <section :if={!@storefront? && @current_user && @participants != []} class="mt-7">
           <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
             Quem vai
@@ -531,3 +640,11 @@
 </div>
 
 <.step_sheet step={@step_sheet} learned={@step_sheet_learned} />
+<.sequence_sheet
+  tab={@sequence_sheet}
+  draft_steps={@sequence_draft_steps}
+  draft_name={@sequence_draft_name}
+  step_matches={@sequence_step_matches}
+  mine={@sequence_mine}
+  cited_ids={MapSet.new(@workshop_sequences, & &1.sequence_id)}
+/>
