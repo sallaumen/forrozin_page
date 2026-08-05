@@ -194,7 +194,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             phx-value-type={@comment_type}
             phx-value-id={@comment.id}
             type="button"
-            class="flex items-center gap-1 text-xs cursor-pointer"
+            class="inline-flex min-h-11 cursor-pointer items-center gap-1 bg-transparent p-0 text-xs sm:min-h-0"
             aria-label={if @liked?, do: "Remover curtida", else: "Curtir comentário"}
           >
             <.icon
@@ -212,7 +212,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             phx-click="start_reply"
             phx-value-id={@comment.id}
             type="button"
-            class="text-xs text-ink-400 hover:text-ink-700 cursor-pointer"
+            class="inline-flex min-h-11 cursor-pointer items-center bg-transparent p-0 text-xs text-ink-400 hover:text-ink-700 sm:min-h-0"
           >
             Responder
           </button>
@@ -226,7 +226,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             phx-value-type={@comment_type}
             data-confirm="Apagar este comentário?"
             type="button"
-            class="inline-grid min-h-11 min-w-11 cursor-pointer place-items-center text-xs text-ink-400 hover:text-accent-red sm:min-h-0 sm:min-w-0"
+            class="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center bg-transparent p-0 text-xs text-ink-400 hover:text-accent-red sm:min-h-0 sm:min-w-0"
             aria-label="Apagar comentário"
           >
             <.icon name="hero-trash" class="size-3.5" />
@@ -253,11 +253,11 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
         placeholder="Escrever resposta…"
         autocomplete="off"
         required
-        class="flex-1 bg-ink-50 rounded-full px-3 py-1.5 text-sm text-ink-800 border border-ink-200 focus:outline-none focus:ring-2 focus:ring-ink-400"
+        class="min-h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-base text-ink-800 focus:outline-none focus:ring-2 focus:ring-ink-400 sm:min-h-9 sm:text-sm"
       />
       <button
         type="submit"
-        class="text-sm font-medium text-accent-orange hover:opacity-80 cursor-pointer whitespace-nowrap"
+        class="inline-flex min-h-11 shrink-0 cursor-pointer items-center whitespace-nowrap bg-transparent px-1 text-sm font-medium text-accent-orange hover:opacity-80 sm:min-h-9"
       >
         Enviar
       </button>
@@ -275,11 +275,11 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
           placeholder="Escrever comentário…"
           autocomplete="off"
           required
-          class="flex-1 bg-ink-50 rounded-full px-3 py-1.5 text-sm text-ink-800 border border-ink-200 focus:outline-none focus:ring-2 focus:ring-ink-400"
+          class="min-h-11 flex-1 rounded-full border border-ink-200 bg-ink-50 px-4 text-base text-ink-800 focus:outline-none focus:ring-2 focus:ring-ink-400 sm:min-h-9 sm:text-sm"
         />
         <button
           type="submit"
-          class="text-sm font-medium text-accent-orange hover:opacity-80 cursor-pointer whitespace-nowrap"
+          class="inline-flex min-h-11 shrink-0 cursor-pointer items-center whitespace-nowrap bg-transparent px-1 text-sm font-medium text-accent-orange hover:opacity-80 sm:min-h-9"
         >
           Enviar
         </button>
