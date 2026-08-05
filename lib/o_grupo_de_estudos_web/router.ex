@@ -61,6 +61,11 @@ defmodule OGrupoDeEstudosWeb.Router do
     get "/workshop-media/:id", WorkshopMediaController, :show
     get "/workshop-media/:id/poster", WorkshopMediaController, :poster
 
+    # A receipt is stricter than the gallery: only whoever sent it and whoever
+    # runs the class get past the controller.
+    get "/workshop-receipts/:id", ReceiptController, :workshop
+    get "/program-receipts/:id", ReceiptController, :program
+
     delete "/logout", UserSessionController, :delete
     get "/confirm/:token", UserConfirmationController, :confirm
     get "/auto-login/:token", UserSessionController, :auto_login

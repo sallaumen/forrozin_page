@@ -253,6 +253,113 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
+  attr :receipt, :map, default: nil
+  attr :upload, :map, required: true
+  attr :whatsapp_link, :string, default: nil
+
+  @doc """
+  Where the receipt of a payment goes up.
+
+  Both paths sit side by side on purpose: the app one lands next to the payment
+  control, and WhatsApp is where people already are. Which one wins is a question
+  the numbers answer, not the layout.
+  """
+  def receipt_box(assigns) do
+    ~H"""
+    <div class="rounded-xl border border-ink-200 bg-ink-100/50 p-3">
+      <p class="m-0 text-[11px] font-bold uppercase tracking-[1.2px] text-ink-500">Comprovante</p>
+
+      <p
+        :if={sent?(@receipt)}
+        class="m-0 mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-ink-700"
+      >
+        <.icon name="hero-check-circle-solid" class="mt-0.5 size-4 shrink-0 text-accent-green" />
+        <span>Enviado em {Brazil.format_datetime_full(@receipt.sent_at)}</span>
+      </p>
+
+      <p :if={!sent?(@receipt)} class="m-0 mt-1 text-[12px] leading-snug text-ink-500">
+        Mande por aqui e quem organiza vê junto com a sua inscrição. Imagem ou PDF, até 10 MB.
+      </p>
+
+      <form id="receipt-form" phx-submit="send_receipt" phx-change="validate_receipt" class="mt-2">
+        <label
+          for={@upload.ref}
+          class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-ink-900 px-4 font-serif text-[12.5px] font-semibold text-ink-50 sm:min-h-9"
+        >
+          <.icon name="hero-paper-clip" class="size-4" /> {choose_label(@receipt)}
+        </label>
+        <.live_file_input upload={@upload} class="sr-only" />
+
+        <div :for={entry <- @upload.entries} class="mt-2 flex items-center gap-3">
+          <span class="min-w-0 truncate text-[12px] text-ink-500">{entry.client_name}</span>
+          <span class="shrink-0 text-[12px] font-bold text-ink-700">{entry.progress}%</span>
+        </div>
+
+        <p
+          :for={error <- receipt_errors(@upload)}
+          class="m-0 mt-1 text-[12px] font-semibold text-accent-red"
+        >
+          {receipt_upload_error(error)}
+        </p>
+
+        <button
+          :if={@upload.entries != []}
+          type="submit"
+          phx-disable-with="Enviando..."
+          class="mt-2 min-h-11 cursor-pointer rounded-full border-0 bg-accent-green px-4 font-serif text-[12.5px] font-semibold text-white sm:min-h-9"
+        >
+          Enviar comprovante
+        </button>
+      </form>
+
+      <div class="mt-1 flex flex-wrap items-center gap-x-4">
+        <a
+          :if={@whatsapp_link}
+          href={@whatsapp_link}
+          phx-click="receipt_via_whatsapp"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex min-h-11 items-center gap-1.5 text-[12.5px] font-semibold text-accent-green no-underline sm:min-h-9"
+        >
+          <.icon name="hero-paper-airplane" class="size-4" /> Prefiro pelo WhatsApp
+        </a>
+
+        <button
+          :if={sent?(@receipt)}
+          type="button"
+          phx-click="remove_receipt"
+          phx-value-id={@receipt.enrollment_id}
+          data-confirm="Tirar o comprovante do ar?"
+          class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent p-0 text-[12.5px] font-semibold text-ink-500 sm:min-h-9"
+        >
+          Remover
+        </button>
+      </div>
+    </div>
+    """
+  end
+
+  defp sent?(%{sent_at: %DateTime{}}), do: true
+  defp sent?(_none), do: false
+
+  defp choose_label(receipt) do
+    if sent?(receipt), do: "Trocar comprovante", else: "Escolher comprovante"
+  end
+
+  # Errors of the entry and errors of the upload itself (too many files) come from
+  # different places and read the same to whoever is sending.
+  defp receipt_errors(upload) do
+    entry_errors = Enum.flat_map(upload.entries, &upload_errors(upload, &1))
+
+    upload_errors(upload) ++ entry_errors
+  end
+
+  @doc false
+  def receipt_upload_error(:too_large), do: "Arquivo grande demais. O limite é 10 MB."
+  def receipt_upload_error(:not_accepted), do: "Só imagem (JPG, PNG, WEBP) ou PDF."
+  def receipt_upload_error(:too_many_files), do: "Um comprovante por vez."
+  def receipt_upload_error(_other), do: "Não deu para carregar esse arquivo."
+
   attr :media, :list, required: true
   attr :current_user, :map, default: nil
   attr :can_delete_any, :boolean, default: false

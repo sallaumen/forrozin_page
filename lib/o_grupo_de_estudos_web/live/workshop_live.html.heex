@@ -151,19 +151,18 @@
             {payment_hint(@workshop, @enrolled? || @organizer?)}
           </p>
 
-          <%!-- Receipt button: only for whoever is already in the class, the same
-               criterion as the Pix key. Sending the receipt stops being copy the
-               number and write which workshop it is about.
+          <%!-- Sending the receipt: through the app, where it lands next to the
+               payment control, or through WhatsApp, where people already are.
+               Both only for whoever is in the class, the same criterion as the
+               Pix key.
           --%>
-          <a
-            :if={@enrolled? && Workshop.receipt_link(@workshop)}
-            href={Workshop.receipt_link(@workshop)}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border border-accent-green/40 bg-accent-green/10 px-4 py-2 font-serif text-[13px] font-semibold text-accent-green no-underline"
-          >
-            <.icon name="hero-paper-airplane" class="size-4" /> Mandar comprovante
-          </a>
+          <div :if={@enrolled? && !Workshop.free?(@workshop)} class="mt-3">
+            <.receipt_box
+              receipt={@my_receipt}
+              upload={@uploads.receipt}
+              whatsapp_link={Workshop.receipt_link(@workshop)}
+            />
+          </div>
 
           <%!-- Seats, only when the organizer set a capacity. --%>
           <div :if={@workshop.capacity} class="mt-3">

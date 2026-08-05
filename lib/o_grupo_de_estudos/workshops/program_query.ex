@@ -29,6 +29,21 @@ defmodule OGrupoDeEstudos.Workshops.ProgramQuery do
     end
   end
 
+  @doc "Slug and title of each program, keyed by id. Feeds notification links."
+  @spec slugs_by_ids([Ecto.UUID.t()]) :: %{
+          Ecto.UUID.t() => %{slug: String.t(), title: String.t()}
+        }
+  def slugs_by_ids([]), do: %{}
+
+  def slugs_by_ids(ids) do
+    from(p in WorkshopProgram,
+      where: p.id in ^ids,
+      select: {p.id, %{slug: p.slug, title: p.title}}
+    )
+    |> Repo.all()
+    |> Map.new()
+  end
+
   @doc """
   Workshops of the program, earliest to latest.
 

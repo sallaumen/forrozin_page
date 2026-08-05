@@ -125,7 +125,15 @@
         indisponivel={@pacote_indisponivel}
       />
 
-      <div class="rounded-2xl border border-dashed border-ink-300 p-4">
+      <%!-- The package has no WhatsApp of its own: the program carries no phone,
+           so here the app is the whole path. --%>
+      <.receipt_box
+        :if={@matricula_pacote}
+        receipt={@my_package_receipt}
+        upload={@uploads.receipt}
+      />
+
+      <div :if={!@matricula_pacote} class="rounded-2xl border border-dashed border-ink-300 p-4">
         <p class="m-0 font-serif text-[15px] font-bold text-ink-900">Ou escolha os dias</p>
         <p class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500">
           Dá para pegar só os workshops que te interessam, cada um pelo preço dele.
@@ -221,6 +229,16 @@
               <span class="block truncate text-[13px] font-bold text-ink-900">{linha.name}</span>
               <span class="block truncate text-[11.5px] text-ink-500">@{linha.username}</span>
             </span>
+            <a
+              :if={linha.receipt_sent_at}
+              href={~p"/program-receipts/#{linha.id}"}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex min-h-11 shrink-0 items-center gap-1 text-[12px] font-semibold text-accent-orange no-underline sm:min-h-0"
+            >
+              <.icon name="hero-paper-clip" class="size-3.5" /> Comprovante
+            </a>
+
             <.workshop_tag tone={payment_tone(linha.payment_status)}>
               {payment_status_label(linha.payment_status)}
             </.workshop_tag>

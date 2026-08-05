@@ -26,6 +26,7 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
         username: u.username,
         payment_status: e.payment_status,
         paid_at: e.paid_at,
+        receipt_sent_at: e.receipt_sent_at,
         enrolled_at: e.inserted_at
       }
     )
@@ -36,6 +37,15 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
   @spec get_for_user(Ecto.UUID.t(), Ecto.UUID.t()) :: ProgramEnrollment.t() | nil
   def get_for_user(program_id, user_id) do
     Repo.get_by(ProgramEnrollment, program_id: program_id, user_id: user_id)
+  end
+
+  @doc "Membership by id, or nil. Permission is asked afterwards, by the caller."
+  @spec get(Ecto.UUID.t()) :: ProgramEnrollment.t() | nil
+  def get(enrollment_id) do
+    case Ecto.UUID.cast(enrollment_id) do
+      {:ok, uuid} -> Repo.get(ProgramEnrollment, uuid)
+      :error -> nil
+    end
   end
 
   @doc "Membership scoped to the program: a forged id from another finds nothing."

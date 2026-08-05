@@ -153,6 +153,15 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     end
   end
 
+  @doc "Enrollment by id, or nil. Permission is asked afterwards, by the caller."
+  @spec get(Ecto.UUID.t()) :: WorkshopEnrollment.t() | nil
+  def get(enrollment_id) do
+    case Ecto.UUID.cast(enrollment_id) do
+      {:ok, uuid} -> Repo.get(WorkshopEnrollment, uuid)
+      :error -> nil
+    end
+  end
+
   @doc "Enrollment of a specific person in a workshop, or nil."
   @spec get_for_user(Ecto.UUID.t(), Ecto.UUID.t()) :: WorkshopEnrollment.t() | nil
   def get_for_user(workshop_id, user_id) do
@@ -190,6 +199,24 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
         total: count(e.id),
         paid: filter(count(e.id), e.payment_status == :paid),
         waived: filter(count(e.id), e.payment_status == :waived)
+      }
+    )
+    |> Repo.one()
+  end
+
+  @doc """
+  How many people sent the receipt through the app and how many opened WhatsApp.
+
+  Two counts of people, never of taps: each column is stamped once per
+  enrollment, so the numbers compare the two paths honestly.
+  """
+  @spec receipt_summary(Ecto.UUID.t()) :: %{app: integer(), whatsapp: integer()}
+  def receipt_summary(workshop_id) do
+    from(e in WorkshopEnrollment,
+      where: e.workshop_id == ^workshop_id,
+      select: %{
+        app: count(e.receipt_sent_at),
+        whatsapp: count(e.whatsapp_opened_at)
       }
     )
     |> Repo.one()

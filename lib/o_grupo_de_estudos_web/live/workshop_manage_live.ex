@@ -196,6 +196,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     socket
     |> assign(:enrollments, enrollments)
     |> assign(:summary, summary)
+    |> assign(:receipts, Workshops.receipt_summary(workshop.id))
   end
 
   defp payment_atom("paid"), do: :paid

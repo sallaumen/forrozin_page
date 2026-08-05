@@ -12,7 +12,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   alias OGrupoDeEstudos.{Accounts, Brazil, Engagement, Sequences, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Engagement.Badges
-  alias OGrupoDeEstudos.Workshops.Workshop
+  alias OGrupoDeEstudos.Workshops.{Receipts, Workshop}
 
   use OGrupoDeEstudosWeb.Handlers.StepLearning
   use OGrupoDeEstudosWeb.Handlers.SequenceSheet
@@ -42,8 +42,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
            socket.assigns[:current_user],
            workshop_access(workshop, socket)
          ) do
-      :ok -> {:ok, socket |> allow_media_uploads() |> assign_page(workshop)}
-      {:error, _} -> {:ok, not_found(socket)}
+      :ok ->
+        {:ok, socket |> allow_media_uploads() |> allow_receipt_upload() |> assign_page(workshop)}
+
+      {:error, _} ->
+        {:ok, not_found(socket)}
     end
   end
 
@@ -76,6 +79,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
       accept: ~w(.jpg .jpeg .png .webp .mp4 .mov),
       max_entries: 1,
       max_file_size: 200_000_000
+    )
+  end
+
+  defp allow_receipt_upload(socket) do
+    allow_upload(socket, :receipt,
+      accept: ~w(.jpg .jpeg .png .webp .pdf),
+      max_entries: 1,
+      max_file_size: Receipts.max_bytes()
     )
   end
 
@@ -322,7 +333,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
     socket
     |> consume_uploaded_entries(:media, fn %{path: tmp_path}, entry ->
-      {:ok, Workshops.add_media(workshop, user, atributos_da_media(tmp_path, entry))}
+      {:ok, Workshops.add_media(workshop, user, upload_attrs(tmp_path, entry))}
     end)
     |> upload_result(socket)
   end
@@ -338,6 +349,40 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível remover.")}
     end
+  end
+
+  def handle_event("validate_receipt", _params, socket), do: {:noreply, socket}
+
+  def handle_event("send_receipt", _params, socket) do
+    workshop = socket.assigns.workshop
+    user = socket.assigns.current_user
+
+    socket
+    |> consume_uploaded_entries(:receipt, fn %{path: tmp_path}, entry ->
+      {:ok, Workshops.send_workshop_receipt(workshop, user, upload_attrs(tmp_path, entry))}
+    end)
+    |> receipt_result(socket)
+  end
+
+  def handle_event("remove_receipt", %{"id" => id}, socket) do
+    workshop = socket.assigns.workshop
+    user = socket.assigns.current_user
+
+    case Workshops.remove_workshop_receipt(workshop, user, id) do
+      {:ok, _} ->
+        {:noreply, socket |> assign_page(workshop) |> put_flash(:info, "Comprovante removido.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível remover o comprovante.")}
+    end
+  end
+
+  # The link opens WhatsApp on its own; the event only records that this person
+  # took that path, so the two ways of sending can be compared.
+  def handle_event("receipt_via_whatsapp", _params, socket) do
+    Workshops.mark_whatsapp_receipt(socket.assigns.workshop, socket.assigns.current_user)
+
+    {:noreply, socket}
   end
 
   def handle_event("toggle_workshop_like", _params, socket) do
@@ -359,9 +404,27 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     {:noreply, assign_workshop(socket, socket.assigns.workshop)}
   end
 
-  defp atributos_da_media(tmp_path, entry) do
+  defp upload_attrs(tmp_path, entry) do
     %{tmp_path: tmp_path, content_type: entry.client_type, byte_size: entry.client_size}
   end
+
+  defp receipt_result([{:ok, _enrollment}], socket) do
+    {:noreply,
+     socket
+     |> assign_page(socket.assigns.workshop)
+     |> put_flash(:info, "Comprovante enviado. Quem organiza já foi avisado.")}
+  end
+
+  defp receipt_result([{:error, reason}], socket) do
+    {:noreply, put_flash(socket, :error, receipt_error(reason))}
+  end
+
+  defp receipt_result(_nothing, socket), do: {:noreply, socket}
+
+  defp receipt_error(:not_enrolled), do: "Faça a inscrição antes de mandar o comprovante."
+  defp receipt_error(:unsupported_type), do: "Só entra imagem ou PDF."
+  defp receipt_error(:too_large), do: "Arquivo grande demais. O limite é 10 MB."
+  defp receipt_error(_other), do: "Não foi possível enviar o comprovante."
 
   defp upload_result([{:ok, %{status: :processing}}], socket) do
     {:noreply,
@@ -542,6 +605,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:full?, Workshop.full?(workshop, length(participants)))
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
     |> assign(:can_see_media?, Workshops.can_see_media?(workshop, user))
+    |> assign(:my_receipt, Workshops.my_receipt(workshop, user))
     |> assign(:media, visible_media(workshop, user))
     |> assign(:teachers, teachers(workshop))
     |> assign(:steps, Workshops.list_steps(workshop.id))

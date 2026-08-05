@@ -25,6 +25,12 @@ defmodule OGrupoDeEstudos.Workshops.ProgramEnrollment do
     field :payment_status, Ecto.Enum, values: [:pending, :paid, :waived], default: :pending
     field :paid_at, :utc_datetime
 
+    # Receipt of the package payment, by the same rule as the workshop one.
+    field :receipt_key, :string
+    field :receipt_content_type, :string
+    field :receipt_byte_size, :integer
+    field :receipt_sent_at, :utc_datetime
+
     belongs_to :program, WorkshopProgram
     belongs_to :user, User
     has_many :workshop_enrollments, WorkshopEnrollment

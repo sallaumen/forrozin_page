@@ -28,6 +28,7 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
         :workshop_join_approved,
         :workshop_join_rejected,
         :workshop_waitlist_promoted,
+        :receipt_sent,
         :suggestion_created,
         :suggestion_approved,
         :suggestion_rejected
@@ -46,8 +47,8 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Notification do
     timestamps(updated_at: false)
   end
 
-  @valid_target_types ~w(step_comment sequence_comment profile_comment workshop_comment step sequence profile workshop suggestion study_link lesson)
-  @valid_parent_types ~w(step sequence profile workshop suggestion study_link)
+  @valid_target_types ~w(step_comment sequence_comment profile_comment workshop_comment step sequence profile workshop program suggestion study_link lesson)
+  @valid_parent_types ~w(step sequence profile workshop program suggestion study_link)
 
   def changeset(notification, attrs) do
     notification
