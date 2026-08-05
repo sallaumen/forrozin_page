@@ -135,6 +135,20 @@
   --collection-layer-outer: var(--color-collection-moss-700);
   --collection-layer-middle: var(--color-collection-moss-500);
   --collection-layer-inner: var(--color-collection-moss-300);
+
+  /* Altura que a barra de abas realmente ocupa. Quem flutua no celular tem que
+     ancorar nela, e nao num numero: no iPhone com barra de gestos a area segura
+     acrescenta cerca de 34px aos 56px da barra, e um `bottom-16` chutado poe o
+     elemento por baixo dela. Fora do celular a barra nao existe e o valor e
+     zero, entao `calc(var(--bottom-nav-h) + 1rem)` continua valendo nos dois. */
+  --bottom-nav-h: 0px;
+}
+
+/* A barra de abas e `md:hidden`, ou seja, existe abaixo de 768px. */
+@media (max-width: 767px) {
+  :root {
+    --bottom-nav-h: calc(3.5rem + env(safe-area-inset-bottom));
+  }
 }
 
 /* ============================================================

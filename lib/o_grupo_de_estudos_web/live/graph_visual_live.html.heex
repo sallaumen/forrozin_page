@@ -23,7 +23,12 @@
        manual mode to its left). Everything centered and width-capped, so the search
        does not become giant and nothing overlaps.
   --%>
-  <div class="fixed left-0 right-0 top-[64px] z-30 flex flex-col items-center gap-2 px-3 font-serif">
+  <%!-- O topo mede 56px para quem estuda e 76px para quem administra, entao o
+       deslocamento vem medido dele, nao chutado. --%>
+  <div
+    style="top: var(--top-nav-h, 56px)"
+    class="fixed left-0 right-0 z-30 flex flex-col items-center gap-2 px-3 font-serif"
+  >
     <%!-- Controles da jornada (esquerda): abrir o painel + alternar mapa --%>
     <div :if={@loaded?} class="flex shrink-0 items-center gap-2">
       <button
@@ -31,7 +36,7 @@
         phx-click="toggle_journey"
         aria-expanded={to_string(@journey_open)}
         class={[
-          "inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-3.5 text-[11px] font-semibold shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur transition",
+          "inline-flex min-h-11 items-center gap-2 rounded-full border pl-1 pr-3.5 text-[11px] font-semibold shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur transition sm:min-h-0 sm:py-1",
           @journey_open && "border-accent-orange bg-accent-orange text-on-accent",
           !@journey_open &&
             "border-accent-orange/30 bg-ink-50/95 text-accent-orange hover:bg-ink-100"
@@ -52,7 +57,7 @@
           aria-pressed={to_string(!@full_map?)}
           phx-click={@full_map? && "toggle_full_map"}
           class={[
-            "rounded-full px-2.5 py-1.5 font-semibold transition",
+            "inline-flex min-h-11 items-center rounded-full px-2.5 font-semibold transition sm:min-h-0 sm:py-1.5",
             !@full_map? && "bg-accent-orange text-on-accent shadow-sm",
             @full_map? && "text-ink-500 hover:text-ink-900"
           ]}
@@ -64,7 +69,7 @@
           aria-pressed={to_string(@full_map?)}
           phx-click={!@full_map? && "toggle_full_map"}
           class={[
-            "rounded-full px-2.5 py-1.5 font-semibold transition",
+            "inline-flex min-h-11 items-center rounded-full px-2.5 font-semibold transition sm:min-h-0 sm:py-1.5",
             @full_map? && "bg-accent-orange text-on-accent shadow-sm",
             !@full_map? && "text-ink-500 hover:text-ink-900"
           ]}
@@ -165,7 +170,7 @@
       data-manual-mode={to_string(@seq_view == :manual)}
       data-user-id={@current_user.id}
       data-initial-sequence-steps={@seq_initial_steps_json}
-      style="width: 100%; height: calc(100vh - 86px); background: var(--color-ink-100);"
+      style="width: 100%; height: calc(100dvh - var(--top-nav-h, 56px) - var(--bottom-nav-h)); background: var(--color-ink-100);"
     >
     </div>
 
@@ -191,7 +196,7 @@
       id="journey-drawer"
       class={[
         "z-30 flex flex-col overflow-hidden bg-ink-50 font-serif",
-        "fixed inset-x-0 bottom-16 h-[55vh] rounded-t-2xl border-t-2 border-accent-orange/30 shadow-[0_-4px_24px_rgba(60,40,20,0.16)]",
+        "fixed inset-x-0 bottom-[var(--bottom-nav-h)] h-[55vh] rounded-t-2xl border-t-2 border-accent-orange/30 shadow-[0_-4px_24px_rgba(60,40,20,0.16)]",
         "md:absolute md:inset-x-auto md:bottom-auto md:left-0 md:top-0 md:h-full md:w-[300px] md:max-w-[88vw] md:rounded-t-none md:border-t-0 md:border-r md:border-accent-orange/25 md:shadow-[2px_0_16px_rgba(60,40,20,0.10)]"
       ]}
     >
@@ -307,7 +312,7 @@
       type="button"
       phx-click="show_seq_mobile"
       class={[
-        "fixed bottom-20 right-4 z-30 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-on-accent shadow-lg transition hover:bg-accent-orange/90",
+        "fixed bottom-[calc(var(--bottom-nav-h)+1rem)] right-4 z-30 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-on-accent shadow-lg transition hover:bg-accent-orange/90",
         @journey_open && "max-md:hidden"
       ]}
       aria-label="Abrir painel de sequências"
@@ -319,8 +324,8 @@
     <div
       id="seq-panel"
       class={[
-        "fixed bottom-16 inset-x-0 z-40 flex h-[72vh] max-h-[72vh] flex-col overflow-hidden rounded-t-xl border-t-2 border-accent-orange/30 bg-ink-50 font-serif shadow-[0_-4px_24px_rgba(60,40,20,0.16)]",
-        "md:inset-x-auto md:bottom-20 md:right-4 md:h-[60vh] md:w-[400px] md:rounded-xl md:border md:border-accent-orange/25",
+        "fixed bottom-[var(--bottom-nav-h)] inset-x-0 z-40 flex h-[72vh] max-h-[72vh] flex-col overflow-hidden rounded-t-xl border-t-2 border-accent-orange/30 bg-ink-50 font-serif shadow-[0_-4px_24px_rgba(60,40,20,0.16)]",
+        "md:inset-x-auto md:bottom-4 md:right-4 md:h-[60vh] md:w-[400px] md:rounded-xl md:border md:border-accent-orange/25",
         !@seq_mobile_visible && "hidden"
       ]}
     >
@@ -1036,7 +1041,7 @@
                           phx-value-id={seq.id}
                           data-confirm="Deletar esta sequência? Essa ação não pode ser desfeita."
                           aria-label={"Deletar sequência #{seq.name}"}
-                          class="inline-flex h-6 w-6 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
+                          class="relative inline-flex h-6 w-6 items-center justify-center rounded border border-accent-red/25 bg-accent-red/[0.04] text-accent-red transition after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:bg-accent-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-red/40"
                         >
                           <.icon name="hero-x-mark" class="size-3.5" />
                         </button>
@@ -1119,50 +1124,6 @@
         <% end %>
 
         <%!-- View: Favorited sequences (from community) --%>
-        <%= if @seq_view == :favorites do %>
-          <div class="p-4">
-            <%= if @seq_favorites_list == [] do %>
-              <div class="text-center py-8">
-                <p class="text-sm font-bold text-ink-600 mb-1">Nenhuma sequência favoritada</p>
-                <p class="text-xs text-ink-400">
-                  Favorite sequências na Comunidade e elas aparecem aqui.
-                </p>
-              </div>
-            <% else %>
-              <div class="space-y-3">
-                <%= for seq <- @seq_favorites_list do %>
-                  <div class={[
-                    "rounded p-3 transition-colors",
-                    @seq_active_id == seq.id && "border-2 border-accent-orange bg-accent-orange/5",
-                    @seq_active_id != seq.id && "border border-gold-500/20 bg-ink-50"
-                  ]}>
-                    <div class="flex items-start justify-between gap-2 mb-1">
-                      <div>
-                        <div class="text-xs font-bold text-ink-900">{seq.name}</div>
-                        <div class="text-[10px] text-ink-500">
-                          {length(seq.sequence_steps)} passos
-                          <%= if seq.user do %>
-                            · por @{seq.user.username}
-                          <% end %>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="flex gap-1.5 mt-2">
-                      <button
-                        type="button"
-                        phx-click="highlight_saved_sequence"
-                        phx-value-id={seq.id}
-                        class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
-                      >
-                        Ver no mapa
-                      </button>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
 
         <%!-- View: Manual sequence builder --%>
         <%= if @seq_view == :manual do %>
@@ -1381,13 +1342,13 @@
                           phx-click="create_missing_connection"
                           phx-value-source={missing.from}
                           phx-value-target={missing.to}
-                          class="ml-auto text-[9px] py-0.5 px-2 bg-accent-green text-on-accent rounded border-0 cursor-pointer font-medium"
+                          class="ml-auto inline-flex min-h-11 items-center rounded border-0 bg-accent-green px-3 text-[11px] font-medium text-on-accent cursor-pointer sm:min-h-0 sm:py-0.5"
                         >
                           Criar
                         </button>
                       <% else %>
                         <%= if MapSet.member?(@seq_suggested_edges, {missing.from, missing.to}) do %>
-                          <span class="ml-auto text-[9px] py-0.5 px-2 bg-ink-200 text-ink-400 rounded font-medium">
+                          <span class="ml-auto inline-flex min-h-11 items-center rounded bg-ink-200 px-3 text-[11px] font-medium text-ink-600 sm:min-h-0 sm:py-0.5">
                             Enviado
                           </span>
                         <% else %>
@@ -1396,7 +1357,7 @@
                             phx-click="suggest_missing_connection"
                             phx-value-source={missing.from}
                             phx-value-target={missing.to}
-                            class="ml-auto text-[9px] py-0.5 px-2 bg-accent-orange text-on-accent rounded border-0 cursor-pointer font-medium"
+                            class="ml-auto inline-flex min-h-11 items-center rounded border-0 bg-accent-orange px-3 text-[11px] font-medium text-on-accent cursor-pointer sm:min-h-0 sm:py-0.5"
                           >
                             Sugerir
                           </button>
@@ -1470,94 +1431,6 @@
         <% end %>
 
         <%!-- View: Saved sequences --%>
-        <%= if @seq_view == :saved do %>
-          <div class="p-4">
-            <%= if @seq_saved == [] do %>
-              <div class="flex flex-col items-center gap-3 py-8 px-2 text-center">
-                <div class="text-4xl">♬</div>
-                <div class="text-sm font-semibold text-ink-900">
-                  Nenhuma sequência salva ainda
-                </div>
-                <div class="text-xs text-ink-500 leading-relaxed max-w-[220px]">
-                  Crie sua primeira sequência! Use o gerador pra
-                  explorar caminhos no mapa, ou monte manual passo a passo.
-                </div>
-                <div class="flex flex-col gap-2 w-full mt-2">
-                  <button
-                    type="button"
-                    phx-click="show_seq_config"
-                    class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-on-accent rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
-                  >
-                    Gerar sequências
-                  </button>
-                  <button
-                    type="button"
-                    phx-click="show_seq_manual"
-                    class="w-full py-2 px-4 font-serif text-xs font-semibold bg-transparent text-accent-green border border-accent-green/50 rounded-md hover:bg-accent-green/5 transition-colors"
-                  >
-                    Criar manual
-                  </button>
-                </div>
-              </div>
-            <% else %>
-              <%= for saved_seq <- @seq_saved do %>
-                <div class={[
-                  "mb-2.5 p-2.5 rounded-md transition-colors",
-                  @seq_active_id == saved_seq.id &&
-                    "border-2 border-accent-orange bg-accent-orange/5",
-                  @seq_active_id != saved_seq.id && "border border-ink-900/12 bg-white"
-                ]}>
-                  <div class="flex items-start justify-between mb-1.5">
-                    <div>
-                      <div class="text-xs font-bold text-ink-900 mb-0.5">
-                        {saved_seq.name}
-                      </div>
-                      <div class="text-[10px] text-ink-500">
-                        {length(saved_seq.sequence_steps)} passos
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex gap-1.5">
-                    <button
-                      type="button"
-                      phx-click="highlight_saved_sequence"
-                      phx-value-id={saved_seq.id}
-                      class="flex-1 py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-orange/40 rounded text-accent-orange cursor-pointer"
-                    >
-                      Ver no mapa
-                    </button>
-                    <button
-                      type="button"
-                      phx-click="edit_saved_sequence"
-                      phx-value-id={saved_seq.id}
-                      class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-ink-300 rounded text-ink-600 cursor-pointer hover:border-accent-orange hover:text-accent-orange"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      phx-click="delete_sequence"
-                      phx-value-id={saved_seq.id}
-                      class="py-1.5 px-2 font-serif text-[10px] bg-transparent border border-accent-red/30 rounded text-accent-red cursor-pointer"
-                      data-confirm="Deletar esta sequência?"
-                    >
-                      Deletar
-                    </button>
-                  </div>
-                </div>
-              <% end %>
-            <% end %>
-            <%= if @seq_active do %>
-              <button
-                type="button"
-                phx-click="clear_highlight"
-                class="w-full mt-2 py-2 font-serif text-[11px] bg-transparent border border-accent-orange/30 rounded text-accent-orange cursor-pointer"
-              >
-                Limpar destaque
-              </button>
-            <% end %>
-          </div>
-        <% end %>
       </div>
     </div>
 
@@ -1576,7 +1449,7 @@
     <div
       id="graph-legend"
       class={[
-        "pointer-events-none absolute inset-x-0 bottom-20 z-10 md:bottom-4",
+        "pointer-events-none absolute inset-x-0 bottom-[calc(var(--bottom-nav-h)+1rem)] z-10",
         @seq_mobile_visible && "max-md:hidden"
       ]}
     >
