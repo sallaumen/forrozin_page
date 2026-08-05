@@ -29,7 +29,7 @@ defmodule OGrupoDeEstudosWeb.UI.GoalsBoard do
         />
         <button
           type="submit"
-          class="text-xs font-bold text-white bg-accent-orange rounded-lg px-3 py-1.5 cursor-pointer border-0 hover:bg-accent-orange/90 transition-colors shrink-0"
+          class="text-xs font-bold text-on-accent bg-accent-orange rounded-lg px-3 py-1.5 cursor-pointer border-0 hover:bg-accent-orange/90 transition-colors shrink-0"
         >
           +
         </button>

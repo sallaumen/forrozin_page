@@ -32,7 +32,7 @@
         aria-expanded={to_string(@journey_open)}
         class={[
           "inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-3.5 text-[11px] font-semibold shadow-[0_4px_16px_rgba(60,40,20,0.10)] backdrop-blur transition",
-          @journey_open && "border-accent-orange bg-accent-orange text-white",
+          @journey_open && "border-accent-orange bg-accent-orange text-on-accent",
           !@journey_open &&
             "border-accent-orange/30 bg-ink-50/95 text-accent-orange hover:bg-ink-100"
         ]}
@@ -40,7 +40,7 @@
         <span class={[
           "inline-flex size-6 items-center justify-center rounded-full transition",
           @journey_open && "bg-white text-accent-orange",
-          !@journey_open && "bg-accent-orange text-white"
+          !@journey_open && "bg-accent-orange text-on-accent"
         ]}>
           <.icon name="hero-academic-cap" class="size-3.5" />
         </span>
@@ -53,7 +53,7 @@
           phx-click={@full_map? && "toggle_full_map"}
           class={[
             "rounded-full px-2.5 py-1.5 font-semibold transition",
-            !@full_map? && "bg-accent-orange text-white shadow-sm",
+            !@full_map? && "bg-accent-orange text-on-accent shadow-sm",
             @full_map? && "text-ink-500 hover:text-ink-900"
           ]}
         >
@@ -65,7 +65,7 @@
           phx-click={!@full_map? && "toggle_full_map"}
           class={[
             "rounded-full px-2.5 py-1.5 font-semibold transition",
-            @full_map? && "bg-accent-orange text-white shadow-sm",
+            @full_map? && "bg-accent-orange text-on-accent shadow-sm",
             !@full_map? && "text-ink-500 hover:text-ink-900"
           ]}
         >
@@ -255,7 +255,7 @@
               <span class="min-w-0 flex-1 truncate text-[13px] text-ink-900">{n.name}</span>
               <span
                 :if={n.code == goal_code}
-                class="shrink-0 rounded-full bg-accent-orange px-1.5 py-0.5 text-[9px] font-bold uppercase text-white"
+                class="shrink-0 rounded-full bg-accent-orange px-1.5 py-0.5 text-[9px] font-bold uppercase text-on-accent"
               >
                 meta
               </span>
@@ -307,7 +307,7 @@
       type="button"
       phx-click="show_seq_mobile"
       class={[
-        "fixed bottom-20 right-4 z-30 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-white shadow-lg transition hover:bg-accent-orange/90",
+        "fixed bottom-20 right-4 z-30 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2.5 font-serif text-sm font-semibold text-on-accent shadow-lg transition hover:bg-accent-orange/90",
         @journey_open && "max-md:hidden"
       ]}
       aria-label="Abrir painel de sequências"
@@ -641,7 +641,7 @@
               <%!-- Submit --%>
               <button
                 type="submit"
-                class="w-full py-3 bg-accent-orange text-white border-none rounded-lg font-serif text-sm font-bold tracking-wide cursor-pointer hover:bg-accent-orange/90 transition-colors shadow-sm"
+                class="w-full py-3 bg-accent-orange text-on-accent border-none rounded-lg font-serif text-sm font-bold tracking-wide cursor-pointer hover:bg-accent-orange/90 transition-colors shadow-sm"
               >
                 Gerar sequências
               </button>
@@ -736,7 +736,7 @@
                       />
                       <button
                         type="submit"
-                        class="py-1 px-2 bg-accent-orange text-white border-none rounded font-serif text-[10px] cursor-pointer"
+                        class="py-1 px-2 bg-accent-orange text-on-accent border-none rounded font-serif text-[10px] cursor-pointer"
                       >
                         ✓
                       </button>
@@ -967,7 +967,7 @@
                 <button
                   type="button"
                   phx-click="show_seq_config"
-                  class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-white rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
+                  class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-on-accent rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
                 >
                   Gerar uma sequência
                 </button>
@@ -1240,7 +1240,7 @@
                 />
                 <button
                   type="submit"
-                  class="absolute right-1 top-1 inline-flex min-h-8 items-center justify-center rounded-md bg-accent-green px-3 text-[11px] font-bold text-white transition hover:bg-accent-green/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
+                  class="absolute right-1 top-1 inline-flex min-h-8 items-center justify-center rounded-md bg-accent-green px-3 text-[11px] font-bold text-on-accent transition hover:bg-accent-green/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/50"
                 >
                   Add
                 </button>
@@ -1381,7 +1381,7 @@
                           phx-click="create_missing_connection"
                           phx-value-source={missing.from}
                           phx-value-target={missing.to}
-                          class="ml-auto text-[9px] py-0.5 px-2 bg-accent-green text-white rounded border-0 cursor-pointer font-medium"
+                          class="ml-auto text-[9px] py-0.5 px-2 bg-accent-green text-on-accent rounded border-0 cursor-pointer font-medium"
                         >
                           Criar
                         </button>
@@ -1396,7 +1396,7 @@
                             phx-click="suggest_missing_connection"
                             phx-value-source={missing.from}
                             phx-value-target={missing.to}
-                            class="ml-auto text-[9px] py-0.5 px-2 bg-accent-orange text-white rounded border-0 cursor-pointer font-medium"
+                            class="ml-auto text-[9px] py-0.5 px-2 bg-accent-orange text-on-accent rounded border-0 cursor-pointer font-medium"
                           >
                             Sugerir
                           </button>
@@ -1461,7 +1461,7 @@
               </div>
               <button
                 type="submit"
-                class="w-full py-2.5 bg-accent-green text-white border-none rounded font-serif text-xs font-bold tracking-wide cursor-pointer"
+                class="w-full py-2.5 bg-accent-green text-on-accent border-none rounded font-serif text-xs font-bold tracking-wide cursor-pointer"
               >
                 {if @seq_editing_id, do: "Atualizar sequência", else: "Salvar sequência"}
               </button>
@@ -1486,7 +1486,7 @@
                   <button
                     type="button"
                     phx-click="show_seq_config"
-                    class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-white rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
+                    class="w-full py-2.5 px-4 font-serif text-xs font-semibold bg-accent-orange text-on-accent rounded-md shadow-sm hover:bg-accent-orange/90 transition-colors"
                   >
                     Gerar sequências
                   </button>
@@ -1674,7 +1674,7 @@
               learned? &&
                 "border-accent-green/40 bg-accent-green/10 text-accent-green hover:bg-accent-green/15",
               !learned? &&
-                "border-accent-orange bg-accent-orange text-white hover:bg-accent-orange/90"
+                "border-accent-orange bg-accent-orange text-on-accent hover:bg-accent-orange/90"
             ]}
           >
             <.icon

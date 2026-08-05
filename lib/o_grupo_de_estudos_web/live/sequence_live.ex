@@ -790,7 +790,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
       <p class="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-ink-500">{@description}</p>
       <.link
         navigate={~p"/graph/visual?mode=generator"}
-        class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2 text-sm font-semibold text-white no-underline transition hover:bg-accent-orange/90"
+        class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent-orange px-5 py-2 text-sm font-semibold text-on-accent no-underline transition hover:bg-accent-orange/90"
       >
         <.icon name="hero-sparkles" class="size-4" /> {@cta}
       </.link>

@@ -656,7 +656,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           type="button"
           phx-click="buy_package"
           phx-disable-with="Confirmando..."
-          class="w-full shrink-0 cursor-pointer rounded-full border-0 bg-accent-orange px-6 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-orange/90 sm:w-auto"
+          class="w-full shrink-0 cursor-pointer rounded-full border-0 bg-accent-orange px-6 py-3 font-serif text-[15px] font-semibold text-on-accent transition-colors hover:bg-accent-orange/90 sm:w-auto"
         >
           Quero a programação toda
         </button>

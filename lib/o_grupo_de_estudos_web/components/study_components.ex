@@ -215,7 +215,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       disabled={@disabled}
       class={[
         "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 font-serif text-sm font-semibold no-underline transition-colors sm:min-h-9",
-        @tone == :primary && "bg-accent-orange text-white hover:bg-accent-orange/90",
+        @tone == :primary && "bg-accent-orange text-on-accent hover:bg-accent-orange/90",
         @tone == :ghost &&
           "border border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400 hover:text-ink-900",
         @disabled && "cursor-not-allowed opacity-50",
@@ -241,7 +241,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       navigate={@navigate}
       class={[
         "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 font-serif text-[13px] font-semibold no-underline transition-colors sm:min-h-9",
-        @tone == :primary && "bg-accent-orange text-white hover:bg-accent-orange/90",
+        @tone == :primary && "bg-accent-orange text-on-accent hover:bg-accent-orange/90",
         @tone == :ghost &&
           "border border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400 hover:text-ink-900",
         @tone == :subtle && "text-accent-orange hover:text-accent-orange/80",
@@ -295,7 +295,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
         <div :for={dow <- 1..7} class="flex flex-1 flex-col items-center gap-1">
           <div class={[
             "flex aspect-square w-full max-w-[28px] items-center justify-center rounded-md border text-[10px] font-bold transition-colors",
-            MapSet.member?(@week_weekdays, dow) && "border-transparent bg-gold-500 text-white",
+            MapSet.member?(@week_weekdays, dow) && "border-transparent bg-gold-500 text-on-accent",
             !MapSet.member?(@week_weekdays, dow) && dow == @today_weekday &&
               "border-accent-orange bg-accent-orange/10 text-accent-orange",
             !MapSet.member?(@week_weekdays, dow) && dow != @today_weekday &&

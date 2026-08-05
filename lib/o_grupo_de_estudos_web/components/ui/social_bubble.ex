@@ -101,7 +101,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
                 phx-value-tab="following"
                 class={[
                   "text-[10px] font-bold py-1 px-2.5 rounded-full border cursor-pointer transition-colors",
-                  @bubble_tab == "following" && "bg-accent-orange border-accent-orange text-white",
+                  @bubble_tab == "following" && "bg-accent-orange border-accent-orange text-on-accent",
                   @bubble_tab != "following" &&
                     "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange"
                 ]}
@@ -114,7 +114,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
                 phx-value-tab="followers"
                 class={[
                   "text-[10px] font-bold py-1 px-2.5 rounded-full border cursor-pointer transition-colors",
-                  @bubble_tab == "followers" && "bg-accent-orange border-accent-orange text-white",
+                  @bubble_tab == "followers" && "bg-accent-orange border-accent-orange text-on-accent",
                   @bubble_tab != "followers" &&
                     "bg-transparent border-ink-300 text-ink-500 hover:border-accent-orange"
                 ]}

@@ -113,7 +113,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 <span>Admin</span>
                 <span
                   :if={@pending_suggestions_count > 0}
-                  class="inline-flex min-w-[16px] items-center justify-center rounded-full bg-accent-orange px-1 py-0.5 text-[9px] font-bold text-white"
+                  class="inline-flex min-w-[16px] items-center justify-center rounded-full bg-accent-orange px-1 py-0.5 text-[9px] font-bold text-on-accent"
                 >
                   {@pending_suggestions_count}
                 </span>
@@ -149,7 +149,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                   <span>Sugestões</span>
                   <span
                     :if={@pending_suggestions_count > 0}
-                    class="inline-flex min-w-[20px] items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[10px] font-bold text-white"
+                    class="inline-flex min-w-[20px] items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[10px] font-bold text-on-accent"
                   >
                     {@pending_suggestions_count}
                   </span>
@@ -413,7 +413,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                   <span>Admin</span>
                   <span
                     :if={@pending_suggestions_count > 0}
-                    class="inline-flex min-w-[16px] items-center justify-center rounded-full bg-accent-orange px-1 py-0.5 text-[9px] font-bold text-white"
+                    class="inline-flex min-w-[16px] items-center justify-center rounded-full bg-accent-orange px-1 py-0.5 text-[9px] font-bold text-on-accent"
                   >
                     {@pending_suggestions_count}
                   </span>
@@ -448,7 +448,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                     <span>Sugestões</span>
                     <span
                       :if={@pending_suggestions_count > 0}
-                      class="inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[9px] font-bold text-white"
+                      class="inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[9px] font-bold text-on-accent"
                     >
                       {@pending_suggestions_count}
                     </span>
