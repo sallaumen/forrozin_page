@@ -51,7 +51,7 @@ defmodule OGrupoDeEstudosWeb.StudySharedLiveTest do
       conn = log_in_user(conn, student)
       {:ok, _lv, html} = live(conn, ~p"/study/shared/#{link.id}")
 
-      assert html =~ "vínculo foi encerrado"
+      assert html =~ "Vínculo encerrado"
       assert html =~ "somente leitura"
     end
 
