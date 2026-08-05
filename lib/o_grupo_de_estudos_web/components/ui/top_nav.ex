@@ -466,6 +466,21 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 </div>
               </details>
             <% end %>
+            <%!-- O sino desce da barra de abas para cá: notificação é visita, não
+            lugar onde se mora, e no desktop ele já vivia no topo. --%>
+            <.link
+              navigate={~p"/notifications"}
+              class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 no-underline"
+              aria-label="Alertas"
+            >
+              <.icon name="hero-bell" class="size-4.5" />
+              <span
+                :if={@notification_count > 0}
+                class="absolute right-0.5 top-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent-red px-0.5 font-sans text-[9px] font-bold leading-none text-white"
+              >
+                {if @notification_count > 99, do: "99+", else: @notification_count}
+              </span>
+            </.link>
             <button
               id="top-nav-mobile-pwa-btn"
               type="button"

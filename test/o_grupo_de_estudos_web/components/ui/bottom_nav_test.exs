@@ -1,4 +1,14 @@
 defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
+  @moduledoc """
+  The tab bar: five places, not seven items.
+
+  Apple and Material both stop at five, and it is not arbitrary: at 375px seven
+  tabs give each one 53px with a 10px label, and the label is what makes a tab
+  bar learnable. Two of the seven were not places at all. "Gerador" is
+  `/graph/visual?mode=generator`, a mode of the map, reachable from the map's own
+  panel; notifications are a check-in, and the bell lives in the top bar.
+  """
+
   use ExUnit.Case, async: true
 
   import Phoenix.LiveViewTest
@@ -7,78 +17,65 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNavTest do
 
   defp user, do: %{username: "tavano", first_name: "Tavano"}
 
+  defp nav(overrides \\ []) do
+    assigns = Enum.into(overrides, %{current_user: user(), current_path: "/collection"})
+
+    render_component(&BottomNav.bottom_nav/1, assigns)
+  end
+
   describe "bottom_nav/1" do
     test "data-ui attribute present" do
-      html =
-        render_component(&BottomNav.bottom_nav/1, %{
-          current_user: user(),
-          current_path: "/collection"
-        })
-
-      assert html =~ ~s(data-ui="bottom-nav")
+      assert nav() =~ ~s(data-ui="bottom-nav")
     end
 
-    test "renders tab links including estudos and generator" do
-      html =
-        render_component(&BottomNav.bottom_nav/1, %{
-          current_user: user(),
-          current_path: "/collection"
-        })
+    test "the five places of the product, and nothing else" do
+      html = nav()
 
-      assert html =~ ~s(href="/collection")
-      assert html =~ ~s(href="/graph/visual")
-      assert html =~ ~s(href="/study")
-      assert html =~ ~s(href="/graph/visual?mode=generator")
-      assert html =~ ~s(href="/sequence")
-      assert html =~ ~s(href="/notifications")
-      assert html =~ ~s(href="/users/tavano")
+      for path <- ~w(/collection /graph/visual /study /sequence /users/tavano) do
+        assert html =~ ~s(href="#{path}")
+      end
+
+      assert count(html, "<a ") == 5
     end
 
-    test "tab labels present" do
-      html =
-        render_component(&BottomNav.bottom_nav/1, %{
-          current_user: user(),
-          current_path: "/collection"
-        })
+    test "every tab keeps its label, which is what makes the bar learnable" do
+      html = nav()
 
-      assert html =~ "Acervo"
-      assert html =~ "Mapa"
-      assert html =~ "Estudos"
-      assert html =~ "Gerador"
-      assert html =~ "Sequências"
-      assert html =~ "Alertas"
-      assert html =~ "Perfil"
+      for label <- ["Acervo", "Mapa", "Estudos", "Sequências", "Perfil"] do
+        assert html =~ label
+      end
     end
 
-    test "generator tab can be active independently from the map tab" do
-      html =
-        render_component(&BottomNav.bottom_nav/1, %{
-          current_user: user(),
-          current_path: "/graph/visual?mode=generator"
-        })
+    test "the generator is a mode of the map, not a place of its own" do
+      html = nav()
 
-      assert html =~ ~s(href="/graph/visual?mode=generator")
-      assert html =~ ~s(data-active="true")
+      refute html =~ "mode=generator"
+      refute html =~ "Gerador"
+    end
+
+    test "notifications are a check-in: the bell lives in the top bar" do
+      html = nav()
+
+      refute html =~ ~s(href="/notifications")
+      refute html =~ "Alertas"
+    end
+
+    test "the map tab stays lit while the generator mode is open" do
+      assert nav(current_path: "/graph/visual?mode=generator") =~ ~s(data-active="true")
     end
 
     test "active tab marked with data-active=true when current_path matches" do
-      html =
-        render_component(&BottomNav.bottom_nav/1, %{
-          current_user: user(),
-          current_path: "/collection"
-        })
-
-      assert html =~ ~s(data-active="true")
+      assert nav() =~ ~s(data-active="true")
     end
 
     test "inactive tabs have data-active=false" do
-      html =
-        render_component(&BottomNav.bottom_nav/1, %{
-          current_user: user(),
-          current_path: "/collection"
-        })
+      assert nav() =~ ~s(data-active="false")
+    end
 
-      assert html =~ ~s(data-active="false")
+    test "a pending study request still shows up on the Estudos tab" do
+      assert nav(pending_study_count: 2) =~ "2"
     end
   end
+
+  defp count(html, needle), do: length(String.split(html, needle)) - 1
 end
