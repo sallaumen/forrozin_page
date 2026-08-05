@@ -81,7 +81,7 @@
           só existia dentro do mapa. O atalho traz o gesto para onde a necessidade
           aparece: acabei de escrever a aula, e a combinação que funcionou é isto. --%>
             <div class="mt-4 border-t border-ink-200 pt-3">
-              <p class="m-0 mb-2 text-[10px] font-semibold uppercase tracking-[0.13em] text-ink-500">
+              <p class="m-0 mb-2 font-sans text-[11.5px] font-semibold text-ink-600">
                 Sequências desta aula
               </p>
               <div class="flex flex-wrap items-center gap-1.5">
@@ -167,9 +167,6 @@
     class="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-6 pb-24 md:pb-10 sm:px-6"
   >
     <.section_intro
-      eyebrow="Você aprende com"
-      eyebrow_icon="hero-academic-cap"
-      tone={:orange}
       title="Meus professores"
       description="Cada professor tem um diário compartilhado só de vocês dois, com anotações de aula, metas e os passos que estão trabalhando juntos."
     >
@@ -183,7 +180,7 @@
     <%!-- Painel de busca de professor (toggle) --%>
     <div
       :if={@adding_teacher}
-      class="mb-4 rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm"
+      class="mb-5 border-y border-ink-200 py-4"
     >
       <p class="m-0 mb-2 text-xs font-semibold text-ink-700">Buscar professor por nome</p>
       <form phx-change="search_teacher" autocomplete="off">
@@ -220,7 +217,7 @@
       </div>
 
       <div :if={@suggested_teachers != [] and @teacher_search == ""} class="mt-3">
-        <p class="m-0 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-ink-400">
+        <p class="m-0 mb-1.5 font-sans text-[11.5px] font-semibold text-ink-500">
           Sugeridos
         </p>
         <div class="space-y-1.5">
@@ -248,7 +245,6 @@
     <%!-- Lista de professores --%>
     <%= if @teacher_links == [] do %>
       <.empty_state
-        icon="hero-academic-cap"
         title="Você ainda não estuda com nenhum professor"
         description="Adicione um professor pra abrir um diário compartilhado e acompanhar a evolução juntos."
       >
@@ -259,29 +255,29 @@
         </:action>
       </.empty_state>
     <% else %>
-      <div class="space-y-2.5">
+      <div>
         <.person_card
           :for={link <- @teacher_links}
           user={link.teacher}
-          accent={:orange}
-          badge_label="Professor"
-          badge_tone={:accent}
           status_label={
             if MapSet.member?(@wrote_today_ids, link.id),
-              do: "Escreveu hoje",
-              else: "Sem registro hoje"
+              do: "escreveu hoje",
+              else: "sem registro hoje"
           }
-          status_tone={if MapSet.member?(@wrote_today_ids, link.id), do: :success, else: :muted}
           href={~p"/users/#{link.teacher.username}"}
         >
           <:actions>
             <span
               :if={MapSet.member?(@unread_lesson_link_ids, link.id)}
-              class="inline-flex items-center gap-1.5 rounded-full bg-accent-red/10 px-2 py-0.5 text-[10px] font-bold text-accent-red"
+              class="inline-flex items-center gap-1.5 font-sans text-[11.5px] font-semibold text-accent-red"
             >
-              <span class="h-1.5 w-1.5 rounded-full bg-accent-red"></span> Nova lição
+              <span class="size-1.5 rounded-full bg-accent-red"></span> Nova lição
             </span>
-            <.action_link navigate={~p"/study/shared/#{link.id}"} icon="hero-arrow-right">
+            <.action_link
+              navigate={~p"/study/shared/#{link.id}"}
+              tone={:subtle}
+              icon="hero-arrow-right"
+            >
               Abrir diário
             </.action_link>
           </:actions>
@@ -296,9 +292,6 @@
     class="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-6 pb-24 md:pb-10 sm:px-6"
   >
     <.section_intro
-      eyebrow="Você ensina"
-      eyebrow_icon="hero-users"
-      tone={:purple}
       title="Meus alunos"
       description="Quem estuda com você. Abra o diário de cada um pra acompanhar a evolução e deixar anotações privadas."
     >
@@ -317,21 +310,17 @@
       </:action>
     </.section_intro>
 
-    <div class="mb-4 grid grid-cols-3 gap-3">
-      <.stat_card value={length(@student_links)} label="alunos" />
-      <.stat_card value={@students_wrote_today} label="escreveram hoje" tone={:success} />
-      <.stat_card
-        value={length(@pending_requests)}
-        label="pedidos"
-        tone={:accent}
-        highlighted={@pending_requests != []}
-      />
-    </div>
+    <.stat_line stats={[
+      {length(@student_links), if(length(@student_links) == 1, do: "aluno", else: "alunos")},
+      {@students_wrote_today, "escreveram hoje"},
+      {length(@pending_requests),
+       if(length(@pending_requests) == 1, do: "pedido", else: "pedidos")}
+    ]} />
 
     <section
       :if={@composing_lesson}
       id="lesson-composer"
-      class="mb-4 rounded-2xl border border-accent-purple/30 border-l-[3px] border-l-accent-purple/70 bg-ink-50 p-4 shadow-sm"
+      class="mb-5 border-y border-ink-300 py-4"
     >
       <h3 class="m-0 mb-1 text-sm font-bold text-ink-900">
         {if @editing_lesson_id, do: "Editar lição", else: "Nova lição para a turma"}
@@ -366,7 +355,7 @@
         >{@lesson_content}</textarea>
 
         <div :if={!@editing_lesson_id} class="mb-3">
-          <p class="m-0 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-ink-500">
+          <p class="m-0 mb-1.5 font-sans text-[11.5px] font-semibold text-ink-600">
             Enviar para
           </p>
           <div class="flex flex-col gap-0.5">
@@ -395,7 +384,7 @@
       <%!-- Outside the <form>: step_search renders its own form and nesting
       forms is invalid HTML. The submit button reattaches via form=. --%>
       <div class="mb-3">
-        <p class="m-0 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-ink-500">
+        <p class="m-0 mb-1.5 font-sans text-[11.5px] font-semibold text-ink-600">
           Passos desta lição
         </p>
         <div :if={@lesson_steps != []} class="mb-2 flex flex-wrap gap-1.5">
@@ -445,9 +434,9 @@
 
     <section
       :if={@teacher_lessons != []}
-      class="mb-4 rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm"
+      class="mb-5 border-t border-ink-200 pt-4"
     >
-      <h3 class="m-0 mb-2.5 text-[10px] font-bold uppercase tracking-widest text-ink-500">
+      <h3 class="brand-display is-title m-0 mb-2.5 text-[15px] font-semibold tracking-tight text-ink-800">
         Lições enviadas
       </h3>
       <div class="space-y-2">
@@ -495,36 +484,26 @@
     <%!-- Pedidos pendentes --%>
     <section
       :if={@pending_requests != []}
-      class="mb-4 rounded-2xl border border-gold-500/30 bg-gold-500/[0.05] p-4"
+      class="mb-5 border-t border-gold-500/40 pt-4"
     >
-      <h3 class="m-0 mb-2.5 text-[10px] font-bold uppercase tracking-widest text-gold-600">
+      <h3 class="brand-display is-title m-0 mb-2.5 text-[15px] font-semibold tracking-tight text-ink-800">
         Pedidos pendentes
       </h3>
-      <div class="space-y-2">
-        <div
+      <%!-- Mesmo bloco de pessoa do resto da aba: escrito à mão aqui, o nome
+           voltava a brigar com os botões e virava "Wiguiri C…" no celular. --%>
+      <div>
+        <.person_card
           :for={req <- @pending_requests}
-          class="flex flex-wrap items-center gap-3 rounded-xl border border-ink-200 bg-ink-50 px-3.5 py-3"
+          user={req.student}
+          status_label={req.student.city}
+          href={~p"/users/#{req.student.username}"}
         >
-          <.link
-            navigate={~p"/users/#{req.student.username}"}
-            class="flex min-w-0 flex-1 items-center gap-3 no-underline"
-          >
-            <.user_avatar user={req.student} size={:md} />
-            <div class="min-w-0 flex-1">
-              <p class="m-0 truncate font-serif text-sm font-bold text-ink-900">
-                {req.student.name}
-              </p>
-              <p class="m-0 text-[11px] text-ink-500">
-                @{req.student.username}<span :if={req.student.city} class="text-ink-400">{" · #{req.student.city}"}</span>
-              </p>
-            </div>
-          </.link>
-          <div class="flex shrink-0 gap-1.5">
+          <:actions>
             <button
               type="button"
               phx-click="accept_request"
               phx-value-id={req.id}
-              class="rounded-full bg-accent-green px-3.5 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-accent-green/90"
+              class="min-h-11 cursor-pointer rounded-full border-0 bg-accent-green px-4 font-serif text-[13px] font-semibold text-white transition-colors hover:bg-accent-green/90 sm:min-h-9"
             >
               Aceitar
             </button>
@@ -532,19 +511,18 @@
               type="button"
               phx-click="reject_request"
               phx-value-id={req.id}
-              class="rounded-full border border-ink-300 bg-ink-50 px-3.5 py-1.5 text-[13px] font-semibold text-ink-600 transition-colors hover:bg-ink-100"
+              class="min-h-11 cursor-pointer rounded-full border border-ink-300 bg-transparent px-4 font-serif text-[13px] font-semibold text-ink-600 transition-colors hover:border-ink-400 sm:min-h-9"
             >
               Recusar
             </button>
-          </div>
-        </div>
+          </:actions>
+        </.person_card>
       </div>
     </section>
 
     <%!-- Lista de alunos --%>
     <%= if @student_links == [] do %>
       <.empty_state
-        icon="hero-users"
         title="Nenhum aluno conectado ainda"
         description="Compartilhe seu link de convite pra que seus alunos comecem a estudar com você."
       >
@@ -555,17 +533,15 @@
         </:action>
       </.empty_state>
     <% else %>
-      <div class="space-y-2.5">
+      <div>
         <.person_card
           :for={link <- @student_links}
           user={link.student}
-          accent={:purple}
           status_label={
             if MapSet.member?(@wrote_today_ids, link.id),
-              do: "Escreveu hoje",
-              else: "Sem registro hoje"
+              do: "escreveu hoje",
+              else: "sem registro hoje"
           }
-          status_tone={if MapSet.member?(@wrote_today_ids, link.id), do: :success, else: :muted}
           href={~p"/users/#{link.student.username}"}
         >
           <:actions>
@@ -578,7 +554,7 @@
                   MapSet.member?(@nudged_link_ids, link.id)
               }
               id={"study-nudged-student-#{link.id}"}
-              class="inline-flex items-center gap-1 rounded-full border border-accent-green/30 bg-accent-green/10 px-3 py-1.5 text-[13px] font-semibold text-accent-green"
+              class="inline-flex min-h-11 items-center gap-1 font-sans text-[12.5px] font-semibold text-accent-green sm:min-h-0"
             >
               <.icon name="hero-check" class="size-3.5" /> Cutucado
             </span>
@@ -592,11 +568,15 @@
               phx-click="nudge_student"
               phx-value-link-id={link.id}
               phx-disable-with="Enviando..."
-              class="cursor-pointer rounded-full border border-accent-orange/25 bg-accent-orange/10 px-3 py-1.5 text-[13px] font-semibold text-accent-orange transition-colors hover:bg-accent-orange/20"
+              class="min-h-11 cursor-pointer rounded-full border border-ink-300 bg-transparent px-3 font-serif text-[12.5px] font-semibold text-ink-700 transition-colors hover:border-ink-400 sm:min-h-9"
             >
               Cutucada
             </button>
-            <.action_link navigate={~p"/study/shared/#{link.id}"} icon="hero-arrow-right">
+            <.action_link
+              navigate={~p"/study/shared/#{link.id}"}
+              tone={:subtle}
+              icon="hero-arrow-right"
+            >
               Abrir
             </.action_link>
           </:actions>

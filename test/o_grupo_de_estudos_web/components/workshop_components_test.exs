@@ -198,7 +198,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
 
       full = row(enrolled_count: 20)
       assert full =~ "Esgotado"
-      refute full =~ "de 20 vagas"
+      assert full =~ "20 de 20 vagas"
     end
 
     test "being enrolled is one discreet mark, not a coloured badge" do
@@ -248,10 +248,56 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
         price_cents: 5000,
         capacity: 20,
         status: :published,
-        visibility: :public
+        visibility: :public,
+        location: "Telhado do Tatá",
+        organizer: %{name: "Tavano", username: "tavano", avatar_path: nil}
       },
       attrs
     )
+  end
+
+  describe "workshop_card/1 na agenda" do
+    test "the date is the rail, and the poster stops being a 54px smudge" do
+      html = card()
+
+      assert html =~ "AGO" or html =~ "ago"
+      refute html =~ "loading=\"lazy\""
+    end
+
+    test "price and seats read as text, not as a row of badges" do
+      html = card()
+
+      assert html =~ "R$ 50"
+      assert html =~ "4 de 20 vagas"
+      refute html =~ "rounded-full px-2.5 py-0.5"
+    end
+
+    test "organising it is said once, quietly" do
+      html = card(organizer?: true)
+
+      assert html =~ "Você organiza"
+      assert html =~ "Gerenciar"
+    end
+
+    test "a free class says free instead of wearing a blue badge" do
+      html = card(workshop: build_workshop(price_cents: nil))
+
+      assert html =~ "Gratuito"
+      refute html =~ "accent-blue"
+    end
+  end
+
+  defp card(overrides \\ []) do
+    assigns =
+      Enum.into(overrides, %{
+        workshop: build_workshop([]),
+        enrolled_count: 4,
+        enrolled?: false,
+        organizer?: false,
+        id_prefix: "agenda"
+      })
+
+    render_component(&workshop_card/1, assigns)
   end
 
   defp autora, do: %{id: @autora_id}

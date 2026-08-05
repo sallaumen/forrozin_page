@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       assert has_element?(lv, "#study-home-shell")
       assert has_element?(lv, "#personal-diary")
-      assert html =~ "Meus professores"
+      assert html =~ "Professores"
       assert html =~ "O que rolou na prática?"
     end
 

@@ -56,7 +56,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopCreationAccessTest do
 
       {:ok, _lv, html} = live(log_in_user(conn, student), ~p"/study/workshops")
 
-      assert html =~ "Agenda da comunidade"
+      assert html =~ "Eventos pontuais abertos a qualquer pessoa"
       refute html =~ "Criar workshop"
       refute html =~ "Juntar num link só"
     end
