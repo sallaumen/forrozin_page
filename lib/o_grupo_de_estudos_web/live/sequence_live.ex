@@ -904,7 +904,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             aria-pressed={to_string(@liked)}
             aria-label={if @liked, do: "Remover curtida", else: "Curtir sequência"}
             class={[
-              "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[12px] transition cursor-pointer",
+              "inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-[12px] transition cursor-pointer sm:min-h-0 sm:py-1",
               @liked && "text-accent-red",
               !@liked && "text-ink-400 hover:text-accent-red"
             ]}
@@ -928,7 +928,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             phx-click="toggle_seq_expand"
             phx-value-seq-id={@seq.id}
             aria-label={if @is_expanded, do: "Recolher sequência", else: "Expandir sequência"}
-            class="inline-flex size-7 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100 hover:text-ink-700 cursor-pointer"
+            class="relative inline-flex size-7 items-center justify-center rounded-full text-ink-400 transition after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:bg-ink-100 hover:text-ink-700 cursor-pointer"
           >
             <.icon
               name="hero-chevron-down-mini"
@@ -1028,7 +1028,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                   phx-click="toggle_follow"
                   phx-value-user-id={@seq.user_id}
                   class={[
-                    "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer",
+                    "inline-flex min-h-11 items-center rounded-full border px-2.5 text-[11px] font-semibold transition cursor-pointer sm:min-h-0 sm:py-1",
                     MapSet.member?(@following_user_ids, @seq.user_id) &&
                       "border-accent-orange/40 bg-accent-orange/10 text-accent-orange",
                     !MapSet.member?(@following_user_ids, @seq.user_id) &&
@@ -1083,7 +1083,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
                 phx-value-id={@seq.id}
                 aria-pressed={to_string(@is_favorited)}
                 class={[
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition cursor-pointer",
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold transition cursor-pointer sm:min-h-0 sm:py-1.5",
                   @is_favorited && "border-gold-500/40 bg-gold-500/10 text-gold-600",
                   !@is_favorited &&
                     "border-ink-300 bg-ink-50 text-ink-600 hover:border-gold-500/40 hover:text-gold-600"
