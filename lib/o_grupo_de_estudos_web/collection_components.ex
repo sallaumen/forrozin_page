@@ -9,6 +9,109 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
 
   use OGrupoDeEstudosWeb, :html
 
+  import OGrupoDeEstudosWeb.UI.Illustration, only: [illustration: 1]
+
+  @doc """
+  The square that identifies a family: its drawing, or its code when there is none.
+
+  Only ten of the twenty-one families were ever drawn, so half the list would
+  open a hole. The code is not a placeholder standing in for the drawing, it is
+  what people say out loud in class, so the undrawn half still says who it is.
+  """
+  attr :card, :map, required: true
+
+  def family_mark(%{card: %{image_path: nil}} = assigns) do
+    ~H"""
+    <span class="grid size-[54px] shrink-0 place-items-center rounded-lg border border-ink-300/50 bg-ink-200 font-sans text-[13px] font-semibold tracking-tight text-ink-600">
+      {family_mark_label(@card)}
+    </span>
+    """
+  end
+
+  def family_mark(assigns) do
+    ~H"""
+    <.illustration
+      src={@card.image_path}
+      alt={"Ilustração da família #{@card.title}"}
+      class="size-[54px] shrink-0 rounded-lg"
+    />
+    """
+  end
+
+  defp family_mark_label(%{code: code}) when is_binary(code) and code != "", do: code
+  defp family_mark_label(%{title: title}), do: title |> String.first() |> String.upcase()
+
+  @doc """
+  One step inside a family: the code that names it, and what you know about it.
+
+  The card this replaced carried five badges in four accent colours, which made
+  every step look like it was announcing an emergency. Only one of those states
+  is about the person rather than about the step, so only that one keeps a
+  colour: green means you already know it. The rest are the same quiet grey.
+  """
+  attr :step, :map, required: true
+  attr :deep_linked, :boolean, default: false
+  attr :steps_with_links, :any, default: %MapSet{}
+  attr :steps_seen_in_class, :any, default: %MapSet{}
+  attr :learned_step_ids, :any, default: %MapSet{}
+
+  def step_row(assigns) do
+    ~H"""
+    <button
+      id={"collection-step-#{@step.code}"}
+      data-deep-linked={to_string(@deep_linked)}
+      phx-click="open_step"
+      phx-value-code={@step.code}
+      class={[
+        "group flex min-h-11 w-full cursor-pointer items-center gap-3 border-0 border-b border-ink-300/45",
+        "py-2.5 pr-1 text-left transition-colors",
+        @deep_linked && "border-l-2 border-l-accent-orange bg-accent-orange/5 pl-2",
+        !@deep_linked && "bg-transparent pl-0"
+      ]}
+    >
+      <code class="w-[52px] shrink-0 font-mono text-[11px] font-bold tracking-wide text-ink-500">
+        {@step.code}
+      </code>
+      <span class="min-w-0 flex-1 truncate font-serif text-[15px] text-ink-900 transition-colors group-hover:text-accent-orange">
+        {@step.name}
+      </span>
+      <span class="flex shrink-0 items-center gap-2 text-ink-400">
+        <span
+          :if={MapSet.member?(@steps_with_links, @step.id)}
+          role="img"
+          title="Tem vídeo"
+          aria-label="Tem vídeo"
+        >
+          <.icon name="hero-play" class="size-3.5" />
+        </span>
+        <span
+          :if={MapSet.member?(@steps_seen_in_class, @step.id)}
+          role="img"
+          title="Você viu este passo em aula"
+          aria-label="Você viu este passo em aula"
+        >
+          <.icon name="hero-eye" class="size-3.5" />
+        </span>
+        <span
+          :if={MapSet.member?(@learned_step_ids, @step.id)}
+          role="img"
+          title="Você já sabe este passo"
+          aria-label="Você já sabe este passo"
+          class="text-accent-green"
+        >
+          <.icon name="hero-check-circle-solid" class="size-4" />
+        </span>
+        <span
+          :if={(@step.like_count || 0) > 0}
+          class="inline-flex items-center gap-1 font-sans text-[11px] tabular-nums text-ink-500"
+        >
+          <.icon name="hero-heart-solid" class="size-3" />{@step.like_count}
+        </span>
+      </span>
+    </button>
+    """
+  end
+
   attr :step, :map, required: true
   attr :current_user_id, :string, default: nil
   attr :steps_with_links, :any, default: %MapSet{}
@@ -140,11 +243,4 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
     </div>
     """
   end
-
-  @doc """
-  How a step announces its likes, in Portuguese that agrees with the number.
-  """
-  def likes_label(nil), do: "0 likes"
-  def likes_label(1), do: "1 like"
-  def likes_label(count), do: "#{count} likes"
 end

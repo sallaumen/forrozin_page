@@ -75,7 +75,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
       category_label: section.category && section.category.label,
       category_color: section.category && section.category.color,
       steps: all_sorted,
-      subsections: Enum.map(section.subsections, &build_subsection_card/1)
+      subsections: Enum.map(section.subsections, &build_subsection_card/1),
+      image_path: section_image_path(section, visible_steps)
     }
   end
 
