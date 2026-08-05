@@ -8,9 +8,10 @@ defmodule OGrupoDeEstudosWeb.StepLive do
   alias OGrupoDeEstudos.Suggestions.Suggestion
   alias OGrupoDeEstudosWeb.StepDetail
 
-  on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
+  import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.SocialBubble
   import OGrupoDeEstudosWeb.StepDetail, only: [step_detail: 1]

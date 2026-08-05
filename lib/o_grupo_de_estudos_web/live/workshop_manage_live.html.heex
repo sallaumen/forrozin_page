@@ -5,8 +5,7 @@
   <.top_nav
     current_user={@current_user}
     is_admin={@is_admin}
-    nav_mode={:detail}
-    title="Gerenciar workshop"
+    nav_mode={@nav_mode}
     notification_count={@notification_count}
     notification_dropdown_enabled={true}
     notification_dropdown_open={@notification_dropdown_open}
@@ -18,7 +17,7 @@
     online_count={@online_count}
   />
 
-  <main class="mx-auto w-full max-w-[900px] flex-1 px-4 py-6 sm:px-6">
+  <main class="mx-auto w-full max-w-[900px] flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6">
     <.link
       navigate={~p"/workshops/#{@workshop.slug}"}
       class="mb-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-500 no-underline hover:text-ink-800"
@@ -435,4 +434,11 @@
       </button>
     </section>
   </main>
+
+  <.bottom_nav
+    current_user={@current_user}
+    current_path={~p"/study"}
+    notification_count={@notification_count}
+    pending_study_count={assigns[:pending_study_count] || 0}
+  />
 </div>

@@ -17,6 +17,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
 
   use OGrupoDeEstudosWeb.NotificationHandlers
 
+  import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
   import OGrupoDeEstudosWeb.WorkshopComponents

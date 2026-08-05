@@ -14,14 +14,19 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   alias OGrupoDeEstudos.Engagement.Badges
   alias OGrupoDeEstudos.Workshops.{Receipts, Workshop}
 
+  on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
+  on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+
   use OGrupoDeEstudosWeb.Handlers.StepLearning
   use OGrupoDeEstudosWeb.Handlers.SequenceSheet
+  use OGrupoDeEstudosWeb.NotificationHandlers
 
   alias OGrupoDeEstudosWeb.ChangesetErrors
   alias OGrupoDeEstudosWeb.InlineEditParams
   alias OGrupoDeEstudosWeb.Meta
 
   import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1, sequence_sheet: 1]
+  import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.InlineEdit
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.TopNav
