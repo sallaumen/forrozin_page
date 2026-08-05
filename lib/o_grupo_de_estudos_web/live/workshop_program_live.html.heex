@@ -105,7 +105,7 @@
             type="button"
             phx-click="publish"
             phx-disable-with="Publicando..."
-            class="cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white"
+            class="cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-on-accent"
           >
             Publicar
           </button>
@@ -189,7 +189,7 @@
           class={[
             "cursor-pointer rounded-full border-0 px-5 py-2.5 font-serif text-[14px] font-semibold transition-colors",
             MapSet.size(@selecionados) > 0 &&
-              "bg-accent-orange text-white hover:bg-accent-orange/90",
+              "bg-accent-orange text-on-accent hover:bg-accent-orange/90",
             MapSet.size(@selecionados) == 0 && "cursor-not-allowed bg-ink-200 text-ink-400"
           ]}
         >

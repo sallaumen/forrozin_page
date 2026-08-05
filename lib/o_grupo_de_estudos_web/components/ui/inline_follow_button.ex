@@ -23,7 +23,7 @@ defmodule OGrupoDeEstudosWeb.UI.InlineFollowButton do
           "text-xs py-1 px-3 rounded-full border font-medium transition-colors cursor-pointer flex-shrink-0",
           is_following && "border-accent-orange bg-accent-orange/10 text-accent-orange",
           !is_following &&
-            "border-accent-orange bg-accent-orange text-white hover:bg-accent-orange/90"
+            "border-accent-orange bg-accent-orange text-on-accent hover:bg-accent-orange/90"
         ]}
       >
         {if is_following, do: "Seguindo \u2713", else: "Seguir"}

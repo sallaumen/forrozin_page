@@ -47,7 +47,7 @@
   --color-ink-200: #ede8df;
   --color-ink-300: #d4cabb;
   --color-ink-400: #bba88a;
-  --color-ink-500: #9a7a5a;
+  --color-ink-500: #7f6247;   /* texto secundario: 5.1:1 sobre o papel */
   --color-ink-600: #7a5c3a;
   --color-ink-700: #5c3a1a;
   --color-ink-800: #3a2410;
@@ -66,6 +66,12 @@
   --color-collection-moss-700: #556046;
   --color-collection-moss-500: #8eb15e;
   --color-collection-moss-300: #b9d297;
+
+  /* Texto sobre acento preenchido. Nao inverte no tema escuro de proposito: o
+     laranja e o verde continuam claros nos dois temas, entao o texto em cima
+     deles tem que continuar escuro. Branco dava 2.85:1 no claro e 2.19:1 no
+     escuro; assim da 6.6:1 e 8.6:1. */
+  --color-on-accent: #1a0e05;
 
   /* Semantic colors used as theme tokens (replaces hardcoded hex) */
   --color-accent-purple: #8e44ad;

@@ -21,7 +21,7 @@ defmodule OGrupoDeEstudosWeb.UI.StepRanking do
           <div class="flex items-center gap-2">
             <div class={[
               "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
-              idx < 3 && "bg-accent-orange text-white",
+              idx < 3 && "bg-accent-orange text-on-accent",
               idx >= 3 && "bg-ink-200 text-ink-500"
             ]}>
               {idx + 1}

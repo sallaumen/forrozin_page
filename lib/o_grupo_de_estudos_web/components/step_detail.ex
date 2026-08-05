@@ -167,7 +167,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
           </select>
           <button
             type="submit"
-            class="text-xs bg-accent-orange text-white px-3 py-1.5 rounded font-medium border-0 cursor-pointer"
+            class="text-xs bg-accent-orange text-on-accent px-3 py-1.5 rounded font-medium border-0 cursor-pointer"
           >
             Enviar
           </button>
@@ -213,7 +213,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
           />
           <button
             type="submit"
-            class="text-xs bg-accent-orange text-white px-3 py-1.5 rounded font-medium border-0 cursor-pointer"
+            class="text-xs bg-accent-orange text-on-accent px-3 py-1.5 rounded font-medium border-0 cursor-pointer"
           >
             Enviar
           </button>
@@ -250,7 +250,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
             phx-click="approve_step"
             phx-value-code={@step.code}
             data-confirm="Aprovar este passo como oficial?"
-            class="inline-flex items-center text-[10px] py-1 px-2.5 rounded bg-accent-green text-white border-0 cursor-pointer"
+            class="inline-flex items-center text-[10px] py-1 px-2.5 rounded bg-accent-green text-on-accent border-0 cursor-pointer"
           >
             Aprovar
           </button>
@@ -382,7 +382,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
               />
               <button
                 type="submit"
-                class="text-xs bg-accent-orange text-white px-3 py-1.5 rounded font-medium border-0 cursor-pointer"
+                class="text-xs bg-accent-orange text-on-accent px-3 py-1.5 rounded font-medium border-0 cursor-pointer"
               >
                 Enviar
               </button>
@@ -614,7 +614,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
               class={[
                 "text-[10px] font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
                 @connection_suggest_direction == "to" &&
-                  "bg-accent-orange border-accent-orange text-white",
+                  "bg-accent-orange border-accent-orange text-on-accent",
                 @connection_suggest_direction != "to" && "bg-transparent border-ink-300 text-ink-500"
               ]}
             >
@@ -627,7 +627,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
               class={[
                 "text-[10px] font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
                 @connection_suggest_direction == "from" &&
-                  "bg-accent-orange border-accent-orange text-white",
+                  "bg-accent-orange border-accent-orange text-on-accent",
                 @connection_suggest_direction != "from" &&
                   "bg-transparent border-ink-300 text-ink-500"
               ]}

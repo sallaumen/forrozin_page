@@ -43,7 +43,7 @@
               class={[
                 "text-sm py-1.5 px-5 rounded-full font-medium border transition-colors cursor-pointer",
                 @is_following && "bg-transparent border-accent-orange text-accent-orange",
-                !@is_following && "bg-accent-orange border-accent-orange text-white"
+                !@is_following && "bg-accent-orange border-accent-orange text-on-accent"
               ]}
             >
               {if @is_following, do: "Seguindo ✓", else: "Seguir"}
@@ -82,7 +82,7 @@
                 <%= if @current_user.is_teacher do %>
                   <button
                     phx-click="accept_study"
-                    class="text-sm py-1.5 px-5 rounded-full font-medium border border-accent-green bg-accent-green text-white transition-colors cursor-pointer hover:bg-accent-green/90"
+                    class="text-sm py-1.5 px-5 rounded-full font-medium border border-accent-green bg-accent-green text-on-accent transition-colors cursor-pointer hover:bg-accent-green/90"
                   >
                     Aceitar como aluno
                   </button>
@@ -250,7 +250,7 @@
             class={[
               "text-xs font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
               @followers_list_tab == "following" &&
-                "bg-accent-orange border-accent-orange text-white",
+                "bg-accent-orange border-accent-orange text-on-accent",
               @followers_list_tab != "following" &&
                 "bg-transparent border-ink-300 text-ink-500 hover:border-ink-400"
             ]}
@@ -264,7 +264,7 @@
             class={[
               "text-xs font-semibold py-1 px-3 rounded-full border cursor-pointer transition-colors",
               @followers_list_tab == "followers" &&
-                "bg-accent-orange border-accent-orange text-white",
+                "bg-accent-orange border-accent-orange text-on-accent",
               @followers_list_tab != "followers" &&
                 "bg-transparent border-ink-300 text-ink-500 hover:border-ink-400"
             ]}
