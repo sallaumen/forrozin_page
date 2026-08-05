@@ -140,4 +140,11 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
     </div>
     """
   end
+
+  @doc """
+  How a step announces its likes, in Portuguese that agrees with the number.
+  """
+  def likes_label(nil), do: "0 likes"
+  def likes_label(1), do: "1 like"
+  def likes_label(count), do: "#{count} likes"
 end

@@ -51,10 +51,13 @@
       </div>
     </div>
 
-    <%!-- Controles (sticky) --%>
+    <%!-- Controles (sticky). O topo mede 56px para quem estuda e 76px para quem
+         administra, então o deslocamento vem medido do próprio cabeçalho: com um
+         número fixo a busca some por baixo dele. --%>
     <div
       id="collection-controls"
-      class="sticky top-[48px] md:top-[66px] z-30 bg-ink-200/95 backdrop-blur-sm border-b border-ink-300/40 py-3.5 px-6"
+      style="top: var(--top-nav-h, 56px)"
+      class="sticky z-30 bg-ink-200/95 backdrop-blur-sm border-b border-ink-300/40 py-3.5 px-6"
     >
       <div class="max-w-[1600px] mx-auto flex gap-2.5 flex-wrap items-center">
         <%!-- Busca --%>
@@ -66,53 +69,40 @@
           <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">
             ⌕
           </span>
+          <%!-- text-base no celular: abaixo de 16px o Safari do iPhone dá zoom
+               sozinho ao focar, e a pessoa perde o enquadramento da página. --%>
           <input
             name="term"
             value={@search}
             placeholder="Buscar por sigla, nome..."
             autocomplete="off"
             phx-debounce="250"
-            class="w-full bg-ink-50 border border-ink-300 rounded py-2 pl-8 pr-3 text-ink-900 text-sm outline-none font-serif box-border focus-visible:ring-2 focus-visible:ring-ink-900"
+            class="w-full min-h-11 bg-ink-50 border border-ink-300 rounded py-2 pl-8 pr-3 text-ink-900 text-base sm:text-sm outline-none font-serif box-border focus-visible:ring-2 focus-visible:ring-ink-900"
           />
         </form>
 
         <button
           id="collection-filter-toggle"
           phx-click="toggle_filters"
-          class="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-ink-300/60 bg-ink-50 px-4 text-sm font-semibold text-ink-700 transition hover:border-ink-500"
+          class="inline-flex min-h-11 items-center gap-2 rounded-full border border-ink-300/60 bg-ink-50 px-4 text-sm font-semibold text-ink-700 transition hover:border-ink-500"
         >
           <.icon name="hero-adjustments-horizontal" class="size-4" /> Ajustes
         </button>
 
-        <%!-- Expandir / recolher + Sugerir --%>
         <%= if @search == "" do %>
-          <div class="flex gap-1.5 ml-auto items-center">
-            <button
-              phx-click="expand_all"
-              class="inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
-            >
-              + expandir
-            </button>
-            <button
-              phx-click="collapse_all"
-              class="inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded cursor-pointer bg-transparent border border-ink-300/50 text-ink-600 font-serif"
-            >
-              − fechar
-            </button>
-            <button
-              phx-click="toggle_suggest"
-              style={
-                if @suggest_mode,
-                  do:
-                    "border-color: var(--color-accent-red); background: color-mix(in srgb, var(--color-accent-red) 6%, transparent); color: var(--color-accent-red);",
-                  else:
-                    "border-color: var(--color-accent-purple); background: var(--color-accent-purple); color: white;"
-              }
-              class="text-xs py-2 px-4 rounded-full cursor-pointer font-serif font-bold tracking-wide border-2 transition-all"
-            >
-              {if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir um passo"}
-            </button>
-          </div>
+          <button
+            phx-click="toggle_suggest"
+            style={
+              if @suggest_mode,
+                do:
+                  "border-color: var(--color-accent-red); background: color-mix(in srgb, var(--color-accent-red) 6%, transparent); color: var(--color-accent-red);",
+                else:
+                  "border-color: var(--color-accent-purple); background: var(--color-accent-purple); color: white;"
+            }
+            class="ml-auto inline-flex min-h-11 items-center rounded-full border-2 px-4 font-serif text-xs font-bold tracking-wide transition-all"
+          >
+            {if @suggest_mode, do: "✕ Cancelar", else: "+ Sugerir um passo"}
+          </button>
         <% end %>
       </div>
 
@@ -126,7 +116,7 @@
             phx-click="filter"
             phx-value-category="all"
             class={[
-              "inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded-full cursor-pointer font-serif italic tracking-tight border",
+              "inline-flex items-center min-h-11 text-[11px] py-1 px-3 rounded-full cursor-pointer font-serif italic tracking-tight border",
               @category_filter == "all" && "bg-ink-900 text-ink-100 border-transparent font-bold",
               @category_filter != "all" &&
                 "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
@@ -143,7 +133,7 @@
                   "background: #{cat.color}; border-color: transparent;"
               }
               class={[
-                "inline-flex items-center text-[10px] py-1 px-2.5 min-h-[36px] rounded-full cursor-pointer font-serif italic tracking-tight border",
+                "inline-flex items-center min-h-11 text-[11px] py-1 px-3 rounded-full cursor-pointer font-serif italic tracking-tight border",
                 @category_filter == cat.name && "text-ink-100 font-bold",
                 @category_filter != cat.name &&
                   "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
@@ -360,9 +350,14 @@
                     <h3 class="font-serif text-xl font-bold leading-tight text-ink-900 sm:text-2xl">
                       {card.title}
                     </h3>
-                    <p class="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-ink-600">
-                      {card.description ||
-                        "Explora os caminhos mais curtidos e as variacoes dessa familia."}
+                    <%!-- Família sem descrição própria fica calada. A frase que
+                         ficava aqui era inventada para encher o card, e aparecia
+                         em sete das vinte. --%>
+                    <p
+                      :if={card.description}
+                      class="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-ink-600"
+                    >
+                      {card.description}
                     </p>
                     <div class="mt-auto flex items-center justify-between pt-4 text-xs">
                       <span class="inline-flex items-center gap-1 text-ink-500">
@@ -407,9 +402,11 @@
                   <h2 class="mt-2 text-3xl font-bold text-ink-900">
                     {@active_section_card.title}
                   </h2>
-                  <p class="mt-3 text-sm leading-6 text-ink-800/80">
-                    {@active_section_card.description ||
-                      "Explora os destaques mais curtidos e as subsecoes reais dessa familia."}
+                  <p
+                    :if={@active_section_card.description}
+                    class="mt-3 text-sm leading-6 text-ink-800/80"
+                  >
+                    {@active_section_card.description}
                   </p>
                 </div>
               </div>
@@ -506,7 +503,7 @@
                         </div>
                         <div class="flex flex-col items-end gap-1 shrink-0">
                           <span class="rounded-full bg-gold-500/15 px-2 py-1 text-[10px] font-semibold text-gold-700 sm:px-2.5 sm:text-xs">
-                            {step.like_count || 0} likes
+                            {likes_label(step.like_count)}
                           </span>
                           <div class="flex gap-1">
                             <span
