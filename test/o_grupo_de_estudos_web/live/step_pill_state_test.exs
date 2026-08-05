@@ -56,7 +56,7 @@ defmodule OGrupoDeEstudosWeb.StepPillStateTest do
   end
 
   describe "on the workshop page" do
-    test "steps of the class change color too", ctx do
+    test "the check marks what the person already knows, and nothing marks the rest", ctx do
       owner = insert(:user)
       workshop = insert(:workshop, organizer: owner)
       {:ok, _} = Workshops.enroll(workshop, ctx.student)
@@ -67,7 +67,7 @@ defmodule OGrupoDeEstudosWeb.StepPillStateTest do
         live(log_in_user(build_conn(), ctx.student), ~p"/workshops/#{workshop.slug}")
 
       assert chip_de(html, "IV") =~ "accent-green"
-      assert chip_de(html, "SC") =~ "accent-orange"
+      refute chip_de(html, "SC") =~ "accent-green"
     end
   end
 

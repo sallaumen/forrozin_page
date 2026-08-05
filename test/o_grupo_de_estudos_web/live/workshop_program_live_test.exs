@@ -136,8 +136,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
 
       assert html =~ "pela programação toda"
       assert html =~ "Quero a programação toda"
-      assert html =~ "Ou escolha os dias"
-      assert html =~ "cada um pelo preço dele"
+      assert html =~ "marque abaixo só os dias que te interessam"
     end
 
     test "buying the package enrolls in every workshop at once", ctx do
