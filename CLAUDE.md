@@ -136,9 +136,15 @@ vive no projeto e vale para qualquer um que rode os testes:
   os cores.
 
 **Nunca subir esses numeros nem contornar com flag na linha de comando.** Para uma
-rodada mais rapida quando a maquina esta livre, `TEST_MAX_CASES=8 mix test`; o CI
-usa 16 pela mesma variavel. Rodar a suite inteira so quando precisar: durante o
-desenvolvimento, `mix test caminho/do/arquivo_test.exs`.
+rodada mais rapida quando a maquina esta livre, `TEST_MAX_CASES=8 mix test`.
+Rodar a suite inteira so quando precisar: durante o desenvolvimento,
+`mix test caminho/do/arquivo_test.exs`.
+
+O CI **nao** sobe o limite. Ja subiu (`TEST_MAX_CASES: 16`) e isso nao acelerava
+nada, porque o gargalo la e o Postgres dividindo o runner, nao os schedulers:
+medido contra o job de cobertura, que roda a mesma suite com o default, a
+diferenca ficou dentro do ruido. O que o 16 produzia era timeout de conexao em
+teste aleatorio, sem relacao com o diff.
 
 ## Comandos
 
