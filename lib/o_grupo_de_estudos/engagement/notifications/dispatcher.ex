@@ -158,6 +158,59 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   end
 
   @doc """
+  Notifies whoever runs the workshop that a receipt came in through the app.
+
+  No `group_key` per person: two receipts are two payments to check, and
+  collapsing them into "Fulano e mais 3" would hide work instead of saving
+  a line.
+  """
+  @spec notify_workshop_receipt(Ecto.UUID.t(), [Ecto.UUID.t()], Ecto.UUID.t()) :: :ok
+  def notify_workshop_receipt(actor_id, organizer_ids, workshop_id)
+      when is_list(organizer_ids) do
+    builder = fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: actor_id,
+        action: :receipt_sent,
+        group_key: "receipt_sent:#{workshop_id}:#{actor_id}",
+        target_type: "workshop",
+        target_id: workshop_id,
+        parent_type: "workshop",
+        parent_id: workshop_id,
+        inserted_at: now()
+      }
+    end
+
+    organizer_ids
+    |> Enum.reject(&(&1 == actor_id))
+    |> insert_and_broadcast(builder)
+  end
+
+  @doc "Notifies whoever owns the program that a package receipt came in."
+  @spec notify_program_receipt(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
+  def notify_program_receipt(actor_id, owner_id, program_id) when actor_id != owner_id do
+    builder = fn user_id ->
+      %{
+        id: Ecto.UUID.generate(),
+        user_id: user_id,
+        actor_id: actor_id,
+        action: :receipt_sent,
+        group_key: "receipt_sent:program:#{program_id}:#{actor_id}",
+        target_type: "program",
+        target_id: program_id,
+        parent_type: "program",
+        parent_id: program_id,
+        inserted_at: now()
+      }
+    end
+
+    insert_and_broadcast([owner_id], builder)
+  end
+
+  def notify_program_receipt(_actor_id, _owner_id, _program_id), do: :ok
+
+  @doc """
   Notifies someone that there is a workshop tomorrow.
 
   The actor is the organizer: the notification requires actor_id, and

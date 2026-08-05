@@ -127,6 +127,14 @@
       </div>
     </div>
 
+    <%!-- Which path the receipt took. People, never taps: each column is stamped
+         once per enrollment, so the comparison between the two is honest. --%>
+    <p :if={@cobra?} class="m-0 mt-2.5 text-[12px] leading-snug text-ink-500">
+      Comprovante: <b class="text-ink-700">{@receipts.app}</b>
+      pelo app · <b class="text-ink-700">{@receipts.whatsapp}</b>
+      abriram o WhatsApp
+    </p>
+
     <%!-- Lista de inscritos --%>
     <section class="mt-6">
       <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
@@ -162,6 +170,18 @@
               </p>
             </div>
           </div>
+
+          <%!-- The receipt opens in another tab: checking it should not lose the
+               list, which is where the payment gets confirmed right after. --%>
+          <a
+            :if={@cobra? && enrollment.receipt_sent_at}
+            href={~p"/workshop-receipts/#{enrollment.id}"}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex min-h-11 shrink-0 items-center gap-1 text-[12px] font-semibold text-accent-orange no-underline sm:min-h-0"
+          >
+            <.icon name="hero-paper-clip" class="size-3.5" /> Ver comprovante
+          </a>
 
           <span
             :if={@cobra?}

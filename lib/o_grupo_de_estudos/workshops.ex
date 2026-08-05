@@ -36,6 +36,7 @@ defmodule OGrupoDeEstudos.Workshops do
     PackageQuery,
     ProgramEnrollment,
     ProgramQuery,
+    Receipts,
     Workshop,
     WorkshopAdmin,
     JoinRequest,
@@ -1092,6 +1093,7 @@ defmodule OGrupoDeEstudos.Workshops do
   defdelegate get_program(id), to: ProgramQuery, as: :get
   defdelegate list_programs_for_owner(owner_id), to: ProgramQuery, as: :list_for_owner
   defdelegate program_summaries(program_ids), to: ProgramQuery, as: :summaries_by_ids
+  defdelegate program_slugs_by_ids(ids), to: ProgramQuery, as: :slugs_by_ids
 
   @doc "Workshops of the program, earliest to latest."
   @spec list_program_workshops(WorkshopProgram.t(), keyword()) :: [Workshop.t()]
@@ -1536,6 +1538,175 @@ defmodule OGrupoDeEstudos.Workshops do
 
   def set_payment_status(%Workshop{}, %User{}, _enrollment_id, _status),
     do: {:error, :unauthorized}
+
+  @doc """
+  Attaches the receipt of whoever is enrolled in the workshop.
+
+  Sending it again replaces the previous file: a receipt is the state of one
+  payment, not a history of attempts.
+  """
+  @spec send_workshop_receipt(Workshop.t(), User.t(), Receipts.upload()) ::
+          {:ok, WorkshopEnrollment.t()} | {:error, :not_enrolled | Receipts.reason()}
+  def send_workshop_receipt(%Workshop{} = workshop, %User{} = user, upload) do
+    with %WorkshopEnrollment{} = enrollment <-
+           EnrollmentQuery.get_for_user(workshop.id, user.id),
+         {:ok, updated} <- Receipts.attach(enrollment, receipt_folder(workshop), upload) do
+      notify_receipt(workshop, user)
+      {:ok, updated}
+    else
+      nil -> {:error, :not_enrolled}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc "Takes the receipt down. Whoever sent it, or whoever runs the workshop."
+  @spec remove_workshop_receipt(Workshop.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, WorkshopEnrollment.t()} | {:error, :unauthorized | :not_found}
+  def remove_workshop_receipt(%Workshop{} = workshop, %User{} = user, enrollment_id) do
+    with %WorkshopEnrollment{} = enrollment <-
+           EnrollmentQuery.get_scoped(enrollment_id, workshop.id),
+         :ok <- Policy.authorize(:manage_receipt, user, {enrollment, access_for(workshop, user)}) do
+      Receipts.detach(enrollment)
+    else
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc "Attaches the receipt of whoever bought the package of a program."
+  @spec send_program_receipt(WorkshopProgram.t(), User.t(), Receipts.upload()) ::
+          {:ok, ProgramEnrollment.t()} | {:error, :not_enrolled | Receipts.reason()}
+  def send_program_receipt(%WorkshopProgram{} = program, %User{} = user, upload) do
+    with %ProgramEnrollment{} = enrollment <- PackageQuery.get_for_user(program.id, user.id),
+         {:ok, updated} <- Receipts.attach(enrollment, program_receipt_folder(program), upload) do
+      notify_program_receipt(program, user)
+      {:ok, updated}
+    else
+      nil -> {:error, :not_enrolled}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc "Takes the package receipt down. Whoever sent it, or whoever owns the program."
+  @spec remove_program_receipt(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, ProgramEnrollment.t()} | {:error, :unauthorized | :not_found}
+  def remove_program_receipt(%WorkshopProgram{} = program, %User{} = user, enrollment_id) do
+    with %ProgramEnrollment{} = enrollment <- PackageQuery.get_scoped(enrollment_id, program.id),
+         :ok <- Policy.authorize(:manage_receipt, user, {enrollment, program}) do
+      Receipts.detach(enrollment)
+    else
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  What a person needs to know about their own receipt on this workshop.
+
+  A projection, not the enrollment: `payment_status` is the organizer's business
+  and does not leave the context on this path.
+  """
+  @spec my_receipt(Workshop.t(), User.t() | nil) ::
+          %{enrollment_id: Ecto.UUID.t(), sent_at: DateTime.t() | nil} | nil
+  def my_receipt(%Workshop{}, nil), do: nil
+
+  def my_receipt(%Workshop{} = workshop, %User{} = user),
+    do: workshop.id |> EnrollmentQuery.get_for_user(user.id) |> receipt_view()
+
+  @doc "The same projection for whoever bought the package of a program."
+  @spec my_package_receipt(WorkshopProgram.t(), User.t() | nil) ::
+          %{enrollment_id: Ecto.UUID.t(), sent_at: DateTime.t() | nil} | nil
+  def my_package_receipt(%WorkshopProgram{}, nil), do: nil
+
+  def my_package_receipt(%WorkshopProgram{} = program, %User{} = user),
+    do: program.id |> PackageQuery.get_for_user(user.id) |> receipt_view()
+
+  defp receipt_view(nil), do: nil
+
+  defp receipt_view(%{id: id, receipt_sent_at: sent_at}),
+    do: %{enrollment_id: id, sent_at: sent_at}
+
+  @doc """
+  The workshop receipt of an enrollment, when this person may open it.
+
+  Everything that is not a yes answers `:not_found`: a receipt someone may not
+  see should not even confirm that it exists.
+  """
+  @spec fetch_workshop_receipt(Ecto.UUID.t(), User.t() | nil) ::
+          {:ok, WorkshopEnrollment.t()} | {:error, :not_found}
+  def fetch_workshop_receipt(enrollment_id, %User{} = user) do
+    with %WorkshopEnrollment{receipt_key: key} = enrollment when is_binary(key) <-
+           EnrollmentQuery.get(enrollment_id),
+         %Workshop{} = workshop <- WorkshopQuery.get(enrollment.workshop_id),
+         :ok <- Policy.authorize(:manage_receipt, user, {enrollment, access_for(workshop, user)}) do
+      {:ok, enrollment}
+    else
+      _refused -> {:error, :not_found}
+    end
+  end
+
+  def fetch_workshop_receipt(_enrollment_id, nil), do: {:error, :not_found}
+
+  @doc "The package receipt of a membership, by the same rule."
+  @spec fetch_program_receipt(Ecto.UUID.t(), User.t() | nil) ::
+          {:ok, ProgramEnrollment.t()} | {:error, :not_found}
+  def fetch_program_receipt(enrollment_id, %User{} = user) do
+    with %ProgramEnrollment{receipt_key: key} = enrollment when is_binary(key) <-
+           PackageQuery.get(enrollment_id),
+         %WorkshopProgram{} = program <- ProgramQuery.get(enrollment.program_id),
+         :ok <- Policy.authorize(:manage_receipt, user, {enrollment, program}) do
+      {:ok, enrollment}
+    else
+      _refused -> {:error, :not_found}
+    end
+  end
+
+  def fetch_program_receipt(_enrollment_id, nil), do: {:error, :not_found}
+
+  @doc "How to serve a receipt file. Permission belongs to whoever calls."
+  @spec serve_receipt(struct()) ::
+          {:file, String.t()} | {:redirect, String.t()} | {:error, :not_found}
+  defdelegate serve_receipt(enrollment), to: Receipts, as: :serve
+
+  @doc """
+  Records that this person opened WhatsApp to send the receipt.
+
+  Only the first time counts: what is being measured is how many people take
+  that path, not how many times they tapped the button.
+  """
+  @spec mark_whatsapp_receipt(Workshop.t(), User.t()) ::
+          {:ok, WorkshopEnrollment.t()} | {:error, :not_enrolled}
+  def mark_whatsapp_receipt(%Workshop{} = workshop, %User{} = user) do
+    workshop.id |> EnrollmentQuery.get_for_user(user.id) |> stamp_whatsapp()
+  end
+
+  defp stamp_whatsapp(nil), do: {:error, :not_enrolled}
+
+  defp stamp_whatsapp(%WorkshopEnrollment{whatsapp_opened_at: %DateTime{}} = enrollment),
+    do: {:ok, enrollment}
+
+  defp stamp_whatsapp(%WorkshopEnrollment{} = enrollment) do
+    agora = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    enrollment |> Ecto.Changeset.change(whatsapp_opened_at: agora) |> Repo.update()
+  end
+
+  defdelegate receipt_summary(workshop_id), to: EnrollmentQuery
+
+  defp receipt_folder(%Workshop{id: id}), do: "workshop_receipts/#{id}"
+  defp program_receipt_folder(%WorkshopProgram{id: id}), do: "program_receipts/#{id}"
+
+  defp notify_receipt(%Workshop{} = workshop, %User{} = user) do
+    SafeDispatch.run(fn ->
+      Dispatcher.notify_workshop_receipt(user.id, admin_ids(workshop), workshop.id)
+    end)
+  end
+
+  defp notify_program_receipt(%WorkshopProgram{} = program, %User{} = user) do
+    SafeDispatch.run(fn ->
+      Dispatcher.notify_program_receipt(user.id, program.owner_id, program.id)
+    end)
+  end
 
   defp lock_workshop(workshop_id) do
     query = from(w in Workshop, where: w.id == ^workshop_id, lock: "FOR UPDATE")

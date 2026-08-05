@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   alias OGrupoDeEstudos.{Accounts, Brazil, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
-  alias OGrupoDeEstudos.Workshops.{Workshop, WorkshopProgram}
+  alias OGrupoDeEstudos.Workshops.{Receipts, Workshop, WorkshopProgram}
 
   alias OGrupoDeEstudosWeb.{ChangesetErrors, InlineEditParams, Meta}
 
@@ -24,9 +24,17 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     user = socket.assigns[:current_user]
 
     case Policy.authorize(:view_program, user, program) do
-      :ok -> {:ok, assign_program(socket, program, user)}
+      :ok -> {:ok, socket |> allow_receipt_upload() |> assign_program(program, user)}
       {:error, _} -> {:ok, not_found(socket)}
     end
+  end
+
+  defp allow_receipt_upload(socket) do
+    allow_upload(socket, :receipt,
+      accept: ~w(.jpg .jpeg .png .webp .pdf),
+      max_entries: 1,
+      max_file_size: Receipts.max_bytes()
+    )
   end
 
   defp open_field(socket, nil), do: socket
@@ -96,6 +104,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:tem_pacote?, WorkshopProgram.pacote?(program))
     |> assign(:avulso_total, Enum.sum(Enum.map(workshops, &(&1.price_cents || 0))))
     |> assign(:matricula_pacote, Workshops.package_enrollment(program, user))
+    |> assign(:my_package_receipt, Workshops.my_package_receipt(program, user))
     |> assign(
       :pacote_indisponivel,
       pacote_indisponivel(workshops, socket.assigns.enrollment_counts)
@@ -231,6 +240,35 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   def handle_event("set_package_payment", _params, socket), do: {:noreply, socket}
 
+  def handle_event("validate_receipt", _params, socket), do: {:noreply, socket}
+
+  def handle_event("send_receipt", _params, socket) do
+    program = socket.assigns.program
+    user = socket.assigns.current_user
+
+    socket
+    |> consume_uploaded_entries(:receipt, fn %{path: tmp_path}, entry ->
+      {:ok, Workshops.send_program_receipt(program, user, upload_attrs(tmp_path, entry))}
+    end)
+    |> receipt_result(socket)
+  end
+
+  def handle_event("remove_receipt", %{"id" => id}, socket) do
+    program = socket.assigns.program
+    user = socket.assigns.current_user
+
+    case Workshops.remove_program_receipt(program, user, id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign_program(program, user)
+         |> put_flash(:info, "Comprovante removido.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível remover o comprovante.")}
+    end
+  end
+
   def handle_event("buy_package", _params, %{assigns: %{current_user: nil}} = socket) do
     {:noreply, to_login(socket)}
   end
@@ -285,6 +323,28 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   def handle_event("detach_workshop", %{"id" => id}, socket) do
     build(socket, id, &Workshops.detach_workshop/3, "Workshop tirado da programação.")
   end
+
+  defp upload_attrs(tmp_path, entry) do
+    %{tmp_path: tmp_path, content_type: entry.client_type, byte_size: entry.client_size}
+  end
+
+  defp receipt_result([{:ok, _enrollment}], socket) do
+    {:noreply,
+     socket
+     |> assign_program(socket.assigns.program, socket.assigns.current_user)
+     |> put_flash(:info, "Comprovante enviado. Quem organiza já foi avisado.")}
+  end
+
+  defp receipt_result([{:error, reason}], socket) do
+    {:noreply, put_flash(socket, :error, receipt_error(reason))}
+  end
+
+  defp receipt_result(_nothing, socket), do: {:noreply, socket}
+
+  defp receipt_error(:not_enrolled), do: "Compre o pacote antes de mandar o comprovante."
+  defp receipt_error(:unsupported_type), do: "Só entra imagem ou PDF."
+  defp receipt_error(:too_large), do: "Arquivo grande demais. O limite é 10 MB."
+  defp receipt_error(_other), do: "Não foi possível enviar o comprovante."
 
   defp payment("paid"), do: :paid
   defp payment("waived"), do: :waived

@@ -78,7 +78,8 @@ defmodule OGrupoDeEstudos.Engagement do
     %{
       steps: notifications |> parent_ids("step") |> Encyclopedia.step_summaries_by_ids(),
       users: notifications |> parent_ids("profile") |> user_summaries_by_ids(),
-      workshops: notifications |> parent_ids("workshop") |> Workshops.slugs_by_ids()
+      workshops: notifications |> parent_ids("workshop") |> Workshops.slugs_by_ids(),
+      programs: notifications |> parent_ids("program") |> Workshops.program_slugs_by_ids()
     }
   end
 

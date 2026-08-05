@@ -21,6 +21,16 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopEnrollment do
     # When the day-before reminder went out. Null means it has not gone out.
     field :reminded_at, :utc_datetime
 
+    # Receipt sent through the app. Private like the payment: only whoever sent it
+    # and whoever runs the workshop reach the file.
+    field :receipt_key, :string
+    field :receipt_content_type, :string
+    field :receipt_byte_size, :integer
+    field :receipt_sent_at, :utc_datetime
+    # First time this person opened WhatsApp to send the receipt. It is what
+    # answers which of the two paths people actually take.
+    field :whatsapp_opened_at, :utc_datetime
+
     belongs_to :workshop, OGrupoDeEstudos.Workshops.Workshop
     belongs_to :user, OGrupoDeEstudos.Accounts.User
     # When present, this workshop is covered by the package payment.

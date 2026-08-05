@@ -13,7 +13,8 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
   @type targets :: %{
           steps: %{optional(binary()) => map()},
           users: %{optional(binary()) => map()},
-          workshops: %{optional(binary()) => map()}
+          workshops: %{optional(binary()) => map()},
+          programs: %{optional(binary()) => map()}
         }
 
   @spec path(map(), targets()) :: String.t()
@@ -46,6 +47,16 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
   def path(%{action: :workshop_enrolled, parent_id: id}, %{workshops: workshops}),
     do: workshop_path(workshops[id], "/manage")
 
+  # A receipt also leads to the panel: it is where the payment is confirmed.
+  def path(%{action: :receipt_sent, parent_type: "workshop", parent_id: id}, %{
+        workshops: workshops
+      }),
+      do: workshop_path(workshops[id], "/manage")
+
+  # The package has no panel of its own: the program page carries the list.
+  def path(%{parent_type: "program", parent_id: id}, targets),
+    do: targets |> Map.get(:programs, %{}) |> Map.get(id) |> program_path()
+
   def path(%{parent_type: "workshop", parent_id: id}, %{workshops: workshops}),
     do: workshop_path(workshops[id], "")
 
@@ -55,6 +66,9 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationRoutes do
 
   defp workshop_path(nil, _suffix), do: ~p"/study/workshops"
   defp workshop_path(%{slug: slug}, suffix), do: ~p"/workshops/#{slug}" <> suffix
+
+  defp program_path(nil), do: ~p"/study/workshops"
+  defp program_path(%{slug: slug}), do: ~p"/programs/#{slug}"
 
   @spec step_name(map(), targets()) :: String.t() | nil
   def step_name(%{parent_type: "step", parent_id: id}, %{steps: steps}) when not is_nil(id) do

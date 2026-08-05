@@ -19,7 +19,9 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   alias OGrupoDeEstudos.Workshops.{Access, Workshop, WorkshopMedia, WorkshopProgram}
 
   @type reason :: :unauthorized | :unauthenticated
-  @type subject :: struct() | {struct(), Access.t()} | nil
+  # A pair when the decision needs the thing AND where it lives: a comment and the
+  # workshop it is on, a receipt and what it pays for.
+  @type subject :: struct() | {struct(), Access.t() | WorkshopProgram.t()} | nil
 
   @spec authorized?(atom(), User.t() | nil, subject()) :: boolean()
   def authorized?(action, user, resource), do: authorize(action, user, resource) == :ok
@@ -74,6 +76,16 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
 
   def authorize(:delete_media, user, {%WorkshopMedia{}, %Access{} = access}),
     do: authorize(:manage_workshop, user, access)
+
+  # A receipt belongs to whoever sent it and to whoever runs the thing it pays
+  # for. Nobody else: it carries bank data.
+  def authorize(:manage_receipt, %User{id: user_id}, {%{user_id: user_id}, _runs_it}), do: :ok
+
+  def authorize(:manage_receipt, user, {_enrollment, %Access{} = access}),
+    do: authorize(:manage_workshop, user, access)
+
+  def authorize(:manage_receipt, user, {_enrollment, %WorkshopProgram{} = program}),
+    do: authorize(:manage_program, user, program)
 
   def authorize(:create_comment, %User{}, _), do: :ok
 
