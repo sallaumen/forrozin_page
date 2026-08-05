@@ -160,11 +160,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
         {:noreply,
          assign(socket,
            following_user_ids: Engagement.following_ids(current.id),
-           profile_list_following_ids:
-             Engagement.following_ids_for(
-               current.id,
-               MapSet.to_list(socket.assigns.profile_list_following_ids)
-             )
+           profile_list_following_ids: refreshed_list_following_ids(socket)
          )}
 
       {:error, :rate_limited} ->
@@ -539,4 +535,18 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   end
 
   defp interpret_study_link(_link, _current_user, _profile_user), do: :available
+
+  # Contra quem a lista aberta mostra, não contra quem já era seguido antes do
+  # toque: `following_ids_for/2` filtra pelos ids que recebe, então perguntar
+  # pelo conjunto anterior nunca devolve quem acabou de ser seguido, e o botão
+  # voltava a dizer "Seguir" com o follow já gravado.
+  defp refreshed_list_following_ids(socket) do
+    list =
+      case socket.assigns.followers_list_tab do
+        "following" -> socket.assigns.profile_following_list
+        _followers -> socket.assigns.profile_followers_list
+      end
+
+    Engagement.following_ids_for(socket.assigns.current_user.id, Enum.map(list, & &1.id))
+  end
 end

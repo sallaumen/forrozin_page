@@ -33,7 +33,7 @@
           <%= if @is_own_profile do %>
             <.link
               navigate={~p"/settings"}
-              class="text-sm text-ink-500 no-underline border border-[rgba(60,40,20,0.2)] px-2.5 py-0.5 rounded"
+              class="inline-flex min-h-11 items-center text-sm text-ink-500 no-underline border border-[rgba(60,40,20,0.2)] px-2.5 rounded"
             >
               Editar perfil
             </.link>
@@ -41,7 +41,7 @@
             <button
               phx-click="toggle_follow"
               class={[
-                "text-sm py-1.5 px-5 rounded-full font-medium border transition-colors cursor-pointer",
+                "inline-flex min-h-11 items-center text-sm px-5 rounded-full font-medium border transition-colors cursor-pointer",
                 @is_following && "bg-transparent border-accent-orange text-accent-orange",
                 !@is_following && "bg-accent-orange border-accent-orange text-on-accent"
               ]}
@@ -54,54 +54,54 @@
                 <button
                   phx-click="request_study"
                   phx-value-role="student"
-                  class="text-xs py-1.5 px-4 rounded-full font-medium border border-gold-500/40 bg-gold-500/10 text-gold-600 transition-colors cursor-pointer hover:bg-gold-500/20"
+                  class="inline-flex min-h-11 items-center text-xs px-4 rounded-full font-medium border border-gold-500/40 bg-gold-500/10 text-gold-600 transition-colors cursor-pointer hover:bg-gold-500/20"
                 >
                   Ser aluno
                 </button>
                 <button
                   phx-click="request_study"
                   phx-value-role="teacher"
-                  class="text-xs py-1.5 px-4 rounded-full font-medium border border-accent-orange/40 bg-accent-orange/10 text-accent-orange transition-colors cursor-pointer hover:bg-accent-orange/20"
+                  class="inline-flex min-h-11 items-center text-xs px-4 rounded-full font-medium border border-accent-orange/40 bg-accent-orange/10 text-accent-orange transition-colors cursor-pointer hover:bg-accent-orange/20"
                 >
                   Convidar aluno
                 </button>
               <% :available -> %>
                 <button
                   phx-click="request_study"
-                  class="text-sm py-1.5 px-5 rounded-full font-medium border border-gold-500/40 bg-gold-500/10 text-gold-600 transition-colors cursor-pointer hover:bg-gold-500/20"
+                  class="inline-flex min-h-11 items-center text-sm px-5 rounded-full font-medium border border-gold-500/40 bg-gold-500/10 text-gold-600 transition-colors cursor-pointer hover:bg-gold-500/20"
                 >
                   {if @current_user.is_teacher and not @is_profile_teacher,
                     do: "Convidar aluno",
                     else: "Quero estudar"}
                 </button>
               <% :pending_sent -> %>
-                <span class="text-sm py-1.5 px-5 rounded-full font-medium border border-ink-300 bg-ink-100 text-ink-500">
+                <span class="inline-flex min-h-11 items-center text-sm px-5 rounded-full font-medium border border-ink-300 bg-ink-100 text-ink-500">
                   Pedido enviado
                 </span>
               <% :pending_received -> %>
                 <%= if @current_user.is_teacher do %>
                   <button
                     phx-click="accept_study"
-                    class="text-sm py-1.5 px-5 rounded-full font-medium border border-accent-green bg-accent-green text-on-accent transition-colors cursor-pointer hover:bg-accent-green/90"
+                    class="inline-flex min-h-11 items-center text-sm px-5 rounded-full font-medium border border-accent-green bg-accent-green text-on-accent transition-colors cursor-pointer hover:bg-accent-green/90"
                   >
                     Aceitar como aluno
                   </button>
                 <% else %>
-                  <span class="text-sm py-1.5 px-5 rounded-full font-medium border border-ink-300 bg-ink-100 text-ink-500">
+                  <span class="inline-flex min-h-11 items-center text-sm px-5 rounded-full font-medium border border-ink-300 bg-ink-100 text-ink-500">
                     Pedido pendente
                   </span>
                 <% end %>
               <% :connected -> %>
                 <.link
                   navigate={~p"/study"}
-                  class="text-sm py-1.5 px-5 rounded-full font-medium border border-accent-green/40 bg-accent-green/10 text-accent-green no-underline"
+                  class="inline-flex min-h-11 items-center text-sm px-5 rounded-full font-medium border border-accent-green/40 bg-accent-green/10 text-accent-green no-underline"
                 >
                   Estudando juntos
                 </.link>
                 <button
                   phx-click="end_study_link"
                   data-confirm="Tem certeza que deseja encerrar esse vínculo de estudo?"
-                  class="text-xs py-1 px-3 rounded-full font-medium border border-ink-200 bg-transparent text-ink-400 transition-colors cursor-pointer hover:text-ink-600 hover:border-ink-300"
+                  class="inline-flex min-h-11 items-center text-xs px-3 rounded-full font-medium border border-ink-200 bg-transparent text-ink-400 transition-colors cursor-pointer hover:text-ink-600 hover:border-ink-300"
                 >
                   Encerrar
                 </button>
@@ -475,7 +475,7 @@
                 phx-click="toggle_like"
                 phx-value-type="step"
                 phx-value-id={step.id}
-                class="flex items-center gap-1 bg-transparent border-0 cursor-pointer p-1 rounded"
+                class="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded border-0 bg-transparent cursor-pointer sm:min-h-0 sm:min-w-0 sm:p-1"
                 title={
                   if MapSet.member?(@step_likes.liked_ids, step.id),
                     do: "Remover like",
@@ -512,8 +512,19 @@
       <% end %>
     <% end %>
 
-    <%!-- Sequences --%>
+    <%!-- Sequences. A aba vazia não renderizava nada, e o contador de sequências
+         leva direto para cá: dava para tocar num número e cair numa área em
+         branco, que é indistinguível de tela quebrada. --%>
     <%= if @profile_tab == "sequences" do %>
+      <%= if @user_sequences == [] do %>
+        <p class="text-center px-10 py-10 text-ink-500 italic text-sm mb-10">
+          <%= if @is_own_profile do %>
+            Você ainda não publicou nenhuma sequência. As que você criar como privadas ficam só no seu estudo.
+          <% else %>
+            Este usuário ainda não publicou nenhuma sequência.
+          <% end %>
+        </p>
+      <% end %>
       <%= if @user_sequences != [] do %>
         <div class="mb-10">
           <h2 class="text-base font-bold text-ink-900 uppercase tracking-[2px] mb-4 pb-2 border-b-2 border-[rgba(60,40,20,0.1)]">
@@ -544,7 +555,7 @@
                   phx-click="toggle_like"
                   phx-value-type="sequence"
                   phx-value-id={seq.id}
-                  class="flex items-center gap-1 bg-transparent border-0 cursor-pointer p-1 rounded flex-shrink-0"
+                  class="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded border-0 bg-transparent cursor-pointer sm:min-h-0 sm:min-w-0 sm:p-1"
                   title={
                     if MapSet.member?(@sequence_likes.liked_ids, seq.id),
                       do: "Remover like",
@@ -664,26 +675,29 @@
                 </span>
                 <div class="flex-1 min-w-0">
                   <p class="text-sm text-ink-700">
+                    <%!-- Átomos, não strings: `action` é um Ecto.Enum, e casar
+                         contra string derrubava a LiveView inteira de quem já
+                         tivesse sugerido qualquer coisa. --%>
                     <%= case s.action do %>
-                      <% "edit_field" -> %>
+                      <% :edit_field -> %>
                         Edição de <span class="font-semibold">{s.field}</span>:
-                        "<span class="text-ink-400 line-through">{String.slice(s.old_value || "", 0, 40)}</span>" →
+                        "<span class="text-ink-500 line-through">{String.slice(s.old_value || "", 0, 40)}</span>" →
                         "<span class="text-accent-orange font-medium">{String.slice(s.new_value || "", 0, 40)}</span>"
-                      <% "create_connection" -> %>
+                      <% :create_connection -> %>
                         Nova conexão:
                         <span class="font-semibold text-accent-orange">{s.new_value}</span>
-                      <% "remove_connection" -> %>
+                      <% :remove_connection -> %>
                         Remover conexão:
                         <span class="font-semibold text-accent-red line-through">
                           {s.old_value}
                         </span>
                     <% end %>
                   </p>
-                  <p class="text-xs text-ink-400 mt-0.5">
+                  <p class="text-xs text-ink-500 mt-0.5">
                     <%= if s.status == :pending do %>
                       Aguardando revisão
                     <% else %>
-                      {String.capitalize(s.status)}
+                      {if s.status == :approved, do: "Aprovado", else: "Rejeitado"}
                       <%= if s.reviewed_by do %>
                         por @{s.reviewed_by.username}
                       <% end %>
