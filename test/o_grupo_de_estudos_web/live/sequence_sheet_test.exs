@@ -228,7 +228,9 @@ defmodule OGrupoDeEstudosWeb.SequenceSheetTest do
 
       render_click(lv, "cite_sequence", %{"id" => ctx.sequence.id})
 
-      note = Study.get_personal_note(ctx.student.id, Date.utc_today())
+      # Brazil.today() and not Date.utc_today(): the page writes the note on the
+      # local date, and after 21h in Curitiba the UTC day is already tomorrow.
+      note = Study.get_personal_note(ctx.student.id, OGrupoDeEstudos.Brazil.today())
       assert note.content == "Aula boa hoje."
     end
   end

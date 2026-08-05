@@ -182,7 +182,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
           <span class="text-xs text-ink-400">{time_ago(@comment.inserted_at)}</span>
         </div>
 
-        <p class="text-sm text-ink-800 mt-0.5 break-words">{@comment.body}</p>
+        <p class="text-sm text-ink-800 mt-0.5 whitespace-pre-line break-words">{@comment.body}</p>
 
         <div class="flex items-center gap-3 mt-1">
           <%!-- Like button --%>

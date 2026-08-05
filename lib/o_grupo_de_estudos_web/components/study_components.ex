@@ -873,7 +873,10 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       </div>
 
       <%= if @long? do %>
-        <p class={["mt-1.5 text-xs leading-6 text-ink-700", !@expanded && "line-clamp-2"]}>
+        <p class={[
+          "mt-1.5 whitespace-pre-line text-xs leading-6 text-ink-700",
+          !@expanded && "line-clamp-2"
+        ]}>
           {@note.content}
         </p>
         <button
@@ -885,7 +888,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           {if @expanded, do: "ver menos", else: "ver mais"}
         </button>
       <% else %>
-        <p class="mt-1.5 text-xs leading-6 text-ink-700">{@note.content}</p>
+        <p class="mt-1.5 whitespace-pre-line text-xs leading-6 text-ink-700">{@note.content}</p>
       <% end %>
 
       <button

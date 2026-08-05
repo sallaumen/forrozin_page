@@ -364,7 +364,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
               </button>
             </div>
             <%= if @step.note do %>
-              <p class="text-base leading-[1.9] text-ink-800 m-0">{@step.note}</p>
+              <p class="text-base leading-[1.9] text-ink-800 m-0 whitespace-pre-line">{@step.note}</p>
             <% else %>
               <p class="text-base text-ink-500 italic m-0">Sem descrição técnica ainda.</p>
             <% end %>
