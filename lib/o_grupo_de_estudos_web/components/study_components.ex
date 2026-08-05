@@ -23,61 +23,44 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :pending_count, :integer, default: 0
   attr :lesson_count, :integer, default: 0
 
+  @doc """
+  The four ways into the study area, on one strip that fits a phone.
+
+  The strip used to be 484px of pills-inside-a-pill on a 375px screen, which
+  left Workshops outside the window behind a scrollbar nobody reads. "Meus" was
+  doing no work in three of the four labels: the page is already yours.
+  """
   def study_tabs(assigns) do
     ~H"""
-    <div class="sticky top-[48px] md:top-[52px] z-30 border-b border-ink-300/40 bg-ink-100/95 backdrop-blur-sm">
-      <%!-- overflow-x-auto: com quatro abas o tablist estoura a largura no celular --%>
-      <div class="mx-auto max-w-[1500px] overflow-x-auto px-4 py-2.5 sm:px-6 lg:px-8">
-        <div
-          role="tablist"
-          class="inline-flex items-center gap-0.5 rounded-full border border-ink-200 bg-ink-200/60 p-1"
-        >
-          <.tab_link
-            :if={@active == "workshops"}
-            navigate="/study"
-            label="Meu estudo"
-          />
+    <div class="sticky top-[48px] md:top-[52px] z-30 border-b border-ink-300/50 bg-ink-100/95 backdrop-blur-sm">
+      <%!-- overflow-x-auto continua como rede de proteção: com nome de aba
+      traduzido ou fonte maior, a tira rola em vez de cortar. --%>
+      <div class="mx-auto max-w-[1500px] overflow-x-auto px-2 sm:px-6 lg:px-8">
+        <div role="tablist" class="flex items-stretch gap-0.5 sm:gap-1">
+          <.tab_link :if={@active == "workshops"} navigate="/study" label="Meu estudo" />
           <.tab_button
             :if={@active != "workshops"}
             tab="personal"
             active={@active}
             label="Meu estudo"
           />
-          <.tab_link
-            :if={@active == "workshops"}
-            navigate="/study"
-            label="Meus professores"
-          />
+          <.tab_link :if={@active == "workshops"} navigate="/study" label="Professores" />
           <.tab_button
             :if={@active != "workshops"}
             tab="teachers"
             active={@active}
-            label="Meus professores"
+            label="Professores"
           >
-            <span
-              :if={@lesson_count > 0}
-              class="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-red px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
-            >
-              {@lesson_count}
-            </span>
+            <.tab_count count={@lesson_count} />
           </.tab_button>
-          <.tab_link
-            :if={@active == "workshops" && @is_teacher}
-            navigate="/study"
-            label="Meus alunos"
-          />
+          <.tab_link :if={@active == "workshops" && @is_teacher} navigate="/study" label="Alunos" />
           <.tab_button
             :if={@active != "workshops" && @is_teacher}
             tab="students"
             active={@active}
-            label="Meus alunos"
+            label="Alunos"
           >
-            <span
-              :if={@pending_count > 0}
-              class="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-red px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
-            >
-              {@pending_count}
-            </span>
+            <.tab_count count={@pending_count} />
           </.tab_button>
           <.tab_link
             navigate="/study/workshops"
@@ -88,6 +71,33 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       </div>
     </div>
     """
+  end
+
+  attr :count, :integer, required: true
+
+  defp tab_count(assigns) do
+    ~H"""
+    <span
+      :if={@count > 0}
+      class="ml-1.5 inline-flex min-w-[17px] items-center justify-center rounded-full bg-accent-red px-1 py-0.5 font-sans text-[10px] font-bold leading-none text-white"
+    >
+      {@count}
+    </span>
+    """
+  end
+
+  # No celular as quatro abas dividem a largura em partes iguais: cabem todas,
+  # e some a pergunta "tem mais coisa para a direita?". No desktop cada uma volta
+  # à largura do próprio texto. O ativo é dito por um fio embaixo, não por uma
+  # pílula clara dentro de uma pílula escura, que gastava largura só para existir.
+  defp tab_class(active?) do
+    [
+      "inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center whitespace-nowrap",
+      "border-0 border-b-2 bg-transparent px-1 font-serif text-[12px] font-semibold tracking-tight",
+      "no-underline transition-colors sm:flex-none sm:px-3.5 sm:text-[13px]",
+      active? && "border-b-accent-orange text-accent-orange",
+      !active? && "border-b-transparent text-ink-500 hover:text-ink-800"
+    ]
   end
 
   # The workshops tab lives in its own LiveView (deep link and a real URL), so
@@ -102,11 +112,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       navigate={@navigate}
       role="tab"
       aria-selected={to_string(@active)}
-      class={[
-        "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 font-serif text-xs font-semibold tracking-tight no-underline transition-colors sm:px-3.5 sm:text-[13px]",
-        @active && "bg-ink-50 text-accent-orange shadow-sm",
-        !@active && "bg-transparent text-ink-500 hover:text-ink-800"
-      ]}
+      class={tab_class(@active)}
     >
       {@label}
     </.link>
@@ -126,48 +132,60 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       aria-selected={to_string(@tab == @active)}
       phx-click="switch_study_tab"
       phx-value-tab={@tab}
-      class={[
-        "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 font-serif text-xs font-semibold tracking-tight transition-colors sm:px-3.5 sm:text-[13px]",
-        @tab == @active && "bg-ink-50 text-accent-orange shadow-sm",
-        @tab != @active && "bg-transparent text-ink-500 hover:text-ink-800"
-      ]}
+      class={tab_class(@tab == @active)}
     >
       {@label}{render_slot(@inner_block)}
     </button>
     """
   end
 
-  attr :eyebrow, :string, required: true
-  attr :eyebrow_icon, :string, default: nil
-  attr :tone, :atom, default: :orange, values: [:orange, :purple, :gold]
   attr :title, :string, required: true
   attr :description, :string, default: nil
   slot :action
 
+  @doc """
+  The head of a study section.
+
+  The eyebrow above the title used to say the title again in caps ("VOCÊ ENSINA"
+  over "Meus alunos"), each tab in a colour of its own. The title says it once,
+  in the display face the workshop pages already use.
+  """
   def section_intro(assigns) do
     ~H"""
-    <header class="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div class="min-w-0">
-        <p class={[
-          "mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em]",
-          @tone == :orange && "text-accent-orange",
-          @tone == :purple && "text-accent-purple",
-          @tone == :gold && "text-gold-600"
-        ]}>
-          <.icon :if={@eyebrow_icon} name={@eyebrow_icon} class="size-3.5" />
-          {@eyebrow}
-        </p>
-        <h1 class="m-0 font-serif text-2xl font-bold leading-tight tracking-tight text-ink-900 md:text-3xl">
+    <header class="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+      <div class="min-w-0 flex-1 basis-[16rem]">
+        <h1 class="brand-display is-title m-0 text-[26px] font-semibold leading-tight tracking-tight text-ink-900 md:text-[30px]">
           {@title}
         </h1>
-        <p :if={@description} class="mt-1.5 max-w-prose text-sm leading-relaxed text-ink-500">
+        <p
+          :if={@description}
+          class="mt-2 max-w-[58ch] font-sans text-[13px] leading-relaxed text-ink-500"
+        >
           {@description}
         </p>
       </div>
-      <div :if={@action != []} class="flex shrink-0 items-center gap-2">
+      <div :if={@action != []} class="flex shrink-0 flex-wrap items-center gap-2">
         {render_slot(@action)}
       </div>
     </header>
+    """
+  end
+
+  attr :stats, :list, required: true
+
+  @doc """
+  Counts of a section, read as a sentence.
+
+  Three numbers in three bordered boxes gave each one the weight of a decision;
+  they are context, not choices, and one line of text carries them.
+  """
+  def stat_line(assigns) do
+    ~H"""
+    <p class="m-0 mb-5 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-sans text-[13px] text-ink-500">
+      <span :for={{value, label} <- @stats}>
+        <b class="font-semibold text-ink-900">{value}</b> {label}
+      </span>
+    </p>
     """
   end
 
@@ -190,7 +208,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       type={@type}
       disabled={@disabled}
       class={[
-        "inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-serif text-sm font-semibold no-underline transition-colors",
+        "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 font-serif text-sm font-semibold no-underline transition-colors sm:min-h-9",
         @tone == :primary && "bg-accent-orange text-white hover:bg-accent-orange/90",
         @tone == :ghost &&
           "border border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400 hover:text-ink-900",
@@ -216,7 +234,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     <.link
       navigate={@navigate}
       class={[
-        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-serif text-[13px] font-semibold no-underline transition-colors",
+        "inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 font-serif text-[13px] font-semibold no-underline transition-colors sm:min-h-9",
         @tone == :primary && "bg-accent-orange text-white hover:bg-accent-orange/90",
         @tone == :ghost &&
           "border border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400 hover:text-ink-900",
@@ -235,12 +253,15 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   attr :class, :any, default: nil
   slot :inner_block, required: true
 
+  # Bloco da coluna lateral: um fio separa um assunto do outro, do mesmo jeito
+  # que na ficha do workshop. Três caixas empilhadas davam a cada widget o peso
+  # de um cartão selecionável, e nenhum deles é.
   def sidebar_card(assigns) do
     ~H"""
-    <section class={["rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm", @class]}>
+    <section class={["border-t border-ink-200 pt-4 first:border-t-0 first:pt-0", @class]}>
       <h2
         :if={@title}
-        class="m-0 mb-3 flex items-center gap-1.5 font-serif text-sm font-bold text-ink-900"
+        class="brand-display is-title m-0 mb-3 flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-ink-800"
       >
         <.icon :if={@icon} name={@icon} class="size-4 text-gold-600" />
         {@title}
@@ -730,19 +751,12 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
 
   def diary_card(assigns) do
     ~H"""
-    <section
-      id={@id}
-      class="rounded-2xl border border-ink-200 border-l-[3px] border-l-accent-orange bg-ink-50 p-5 shadow-sm"
-    >
-      <div class="mb-3 flex items-start justify-between gap-3">
+    <section id={@id} class="rounded-xl border border-ink-200 bg-ink-50 p-4 sm:p-5">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <div class="min-w-0">
-          <p
-            :if={@eyebrow}
-            class="mb-0.5 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-orange"
-          >
-            {@eyebrow}
-          </p>
-          <h2 class="m-0 font-serif text-xl font-bold leading-snug text-ink-900">{@title}</h2>
+          <h2 class="brand-display is-title m-0 text-[18px] font-semibold leading-snug tracking-tight text-ink-900">
+            {@title}
+          </h2>
           <p :if={@description} class="mt-1 text-xs leading-relaxed text-ink-500">{@description}</p>
         </div>
         <div :if={@meta != []} class="shrink-0 text-right">{render_slot(@meta)}</div>
@@ -810,10 +824,12 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
 
   def note_history(assigns) do
     ~H"""
-    <section class="rounded-2xl border border-ink-200 bg-ink-50 p-5 shadow-sm">
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="m-0 font-serif text-lg font-bold text-ink-900">{@title}</h2>
-        <span :if={@count_label} class="text-[11px] text-ink-400">{@count_label}</span>
+    <section class="mt-2 border-t border-ink-200 pt-5">
+      <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 class="brand-display is-title m-0 text-[16px] font-semibold tracking-tight text-ink-800">
+          {@title}
+        </h2>
+        <span :if={@count_label} class="font-sans text-[11.5px] text-ink-500">{@count_label}</span>
       </div>
 
       <div :if={@notes == []}>
@@ -926,66 +942,45 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   end
 
   attr :user, :map, required: true
-  attr :accent, :atom, default: :orange, values: [:orange, :purple, :green]
-  attr :badge_label, :string, default: nil
-  attr :badge_tone, :atom, default: :neutral, values: [:neutral, :accent, :purple]
+  # Quem é professor e quem é aluno já está dito pela aba onde a linha aparece:
+  # a etiqueta em caixa alta ao lado do nome repetia isso e roubava a largura.
   attr :status_label, :string, default: nil
-  attr :status_tone, :atom, default: :muted, values: [:muted, :success]
   attr :href, :string, default: nil
   slot :actions
   slot :footer
 
+  @doc """
+  One person of the study area: who they are, and the way in.
+
+  On a phone the name used to get 52px of the 130px it needed, because it shared
+  a row with a badge and two buttons that never shrink: "Marina Kienteca" read
+  "Mar…". Here the buttons wrap to their own row below 640px, so the name always
+  has the width of the card, and the row is a hairline instead of a card with a
+  coloured rail.
+  """
   def person_card(assigns) do
     ~H"""
-    <div class={[
-      "rounded-2xl border border-ink-200 border-l-[3px] bg-ink-50 px-4 py-3.5 shadow-sm",
-      @accent == :orange && "border-l-accent-orange/70",
-      @accent == :purple && "border-l-accent-purple/70",
-      @accent == :green && "border-l-accent-green/70"
-    ]}>
-      <div class="flex items-center gap-3">
-        <.maybe_user_link href={@href} class="flex min-w-0 flex-1 items-center gap-3 no-underline">
+    <div class="border-t border-ink-200 py-3.5 first:border-t-0">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2.5 sm:flex-nowrap">
+        <.maybe_user_link
+          href={@href}
+          class="flex min-w-0 flex-1 basis-full items-center gap-3 no-underline sm:basis-auto"
+        >
           <.user_avatar user={@user} size={:lg} />
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <p class="m-0 truncate font-serif text-base font-bold text-ink-900">
-                {@user.name || @user.username}
-              </p>
-              <span
-                :if={@badge_label}
-                class={[
-                  "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide",
-                  @badge_tone == :neutral && "bg-ink-200 text-ink-600",
-                  @badge_tone == :accent && "bg-accent-orange/15 text-accent-orange",
-                  @badge_tone == :purple && "bg-accent-purple/15 text-accent-purple"
-                ]}
-              >
-                {@badge_label}
-              </span>
-            </div>
-            <p class="m-0 mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-500">
-              <span>@{@user.username}</span>
-              <span :if={@status_label} class="text-ink-300">·</span>
-              <span
-                :if={@status_label}
-                class={[
-                  "font-semibold",
-                  @status_tone == :success && "text-accent-green",
-                  @status_tone == :muted && "text-ink-400"
-                ]}
-              >
-                {@status_label}
-              </span>
+            <p class="m-0 font-serif text-[15px] font-bold leading-snug text-ink-900">
+              {@user.name || @user.username}
+            </p>
+            <p class="m-0 mt-0.5 font-sans text-[11.5px] text-ink-500">
+              @{@user.username}<span :if={@status_label}> · {@status_label}</span>
             </p>
           </div>
         </.maybe_user_link>
-        <div :if={@actions != []} class="flex shrink-0 items-center gap-1.5">
+        <div :if={@actions != []} class="flex shrink-0 items-center gap-2">
           {render_slot(@actions)}
         </div>
       </div>
-      <div :if={@footer != []} class="mt-2.5 border-t border-ink-200/70 pt-2.5">
-        {render_slot(@footer)}
-      </div>
+      <div :if={@footer != []} class="mt-2.5">{render_slot(@footer)}</div>
     </div>
     """
   end
@@ -1001,25 +996,25 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     """
   end
 
-  attr :icon, :string, default: nil
   attr :title, :string, required: true
   attr :description, :string, default: nil
-  attr :tone, :atom, default: :gold, values: [:gold, :neutral]
   slot :action
 
+  # Ainda não ter nada é uma frase, não um anúncio emoldurado: a caixa tracejada
+  # com ícone vestia uma ausência como se fosse mais um item da lista.
   def empty_state(assigns) do
     ~H"""
-    <div class={[
-      "rounded-2xl border border-dashed px-5 py-8 text-center",
-      @tone == :gold && "border-gold-500/30 bg-gold-500/[0.04]",
-      @tone == :neutral && "border-ink-200 bg-ink-100/40"
-    ]}>
-      <.icon :if={@icon} name={@icon} class="mx-auto mb-2 size-6 text-ink-300" />
-      <p class="m-0 font-serif text-sm font-bold text-ink-800">{@title}</p>
-      <p :if={@description} class="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-ink-500">
+    <div class="border-t border-ink-200 py-8">
+      <p class="brand-display is-title m-0 text-[16px] font-semibold tracking-tight text-ink-800">
+        {@title}
+      </p>
+      <p
+        :if={@description}
+        class="m-0 mt-1.5 max-w-[52ch] font-sans text-[13px] leading-relaxed text-ink-500"
+      >
         {@description}
       </p>
-      <div :if={@action != []} class="mt-3 flex justify-center">{render_slot(@action)}</div>
+      <div :if={@action != []} class="mt-4">{render_slot(@action)}</div>
     </div>
     """
   end

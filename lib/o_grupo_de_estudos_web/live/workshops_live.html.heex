@@ -20,9 +20,6 @@
 
   <main class="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
     <.section_intro
-      eyebrow="Agenda da comunidade"
-      eyebrow_icon="hero-calendar-days"
-      tone={:purple}
       title="Workshops"
       description="Eventos pontuais abertos a qualquer pessoa. Quem se inscreve num workshop não vira seu aluno: são coisas diferentes de propósito."
     >
@@ -35,7 +32,7 @@
         </.action_link>
         <.link
           navigate={~p"/study/programs/new"}
-          class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline hover:border-ink-400"
+          class="inline-flex min-h-11 items-center rounded-full border border-ink-300 px-4 font-serif text-[13px] font-semibold text-ink-700 no-underline hover:border-ink-400 sm:min-h-9"
         >
           Juntar num link só
         </.link>
@@ -75,10 +72,8 @@
 
     <%!-- My workshops: only shows for whoever organizes one. --%>
     <section :if={@mine != []} class="mt-7">
-      <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-        Você organiza
-      </h2>
-      <div class="flex flex-col gap-2.5">
+      <.section_heading>Você organiza</.section_heading>
+      <div>
         <.workshop_card
           :for={w <- @mine}
           id_prefix="organiza"
@@ -92,7 +87,7 @@
     <%!-- Agenda --%>
     <section class="mt-7">
       <div class="mb-2.5 flex items-baseline justify-between gap-3">
-        <h2 class="m-0 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+        <h2 class="brand-display is-title m-0 text-[16px] font-semibold tracking-tight text-ink-800">
           {period_heading(@period)}
         </h2>
         <span :if={@itens != []} class="text-[12px] text-ink-500">
@@ -100,7 +95,7 @@
         </span>
       </div>
 
-      <div :if={@itens != []} class="flex flex-col gap-2.5">
+      <div :if={@itens != []}>
         <%= for item <- @itens do %>
           <.workshop_card
             :if={item.kind == :workshop}
@@ -128,7 +123,7 @@
           <button
             type="button"
             phx-click="clear_search"
-            class="cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700"
+            class="min-h-11 cursor-pointer rounded-full border border-ink-300 bg-transparent px-4 font-serif text-[13px] font-semibold text-ink-700 sm:min-h-9"
           >
             Limpar busca
           </button>
@@ -147,7 +142,7 @@
             </.action_link>
             <.link
               navigate={~p"/study/programs/new"}
-              class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
+              class="inline-flex min-h-11 items-center rounded-full border border-ink-300 px-4 font-serif text-[13px] font-semibold text-ink-700 no-underline sm:min-h-9"
             >
               Juntar num link só
             </.link>

@@ -42,76 +42,94 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   # inside it, and clicking "Ver" must not tick the checkbox.
   slot :select
 
+  @doc """
+  One line of the community agenda.
+
+  It used to be a card carrying up to six coloured badges, a 54px smudge of the
+  poster and a dotted train that ended in the full street address. Here the date
+  is the rail you scan, the poster keeps its presence on the workshop page, and
+  the state of the class is said once in words.
+  """
   def workshop_card(assigns) do
+    assigns =
+      assigns
+      |> assign(:sold_out?, Workshop.full?(assigns.workshop, assigns.enrolled_count))
+      |> assign(:seats, seats_label(assigns.workshop, assigns.enrolled_count))
+      |> assign(:program, program_of(assigns.workshop))
+
     ~H"""
     <article
       id={"#{@id_prefix}-#{@workshop.id}"}
-      class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-ink-200 bg-ink-50 p-4 shadow-sm transition-colors hover:border-ink-300"
+      class="flex items-baseline gap-3 border-t border-ink-200 py-3.5 sm:gap-4"
     >
-      <div :if={@select != []} class="shrink-0">{render_slot(@select)}</div>
+      <div :if={@select != []} class="shrink-0 self-center">{render_slot(@select)}</div>
 
-      <%!-- Com flyer, o cartaz vira a ancora visual: a data continua na linha
-      de baixo, entao nada se perde. --%>
-      <img
-        :if={@workshop.flyer_path}
-        src={@workshop.flyer_path}
-        alt={"Flyer de #{@workshop.title}"}
-        loading="lazy"
-        class="h-[54px] w-[54px] shrink-0 rounded-xl border border-ink-200 object-cover"
-      />
-      <.date_block :if={is_nil(@workshop.flyer_path)} datetime={@workshop.starts_at} />
+      <.date_block datetime={@workshop.starts_at} />
 
-      <div class="min-w-0 flex-1 basis-[55%]">
-        <p class="m-0 line-clamp-2 font-serif text-[15px] font-bold tracking-tight text-ink-900">
-          {@workshop.title}
+      <div class="min-w-0 flex-1">
+        <p class="m-0 font-serif text-[15px] font-bold leading-snug tracking-tight sm:text-[16px]">
+          <.icon
+            :if={@workshop.visibility == :private}
+            name="hero-lock-closed"
+            class="-mt-1 mr-1 size-3.5 text-ink-500"
+          />
+          <.link
+            navigate={~p"/workshops/#{@workshop.slug}"}
+            class="text-ink-900 no-underline hover:underline"
+          >
+            {@workshop.title}
+          </.link>
         </p>
+
         <%!-- Rosto pequeno junto do nome: quem passa os olhos na agenda
-        reconhece o professor antes de ler. O par foto+nome é inline para o
-        resto da linha continuar fluindo como texto, sem quebra forçada. --%>
-        <p class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500">
-          <span class="mr-1 inline-flex items-center gap-1 align-middle">
+        reconhece o professor antes de ler. --%>
+        <p class="m-0 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[12px] leading-snug text-ink-500">
+          <span class="inline-flex items-center gap-1">
             <.user_avatar user={@workshop.organizer} size={:xs} />
             <span class="font-semibold text-ink-700">{@workshop.organizer.name}</span>
           </span>
-          · {schedule_label(@workshop)}{location_suffix(@workshop)}
+          <span>{time_and_place(@workshop)}</span>
         </p>
 
-        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <%!-- Só o privado ganha selo: se todo card carregasse etiqueta, a
-          etiqueta viraria enfeite. Ausência de cadeado quer dizer "entra
-          quem quiser". --%>
-          <.workshop_tag :if={@workshop.visibility == :private} tone={:gold}>
-            <.icon name="hero-lock-closed" class="mr-1 size-3" /> Por aprovação
-          </.workshop_tag>
-          <.workshop_tag :if={program_of(@workshop)} tone={:purple}>
-            {program_of(@workshop).title}
-          </.workshop_tag>
-          <.workshop_tag :if={@organizer?} tone={:neutral}>Você organiza</.workshop_tag>
-          <.workshop_tag :if={@enrolled? && !@organizer?} tone={:green}>
-            Você está inscrito
-          </.workshop_tag>
-          <.workshop_tag :if={Workshop.free?(@workshop)} tone={:blue}>Gratuito</.workshop_tag>
-          <.workshop_tag :if={!Workshop.free?(@workshop)} tone={:neutral}>
-            {price_label(@workshop)}
-          </.workshop_tag>
-          <.workshop_tag :if={Workshop.full?(@workshop, @enrolled_count)} tone={:red}>
-            Esgotado
-          </.workshop_tag>
-          <span :if={@enrolled_count > 0} class="text-[11.5px] text-ink-400">
-            {people_label(@enrolled_count)}
-          </span>
-        </div>
+        <p class="m-0 mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-sans text-[12px] leading-snug text-ink-500">
+          <span class="font-semibold text-ink-700">{price_label(@workshop)}</span>
+          <span :if={@seats}>{@seats}</span>
+          <span :if={@sold_out?} class="font-semibold text-accent-red">Esgotado</span>
+          <span :if={@workshop.visibility == :private}>Por aprovação</span>
+          <span :if={@organizer?}>Você organiza</span>
+          <span :if={@enrolled? && !@organizer?} class="text-accent-green">Você está inscrito</span>
+          <.link
+            :if={@program}
+            navigate={~p"/programs/#{@program.slug}"}
+            class="text-ink-500 underline decoration-ink-300 underline-offset-2 hover:text-ink-800"
+          >
+            {@program.title}
+          </.link>
+        </p>
       </div>
 
       <.link
         navigate={~p"/workshops/#{@workshop.slug}"}
-        class="w-full shrink-0 rounded-full bg-accent-orange px-4 py-2 text-center font-serif text-[13px] font-semibold text-white no-underline transition-colors hover:bg-accent-orange/90 sm:w-auto"
+        class="inline-flex min-h-11 shrink-0 items-center self-center rounded-full border border-ink-300 px-3.5 text-center font-serif text-[12.5px] font-semibold text-ink-700 no-underline transition-colors hover:border-ink-400 sm:min-h-9"
       >
         {if @organizer?, do: "Gerenciar", else: "Ver"}
       </.link>
     </article>
     """
   end
+
+  # Hora e lugar numa linha só: o endereço completo é da página do workshop,
+  # onde quem já está a caminho vai procurar.
+  defp time_and_place(workshop) do
+    [schedule_label(workshop), place_only(workshop)]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join(" · ")
+  end
+
+  defp place_only(%Workshop{location: location}) when is_binary(location) and location != "",
+    do: location
+
+  defp place_only(_workshop), do: nil
 
   slot :inner_block, required: true
 
@@ -207,8 +225,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
         <p class="m-0 mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-sans text-[12px] leading-snug text-ink-500">
           <span class="font-semibold text-ink-700">{price_label(@workshop)}</span>
+          <span :if={@seats}>{@seats}</span>
           <span :if={@sold_out?} class="font-semibold text-accent-red">Esgotado</span>
-          <span :if={!@sold_out? && @seats}>{@seats}</span>
           <span :if={@enrolled?} class="text-accent-green">Você está inscrito</span>
           <span :if={@workshop.status == :draft}>Rascunho</span>
         </p>
@@ -241,6 +259,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   @doc "How full a class is: seats out of capacity, or just how many people came."
   def seats_label(%{capacity: nil}, 0), do: nil
   def seats_label(%{capacity: nil}, count), do: people_label(count)
+  def seats_label(%{capacity: 1}, count), do: "#{count} de 1 vaga"
   def seats_label(%{capacity: capacity}, count), do: "#{count} de #{capacity} vagas"
 
   attr :program, :map, required: true
@@ -248,49 +267,52 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   attr :owner?, :boolean, default: false
   attr :enrolled_count, :integer, default: 0
 
+  @doc """
+  A programme on the agenda, in the same grammar as a workshop.
+
+  It used to be the purple species of card: purple border, purple badge, purple
+  button, next to the orange ones. What tells a programme from a class is that it
+  holds several days, and the line says so.
+  """
   def program_card(assigns) do
     ~H"""
     <article
       id={"program-card-#{@program.id}"}
-      class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-accent-purple/25 bg-ink-50 p-4 shadow-sm transition-colors hover:border-accent-purple/50"
+      class="flex items-baseline gap-3 border-t border-ink-200 py-3.5 sm:gap-4"
     >
-      <img
-        :if={@program.flyer_path}
-        src={@program.flyer_path}
-        alt={"Flyer de #{@program.title}"}
-        loading="lazy"
-        class="h-[54px] w-[54px] shrink-0 rounded-xl border border-ink-200 object-cover"
-      />
-      <div
-        :if={is_nil(@program.flyer_path)}
-        class="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-xl border border-accent-purple/25 bg-accent-purple/10"
-      >
-        <.icon name="hero-calendar-days" class="size-6 text-accent-purple" />
+      <div class="flex h-[54px] w-[54px] shrink-0 flex-col items-center justify-center rounded-xl border border-ink-200 bg-ink-100 leading-none">
+        <.icon name="hero-calendar-days" class="size-5 text-ink-500" />
       </div>
 
-      <div class="min-w-0 flex-1 basis-[55%]">
-        <p class="m-0 line-clamp-2 font-serif text-[15px] font-bold tracking-tight text-ink-900">
-          {@program.title}
-        </p>
-        <p class="m-0 mt-0.5 line-clamp-2 text-[12.5px] text-ink-500">
-          {@program.owner.name} · {program_dates(@summary)}{location_suffix(@program)}
+      <div class="min-w-0 flex-1">
+        <p class="m-0 font-serif text-[15px] font-bold leading-snug tracking-tight sm:text-[16px]">
+          <.link
+            navigate={~p"/programs/#{@program.slug}"}
+            class="text-ink-900 no-underline hover:underline"
+          >
+            {@program.title}
+          </.link>
         </p>
 
-        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <.workshop_tag tone={:purple}>Programação</.workshop_tag>
-          <.workshop_tag :if={@owner?} tone={:neutral}>Você organiza</.workshop_tag>
-          <.workshop_tag :if={@enrolled_count > 0 && !@owner?} tone={:green}>
+        <p class="m-0 mt-1 font-sans text-[12px] leading-snug text-ink-500">
+          <b class="font-semibold text-ink-700">{@program.owner.name}</b>
+          · {program_dates(@summary)}{location_suffix(@program)}
+        </p>
+
+        <p class="m-0 mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-sans text-[12px] leading-snug text-ink-500">
+          <span class="font-semibold text-ink-700">{workshop_count_label(@summary.count)}</span>
+          <span :if={@owner?}>Você organiza</span>
+          <span :if={@enrolled_count > 0 && !@owner?} class="text-accent-green">
             {enrollment_label(@enrolled_count)}
-          </.workshop_tag>
-          <span class="text-[11.5px] text-ink-400">{workshop_count_label(@summary.count)}</span>
-        </div>
+          </span>
+        </p>
       </div>
 
       <.link
         navigate={~p"/programs/#{@program.slug}"}
-        class="w-full shrink-0 rounded-full bg-accent-purple px-4 py-2 text-center font-serif text-[13px] font-semibold text-white no-underline transition-colors hover:bg-accent-purple/90 sm:w-auto"
+        class="inline-flex min-h-11 shrink-0 items-center self-center rounded-full border border-ink-300 px-3.5 text-center font-serif text-[12.5px] font-semibold text-ink-700 no-underline transition-colors hover:border-ink-400 sm:min-h-9"
       >
-        Ver programação
+        Ver
       </.link>
     </article>
     """
@@ -298,7 +320,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
   # In a search the workshop shows up loose even when it belongs to a program:
   # without this tag nothing on screen connects the two.
-  defp program_of(%{program: %{title: _} = program}), do: program
+  # Precisa do slug: na agenda o nome da programação virou o link para ela, em
+  # vez de uma etiqueta roxa que só dizia que ela existe.
+  defp program_of(%{program: %{title: _, slug: _} = program}), do: program
   defp program_of(_workshop), do: nil
 
   @doc "For instance: Você está em 1 / Você está em 3"
@@ -357,7 +381,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
         phx-click={@event}
         phx-value-period={value}
         class={[
-          "cursor-pointer whitespace-nowrap rounded-full border px-3 py-1.5 font-serif text-[12px] font-semibold transition-colors",
+          "min-h-11 cursor-pointer whitespace-nowrap rounded-full border px-3.5 font-serif text-[12px] font-semibold transition-colors sm:min-h-9",
           @active == value && "border-ink-900 bg-ink-900 text-ink-50",
           @active != value && "border-ink-300 bg-ink-50 text-ink-600 hover:border-ink-400"
         ]}

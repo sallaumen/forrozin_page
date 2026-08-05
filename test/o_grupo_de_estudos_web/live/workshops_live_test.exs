@@ -595,7 +595,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       {:ok, _lv, html} = live(log_in_user(ctx.conn, insert(:user)), ~p"/study/workshops")
 
       assert html =~ "Festival de Itaúnas"
-      assert html =~ "Ver programação"
+      assert html =~ ~s(href="/programs/#{p.slug}")
       refute html =~ "Itaúnas 7"
       assert html =~ ~s(id="program-card-#{p.id}")
     end
@@ -660,7 +660,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
 
       {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.owner), ~p"/study/workshops")
 
-      assert html =~ "1 inscrito"
+      assert html =~ "1 de 1 vaga"
       assert html =~ "Esgotado"
     end
 
