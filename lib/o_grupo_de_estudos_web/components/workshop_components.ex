@@ -113,6 +113,136 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     """
   end
 
+  slot :inner_block, required: true
+
+  @doc """
+  A section head the way a printed programme sets one.
+
+  It replaces the uppercase eyebrow every block on these pages used to wear: when
+  the photo gallery, the payment label and the conversation all carry the same
+  10px caps, none of them is a heading anymore.
+  """
+  def section_heading(assigns) do
+    ~H"""
+    <h2 class="brand-display is-title m-0 mb-3 text-[16px] font-semibold tracking-tight text-ink-800">
+      {render_slot(@inner_block)}
+    </h2>
+    """
+  end
+
+  attr :workshop, :map, required: true
+  attr :enrolled_count, :integer, default: 0
+  attr :enrolled?, :boolean, default: false
+  attr :selectable?, :boolean, default: false
+  attr :selected?, :boolean, default: false
+
+  @doc """
+  One line of the day, on a programme instead of on a card.
+
+  The day heading above already says the date and the header already says who runs
+  it and in which city, so the row keeps only what tells one class from the other:
+  the hour, the name, the price and how much room is left. The address stays on
+  the workshop page, where whoever is already on the way goes looking for it.
+  """
+  def agenda_row(assigns) do
+    {starts, ends} = rail_hours(assigns.workshop)
+
+    assigns =
+      assigns
+      |> assign(:starts_hour, starts)
+      |> assign(:ends_hour, ends)
+      |> assign(:sold_out?, Workshop.full?(assigns.workshop, assigns.enrolled_count))
+      |> assign(:seats, seats_label(assigns.workshop, assigns.enrolled_count))
+
+    ~H"""
+    <article
+      id={"agenda-#{@workshop.id}"}
+      class="flex items-baseline gap-3 border-t border-ink-200 py-3.5 sm:gap-4"
+    >
+      <%!-- Picking a day is not enrolling in it: the checkbox waits for the confirm
+      at the end of the list, and whoever is already in gets a check in its place. --%>
+      <label
+        :if={@selectable?}
+        class="-my-2 flex min-h-11 shrink-0 cursor-pointer items-center self-center py-2"
+      >
+        <input
+          type="checkbox"
+          id={"pick-#{@workshop.id}"}
+          checked={@selected?}
+          phx-click="toggle_selection"
+          phx-value-id={@workshop.id}
+          aria-label={"Marcar #{@workshop.title}"}
+          class="size-[18px] cursor-pointer accent-accent-orange"
+        />
+      </label>
+      <.icon
+        :if={@enrolled?}
+        name="hero-check-circle-solid"
+        class="size-[18px] shrink-0 self-center text-accent-green"
+      />
+
+      <p class="m-0 w-[3.1rem] shrink-0 font-sans leading-tight sm:w-[3.4rem]">
+        <span class="block text-[15px] font-semibold tabular-nums text-ink-900">
+          {@starts_hour}
+        </span>
+        <span :if={@ends_hour} class="block text-[11.5px] tabular-nums text-ink-500">
+          {@ends_hour}
+        </span>
+      </p>
+
+      <div class="min-w-0 flex-1">
+        <p class="m-0 font-serif text-[15px] font-bold leading-snug tracking-tight sm:text-[16px]">
+          <.icon
+            :if={@workshop.visibility == :private}
+            name="hero-lock-closed"
+            class="-mt-1 mr-1 size-3.5 text-ink-500"
+          />
+          <.link
+            navigate={~p"/workshops/#{@workshop.slug}"}
+            class="text-ink-900 no-underline hover:underline"
+          >
+            {@workshop.title}
+          </.link>
+        </p>
+
+        <p class="m-0 mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 font-sans text-[12px] leading-snug text-ink-500">
+          <span class="font-semibold text-ink-700">{price_label(@workshop)}</span>
+          <span :if={@sold_out?} class="font-semibold text-accent-red">Esgotado</span>
+          <span :if={!@sold_out? && @seats}>{@seats}</span>
+          <span :if={@enrolled?} class="text-accent-green">Você está inscrito</span>
+          <span :if={@workshop.status == :draft}>Rascunho</span>
+        </p>
+      </div>
+    </article>
+    """
+  end
+
+  @doc """
+  The two hours a programme stacks on the left rail.
+
+  Only the start when the class runs into the next day: printing "23h" under "20h"
+  would read as a class that ends three hours before it begins.
+  """
+  def rail_hours(%{starts_at: starts_at, ends_at: nil}),
+    do: {hour_label(starts_at), nil}
+
+  def rail_hours(%{starts_at: starts_at, ends_at: ends_at}) do
+    starts_local = Brazil.to_local(starts_at)
+    ends_local = Brazil.to_local(ends_at)
+
+    {local_hour(starts_local), same_day_hour(starts_local, ends_local)}
+  end
+
+  defp same_day_hour(%{year: y, month: m, day: d}, %{year: y, month: m, day: d} = ends_local),
+    do: local_hour(ends_local)
+
+  defp same_day_hour(_starts_local, _ends_local), do: nil
+
+  @doc "How full a class is: seats out of capacity, or just how many people came."
+  def seats_label(%{capacity: nil}, 0), do: nil
+  def seats_label(%{capacity: nil}, count), do: people_label(count)
+  def seats_label(%{capacity: capacity}, count), do: "#{count} de #{capacity} vagas"
+
   attr :program, :map, required: true
   attr :summary, :map, required: true
   attr :owner?, :boolean, default: false
@@ -242,12 +372,17 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   attr :description, :string, default: nil
   slot :action
 
+  # Nothing there yet is a sentence, not a framed announcement: the dashed box and
+  # the calendar icon dressed an absence up as if it were an item.
   def workshop_empty(assigns) do
     ~H"""
-    <div class="rounded-2xl border border-dashed border-ink-300 bg-ink-50/60 px-6 py-10 text-center">
-      <.icon name="hero-calendar-days" class="size-7 text-ink-300" />
-      <p class="m-0 mt-2 font-serif text-[15px] font-bold text-ink-800">{@title}</p>
-      <p :if={@description} class="m-0 mt-1 text-[13px] text-ink-500">{@description}</p>
+    <div class="border-t border-ink-200 py-8">
+      <p class="brand-display is-title m-0 text-[16px] font-semibold tracking-tight text-ink-800">
+        {@title}
+      </p>
+      <p :if={@description} class="m-0 mt-1.5 font-sans text-[13px] text-ink-500">
+        {@description}
+      </p>
       <div :if={@action != []} class="mt-4">{render_slot(@action)}</div>
     </div>
     """
@@ -266,38 +401,40 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   """
   def receipt_box(assigns) do
     ~H"""
-    <div class="rounded-xl border border-ink-200 bg-ink-100/50 p-3">
-      <p class="m-0 text-[11px] font-bold uppercase tracking-[1.2px] text-ink-500">Comprovante</p>
+    <div>
+      <p class="m-0 font-sans text-[10.5px] font-semibold uppercase tracking-[1.4px] text-ink-500">
+        Comprovante
+      </p>
 
       <p
         :if={sent?(@receipt)}
-        class="m-0 mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-snug text-ink-700"
+        class="m-0 mt-1.5 flex items-start gap-1.5 font-sans text-[12.5px] leading-snug text-ink-700"
       >
         <.icon name="hero-check-circle-solid" class="mt-0.5 size-4 shrink-0 text-accent-green" />
         <span>Enviado em {Brazil.format_datetime_full(@receipt.sent_at)}</span>
       </p>
 
-      <p :if={!sent?(@receipt)} class="m-0 mt-1 text-[12px] leading-snug text-ink-500">
+      <p :if={!sent?(@receipt)} class="m-0 mt-1 font-sans text-[12px] leading-snug text-ink-500">
         Mande por aqui e quem organiza vê junto com a sua inscrição. Imagem ou PDF, até 10 MB.
       </p>
 
       <form id="receipt-form" phx-submit="send_receipt" phx-change="validate_receipt" class="mt-2">
         <label
           for={@upload.ref}
-          class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-ink-900 px-4 font-serif text-[12.5px] font-semibold text-ink-50 sm:min-h-9"
+          class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-ink-300 px-4 font-serif text-[12.5px] font-semibold text-ink-700 transition-colors hover:border-ink-400 sm:min-h-9"
         >
           <.icon name="hero-paper-clip" class="size-4" /> {choose_label(@receipt)}
         </label>
         <.live_file_input upload={@upload} class="sr-only" />
 
-        <div :for={entry <- @upload.entries} class="mt-2 flex items-center gap-3">
+        <div :for={entry <- @upload.entries} class="mt-2 flex items-center gap-3 font-sans">
           <span class="min-w-0 truncate text-[12px] text-ink-500">{entry.client_name}</span>
           <span class="shrink-0 text-[12px] font-bold text-ink-700">{entry.progress}%</span>
         </div>
 
         <p
           :for={error <- receipt_errors(@upload)}
-          class="m-0 mt-1 text-[12px] font-semibold text-accent-red"
+          class="m-0 mt-1 font-sans text-[12px] font-semibold text-accent-red"
         >
           {receipt_upload_error(error)}
         </p>
@@ -306,20 +443,20 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           :if={@upload.entries != []}
           type="submit"
           phx-disable-with="Enviando..."
-          class="mt-2 min-h-11 cursor-pointer rounded-full border-0 bg-accent-green px-4 font-serif text-[12.5px] font-semibold text-white sm:min-h-9"
+          class="mt-2 min-h-11 cursor-pointer rounded-full border-0 bg-ink-900 px-4 font-serif text-[12.5px] font-semibold text-ink-50 sm:min-h-9"
         >
           Enviar comprovante
         </button>
       </form>
 
-      <div class="mt-1 flex flex-wrap items-center gap-x-4">
+      <div class="flex flex-wrap items-center gap-x-4 font-sans">
         <a
           :if={@whatsapp_link}
           href={@whatsapp_link}
           phx-click="receipt_via_whatsapp"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex min-h-11 items-center gap-1.5 text-[12.5px] font-semibold text-accent-green no-underline sm:min-h-9"
+          class="inline-flex min-h-11 items-center gap-1.5 text-[12.5px] font-semibold text-ink-600 no-underline hover:text-ink-900 sm:min-h-9"
         >
           <.icon name="hero-paper-airplane" class="size-4" /> Prefiro pelo WhatsApp
         </a>
@@ -330,7 +467,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           phx-click="remove_receipt"
           phx-value-id={@receipt.enrollment_id}
           data-confirm="Tirar o comprovante do ar?"
-          class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent p-0 text-[12.5px] font-semibold text-ink-500 sm:min-h-9"
+          class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent p-0 text-[12.5px] text-ink-500 underline sm:min-h-9"
         >
           Remover
         </button>
@@ -454,53 +591,75 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   attr :avulso_total, :integer, required: true
   attr :ja_comprou, :boolean, default: false
   attr :indisponivel, :string, default: nil
+  attr :selecionaveis, :boolean, default: false
 
-  def package_box(assigns) do
+  @doc """
+  The closed package, priced on the page instead of boxed off from it.
+
+  It used to be a card with a green rail, paired against a dashed card that held
+  nothing but the instructions for the other way in. Two boxes of the same size
+  said the two paths weighed the same; they do not. Here the price is a line of
+  the page and the day-by-day way is the sentence right under it.
+  """
+  def package_offer(assigns) do
     ~H"""
-    <div class="rounded-2xl border border-ink-200 border-l-[3px] border-l-accent-green bg-ink-50 p-4 shadow-sm">
-      <p class="m-0 font-serif text-[24px] font-bold tracking-tight text-ink-900">
-        {money_label(@program.price_cents)}
-        <span class="text-[12px] font-normal text-ink-500">pela programação toda</span>
-      </p>
+    <div class="mt-7 border-y border-ink-200 py-5">
+      <div class="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div class="min-w-0 flex-1 basis-[20rem]">
+          <p class="brand-display is-title m-0 text-[27px] font-semibold leading-none tracking-tight text-ink-900">
+            {money_label(@program.price_cents)}
+            <span class="font-serif text-[13.5px] font-normal text-ink-500">
+              pela programação toda
+            </span>
+          </p>
 
-      <p :if={economia(@program, @avulso_total) > 0} class="m-0 mt-1 text-[12.5px] text-accent-green">
-        <b>Economiza {money_label(economia(@program, @avulso_total))}</b>
-        em relação a pagar dia a dia.
-      </p>
+          <p class="m-0 mt-2 max-w-[38rem] font-sans text-[12.5px] leading-relaxed text-ink-500">
+            <span :if={economia(@program, @avulso_total) > 0}>
+              Sai
+              <b class="font-semibold text-ink-700">
+                {money_label(economia(@program, @avulso_total))}
+              </b>
+              mais barato do que pagar dia a dia.
+            </span>
+            <span :if={!@ja_comprou && @selecionaveis}>
+              Se preferir, marque abaixo só os dias que te interessam.
+            </span>
+          </p>
+        </div>
+
+        <button
+          :if={!@ja_comprou && is_nil(@indisponivel)}
+          type="button"
+          phx-click="buy_package"
+          phx-disable-with="Confirmando..."
+          class="w-full shrink-0 cursor-pointer rounded-full border-0 bg-accent-orange px-6 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-orange/90 sm:w-auto"
+        >
+          Quero a programação toda
+        </button>
+
+        <p
+          :if={!@ja_comprou && @indisponivel}
+          class="m-0 shrink-0 font-sans text-[12.5px] text-ink-500"
+        >
+          {@indisponivel}
+        </p>
+
+        <p
+          :if={@ja_comprou}
+          class="m-0 flex shrink-0 items-center gap-1.5 font-sans text-[13px] font-semibold text-ink-700"
+        >
+          <.icon name="hero-check-circle-solid" class="size-4 text-accent-green" />
+          Você tem a programação toda
+        </p>
+      </div>
 
       <%!-- Chave Pix costuma ser CPF ou telefone: só depois de garantir a
       vaga, mesma regra da página do workshop. --%>
       <p
         :if={@program.payment_info && @ja_comprou}
-        class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500"
+        class="m-0 mt-3 font-sans text-[12.5px] leading-snug text-ink-500"
       >
         {@program.payment_info}
-      </p>
-
-      <div
-        :if={@ja_comprou}
-        class="mt-3 rounded-xl border border-accent-green/30 bg-accent-green/10 px-4 py-3 text-center"
-      >
-        <p class="m-0 text-[13px] font-bold text-accent-green">
-          <.icon name="hero-check-circle" class="size-4 -mt-0.5" /> Você tem a programação toda
-        </p>
-      </div>
-
-      <button
-        :if={!@ja_comprou && is_nil(@indisponivel)}
-        type="button"
-        phx-click="buy_package"
-        phx-disable-with="Confirmando..."
-        class="mt-3 w-full cursor-pointer rounded-full border-0 bg-accent-green px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-green/90"
-      >
-        Quero a programação toda
-      </button>
-
-      <p
-        :if={!@ja_comprou && @indisponivel}
-        class="m-0 mt-3 rounded-xl bg-ink-200 px-4 py-3 text-center text-[12.5px] text-ink-600"
-      >
-        {@indisponivel}
       </p>
     </div>
     """
@@ -751,14 +910,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   """
   def locked_preview(assigns) do
     ~H"""
-    <section class="mt-7 border-t border-ink-200 pt-6">
-      <p class="m-0 mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-        <.icon name="hero-lock-closed" class="size-3.5" /> Só para quem está na turma
-      </p>
+    <section class="mt-8 border-t border-ink-200 pt-6">
+      <h2 class="brand-display is-title m-0 mb-4 flex items-center gap-2 text-[16px] font-semibold tracking-tight text-ink-800">
+        <.icon name="hero-lock-closed" class="size-4 text-ink-500" /> Só para quem está na turma
+      </h2>
 
       <.locked_row title="Quem vai" caption={people_caption(@enrolled_count)}>
         <span :for={_ <- 1..min(max(@enrolled_count, 1), 6)} class="-ml-2 first:ml-0">
-          <span class="block size-7 rounded-full border-2 border-ink-50 bg-ink-300"></span>
+          <span class="block size-7 rounded-full border-2 border-ink-100 bg-ink-300"></span>
         </span>
       </.locked_row>
 
@@ -783,16 +942,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   attr :caption, :string, required: true
   slot :inner_block, required: true
 
+  # Three dashed boxes said "three locked things" three times over. A hairline
+  # between them says the same and lets the blurred shape do the talking.
   defp locked_row(assigns) do
     ~H"""
-    <div class="mb-2.5 overflow-hidden rounded-xl border border-dashed border-ink-300 bg-ink-100/70 px-4 py-3">
-      <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-[1.6px] text-ink-500">
-        {@title}
-      </p>
-      <div class="pointer-events-none flex select-none items-center opacity-50 blur-[4px]">
+    <div class="border-t border-ink-200 py-3.5 first:border-t-0 first:pt-0">
+      <p class="m-0 mb-2 font-sans text-[12px] font-semibold text-ink-700">{@title}</p>
+      <div class="pointer-events-none flex select-none items-center opacity-45 blur-[4px]">
         {render_slot(@inner_block)}
       </div>
-      <p class="m-0 mt-2 text-[12.5px] text-ink-600">{@caption}</p>
+      <p class="m-0 mt-2 font-sans text-[12.5px] text-ink-500">{@caption}</p>
     </div>
     """
   end

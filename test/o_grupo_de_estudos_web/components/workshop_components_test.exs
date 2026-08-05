@@ -4,6 +4,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
   import OGrupoDeEstudosWeb.WorkshopComponents
   import Phoenix.LiveViewTest
 
+  alias OGrupoDeEstudos.Workshops.Workshop
+
   @id "11111111-1111-1111-1111-111111111111"
   @autora_id "22222222-2222-2222-2222-222222222222"
 
@@ -158,6 +160,98 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
 
       refute html =~ "remove_media"
     end
+  end
+
+  describe "rail_hours/1" do
+    test "stacks the start over the end, the way a printed programme prints it" do
+      assert rail_hours(workshop(~U[2026-09-12 17:00:00Z], ~U[2026-09-12 21:00:00Z])) ==
+               {"14h", "18h"}
+    end
+
+    test "without an end hour only the start goes on the rail" do
+      assert rail_hours(workshop(~U[2026-09-12 17:00:00Z])) == {"14h", nil}
+    end
+
+    test "a class that runs into the next day drops the end hour" do
+      assert rail_hours(workshop(~U[2026-09-12 17:00:00Z], ~U[2026-09-13 21:00:00Z])) ==
+               {"14h", nil}
+    end
+  end
+
+  describe "agenda_row/1" do
+    test "the day heading owns the date, so the row prints only the hour" do
+      html = row()
+
+      assert html =~ "19h"
+      refute html =~ "de agosto"
+    end
+
+    test "the price reads as a price, not as one more badge" do
+      html = row()
+
+      assert html =~ "R$ 50"
+      refute html =~ "uppercase"
+    end
+
+    test "seats left say how full it is, and a full class says so once" do
+      assert row(enrolled_count: 4) =~ "4 de 20 vagas"
+
+      full = row(enrolled_count: 20)
+      assert full =~ "Esgotado"
+      refute full =~ "de 20 vagas"
+    end
+
+    test "being enrolled is one discreet mark, not a coloured badge" do
+      html = row(enrolled?: true)
+
+      assert html =~ "Você está inscrito"
+      refute html =~ "checkbox"
+    end
+
+    test "whoever may pick the day gets a checkbox, and it is not the link" do
+      html = row(selectable?: true)
+
+      assert html =~ "toggle_selection"
+      assert html =~ ~s|href="/workshops/caminho-do-roots|
+    end
+
+    test "a draft says so to whoever organizes" do
+      assert row(workshop: build_workshop(status: :draft)) =~ "Rascunho"
+    end
+
+    test "a private class carries the lock next to the title" do
+      assert row(workshop: build_workshop(visibility: :private)) =~ "hero-lock-closed"
+    end
+  end
+
+  defp row(overrides \\ []) do
+    assigns =
+      Enum.into(overrides, %{
+        workshop: build_workshop([]),
+        enrolled_count: 4,
+        enrolled?: false,
+        selectable?: false,
+        selected?: false
+      })
+
+    render_component(&agenda_row/1, assigns)
+  end
+
+  defp build_workshop(attrs) do
+    struct!(
+      %Workshop{
+        id: @id,
+        slug: "caminho-do-roots-iniciante-9xfwjg",
+        title: "Caminho do Roots, iniciante e intermediário",
+        starts_at: ~U[2026-08-20 22:00:00Z],
+        ends_at: ~U[2026-08-20 23:30:00Z],
+        price_cents: 5000,
+        capacity: 20,
+        status: :published,
+        visibility: :public
+      },
+      attrs
+    )
   end
 
   defp autora, do: %{id: @autora_id}

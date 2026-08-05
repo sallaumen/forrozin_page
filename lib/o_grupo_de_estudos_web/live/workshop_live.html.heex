@@ -29,32 +29,43 @@
     title="Workshop"
   />
 
-  <main class="mx-auto w-full max-w-[1000px] flex-1 px-4 py-6 sm:px-6">
+  <%!-- The state of the whole page is a band across it: a floating card would be
+       one more item competing with the class itself. --%>
+  <p
+    :if={@workshop.status == :cancelled}
+    class="m-0 border-b border-accent-red/25 bg-accent-red/[0.07] px-4 py-2.5 text-center font-sans text-[12.5px] font-semibold text-accent-red"
+  >
+    Este workshop foi cancelado pelo organizador.
+  </p>
+
+  <p
+    :if={@workshop.status == :draft}
+    class="m-0 border-b border-gold-500/30 bg-gold-500/10 px-4 py-2.5 text-center font-sans text-[12.5px] text-ink-700"
+  >
+    Rascunho: só você enxerga esta página até publicar.
+  </p>
+
+  <main class="mx-auto w-full max-w-[1020px] flex-1 px-4 py-6 sm:px-6 sm:py-8">
     <.link
       :if={@current_user}
       navigate={~p"/study/workshops"}
-      class="mb-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-500 no-underline hover:text-ink-800"
+      class="mb-3 inline-flex min-h-11 items-center gap-1.5 font-sans text-[12.5px] font-semibold text-ink-500 no-underline hover:text-ink-800 sm:mb-5 sm:min-h-0"
     >
       <.icon name="hero-arrow-left" class="size-4" /> Workshops
     </.link>
 
-    <div :if={@workshop.status == :cancelled} class="mb-4 rounded-xl bg-accent-red/10 px-4 py-3">
-      <p class="m-0 text-[13px] font-bold text-accent-red">
-        Este workshop foi cancelado pelo organizador.
-      </p>
-    </div>
+    <%!-- O cartaz abre a página do mesmo jeito que abre a da programação: é ele
+         que circulou no WhatsApp. Na coluna da direita ele empurrava a ficha para
+         600px de altura e abria um vazio embaixo do conteúdo. --%>
+    <header class="flex flex-col gap-5 border-b border-ink-200 pb-6 sm:flex-row sm:items-start sm:gap-7">
+      <img
+        :if={@workshop.flyer_path}
+        src={@workshop.flyer_path}
+        alt={"Flyer de #{@workshop.title}"}
+        class="w-[52%] max-w-[230px] shrink-0 self-start rounded-lg border border-ink-200 object-cover shadow-sm sm:w-[210px] sm:max-w-none"
+      />
 
-    <div :if={@workshop.status == :draft} class="mb-4 rounded-xl bg-gold-500/15 px-4 py-3">
-      <p class="m-0 text-[13px] font-bold text-ink-700">
-        Rascunho: só você enxerga esta página até publicar.
-      </p>
-    </div>
-
-    <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-5">
-      <div class="min-w-0">
-        <.workshop_tag :if={@workshop.visibility == :private} tone={:gold}>
-          <.icon name="hero-lock-closed" class="mr-1 size-3" /> Entrada por aprovação
-        </.workshop_tag>
+      <div class="min-w-0 flex-1">
         <.editable
           field={:title}
           label="título"
@@ -63,11 +74,15 @@
           value={InlineEditParams.form_value(@workshop, :title)}
           error={@edit_error}
         >
-          <h1 class="m-0 font-serif text-[26px] font-bold tracking-tight text-ink-900 sm:text-[30px]">
+          <h1 class="brand-display is-title m-0 text-[27px] font-semibold leading-[1.14] tracking-tight text-ink-900 sm:text-[33px]">
             {@workshop.title}
           </h1>
         </.editable>
-        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-600">
+
+        <%!-- Quando, onde e com quem, uma coisa por linha. A mesma informação numa
+           linha só, separada por pontos, vira um caminho de arquivo: o olho não
+           acha o horário nem o endereço. --%>
+        <div class="mt-3.5 font-sans text-[13.5px] leading-relaxed text-ink-600">
           <.editable
             field={:starts_at}
             label="quando começa"
@@ -78,8 +93,9 @@
             hint="A duração da aula é mantida: o fim anda junto."
             error={@edit_error}
           >
-            <span class="font-bold text-ink-900">{schedule_label(@workshop)}</span>
+            <span class="font-semibold text-ink-900">{schedule_label(@workshop)}</span>
           </.editable>
+
           <.editable
             field={:location}
             label="nome do lugar"
@@ -90,233 +106,237 @@
           >
             <span>{Workshop.place_line(@workshop) || "sem lugar definido"}</span>
           </.editable>
-          <%!-- "com" names who teaches, not who organizes: with the two roles
-               separated, crediting the class to whoever only produced it became a
-               bug.
-          --%>
-          <span>com <b class="text-ink-900">{teacher_names(@teachers)}</b></span>
-        </div>
 
-        <%!-- The full address sits with the title and not buried in the description:
+          <%!-- The full address sits with the title and not buried in the description:
              whoever opens the page on a phone is often already on the way. --%>
-        <.editable_address
-          :if={Workshop.address_line(@workshop) || @organizer?}
-          field={:address}
-          label="endereço"
-          editing={@editing_field}
-          can_edit={@organizer?}
-          workshop={@workshop}
-          states={Brazil.states()}
-          error={@edit_error}
-        >
-          <p class="m-0 mt-2 flex items-start gap-1.5 text-[13px] leading-snug text-ink-500">
-            <.icon name="hero-map-pin" class="mt-0.5 size-4 shrink-0 text-ink-400" />
-            {Workshop.address_line(@workshop) || "endereço não preenchido"}
-          </p>
-        </.editable_address>
-      </div>
-      <.link
-        :if={@organizer?}
-        navigate={~p"/workshops/#{@workshop.slug}/manage"}
-        class="shrink-0 rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
-      >
-        Gerenciar inscritos
-      </.link>
-    </div>
+          <.editable_address
+            :if={Workshop.address_line(@workshop) || @organizer?}
+            field={:address}
+            label="endereço"
+            editing={@editing_field}
+            can_edit={@organizer?}
+            workshop={@workshop}
+            states={Brazil.states()}
+            error={@edit_error}
+          >
+            <%!-- Sem endereço a linha vira recado para quem organiza, não um fato
+               da página: menor, ela não disputa com o nome do lugar. --%>
+            <p class={[
+              "m-0 text-ink-500",
+              is_nil(Workshop.address_line(@workshop)) && "text-[12.5px]"
+            ]}>
+              {Workshop.address_line(@workshop) || "endereço não preenchido"}
+            </p>
+          </.editable_address>
 
-    <%!-- DOM order is the mobile order: flyer, price and enrollment before
-         everything. On desktop the columns go back in place through `order`, with no
-         duplicated markup. Without this the box falls to 79% of the height on a
+          <%!-- "com" names who teaches, not who organizes: with the two roles
+             separated, crediting the class to whoever only produced it became a
+             bug.
+        --%>
+          <p class="m-0">
+            com <b class="font-semibold text-ink-900">{teacher_names(@teachers)}</b>
+          </p>
+
+          <p
+            :if={@workshop.visibility == :private}
+            class="m-0 mt-1 flex items-center gap-1.5 text-[12.5px] text-gold-600"
+          >
+            <.icon name="hero-lock-closed" class="size-3.5" /> Entrada por aprovação
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <%!-- DOM order is the mobile order: price and enrollment before everything
+         else. On desktop the columns go back in place through `order`, with no
+         duplicated markup. Without this the ficha falls to 79% of the height on a
          small screen, after the whole conversation.
     --%>
-    <div class="mt-5 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-      <aside class="lg:order-2">
-        <img
-          :if={@workshop.flyer_path}
-          src={@workshop.flyer_path}
-          alt={"Flyer de #{@workshop.title}"}
-          class="mb-4 w-full rounded-2xl border border-ink-200 object-cover shadow-sm"
-        />
-        <div class="rounded-2xl border border-ink-200 border-l-[3px] border-l-accent-green bg-ink-50 p-4 shadow-sm">
-          <p class="m-0 font-serif text-[24px] font-bold tracking-tight text-ink-900">
-            {price_label(@workshop)}
-            <span :if={!Workshop.free?(@workshop)} class="text-[12px] font-normal text-ink-500">
-              por pessoa
-            </span>
-          </p>
-          <p
+    <div class="mt-6 grid gap-7 lg:grid-cols-[1.55fr_1fr] lg:gap-9">
+      <%!-- A ficha, não um cartão: o que separa a coluna prática do conteúdo é um
+           fio, e dentro dela os assuntos se separam por outros fios. Caixa dentro
+           de caixa era o que fazia o preço, o comprovante e as vagas brigarem. --%>
+      <aside class="lg:order-2 lg:border-l lg:border-ink-300 lg:pl-8">
+        <p class="brand-display is-title m-0 text-[30px] font-semibold leading-none tracking-tight text-ink-900">
+          {price_label(@workshop)}
+          <span
             :if={!Workshop.free?(@workshop)}
-            class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500"
+            class="font-serif text-[13px] font-normal text-ink-500"
           >
-            {payment_hint(@workshop, @enrolled? || @organizer?)}
-          </p>
+            por pessoa
+          </span>
+        </p>
+        <p
+          :if={!Workshop.free?(@workshop)}
+          class="m-0 mt-1.5 font-sans text-[12.5px] leading-snug text-ink-500"
+        >
+          {payment_hint(@workshop, @enrolled? || @organizer?)}
+        </p>
 
-          <%!-- Sending the receipt: through the app, where it lands next to the
-               payment control, or through WhatsApp, where people already are.
-               Both only for whoever is in the class, the same criterion as the
-               Pix key.
-          --%>
-          <div :if={@enrolled? && !Workshop.free?(@workshop)} class="mt-3">
-            <.receipt_box
-              receipt={@my_receipt}
-              upload={@uploads.receipt}
-              whatsapp_link={Workshop.receipt_link(@workshop)}
-            />
-          </div>
-
-          <%!-- Seats, only when the organizer set a capacity. --%>
-          <div :if={@workshop.capacity} class="mt-3">
-            <div class="h-1.5 w-full overflow-hidden rounded-full bg-ink-200">
-              <div
-                class="h-full rounded-full bg-accent-green"
-                style={"width: #{seats_percent(@enrolled_count, @workshop.capacity)}%"}
-              >
-              </div>
+        <%!-- Seats, only when the organizer set a capacity. --%>
+        <div :if={@workshop.capacity} class="mt-4">
+          <div class="h-1 w-full overflow-hidden rounded-full bg-ink-200">
+            <div
+              class="h-full rounded-full bg-ink-500"
+              style={"width: #{seats_percent(@enrolled_count, @workshop.capacity)}%"}
+            >
             </div>
-            <p class="m-0 mt-1.5 text-[12px] text-ink-600">
-              <b>{@enrolled_count} de {@workshop.capacity}</b> vagas preenchidas
+          </div>
+          <p class="m-0 mt-1.5 font-sans text-[12px] text-ink-500">
+            <b class="font-semibold text-ink-700">{@enrolled_count} de {@workshop.capacity}</b>
+            vagas preenchidas
+          </p>
+        </div>
+
+        <p
+          :if={is_nil(@workshop.capacity) && @enrolled_count > 0}
+          class="m-0 mt-4 font-sans text-[12px] font-semibold text-ink-700"
+        >
+          {people_label(@enrolled_count)}
+        </p>
+
+        <div class="mt-5">
+          <%!-- The organizer is already at the event: enrolling would take a seat
+               and show up in their own payment list.
+          --%>
+          <.link
+            :if={@organizer?}
+            navigate={~p"/workshops/#{@workshop.slug}/manage"}
+            class="block w-full rounded-full bg-ink-900 px-5 py-3 text-center font-serif text-[15px] font-semibold text-ink-50 no-underline"
+          >
+            Gerenciar inscritos
+          </.link>
+
+          <%!-- A private workshop swaps direct enrollment for a request: the door
+               goes through the organizer.
+          --%>
+          <button
+            :if={can_ask_to_join?(@workshop, @organizer?, @enrolled?, @join_status, @full?)}
+            type="button"
+            phx-click="request_join"
+            phx-disable-with="Enviando..."
+            class="w-full cursor-pointer rounded-full border-0 bg-accent-orange px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-orange/90"
+          >
+            Pedir para entrar
+          </button>
+
+          <div :if={@join_status == :pending && !@enrolled?}>
+            <p class="m-0 flex items-center gap-1.5 font-sans text-[13px] font-semibold text-ink-800">
+              <.icon name="hero-clock" class="size-4 text-gold-600" /> Seu pedido foi enviado
+            </p>
+            <p class="m-0 mt-1 font-sans text-[12px] leading-snug text-ink-500">
+              Assim que {@workshop.organizer.name} aceitar, a página abre inteira e você
+              recebe um aviso no sino.
             </p>
           </div>
 
-          <p
-            :if={is_nil(@workshop.capacity) && @enrolled_count > 0}
-            class="m-0 mt-3 text-[12px] text-ink-600"
+          <button
+            :if={
+              !@organizer? && !@enrolled? && !@full? && @workshop.status == :published &&
+                @workshop.visibility == :public
+            }
+            type="button"
+            phx-click="enroll"
+            phx-disable-with="Inscrevendo..."
+            class="w-full cursor-pointer rounded-full border-0 bg-accent-orange px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-orange/90"
           >
-            <b>{people_label(@enrolled_count)}</b>
+            Fazer inscrição
+          </button>
+
+          <%!-- Estar inscrito é um fato, não um alarme: uma marca e a saída ao lado,
+               em vez de borda, fundo, ícone e negrito dizendo a mesma coisa. --%>
+          <p
+            :if={@enrolled?}
+            class="m-0 flex flex-wrap items-center gap-x-2 font-sans text-[13px]"
+          >
+            <span class="inline-flex items-center gap-1.5 font-semibold text-ink-800">
+              <.icon name="hero-check-circle-solid" class="size-4 text-accent-green" />
+              Você está inscrito
+            </span>
+            <button
+              type="button"
+              phx-click="cancel_enrollment"
+              data-confirm="Cancelar sua inscrição neste workshop?"
+              class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent p-0 text-[12px] text-ink-500 underline sm:min-h-0"
+            >
+              cancelar
+            </button>
           </p>
+
+          <%!-- A full class stops being a dead end: the person joins the waitlist.
+               Without it, whoever was interested vanished without a trace, and
+               that number is exactly what says whether another class fits.
+          --%>
+          <div :if={shows_waitlist?(@workshop, @organizer?, @enrolled?, @full?, @waitlist_entry)}>
+            <p class="m-0 mb-2 font-sans text-[13px] font-semibold text-accent-red">
+              Vagas esgotadas
+            </p>
+            <button
+              type="button"
+              phx-click="join_waitlist"
+              phx-disable-with="Entrando..."
+              class="w-full cursor-pointer rounded-full border border-ink-900 bg-transparent px-5 py-3 font-serif text-[15px] font-semibold text-ink-900"
+            >
+              Entrar na lista de espera
+            </button>
+            <p :if={@waitlist_total > 0} class="m-0 mt-1.5 font-sans text-[12px] text-ink-500">
+              {waitlist_label(@waitlist_total)}
+            </p>
+          </div>
+
+          <div :if={@waitlist_entry && !@enrolled?}>
+            <p class="m-0 flex items-center gap-1.5 font-sans text-[13px] font-semibold text-ink-800">
+              <.icon name="hero-queue-list" class="size-4 text-ink-500" />
+              Você é {@waitlist_entry}º da lista de espera
+            </p>
+            <p class="m-0 mt-1 font-sans text-[12px] leading-snug text-ink-500">
+              Se alguém cancelar, a vaga é sua e você recebe um aviso.
+            </p>
+            <button
+              type="button"
+              phx-click="leave_waitlist"
+              class="inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent p-0 font-sans text-[12px] text-ink-500 underline sm:min-h-0"
+            >
+              sair da lista
+            </button>
+          </div>
 
           <button
             type="button"
             phx-click="toggle_workshop_like"
             aria-pressed={to_string(@liked?)}
             class={[
-              "mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border px-4 py-2 font-serif text-[13px] font-semibold transition-colors",
-              @liked? && "border-accent-red/40 bg-accent-red/10 text-accent-red",
-              !@liked? && "border-ink-300 bg-ink-50 text-ink-600 hover:border-ink-400"
+              "mt-3 inline-flex min-h-11 cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-sans text-[12.5px] font-semibold transition-colors sm:min-h-9",
+              @liked? && "text-accent-red",
+              !@liked? && "text-ink-500 hover:text-ink-800"
             ]}
           >
             <.icon name={if @liked?, do: "hero-heart-solid", else: "hero-heart"} class="size-4" />
             {like_label(@liked?, @like_count)}
           </button>
+        </div>
 
-          <div class="mt-4">
-            <%!-- The organizer is already at the event: enrolling would take a seat
-                 and show up in their own payment list.
-            --%>
-            <.link
-              :if={@organizer?}
-              navigate={~p"/workshops/#{@workshop.slug}/manage"}
-              class="block w-full rounded-full bg-ink-900 px-5 py-3 text-center font-serif text-[15px] font-semibold text-ink-50 no-underline"
-            >
-              Gerenciar inscritos
-            </.link>
-
-            <%!-- A private workshop swaps direct enrollment for a request: the door
-                 goes through the organizer.
-            --%>
-            <button
-              :if={can_ask_to_join?(@workshop, @organizer?, @enrolled?, @join_status, @full?)}
-              type="button"
-              phx-click="request_join"
-              phx-disable-with="Enviando..."
-              class="w-full cursor-pointer rounded-full border-0 bg-gold-600 px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-gold-500"
-            >
-              Pedir para entrar
-            </button>
-
-            <div
-              :if={@join_status == :pending && !@enrolled?}
-              class="rounded-xl border border-gold-500/40 bg-gold-500/12 px-4 py-3"
-            >
-              <p class="m-0 text-[13px] font-bold text-ink-800">
-                <.icon name="hero-clock" class="size-4 -mt-0.5" /> Seu pedido foi enviado
-              </p>
-              <p class="m-0 mt-1 text-[12px] leading-snug text-ink-600">
-                Assim que {@workshop.organizer.name} aceitar, a página abre inteira e você
-                recebe um aviso no sino.
-              </p>
-            </div>
-
-            <button
-              :if={
-                !@organizer? && !@enrolled? && !@full? && @workshop.status == :published &&
-                  @workshop.visibility == :public
-              }
-              type="button"
-              phx-click="enroll"
-              phx-disable-with="Inscrevendo..."
-              class="w-full cursor-pointer rounded-full border-0 bg-accent-orange px-5 py-3 font-serif text-[15px] font-semibold text-white transition-colors hover:bg-accent-orange/90"
-            >
-              Fazer inscrição
-            </button>
-
-            <div
-              :if={@enrolled?}
-              class="rounded-xl border border-accent-green/30 bg-accent-green/10 px-4 py-3 text-center"
-            >
-              <p class="m-0 text-[13px] font-bold text-accent-green">
-                <.icon name="hero-check-circle" class="size-4 -mt-0.5" /> Você está inscrito
-              </p>
-              <button
-                type="button"
-                phx-click="cancel_enrollment"
-                data-confirm="Cancelar sua inscrição neste workshop?"
-                class="mt-1.5 cursor-pointer border-0 bg-transparent p-0 text-[11.5px] text-ink-500 underline"
-              >
-                cancelar inscrição
-              </button>
-            </div>
-
-            <%!-- A full class stops being a dead end: the person joins the waitlist.
-                 Without it, whoever was interested vanished without a trace, and
-                 that number is exactly what says whether another class fits.
-            --%>
-            <div :if={
-              shows_waitlist?(@workshop, @organizer?, @enrolled?, @full?, @waitlist_entry)
-            }>
-              <p class="m-0 mb-2 rounded-xl bg-ink-200 px-4 py-2.5 text-center text-[13px] font-bold text-ink-600">
-                Vagas esgotadas
-              </p>
-              <button
-                type="button"
-                phx-click="join_waitlist"
-                phx-disable-with="Entrando..."
-                class="w-full cursor-pointer rounded-full border border-ink-900 bg-ink-50 px-5 py-3 font-serif text-[15px] font-semibold text-ink-900"
-              >
-                Entrar na lista de espera
-              </button>
-              <p :if={@waitlist_total > 0} class="m-0 mt-1.5 text-center text-[12px] text-ink-500">
-                {waitlist_label(@waitlist_total)}
-              </p>
-            </div>
-
-            <div
-              :if={@waitlist_entry && !@enrolled?}
-              class="rounded-xl border border-ink-300 bg-ink-100 px-4 py-3 text-center"
-            >
-              <p class="m-0 text-[13px] font-bold text-ink-800">
-                <.icon name="hero-queue-list" class="size-4 -mt-0.5" />
-                Você é {@waitlist_entry}º da lista de espera
-              </p>
-              <p class="m-0 mt-1 text-[12px] leading-snug text-ink-600">
-                Se alguém cancelar, a vaga é sua e você recebe um aviso.
-              </p>
-              <button
-                type="button"
-                phx-click="leave_waitlist"
-                class="mt-1.5 cursor-pointer border-0 bg-transparent p-0 text-[11.5px] text-ink-500 underline"
-              >
-                sair da lista
-              </button>
-            </div>
-          </div>
+        <%!-- Sending the receipt: through the app, where it lands next to the
+             payment control, or through WhatsApp, where people already are.
+             Both only for whoever is in the class, the same criterion as the
+             Pix key.
+        --%>
+        <div
+          :if={@enrolled? && !Workshop.free?(@workshop)}
+          class="mt-5 border-t border-ink-200 pt-4"
+        >
+          <.receipt_box
+            receipt={@my_receipt}
+            upload={@uploads.receipt}
+            whatsapp_link={Workshop.receipt_link(@workshop)}
+          />
         </div>
 
         <%!-- The face of whoever teaches: it introduces the teacher and leads to
              their profile, which is where the name circulates.
         --%>
-        <div class="mt-3 rounded-xl border border-ink-200 bg-ink-50/60 px-4 py-3">
-          <p class="m-0 mb-2 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+        <div class="mt-5 border-t border-ink-200 pt-4">
+          <p class="m-0 mb-2 font-sans text-[10.5px] font-semibold uppercase tracking-[1.4px] text-ink-500">
             Quem dá a aula
           </p>
           <%!-- A teacher without an account comes in as a name only: waiting for the
@@ -330,10 +350,12 @@
           >
             <.user_avatar user={teacher} size={:md} />
             <span class="min-w-0">
-              <span class="block truncate text-[13.5px] font-bold text-ink-900">
+              <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
                 {teacher.name || teacher.username}
               </span>
-              <span class="block truncate text-[12px] text-ink-500">@{teacher.username}</span>
+              <span class="block truncate font-sans text-[11.5px] text-ink-500">
+                @{teacher.username}
+              </span>
             </span>
           </.link>
 
@@ -342,7 +364,7 @@
             class="flex items-center gap-2.5 py-1"
           >
             <.user_avatar user={teacher} size={:md} />
-            <span class="block truncate text-[13.5px] font-bold text-ink-900">
+            <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
               {teacher.name}
             </span>
           </div>
@@ -362,7 +384,7 @@
           value={InlineEditParams.form_value(@workshop, :description)}
           error={@edit_error}
         >
-          <p class="m-0 whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800">
+          <p class="m-0 max-w-[62ch] whitespace-pre-line text-[15px] leading-relaxed text-ink-800">
             {@workshop.description}
           </p>
         </.editable>
@@ -382,44 +404,43 @@
              collection. A click opens the step sheet, with the learn gesture,
              without leaving this page.
         --%>
-        <section :if={!@storefront? && (@steps != [] || @organizer?)} class="mt-7">
-          <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-            Passos desta aula
-          </h2>
+        <section
+          :if={!@storefront? && (@steps != [] || @organizer?)}
+          class="mt-8 border-t border-ink-200 pt-6"
+        >
+          <.section_heading>Passos desta aula</.section_heading>
 
-          <p :if={@steps == []} class="m-0 mb-2 text-[13px] text-ink-500">
+          <p :if={@steps == []} class="m-0 mb-2 font-sans text-[13px] text-ink-500">
             Nenhum passo marcado ainda. Vincule o que foi dado para quem esteve na aula
             achar depois.
           </p>
 
           <div class="flex flex-wrap gap-2">
-            <%!-- Light green for what the person already knows, amber for what they
-                 do not: looking at the class list now says something about their own
-                 learning, without opening step by step.
-            --%>
+            <%!-- Um traço só diz o que a pessoa já aprendeu: o visto. Antes eram duas
+                 famílias de cor inteiras, verde e âmbar, para dizer a mesma coisa. --%>
+            <%!-- 36px de altura: a pílula fica densa o bastante para caber cinco
+                 passos na tela e alta o bastante para o dedo acertar uma só. --%>
             <span
               :for={step <- @steps}
               class={[
-                "inline-flex items-center rounded-full border text-[11.5px] font-semibold",
-                MapSet.member?(@learned_codes, step.code) &&
-                  "border-accent-green/30 bg-accent-green/[0.10] text-accent-green",
-                !MapSet.member?(@learned_codes, step.code) &&
-                  "border-accent-orange/25 bg-accent-orange/[0.08] text-accent-orange"
+                "inline-flex min-h-9 items-center rounded-full border text-[12px]",
+                MapSet.member?(@learned_codes, step.code) && "border-ink-400 text-ink-900",
+                !MapSet.member?(@learned_codes, step.code) && "border-ink-300 text-ink-700"
               ]}
             >
               <button
                 type="button"
                 phx-click="open_step_sheet"
                 phx-value-code={step.code}
-                class="inline-flex cursor-pointer items-center gap-1.5 rounded-l-full py-1 pl-2.5 pr-2 transition-colors hover:brightness-95"
+                class="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-l-full pl-3 pr-2 transition-colors hover:bg-ink-200/60"
               >
                 <.icon
                   :if={MapSet.member?(@learned_codes, step.code)}
                   name="hero-check-circle-solid"
-                  class="size-3"
+                  class="size-3.5 text-accent-green"
                 />
-                <code class="font-bold">{step.code}</code>
-                <span class="font-normal text-ink-600">{step.name}</span>
+                <code class="font-sans text-[11.5px] font-bold">{step.code}</code>
+                <span class="font-serif text-ink-600">{step.name}</span>
               </button>
               <button
                 :if={@organizer?}
@@ -427,18 +448,18 @@
                 phx-click="remove_workshop_step"
                 phx-value-id={step.step_id}
                 aria-label={"Tirar #{step.code} da lista"}
-                class="group cursor-pointer rounded-r-full py-1 pl-1 pr-2.5"
+                class="group inline-flex min-h-9 min-w-8 cursor-pointer items-center justify-center rounded-r-full pl-1 pr-2.5"
               >
-                <.icon name="hero-x-mark" class="size-3 opacity-60 group-hover:opacity-100" />
+                <.icon name="hero-x-mark" class="size-3.5 opacity-50 group-hover:opacity-100" />
               </button>
-              <span :if={!@organizer?} class="rounded-r-full py-1 pr-2"></span>
+              <span :if={!@organizer?} class="rounded-r-full pr-2"></span>
             </span>
           </div>
 
           <%!-- Only an admin builds the list: it is what the class offered, and
                whoever taught it knows what they offered.
           --%>
-          <div :if={@organizer?} class="relative mt-2.5 max-w-[22rem]">
+          <div :if={@organizer?} class="relative mt-3 max-w-[22rem]">
             <input
               type="text"
               name="term"
@@ -446,7 +467,7 @@
               phx-debounce="200"
               autocomplete="off"
               placeholder="+ Vincular passo dado nesta aula"
-              class="w-full rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] text-ink-800 placeholder:text-ink-400"
+              class="w-full rounded-full border border-ink-300 bg-transparent px-4 py-2 font-serif text-[13px] text-ink-800 placeholder:text-ink-400"
             />
             <div
               :if={@step_search != []}
@@ -459,7 +480,9 @@
                 phx-value-id={suggestion.id}
                 class="flex w-full cursor-pointer items-center gap-2 border-0 border-b border-ink-200 bg-transparent px-3 py-2 text-left text-[13px] last:border-b-0 hover:bg-ink-100"
               >
-                <code class="font-bold text-accent-orange">{suggestion.code}</code>
+                <code class="font-sans text-[11.5px] font-bold text-ink-900">
+                  {suggestion.code}
+                </code>
                 <span class="text-ink-700">{suggestion.name}</span>
               </button>
             </div>
@@ -472,23 +495,21 @@
         --%>
         <section
           :if={!@storefront? && (@workshop_sequences != [] || @organizer?)}
-          class="mt-7"
+          class="mt-8 border-t border-ink-200 pt-6"
         >
-          <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-            Sequências desta aula
-          </h2>
+          <.section_heading>Sequências desta aula</.section_heading>
 
-          <p :if={@workshop_sequences == []} class="m-0 mb-2 text-[13px] text-ink-500">
+          <p :if={@workshop_sequences == []} class="m-0 mb-2 font-sans text-[13px] text-ink-500">
             Nenhuma sequência ainda. Monte a combinação que você deu para quem esteve
             aqui levar pra casa.
           </p>
 
-          <div class="flex flex-col gap-2">
+          <div>
             <div
               :for={cited <- @workshop_sequences}
-              class="rounded-xl border border-gold-500/35 bg-gold-500/[0.07]"
+              class="border-t border-ink-200 first:border-t-0"
             >
-              <div class="flex items-center gap-1 px-1.5 py-1">
+              <div class="flex items-center gap-1">
                 <button
                   type="button"
                   phx-click="toggle_sequence_steps"
@@ -496,11 +517,11 @@
                   aria-expanded={
                     to_string(@open_sequence && @open_sequence.id == cited.sequence_id)
                   }
-                  class="flex min-h-9 flex-1 cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-[13px] font-semibold text-ink-800 hover:bg-gold-500/[0.10]"
+                  class="flex min-h-11 flex-1 cursor-pointer items-center gap-2 rounded-lg px-1 text-left font-serif text-[13.5px] font-semibold text-ink-800 hover:text-gold-600"
                 >
-                  <span class="text-[11px] font-bold text-gold-600">→</span>
+                  <span class="font-sans text-[12px] font-bold text-gold-600">→</span>
                   {cited.name}
-                  <span class="text-[10.5px] font-medium text-ink-500">
+                  <span class="font-sans text-[11px] font-medium text-ink-500">
                     {cited.step_count} {if cited.step_count == 1, do: "passo", else: "passos"}
                   </span>
                 </button>
@@ -511,7 +532,7 @@
                   phx-click="toggle_sequence_favorite"
                   phx-value-id={cited.sequence_id}
                   aria-label={"Favoritar #{cited.name}"}
-                  class="grid size-9 cursor-pointer place-items-center rounded-lg text-ink-400 hover:bg-gold-500/[0.10] hover:text-gold-600"
+                  class="grid size-11 cursor-pointer place-items-center rounded-lg text-ink-400 hover:text-gold-600"
                 >
                   <.icon
                     name={
@@ -532,7 +553,7 @@
                   phx-click="uncite_sequence"
                   phx-value-id={cited.sequence_id}
                   aria-label={"Tirar #{cited.name} desta aula"}
-                  class="grid size-9 cursor-pointer place-items-center rounded-lg text-ink-400 hover:bg-gold-500/[0.10] hover:text-ink-700"
+                  class="grid size-11 cursor-pointer place-items-center rounded-lg text-ink-400 hover:text-ink-700"
                 >
                   <.icon name="hero-x-mark" class="size-3.5" />
                 </button>
@@ -540,27 +561,31 @@
 
               <div
                 :if={@open_sequence && @open_sequence.id == cited.sequence_id}
-                class="flex flex-wrap items-center gap-1.5 border-t border-gold-500/25 px-3 py-2.5"
+                class="flex flex-wrap items-center gap-1.5 pb-3 pl-4"
               >
                 <span
                   :for={{sequence_step, index} <- Enum.with_index(@open_sequence.sequence_steps)}
                   data-sequence-step={sequence_step.step.code}
                   class="inline-flex items-center gap-1.5 text-[12px]"
                 >
-                  <span :if={index > 0} class="text-[11px] font-bold text-gold-600">→</span>
-                  <code class="font-bold text-accent-orange">{sequence_step.step.code}</code>
+                  <span :if={index > 0} class="font-sans text-[11px] font-bold text-gold-600">
+                    →
+                  </span>
+                  <code class="font-sans text-[11px] font-bold text-ink-900">
+                    {sequence_step.step.code}
+                  </code>
                   <span class="text-ink-600">{sequence_step.step.name}</span>
                 </span>
               </div>
             </div>
           </div>
 
-          <div :if={@organizer?} class="mt-2.5 flex flex-wrap gap-2">
+          <div :if={@organizer?} class="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               phx-click="open_sequence_sheet"
               phx-value-tab="new"
-              class="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-ink-300 px-3.5 text-[12.5px] font-semibold text-ink-600 transition hover:border-gold-500 hover:bg-gold-500/[0.06] hover:text-gold-600"
+              class="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-ink-300 px-3.5 font-sans text-[12px] font-semibold text-ink-600 transition hover:border-gold-500 hover:text-gold-600"
             >
               <span aria-hidden="true">→</span> montar sequência
             </button>
@@ -568,33 +593,31 @@
               type="button"
               phx-click="open_sequence_sheet"
               phx-value-tab="mine"
-              class="inline-flex min-h-9 cursor-pointer items-center rounded-full border border-ink-200 px-3.5 text-[12.5px] font-semibold text-ink-600 transition hover:border-gold-500 hover:text-gold-600"
+              class="inline-flex min-h-9 cursor-pointer items-center rounded-full border border-ink-300 px-3.5 font-sans text-[12px] font-semibold text-ink-600 transition hover:border-gold-500 hover:text-gold-600"
             >
               citar uma minha
             </button>
           </div>
         </section>
 
-        <section :if={!@storefront? && @current_user && @participants != []} class="mt-7">
-          <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-            Quem vai
-          </h2>
-          <div class="flex flex-wrap gap-2">
-            <span
-              :for={p <- @participants}
-              class="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-ink-50 py-1 pl-1 pr-3"
-            >
-              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-[10px] font-bold text-ink-50">
-                {String.first(p.name || p.username)}
-              </span>
-              <span class="text-[12.5px] text-ink-700">{p.name}</span>
+        <section
+          :if={!@storefront? && @current_user && @participants != []}
+          class="mt-8 border-t border-ink-200 pt-6"
+        >
+          <.section_heading>Quem vai</.section_heading>
+          <%!-- Rostos de verdade em vez de inicial dentro de pílula: numa turma de
+               dança a pessoa reconhece a cara antes de ler o nome. --%>
+          <div class="flex flex-wrap gap-x-5 gap-y-2.5">
+            <span :for={p <- @participants} class="inline-flex items-center gap-2">
+              <.user_avatar user={p} size={:xs} />
+              <span class="font-sans text-[12.5px] text-ink-700">{p.name || p.username}</span>
             </span>
           </div>
         </section>
 
         <p
           :if={is_nil(@current_user) && @enrolled_count > 0}
-          class="mt-6 text-[13px] text-ink-500"
+          class="mt-6 font-sans text-[13px] text-ink-500"
         >
           {people_label(@enrolled_count)} até agora.
           <a
@@ -607,11 +630,12 @@
         </p>
 
         <%!-- Gallery: only for whoever is in the workshop. --%>
-        <section :if={!@storefront? && @can_see_media?} class="mt-8 border-t border-ink-200 pt-6">
-          <h2 class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-            Fotos e vídeos
-          </h2>
-          <p class="m-0 mb-3 text-[12.5px] text-ink-500">
+        <section
+          :if={!@storefront? && @can_see_media?}
+          class="mt-8 border-t border-ink-200 pt-6"
+        >
+          <.section_heading>Fotos e vídeos</.section_heading>
+          <p class="m-0 mb-3 font-sans text-[12.5px] text-ink-500">
             Só quem está no workshop vê e manda. O que vem de quem dá a aula aparece primeiro.
           </p>
 
@@ -622,7 +646,7 @@
             can_delete_any={@organizer? || false}
           />
 
-          <p :if={@media == []} class="m-0 mb-3 text-[13px] text-ink-500">
+          <p :if={@media == []} class="m-0 mb-3 font-sans text-[13px] text-ink-500">
             Nada aqui ainda. Mande a primeira foto ou o primeiro vídeo do workshop.
           </p>
 
@@ -634,21 +658,21 @@
             --%>
             <label
               for={@uploads.media.ref}
-              class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ink-900 px-4 py-2 font-serif text-[12.5px] font-semibold text-ink-50"
+              class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-ink-300 px-4 font-serif text-[12.5px] font-semibold text-ink-700 transition-colors hover:border-ink-400 sm:min-h-9"
             >
               <.icon name="hero-arrow-up-tray" class="size-4" /> Escolher foto ou vídeo
             </label>
             <.live_file_input upload={@uploads.media} class="sr-only" />
 
             <div :for={entry <- @uploads.media.entries} class="mt-2 flex items-center gap-3">
-              <span class="text-[12px] text-ink-500">{entry.client_name}</span>
-              <span class="text-[12px] font-bold text-ink-700">{entry.progress}%</span>
+              <span class="font-sans text-[12px] text-ink-500">{entry.client_name}</span>
+              <span class="font-sans text-[12px] font-bold text-ink-700">{entry.progress}%</span>
             </div>
 
             <div :for={entry <- @uploads.media.entries}>
               <p
                 :for={error <- upload_errors(@uploads.media, entry)}
-                class="m-0 mt-1 text-[12px] font-semibold text-accent-red"
+                class="m-0 mt-1 font-sans text-[12px] font-semibold text-accent-red"
               >
                 {media_upload_error(error)}
               </p>
@@ -658,7 +682,7 @@
               :if={@uploads.media.entries != []}
               type="submit"
               phx-disable-with="Enviando..."
-              class="mt-2 cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white"
+              class="mt-2 cursor-pointer rounded-full border-0 bg-ink-900 px-4 py-2 font-serif text-[13px] font-semibold text-ink-50"
             >
               Enviar para a galeria
             </button>
@@ -667,11 +691,9 @@
 
         <%!-- Conversa: aberta a leitura, escrita exige conta --%>
         <section :if={!@storefront?} class="mt-8 border-t border-ink-200 pt-6">
-          <h2 class="m-0 mb-3 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
-            Conversa
-          </h2>
+          <.section_heading>Conversa</.section_heading>
 
-          <p :if={@comments == []} class="m-0 mb-3 text-[13px] text-ink-500">
+          <p :if={@comments == []} class="m-0 mb-3 font-sans text-[13px] text-ink-500">
             Ninguém comentou ainda. Dúvida sobre horário, nível ou o que levar? Pergunte aqui.
           </p>
 
@@ -688,10 +710,10 @@
             show_form={@can_comment?}
           >
             <:form_placeholder>
-              <p :if={@workshop.status == :draft} class="m-0 text-[13px] text-ink-500">
+              <p :if={@workshop.status == :draft} class="m-0 font-sans text-[13px] text-ink-500">
                 A conversa abre quando você publicar o workshop.
               </p>
-              <p :if={@workshop.status != :draft} class="m-0 text-[13px] text-ink-500">
+              <p :if={@workshop.status != :draft} class="m-0 font-sans text-[13px] text-ink-500">
                 <.link
                   navigate={~p"/login?#{[return_to: ~p"/workshops/#{@workshop.slug}"]}"}
                   class="font-semibold text-accent-orange"

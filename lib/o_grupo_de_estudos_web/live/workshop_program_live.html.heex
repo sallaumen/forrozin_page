@@ -20,35 +20,34 @@
     </.link>
   </header>
 
-  <main class="mx-auto w-full max-w-[860px] flex-1 px-4 py-6 sm:px-6">
-    <div :if={@program.status == :draft} class="mb-4 rounded-xl bg-gold-500/15 px-4 py-3">
-      <p class="m-0 text-[13px] font-bold text-ink-700">
-        Ainda é rascunho: só você enxerga. Publique para o link funcionar para os outros.
-      </p>
-    </div>
+  <%!-- A state of the whole page is a band across it, not a card floating above
+       the content: it is the paper that changed, not one more item on it. --%>
+  <p
+    :if={@program.status == :draft}
+    class="m-0 border-b border-gold-500/30 bg-gold-500/10 px-4 py-2.5 text-center font-sans text-[12.5px] text-ink-700"
+  >
+    Ainda é rascunho: só você enxerga. Publique para o link funcionar para os outros.
+  </p>
 
-    <div :if={@program.status == :cancelled} class="mb-4 rounded-xl bg-accent-red/10 px-4 py-3">
-      <p class="m-0 text-[13px] font-bold text-accent-red">
-        Esta programação foi cancelada.
-      </p>
-    </div>
+  <p
+    :if={@program.status == :cancelled}
+    class="m-0 border-b border-accent-red/25 bg-accent-red/[0.07] px-4 py-2.5 text-center font-sans text-[12.5px] font-semibold text-accent-red"
+  >
+    Esta programação foi cancelada.
+  </p>
 
-    <%!-- The flyer sits next to the title instead of taking the screen: whoever opens
-         the link wants to know what there is and when, and the flyer reinforces
-         without getting in the way.
-    --%>
-    <div class="flex flex-wrap items-start gap-5">
+  <main class="mx-auto w-full max-w-[820px] flex-1 px-4 py-7 sm:px-6 sm:py-9">
+    <%!-- The flyer is the thing that actually circulated on WhatsApp, so it opens
+         the page at the size of a poster and the title reads beside it. --%>
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-7">
       <img
         :if={@program.flyer_path}
         src={@program.flyer_path}
         alt={"Flyer de #{@program.title}"}
-        class="w-[130px] shrink-0 rounded-xl border border-ink-200 object-cover shadow-sm sm:w-[170px]"
+        class="w-[52%] max-w-[240px] shrink-0 self-start rounded-lg border border-ink-200 object-cover shadow-sm sm:w-[230px] sm:max-w-none"
       />
 
       <div class="min-w-0 flex-1">
-        <p class="m-0 mb-1 text-[11px] font-bold uppercase tracking-[2px] text-accent-purple">
-          Programação
-        </p>
         <.editable
           field={:title}
           label="nome da programação"
@@ -57,13 +56,16 @@
           value={InlineEditParams.form_value(@program, :title)}
           error={@edit_error}
         >
-          <h1 class="m-0 font-serif text-[26px] font-bold leading-tight tracking-tight text-ink-900 sm:text-[30px]">
+          <h1 class="brand-display is-title m-0 text-[28px] font-semibold leading-[1.12] tracking-tight text-ink-900 sm:text-[34px]">
             {@program.title}
           </h1>
         </.editable>
 
-        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-500">
-          <span class="font-bold text-ink-900">{program_span(@days, @workshop_count)}</span>
+        <%!-- Quando, onde e de quem: uma coisa por linha. Numa linha só, com
+             pontos entre elas, o olho lê um endereço de arquivo. --%>
+        <div class="mt-3 font-sans text-[13px] leading-relaxed text-ink-500">
+          <p class="m-0 font-semibold text-ink-900">{program_span(@days, @workshop_count)}</p>
+
           <.editable
             :if={@program.location || @owner?}
             field={:location}
@@ -76,30 +78,31 @@
           >
             <span>{@program.location || "sem lugar definido"}</span>
           </.editable>
-          <span>por <b class="text-ink-900">{@program.owner.name}</b></span>
+
+          <p class="m-0">por <b class="font-semibold text-ink-700">{@program.owner.name}</b></p>
+        </div>
+
+        <div :if={@owner?} class="mt-4 flex flex-wrap gap-2">
+          <.link
+            navigate={~p"/study/programs/#{@program.slug}/edit"}
+            class="rounded-full border border-ink-300 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline transition-colors hover:border-ink-400"
+          >
+            Editar programação
+          </.link>
+          <button
+            :if={@program.status == :draft}
+            type="button"
+            phx-click="publish"
+            phx-disable-with="Publicando..."
+            class="cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white"
+          >
+            Publicar
+          </button>
         </div>
       </div>
     </div>
 
-    <div :if={@owner?} class="mt-4 flex flex-wrap gap-2">
-      <.link
-        navigate={~p"/study/programs/#{@program.slug}/edit"}
-        class="rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline"
-      >
-        Editar programação
-      </.link>
-      <button
-        :if={@program.status == :draft}
-        type="button"
-        phx-click="publish"
-        phx-disable-with="Publicando..."
-        class="cursor-pointer rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white"
-      >
-        Publicar
-      </button>
-    </div>
-
-    <div :if={@program.description || @owner?} class="mt-5">
+    <div :if={@program.description || @owner?} class="mt-6 max-w-[62ch]">
       <.editable
         field={:description}
         label="descrição"
@@ -110,238 +113,61 @@
         value={InlineEditParams.form_value(@program, :description)}
         error={@edit_error}
       >
-        <p class="m-0 whitespace-pre-line text-[14.5px] leading-relaxed text-ink-800">
+        <p class="m-0 whitespace-pre-line text-[15px] leading-relaxed text-ink-800">
           {@program.description || "sem descrição"}
         </p>
       </.editable>
     </div>
 
-    <%!-- As duas formas de participar: pacote fechado ou dia a dia --%>
-    <div :if={@tem_pacote?} class="mt-6 grid gap-4 sm:grid-cols-[1fr_1fr]">
-      <.package_box
-        program={@program}
-        avulso_total={@avulso_total}
-        ja_comprou={not is_nil(@matricula_pacote)}
-        indisponivel={@pacote_indisponivel}
-      />
+    <.package_offer
+      :if={@tem_pacote?}
+      program={@program}
+      avulso_total={@avulso_total}
+      ja_comprou={not is_nil(@matricula_pacote)}
+      indisponivel={@pacote_indisponivel}
+      selecionaveis={MapSet.size(@selecionaveis) > 0}
+    />
 
-      <%!-- The package has no WhatsApp of its own: the program carries no phone,
-           so here the app is the whole path. --%>
-      <.receipt_box
-        :if={@matricula_pacote}
-        receipt={@my_package_receipt}
-        upload={@uploads.receipt}
-      />
-
-      <div :if={!@matricula_pacote} class="rounded-2xl border border-dashed border-ink-300 p-4">
-        <p class="m-0 font-serif text-[15px] font-bold text-ink-900">Ou escolha os dias</p>
-        <p class="m-0 mt-1 text-[12.5px] leading-snug text-ink-500">
-          Dá para pegar só os workshops que te interessam, cada um pelo preço dele.
-          Some {money_label(@avulso_total)} se você levar todos.
-        </p>
-        <p class="m-0 mt-2 text-[12.5px] text-ink-500">
-          Marque na lista abaixo e confirme no fim.
-        </p>
-      </div>
+    <%!-- The package has no WhatsApp of its own: the program carries no phone,
+         so here the app is the whole path. --%>
+    <div :if={@tem_pacote? && @matricula_pacote} class="mt-5 max-w-[26rem]">
+      <.receipt_box receipt={@my_package_receipt} upload={@uploads.receipt} />
     </div>
 
     <%!-- Os workshops, dia a dia --%>
-    <section class="mt-7">
-      <div :for={{date, workshops} <- @days} class="mb-6 last:mb-0">
-        <h2 class="m-0 mb-2.5 text-[11px] font-bold uppercase tracking-[2px] text-ink-500">
+    <section class="mt-9">
+      <p
+        :if={!@tem_pacote? && MapSet.size(@selecionaveis) > 0}
+        class="m-0 mb-5 font-sans text-[12.5px] text-ink-500"
+      >
+        Marque os dias que te interessam e confirme no fim da lista.
+      </p>
+
+      <div :for={{date, workshops} <- @days} class="mb-7 last:mb-0">
+        <%!-- A regra que fecha o título do dia é a borda de cima da primeira linha:
+             uma linha só, no lugar de duas coladas. --%>
+        <h2 class="brand-display is-title m-0 mb-2 text-[17px] font-semibold tracking-tight text-ink-800 first-letter:uppercase">
           {day_heading(date)}
         </h2>
 
-        <div class="flex flex-col gap-2.5">
-          <.workshop_card
-            :for={w <- workshops}
-            id_prefix="program"
-            workshop={w}
-            enrolled_count={Map.get(@enrollment_counts, w.id, 0)}
-            enrolled?={MapSet.member?(@enrolled_ids, w.id)}
-            organizer?={false}
-          >
-            <:select>
-              <input
-                :if={MapSet.member?(@selecionaveis, w.id)}
-                type="checkbox"
-                id={"pick-#{w.id}"}
-                checked={MapSet.member?(@selecionados, w.id)}
-                phx-click="toggle_selection"
-                phx-value-id={w.id}
-                aria-label={"Marcar #{w.title}"}
-                class="size-5 cursor-pointer accent-accent-orange"
-              />
-              <.icon
-                :if={MapSet.member?(@enrolled_ids, w.id)}
-                name="hero-check-circle-solid"
-                class="size-5 text-accent-green"
-              />
-            </:select>
-          </.workshop_card>
-        </div>
+        <.agenda_row
+          :for={w <- workshops}
+          workshop={w}
+          enrolled_count={Map.get(@enrollment_counts, w.id, 0)}
+          enrolled?={MapSet.member?(@enrolled_ids, w.id)}
+          selectable?={MapSet.member?(@selecionaveis, w.id)}
+          selected?={MapSet.member?(@selecionados, w.id)}
+        />
       </div>
-
-      <%!-- Package: who bought and who paid. Only the creator sees it. --%>
-      <section
-        :if={@owner? && @tem_pacote?}
-        class="mt-8 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5"
-      >
-        <h2 class="m-0 text-[12.5px] font-bold text-ink-700">Quem levou a programação toda</h2>
-        <p class="m-0 mt-1 mb-3 text-[12px] leading-snug text-ink-500">
-          Só você vê isto. Quem escolheu dias avulsos aparece no painel de cada workshop.
-        </p>
-
-        <div class="mb-3 grid grid-cols-3 gap-2.5">
-          <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
-            <p class="m-0 font-serif text-[19px] font-bold leading-none text-ink-900">
-              {@package_summary.packages}
-            </p>
-            <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
-              pacotes
-            </p>
-          </div>
-          <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
-            <p class="m-0 font-serif text-[19px] font-bold leading-none text-accent-green">
-              {@package_summary.paid}
-            </p>
-            <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
-              pagaram
-            </p>
-          </div>
-          <div class="rounded-xl border border-ink-200 bg-ink-100/40 p-3 text-center">
-            <p class="m-0 font-serif text-[19px] font-bold leading-none text-ink-900">
-              {money_label(@package_summary.revenue_cents)}
-            </p>
-            <p class="m-0 mt-1 text-[10px] font-bold uppercase tracking-[1.2px] text-ink-500">
-              recebido
-            </p>
-          </div>
-        </div>
-
-        <div :if={@pacotes != []} class="flex flex-col gap-1.5">
-          <div
-            :for={linha <- @pacotes}
-            id={"pacote-#{linha.id}"}
-            class="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2"
-          >
-            <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13px] font-bold text-ink-900">{linha.name}</span>
-              <span class="block truncate text-[11.5px] text-ink-500">@{linha.username}</span>
-            </span>
-            <a
-              :if={linha.receipt_sent_at}
-              href={~p"/program-receipts/#{linha.id}"}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex min-h-11 shrink-0 items-center gap-1 text-[12px] font-semibold text-accent-orange no-underline sm:min-h-0"
-            >
-              <.icon name="hero-paper-clip" class="size-3.5" /> Comprovante
-            </a>
-
-            <.workshop_tag tone={payment_tone(linha.payment_status)}>
-              {payment_status_label(linha.payment_status)}
-            </.workshop_tag>
-            <button
-              :if={linha.payment_status != :paid}
-              type="button"
-              phx-click="set_package_payment"
-              phx-value-id={linha.id}
-              phx-value-status="paid"
-              class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
-            >
-              Marcar pago
-            </button>
-            <button
-              :if={linha.payment_status == :paid}
-              type="button"
-              phx-click="set_package_payment"
-              phx-value-id={linha.id}
-              phx-value-status="pending"
-              class="shrink-0 cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
-            >
-              Desfazer
-            </button>
-          </div>
-        </div>
-
-        <p :if={@pacotes == []} class="m-0 text-[13px] text-ink-500">
-          Ninguém levou o pacote fechado ainda.
-        </p>
-      </section>
-
-      <%!-- Assembly: the organizer changes it without leaving the page. --%>
-      <section :if={@owner?} class="mt-8 rounded-2xl border border-ink-200 bg-ink-50 p-4 sm:p-5">
-        <h2 class="m-0 text-[12.5px] font-bold text-ink-700">Montar a programação</h2>
-        <p class="m-0 mt-1 mb-3 text-[12px] leading-snug text-ink-500">
-          Só você vê isto. Dá para tirar e pôr workshop a qualquer momento, inclusive
-          depois de publicar.
-        </p>
-
-        <div :if={@dentro != []} class="flex flex-col gap-1.5">
-          <div
-            :for={w <- @dentro}
-            id={"dentro-#{w.id}"}
-            class="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 bg-ink-100/40 px-3 py-2"
-          >
-            <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13px] font-bold text-ink-900">{w.title}</span>
-              <span class="block truncate text-[11.5px] text-ink-500">{schedule_label(w)}</span>
-            </span>
-            <.workshop_tag :if={w.status == :draft} tone={:neutral}>Rascunho</.workshop_tag>
-            <button
-              type="button"
-              phx-click="detach_workshop"
-              phx-value-id={w.id}
-              class="shrink-0 cursor-pointer rounded-full border border-ink-300 bg-ink-50 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
-            >
-              Tirar
-            </button>
-          </div>
-        </div>
-
-        <div :if={@disponiveis != []} class="mt-4">
-          <p class="m-0 mb-1.5 text-[11px] font-bold uppercase tracking-[1.4px] text-ink-500">
-            Seus workshops fora desta programação
-          </p>
-          <div class="flex flex-col gap-1.5">
-            <div
-              :for={w <- @disponiveis}
-              id={"fora-#{w.id}"}
-              class="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-ink-300 px-3 py-2"
-            >
-              <span class="min-w-0 flex-1">
-                <span class="block truncate text-[13px] font-bold text-ink-800">{w.title}</span>
-                <span class="block truncate text-[11.5px] text-ink-500">{schedule_label(w)}</span>
-              </span>
-              <button
-                type="button"
-                phx-click="attach_workshop"
-                phx-value-id={w.id}
-                class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
-              >
-                Adicionar
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <.link
-          navigate={~p"/study/workshops/new?#{[program: @program.slug]}"}
-          class="mt-4 inline-flex items-center gap-1.5 rounded-full border-0 bg-accent-orange px-4 py-2 font-serif text-[13px] font-semibold text-white no-underline"
-        >
-          <.icon name="hero-plus" class="size-4" /> Criar workshop já nesta programação
-        </.link>
-      </section>
 
       <%!-- Confirms everything at once: checking does not enroll, so a wrong tap on a
            phone does not pull anyone out of a paid workshop.
       --%>
       <div
         :if={MapSet.size(@selecionaveis) > 0}
-        class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ink-200 bg-ink-50 px-4 py-3"
+        class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-ink-200 pt-5"
       >
-        <p class="m-0 text-[13px] text-ink-600">
+        <p class="m-0 font-sans text-[13px] text-ink-600">
           {selecao_label(MapSet.size(@selecionados))}
         </p>
         <button
@@ -371,6 +197,160 @@
       />
     </section>
 
-    <.last_updated :if={@owner?} at={@program.updated_at} />
+    <%!-- Bastidores: tudo o que só quem organiza vê fica atrás de uma linha só,
+         em vez de virar mais duas caixas competindo com a programação. --%>
+    <section :if={@owner?} class="mt-12 border-t-2 border-ink-300 pt-6">
+      <p class="m-0 font-sans text-[10.5px] font-semibold uppercase tracking-[1.6px] text-ink-500">
+        Bastidores
+      </p>
+      <p class="m-0 mt-1 font-sans text-[12.5px] text-ink-500">
+        Só você vê daqui para baixo.
+      </p>
+
+      <%!-- Package: who bought and who paid. --%>
+      <div :if={@tem_pacote?} class="mt-7">
+        <.section_heading>Quem levou a programação toda</.section_heading>
+
+        <p class="m-0 mb-4 font-sans text-[13px] text-ink-600">
+          <b class="font-semibold text-ink-900">{@package_summary.packages}</b>
+          {if @package_summary.packages == 1, do: "pacote", else: "pacotes"},
+          <b class="font-semibold text-ink-900">{@package_summary.paid}</b>
+          {if @package_summary.paid == 1, do: "pagou", else: "pagaram"},
+          <b class="font-semibold text-ink-900">{money_label(@package_summary.revenue_cents)}</b>
+          recebido. Quem escolheu dias avulsos aparece no painel de cada workshop.
+        </p>
+
+        <div :if={@pacotes != []}>
+          <div
+            :for={linha <- @pacotes}
+            id={"pacote-#{linha.id}"}
+            class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5 first:border-t-0"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
+                {linha.name}
+              </span>
+              <span class="block truncate font-sans text-[11.5px] text-ink-500">
+                @{linha.username}
+              </span>
+            </span>
+
+            <a
+              :if={linha.receipt_sent_at}
+              href={~p"/program-receipts/#{linha.id}"}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex min-h-11 shrink-0 items-center gap-1 font-sans text-[12px] font-semibold text-ink-600 no-underline hover:text-ink-900 sm:min-h-0"
+            >
+              <.icon name="hero-paper-clip" class="size-3.5" /> Comprovante
+            </a>
+
+            <span class={[
+              "shrink-0 font-sans text-[12px] font-semibold",
+              linha.payment_status == :paid && "text-accent-green",
+              linha.payment_status != :paid && "text-ink-500"
+            ]}>
+              {payment_status_label(linha.payment_status)}
+            </span>
+
+            <button
+              :if={linha.payment_status != :paid}
+              type="button"
+              phx-click="set_package_payment"
+              phx-value-id={linha.id}
+              phx-value-status="paid"
+              class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+            >
+              Marcar pago
+            </button>
+            <button
+              :if={linha.payment_status == :paid}
+              type="button"
+              phx-click="set_package_payment"
+              phx-value-id={linha.id}
+              phx-value-status="pending"
+              class="shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            >
+              Desfazer
+            </button>
+          </div>
+        </div>
+
+        <p :if={@pacotes == []} class="m-0 font-sans text-[13px] text-ink-500">
+          Ninguém levou o pacote fechado ainda.
+        </p>
+      </div>
+
+      <%!-- Assembly: the organizer changes it without leaving the page. --%>
+      <div class="mt-8">
+        <.section_heading>Montar a programação</.section_heading>
+
+        <p class="m-0 mb-4 font-sans text-[12.5px] leading-snug text-ink-500">
+          Dá para tirar e pôr workshop a qualquer momento, inclusive depois de publicar.
+        </p>
+
+        <div :if={@dentro != []}>
+          <div
+            :for={w <- @dentro}
+            id={"dentro-#{w.id}"}
+            class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5 first:border-t-0"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
+                {w.title}
+              </span>
+              <span class="block truncate font-sans text-[11.5px] text-ink-500">
+                {schedule_label(w)}<span :if={w.status == :draft}> · rascunho</span>
+              </span>
+            </span>
+            <button
+              type="button"
+              phx-click="detach_workshop"
+              phx-value-id={w.id}
+              class="shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            >
+              Tirar
+            </button>
+          </div>
+        </div>
+
+        <div :if={@disponiveis != []} class="mt-5">
+          <p class="m-0 mb-1 font-sans text-[12.5px] font-semibold text-ink-600">
+            Seus workshops fora desta programação
+          </p>
+          <div
+            :for={w <- @disponiveis}
+            id={"fora-#{w.id}"}
+            class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-serif text-[13.5px] font-bold text-ink-800">
+                {w.title}
+              </span>
+              <span class="block truncate font-sans text-[11.5px] text-ink-500">
+                {schedule_label(w)}
+              </span>
+            </span>
+            <button
+              type="button"
+              phx-click="attach_workshop"
+              phx-value-id={w.id}
+              class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+            >
+              Adicionar
+            </button>
+          </div>
+        </div>
+
+        <.link
+          navigate={~p"/study/workshops/new?#{[program: @program.slug]}"}
+          class="mt-5 inline-flex items-center gap-1.5 rounded-full border border-ink-300 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline transition-colors hover:border-ink-400"
+        >
+          <.icon name="hero-plus" class="size-4" /> Criar workshop já nesta programação
+        </.link>
+      </div>
+
+      <.last_updated at={@program.updated_at} />
+    </section>
   </main>
 </div>
