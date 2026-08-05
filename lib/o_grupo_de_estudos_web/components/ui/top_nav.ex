@@ -195,7 +195,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             id="top-nav-pwa-btn"
             type="button"
             phx-hook="PWANavIcon"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 cursor-pointer bg-transparent border-0"
+            class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 cursor-pointer bg-transparent border-0 after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
             aria-label="Instalar app"
             title="Instalar app"
           >
@@ -205,7 +205,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           <button
             type="button"
             phx-click="toggle_dark_mode"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 cursor-pointer bg-transparent border-0"
+            class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 cursor-pointer bg-transparent border-0 after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
             aria-label="Alternar modo escuro"
             title="Modo escuro"
           >
@@ -240,7 +240,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 phx-click="toggle_notifications_dropdown"
                 aria-haspopup="dialog"
                 aria-expanded={@notification_dropdown_open}
-                class="relative group flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-transparent text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/70"
+                class="relative group flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-transparent text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/70 after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
               >
                 <.icon
                   name="hero-bell-solid"
@@ -365,7 +365,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
           </.link>
           <.link
             navigate={~p"/settings"}
-            class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 no-underline"
+            class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 transition hover:bg-ink-100/5 hover:text-ink-100 no-underline after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
             title="Configurações"
             aria-label="Configurações"
           >
@@ -406,10 +406,10 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             />
             <span>Grupo de Estudos</span>
           </.link>
-          <div class="flex items-center gap-2">
+          <div class="relative flex items-center gap-2">
             <%= if @is_admin do %>
-              <details id="top-nav-mobile-admin-menu" class="group relative">
-                <summary class="flex items-center gap-1 cursor-pointer list-none text-xs font-semibold text-ink-400 [&::-webkit-details-marker]:hidden">
+              <details id="top-nav-mobile-admin-menu" class="group">
+                <summary class="flex min-h-11 items-center gap-1 px-1 cursor-pointer list-none text-xs font-semibold text-ink-400 [&::-webkit-details-marker]:hidden">
                   <span>Admin</span>
                   <span
                     :if={@pending_suggestions_count > 0}
@@ -425,25 +425,25 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                 <div class="absolute right-0 top-[calc(100%+8px)] z-50 w-48 overflow-hidden rounded-md border border-ink-900/10 bg-ink-50 p-1 text-ink-900 shadow-[0_12px_32px_rgba(30,22,16,0.2)]">
                   <.link
                     navigate={~p"/graph"}
-                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                    class="flex min-h-11 items-center rounded px-3 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
                   >
                     Conexões
                   </.link>
                   <.link
                     navigate={~p"/admin/links"}
-                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                    class="flex min-h-11 items-center rounded px-3 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
                   >
                     Links
                   </.link>
                   <.link
                     navigate={~p"/admin/backups"}
-                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                    class="flex min-h-11 items-center rounded px-3 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
                   >
                     Backups
                   </.link>
                   <.link
                     navigate={~p"/admin/suggestions"}
-                    class="flex items-center justify-between rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                    class="flex min-h-11 items-center justify-between rounded px-3 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
                   >
                     <span>Sugestões</span>
                     <span
@@ -455,13 +455,13 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
                   </.link>
                   <.link
                     navigate={~p"/admin/errors"}
-                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                    class="flex min-h-11 items-center rounded px-3 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
                   >
                     Erros
                   </.link>
                   <.link
                     href={~p"/admin/dashboard"}
-                    class="flex items-center rounded px-3 py-2 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
+                    class="flex min-h-11 items-center rounded px-3 text-xs font-medium text-ink-700 no-underline hover:bg-ink-100"
                   >
                     Dashboard
                   </.link>
@@ -472,7 +472,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             lugar onde se mora, e no desktop ele já vivia no topo. --%>
             <.link
               navigate={~p"/notifications"}
-              class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 no-underline"
+              class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 no-underline after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
               aria-label="Alertas"
             >
               <.icon name="hero-bell" class="size-4.5" />
@@ -487,7 +487,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               id="top-nav-mobile-pwa-btn"
               type="button"
               phx-hook="PWANavIcon"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 cursor-pointer bg-transparent border-0"
+              class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 cursor-pointer bg-transparent border-0 after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
               aria-label="Instalar app"
             >
               <.icon name="hero-device-phone-mobile" class="size-4" />
@@ -495,7 +495,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             <button
               type="button"
               phx-click="toggle_dark_mode"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 cursor-pointer bg-transparent border-0"
+              class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 cursor-pointer bg-transparent border-0 after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
               aria-label="Alternar modo escuro"
             >
               <.icon name="hero-moon-solid" class="size-4 hidden dark:block" />
@@ -503,7 +503,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
             </button>
             <.link
               navigate={~p"/settings"}
-              class="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 no-underline"
+              class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-400 no-underline after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
               title="Configurações"
               aria-label="Configurações"
             >
@@ -514,7 +514,7 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
               <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
               <button
                 type="submit"
-                class="text-[11px] text-ink-600 bg-transparent border-0 cursor-pointer"
+                class="inline-flex min-h-11 items-center px-2 text-[11px] text-ink-600 bg-transparent border-0 cursor-pointer"
               >
                 sair
               </button>
