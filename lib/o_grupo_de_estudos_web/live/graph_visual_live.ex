@@ -342,7 +342,7 @@ defmodule OGrupoDeEstudosWeb.GraphVisualLive do
      |> assign(:seq_manual_error, nil)
      |> assign(:seq_manual_search, "")
      |> assign(:seq_manual_suggestions, [])
-     |> assign(:editing_sequence_id, nil)
+     |> assign(:seq_editing_id, nil)
      |> assign(:seq_manual_name, "")
      |> assign(:seq_manual_description, "")
      |> assign(:seq_manual_video_url, "")
