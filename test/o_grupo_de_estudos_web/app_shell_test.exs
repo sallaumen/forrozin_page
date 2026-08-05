@@ -138,6 +138,20 @@ defmodule OGrupoDeEstudosWeb.AppShellTest do
   end
 
   describe "the tab bar never sits on top of the content" do
+    test "the agenda reserves room for it, and used to lose its last row", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.teacher), ~p"/study/workshops")
+
+      assert html =~ "pb-24"
+    end
+
+    test "a profile reserves room, and used to bury the comment box", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.teacher), ~p"/users/#{ctx.teacher.username}")
+
+      assert html =~ "pb-24"
+    end
+
     test "the workshop reserves room for it", ctx do
       {:ok, _} = Workshops.enroll(ctx.workshop, insert(:user))
 

@@ -32,7 +32,13 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
   """
   def study_tabs(assigns) do
     ~H"""
-    <div class="sticky top-[48px] md:top-[52px] z-30 border-b border-ink-300/50 bg-ink-100/95 backdrop-blur-sm">
+    <%!-- O topo mede 56px para quem estuda e 76px para quem administra, porque o
+    menu de admin faz a linha quebrar: um deslocamento fixo escondia até 28px da
+    tira atrás dele. O próprio topo publica a altura em --top-nav-h. --%>
+    <div
+      class="sticky z-30 border-b border-ink-300/50 bg-ink-100/95 backdrop-blur-sm"
+      style="top: var(--top-nav-h, 56px)"
+    >
       <%!-- overflow-x-auto continua como rede de proteção: com nome de aba
       traduzido ou fonte maior, a tira rola em vez de cortar. --%>
       <div class="mx-auto max-w-[1500px] overflow-x-auto px-2 sm:px-6 lg:px-8">

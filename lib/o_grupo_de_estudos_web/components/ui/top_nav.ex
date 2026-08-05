@@ -42,6 +42,8 @@ defmodule OGrupoDeEstudosWeb.UI.TopNav do
     ~H"""
     <header
       data-ui="top-nav"
+      id="top-nav"
+      phx-hook="StickyOffset"
       data-mode={@nav_mode}
       class="bg-ink-900 text-ink-100 sticky top-0 z-40 font-serif"
     >
