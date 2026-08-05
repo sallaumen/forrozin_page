@@ -17,6 +17,7 @@ defmodule OGrupoDeEstudos.Workshops do
 
   alias OGrupoDeEstudos.Accounts
   alias OGrupoDeEstudos.Accounts.User
+  alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
   alias OGrupoDeEstudos.Engagement.SafeDispatch
@@ -643,11 +644,8 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  defp ensure_can_delete(workshop, user, media) do
-    if media.uploaded_by_id == user.id or admin?(workshop, user),
-      do: :ok,
-      else: {:error, :unauthorized}
-  end
+  defp ensure_can_delete(workshop, user, media),
+    do: Policy.authorize(:delete_media, user, {media, access_for(workshop, user)})
 
   defp delete_media(media) do
     agora = DateTime.utc_now() |> DateTime.truncate(:second)

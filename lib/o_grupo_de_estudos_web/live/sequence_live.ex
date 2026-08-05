@@ -1180,7 +1180,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
             parent_id={@seq.id}
             replying_to={@expanded_seq_replying_to}
             replies_map={@expanded_seq_replies_map}
-            is_admin={@is_admin}
+            can_moderate={@is_admin}
           />
         </div>
       </section>

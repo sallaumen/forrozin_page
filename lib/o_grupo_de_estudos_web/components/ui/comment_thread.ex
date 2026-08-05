@@ -29,7 +29,10 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :parent_id, :string, required: true
   attr :replying_to, :string, default: nil
   attr :replies_map, :map, default: %{}
-  attr :is_admin, :boolean, default: false
+  # Who takes down a comment written by someone else. Site-wide it is an admin;
+  # on a workshop page it is also whoever runs that workshop, because what stays
+  # on the page is their responsibility.
+  attr :can_moderate, :boolean, default: false
   # `%{user_id => badge}` precomputed by the host. Only the workshop page does
   # that today; every other host leaves it empty and falls back to one query per
   # rendered comment.
@@ -49,7 +52,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
           comment_type={@comment_type}
           replying_to={@replying_to}
           replies={Map.get(@replies_map, comment.id, [])}
-          is_admin={@is_admin}
+          can_moderate={@can_moderate}
           show_form={@show_form}
           badges={@badges}
         />
@@ -69,7 +72,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :comment_type, :string, required: true
   attr :replying_to, :string, required: true
   attr :replies, :list, required: true
-  attr :is_admin, :boolean, required: true
+  attr :can_moderate, :boolean, required: true
   attr :show_form, :boolean, default: true
   attr :badges, :map, default: %{}
 
@@ -81,7 +84,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
         current_user={@current_user}
         likes_map={@likes_map}
         comment_type={@comment_type}
-        is_admin={@is_admin}
+        can_moderate={@can_moderate}
         size={:root}
         show_reply={@show_form}
         badges={@badges}
@@ -100,7 +103,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             current_user={@current_user}
             likes_map={@likes_map}
             comment_type={@comment_type}
-            is_admin={@is_admin}
+            can_moderate={@can_moderate}
             size={:reply}
             badges={@badges}
           />
@@ -135,7 +138,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   attr :current_user, :map, default: nil
   attr :likes_map, :map, required: true
   attr :comment_type, :string, required: true
-  attr :is_admin, :boolean, required: true
+  attr :can_moderate, :boolean, required: true
   attr :size, :atom, required: true
   attr :show_reply, :boolean, default: true
   attr :badges, :map, default: %{}
@@ -160,7 +163,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
       |> assign(:liked?, liked?(assigns.likes_map, assigns.comment.id))
       |> assign(
         :can_delete?,
-        can_delete?(assigns.comment, assigns.current_user, assigns.is_admin)
+        can_delete?(assigns.comment, assigns.current_user, assigns.can_moderate)
       )
       |> assign(:badge, badge)
 
@@ -214,7 +217,8 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             Responder
           </button>
 
-          <%!-- Delete button: owner or admin only --%>
+          <%!-- Delete button: whoever wrote it, or whoever moderates the thread.
+               44px of target on a phone, back to the compact icon on desktop. --%>
           <button
             :if={@can_delete?}
             phx-click="delete_comment"
@@ -222,7 +226,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
             phx-value-type={@comment_type}
             data-confirm="Apagar este comentário?"
             type="button"
-            class="text-xs text-ink-400 hover:text-accent-red cursor-pointer"
+            class="inline-grid min-h-11 min-w-11 cursor-pointer place-items-center text-xs text-ink-400 hover:text-accent-red sm:min-h-0 sm:min-w-0"
             aria-label="Apagar comentário"
           >
             <.icon name="hero-trash" class="size-3.5" />
@@ -316,10 +320,10 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThread do
   defp liked?(_likes_map, _comment_id), do: false
 
   # An anonymous visitor deletes nothing, and the page cannot break over it.
-  defp can_delete?(_comment, nil, _is_admin), do: false
+  defp can_delete?(_comment, nil, _can_moderate), do: false
 
-  defp can_delete?(comment, current_user, is_admin) do
-    is_admin || current_user.id == get_user_id(comment)
+  defp can_delete?(comment, current_user, can_moderate) do
+    can_moderate || current_user.id == get_user_id(comment)
   end
 
   defp time_ago(datetime) do

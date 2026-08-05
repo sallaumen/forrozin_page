@@ -16,14 +16,15 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   alias OGrupoDeEstudos.Encyclopedia.{Step, StepLink}
   alias OGrupoDeEstudos.Sequences.Sequence
   alias OGrupoDeEstudos.Study.Lesson
-  alias OGrupoDeEstudos.Workshops.{Access, Workshop, WorkshopProgram}
+  alias OGrupoDeEstudos.Workshops.{Access, Workshop, WorkshopMedia, WorkshopProgram}
 
   @type reason :: :unauthorized | :unauthenticated
+  @type subject :: struct() | {struct(), Access.t()} | nil
 
-  @spec authorized?(atom(), User.t() | nil, struct() | nil) :: boolean()
+  @spec authorized?(atom(), User.t() | nil, subject()) :: boolean()
   def authorized?(action, user, resource), do: authorize(action, user, resource) == :ok
 
-  @spec authorize(atom(), User.t() | nil, struct() | nil) :: :ok | {:error, reason()}
+  @spec authorize(atom(), User.t() | nil, subject()) :: :ok | {:error, reason()}
 
   @doc """
   Delete comment authorization.
@@ -31,6 +32,7 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
   Rules:
   - Admin can delete any comment
   - Author can delete their own comment
+  - Whoever runs the workshop deletes any comment on that workshop
   - Other users cannot delete comments
 
   Also handles create_comment action:
@@ -47,7 +49,31 @@ defmodule OGrupoDeEstudos.Authorization.Policy do
       when user_id == author_id,
       do: :ok
 
+  # A comment lives on a workshop page, and whoever runs that page answers for
+  # what stays there: spam, or worse, from someone else has to come down without
+  # waiting for a site admin to show up. The caller hands the `Access` over
+  # because the Policy does not query the database.
+  def authorize(:delete_comment, user, {comment, %Access{} = access}) do
+    case authorize(:manage_workshop, user, access) do
+      :ok -> :ok
+      {:error, _does_not_run_it} -> authorize(:delete_comment, user, comment)
+    end
+  end
+
   def authorize(:delete_comment, _, _), do: {:error, :unauthorized}
+
+  # Same two names as the comment above, for the same reason: whoever uploaded
+  # takes their own out of the gallery, whoever runs the workshop takes out
+  # anything that lands there.
+  def authorize(
+        :delete_media,
+        %User{id: user_id},
+        {%WorkshopMedia{uploaded_by_id: user_id}, %Access{}}
+      ),
+      do: :ok
+
+  def authorize(:delete_media, user, {%WorkshopMedia{}, %Access{} = access}),
+    do: authorize(:manage_workshop, user, access)
 
   def authorize(:create_comment, %User{}, _), do: :ok
 

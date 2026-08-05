@@ -4,7 +4,7 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
   import OGrupoDeEstudos.Factory
 
   alias OGrupoDeEstudos.Engagement
-  alias OGrupoDeEstudos.Engagement.Comments.{WorkshopComment, WorkshopCommentQuery}
+  alias OGrupoDeEstudos.Engagement.Comments.WorkshopComment
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Repo
   alias OGrupoDeEstudos.Workshops
@@ -20,6 +20,8 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
     {:ok, workshop} = Workshops.publish_workshop(organizer, workshop)
     workshop
   end
+
+  defp access(workshop, user), do: Workshops.access_for(workshop, user)
 
   setup do
     organizer = insert(:user)
@@ -169,14 +171,16 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
     end
   end
 
-  describe "delete_workshop_comment/2" do
+  describe "delete_workshop_comment/3" do
     test "author deletes their own comment", %{workshop: workshop} do
       author = insert(:user)
 
       {:ok, comment} =
         Engagement.create_workshop_comment(author, workshop.id, %{body: "erro de digitação"})
 
-      assert {:ok, _} = Engagement.delete_workshop_comment(author, comment)
+      assert {:ok, _} =
+               Engagement.delete_workshop_comment(author, comment, access(workshop, author))
+
       assert Engagement.list_workshop_comments(workshop.id) == []
     end
 
@@ -184,8 +188,23 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
       {:ok, comment} =
         Engagement.create_workshop_comment(insert(:user), workshop.id, %{body: "meu"})
 
+      outsider = insert(:user)
+
       assert {:error, :unauthorized} =
-               Engagement.delete_workshop_comment(insert(:user), comment)
+               Engagement.delete_workshop_comment(outsider, comment, access(workshop, outsider))
+    end
+
+    test "whoever organizes takes down what someone else wrote", %{
+      organizer: organizer,
+      workshop: workshop
+    } do
+      {:ok, comment} =
+        Engagement.create_workshop_comment(insert(:user), workshop.id, %{body: "propaganda"})
+
+      assert {:ok, _} =
+               Engagement.delete_workshop_comment(organizer, comment, access(workshop, organizer))
+
+      assert Engagement.list_workshop_comments(workshop.id) == []
     end
 
     test "comment with a reply becomes a tombstone and the reply does not turn into a loose root",
@@ -202,7 +221,7 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
           parent_workshop_comment_id: raiz.id
         })
 
-      assert {:ok, _} = Engagement.delete_workshop_comment(author, raiz)
+      assert {:ok, _} = Engagement.delete_workshop_comment(author, raiz, access(workshop, author))
 
       lapide = Repo.get!(WorkshopComment, raiz.id)
       assert lapide.body == "[comentário removido]"
@@ -226,7 +245,7 @@ defmodule OGrupoDeEstudos.Engagement.WorkshopCommentsTest do
         })
 
       assert raiz.reply_count == 0
-      assert {:ok, _} = Engagement.delete_workshop_comment(author, raiz)
+      assert {:ok, _} = Engagement.delete_workshop_comment(author, raiz, access(workshop, author))
 
       assert Repo.get(WorkshopComment, raiz.id)
       assert Repo.get!(WorkshopComment, resposta.id).parent_workshop_comment_id == raiz.id

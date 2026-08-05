@@ -684,7 +684,7 @@
             parent_id={@workshop.id}
             replying_to={@replying_to}
             replies_map={@replies_map}
-            is_admin={@is_admin || false}
+            can_moderate={@can_moderate?}
             badges={@comment_badges}
             show_form={@can_comment?}
           >

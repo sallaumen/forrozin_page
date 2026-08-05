@@ -305,7 +305,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     with %{} = user <- socket.assigns.current_user,
          {:ok, id} <- comment_of_this_workshop(socket, comment_id),
          %{} = comment <- Engagement.get_workshop_comment(id),
-         {:ok, _} <- Engagement.delete_workshop_comment(user, comment) do
+         access = Workshops.access_for(socket.assigns.workshop, user),
+         {:ok, _} <- Engagement.delete_workshop_comment(user, comment, access) do
       {:noreply, socket |> reload_comments() |> put_flash(:info, "Comentário apagado.")}
     else
       :error -> {:noreply, socket}
@@ -519,6 +520,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   defp enrolled?(user, participants), do: Enum.any?(participants, &(&1.user_id == user.id))
 
+  # Mirrors the two names the Policy accepts for taking a comment off a workshop:
+  # a site admin, and whoever runs this workshop.
+  defp moderator?(_workshop, nil), do: false
+
+  defp moderator?(workshop, user),
+    do: Accounts.admin?(user) || Workshops.admin?(workshop, user)
+
   defp assign_workshop(socket, workshop) do
     user = socket.assigns[:current_user]
     participants = Workshops.list_participants(workshop.id)
@@ -530,6 +538,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
     |> assign(:enrolled_count, length(participants))
     |> assign(:enrolled?, enrolled?(user, participants))
     |> assign(:organizer?, Workshops.admin?(workshop, user))
+    |> assign(:can_moderate?, moderator?(workshop, user))
     |> assign(:full?, Workshop.full?(workshop, length(participants)))
     |> assign(:can_comment?, Policy.authorized?(:comment_workshop, user, workshop))
     |> assign(:can_see_media?, Workshops.can_see_media?(workshop, user))
