@@ -21,12 +21,16 @@
     </a>
   </header>
 
+  <%!-- Um workshop é lugar, não tarefa: a pessoa chegou tocando num card de uma
+       lista. Trocar o app inteiro por uma barra de "Voltar" tirava junto o sino e
+       o perfil, e ainda repetia o "← Workshops" que já vive na página. --%>
   <.top_nav
     :if={@current_user}
     current_user={@current_user}
     is_admin={@is_admin}
-    nav_mode={:detail}
-    title="Workshop"
+    nav_mode={@nav_mode}
+    notification_count={assigns[:notification_count] || 0}
+    pending_suggestions_count={assigns[:pending_suggestions_count] || 0}
   />
 
   <%!-- The state of the whole page is a band across it: a floating card would be
@@ -45,7 +49,9 @@
     Rascunho: só você enxerga esta página até publicar.
   </p>
 
-  <main class="mx-auto w-full max-w-[1020px] flex-1 px-4 py-6 sm:px-6 sm:py-8">
+  <%!-- pb-24 reserva a altura da barra de abas: sem isso o último bloco fica
+       embaixo dela no celular. --%>
+  <main class="mx-auto w-full max-w-[1020px] flex-1 px-4 py-6 pb-24 sm:px-6 sm:py-8 md:pb-8">
     <.link
       :if={@current_user}
       navigate={~p"/study/workshops"}
@@ -729,6 +735,14 @@
     </div>
     <.last_updated :if={@organizer?} at={@workshop.updated_at} />
   </main>
+
+  <.bottom_nav
+    :if={@current_user}
+    current_user={@current_user}
+    current_path={~p"/study"}
+    notification_count={assigns[:notification_count] || 0}
+    pending_study_count={assigns[:pending_study_count] || 0}
+  />
 </div>
 
 <.step_sheet step={@step_sheet} learned={@step_sheet_learned} />

@@ -103,12 +103,21 @@
   </div>
 
   <%!-- Footer --%>
-  <footer class="border-t border-ink-900/10 p-6 text-center bg-ink-200 mt-auto">
+  <footer class="border-t border-ink-900/10 p-6 pb-20 text-center bg-ink-200 mt-auto md:pb-6">
     <p class="text-xs text-ink-600">
       <a href="/about" class="text-ink-500 no-underline">Quem somos</a>
       <span class="text-ink-400 mx-2">·</span> O Grupo de Estudos
     </p>
   </footer>
+  <%!-- O passo também é lugar: quem toca num card do acervo continua dentro do app. --%>
+  <.bottom_nav
+    :if={@current_user}
+    current_user={@current_user}
+    current_path={~p"/collection"}
+    notification_count={assigns[:notification_count] || 0}
+    pending_study_count={assigns[:pending_study_count] || 0}
+  />
+
   <.social_bubble
     current_user={@current_user}
     suggested_users={@suggested_users}
