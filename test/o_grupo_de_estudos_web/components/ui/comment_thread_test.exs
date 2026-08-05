@@ -269,4 +269,34 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
       assert html =~ ~s(data-ui="comment-thread")
     end
   end
+
+  describe "on a phone, the controls of a comment" do
+    test "curtir, responder e apagar têm alvo de 44px" do
+      html = render_component(&CommentThread.comment_thread/1, base_assigns())
+
+      for control <- ["toggle_comment_like", "start_reply", "delete_comment"] do
+        assert html =~ control
+      end
+
+      # Três controles numa linha só: se um não reservar altura, o dedo erra.
+      assert count(html, "min-h-11") >= 3
+    end
+
+    test "o campo de escrever não faz o iPhone dar zoom" do
+      html = render_component(&CommentThread.comment_thread/1, base_assigns(show_form: true))
+
+      # Abaixo de 16px o Safari amplia a página inteira ao focar o campo.
+      assert html =~ "text-base"
+      refute html =~ ~s(class="flex-1 bg-ink-50 rounded-full px-3 py-1.5 text-sm)
+    end
+
+    test "o botão de enviar é botão, não só uma palavra laranja" do
+      html = render_component(&CommentThread.comment_thread/1, base_assigns(show_form: true))
+
+      assert html =~ "Enviar"
+      assert count(html, "min-h-11") >= 4
+    end
+  end
+
+  defp count(html, needle), do: length(String.split(html, needle)) - 1
 end
