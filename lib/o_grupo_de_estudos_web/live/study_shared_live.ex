@@ -4,9 +4,10 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
   alias OGrupoDeEstudos.{Accounts, Study}
   alias OGrupoDeEstudos.Engagement.Notifications.Dispatcher
 
-  on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
+  on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
 
+  import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
@@ -303,10 +304,14 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
     {lessons, new_ids, marked}
   end
 
-  # The visual cut is line-clamp-3 with whitespace-pre-line: short content over
-  # many lines also needs the button, otherwise it stays out of reach.
+  # The visual cut is line-clamp-3 with whitespace-pre-line, and how many
+  # characters fit in three lines depends on the column: 220 was measured on a
+  # desktop column, so on a phone a 175-character lesson was clipped with no way
+  # to open it. The threshold now follows the narrowest column (about 42
+  # characters a line at 375px). Erring low only costs a button that expands
+  # nothing; erring high costs content nobody can reach.
   defp lesson_long?(content) do
-    String.length(content) > 220 or length(String.split(content, "\n")) > 3
+    String.length(content) > 120 or length(String.split(content, "\n")) > 3
   end
 
   defp counterpart(link, current_user_id) do
