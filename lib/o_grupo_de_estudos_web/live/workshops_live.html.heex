@@ -18,7 +18,9 @@
 
   <.study_tabs active="workshops" is_teacher={@current_user.is_teacher} />
 
-  <main class="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
+  <%!-- pb-24 reserva a altura da barra de abas: sem isso a última linha da agenda
+       fica embaixo dela, e não há mais rolagem para alcançá-la. --%>
+  <main class="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8">
     <.section_intro
       title="Workshops"
       description="Eventos pontuais abertos a qualquer pessoa. Quem se inscreve num workshop não vira seu aluno: são coisas diferentes de propósito."

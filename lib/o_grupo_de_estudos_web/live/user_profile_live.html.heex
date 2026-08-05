@@ -19,7 +19,9 @@
   <.activity_toast toast={assigns[:activity_toast]} />
 
   <%!-- Profile --%>
-  <div class="max-w-[680px] mx-auto px-6 pt-12 pb-6 w-full box-border">
+  <%!-- pb-24: o campo de comentário é o último elemento da página, então sem a
+       reserva ele nasce embaixo da barra de abas e não há como rolar até ele. --%>
+  <div class="max-w-[680px] mx-auto px-6 pt-12 pb-24 md:pb-6 w-full box-border">
     <%!-- Avatar + Name --%>
     <div class="flex items-center gap-5 mb-6">
       <.user_avatar user={@profile_user} size={:xl} />
