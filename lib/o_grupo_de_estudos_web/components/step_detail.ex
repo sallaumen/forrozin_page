@@ -118,7 +118,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
               :if={@page? && !@edit_mode && @suggesting_field != "category_id"}
               phx-click="start_suggest"
               phx-value-field="category_id"
-              class="inline-flex p-0.5 text-ink-300 hover:text-accent-orange transition-colors"
+              class="relative inline-flex p-0.5 text-ink-300 transition-colors after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:text-accent-orange"
               title="Sugerir edição da categoria"
             >
               <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
@@ -193,7 +193,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
             :if={@page? && !@edit_mode && @suggesting_field != "name"}
             phx-click="start_suggest"
             phx-value-field="name"
-            class="inline-flex p-0.5 text-ink-300 hover:text-accent-orange transition-colors ml-1"
+            class="relative inline-flex p-0.5 text-ink-300 transition-colors after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:text-accent-orange"
             title="Sugerir edição do nome"
           >
             <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
@@ -267,7 +267,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
         phx-value-code={@step.code}
         aria-pressed={to_string(@step_learned)}
         class={[
-          "mb-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border px-5 py-2.5 font-serif text-[14px] font-semibold transition-colors",
+          "mb-4 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full border px-5 py-2.5 font-serif text-[14px] font-semibold transition-colors",
           @step_learned && "border-accent-green/40 bg-accent-green/12 text-accent-green",
           !@step_learned && "border-ink-300 bg-ink-50 text-ink-700 hover:border-ink-400"
         ]}
@@ -285,7 +285,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
           phx-value-id={@step.id}
           aria-label={if @step_liked, do: "Remover curtida deste passo", else: "Curtir este passo"}
           aria-pressed={to_string(@step_liked)}
-          class="flex items-center gap-1.5 group"
+          class="group flex min-h-11 items-center gap-1.5"
         >
           <.icon
             name={if @step_liked, do: "hero-heart-solid", else: "hero-heart"}
@@ -311,7 +311,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
             if @step_favorited, do: "Remover dos favoritos", else: "Adicionar aos favoritos"
           }
           aria-pressed={to_string(@step_favorited)}
-          class="flex items-center gap-1.5 group"
+          class="group flex min-h-11 items-center gap-1.5"
         >
           <.icon
             name={if @step_favorited, do: "hero-star-solid", else: "hero-star"}
@@ -357,7 +357,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                 :if={@page? && @suggesting_field != "note"}
                 phx-click="start_suggest"
                 phx-value-field="note"
-                class="inline-flex p-0.5 text-ink-300 hover:text-accent-orange transition-colors"
+                class="relative inline-flex p-0.5 text-ink-300 transition-colors after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:text-accent-orange"
                 title="Sugerir edição da descrição"
               >
                 <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
@@ -598,7 +598,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
         <button
           :if={@page? && !@edit_mode && !@suggesting_connection}
           phx-click="start_suggest_connection"
-          class="text-xs text-accent-orange hover:text-accent-orange/80 mt-3 cursor-pointer bg-transparent border-0 font-serif"
+          class="mt-3 inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent font-serif text-xs text-accent-orange hover:text-accent-orange/80 sm:min-h-0"
         >
           + Sugerir nova conexão
         </button>
@@ -926,7 +926,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                     href={link.url}
                     target="_blank"
                     rel="noreferrer noopener"
-                    class="inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold no-underline"
+                    class="relative inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold no-underline after:absolute after:left-0 after:top-1/2 after:h-11 after:w-full after:-translate-y-1/2 after:content-[''] sm:after:hidden"
                     style={provider_pill(media)}
                     title={"Abrir no #{media.label}"}
                   >
@@ -937,7 +937,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                   :if={can_edit_link}
                   phx-click="start_edit_link"
                   phx-value-link-id={link.id}
-                  class="bg-transparent border-0 cursor-pointer text-sm text-gold-500 py-1 px-1.5 flex-shrink-0"
+                  class="inline-grid min-h-11 min-w-11 flex-shrink-0 cursor-pointer place-items-center border-0 bg-transparent text-sm text-gold-500 sm:min-h-0 sm:min-w-0 sm:px-1.5 sm:py-1"
                   title="Editar link"
                 >
                   ✏
@@ -947,7 +947,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                   phx-click="delete_link"
                   phx-value-link-id={link.id}
                   data-confirm="Remover este link?"
-                  class="bg-transparent border-0 cursor-pointer text-base text-accent-red py-1 px-1.5 flex-shrink-0"
+                  class="inline-grid min-h-11 min-w-11 flex-shrink-0 cursor-pointer place-items-center border-0 bg-transparent text-base text-accent-red sm:min-h-0 sm:min-w-0 sm:px-1.5 sm:py-1"
                   title="Remover link"
                 >
                   ×
@@ -956,7 +956,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                   phx-click="toggle_link_like"
                   phx-value-link-id={link.id}
                   class={[
-                    "flex items-center gap-1 bg-transparent border-0 cursor-pointer text-sm py-1 px-1.5 rounded flex-shrink-0",
+                    "flex min-h-11 min-w-11 flex-shrink-0 cursor-pointer items-center justify-center gap-1 rounded border-0 bg-transparent text-sm sm:min-h-0 sm:min-w-0 sm:px-1.5 sm:py-1",
                     liked && "text-accent-red",
                     !liked && "text-ink-500"
                   ]}
@@ -970,7 +970,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
                   phx-click="toggle_link_video"
                   phx-value-link-id={link.id}
                   class={[
-                    "text-xs py-1 px-2.5 rounded cursor-pointer border border-ink-900/20 text-ink-700 whitespace-nowrap font-serif flex-shrink-0",
+                    "inline-flex min-h-11 flex-shrink-0 cursor-pointer items-center whitespace-nowrap rounded border border-ink-900/20 px-2.5 font-serif text-xs text-ink-700 sm:min-h-0 sm:py-1",
                     expanded && "bg-ink-900/[0.06]",
                     !expanded && "bg-transparent"
                   ]}
@@ -994,19 +994,19 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
             value={@link_url}
             placeholder="https://..."
             required
-            class="w-full py-2 px-3 border border-ink-900/25 rounded font-serif text-sm text-ink-900 box-border"
+            class="box-border w-full min-h-11 rounded border border-ink-900/25 px-3 py-2 font-serif text-base text-ink-900 sm:text-sm"
           />
           <input
             type="text"
             name="title"
             value={@link_title}
             placeholder="Título opcional"
-            class="w-full py-2 px-3 border border-ink-900/25 rounded font-serif text-sm text-ink-900 box-border"
+            class="box-border w-full min-h-11 rounded border border-ink-900/25 px-3 py-2 font-serif text-base text-ink-900 sm:text-sm"
           />
           <div>
             <button
               type="submit"
-              class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded-md cursor-pointer font-serif text-sm font-semibold tracking-wide"
+              class="inline-flex min-h-11 cursor-pointer items-center rounded-md border-0 bg-ink-900 px-4 font-serif text-sm font-semibold tracking-wide text-ink-100"
             >
               Enviar link
             </button>
@@ -1106,10 +1106,13 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
       class="inline-flex items-center overflow-hidden rounded-lg border bg-ink-50 transition hover:bg-ink-200/50"
       style={"border-color: #{@color}40;"}
     >
+      <%!-- min-h-11 no celular: a conexão é a navegação principal do passo e
+           media 24px de altura, que é menos da metade do dedo. No desktop volta
+           a ser a fileira compacta de sempre. --%>
       <.link
         :if={@navigate}
         navigate={~p"/steps/#{@step.code}"}
-        class="inline-flex max-w-[200px] items-center gap-1.5 px-2 py-1 text-left no-underline"
+        class="inline-flex min-h-11 max-w-[200px] items-center gap-1.5 px-2.5 py-1 text-left no-underline sm:min-h-0 sm:px-2"
       >
         <code class="shrink-0 text-[10px] font-bold" style={"color: #{@color};"}>{@step.code}</code>
         <span class="truncate text-xs text-ink-700">{@step.name}</span>
@@ -1118,7 +1121,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
         :if={!@navigate}
         phx-click="open_step"
         phx-value-code={@step.code}
-        class="inline-flex max-w-[200px] items-center gap-1.5 px-2 py-1 text-left"
+        class="inline-flex min-h-11 max-w-[200px] items-center gap-1.5 px-2.5 py-1 text-left sm:min-h-0 sm:px-2"
       >
         <code class="shrink-0 text-[10px] font-bold" style={"color: #{@color};"}>{@step.code}</code>
         <span class="truncate text-xs text-ink-700">{@step.name}</span>
@@ -1129,7 +1132,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
         phx-value-source={@delete_source}
         phx-value-target={@delete_target}
         data-confirm={"Remover #{@delete_source} → #{@delete_target}?"}
-        class="self-stretch border-l border-ink-200 px-1.5 text-accent-red/70 transition hover:bg-accent-red/10 hover:text-accent-red"
+        class="self-stretch border-l border-ink-200 px-3 text-accent-red/70 transition hover:bg-accent-red/10 hover:text-accent-red sm:px-1.5"
       >
         ×
       </button>
@@ -1140,7 +1143,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
         phx-value-label={@suggest_label}
         data-confirm="Sugerir remoção desta conexão?"
         title="Sugerir remoção"
-        class="self-stretch border-l border-ink-200 px-1.5 text-ink-300 transition hover:text-accent-red"
+        class="self-stretch border-l border-ink-200 px-3 text-ink-300 transition hover:text-accent-red sm:px-1.5"
       >
         <.icon name="hero-x-mark" class="w-3 h-3" />
       </button>

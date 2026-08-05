@@ -54,7 +54,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         sections: sections,
         collection_cards: CollectionBrowser.build_sections(sections),
         categories: Encyclopedia.list_categories(),
-        open_sections: Map.new(sections, fn s -> {s.id, false} end),
         steps_with_links: Encyclopedia.step_ids_with_links(),
         steps_seen_in_class: steps_seen_in_class(socket.assigns.current_user.id),
         learned_step_ids: Engagement.learned_step_ids(socket.assigns.current_user.id),
@@ -76,7 +75,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       sections: [],
       collection_cards: [],
       categories: [],
-      open_sections: %{},
       steps_with_links: MapSet.new(),
       steps_seen_in_class: MapSet.new(),
       learned_step_ids: MapSet.new(),
@@ -216,21 +214,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       end
 
     {:noreply, socket}
-  end
-
-  def handle_event("toggle_section", %{"section_id" => id}, socket) do
-    open_sections = Map.update(socket.assigns.open_sections, id, true, fn a -> !a end)
-    {:noreply, assign(socket, open_sections: open_sections)}
-  end
-
-  def handle_event("expand_all", _params, socket) do
-    open_sections = Map.new(socket.assigns.sections, fn s -> {s.id, true} end)
-    {:noreply, assign(socket, open_sections: open_sections)}
-  end
-
-  def handle_event("collapse_all", _params, socket) do
-    open_sections = Map.new(socket.assigns.sections, fn s -> {s.id, false} end)
-    {:noreply, assign(socket, open_sections: open_sections)}
   end
 
   def handle_event("switch_tab", %{"tab" => tab}, socket) do
@@ -693,13 +676,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
         CollectionBrowser.section_details(sections, socket.assigns.active_section_id)
       end
 
-    open =
-      Map.new(sections, fn s -> {s.id, Map.get(socket.assigns.open_sections, s.id, false)} end)
-
     assign(socket,
       sections: sections,
       collection_cards: CollectionBrowser.build_sections(sections),
-      open_sections: open,
       active_section_card: active_section_card
     )
   end

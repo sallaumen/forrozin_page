@@ -296,7 +296,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       section = insert(:section, title: "Bases", position: 1)
       insert(:step, section: section, code: "BF", name: "Base frontal", note: "Mechanical note")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      render_click(lv, "expand_all", %{})
       html = render_click(lv, "open_step", %{"code" => "BF"})
       assert html =~ "Base frontal"
       assert html =~ "Mechanical note"
