@@ -1,10 +1,23 @@
 name: CI
 
+# A branch with an open PR used to fire both triggers, so every commit ran the
+# whole matrix twice. Two runs of the same commit means twice the minutes and
+# twice the exposure to any flake: on #223, #228 and #229 one of the pair went
+# red while its twin went green on the very same sha.
+#
+# `push` on main is the health check of the default branch after a merge; every
+# other branch is covered by `pull_request`.
 on:
   push:
-    branches-ignore:
+    branches:
       - main
   pull_request:
+
+# Pushing a new commit to a PR makes the previous run pointless. Main is left
+# alone: its runs are the record of what merged, not work in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   MIX_ENV: test
@@ -53,12 +66,19 @@ jobs:
       - name: Compile (warnings as errors)
         run: mix compile --warnings-as-errors
 
+      # No TEST_MAX_CASES here on purpose. It used to be 16, on the theory that
+      # a runner with nothing else to do should use every core. Measured against
+      # the coverage job, which runs the same suite with the derived default,
+      # the override bought nothing: 173.4s vs 175.0s, 219.9s vs 219.8s, 206.5s
+      # vs 210.6s, 215.7s vs 220.8s. The bottleneck is the Postgres container
+      # sharing the runner, not the schedulers.
+      #
+      # What it did buy was the flake. Sixteen cases on a four-core runner
+      # starve each other while each one holds a sandbox connection, and the
+      # checkout dies at 15000ms in whatever test happened to be running. The
+      # coverage job never failed once; this one failed three times.
       - name: Run tests
         run: mix test
-        env:
-          # The runner has nothing else to do, so use every core. The local
-          # default is half of them, to keep a dev machine usable.
-          TEST_MAX_CASES: 16
 
   coverage:
     name: Coverage gate
