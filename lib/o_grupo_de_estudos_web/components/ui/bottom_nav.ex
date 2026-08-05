@@ -1,6 +1,13 @@
 defmodule OGrupoDeEstudosWeb.UI.BottomNav do
   @moduledoc """
-  Mobile tab bar: fixed to bottom, 4 primary destinations.
+  Mobile tab bar: fixed to bottom, five primary destinations.
+
+  Five is the ceiling both Apple and Material set, and it is not arbitrary: at
+  375px seven tabs give each one 53px with a 10px label, and the label is what
+  makes a tab bar learnable. Two of the seven were not places anyway. "Gerador"
+  was `/graph/visual?mode=generator`, a mode of the map, and the map's own panel
+  already opens on it; notifications are a check-in, so the bell went to the top
+  bar, where it already was on desktop.
 
   Only renders visually on `md` and below (hidden on desktop via CSS).
   Active tab is determined by comparing `@current_path` prefix to each
@@ -28,14 +35,7 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
       %{label: "Acervo", path: "/collection", icon: "hero-rectangle-stack"},
       %{label: "Mapa", path: "/graph/visual", icon: "hero-map"},
       %{label: "Estudos", path: "/study", icon: "hero-book-open"},
-      %{
-        label: "Gerador",
-        path: "/graph/visual?mode=generator",
-        icon: "hero-sparkles",
-        accent: true
-      },
       %{label: "Sequências", path: "/sequence", icon: "hero-queue-list"},
-      %{label: "Alertas", path: "/notifications", icon: "hero-bell"},
       %{
         label: "Perfil",
         path: "/users/#{assigns.current_user.username}",
@@ -61,25 +61,12 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
             data-active={active?(@current_path, tab.path)}
             class={[
               "flex flex-col items-center justify-center gap-0.5 h-full w-full no-underline font-sans",
-              Map.get(tab, :accent) &&
-                "text-accent-orange data-[active=true]:text-accent-orange",
-              !Map.get(tab, :accent) && "text-ink-500 data-[active=true]:text-ink-900"
+              "text-ink-500 data-[active=true]:text-ink-900"
             ]}
           >
             <.icon name={tab.icon} class="size-6" />
             <span class="text-[10px] leading-none">{tab.label}</span>
           </.link>
-          <span
-            :if={tab.path == "/notifications" && @notification_count > 0}
-            class={[
-              "absolute top-1 right-1/4 min-w-[16px] h-4 px-0.5",
-              "flex items-center justify-center",
-              "bg-accent-red text-white text-[9px] font-bold rounded-full",
-              "animate-notification-pop pointer-events-none"
-            ]}
-          >
-            {if @notification_count > 99, do: "99+", else: @notification_count}
-          </span>
           <span
             :if={tab.path == "/study" && @pending_study_count > 0}
             class={[
@@ -97,7 +84,11 @@ defmodule OGrupoDeEstudosWeb.UI.BottomNav do
     """
   end
 
+  # A query string is a mode of a place, not another place: com o gerador aberto
+  # a aba do Mapa continua acesa, que é a resposta certa para "onde eu estou?".
   defp active?(current_path, tab_path) do
-    to_string(current_path == tab_path or String.starts_with?(current_path, tab_path <> "/"))
+    path = current_path |> String.split("?") |> hd()
+
+    to_string(path == tab_path or String.starts_with?(path, tab_path <> "/"))
   end
 end

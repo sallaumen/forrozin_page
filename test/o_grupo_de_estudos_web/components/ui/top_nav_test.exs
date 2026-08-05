@@ -199,4 +199,42 @@ defmodule OGrupoDeEstudosWeb.UI.TopNavTest do
       assert html =~ ~s(data-mode="detail")
     end
   end
+
+  describe "the bell on a phone" do
+    test "is reachable from the top bar, since it left the tab bar" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary
+        })
+
+      assert html =~ ~s(href="/notifications")
+      assert html =~ ~s(aria-label="Alertas")
+    end
+
+    test "carries the unread count, the way the tab used to" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary,
+          notification_count: 7
+        })
+
+      assert html =~ "7"
+    end
+
+    test "a hundred unread does not stretch the badge" do
+      html =
+        render_component(&TopNav.top_nav/1, %{
+          current_user: user(),
+          is_admin: false,
+          nav_mode: :primary,
+          notification_count: 140
+        })
+
+      assert html =~ "99+"
+    end
+  end
 end
