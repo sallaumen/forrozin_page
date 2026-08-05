@@ -170,7 +170,7 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
       html =
         render_component(
           &CommentThread.comment_thread/1,
-          base_assigns(current_user: other_user, is_admin: false)
+          base_assigns(current_user: other_user, can_moderate: false)
         )
 
       refute html =~ ~s(phx-click="delete_comment")
@@ -182,13 +182,13 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
       assert html =~ ~s(data-confirm="Apagar este comentário?")
     end
 
-    test "delete button shown when is_admin is true even if not owner" do
+    test "delete button shown when can_moderate is true even if not owner" do
       other_user = user(id: "u2", username: "admin")
 
       html =
         render_component(
           &CommentThread.comment_thread/1,
-          base_assigns(current_user: other_user, is_admin: true)
+          base_assigns(current_user: other_user, can_moderate: true)
         )
 
       assert html =~ ~s(phx-click="delete_comment")
@@ -259,11 +259,11 @@ defmodule OGrupoDeEstudosWeb.UI.CommentThreadTest do
       assert html =~ "delete_comment"
     end
 
-    test "is_admin without a user does not crash" do
+    test "can_moderate without a user does not crash" do
       html =
         render_component(
           &CommentThread.comment_thread/1,
-          base_assigns(current_user: nil, is_admin: true)
+          base_assigns(current_user: nil, can_moderate: true)
         )
 
       assert html =~ ~s(data-ui="comment-thread")

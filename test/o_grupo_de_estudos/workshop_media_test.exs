@@ -138,6 +138,14 @@ defmodule OGrupoDeEstudos.WorkshopMediaTest do
       assert {:ok, _} = Workshops.remove_media(ctx.workshop, ctx.owner, media.id)
     end
 
+    test "co-organizer removes anyone's media too", ctx do
+      partner = insert(:user)
+      {:ok, _} = Workshops.add_admin(ctx.workshop, ctx.owner, partner.id)
+      {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
+
+      assert {:ok, _} = Workshops.remove_media(ctx.workshop, partner, media.id)
+    end
+
     test "enrolled user does not remove another user's media", ctx do
       {:ok, media} = Workshops.add_media(ctx.workshop, ctx.student, photo(ctx))
       other = insert(:user)

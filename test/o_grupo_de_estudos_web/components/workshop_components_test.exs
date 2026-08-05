@@ -139,7 +139,30 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
     end
   end
 
+  describe "media_gallery/1 on a phone" do
+    test "the trash of whoever uploaded shows up without depending on hover" do
+      html = gallery([item([])], autora())
+
+      assert html =~ "remove_media"
+      refute html =~ "opacity-0"
+    end
+
+    test "whoever runs the workshop sees the trash on media from anyone" do
+      html = gallery([item([])], outra(), true)
+
+      assert html =~ "remove_media"
+    end
+
+    test "whoever neither uploaded nor runs the workshop sees no trash" do
+      html = gallery([item([])], outra())
+
+      refute html =~ "remove_media"
+    end
+  end
+
   defp autora, do: %{id: @autora_id}
+
+  defp outra, do: %{id: "33333333-3333-3333-3333-333333333333"}
 
   defp item(attrs) do
     defaults = %{
@@ -156,8 +179,8 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
     Enum.into(attrs, defaults)
   end
 
-  defp gallery(media, current_user \\ nil) do
-    assigns = %{media: media, current_user: current_user, can_delete_any: false}
+  defp gallery(media, current_user \\ nil, can_delete_any \\ false) do
+    assigns = %{media: media, current_user: current_user, can_delete_any: can_delete_any}
 
     render_component(&media_gallery/1, assigns)
   end

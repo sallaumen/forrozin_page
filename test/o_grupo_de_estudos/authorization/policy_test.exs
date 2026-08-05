@@ -2,7 +2,18 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
   use OGrupoDeEstudos.DataCase, async: true
   import OGrupoDeEstudos.Factory
   alias OGrupoDeEstudos.Authorization.Policy
-  alias OGrupoDeEstudos.Workshops.Workshop
+  alias OGrupoDeEstudos.Engagement.Comments.WorkshopComment
+  alias OGrupoDeEstudos.Workshops.{Access, Workshop, WorkshopMedia}
+
+  defp access(workshop, user, admin?) do
+    %Access{
+      workshop: workshop,
+      user_id: user.id,
+      owner?: admin?,
+      admin?: admin?,
+      enrolled?: true
+    }
+  end
 
   describe "authorize(:delete_comment, user, comment)" do
     test "admin can delete any comment" do
@@ -21,6 +32,74 @@ defmodule OGrupoDeEstudos.Authorization.PolicyTest do
       user = insert(:user)
       comment = insert(:step_comment)
       assert {:error, :unauthorized} = Policy.authorize(:delete_comment, user, comment)
+    end
+  end
+
+  describe "authorize(:delete_comment, user, {comment, access})" do
+    setup do
+      organizer = insert(:user)
+      author = insert(:user)
+      workshop = insert(:workshop, organizer: organizer)
+
+      %{
+        organizer: organizer,
+        author: author,
+        workshop: workshop,
+        comment: %WorkshopComment{user_id: author.id}
+      }
+    end
+
+    test "whoever runs the workshop takes down a comment from anyone", ctx do
+      subject = {ctx.comment, access(ctx.workshop, ctx.organizer, true)}
+
+      assert :ok = Policy.authorize(:delete_comment, ctx.organizer, subject)
+    end
+
+    test "whoever wrote it still takes down their own", ctx do
+      subject = {ctx.comment, access(ctx.workshop, ctx.author, false)}
+
+      assert :ok = Policy.authorize(:delete_comment, ctx.author, subject)
+    end
+
+    test "anyone else takes down nothing", ctx do
+      other = insert(:user)
+      subject = {ctx.comment, access(ctx.workshop, other, false)}
+
+      assert {:error, :unauthorized} = Policy.authorize(:delete_comment, other, subject)
+    end
+  end
+
+  describe "authorize(:delete_media, user, {media, access})" do
+    setup do
+      organizer = insert(:user)
+      author = insert(:user)
+      workshop = insert(:workshop, organizer: organizer)
+
+      %{
+        organizer: organizer,
+        author: author,
+        workshop: workshop,
+        media: %WorkshopMedia{uploaded_by_id: author.id}
+      }
+    end
+
+    test "whoever uploaded takes their own out of the gallery", ctx do
+      subject = {ctx.media, access(ctx.workshop, ctx.author, false)}
+
+      assert :ok = Policy.authorize(:delete_media, ctx.author, subject)
+    end
+
+    test "whoever runs the workshop takes out media from anyone", ctx do
+      subject = {ctx.media, access(ctx.workshop, ctx.organizer, true)}
+
+      assert :ok = Policy.authorize(:delete_media, ctx.organizer, subject)
+    end
+
+    test "anyone else takes out nothing", ctx do
+      other = insert(:user)
+      subject = {ctx.media, access(ctx.workshop, other, false)}
+
+      assert {:error, :unauthorized} = Policy.authorize(:delete_media, other, subject)
     end
   end
 

@@ -36,7 +36,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   @doc "Deletes a step comment with authorization. Hard-deletes if no replies, tombstones otherwise."
   def delete_step_comment(user, comment),
-    do: delete_comment(StepComment, StepCommentQuery, user, comment)
+    do: delete_comment(StepComment, user, comment)
 
   @doc "Lists root sequence comments for the given sequence, ordered by engagement."
   def list_sequence_comments(sequence_id, opts \\ []),
@@ -48,7 +48,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   @doc "Deletes a sequence comment with authorization."
   def delete_sequence_comment(user, comment),
-    do: delete_comment(SequenceComment, SequenceCommentQuery, user, comment)
+    do: delete_comment(SequenceComment, user, comment)
 
   @doc "Lists root workshop comments for the given workshop, ordered by engagement."
   def list_workshop_comments(workshop_id, opts \\ []),
@@ -58,9 +58,14 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
   def create_workshop_comment(user, workshop_id, attrs),
     do: create_comment(WorkshopComment, WorkshopCommentQuery, user, workshop_id, attrs)
 
-  @doc "Deletes a workshop comment with authorization."
-  def delete_workshop_comment(user, comment),
-    do: delete_comment(WorkshopComment, WorkshopCommentQuery, user, comment)
+  @doc """
+  Deletes a workshop comment with authorization.
+
+  `access` comes from `Workshops.access_for/2`: whoever runs the workshop takes
+  down anything written on it, and only the boundary knows who runs it.
+  """
+  def delete_workshop_comment(user, comment, access),
+    do: delete_comment(WorkshopComment, user, {comment, access})
 
   @doc "Lists root profile comments for the given profile, ordered by engagement."
   def list_profile_comments(profile_id, opts) when is_binary(profile_id),
@@ -72,7 +77,7 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
 
   @doc "Deletes a profile comment with authorization (new 2-arity)."
   def delete_profile_comment(user, comment),
-    do: delete_comment(ProfileComment, ProfileCommentQuery, user, comment)
+    do: delete_comment(ProfileComment, user, comment)
 
   @doc "Lists replies to a step comment, ordered by engagement."
   def list_step_comment_replies(comment_id, opts \\ []),
@@ -156,16 +161,22 @@ defmodule OGrupoDeEstudos.Engagement.Comments do
     end
   end
 
-  defp delete_comment(schema_mod, _query_mod, user, comment) do
-    with :ok <- Policy.authorize(:delete_comment, user, comment) do
+  # `subject` is what the Policy looks at, and it is not always the comment: on a
+  # workshop it is the pair `{comment, access}`, so whoever runs the workshop can
+  # take down what someone else wrote.
+  defp delete_comment(schema_mod, user, subject) do
+    with :ok <- Policy.authorize(:delete_comment, user, subject) do
       # Reply count read fresh: the in-memory struct may predate a reply, and hard
       # deleting then would orphan it (the FK nilifies, so the reply would resurface
       # as a root comment).
       schema_mod
-      |> Repo.get(comment.id)
+      |> Repo.get(comment_id(subject))
       |> delete_or_tombstone()
     end
   end
+
+  defp comment_id({%{id: id}, _access}), do: id
+  defp comment_id(%{id: id}), do: id
 
   defp delete_or_tombstone(nil), do: {:ok, :deleted}
 

@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudos.Engagement do
 
   defdelegate list_workshop_comments(workshop_id, opts \\ []), to: Comments
   defdelegate create_workshop_comment(user, workshop_id, attrs), to: Comments
-  defdelegate delete_workshop_comment(user, comment), to: Comments
+  defdelegate delete_workshop_comment(user, comment, access), to: Comments
   defdelegate get_workshop_comment(id), to: Comments
 
   defdelegate list_profile_comments(profile_id, opts), to: Comments

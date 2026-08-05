@@ -736,7 +736,7 @@ defmodule OGrupoDeEstudosWeb.StepDetail do
           parent_id={@step.id}
           replying_to={@replying_to}
           replies_map={@replies_map}
-          is_admin={@is_admin}
+          can_moderate={@is_admin}
         />
       </section>
     </article>

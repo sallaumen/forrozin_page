@@ -302,6 +302,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           <.icon name="hero-star-solid" class="size-3" /> Oficial
         </span>
 
+        <%!-- Always visible, never on hover: a phone has no hover, so the trash
+        used to be an invisible button that still answered a tap. The `after`
+        block takes the touch target to 44px without growing the circle. --%>
         <button
           :if={can_delete?(item, @current_user, @can_delete_any)}
           type="button"
@@ -309,9 +312,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
           phx-value-id={item.id}
           data-confirm="Tirar esta mídia da galeria?"
           aria-label="Tirar da galeria"
-          class="absolute right-2 top-2 cursor-pointer rounded-full border-0 bg-ink-900/70 p-1.5 text-ink-50 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          class="absolute right-2 top-2 inline-grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-ink-900/70 text-ink-50 backdrop-blur-sm transition-colors after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] hover:bg-ink-900"
         >
-          <.icon name="hero-trash" class="size-3.5" />
+          <.icon name="hero-trash" class="size-4" />
         </button>
 
         <figcaption class="flex items-center gap-1.5 px-2 py-1.5 text-[11px] text-ink-500">
