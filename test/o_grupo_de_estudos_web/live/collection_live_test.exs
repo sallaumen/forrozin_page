@@ -149,7 +149,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
              )
     end
 
-    test "shows step cards with images when section has mapped images", %{conn: conn} do
+    test "carries the family illustration into the family it opened", %{conn: conn} do
       category = insert(:category, name: "sacadas", label: "Sacadas", color: "#ef5b8d")
       section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
 
@@ -164,7 +164,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       html = render_click(lv, "enter_section", %{"section_id" => section.id})
 
       assert has_element?(lv, "#collection-step-SC-E")
-      assert html =~ "/images/collection/sacada-esquerda.png"
+      assert html =~ "/images/collection/sacada-simples.png"
     end
 
     test "deep-linked step opens the right section and highlights the step", %{conn: conn} do

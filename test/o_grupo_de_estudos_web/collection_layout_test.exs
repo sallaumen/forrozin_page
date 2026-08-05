@@ -70,13 +70,33 @@ defmodule OGrupoDeEstudosWeb.CollectionLayoutTest do
       refute html =~ "Explora os destaques"
     end
 
-    test "one like is a like, not likes", ctx do
+    test "the like count is a number, so it never has to agree with a word", ctx do
       {:ok, lv, _html} = open(ctx.conn, ctx.user)
 
       html = render_click(lv, "enter_section", %{"section_id" => ctx.section.id})
 
-      assert html =~ "1 like"
+      assert html =~ ctx.step.name
       refute html =~ "1 likes"
+      refute html =~ "1 like"
+    end
+  end
+
+  describe "a family row, which used to be a card" do
+    test "carries the family mark, the name and the count", ctx do
+      {:ok, _lv, html} = open(ctx.conn, ctx.user)
+
+      assert html =~ ctx.section.title
+      assert html =~ "7 passos" or html =~ "1 passos"
+      refute html =~ "hover:shadow-[0_16px_40px", "a família deixou de ser card com sombra"
+    end
+
+    test "a step row says what you know about the step without four colours", ctx do
+      {:ok, lv, _html} = open(ctx.conn, ctx.user)
+
+      html = render_click(lv, "enter_section", %{"section_id" => ctx.section.id})
+
+      refute html =~ "bg-gold-500/15", "a pill dourada de likes saiu"
+      refute html =~ "bg-accent-purple/10", "o círculo roxo de sugestão saiu"
     end
   end
 
