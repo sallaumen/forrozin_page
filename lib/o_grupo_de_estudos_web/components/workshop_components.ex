@@ -867,6 +867,17 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   def payment_status_label(:waived), do: "Isento"
   def payment_status_label(_status), do: "Aguardando"
 
+  @doc """
+  Where the payment of whoever is covered by a package came from.
+
+  Only says "pago" when the package really is paid: the tag exists to explain
+  the amount, and announcing a payment that has not happened would be the same
+  confusion it was written to end.
+  """
+  def package_source_label(:paid), do: "Pago na programação"
+  def package_source_label(:waived), do: "Isento pela programação"
+  def package_source_label(_status), do: "Aguardando na programação"
+
   @doc "Percentual de vagas preenchidas, limitado a 100."
   def seats_percent(_enrolled, nil), do: 0
   def seats_percent(_enrolled, 0), do: 100

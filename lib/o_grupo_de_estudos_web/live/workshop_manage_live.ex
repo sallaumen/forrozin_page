@@ -62,6 +62,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
       {:error, :not_found} ->
         {:noreply, put_flash(socket, :error, "Inscrição não encontrada.")}
 
+      {:error, :covered_by_package} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "Essa pessoa pagou pela programação. O pagamento se altera lá, não aqui."
+         )}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Não foi possível atualizar o pagamento.")}
     end
@@ -208,10 +216,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
   defp payment_message("waived"), do: "Marcado como isento."
   defp payment_message(_status), do: "Voltou para aguardando."
 
+  # The amount comes from the context already resolved: whoever paid the workshop
+  # alone weighs its full price, whoever paid a package weighs only the slice of
+  # it that belongs here. Multiplying paid by price, as this did before, charged
+  # the workshop price to people who had paid the package.
   @doc false
-  def revenue_label(%{paid: paid}, %{price_cents: cents}) when is_integer(cents) and cents > 0 do
-    money_label(paid * cents)
-  end
+  def revenue_label(%{revenue_cents: cents}, %{price_cents: price})
+      when is_integer(price) and price > 0,
+      do: money_label(cents)
+
+  def revenue_label(%{revenue_cents: cents}, _workshop) when cents > 0, do: money_label(cents)
 
   def revenue_label(_summary, _workshop), do: "—"
 

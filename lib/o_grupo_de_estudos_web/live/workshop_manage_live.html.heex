@@ -182,8 +182,10 @@
             <.icon name="hero-paper-clip" class="size-3.5" /> Ver comprovante
           </a>
 
+          <%!-- Para quem veio pelo pacote a etiqueta da programação já diz o
+               estado; repetir aqui seriam dois selos dizendo a mesma coisa. --%>
           <span
-            :if={@cobra?}
+            :if={@cobra? && !enrollment.covered_by_package?}
             class={[
               "inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11.5px] font-bold",
               enrollment.payment_status == :paid && "bg-accent-green/15 text-accent-green",
@@ -194,7 +196,23 @@
             {payment_status_label(enrollment.payment_status)}
           </span>
 
-          <div :if={@cobra?} class="flex shrink-0 gap-1.5">
+          <%!-- Coberto pelo pacote: o dinheiro entrou uma vez, na programação, e
+               aqui entra só a fatia deste workshop. Sem botão, porque o
+               pagamento se altera lá; o contexto recusa a mudança daqui de
+               qualquer forma. --%>
+          <span
+            :if={@cobra? && enrollment.covered_by_package?}
+            class="inline-flex shrink-0 items-center gap-1 rounded-full bg-gold-500/15 px-3 py-1 text-[11.5px] font-bold text-ink-700"
+            title={"Vem da programação #{enrollment.program_title}"}
+          >
+            <.icon name="hero-squares-2x2" class="size-3.5" />
+            {package_source_label(enrollment.payment_status)}
+            <span :if={enrollment.payment_status == :paid}>
+              · {money_label(enrollment.package_share_cents)}
+            </span>
+          </span>
+
+          <div :if={@cobra? && !enrollment.covered_by_package?} class="flex shrink-0 gap-1.5">
             <button
               :if={enrollment.payment_status != :paid}
               type="button"
