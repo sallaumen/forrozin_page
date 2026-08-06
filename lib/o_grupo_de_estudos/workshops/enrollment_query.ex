@@ -123,15 +123,57 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     |> Repo.all()
   end
 
-  @doc "Full organizer list, with the payment state."
-  @spec list_for_organizer(Ecto.UUID.t()) :: [WorkshopEnrollment.t()]
+  @doc """
+  Full organizer list, with the payment state and the package behind it.
+
+  The package fields come along because an enrollment covered by one has no
+  payment of its own to report: `EnrollmentPayment` derives the state and the
+  amount from them.
+  """
+  @spec list_for_organizer(Ecto.UUID.t()) :: [map()]
   def list_for_organizer(workshop_id) do
     from(e in WorkshopEnrollment,
+      join: u in assoc(e, :user),
+      left_join: pe in assoc(e, :program_enrollment),
+      left_join: p in assoc(pe, :program),
       where: e.workshop_id == ^workshop_id,
       order_by: [asc: e.inserted_at],
-      preload: [:user]
+      select: %{
+        id: e.id,
+        user: u,
+        inserted_at: e.inserted_at,
+        receipt_sent_at: e.receipt_sent_at,
+        own_payment_status: e.payment_status,
+        program_enrollment_id: pe.id,
+        package_payment_status: pe.payment_status,
+        package_price_cents: p.price_cents,
+        program_title: p.title
+      }
     )
     |> Repo.all()
+  end
+
+  @doc """
+  `%{program_enrollment_id => [{workshop_id, price_cents}]}`: which workshops
+  each package actually covers, to split what was paid across them.
+
+  Read from the enrollments, not from the program: what a package covers is what
+  it enrolled the person into, which is not the same set as the program's
+  workshops today if one was published afterwards.
+  """
+  @spec covered_workshops_by_package([Ecto.UUID.t()]) :: %{
+          Ecto.UUID.t() => [{Ecto.UUID.t(), integer() | nil}]
+        }
+  def covered_workshops_by_package([]), do: %{}
+
+  def covered_workshops_by_package(program_enrollment_ids) do
+    from(e in WorkshopEnrollment,
+      join: w in assoc(e, :workshop),
+      where: e.program_enrollment_id in ^program_enrollment_ids,
+      select: {e.program_enrollment_id, w.id, w.price_cents}
+    )
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), fn {_package, id, price} -> {id, price} end)
   end
 
   @doc """
@@ -188,20 +230,6 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
     )
     |> Repo.all()
     |> Map.new()
-  end
-
-  @doc "Organizer payment summary: enrolled, paid and waived."
-  @spec payment_summary(Ecto.UUID.t()) :: %{total: integer(), paid: integer(), waived: integer()}
-  def payment_summary(workshop_id) do
-    from(e in WorkshopEnrollment,
-      where: e.workshop_id == ^workshop_id,
-      select: %{
-        total: count(e.id),
-        paid: filter(count(e.id), e.payment_status == :paid),
-        waived: filter(count(e.id), e.payment_status == :waived)
-      }
-    )
-    |> Repo.one()
   end
 
   @doc """

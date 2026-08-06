@@ -231,6 +231,24 @@
           recebido. Quem escolheu dias avulsos aparece no painel de cada workshop.
         </p>
 
+        <%!-- Onde o dinheiro do pacote cai. Sem isto, o painel de cada workshop
+             mostra um valor que não bate com o preço dele e parece erro. --%>
+        <div :if={@package_shares != []} class="mb-5 rounded-xl bg-ink-100 px-4 py-3">
+          <p class="m-0 font-sans text-[11px] font-semibold uppercase tracking-[1.4px] text-ink-500">
+            Como cada pacote se divide
+          </p>
+          <p
+            :for={share <- @package_shares}
+            class="m-0 mt-1.5 flex items-baseline justify-between gap-3 font-sans text-[12.5px] text-ink-600"
+          >
+            <span class="min-w-0 truncate">{share.title}</span>
+            <b class="shrink-0 font-semibold text-ink-900">{money_label(share.share_cents)}</b>
+          </p>
+          <p class="m-0 mt-2 font-sans text-[11.5px] leading-snug text-ink-500">
+            É esse valor que entra no "recebido" de cada workshop, não o preço avulso dele.
+          </p>
+        </div>
+
         <div :if={@pacotes != []}>
           <div
             :for={linha <- @pacotes}

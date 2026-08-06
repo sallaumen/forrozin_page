@@ -31,9 +31,11 @@ defmodule OGrupoDeEstudos.Workshops do
   alias OGrupoDeEstudos.Workshops.{
     Access,
     AdminQuery,
+    EnrollmentPayment,
     EnrollmentQuery,
     MediaQuery,
     PackageQuery,
+    PackageSplit,
     ProgramEnrollment,
     ProgramQuery,
     Receipts,
@@ -935,6 +937,31 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
+  @doc """
+  How the package price lands on each workshop of the program.
+
+  This is the division of the price as it stands today, which is what the
+  organizer needs while setting it. What an individual package actually paid is
+  in the roster of each workshop: someone who bought before a workshop was
+  published covers a smaller set, and their slices are bigger.
+  """
+  @spec package_shares(WorkshopProgram.t(), User.t()) ::
+          {:ok, [%{id: Ecto.UUID.t(), title: String.t(), share_cents: non_neg_integer()}]}
+          | {:error, :unauthorized}
+  def package_shares(%WorkshopProgram{} = program, %User{} = user) do
+    with :ok <- ensure_program_owner(program, user) do
+      workshops = ProgramQuery.list_workshops(program.id)
+
+      shares =
+        PackageSplit.shares(program.price_cents, Enum.map(workshops, &{&1.id, &1.price_cents}))
+
+      {:ok,
+       Enum.map(workshops, fn w ->
+         %{id: w.id, title: w.title, share_cents: Map.get(shares, w.id, 0)}
+       end)}
+    end
+  end
+
   @doc "Marks the package payment."
   @spec set_package_payment(WorkshopProgram.t(), User.t(), Ecto.UUID.t(), atom()) ::
           {:ok, ProgramEnrollment.t()} | {:error, :unauthorized | :not_found | term()}
@@ -1498,21 +1525,42 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  @doc "Enrollment list WITH payment. Organizer only."
+  @doc """
+  Enrollment list WITH payment. Organizer only.
+
+  Whoever is covered by a package comes with `covered_by_package?`, the program
+  title and `package_share_cents`, the slice of the package that belongs to this
+  workshop. The payment state of those rows is the package's, not their own.
+  """
   @spec list_enrollments_for_organizer(Workshop.t(), User.t()) ::
-          {:ok, [WorkshopEnrollment.t()]} | {:error, :unauthorized}
+          {:ok, [map()]} | {:error, :unauthorized}
   def list_enrollments_for_organizer(%Workshop{} = workshop, %User{} = user) do
     with :ok <- ensure_admin(workshop, user) do
-      {:ok, EnrollmentQuery.list_for_organizer(workshop.id)}
+      {:ok, organizer_roster(workshop)}
     end
   end
 
-  @doc "Payment summary (enrolled, paid, waived). Admins see it."
+  @doc """
+  Payment summary (enrolled, paid, waived, and how much came in). Admins see it.
+
+  `revenue_cents` adds the full price for whoever paid this workshop alone and
+  only the package slice for whoever paid the set, so one payment never lands
+  twice in the totals.
+  """
   @spec payment_summary(Workshop.t(), User.t()) :: {:ok, map()} | {:error, :unauthorized}
   def payment_summary(%Workshop{} = workshop, %User{} = user) do
     with :ok <- ensure_admin(workshop, user) do
-      {:ok, EnrollmentQuery.payment_summary(workshop.id)}
+      {:ok, EnrollmentPayment.summarize(organizer_roster(workshop), workshop.price_cents)}
     end
+  end
+
+  defp organizer_roster(%Workshop{} = workshop) do
+    rows = EnrollmentQuery.list_for_organizer(workshop.id)
+
+    covered =
+      rows |> EnrollmentPayment.package_ids() |> EnrollmentQuery.covered_workshops_by_package()
+
+    EnrollmentPayment.enrich(rows, covered, workshop.id)
   end
 
   @doc """
@@ -1520,15 +1568,21 @@ defmodule OGrupoDeEstudos.Workshops do
 
   The enrollment is fetched scoped to the organizer's workshop, so a forged id
   from another event finds nothing.
+
+  An enrollment covered by a package is refused: that payment already happened
+  on the program, and marking it again here would count the same money twice.
+  The refusal lives here, not only in the panel, because a hidden button is not
+  a rule.
   """
   @spec set_payment_status(Workshop.t(), User.t(), Ecto.UUID.t(), atom()) ::
           {:ok, WorkshopEnrollment.t()}
-          | {:error, :unauthorized | :not_found | Ecto.Changeset.t()}
+          | {:error, :unauthorized | :not_found | :covered_by_package | Ecto.Changeset.t()}
   def set_payment_status(%Workshop{} = workshop, %User{} = user, enrollment_id, status)
       when status in [:pending, :paid, :waived] do
     with :ok <- ensure_admin(workshop, user),
          %WorkshopEnrollment{} = enrollment <-
-           EnrollmentQuery.get_scoped(enrollment_id, workshop.id) do
+           EnrollmentQuery.get_scoped(enrollment_id, workshop.id),
+         :ok <- ensure_not_covered(enrollment) do
       enrollment |> WorkshopEnrollment.payment_changeset(status) |> Repo.update()
     else
       nil -> {:error, :not_found}
@@ -1538,6 +1592,9 @@ defmodule OGrupoDeEstudos.Workshops do
 
   def set_payment_status(%Workshop{}, %User{}, _enrollment_id, _status),
     do: {:error, :unauthorized}
+
+  defp ensure_not_covered(%WorkshopEnrollment{program_enrollment_id: nil}), do: :ok
+  defp ensure_not_covered(_enrollment), do: {:error, :covered_by_package}
 
   @doc """
   Attaches the receipt of whoever is enrolled in the workshop.
