@@ -99,6 +99,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponentsTest do
     end
   end
 
+  describe "revenue_sources/1" do
+    test "names both sources when the money came from both" do
+      assert revenue_sources(%{package_cents: 4500, individual_cents: 5000}) ==
+               "pacote R$ 45 · avulso R$ 50"
+    end
+
+    test "omits the source that brought nothing" do
+      assert revenue_sources(%{package_cents: 4500, individual_cents: 0}) == "pacote R$ 45"
+      assert revenue_sources(%{package_cents: 0, individual_cents: 5000}) == "avulso R$ 50"
+    end
+
+    test "says plainly when nothing came in, instead of showing R$ 0 twice" do
+      assert revenue_sources(%{package_cents: 0, individual_cents: 0}) == "ninguém pagou ainda"
+    end
+  end
+
   describe "media_gallery/1 with a video being transcoded" do
     test "processing video warns and offers no broken player" do
       html = gallery([item(kind: :video, status: :processing)])

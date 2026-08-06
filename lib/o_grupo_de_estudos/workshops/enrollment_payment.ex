@@ -34,14 +34,27 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentPayment do
     rows |> Enum.map(& &1.program_enrollment_id) |> Enum.reject(&is_nil/1) |> Enum.uniq()
   end
 
-  @doc "How many are enrolled, paid and waived, and how much actually came in."
+  @doc """
+  How many are enrolled, paid and waived, and how much actually came in.
+
+  The money comes broken down by where it came from: `package_cents` is the sum
+  of the slices of whoever bought the set, `individual_cents` is the full price
+  of whoever paid this workshop alone. `revenue_cents` is the two together.
+  """
   @spec summarize([map()], non_neg_integer() | nil) :: map()
   def summarize(rows, workshop_price_cents) do
+    paid = Enum.filter(rows, &(&1.payment_status == :paid))
+    {package, individual} = Enum.split_with(paid, & &1.covered_by_package?)
+    package_cents = package |> Enum.map(& &1.package_share_cents) |> Enum.sum()
+    individual_cents = length(individual) * (workshop_price_cents || 0)
+
     %{
       total: length(rows),
-      paid: Enum.count(rows, &(&1.payment_status == :paid)),
+      paid: length(paid),
       waived: Enum.count(rows, &(&1.payment_status == :waived)),
-      revenue_cents: revenue(rows, workshop_price_cents)
+      package_cents: package_cents,
+      individual_cents: individual_cents,
+      revenue_cents: package_cents + individual_cents
     }
   end
 
@@ -56,14 +69,4 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentPayment do
   defp share(row, covered, workshop_id) do
     row.package_price_cents |> PackageSplit.shares(covered) |> Map.get(workshop_id, 0)
   end
-
-  defp revenue(rows, workshop_price_cents) do
-    rows
-    |> Enum.filter(&(&1.payment_status == :paid))
-    |> Enum.map(&amount(&1, workshop_price_cents))
-    |> Enum.sum()
-  end
-
-  defp amount(%{covered_by_package?: true} = row, _price), do: row.package_share_cents
-  defp amount(_row, price), do: price || 0
 end

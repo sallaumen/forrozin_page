@@ -124,5 +124,37 @@ defmodule OGrupoDeEstudosWeb.PackagePaymentPanelTest do
       assert html =~ "Como cada pacote se divide"
       assert html =~ "R$ 45"
     end
+
+    test "balances the whole event: what came from packages and what came loose", ctx do
+      {:ok, _} = Workshops.set_package_payment(ctx.program, ctx.owner, ctx.membership.id, :paid)
+      avulso = insert(:user, name: "Joao Souza")
+      {:ok, _} = Workshops.enroll(ctx.workshop, avulso)
+      {:ok, rows} = Workshops.list_enrollments_for_organizer(ctx.workshop, ctx.owner)
+      row = Enum.find(rows, &(&1.user.id == avulso.id))
+      {:ok, _} = Workshops.set_payment_status(ctx.workshop, ctx.owner, row.id, :paid)
+
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}")
+
+      assert html =~ "Balanço da programação"
+      assert html =~ "Total do evento"
+      assert html =~ "pacote R$ 45 · avulso R$ 50"
+      assert html =~ "R$ 140"
+    end
+
+    test "says plainly when a workshop has not received anything", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}")
+
+      assert html =~ "ninguém pagou ainda"
+    end
+
+    test "the balance stays behind the owner's door", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, insert(:user)), ~p"/programs/#{ctx.program.slug}")
+
+      refute html =~ "Balanço da programação"
+      refute html =~ "Total do evento"
+    end
   end
 end

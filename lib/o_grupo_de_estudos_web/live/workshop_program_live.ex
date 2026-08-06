@@ -163,6 +163,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:pacotes, [])
     |> assign(:package_summary, nil)
     |> assign(:package_shares, [])
+    |> assign(:revenue, nil)
   end
 
   defp assign_montagem(socket, workshops, true, user) do
@@ -184,11 +185,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     {:ok, pacotes} = Workshops.list_package_enrollments(program, user)
     {:ok, summary} = Workshops.package_summary(program, user)
     {:ok, shares} = Workshops.package_shares(program, user)
+    {:ok, revenue} = Workshops.program_revenue(program, user)
 
     socket
     |> assign(:pacotes, pacotes)
     |> assign(:package_summary, summary)
     |> assign(:package_shares, shares)
+    |> assign(:revenue, revenue)
   end
 
   @impl true

@@ -131,16 +131,26 @@ defmodule OGrupoDeEstudos.Workshops.EnrollmentQuery do
   amount from them.
   """
   @spec list_for_organizer(Ecto.UUID.t()) :: [map()]
-  def list_for_organizer(workshop_id) do
+  def list_for_organizer(workshop_id), do: list_for_workshops([workshop_id])
+
+  @doc """
+  The same rows for several workshops at once, to balance a whole program
+  without one round trip per workshop.
+  """
+  @spec list_for_workshops([Ecto.UUID.t()]) :: [map()]
+  def list_for_workshops([]), do: []
+
+  def list_for_workshops(workshop_ids) do
     from(e in WorkshopEnrollment,
       join: u in assoc(e, :user),
       left_join: pe in assoc(e, :program_enrollment),
       left_join: p in assoc(pe, :program),
-      where: e.workshop_id == ^workshop_id,
+      where: e.workshop_id in ^workshop_ids,
       order_by: [asc: e.inserted_at],
       select: %{
         id: e.id,
         user: u,
+        workshop_id: e.workshop_id,
         inserted_at: e.inserted_at,
         receipt_sent_at: e.receipt_sent_at,
         own_payment_status: e.payment_status,
