@@ -5,7 +5,10 @@ import Config
 # with the editor and the browser. `test/test_helper.exs` caps the VM schedulers
 # to match, otherwise the BEAM still spreads over every core.
 #
-# CI raises both with TEST_MAX_CASES, where the machine has nothing else to do.
+# CI runs on this same default. It used to override it to 16, which starved a
+# four-core runner and killed a random test at the 15000ms checkout, without
+# ever being faster. TEST_MAX_CASES stays for a one-off local run on a free
+# machine.
 max_cases =
   case System.get_env("TEST_MAX_CASES") do
     nil -> max(div(System.schedulers_online(), 4), 2)

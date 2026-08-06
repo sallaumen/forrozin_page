@@ -81,13 +81,47 @@ defmodule OGrupoDeEstudosWeb.CollectionLayoutTest do
     end
   end
 
-  describe "a family row, which used to be a card" do
+  describe "o mosaico de famílias" do
     test "carries the family mark, the name and the count", ctx do
       {:ok, _lv, html} = open(ctx.conn, ctx.user)
 
       assert html =~ ctx.section.title
       assert html =~ "7 passos" or html =~ "1 passos"
       refute html =~ "hover:shadow-[0_16px_40px", "a família deixou de ser card com sombra"
+    end
+
+    test "para em quatro colunas por mais larga que seja a tela", ctx do
+      {:ok, _lv, html} = open(ctx.conn, ctx.user)
+
+      [_, grade] = String.split(html, ~s(id="collection-overview-grid"), parts: 2)
+      abertura = grade |> String.split(">", parts: 2) |> hd()
+
+      assert abertura =~ "lg:grid-cols-4"
+      assert abertura =~ "max-w-[1120px]"
+
+      refute abertura =~ "grid-cols-5",
+             "acima de quatro cada família vira miniatura e o desenho deixa de ser reconhecível"
+    end
+
+    test "o nome sobe a ilustração, sobre o verde dela e não sobre tarja preta", ctx do
+      insert(:step, section: ctx.section, category: ctx.category, code: "BQ")
+
+      {:ok, _lv, html} = open(ctx.conn, ctx.user)
+
+      assert html =~ "linear-gradient(to top, #",
+             "o degradê nasce do próprio verde da ilustração"
+
+      refute html =~ "from-black/", "tarja preta esconde o desenho em vez de continuar nele"
+    end
+
+    test "família sem desenho mostra a sigla, que é como o passo é chamado em aula", ctx do
+      sem_desenho = insert(:section, category: ctx.category, title: "Arrastes", code: "AR")
+      insert(:step, section: sem_desenho, category: ctx.category, code: "AR-1")
+
+      {:ok, _lv, html} = open(ctx.conn, ctx.user)
+
+      assert html =~ "Arrastes"
+      assert html =~ "AR"
     end
 
     test "a step row says what you know about the step without four colours", ctx do

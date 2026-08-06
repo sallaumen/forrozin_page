@@ -11,6 +11,8 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
 
   import OGrupoDeEstudosWeb.UI.Illustration, only: [illustration: 1]
 
+  alias OGrupoDeEstudosWeb.UI.Illustration
+
   @doc """
   The square that identifies a family: its drawing, or its code when there is none.
 
@@ -40,6 +42,88 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
 
   defp family_mark_label(%{code: code}) when is_binary(code) and code != "", do: code
   defp family_mark_label(%{title: title}), do: title |> String.first() |> String.upcase()
+
+  # O verde das onze ilustrações vai de #4b513f a #545d45. As famílias que nunca
+  # foram desenhadas usam a média, para o mosaico ler como um conjunto só em vez
+  # de metade desenho e metade buraco.
+  @undrawn_ground "#4e5742"
+
+  @doc """
+  Uma família no mosaico: a ilustração é a superfície e o nome sobe nela.
+
+  O nome fica sobre um degradê do próprio verde da ilustração, e não sobre uma
+  tarja preta: a sobra já é aquele verde, então o texto parece pousado no chão
+  onde os gatos dançam. Branco sobre esses verdes dá de 6,8 a 8,2:1.
+
+  Família sem desenho recebe o mesmo chão verde com a sigla grande, que é como
+  o passo é chamado em aula. Assim toda peça do mosaico tem o mesmo peso.
+  """
+  attr :card, :map, required: true
+  attr :sizes, :string, required: true
+
+  def family_tile(assigns) do
+    assigns = assign(assigns, :ground, family_ground(assigns.card))
+
+    ~H"""
+    <button
+      id={"collection-section-card-#{@card.id}"}
+      phx-click="enter_section"
+      phx-value-section_id={@card.id}
+      class="group relative block w-full cursor-pointer overflow-hidden rounded-xl border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange focus-visible:ring-offset-2 focus-visible:ring-offset-ink-100"
+    >
+      <.family_surface card={@card} sizes={@sizes} />
+      <%!-- O degradê é do verde da própria ilustração, não uma tarja preta: a
+           sobra da moldura já é aquele verde, então o nome parece pousado no
+           chão onde os gatos dançam em vez de colado por cima. --%>
+      <div
+        class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col justify-end p-3 pt-10 sm:p-3.5 sm:pt-12"
+        style={"background-image: linear-gradient(to top, #{@ground} 12%, #{@ground}d9 45%, transparent 100%)"}
+      >
+        <div class="brand-display is-title text-[15px] leading-tight text-white sm:text-[17px]">
+          {@card.title}
+        </div>
+        <div class="mt-0.5 font-sans text-[11px] tabular-nums text-white/70">
+          {@card.step_count} passos
+        </div>
+      </div>
+    </button>
+    """
+  end
+
+  defp family_ground(%{image_path: nil}), do: @undrawn_ground
+
+  defp family_ground(%{image_path: path}) do
+    case Illustration.source(path) do
+      %{background: background} -> background
+      nil -> @undrawn_ground
+    end
+  end
+
+  defp family_surface(%{card: %{image_path: nil}} = assigns) do
+    assigns = assign(assigns, :ground, @undrawn_ground)
+
+    ~H"""
+    <div
+      class="flex aspect-square items-center justify-center"
+      style={"background-color: #{@ground}"}
+    >
+      <span class="brand-display is-title text-[36px] leading-none text-white/45 sm:text-[44px]">
+        {family_mark_label(@card)}
+      </span>
+    </div>
+    """
+  end
+
+  defp family_surface(assigns) do
+    ~H"""
+    <.illustration
+      src={@card.image_path}
+      alt={"Ilustração da família #{@card.title}"}
+      sizes={@sizes}
+      class="aspect-square w-full transition-transform duration-300 group-hover:scale-[1.03]"
+    />
+    """
+  end
 
   @doc """
   One step inside a family: the code that names it, and what you know about it.
