@@ -116,10 +116,10 @@ defmodule OGrupoDeEstudosWeb.PackagePaymentPanelTest do
     end
   end
 
-  describe "the program panel" do
+  describe "the program backstage" do
     test "shows how the package price divides across the workshops", ctx do
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}")
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}/manage")
 
       assert html =~ "Como cada pacote se divide"
       assert html =~ "R$ 45"
@@ -134,7 +134,7 @@ defmodule OGrupoDeEstudosWeb.PackagePaymentPanelTest do
       {:ok, _} = Workshops.set_payment_status(ctx.workshop, ctx.owner, row.id, :paid)
 
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}")
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}/manage")
 
       assert html =~ "Balanço da programação"
       assert html =~ "Total do evento"
@@ -144,17 +144,17 @@ defmodule OGrupoDeEstudosWeb.PackagePaymentPanelTest do
 
     test "says plainly when a workshop has not received anything", ctx do
       {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}")
+        live(log_in_user(ctx.conn, ctx.owner), ~p"/programs/#{ctx.program.slug}/manage")
 
       assert html =~ "ninguém pagou ainda"
     end
 
-    test "the balance stays behind the owner's door", ctx do
-      {:ok, _lv, html} =
-        live(log_in_user(ctx.conn, insert(:user)), ~p"/programs/#{ctx.program.slug}")
-
-      refute html =~ "Balanço da programação"
-      refute html =~ "Total do evento"
+    test "the balance stays behind the owner's door: the page does not even open", ctx do
+      assert {:error, {:redirect, %{to: "/study/workshops"}}} =
+               live(
+                 log_in_user(ctx.conn, insert(:user)),
+                 ~p"/programs/#{ctx.program.slug}/manage"
+               )
     end
   end
 end

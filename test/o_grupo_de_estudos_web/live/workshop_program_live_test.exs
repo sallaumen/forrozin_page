@@ -197,20 +197,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       assert html =~ "Confirmar inscrição"
     end
 
-    test "creator sees the package dashboard and marks as paid", ctx do
-      student = insert(:user)
-      {:ok, _} = Workshops.enroll_in_package(ctx.com_pacote, student)
+    test "the package dashboard is not on the public page anymore", ctx do
+      {:ok, _} = Workshops.enroll_in_package(ctx.com_pacote, insert(:user))
 
-      {:ok, lv, html} =
+      {:ok, _lv, html} =
         live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.com_pacote.slug}")
 
-      assert html =~ "Quem levou a programação toda"
-      assert html =~ student.name
-
-      {:ok, [row]} = Workshops.list_package_enrollments(ctx.com_pacote, ctx.owner)
-      html = render_click(lv, "set_package_payment", %{"id" => row.id, "status" => "paid"})
-
-      assert html =~ "R$ 150"
+      refute html =~ "Quem levou a programação toda"
     end
 
     test "non-creator does not see the package dashboard", ctx do
@@ -330,80 +323,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLiveTest do
       html = render_click(lv, "toggle_selection", %{"id" => alheio.id})
 
       assert html =~ "Marque os workshops que você vai"
-    end
-  end
-
-  describe "building the program without leaving the page" do
-    test "organizer attaches a loose workshop on the spot", ctx do
-      improvised = insert(:workshop, organizer: ctx.owner, title: "Roda improvisada")
-
-      {:ok, lv, html} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
-
-      assert html =~ "Roda improvisada"
-
-      render_click(lv, "attach_workshop", %{"id" => improvised.id})
-
-      ids = ctx.program |> Workshops.list_program_workshops() |> Enum.map(& &1.id)
-      assert improvised.id in ids
-    end
-
-    test "organizer detaches one on the spot", ctx do
-      {:ok, lv, _} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
-
-      render_click(lv, "detach_workshop", %{"id" => ctx.friday.id})
-
-      assert [restante] = Workshops.list_program_workshops(ctx.program)
-      assert restante.id == ctx.thursday.id
-      assert Workshops.get_workshop(ctx.friday.id)
-    end
-
-    test "non-organizer sees no panel and cannot change anything", ctx do
-      outsider = insert(:user)
-      workshop_dele = insert(:workshop, organizer: outsider)
-
-      {:ok, lv, html} =
-        live(log_in_user(build_conn(), outsider), ~p"/programs/#{ctx.program.slug}")
-
-      refute html =~ "Montar a programação"
-
-      render_click(lv, "attach_workshop", %{"id" => workshop_dele.id})
-      render_click(lv, "detach_workshop", %{"id" => ctx.thursday.id})
-
-      assert length(Workshops.list_program_workshops(ctx.program)) == 2
-    end
-
-    test "anonymous visitor sending the event does not crash the page", ctx do
-      {:ok, lv, _} = live(build_conn(), ~p"/programs/#{ctx.program.slug}")
-
-      render_click(lv, "attach_workshop", %{"id" => ctx.thursday.id})
-      render_click(lv, "detach_workshop", %{"id" => ctx.thursday.id})
-
-      assert render(lv) =~ ctx.program.title
-      assert length(Workshops.list_program_workshops(ctx.program)) == 2
-    end
-
-    test "made-up id breaks nothing", ctx do
-      {:ok, lv, _} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
-
-      render_click(lv, "attach_workshop", %{"id" => "nao-e-uuid"})
-
-      assert render(lv) =~ ctx.program.title
-    end
-
-    test "panel only offers workshops that are not inside yet", ctx do
-      fora = insert(:workshop, organizer: ctx.owner, title: "Ainda fora da programação")
-
-      {:ok, lv, html} =
-        live(log_in_user(build_conn(), ctx.owner), ~p"/programs/#{ctx.program.slug}")
-
-      assert html =~ "Ainda fora da programação"
-
-      html = render_click(lv, "attach_workshop", %{"id" => fora.id})
-
-      assert html =~ "Tirar"
     end
   end
 

@@ -118,6 +118,7 @@ defmodule OGrupoDeEstudosWeb.Router do
       live "/study/programs/new", WorkshopProgramFormLive, :new
       live "/study/programs/:slug/edit", WorkshopProgramFormLive, :edit
       live "/workshops/:slug/manage", WorkshopManageLive
+      live "/programs/:slug/manage", WorkshopProgramManageLive
     end
 
     live_session :admin, on_mount: [{OGrupoDeEstudosWeb.UserAuth, :ensure_admin}] do
