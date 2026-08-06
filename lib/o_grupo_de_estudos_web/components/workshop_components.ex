@@ -22,12 +22,19 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
     assigns = assign(assigns, day: local.day, month: elem(@month_abbr, local.month - 1))
 
     ~H"""
-    <div class="flex h-[54px] w-[54px] shrink-0 flex-col items-center justify-center rounded-xl border border-ink-200 bg-ink-100 leading-none">
-      <span class="font-serif text-[21px] font-bold tracking-tight text-ink-900">{@day}</span>
-      <span class="mt-0.5 text-[9px] font-bold uppercase tracking-[1.4px] text-ink-500">
+    <%!-- Trilho tipográfico, não caixa. A caixa de 54px alinhava pela linha de
+         base do número, então a borda subia 13px acima do título e terminava
+         25px antes dele: os centros ficavam a 19px de distância e o olho, que lê
+         caixa pela borda, via tudo torto. Sem borda não há aresta para
+         desalinhar, e fica igual ao trilho de horas do `agenda_row`. --%>
+    <p class="m-0 w-[3.1rem] shrink-0 text-center font-sans leading-[1.15] sm:w-[3.4rem]">
+      <span class="block font-serif text-[20px] font-bold tracking-tight text-ink-900">
+        {@day}
+      </span>
+      <span class="block text-[9.5px] font-bold uppercase tracking-[1.4px] text-ink-500">
         {@month}
       </span>
-    </div>
+    </p>
     """
   end
 
@@ -280,9 +287,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
       id={"program-card-#{@program.id}"}
       class="flex items-baseline gap-3 border-t border-ink-200 py-3.5 sm:gap-4"
     >
-      <div class="flex h-[54px] w-[54px] shrink-0 flex-col items-center justify-center rounded-xl border border-ink-200 bg-ink-100 leading-none">
-        <.icon name="hero-calendar-days" class="size-5 text-ink-500" />
-      </div>
+      <%!-- Programação não tem um dia só, então no lugar do número vai o ícone,
+           no mesmo trilho e alinhado pela primeira linha do título. --%>
+      <p class="m-0 flex w-[3.1rem] shrink-0 justify-center sm:w-[3.4rem]">
+        <.icon name="hero-calendar-days" class="size-5 translate-y-0.5 text-ink-400" />
+      </p>
 
       <div class="min-w-0 flex-1">
         <p class="m-0 font-serif text-[15px] font-bold leading-snug tracking-tight sm:text-[16px]">
