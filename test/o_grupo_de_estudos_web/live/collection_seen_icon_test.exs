@@ -24,7 +24,7 @@ defmodule OGrupoDeEstudosWeb.CollectionSeenIconTest do
 
   defp open_section(ctx) do
     {:ok, lv, _html} = live(ctx.conn, ~p"/collection")
-    render_click(lv, "enter_section", %{"section_id" => ctx.section.id})
+    render_patch(lv, "/collection?section=#{ctx.section.id}")
   end
 
   defp attend_workshop_teaching(student, step) do

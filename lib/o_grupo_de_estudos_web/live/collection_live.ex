@@ -127,48 +127,132 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     ]
   end
 
-  @impl true
-  def handle_params(%{"step" => step_code}, _uri, socket)
-      when is_binary(step_code) and step_code != "" do
-    case find_step_context(socket.assigns.sections, step_code) do
-      {:ok, section_id} ->
-        details = CollectionBrowser.section_details(socket.assigns.sections, section_id)
+  @doc """
+  Where the person is in the acervo, written as an address.
 
-        {:noreply,
-         socket
-         |> assign(
-           active_tab: "collection",
-           search: "",
-           search_results: [],
-           active_section_id: section_id,
-           active_section_card: details,
-           deep_linked_step_code: step_code,
-           drawer_open: false,
-           drawer_type: nil,
-           drawer_item: nil
-         )
-         |> push_event("scroll-to-element", %{id: "collection-step-#{step_code}", block: "center"})}
+  Only what answers "where are you?" goes in: the family, the step whose detail
+  is open, the tab, and the category being filtered. The search term and the
+  edit mode stay in the socket, because they say how the page is being used and
+  not which page it is, and because a history entry per keystroke would make
+  going back useless.
 
-      :error ->
-        {:noreply, assign(socket, :deep_linked_step_code, nil)}
+  A default is not worth writing down, so the acervo tab and the unfiltered
+  category leave no trace in the address.
+  """
+  @spec collection_path(keyword()) :: String.t()
+  def collection_path(place) do
+    query =
+      [
+        section: place[:section],
+        step: place[:step],
+        detail: place[:detail],
+        tab: tab_param(place[:tab]),
+        category: place[:category]
+      ]
+      |> Enum.reject(&default_place?/1)
+
+    case query do
+      [] -> ~p"/collection"
+      query -> ~p"/collection?#{query}"
     end
   end
 
-  def handle_params(_params, _uri, socket) do
-    previous_deep_link = socket.assigns[:deep_linked_step_code]
+  defp tab_param("my_steps"), do: "my-steps"
+  defp tab_param(_acervo), do: nil
 
-    socket =
-      if previous_deep_link do
-        assign(socket,
-          deep_linked_step_code: nil,
-          active_section_id: nil,
-          active_section_card: nil
-        )
-      else
+  defp default_place?({_key, value}) when value in [nil, ""], do: true
+  defp default_place?({:category, "all"}), do: true
+  defp default_place?(_written_down), do: false
+
+  # The address is the single source of truth for where the person is. Every
+  # state below used to be an assign changed by a click, which handed the
+  # browser no history entry: the back gesture skipped the whole acervo and left
+  # the site.
+  @impl true
+  def handle_params(params, _uri, socket) do
+    {:noreply,
+     socket
+     |> assign(:category_filter, params["category"] || "all")
+     |> apply_tab(params["tab"])
+     |> apply_family(params)
+     |> apply_detail(params["detail"])}
+  end
+
+  defp apply_tab(socket, "my-steps") do
+    socket
+    |> assign(:active_tab, "my_steps")
+    |> load_my_steps()
+  end
+
+  defp apply_tab(socket, _acervo), do: assign(socket, :active_tab, "collection")
+
+  defp load_my_steps(%{assigns: %{loaded?: false}} = socket), do: socket
+
+  defp load_my_steps(socket) do
+    assign(socket, :my_steps, Encyclopedia.list_user_steps(socket.assigns.current_user.id))
+  end
+
+  # `?step=CODE` is the link people copy: it opens the family the step lives in
+  # and marks the row. `?section=ID` is the family opened from the mosaic.
+  defp apply_family(socket, %{"step" => code}) when is_binary(code) and code != "" do
+    case find_step_context(socket.assigns.sections, code) do
+      {:ok, section_id} ->
+        socket
+        |> enter_family(section_id)
+        |> assign(search: "", search_results: [], deep_linked_step_code: code)
+        |> push_event("scroll-to-element", %{id: "collection-step-#{code}", block: "center"})
+
+      :error ->
         assign(socket, :deep_linked_step_code, nil)
-      end
+    end
+  end
 
-    {:noreply, socket}
+  defp apply_family(socket, %{"section" => id}) when is_binary(id) and id != "" do
+    socket
+    |> assign(:deep_linked_step_code, nil)
+    |> enter_family(id)
+  end
+
+  defp apply_family(socket, _mosaic) do
+    assign(socket,
+      active_section_id: nil,
+      active_section_card: nil,
+      suggest_section_id: nil,
+      deep_linked_step_code: nil
+    )
+  end
+
+  defp enter_family(socket, section_id) do
+    assign(socket,
+      active_section_id: section_id,
+      active_section_card: CollectionBrowser.section_details(socket.assigns.sections, section_id),
+      suggest_section_id: section_id
+    )
+  end
+
+  # The drawer is a full screen on the phone, so it is a place like any other.
+  defp apply_detail(socket, code) when is_binary(code) and code != "" do
+    if drawer_showing?(socket, code), do: socket, else: open_step_drawer(socket, code)
+  end
+
+  defp apply_detail(socket, _closed) do
+    assign(socket, drawer_open: false, drawer_type: nil, drawer_item: nil)
+  end
+
+  defp drawer_showing?(socket, code) do
+    match?(%{drawer_open: true, drawer_type: :step, drawer_item: %{code: ^code}}, socket.assigns)
+  end
+
+  defp open_step_drawer(socket, code) do
+    case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
+      {:ok, _step} ->
+        socket
+        |> assign(drawer_open: true, drawer_type: :step)
+        |> load_drawer_step(code)
+
+      {:error, :not_found} ->
+        assign(socket, drawer_open: false, drawer_type: nil, drawer_item: nil)
+    end
   end
 
   @impl true
@@ -178,54 +262,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     {:noreply, assign(socket, search: term, search_results: results)}
   end
 
-  def handle_event("filter", %{"category" => category}, socket) do
-    {:noreply, assign(socket, category_filter: category)}
-  end
-
   def handle_event("toggle_filters", _params, socket) do
     {:noreply, assign(socket, :filters_open?, !socket.assigns.filters_open?)}
-  end
-
-  def handle_event("enter_section", %{"section_id" => section_id}, socket) do
-    details = CollectionBrowser.section_details(socket.assigns.sections, section_id)
-
-    {:noreply,
-     assign(socket,
-       active_section_id: section_id,
-       active_section_card: details,
-       suggest_section_id: section_id
-     )}
-  end
-
-  def handle_event("back_to_overview", _params, socket) do
-    socket =
-      assign(socket,
-        active_section_id: nil,
-        active_section_card: nil
-      )
-
-    socket =
-      if socket.assigns.deep_linked_step_code do
-        socket
-        |> assign(:deep_linked_step_code, nil)
-        |> push_patch(to: ~p"/collection", replace: true)
-      else
-        socket
-      end
-
-    {:noreply, socket}
-  end
-
-  def handle_event("switch_tab", %{"tab" => tab}, socket) do
-    socket =
-      if tab == "my_steps" do
-        my_steps = Encyclopedia.list_user_steps(socket.assigns.current_user.id)
-        assign(socket, active_tab: tab, my_steps: my_steps)
-      else
-        assign(socket, active_tab: tab)
-      end
-
-    {:noreply, socket}
   end
 
   def handle_event("toggle_edit_mode", _params, socket) do
@@ -236,26 +274,11 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
     end
   end
 
+  # Opening a step is an event and not a link because the drawer needs a round
+  # trip to the server anyway (connections, links, comments). The mosaic, the
+  # tabs and the filter need nothing, so those are real links.
   def handle_event("open_step", %{"code" => code}, socket) do
-    socket =
-      if socket.assigns.deep_linked_step_code && socket.assigns.deep_linked_step_code != code do
-        socket
-        |> assign(:deep_linked_step_code, nil)
-        |> push_patch(to: ~p"/collection", replace: true)
-      else
-        socket
-      end
-
-    case Encyclopedia.fetch_step_with_details(code, admin: socket.assigns.is_admin) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(drawer_open: true, drawer_type: :step)
-         |> load_drawer_step(code)}
-
-      {:error, :not_found} ->
-        {:noreply, socket}
-    end
+    {:noreply, push_patch(socket, to: detail_path(socket, code))}
   end
 
   def handle_event("copy_step_link", %{"code" => code}, socket) do
@@ -280,10 +303,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
            drawer_connections_in: []
          )}
     end
-  end
-
-  def handle_event("close_drawer", _params, socket) do
-    {:noreply, assign(socket, drawer_open: false, drawer_type: nil, drawer_item: nil)}
   end
 
   def handle_event("toggle_connections", _params, socket) do
@@ -732,6 +751,15 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   defp conventions_card?(%{title: "Convenções da Notação"}), do: true
   defp conventions_card?(_), do: false
+
+  defp detail_path(socket, code) do
+    collection_path(
+      section: socket.assigns.active_section_id,
+      detail: code,
+      tab: socket.assigns.active_tab,
+      category: socket.assigns.category_filter
+    )
+  end
 
   def total_steps(sections) do
     Enum.reduce(sections, 0, fn s, acc ->

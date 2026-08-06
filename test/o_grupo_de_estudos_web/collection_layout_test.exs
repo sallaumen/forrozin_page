@@ -73,7 +73,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLayoutTest do
     test "the like count is a number, so it never has to agree with a word", ctx do
       {:ok, lv, _html} = open(ctx.conn, ctx.user)
 
-      html = render_click(lv, "enter_section", %{"section_id" => ctx.section.id})
+      html = render_patch(lv, "/collection?section=#{ctx.section.id}")
 
       assert html =~ ctx.step.name
       refute html =~ "1 likes"
@@ -127,7 +127,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLayoutTest do
     test "a step row says what you know about the step without four colours", ctx do
       {:ok, lv, _html} = open(ctx.conn, ctx.user)
 
-      html = render_click(lv, "enter_section", %{"section_id" => ctx.section.id})
+      html = render_patch(lv, "/collection?section=#{ctx.section.id}")
 
       refute html =~ "bg-gold-500/15", "a pill dourada de likes saiu"
       refute html =~ "bg-accent-purple/10", "o círculo roxo de sugestão saiu"

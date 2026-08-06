@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       insert(:step, section: section, name: "Base frontal", wip: false)
       insert(:step, section: section, name: "Sacada Suspensa", wip: true)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "enter_section", %{"section_id" => section.id})
+      html = render_patch(lv, "/collection?section=#{section.id}")
       assert html =~ "Base frontal"
       refute html =~ "Sacada Suspensa"
     end
@@ -84,7 +84,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       insert(:step, section: section, name: "Publicado", status: :published)
       insert(:step, section: section, name: "Rascunho", status: :draft)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "enter_section", %{"section_id" => section.id})
+      html = render_patch(lv, "/collection?section=#{section.id}")
       assert html =~ "Publicado"
       refute html =~ "Rascunho"
     end
@@ -112,7 +112,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       refute has_element?(lv, "#collection-section-card-#{conventions.id}")
     end
 
-    test "enter_section reorganizes the page around the selected section", %{conn: conn} do
+    test "opening a family reorganizes the page around it", %{conn: conn} do
       category = insert(:category, name: "bases", label: "Bases", color: "#2e9f6b")
       section = insert(:section, title: "Bases", code: "B", position: 1, category: category)
 
@@ -125,7 +125,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       )
 
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      render_click(lv, "enter_section", %{"section_id" => section.id})
+      render_patch(lv, "/collection?section=#{section.id}")
 
       assert has_element?(lv, "#collection-drilldown-shell")
       assert has_element?(lv, "#collection-breadcrumb")
@@ -137,7 +137,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       section = insert(:section, title: "Sacadas", code: "SC", position: 1, category: category)
 
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      render_click(lv, "enter_section", %{"section_id" => section.id})
+      render_patch(lv, "/collection?section=#{section.id}")
       html = render_click(lv, "toggle_suggest", %{})
 
       assert has_element?(lv, "#collection-suggest-form")
@@ -161,7 +161,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       )
 
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "enter_section", %{"section_id" => section.id})
+      html = render_patch(lv, "/collection?section=#{section.id}")
 
       assert has_element?(lv, "#collection-step-SC-E")
       assert html =~ "/images/collection/sacada-simples.png"
@@ -185,7 +185,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert has_element?(lv, "#collection-step-BF[data-deep-linked='true']")
     end
 
-    test "returning from a deep-linked step clears the url", %{conn: conn} do
+    test "leaving a deep-linked step drops the mark from the row", %{conn: conn} do
       category = insert(:category, name: "bases", label: "Bases", color: "#2e9f6b")
       section = insert(:section, title: "Bases", code: "B", position: 1, category: category)
 
@@ -199,9 +199,10 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
 
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection?step=BF")
 
-      render_click(lv, "back_to_overview", %{})
+      html = render_patch(lv, ~p"/collection")
 
-      assert_patch(lv, ~p"/collection")
+      assert html =~ "collection-overview-grid"
+      refute html =~ ~s(data-deep-linked="true")
     end
   end
 
@@ -254,9 +255,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       insert(:section, title: "Seção Bases", position: 1, category: cat_b)
       section_s = insert(:section, title: "Seção Sacadas", position: 2, category: cat_s)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "filter", %{"category" => "bases"})
+      html = render_patch(lv, "/collection?category=bases")
       assert html =~ "Seção Bases"
-      refute html =~ "phx-value-section_id=\"#{section_s.id}\""
+      refute html =~ "section=#{section_s.id}"
     end
 
     test "'all' filter restores all sections", %{conn: conn} do
@@ -265,28 +266,28 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       insert(:section, title: "Seção Bases", position: 1, category: cat_b)
       insert(:section, title: "Seção Sacadas", position: 2, category: cat_s)
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      render_click(lv, "filter", %{"category" => "bases"})
-      html = render_click(lv, "filter", %{"category" => "all"})
+      render_patch(lv, "/collection?category=bases")
+      html = render_patch(lv, "/collection")
       assert html =~ "Seção Bases"
       assert html =~ "Seção Sacadas"
     end
   end
 
   describe "section drilldown" do
-    test "enter_section shows all steps from the section", %{conn: conn} do
+    test "the family lists every step it holds", %{conn: conn} do
       section = insert(:section, title: "Bases", position: 1, code: "B")
       insert(:step, section: section, name: "Base frontal")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      html = render_click(lv, "enter_section", %{"section_id" => section.id})
+      html = render_patch(lv, "/collection?section=#{section.id}")
       assert html =~ "Base frontal"
     end
 
-    test "back_to_overview returns to section grid", %{conn: conn} do
+    test "the acervo address brings the mosaic back", %{conn: conn} do
       section = insert(:section, title: "Bases", position: 1, code: "B")
       insert(:step, section: section, name: "Base frontal")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
-      render_click(lv, "enter_section", %{"section_id" => section.id})
-      render_click(lv, "back_to_overview", %{})
+      render_patch(lv, "/collection?section=#{section.id}")
+      render_patch(lv, "/collection")
       assert has_element?(lv, "#collection-overview-grid")
     end
   end
@@ -312,7 +313,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ "Conexões"
       assert html =~ "Comentários"
       assert html =~ "overflow-y-auto"
-      assert has_element?(lv, ~s(button[phx-click="close_drawer"][aria-label="Fechar painel"]))
+      assert has_element?(lv, ~s(button#collection-drawer-close[aria-label="Fechar painel"]))
     end
 
     test "step drawer can copy a deep link", %{conn: conn} do
@@ -327,12 +328,12 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert_push_event(lv, "clipboard:copy", %{text: ^expected_link})
     end
 
-    test "close_drawer hides the panel", %{conn: conn} do
+    test "leaving the step address hides the panel", %{conn: conn} do
       section = insert(:section, title: "Bases", position: 1)
       insert(:step, section: section, code: "BF", name: "Base frontal", note: "Test note")
       {:ok, lv, _html} = live(logged_in_conn(conn), ~p"/collection")
       render_click(lv, "open_step", %{"code" => "BF"})
-      html = render_click(lv, "close_drawer", %{})
+      html = render_patch(lv, "/collection")
       refute html =~ "Test note"
     end
 
@@ -512,7 +513,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       section = insert(:section, title: "Pescadas", position: 1, code: "PE")
       insert(:step, section: section, code: "PE-T", name: "Pescada teste", suggested_by: user)
       {:ok, lv, _html} = live(log_in_user(build_conn(), user), ~p"/collection")
-      html = render_click(lv, "enter_section", %{"section_id" => section.id})
+      html = render_patch(lv, "/collection?section=#{section.id}")
       assert html =~ "Pescada teste"
     end
 

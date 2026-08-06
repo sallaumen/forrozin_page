@@ -60,16 +60,16 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
   """
   attr :card, :map, required: true
   attr :sizes, :string, required: true
+  attr :patch, :string, required: true
 
   def family_tile(assigns) do
     assigns = assign(assigns, :ground, family_ground(assigns.card))
 
     ~H"""
-    <button
+    <.link
+      patch={@patch}
       id={"collection-section-card-#{@card.id}"}
-      phx-click="enter_section"
-      phx-value-section_id={@card.id}
-      class="group relative block w-full cursor-pointer overflow-hidden rounded-xl border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange focus-visible:ring-offset-2 focus-visible:ring-offset-ink-100"
+      class="group relative block w-full cursor-pointer overflow-hidden rounded-xl no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-orange focus-visible:ring-offset-2 focus-visible:ring-offset-ink-100"
     >
       <.family_surface card={@card} sizes={@sizes} />
       <%!-- O degradê é do verde da própria ilustração, não uma tarja preta: a
@@ -86,7 +86,7 @@ defmodule OGrupoDeEstudosWeb.CollectionComponents do
           {@card.step_count} passos
         </div>
       </div>
-    </button>
+    </.link>
     """
   end
 
