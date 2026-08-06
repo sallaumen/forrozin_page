@@ -877,6 +877,20 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   def payment_status_label(_status), do: "Aguardando"
 
   @doc """
+  Where the money of a workshop came from, in one line.
+
+  Leaves out the source that brought nothing: showing "avulso R$ 0" next to a
+  real number reads as a hole in the accounting instead of an absence.
+  """
+  def revenue_sources(%{package_cents: 0, individual_cents: 0}), do: "ninguém pagou ainda"
+
+  def revenue_sources(line) do
+    [{"pacote", line.package_cents}, {"avulso", line.individual_cents}]
+    |> Enum.reject(fn {_source, cents} -> cents == 0 end)
+    |> Enum.map_join(" · ", fn {source, cents} -> "#{source} #{money_label(cents)}" end)
+  end
+
+  @doc """
   Where the payment of whoever is covered by a package came from.
 
   Only says "pago" when the package really is paid: the tag exists to explain

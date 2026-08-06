@@ -218,6 +218,49 @@
         Só você vê daqui para baixo.
       </p>
 
+      <%!-- Balanço primeiro: a programação não é só o que venderam junto. Quem
+           comprou um dia solto pagou o workshop, e esse dinheiro é do evento
+           igual. Sem esta tabela a conta do todo só existia somando painel por
+           painel na mão. --%>
+      <div :if={@revenue && @revenue.workshops != []} class="mt-7">
+        <.section_heading>Balanço da programação</.section_heading>
+
+        <div class="rounded-2xl border border-ink-200 bg-ink-50 px-4">
+          <div
+            :for={linha <- @revenue.workshops}
+            id={"balanco-#{linha.id}"}
+            class="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-ink-200 py-3 last:border-b-0"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-serif text-[14px] font-bold text-ink-900">
+                {linha.title}
+              </span>
+              <span class="block font-sans text-[11.5px] text-ink-500">
+                {revenue_sources(linha)}<span :if={linha.paid > 0}>
+                  · {linha.paid} {if linha.paid == 1, do: "pagou", else: "pagaram"}</span>
+              </span>
+            </span>
+            <b class="shrink-0 font-serif text-[15.5px] font-bold text-ink-900">
+              {money_label(linha.total_cents)}
+            </b>
+          </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 border-t-2 border-ink-300 pt-3">
+          <span class="font-sans text-[10.5px] font-bold uppercase tracking-[1.6px] text-ink-500">
+            Total do evento
+          </span>
+          <b class="font-serif text-[21px] font-bold leading-none text-ink-900">
+            {money_label(@revenue.total_cents)}
+          </b>
+        </div>
+        <p class="m-0 mt-1.5 font-sans text-[11.5px] leading-snug text-ink-500">
+          {money_label(@revenue.package_cents)} vieram da programação fechada e {money_label(
+            @revenue.individual_cents
+          )} de inscrições avulsas nos workshops.
+        </p>
+      </div>
+
       <%!-- Package: who bought and who paid. --%>
       <div :if={@tem_pacote?} class="mt-7">
         <.section_heading>Quem levou a programação toda</.section_heading>

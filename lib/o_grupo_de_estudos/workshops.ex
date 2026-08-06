@@ -962,6 +962,62 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
+  @doc """
+  The balance of the whole program: what each workshop made and what came in
+  altogether.
+
+  A program is not only what was sold as a package. Someone who bought a single
+  day paid the workshop, and that money belongs to the event just the same, so
+  each line separates the two sources and the total is the two added up.
+
+  One query for every enrollment of the program instead of one per workshop:
+  the panel already shows a dozen lines and would otherwise open a dozen round
+  trips to draw a single table.
+  """
+  @spec program_revenue(WorkshopProgram.t(), User.t()) :: {:ok, map()} | {:error, :unauthorized}
+  def program_revenue(%WorkshopProgram{} = program, %User{} = user) do
+    with :ok <- ensure_program_owner(program, user) do
+      workshops = ProgramQuery.list_workshops(program.id)
+      {:ok, balance(workshops)}
+    end
+  end
+
+  defp balance(workshops) do
+    rows = workshops |> Enum.map(& &1.id) |> EnrollmentQuery.list_for_workshops()
+
+    covered =
+      rows |> EnrollmentPayment.package_ids() |> EnrollmentQuery.covered_workshops_by_package()
+
+    by_workshop = Enum.group_by(rows, & &1.workshop_id)
+    lines = Enum.map(workshops, &workshop_line(&1, by_workshop, covered))
+
+    %{
+      workshops: lines,
+      package_cents: sum_of(lines, :package_cents),
+      individual_cents: sum_of(lines, :individual_cents),
+      total_cents: sum_of(lines, :total_cents)
+    }
+  end
+
+  defp workshop_line(workshop, by_workshop, covered) do
+    summary =
+      by_workshop
+      |> Map.get(workshop.id, [])
+      |> EnrollmentPayment.enrich(covered, workshop.id)
+      |> EnrollmentPayment.summarize(workshop.price_cents)
+
+    %{
+      id: workshop.id,
+      title: workshop.title,
+      paid: summary.paid,
+      package_cents: summary.package_cents,
+      individual_cents: summary.individual_cents,
+      total_cents: summary.revenue_cents
+    }
+  end
+
+  defp sum_of(lines, key), do: lines |> Enum.map(&Map.fetch!(&1, key)) |> Enum.sum()
+
   @doc "Marks the package payment."
   @spec set_package_payment(WorkshopProgram.t(), User.t(), Ecto.UUID.t(), atom()) ::
           {:ok, ProgramEnrollment.t()} | {:error, :unauthorized | :not_found | term()}
