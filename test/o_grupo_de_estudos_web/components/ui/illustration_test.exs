@@ -4,8 +4,8 @@ defmodule OGrupoDeEstudosWeb.UI.IllustrationTest do
 
   Two rules, and every test here is one of them. Nothing is cropped, because the
   figure is a whole body and which part carries the step changes from step to
-  step. Nothing is enlarged past what it can carry, because a phone draws two
-  device pixels per CSS pixel and a 310px drawing turns to mush above 155.
+  step. Nothing is enlarged past what it can carry, because a drawing stretched
+  past its own resolution looks broken in a way a smaller one never does.
   """
 
   use OGrupoDeEstudosWeb.ConnCase, async: true
@@ -16,8 +16,11 @@ defmodule OGrupoDeEstudosWeb.UI.IllustrationTest do
 
   describe "what the library knows about each file" do
     test "what it measures is the file that actually gets served" do
-      assert %{thumb: "/images/collection/thumb/trava-frontal.webp", width: 320, height: 320} =
+      assert %{width: 640, height: 640, srcset: srcset} =
                Illustration.source("/images/collection/trava-frontal.png")
+
+      assert srcset =~ "/images/collection/thumb/trava-frontal.webp 320w"
+      assert srcset =~ "/images/collection/thumb/trava-frontal@640.webp 640w"
     end
 
     test "a drawing already smaller than the thumbnail was converted, never enlarged" do
@@ -38,9 +41,21 @@ defmodule OGrupoDeEstudosWeb.UI.IllustrationTest do
     end
   end
 
-  describe "the ceiling, which is half the file on a phone" do
-    test "a 310 by 315 drawing stops at 155 by 157" do
-      assert {155, 157} = Illustration.crisp_ceiling("/images/collection/sacada-esquerda.png")
+  describe "the ceiling, derived from the file's real size" do
+    test "a 310 by 315 drawing stops well before it would blur" do
+      assert {194, 197} = Illustration.crisp_ceiling("/images/collection/sacada-esquerda.png")
+    end
+
+    test "the mosaic tile of 271px fits inside every family drawing's ceiling" do
+      familias =
+        ~w(base inversao gp piao scsp caminhada pescada trava-frontal sacada-simples giro-simples)
+
+      for nome <- familias do
+        {largura, altura} = Illustration.crisp_ceiling("/images/collection/#{nome}.png")
+
+        assert min(largura, altura) >= 271,
+               "#{nome} pararia antes de preencher o mosaico e ficaria encolhida entre as vizinhas"
+      end
     end
 
     test "a drawing nobody measured has no ceiling to enforce" do
@@ -72,8 +87,8 @@ defmodule OGrupoDeEstudosWeb.UI.IllustrationTest do
     test "it caps a small drawing at the size it can carry" do
       html = slot("/images/collection/sacada-esquerda.png")
 
-      assert html =~ "max-width:min(100%,155px)"
-      assert html =~ "max-height:min(100%,157px)"
+      assert html =~ "max-width:min(100%,194px)"
+      assert html =~ "max-height:min(100%,197px)"
     end
 
     test "the frame is always a ceiling too, so nothing overflows and gets clipped" do
@@ -85,15 +100,16 @@ defmodule OGrupoDeEstudosWeb.UI.IllustrationTest do
     test "it reserves the space before the file arrives" do
       html = slot("/images/collection/piao.png")
 
-      assert html =~ ~s(width="320")
-      assert html =~ ~s(height="320")
+      assert html =~ ~s(width="640")
+      assert html =~ ~s(height="640")
       assert html =~ ~s(loading="lazy")
     end
 
     test "it serves a hundred kilobytes instead of eleven megabytes" do
       html = slot("/images/collection/piao.png")
 
-      assert html =~ ~s(srcset="/images/collection/thumb/piao.webp")
+      assert html =~ "/images/collection/thumb/piao.webp 320w"
+      assert html =~ "/images/collection/thumb/piao@640.webp 640w"
       assert html =~ ~s(type="image/webp")
 
       assert html =~ "/images/collection/piao.png",

@@ -13,18 +13,18 @@ defmodule OGrupoDeEstudosWeb.UI.Illustration do
   the drawing's own corner colour. The padding then reads as more drawing rather
   than as letterboxing, and the frame is free to be any shape.
 
-  **Nothing is enlarged past what it can carry.** A phone draws two device
-  pixels per CSS pixel, so a 310px drawing is sharp up to 155 CSS pixels and
-  soft after that. Each drawing carries its own ceiling; above it the drawing
-  sits smaller inside the green, which looks deliberate, where a blurred
-  enlargement looks broken.
+  **Nothing is enlarged past what it can carry.** Each drawing carries its own
+  ceiling, derived from its real size; above it the drawing sits smaller inside
+  the green, which looks deliberate, where a blurred enlargement looks broken.
+  The ceiling is where the drawing still holds up, not where it is
+  pixel-perfect: see `@density`.
 
   **Nothing arrives heavier than the frame needs.** The originals total eleven
-  megabytes, which is an absurd price for a row of 54 pixel marks, so what gets
-  served is a 320px WebP: a hundred kilobytes for all eleven. The original PNG
-  stays as the fallback of the `<picture>`, for whoever cannot read WebP. The
-  two drawings that were already smaller than 320 were converted, never
-  enlarged.
+  megabytes, which is an absurd price for a row of 54 pixel marks. Two WebP
+  derivatives are served instead — 320px for the marks, 640px for the acervo
+  mosaic — and the browser picks by `sizes`. The original PNG stays as the
+  fallback of the `<picture>`, for whoever cannot read WebP. The two drawings
+  that were already smaller were converted, never enlarged.
 
   A file nobody measured (a future upload) renders straight from its own path.
   Refusing to draw it would be worse than drawing it unmeasured.
@@ -32,27 +32,35 @@ defmodule OGrupoDeEstudosWeb.UI.Illustration do
 
   use OGrupoDeEstudosWeb, :html
 
-  # Sizes and colours are of the *thumbnail*, because the thumbnail is what
-  # browsers actually receive. The colour is sampled from the four corners,
-  # which are background on all eleven; whole edges are not safe, since in
-  # sacada-esquerda the cats' feet reach the bottom and drag the average
-  # towards the fur.
+  # Cada desenho tem duas versões: a pequena para a marca de 54px das listas, a
+  # grande para o mosaico do acervo. As medidas são as da VERSÃO GRANDE, que é o
+  # teto de nitidez real, e a cor vem dos quatro cantos do arquivo — a borda
+  # inteira não serve, porque em sacada-esquerda os pés dos gatos encostam
+  # embaixo e puxam a média para o pelo.
+  #
+  # Nenhuma foi ampliada: as duas que já nasceram menores que 640 aparecem aqui
+  # no próprio tamanho.
   @library %{
-    "/images/collection/base.png" => {"base", 235, 320, "#4c5841"},
-    "/images/collection/inversao.png" => {"inversao", 320, 320, "#4b5140"},
-    "/images/collection/gp.png" => {"gp", 320, 320, "#515b44"},
-    "/images/collection/piao.png" => {"piao", 320, 320, "#4b513f"},
-    "/images/collection/scsp.png" => {"scsp", 320, 320, "#4c543d"},
-    "/images/collection/caminhada.png" => {"caminhada", 320, 320, "#535c45"},
-    "/images/collection/pescada.png" => {"pescada", 320, 320, "#505744"},
-    "/images/collection/trava-frontal.png" => {"trava-frontal", 320, 320, "#4f5845"},
-    "/images/collection/sacada-simples.png" => {"sacada-simples", 320, 320, "#4d5b4a"},
+    "/images/collection/base.png" => {"base", 470, 640, "#4c5841"},
+    "/images/collection/inversao.png" => {"inversao", 640, 640, "#4b5140"},
+    "/images/collection/gp.png" => {"gp", 640, 640, "#515b44"},
+    "/images/collection/piao.png" => {"piao", 640, 640, "#4b513f"},
+    "/images/collection/scsp.png" => {"scsp", 640, 640, "#4c543d"},
+    "/images/collection/caminhada.png" => {"caminhada", 640, 640, "#535c45"},
+    "/images/collection/pescada.png" => {"pescada", 640, 640, "#505744"},
+    "/images/collection/trava-frontal.png" => {"trava-frontal", 640, 640, "#4f5845"},
+    "/images/collection/sacada-simples.png" => {"sacada-simples", 481, 481, "#4d5b4a"},
     "/images/collection/sacada-esquerda.png" => {"sacada-esquerda", 310, 315, "#4c5848"},
-    "/images/collection/giro-simples.png" => {"giro-simples", 284, 320, "#535c41"}
+    "/images/collection/giro-simples.png" => {"giro-simples", 568, 640, "#535c41"}
   }
 
-  # Every phone this app runs on draws two device pixels per CSS pixel.
-  @device_pixel_ratio 2
+  # Dois pixels de tela por pixel de CSS é o ideal num celular. Mas o teto é o
+  # ponto onde o desenho AINDA se segura, não o ponto onde ele fica perfeito:
+  # abaixo de 1,6 a suavização começa a aparecer, e acima disso não. Com 2
+  # cravado, a `sacada-simples` (481px nativos) parava em 240 dentro de um
+  # mosaico de 271 e ficava visivelmente encolhida no meio das vizinhas — uma
+  # emenda pior do que os 10% de nitidez que ela economizava.
+  @density 1.6
 
   @doc """
   What is known about a drawing: the file that gets served, its size and its green.
@@ -63,7 +71,8 @@ defmodule OGrupoDeEstudosWeb.UI.Illustration do
 
   defp build_source({name, width, height, background}) do
     %{
-      thumb: "/images/collection/thumb/#{name}.webp",
+      srcset:
+        "/images/collection/thumb/#{name}.webp 320w, /images/collection/thumb/#{name}@640.webp #{width}w",
       width: width,
       height: height,
       background: background
@@ -78,11 +87,16 @@ defmodule OGrupoDeEstudosWeb.UI.Illustration do
   defp ceiling_of(nil), do: nil
 
   defp ceiling_of({_name, width, height, _background}),
-    do: {div(width, @device_pixel_ratio), div(height, @device_pixel_ratio)}
+    do: {ceiling_px(width), ceiling_px(height)}
 
   attr :src, :string, required: true
   attr :alt, :string, required: true
   attr :class, :string, default: ""
+
+  attr :sizes, :string,
+    default: "54px",
+    doc: "largura em CSS que a moldura terá, para o navegador escolher a versão certa"
+
   attr :rest, :global
 
   def illustration(assigns) do
@@ -99,7 +113,7 @@ defmodule OGrupoDeEstudosWeb.UI.Illustration do
       {@rest}
     >
       <picture class="contents">
-        <source :if={@source} srcset={@source.thumb} type="image/webp" />
+        <source :if={@source} srcset={@source.srcset} sizes={@sizes} type="image/webp" />
         <img
           src={@src}
           alt={@alt}
@@ -123,7 +137,8 @@ defmodule OGrupoDeEstudosWeb.UI.Illustration do
   defp cap(nil), do: "max-width:100%;max-height:100%"
 
   defp cap(%{width: width, height: height}) do
-    "max-width:min(100%,#{div(width, @device_pixel_ratio)}px);" <>
-      "max-height:min(100%,#{div(height, @device_pixel_ratio)}px)"
+    "max-width:min(100%,#{ceiling_px(width)}px);max-height:min(100%,#{ceiling_px(height)}px)"
   end
+
+  defp ceiling_px(pixels), do: round(pixels / @density)
 end

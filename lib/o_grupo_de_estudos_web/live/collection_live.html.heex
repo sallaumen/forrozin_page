@@ -27,7 +27,7 @@
          família para fora da tela do celular. O convite a sugerir passo agora
          mora no fim da lista, que é onde a pessoa descobre que não achou. --%>
     <div id="collection-hero" class="border-b border-ink-300/50 bg-ink-200 px-4 pt-6 pb-5 sm:px-6">
-      <div class="mx-auto flex max-w-[1600px] flex-wrap items-baseline gap-x-3 gap-y-1">
+      <div class="mx-auto flex max-w-[1120px] flex-wrap items-baseline gap-x-3 gap-y-1">
         <h1 class="brand-display is-title text-[26px] leading-none tracking-tight text-ink-900 sm:text-[30px]">
           Acervo
         </h1>
@@ -45,7 +45,7 @@
       style="top: var(--top-nav-h, 56px)"
       class="sticky z-30 bg-ink-200/95 backdrop-blur-sm border-b border-ink-300/40 py-3.5 px-6"
     >
-      <div class="max-w-[1600px] mx-auto flex gap-2.5 flex-wrap items-center">
+      <div class="max-w-[1120px] mx-auto flex gap-2.5 flex-wrap items-center">
         <%!-- Busca --%>
         <form
           id="collection-search-form"
@@ -103,7 +103,7 @@
       <div
         :if={@filters_open?}
         id="collection-filter-panel"
-        class="max-w-[1600px] mx-auto mt-3 rounded-3xl border border-ink-300/50 bg-ink-50 p-4"
+        class="max-w-[1120px] mx-auto mt-3 rounded-3xl border border-ink-300/50 bg-ink-50 p-4"
       >
         <div class="flex gap-1.5 flex-wrap">
           <button
@@ -141,7 +141,7 @@
 
       <%!-- Suggestion form: inside sticky controls, never scrolls away --%>
       <div class={[
-        "max-w-[1600px] mx-auto mt-3 p-4 bg-accent-purple/5 border border-accent-purple/20 rounded-md",
+        "max-w-[1120px] mx-auto mt-3 p-4 bg-accent-purple/5 border border-accent-purple/20 rounded-md",
         !@suggest_mode && "hidden"
       ]}>
         <div class="flex items-center justify-between mb-3">
@@ -234,7 +234,7 @@
     <%!-- /collection-controls --%>
 
     <%!-- Tabs --%>
-    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10">
+    <div class="max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10">
       <div class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
         <button
           phx-click="switch_tab"
@@ -267,7 +267,7 @@
 
     <div
       :if={@loaded?}
-      class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 pt-6 pb-20 w-full box-border"
+      class="max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 pt-6 pb-20 w-full box-border"
     >
       <%= if @active_tab == "my_steps" do %>
         <%!-- Meus passos tab --%>
@@ -314,41 +314,19 @@
           <% end %>
         <% else %>
           <%= if is_nil(@active_section_card) do %>
-            <%!-- Fileiras separadas por fio, não cards. Vinte e uma famílias em
-                 caixas arredondadas comiam a tela inteira do celular; a mesma
-                 informação em linha cabe seis de uma vez. --%>
+            <%!-- Mosaico. A largura para em 1120px de propósito: sem isso, numa
+                 tela larga a grade continuaria crescendo e cada família viraria
+                 um cartaz. Travada em quatro colunas, o desenho fica do tamanho
+                 em que ainda dá para reconhecer o passo. --%>
             <div
               id="collection-overview-grid"
-              class="grid border-t border-ink-300/45 sm:grid-cols-2 sm:gap-x-8"
+              class="mx-auto grid max-w-[1120px] grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4"
             >
-              <%= for card <- filtered_collection_cards(@collection_cards, @category_filter) do %>
-                <button
-                  id={"collection-section-card-#{card.id}"}
-                  phx-click="enter_section"
-                  phx-value-section_id={card.id}
-                  class="group flex min-h-11 w-full cursor-pointer items-center gap-3.5 border-0 border-b border-ink-300/45 bg-transparent px-0 py-2.5 text-left"
-                >
-                  <.family_mark card={card} />
-                  <div class="min-w-0 flex-1">
-                    <div class="font-serif text-[15px] font-semibold leading-snug text-ink-900 transition-colors group-hover:text-accent-orange">
-                      {card.title}
-                    </div>
-                    <%!-- Metade das famílias tem o nome da própria categoria, e
-                         repetir "Bases" embaixo de "Bases" não informa nada. --%>
-                    <div class="mt-0.5 font-sans text-[12px] text-ink-500">
-                      <span :if={card.category_label && card.category_label != card.title}>
-                        {card.category_label} ·
-                      </span>
-                      <span class="tabular-nums">{card.step_count}</span>
-                      passos
-                    </div>
-                  </div>
-                  <.icon
-                    name="hero-chevron-right"
-                    class="size-4 shrink-0 text-ink-400 transition-transform group-hover:translate-x-0.5"
-                  />
-                </button>
-              <% end %>
+              <.family_tile
+                :for={card <- filtered_collection_cards(@collection_cards, @category_filter)}
+                card={card}
+                sizes="(min-width: 1120px) 268px, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 47vw"
+              />
             </div>
 
             <p class="mt-6 font-serif text-sm italic leading-relaxed text-ink-500">
@@ -439,7 +417,7 @@
     <div
       :if={!@loaded?}
       id="collection-loading"
-      class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 pt-8 pb-20 w-full box-border"
+      class="max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 pt-8 pb-20 w-full box-border"
       aria-busy="true"
     >
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
