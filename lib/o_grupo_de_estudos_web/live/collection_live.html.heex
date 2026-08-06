@@ -105,36 +105,39 @@
         id="collection-filter-panel"
         class="max-w-[1120px] mx-auto mt-3 rounded-3xl border border-ink-300/50 bg-ink-50 p-4"
       >
+        <%!-- O filtro viaja na URL para sobreviver a sair da página e voltar,
+             mas com `replace`: escolher uma categoria não é um lugar a mais
+             para atravessar no caminho de volta. --%>
         <div class="flex gap-1.5 flex-wrap">
-          <button
-            phx-click="filter"
-            phx-value-category="all"
+          <.link
+            patch={collection_path(tab: @active_tab)}
+            replace
             class={[
-              "inline-flex items-center min-h-11 text-[11px] py-1 px-3 rounded-full cursor-pointer font-serif italic tracking-tight border",
+              "inline-flex items-center min-h-11 text-[11px] py-1 px-3 rounded-full cursor-pointer font-serif italic tracking-tight border no-underline",
               @category_filter == "all" && "bg-ink-900 text-ink-100 border-transparent font-bold",
               @category_filter != "all" &&
                 "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
             ]}
           >
             Todos
-          </button>
+          </.link>
           <%= for cat <- @categories do %>
-            <button
-              phx-click="filter"
-              phx-value-category={cat.name}
+            <.link
+              patch={collection_path(tab: @active_tab, category: cat.name)}
+              replace
               style={
                 @category_filter == cat.name &&
                   "background: #{cat.color}; border-color: transparent;"
               }
               class={[
-                "inline-flex items-center min-h-11 text-[11px] py-1 px-3 rounded-full cursor-pointer font-serif italic tracking-tight border",
+                "inline-flex items-center min-h-11 text-[11px] py-1 px-3 rounded-full cursor-pointer font-serif italic tracking-tight border no-underline",
                 @category_filter == cat.name && "text-ink-100 font-bold",
                 @category_filter != cat.name &&
                   "bg-ink-900/5 text-ink-600 border-ink-300/40 font-normal"
               ]}
             >
               {cat.label}
-            </button>
+            </.link>
           <% end %>
         </div>
       </div>
@@ -235,33 +238,31 @@
 
     <%!-- Tabs --%>
     <div class="max-w-[1120px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10">
-      <div class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
-        <button
-          phx-click="switch_tab"
-          phx-value-tab="collection"
+      <div id="collection-tabs" class="flex gap-0 border-b-2 border-ink-300/50 mt-3">
+        <.link
+          patch={collection_path(category: @category_filter)}
           class={[
-            "inline-flex min-h-11 items-center px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
+            "inline-flex min-h-11 items-center px-6 font-serif text-sm cursor-pointer -mb-0.5 border-b-2 no-underline",
             @active_tab == "collection" && "text-ink-900 border-ink-900 font-bold",
             @active_tab != "collection" && "text-ink-500 border-transparent font-normal"
           ]}
         >
           Acervo
-        </button>
-        <button
-          phx-click="switch_tab"
-          phx-value-tab="my_steps"
+        </.link>
+        <.link
+          patch={collection_path(tab: "my_steps", category: @category_filter)}
           style={
             if @active_tab == "my_steps",
               do: "color: var(--color-accent-purple); border-color: var(--color-accent-purple);"
           }
           class={[
-            "inline-flex min-h-11 items-center px-6 font-serif text-sm cursor-pointer border-0 bg-transparent -mb-0.5 border-b-2",
+            "inline-flex min-h-11 items-center px-6 font-serif text-sm cursor-pointer -mb-0.5 border-b-2 no-underline",
             @active_tab == "my_steps" && "font-bold",
             @active_tab != "my_steps" && "text-ink-500 border-transparent font-normal"
           ]}
         >
           Meus passos
-        </button>
+        </.link>
       </div>
     </div>
 
@@ -325,6 +326,7 @@
               <.family_tile
                 :for={card <- filtered_collection_cards(@collection_cards, @category_filter)}
                 card={card}
+                patch={collection_path(section: card.id, category: @category_filter)}
                 sizes="(min-width: 1120px) 268px, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 47vw"
               />
             </div>
@@ -339,9 +341,15 @@
           <% else %>
             <div id="collection-drilldown-shell" class="space-y-6">
               <div id="collection-breadcrumb" class="flex items-center gap-2 text-sm text-ink-600">
+                <%!-- Sair da família é andar para trás no histórico, não empilhar
+                     mais um lugar: senão o gesto de voltar reabriria a família
+                     que a pessoa acabou de fechar. --%>
                 <button
-                  phx-click="back_to_overview"
-                  class="inline-flex min-h-11 items-center gap-1 font-semibold text-ink-900 transition-colors hover:text-accent-orange sm:min-h-0"
+                  id="collection-breadcrumb-back"
+                  type="button"
+                  phx-hook="BackButton"
+                  data-fallback={collection_path(tab: @active_tab, category: @category_filter)}
+                  class="inline-flex min-h-11 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 font-serif text-sm font-semibold text-ink-900 transition-colors hover:text-accent-orange sm:min-h-0"
                 >
                   <.icon name="hero-arrow-left" class="size-4" /> Acervo
                 </button>
@@ -436,14 +444,21 @@
     </div>
   </div>
 
-  <%!-- Drawer backdrop: blurs and darkens the center while the panel is open. --%>
+  <%!-- Drawer backdrop: blurs and darkens the center while the panel is open.
+       Fechar a gaveta é voltar: ela tem endereço próprio, então o X, a barra do
+       celular e o fundo desfazem a entrada no histórico em vez de criar outra.
+       Sem isso, o gesto de voltar reabriria a gaveta recém-fechada. --%>
   <div
+    id="collection-drawer-backdrop"
+    phx-hook="BackButton"
+    data-fallback={
+      collection_path(section: @active_section_id, tab: @active_tab, category: @category_filter)
+    }
     class={[
       "fixed inset-0 z-[39] bg-black/30 backdrop-blur-[3px] transition-opacity duration-200",
       @drawer_open && "opacity-100",
       !@drawer_open && "pointer-events-none opacity-0"
     ]}
-    phx-click="close_drawer"
     aria-hidden="true"
   >
   </div>
@@ -462,9 +477,14 @@
     <%!-- Desktop: X discreto no canto (painel lateral). --%>
     <button
       :if={@drawer_open}
-      phx-click="close_drawer"
+      id="collection-drawer-close"
+      type="button"
+      phx-hook="BackButton"
+      data-fallback={
+        collection_path(section: @active_section_id, tab: @active_tab, category: @category_filter)
+      }
       aria-label="Fechar painel"
-      class="absolute right-3 top-3 z-20 hidden min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-ink-200 bg-ink-50/90 text-ink-500 shadow-sm backdrop-blur transition hover:bg-ink-100 hover:text-ink-900 md:inline-flex"
+      class="absolute right-3 top-3 z-20 hidden min-h-[40px] min-w-[40px] cursor-pointer items-center justify-center rounded-lg border border-ink-200 bg-ink-50/90 text-ink-500 shadow-sm backdrop-blur transition hover:bg-ink-100 hover:text-ink-900 md:inline-flex"
     >
       <.icon name="hero-x-mark" class="size-5" />
     </button>
@@ -475,8 +495,17 @@
       --%>
       <button
         :if={@drawer_open}
-        phx-click="close_drawer"
-        class="sticky top-0 z-10 flex w-full items-center gap-1.5 border-b border-ink-200 bg-ink-50/95 px-5 py-3 text-sm font-semibold text-ink-700 backdrop-blur md:hidden"
+        id="collection-drawer-back"
+        type="button"
+        phx-hook="BackButton"
+        data-fallback={
+          collection_path(
+            section: @active_section_id,
+            tab: @active_tab,
+            category: @category_filter
+          )
+        }
+        class="sticky top-0 z-10 flex w-full cursor-pointer items-center gap-1.5 border-0 border-b border-ink-200 bg-ink-50/95 px-5 py-3 font-serif text-sm font-semibold text-ink-700 backdrop-blur md:hidden"
       >
         <.icon name="hero-arrow-left" class="size-4 shrink-0" /> Voltar ao acervo
       </button>
