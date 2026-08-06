@@ -43,36 +43,14 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
       traduzido ou fonte maior, a tira rola em vez de cortar. --%>
       <div class="mx-auto max-w-[1500px] overflow-x-auto px-2 sm:px-6 lg:px-8">
         <div role="tablist" class="flex items-stretch gap-0.5 sm:gap-1">
-          <.tab_link :if={@active == "workshops"} navigate="/study" label="Meu estudo" />
-          <.tab_button
-            :if={@active != "workshops"}
-            tab="personal"
-            active={@active}
-            label="Meu estudo"
-          />
-          <.tab_link :if={@active == "workshops"} navigate="/study" label="Professores" />
-          <.tab_button
-            :if={@active != "workshops"}
-            tab="teachers"
-            active={@active}
-            label="Professores"
-          >
+          <.tab_link tab="personal" active={@active} label="Meu estudo" />
+          <.tab_link tab="teachers" active={@active} label="Professores">
             <.tab_count count={@lesson_count} />
-          </.tab_button>
-          <.tab_link :if={@active == "workshops" && @is_teacher} navigate="/study" label="Alunos" />
-          <.tab_button
-            :if={@active != "workshops" && @is_teacher}
-            tab="students"
-            active={@active}
-            label="Alunos"
-          >
+          </.tab_link>
+          <.tab_link :if={@is_teacher} tab="students" active={@active} label="Alunos">
             <.tab_count count={@pending_count} />
-          </.tab_button>
-          <.tab_link
-            navigate="/study/workshops"
-            label="Workshops"
-            active={@active == "workshops"}
-          />
+          </.tab_link>
+          <.tab_link tab="workshops" active={@active} label="Workshops" />
         </div>
       </div>
     </div>
@@ -106,44 +84,40 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
     ]
   end
 
-  # The workshops tab lives in its own LiveView (deep link and a real URL), so
-  # it navigates instead of flipping local state.
-  attr :navigate, :string, required: true
-  attr :label, :string, required: true
-  attr :active, :boolean, default: false
-
-  defp tab_link(assigns) do
-    ~H"""
-    <.link
-      navigate={@navigate}
-      role="tab"
-      aria-selected={to_string(@active)}
-      class={tab_class(@active)}
-    >
-      {@label}
-    </.link>
-    """
-  end
-
-  attr :tab, :string, required: true
+  # One tab of the strip, as an address rather than as local state. A tab used to
+  # be an assign flipped by a click, so the browser was handed no history entry
+  # and the back gesture left the site instead of stepping back one tab. It also
+  # meant that going into a workshop and coming back landed on the diary, since
+  # that is a remount and a remount keeps only what the address carries.
+  attr :tab, :string, required: true, values: ~w(personal teachers students workshops)
   attr :active, :string, required: true
   attr :label, :string, required: true
   slot :inner_block
 
-  defp tab_button(assigns) do
+  defp tab_link(assigns) do
+    assigns = assign(assigns, :nav, tab_nav(assigns.active, assigns.tab))
+
     ~H"""
-    <button
-      type="button"
+    <.link
+      {@nav}
       role="tab"
       aria-selected={to_string(@tab == @active)}
-      phx-click="switch_study_tab"
-      phx-value-tab={@tab}
       class={tab_class(@tab == @active)}
     >
       {@label}{render_slot(@inner_block)}
-    </button>
+    </.link>
     """
   end
+
+  # Workshops is a LiveView of its own, so crossing that border is a navigate.
+  # Between the three tabs of /study it is a patch, which keeps the dashboard
+  # already loaded instead of running every query again.
+  defp tab_nav(_active, "workshops"), do: %{navigate: ~p"/study/workshops"}
+  defp tab_nav("workshops", tab), do: %{navigate: study_tab_path(tab)}
+  defp tab_nav(_inside_study, tab), do: %{patch: study_tab_path(tab)}
+
+  defp study_tab_path("personal"), do: ~p"/study"
+  defp study_tab_path(tab), do: ~p"/study?tab=#{tab}"
 
   attr :title, :string, required: true
   attr :description, :string, default: nil

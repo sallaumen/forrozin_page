@@ -27,7 +27,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileRegressionsTest do
       insert(:suggestion, user: ctx.owner, action: :edit_field, status: :approved)
 
       {:ok, lv, _html} = open(ctx.conn, ctx.owner, ctx.owner)
-      html = render_click(lv, "switch_profile_tab", %{"tab" => "contributions"})
+      html = render_patch(lv, ~p"/users/#{ctx.owner.username}?tab=contributions")
 
       assert html =~ "Edição de"
       assert html =~ "Aprovado", "o estado da sugestão é lido por gente, em português"
@@ -43,7 +43,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileRegressionsTest do
       )
 
       {:ok, lv, _html} = open(ctx.conn, ctx.owner, ctx.owner)
-      html = render_click(lv, "switch_profile_tab", %{"tab" => "contributions"})
+      html = render_patch(lv, ~p"/users/#{ctx.owner.username}?tab=contributions")
 
       assert html =~ "Nova conexão"
       assert html =~ "Aguardando revisão"
@@ -58,7 +58,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileRegressionsTest do
       )
 
       {:ok, lv, _html} = open(ctx.conn, ctx.owner, ctx.owner)
-      html = render_click(lv, "switch_profile_tab", %{"tab" => "contributions"})
+      html = render_patch(lv, ~p"/users/#{ctx.owner.username}?tab=contributions")
 
       assert html =~ "Remover conexão"
       assert html =~ "Rejeitado"
@@ -86,7 +86,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileRegressionsTest do
     test "says so instead of leaving the area blank", ctx do
       {:ok, lv, _html} = open(ctx.conn, ctx.other, ctx.owner)
 
-      html = render_click(lv, "switch_profile_tab", %{"tab" => "sequences"})
+      html = render_patch(lv, ~p"/users/#{ctx.owner.username}?tab=sequences")
 
       assert html =~ "nenhuma sequência",
              "aba vazia sem uma frase é indistinguível de tela quebrada"

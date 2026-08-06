@@ -87,14 +87,14 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLiveTest do
       assert html =~ "Vai acontecer"
       refute html =~ "Já rolou"
 
-      html = render_click(lv, "filter_period", %{"period" => "past"})
+      html = render_patch(lv, "/study/workshops?period=past")
       assert html =~ "Já rolou"
     end
 
     test "forged period is ignored", %{conn: conn} do
       {:ok, lv, _} = live(log_in_user(conn, insert(:user)), ~p"/study/workshops")
 
-      html = render_click(lv, "filter_period", %{"period" => "drop_table"})
+      html = render_patch(lv, "/study/workshops?period=drop_table")
       assert html =~ "Workshops"
     end
 

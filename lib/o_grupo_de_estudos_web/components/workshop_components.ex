@@ -370,8 +370,15 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
   end
 
   attr :active, :string, required: true
-  attr :event, :string, default: "filter_period"
 
+  @doc """
+  The window of the agenda: what is coming, this week, this month, and so on.
+
+  It travels in the address so it survives opening a workshop and coming back,
+  which is a remount and keeps only what the address carries. It replaces the
+  entry instead of adding one: narrowing the agenda is not a place to walk back
+  through on the way out.
+  """
   def period_filter(assigns) do
     assigns =
       assign(assigns, :options, [
@@ -384,22 +391,25 @@ defmodule OGrupoDeEstudosWeb.WorkshopComponents do
 
     ~H"""
     <div class="flex flex-wrap gap-1.5">
-      <button
+      <.link
         :for={{value, label} <- @options}
-        type="button"
-        phx-click={@event}
-        phx-value-period={value}
+        patch={period_path(value)}
+        replace
+        aria-current={to_string(@active == value)}
         class={[
-          "min-h-11 cursor-pointer whitespace-nowrap rounded-full border px-3.5 font-serif text-[12px] font-semibold transition-colors sm:min-h-9",
+          "inline-flex min-h-11 items-center whitespace-nowrap rounded-full border px-3.5 font-serif text-[12px] font-semibold no-underline transition-colors sm:min-h-9",
           @active == value && "border-ink-900 bg-ink-900 text-ink-50",
           @active != value && "border-ink-300 bg-ink-50 text-ink-600 hover:border-ink-400"
         ]}
       >
         {label}
-      </button>
+      </.link>
     </div>
     """
   end
+
+  defp period_path("upcoming"), do: ~p"/study/workshops"
+  defp period_path(period), do: ~p"/study/workshops?period=#{period}"
 
   attr :title, :string, required: true
   attr :description, :string, default: nil

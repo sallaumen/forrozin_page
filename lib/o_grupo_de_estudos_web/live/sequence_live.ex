@@ -92,7 +92,9 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
     {:noreply, socket}
   end
 
-  def handle_params(_params, _uri, socket) do
+  # The tab is where the person is, so it lives in the address: without it the
+  # back gesture left the page instead of stepping back one tab.
+  def handle_params(params, _uri, socket) do
     previous_deep_link = socket.assigns[:deep_linked_sequence_id]
 
     socket =
@@ -102,7 +104,27 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
         socket
       end
 
-    {:noreply, assign(socket, :deep_linked_sequence_id, nil)}
+    {:noreply,
+     socket
+     |> assign(:deep_linked_sequence_id, nil)
+     |> apply_seq_tab(params["tab"])}
+  end
+
+  defp apply_seq_tab(socket, "mine") do
+    current_user = socket.assigns.current_user
+    my_sequences = list_my_sequences(current_user)
+
+    socket
+    |> assign(active_seq_tab: "mine", my_sequences: my_sequences, create_menu_open: false)
+    |> assign_sequence_social_metadata(
+      current_user.id,
+      socket.assigns.community_sequences_all,
+      my_sequences
+    )
+  end
+
+  defp apply_seq_tab(socket, _community) do
+    assign(socket, active_seq_tab: "community", create_menu_open: false)
   end
 
   @impl true
@@ -145,35 +167,6 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
        community_sequences_all,
        socket.assigns.my_sequences
      )}
-  end
-
-  def handle_event("switch_seq_tab", %{"tab" => tab}, socket) do
-    current_user = socket.assigns.current_user
-
-    socket =
-      case tab do
-        "mine" ->
-          my_sequences = list_my_sequences(current_user)
-
-          socket
-          |> assign(active_seq_tab: "mine", my_sequences: my_sequences, create_menu_open: false)
-          |> assign_sequence_social_metadata(
-            current_user.id,
-            socket.assigns.community_sequences_all,
-            my_sequences
-          )
-
-        _ ->
-          socket
-          |> assign(active_seq_tab: "community", create_menu_open: false)
-          |> assign_sequence_social_metadata(
-            current_user.id,
-            socket.assigns.community_sequences_all,
-            socket.assigns.my_sequences
-          )
-      end
-
-    {:noreply, socket}
   end
 
   def handle_event("toggle_create_menu", _params, socket) do

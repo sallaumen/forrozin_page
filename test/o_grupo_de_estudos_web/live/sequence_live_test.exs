@@ -352,7 +352,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
 
       conn = log_in_user(conn, user)
       {:ok, lv, _html} = live(conn, ~p"/sequence")
-      html = render_click(lv, "switch_seq_tab", %{"tab" => "mine"})
+      html = render_patch(lv, "/sequence?tab=mine")
 
       assert has_element?(lv, "#my-sequences-stream")
       assert has_element?(lv, "#my-sequences-stream #sequence-card-#{sequence.id}")
@@ -371,7 +371,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLiveTest do
         |> log_in_user(user)
         |> live(~p"/sequence")
 
-      render_click(lv, "switch_seq_tab", %{"tab" => "mine"})
+      render_patch(lv, "/sequence?tab=mine")
 
       assert has_element?(lv, "#my-sequences-stream")
       assert has_element?(lv, "#my-sequences-stream #sequence-card-#{owned_sequence.id}")
