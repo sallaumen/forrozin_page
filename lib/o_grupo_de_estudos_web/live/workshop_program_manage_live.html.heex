@@ -1,0 +1,310 @@
+<div id="program-manage-shell" class="min-h-screen bg-ink-100 font-serif flex flex-col">
+  <.flash kind={:info} id="lv-flash-info" flash={@flash} />
+  <.flash kind={:error} id="lv-flash-error" flash={@flash} />
+
+  <.top_nav
+    current_user={@current_user}
+    is_admin={@is_admin}
+    nav_mode={@nav_mode}
+    notification_count={@notification_count}
+    notification_dropdown_enabled={true}
+    notification_dropdown_open={@notification_dropdown_open}
+    notification_preview_groups={@notification_preview_groups}
+    notification_targets={@notification_targets}
+    pending_suggestions_count={@pending_suggestions_count}
+    pending_study_count={@pending_study_count}
+    online_users={@online_users}
+    online_count={@online_count}
+  />
+
+  <main class="mx-auto w-full max-w-[900px] flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6">
+    <.link
+      navigate={~p"/programs/#{@program.slug}"}
+      class="mb-4 inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold text-ink-500 no-underline hover:text-ink-800 sm:min-h-0"
+    >
+      <.icon name="hero-arrow-left" class="size-4" /> Página da programação
+    </.link>
+
+    <h1 class="m-0 font-serif text-[22px] font-bold tracking-tight text-ink-900">
+      {@program.title}
+    </h1>
+    <p class="m-0 mt-1 font-sans text-[12.5px] text-ink-500">
+      Só quem organiza esta programação vê esta tela.
+    </p>
+
+    <%!-- Balanço primeiro: a programação não é só o que venderam junto. Quem
+         comprou um dia solto pagou o workshop, e esse dinheiro é do evento
+         igual. Sem esta tabela a conta do todo só existia somando painel por
+         painel na mão. --%>
+    <div :if={@revenue && @revenue.workshops != []} class="mt-7">
+      <.section_heading>Balanço da programação</.section_heading>
+
+      <div class="rounded-2xl border border-ink-200 bg-ink-50 px-4">
+        <div
+          :for={linha <- @revenue.workshops}
+          id={"balanco-#{linha.id}"}
+          class="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-ink-200 py-3 last:border-b-0"
+        >
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-serif text-[14px] font-bold text-ink-900">
+              {linha.title}
+            </span>
+            <span class="block font-sans text-[11.5px] text-ink-500">
+              {revenue_sources(linha)}<span :if={linha.paid > 0}>
+                · {linha.paid} {if linha.paid == 1, do: "pagou", else: "pagaram"}</span>
+            </span>
+          </span>
+          <b class="shrink-0 font-serif text-[15.5px] font-bold text-ink-900">
+            {money_label(linha.total_cents)}
+          </b>
+        </div>
+      </div>
+
+      <div class="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 border-t-2 border-ink-300 pt-3">
+        <span class="font-sans text-[10.5px] font-bold uppercase tracking-[1.6px] text-ink-500">
+          Total do evento
+        </span>
+        <b class="font-serif text-[21px] font-bold leading-none text-ink-900">
+          {money_label(@revenue.total_cents)}
+        </b>
+      </div>
+      <p class="m-0 mt-1.5 font-sans text-[11.5px] leading-snug text-ink-500">
+        {money_label(@revenue.package_cents)} vieram da programação fechada e {money_label(
+          @revenue.individual_cents
+        )} de inscrições avulsas nos workshops.
+      </p>
+    </div>
+
+    <%!-- Package: who bought and who paid. --%>
+    <div :if={@tem_pacote?} class="mt-7">
+      <.section_heading>Quem levou a programação toda</.section_heading>
+
+      <p class="m-0 mb-4 font-sans text-[13px] text-ink-600">
+        <b class="font-semibold text-ink-900">{@package_summary.packages}</b>
+        {if @package_summary.packages == 1, do: "pacote", else: "pacotes"},
+        <b class="font-semibold text-ink-900">{@package_summary.paid}</b>
+        {if @package_summary.paid == 1, do: "pagou", else: "pagaram"},
+        <b class="font-semibold text-ink-900">{money_label(@package_summary.revenue_cents)}</b>
+        recebido. Quem escolheu dias avulsos aparece no painel de cada workshop.
+      </p>
+
+      <%!-- Onde o dinheiro do pacote cai. Sem isto, o painel de cada workshop
+           mostra um valor que não bate com o preço dele e parece erro. --%>
+      <div :if={@package_shares != []} class="mb-5 rounded-xl bg-ink-100 px-4 py-3">
+        <p class="m-0 font-sans text-[11px] font-semibold uppercase tracking-[1.4px] text-ink-500">
+          Como cada pacote se divide
+        </p>
+        <p
+          :for={share <- @package_shares}
+          class="m-0 mt-1.5 flex items-baseline justify-between gap-3 font-sans text-[12.5px] text-ink-600"
+        >
+          <span class="min-w-0 truncate">{share.title}</span>
+          <b class="shrink-0 font-semibold text-ink-900">{money_label(share.share_cents)}</b>
+        </p>
+        <p class="m-0 mt-2 font-sans text-[11.5px] leading-snug text-ink-500">
+          É esse valor que entra no "recebido" de cada workshop, não o preço avulso dele.
+        </p>
+      </div>
+
+      <div :if={@pacotes != []}>
+        <div
+          :for={linha <- @pacotes}
+          id={"pacote-#{linha.id}"}
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5 first:border-t-0"
+        >
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
+              {linha.name}
+            </span>
+            <span class="block truncate font-sans text-[11.5px] text-ink-500">
+              @{linha.username}
+            </span>
+          </span>
+
+          <a
+            :if={linha.receipt_sent_at}
+            href={~p"/program-receipts/#{linha.id}"}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex min-h-11 shrink-0 items-center gap-1 font-sans text-[12px] font-semibold text-ink-600 no-underline hover:text-ink-900 sm:min-h-0"
+          >
+            <.icon name="hero-paper-clip" class="size-3.5" /> Comprovante
+          </a>
+
+          <span class={[
+            "shrink-0 font-sans text-[12px] font-semibold",
+            linha.payment_status == :paid && "text-accent-green",
+            linha.payment_status != :paid && "text-ink-500"
+          ]}>
+            {payment_status_label(linha.payment_status)}
+          </span>
+
+          <button
+            :if={linha.payment_status != :paid}
+            type="button"
+            phx-click="set_package_payment"
+            phx-value-id={linha.id}
+            phx-value-status="paid"
+            class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+          >
+            Marcar pago
+          </button>
+          <button
+            :if={linha.payment_status == :paid}
+            type="button"
+            phx-click="set_package_payment"
+            phx-value-id={linha.id}
+            phx-value-status="pending"
+            class="shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+          >
+            Desfazer
+          </button>
+        </div>
+      </div>
+
+      <p :if={@pacotes == []} class="m-0 font-sans text-[13px] text-ink-500">
+        Ninguém levou o pacote fechado ainda.
+      </p>
+    </div>
+
+    <%!-- Assembly: the organizer changes it without leaving the page. --%>
+    <div class="mt-8">
+      <.section_heading>Montar a programação</.section_heading>
+
+      <p class="m-0 mb-4 font-sans text-[12.5px] leading-snug text-ink-500">
+        Dá para tirar e pôr workshop a qualquer momento, inclusive depois de publicar.
+      </p>
+
+      <div :if={@dentro != []}>
+        <div
+          :for={w <- @dentro}
+          id={"dentro-#{w.id}"}
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5 first:border-t-0"
+        >
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
+              {w.title}
+            </span>
+            <span class="block truncate font-sans text-[11.5px] text-ink-500">
+              {schedule_label(w)}<span :if={w.status == :draft}> · rascunho</span>
+            </span>
+          </span>
+          <button
+            type="button"
+            phx-click="detach_workshop"
+            phx-value-id={w.id}
+            class="shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+          >
+            Tirar
+          </button>
+        </div>
+      </div>
+
+      <div :if={@disponiveis != []} class="mt-5">
+        <p class="m-0 mb-1 font-sans text-[12.5px] font-semibold text-ink-600">
+          Seus workshops fora desta programação
+        </p>
+        <div
+          :for={w <- @disponiveis}
+          id={"fora-#{w.id}"}
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5"
+        >
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-serif text-[13.5px] font-bold text-ink-800">
+              {w.title}
+            </span>
+            <span class="block truncate font-sans text-[11.5px] text-ink-500">
+              {schedule_label(w)}
+            </span>
+          </span>
+          <button
+            type="button"
+            phx-click="attach_workshop"
+            phx-value-id={w.id}
+            class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+          >
+            Adicionar
+          </button>
+        </div>
+      </div>
+
+      <.link
+        navigate={~p"/study/workshops/new?#{[program: @program.slug]}"}
+        class="mt-5 inline-flex items-center gap-1.5 rounded-full border border-ink-300 px-4 py-2 font-serif text-[13px] font-semibold text-ink-700 no-underline transition-colors hover:border-ink-400"
+      >
+        <.icon name="hero-plus" class="size-4" /> Criar workshop já nesta programação
+      </.link>
+    </div>
+    <%!-- Quem organiza. A lista fica visível para toda a equipe, porque saber
+         quem mais enxerga o dinheiro faz parte de enxergar o dinheiro. Só quem
+         criou convida: essa porta dá para o caixa do evento. --%>
+    <div class="mt-8">
+      <.section_heading>Quem organiza</.section_heading>
+
+      <p class="m-0 mb-4 font-sans text-[12.5px] leading-snug text-ink-500">
+        Co-organizador vê o balanço, os pacotes e marca pagamento da programação.
+        Não passa a administrar os workshops de dentro: cada um tem o convite dele.
+      </p>
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5">
+        <span class="min-w-0 flex-1 font-serif text-[13.5px] font-bold text-ink-900">
+          {@program.owner.name || @program.owner.username}
+        </span>
+        <span class="shrink-0 font-sans text-[11.5px] text-ink-500">criou a programação</span>
+      </div>
+
+      <div
+        :for={admin <- @program_admins}
+        id={"program-admin-#{admin.user_id}"}
+        class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5"
+      >
+        <span class="min-w-0 flex-1">
+          <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
+            {admin.name}
+          </span>
+          <span class="block truncate font-sans text-[11.5px] text-ink-500">
+            @{admin.username}
+          </span>
+        </span>
+        <button
+          :if={@creator?}
+          type="button"
+          phx-click="remove_program_admin"
+          phx-value-id={admin.user_id}
+          class="shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+        >
+          Tirar
+        </button>
+      </div>
+
+      <form :if={@creator?} phx-submit="add_program_admin" class="mt-4 flex flex-wrap gap-2">
+        <input
+          type="text"
+          name="username"
+          placeholder="usuário de quem vai ajudar"
+          autocomplete="off"
+          class="min-w-0 flex-1 rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-sans text-[13px] text-ink-900 placeholder:text-ink-400"
+        />
+        <button
+          type="submit"
+          class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-4 py-2 font-serif text-[13px] font-semibold text-ink-50"
+        >
+          Adicionar
+        </button>
+      </form>
+
+      <p :if={@admin_form_error} class="m-0 mt-2 font-sans text-[12px] text-accent-red">
+        {@admin_form_error}
+      </p>
+    </div>
+
+    <.last_updated at={@program.updated_at} />
+  </main>
+
+  <.bottom_nav
+    current_user={@current_user}
+    current_path={~p"/study"}
+    notification_count={@notification_count}
+    pending_study_count={assigns[:pending_study_count] || 0}
+  />
+</div>

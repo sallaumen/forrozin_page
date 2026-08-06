@@ -99,7 +99,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> assign(:workshop_count, length(workshops))
     |> assign(:enrolled_ids, enrolled_ids(user))
     |> assign(:enrollment_counts, Workshops.enrollment_counts(Enum.map(workshops, & &1.id)))
-    |> assign_montagem(workshops, owner?, user)
     |> clear_selection(workshops, user)
     |> assign_pacote(program, workshops, user)
   end
@@ -155,45 +154,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   defp selecionados(%{assigns: %{selecionados: atual}}), do: atual
   defp selecionados(_socket), do: MapSet.new()
 
-  # Assembly panel: only for the organizer, and only over what they administer.
-  defp assign_montagem(socket, _workshops, false, _user) do
-    socket
-    |> assign(:dentro, [])
-    |> assign(:disponiveis, [])
-    |> assign(:pacotes, [])
-    |> assign(:package_summary, nil)
-    |> assign(:package_shares, [])
-    |> assign(:revenue, nil)
-  end
-
-  defp assign_montagem(socket, workshops, true, user) do
-    dentro_ids = MapSet.new(workshops, & &1.id)
-
-    disponiveis =
-      user.id
-      |> Workshops.list_for_organizer()
-      |> Enum.reject(&MapSet.member?(dentro_ids, &1.id))
-
-    socket
-    |> assign(:dentro, workshops)
-    |> assign(:disponiveis, disponiveis)
-    |> assign_pacotes(user)
-  end
-
-  defp assign_pacotes(socket, user) do
-    program = socket.assigns.program
-    {:ok, pacotes} = Workshops.list_package_enrollments(program, user)
-    {:ok, summary} = Workshops.package_summary(program, user)
-    {:ok, shares} = Workshops.package_shares(program, user)
-    {:ok, revenue} = Workshops.program_revenue(program, user)
-
-    socket
-    |> assign(:pacotes, pacotes)
-    |> assign(:package_summary, summary)
-    |> assign(:package_shares, shares)
-    |> assign(:revenue, revenue)
-  end
-
   @impl true
   def handle_event("edit_field", %{"field" => field}, socket) do
     {:noreply, open_field(socket, InlineEditParams.program_field(field))}
@@ -220,7 +180,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     end
   end
 
-  @impl true
   def handle_event("publish", _params, socket) do
     user = socket.assigns.current_user
 
@@ -235,24 +194,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
         {:noreply, put_flash(socket, :error, "Não foi possível publicar.")}
     end
   end
-
-  def handle_event("set_package_payment", %{"id" => id, "status" => status}, socket)
-      when status in ~w(pending paid waived) do
-    user = socket.assigns.current_user
-
-    case Workshops.set_package_payment(socket.assigns.program, user, id, payment(status)) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign_program(socket.assigns.program, user)
-         |> put_flash(:info, "Pagamento do pacote atualizado.")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Não foi possível atualizar.")}
-    end
-  end
-
-  def handle_event("set_package_payment", _params, socket), do: {:noreply, socket}
 
   def handle_event("validate_receipt", _params, socket), do: {:noreply, socket}
 
@@ -330,14 +271,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     end
   end
 
-  def handle_event("attach_workshop", %{"id" => id}, socket) do
-    build(socket, id, &Workshops.attach_workshop/3, "Workshop adicionado à programação.")
-  end
-
-  def handle_event("detach_workshop", %{"id" => id}, socket) do
-    build(socket, id, &Workshops.detach_workshop/3, "Workshop tirado da programação.")
-  end
-
   defp upload_attrs(tmp_path, entry) do
     %{tmp_path: tmp_path, content_type: entry.client_type, byte_size: entry.client_size}
   end
@@ -359,10 +292,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
   defp receipt_error(:unsupported_type), do: "Só entra imagem ou PDF."
   defp receipt_error(:too_large), do: "Arquivo grande demais. O limite é 10 MB."
   defp receipt_error(_other), do: "Não foi possível enviar o comprovante."
-
-  defp payment("paid"), do: :paid
-  defp payment("waived"), do: :waived
-  defp payment(_pending), do: :pending
 
   defp package_error({:full, workshop}),
     do: "#{workshop.title} lotou, então o pacote não deu. Escolha os dias que ainda têm vaga."
@@ -405,23 +334,6 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
 
   # The id comes from params on a public page: only the organizer changes it, and
   # the real authorization lives in the context, which checks both sides.
-  defp build(%{assigns: %{owner?: false}} = socket, _id, _fun, _mensagem),
-    do: {:noreply, socket}
-
-  defp build(socket, id, fun, mensagem) do
-    user = socket.assigns.current_user
-
-    case fun.(socket.assigns.program, user, id) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign_program(socket.assigns.program, user)
-         |> put_flash(:info, mensagem)}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Não foi possível mexer nessa programação.")}
-    end
-  end
 
   defp not_found(socket) do
     socket
@@ -429,8 +341,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramLive do
     |> redirect(to: ~p"/study/workshops")
   end
 
-  defp owner?(_program, nil), do: false
-  defp owner?(program, user), do: program.owner_id == user.id
+  # Whoever administers, not only whoever created: a co-organizer edits the page
+  # and reaches the backstage the same way.
+  defp owner?(program, user), do: Workshops.program_admin?(program, user)
 
   # Not signed in: login already offers Google and links to signup, and the
   # program travels along so the person lands back where they stopped.

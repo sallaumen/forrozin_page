@@ -36,6 +36,8 @@ defmodule OGrupoDeEstudos.Workshops do
     MediaQuery,
     PackageQuery,
     PackageSplit,
+    ProgramAdmin,
+    ProgramAdminQuery,
     ProgramEnrollment,
     ProgramQuery,
     Receipts,
@@ -1249,8 +1251,86 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
-  defp ensure_program_owner(%WorkshopProgram{owner_id: id}, %User{id: id}), do: :ok
-  defp ensure_program_owner(%WorkshopProgram{}, %User{}), do: {:error, :unauthorized}
+  # Reading and running the program is open to the co-organizers; what stays
+  # with the creator alone is the guest list of who administers it.
+  defp ensure_program_owner(%WorkshopProgram{} = program, %User{} = user) do
+    if program_admin?(program, user), do: :ok, else: {:error, :unauthorized}
+  end
+
+  defp ensure_program_creator(%WorkshopProgram{owner_id: id}, %User{id: id}), do: :ok
+  defp ensure_program_creator(%WorkshopProgram{}, %User{}), do: {:error, :unauthorized}
+
+  @doc "true when the person administers the program (creator or co-organizer)."
+  @spec program_admin?(WorkshopProgram.t(), User.t() | nil) :: boolean()
+  def program_admin?(%WorkshopProgram{}, nil), do: false
+  def program_admin?(%WorkshopProgram{owner_id: id}, %User{id: id}), do: true
+
+  def program_admin?(%WorkshopProgram{} = program, %User{} = user),
+    do: ProgramAdminQuery.co_admin?(program.id, user.id)
+
+  @doc "Co-organizers of the program, with display data."
+  @spec list_program_admins(WorkshopProgram.t()) :: [map()]
+  def list_program_admins(%WorkshopProgram{} = program),
+    do: ProgramAdminQuery.list_co_admins(program.id)
+
+  @doc """
+  Promotes someone to co-organizer of the program.
+
+  Only the creator promotes: whoever comes in sees the money of the event, and
+  that door belongs to whoever opened the event. It does not hand over the
+  workshops inside the program, which can be other people's.
+  """
+  @spec add_program_admin(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, ProgramAdmin.t()} | {:error, :unauthorized | :already_admin | :not_found}
+  def add_program_admin(%WorkshopProgram{} = program, %User{} = actor, user_id) do
+    with :ok <- ensure_program_creator(program, actor),
+         :ok <- ensure_not_program_admin(program, user_id),
+         %User{} = user <- Accounts.get_user_by_id(user_id) do
+      insert_program_admin(program, actor, user)
+    else
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp ensure_not_program_admin(program, user_id) do
+    if program_admin?(program, %User{id: user_id}),
+      do: {:error, :already_admin},
+      else: :ok
+  end
+
+  defp insert_program_admin(program, actor, user) do
+    %ProgramAdmin{}
+    |> ProgramAdmin.changeset(%{
+      program_id: program.id,
+      user_id: user.id,
+      invited_by_id: actor.id
+    })
+    |> Repo.insert()
+    |> case do
+      {:ok, admin} -> {:ok, admin}
+      {:error, %Ecto.Changeset{}} -> {:error, :already_admin}
+    end
+  end
+
+  @doc "Removes a co-organizer. The creator removes anyone; the others only themselves."
+  @spec remove_program_admin(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, ProgramAdmin.t()} | {:error, :unauthorized | :cannot_remove_owner | :not_found}
+  def remove_program_admin(%WorkshopProgram{owner_id: id}, %User{}, id),
+    do: {:error, :cannot_remove_owner}
+
+  def remove_program_admin(%WorkshopProgram{} = program, %User{} = actor, user_id) do
+    with :ok <- ensure_can_leave_program(program, actor, user_id) do
+      ProgramAdminQuery.delete(program.id, user_id)
+    end
+  end
+
+  defp ensure_can_leave_program(program, %User{id: actor_id}, actor_id) do
+    if program_admin?(program, %User{id: actor_id}), do: :ok, else: {:error, :unauthorized}
+  end
+
+  defp ensure_can_leave_program(program, actor, _user_id),
+    do: ensure_program_creator(program, actor)
 
   @doc "Ids of who administers: the creator plus the co-organizers."
   @spec admin_ids(Workshop.t()) :: [Ecto.UUID.t()]
