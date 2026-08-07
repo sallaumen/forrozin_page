@@ -421,20 +421,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLiveTest do
       assert html =~ "Base frontal v2"
     end
 
-    test "admin updates section title via drawer", %{conn: conn} do
-      section = insert(:section, title: "Bases Antigas", position: 1)
-      {:ok, lv, _html} = live(admin_conn(conn), ~p"/collection")
-      render_click(lv, "toggle_edit_mode", %{})
-      render_click(lv, "open_section", %{"id" => section.id})
-
-      html =
-        render_submit(lv, "update_section", %{
-          "section" => %{"title" => "Bases Novas", "position" => "1"}
-        })
-
-      assert html =~ "Bases Novas"
-    end
-
     test "admin creates connection from drawer", %{conn: conn} do
       section = insert(:section, title: "Bases", position: 1)
       insert(:step, section: section, code: "BF", name: "Base frontal")

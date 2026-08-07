@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudosWeb.InlineEditParams do
 
   @workshop ~w(title description location price capacity payment_info starts_at address)a
   @program ~w(title description location price payment_info)a
+  @section ~w(title category_id description note)a
 
   @address ~w(street street_number complement neighborhood city state postal_code)a
 
@@ -19,6 +20,12 @@ defmodule OGrupoDeEstudosWeb.InlineEditParams do
 
   @spec program_field(String.t()) :: atom() | nil
   def program_field(name), do: offered(@program, name)
+
+  # Position and num order the acervo and are not a judgement call, so the pencil
+  # does not offer them: a family typed into the wrong place would reshuffle a
+  # list nobody was looking at.
+  @spec section_field(String.t()) :: atom() | nil
+  def section_field(name), do: offered(@section, name)
 
   # Comparing strings against a fixed list, instead of to_existing_atom: an atom
   # that happens to exist elsewhere in the app is not the same as a field this page
@@ -34,7 +41,7 @@ defmodule OGrupoDeEstudosWeb.InlineEditParams do
   Takes the record because a field can depend on it: moving the start keeps the
   length of the class, which only the record knows.
   """
-  @spec attrs(struct(), atom(), map()) :: map()
+  @spec attrs(map(), atom(), map()) :: map()
   def attrs(_record, :address, params) do
     Map.new(@address, fn field -> {field, blank_to_nil(params[to_string(field)])} end)
   end
@@ -52,7 +59,7 @@ defmodule OGrupoDeEstudosWeb.InlineEditParams do
   def attrs(_record, _field, _params), do: %{}
 
   @doc "How the field reads inside the open input."
-  @spec form_value(struct(), atom()) :: String.t()
+  @spec form_value(map(), atom()) :: String.t()
   def form_value(record, :price), do: price_input(record.price_cents)
   def form_value(record, :capacity), do: to_string(record.capacity || "")
   def form_value(record, :starts_at), do: datetime_input(record.starts_at)
