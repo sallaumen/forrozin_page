@@ -181,7 +181,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
 
       {:ok, view, _html} = live(conn, ~p"/users/#{viewer.username}")
 
-      html = view |> render_click("switch_profile_tab", %{"tab" => "favorites"})
+      html = render_patch(view, ~p"/users/#{viewer.username}?tab=favorites")
 
       assert html =~ "Nenhum passo favoritado"
     end
@@ -192,7 +192,7 @@ defmodule OGrupoDeEstudosWeb.UserProfileLiveTest do
       conn = logged_in_conn(conn, viewer)
 
       {:ok, view, _html} = live(conn, ~p"/users/#{viewer.username}")
-      html = view |> render_click("switch_profile_tab", %{"tab" => "favorites"})
+      html = render_patch(view, ~p"/users/#{viewer.username}?tab=favorites")
 
       assert html =~ step.code
     end

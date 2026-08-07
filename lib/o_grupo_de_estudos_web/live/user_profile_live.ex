@@ -133,6 +133,22 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
     end
   end
 
+  # Which tab is open lives in the address: without it the back gesture left the
+  # profile instead of stepping back one tab, and a link could not point at the
+  # part of the profile being talked about. A profile that does not exist has
+  # already been sent to the acervo by `mount/3`, so there is nothing to place.
+  @impl true
+  def handle_params(params, _uri, socket) do
+    if socket.assigns[:profile_user] do
+      {:noreply,
+       socket
+       |> apply_profile_tab(params["tab"])
+       |> assign(:favorite_sub_tab, favorite_sub_tab(params["sub"]))}
+    else
+      {:noreply, socket}
+    end
+  end
+
   @impl true
   def handle_event("toggle_like", %{"type" => type, "id" => id}, socket) do
     current_user = socket.assigns.current_user
@@ -345,36 +361,6 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   end
 
   @impl true
-  def handle_event("switch_profile_tab", %{"tab" => "favorites"}, socket) do
-    profile_user = socket.assigns.profile_user
-    fav_steps = Engagement.list_user_favorites(profile_user.id, "step")
-    fav_sequences = Engagement.list_user_favorites(profile_user.id, "sequence")
-
-    {:noreply,
-     assign(socket,
-       profile_tab: "favorites",
-       favorite_steps: fav_steps,
-       favorite_sequences: fav_sequences
-     )}
-  end
-
-  @impl true
-  def handle_event("switch_profile_tab", %{"tab" => "contributions"}, socket) do
-    profile_user = socket.assigns.profile_user
-    contributions = Suggestions.list_by_user(profile_user.id)
-    {:noreply, assign(socket, profile_tab: "contributions", contributions: contributions)}
-  end
-
-  @impl true
-  def handle_event("switch_profile_tab", %{"tab" => tab}, socket) do
-    {:noreply, assign(socket, profile_tab: tab)}
-  end
-
-  @impl true
-  def handle_event("switch_favorite_sub_tab", %{"tab" => tab}, socket) do
-    {:noreply, assign(socket, favorite_sub_tab: tab)}
-  end
-
   def handle_event("request_study", params, socket) do
     current = socket.assigns.current_user
     profile = socket.assigns.profile_user
@@ -549,4 +535,43 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
 
     Engagement.following_ids_for(socket.assigns.current_user.id, Enum.map(list, & &1.id))
   end
+
+  defp apply_profile_tab(socket, "favorites") do
+    profile_user = socket.assigns.profile_user
+
+    assign(socket,
+      profile_tab: "favorites",
+      favorite_steps: Engagement.list_user_favorites(profile_user.id, "step"),
+      favorite_sequences: Engagement.list_user_favorites(profile_user.id, "sequence")
+    )
+  end
+
+  defp apply_profile_tab(socket, "contributions") do
+    assign(socket,
+      profile_tab: "contributions",
+      contributions: Suggestions.list_by_user(socket.assigns.profile_user.id)
+    )
+  end
+
+  defp apply_profile_tab(socket, "sequences"), do: assign(socket, :profile_tab, "sequences")
+  defp apply_profile_tab(socket, _steps), do: assign(socket, :profile_tab, "steps")
+
+  defp favorite_sub_tab("sequences"), do: "sequences"
+  defp favorite_sub_tab(_steps), do: "steps"
+
+  @doc """
+  The address of one part of a profile: the tab, and the sub-tab inside
+  Favoritos.
+
+  Defaults are not written down, so the plain address of a profile is its steps,
+  and Favoritos without a sub-tab is the steps inside it.
+  """
+  @spec profile_path(String.t(), String.t(), String.t() | nil) :: String.t()
+  def profile_path(username, tab, sub \\ nil)
+  def profile_path(username, "steps", _sub), do: ~p"/users/#{username}"
+  def profile_path(username, tab, nil), do: ~p"/users/#{username}?tab=#{tab}"
+  def profile_path(username, "favorites", "steps"), do: ~p"/users/#{username}?tab=favorites"
+
+  def profile_path(username, tab, sub),
+    do: ~p"/users/#{username}?#{[tab: tab, sub: sub]}"
 end

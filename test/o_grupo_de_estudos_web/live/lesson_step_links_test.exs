@@ -31,7 +31,7 @@ defmodule OGrupoDeEstudosWeb.LessonStepLinksTest do
   describe "the teacher links steps in the composer" do
     setup ctx do
       {:ok, lv, _html} = live(log_in_user(ctx.conn, ctx.teacher), ~p"/study")
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
       render_click(lv, "open_lesson_composer", %{})
 
       Map.put(ctx, :lv, lv)
@@ -109,7 +109,7 @@ defmodule OGrupoDeEstudosWeb.LessonStepLinksTest do
         )
 
       {:ok, lv, _html} = live(log_in_user(ctx.conn, ctx.teacher), ~p"/study")
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
 
       ctx |> Map.put(:lv, lv) |> Map.put(:lesson, lesson)
     end

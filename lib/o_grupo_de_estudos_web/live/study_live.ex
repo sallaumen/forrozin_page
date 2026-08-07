@@ -72,13 +72,20 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign_dashboard(dashboard)}
   end
 
+  # The tab is where the person is, so it lives in the address: without it the
+  # back gesture left the study area instead of stepping back one tab, and going
+  # into a workshop and coming back always landed on the diary. The dashboard is
+  # already loaded, so patching between tabs re-runs no query.
   @impl true
-  def handle_event("switch_study_tab", %{"tab" => tab}, socket) do
-    # The dashboard data is already loaded (mount plus reload after mutations), so
-    # switching tabs is UI state and does not re-run the queries.
-    {:noreply, assign(socket, :active_study_tab, tab)}
+  def handle_params(params, _uri, socket) do
+    {:noreply, assign(socket, :active_study_tab, requested_tab(params["tab"], socket.assigns))}
   end
 
+  defp requested_tab("teachers", _assigns), do: "teachers"
+  defp requested_tab("students", %{current_user: %{is_teacher: true}}), do: "students"
+  defp requested_tab(_personal, _assigns), do: "personal"
+
+  @impl true
   def handle_event("toggle_add_teacher", _params, socket) do
     {:noreply,
      assign(socket,

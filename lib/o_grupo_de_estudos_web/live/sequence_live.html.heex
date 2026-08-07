@@ -95,32 +95,30 @@
       aria-label="Abas de sequências"
       class="mt-5 inline-flex items-center gap-0.5 rounded-full border border-ink-200 bg-ink-200/60 p-1"
     >
-      <button
+      <.link
+        patch={~p"/sequence"}
         role="tab"
         aria-selected={to_string(@active_seq_tab == "community")}
-        phx-click="switch_seq_tab"
-        phx-value-tab="community"
         class={[
-          "inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-4 font-serif text-[13px] font-semibold transition-colors cursor-pointer",
+          "inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-4 font-serif text-[13px] font-semibold no-underline transition-colors cursor-pointer",
           @active_seq_tab == "community" && "bg-ink-50 text-accent-orange shadow-sm",
           @active_seq_tab != "community" && "bg-transparent text-ink-500 hover:text-ink-800"
         ]}
       >
         Comunidade
-      </button>
-      <button
+      </.link>
+      <.link
+        patch={~p"/sequence?tab=mine"}
         role="tab"
         aria-selected={to_string(@active_seq_tab == "mine")}
-        phx-click="switch_seq_tab"
-        phx-value-tab="mine"
         class={[
-          "inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-4 font-serif text-[13px] font-semibold transition-colors cursor-pointer",
+          "inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-4 font-serif text-[13px] font-semibold no-underline transition-colors cursor-pointer",
           @active_seq_tab == "mine" && "bg-ink-50 text-accent-orange shadow-sm",
           @active_seq_tab != "mine" && "bg-transparent text-ink-500 hover:text-ink-800"
         ]}
       >
         Minhas
-      </button>
+      </.link>
     </div>
 
     <%!-- Busca, filtro e ordenação só existem para a lista da comunidade:

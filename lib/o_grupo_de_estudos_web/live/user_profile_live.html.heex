@@ -430,17 +430,19 @@
     <div class="px-4 mb-4">
       <div class="flex w-full p-0.5 bg-ink-100 rounded-md">
         <%= for {tab, label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}, {"favorites", "Favoritos"}, {"contributions", "Contribuições"}] do %>
-          <button
-            phx-click="switch_profile_tab"
-            phx-value-tab={tab}
+          <.link
+            patch={profile_path(@profile_user.username, tab)}
+            role="tab"
+            aria-selected={to_string(@profile_tab == tab)}
             class={[
-              "flex-1 py-2 text-sm font-medium rounded-md transition-all text-center border-0 cursor-pointer",
+              "inline-flex min-h-11 flex-1 items-center justify-center rounded-md text-center text-sm",
+              "font-medium no-underline transition-all cursor-pointer",
               @profile_tab == tab && "bg-white shadow-sm text-accent-orange",
               @profile_tab != tab && "text-ink-500 hover:text-ink-700 bg-transparent"
             ]}
           >
             {label}
-          </button>
+          </.link>
         <% end %>
       </div>
     </div>
@@ -590,17 +592,18 @@
       <div class="px-4">
         <div class="flex gap-2 mb-3">
           <%= for {tab, label} <- [{"steps", "Passos"}, {"sequences", "Sequências"}] do %>
-            <button
-              phx-click="switch_favorite_sub_tab"
-              phx-value-tab={tab}
+            <.link
+              patch={profile_path(@profile_user.username, "favorites", tab)}
+              role="tab"
+              aria-selected={to_string(@favorite_sub_tab == tab)}
               class={[
-                "py-1.5 px-4 rounded-full text-xs font-medium border transition-colors cursor-pointer",
+                "inline-flex min-h-11 items-center rounded-full px-4 text-xs font-medium border no-underline transition-colors cursor-pointer",
                 @favorite_sub_tab == tab && "bg-gold-500/10 border-gold-500/30 text-gold-500",
                 @favorite_sub_tab != tab && "bg-ink-50 border-ink-200 text-ink-500"
               ]}
             >
               {label}
-            </button>
+            </.link>
           <% end %>
         </div>
 

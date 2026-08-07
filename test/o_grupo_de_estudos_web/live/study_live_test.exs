@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
 
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      html = render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      html = render_patch(lv, "/study?tab=students")
 
       assert html =~ "Meus alunos"
       assert html =~ student.name
@@ -92,7 +92,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       assert has_element?(lv, "#study-home-shell")
       assert has_element?(lv, "#personal-diary")
 
-      html = render_click(lv, "switch_study_tab", %{"tab" => "teachers"})
+      html = render_patch(lv, "/study?tab=teachers")
 
       assert html =~ teacher.name
       assert has_element?(lv, "a[href='/study/shared/#{link.id}']")
@@ -175,7 +175,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       conn = log_in_user(conn, teacher)
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
       assert has_element?(lv, "#study-nudge-student-#{link.id}")
 
       render_click(lv, "nudge_student", %{"link-id" => link.id})
@@ -203,7 +203,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       conn = log_in_user(conn, teacher)
       {:ok, lv, _html} = live(conn, ~p"/study")
 
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
       refute has_element?(lv, "#study-nudge-student-#{link.id}")
     end
 
@@ -387,7 +387,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       link_a = insert(:teacher_student_link, teacher: teacher, active: true)
       link_b = insert(:teacher_student_link, teacher: teacher, active: true)
       {:ok, lv, _html} = live(log_in_user(conn, teacher), ~p"/study")
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
       render_click(lv, "open_lesson_composer", %{})
 
       %{lv: lv, teacher: teacher, link_a: link_a, link_b: link_b}
@@ -474,7 +474,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
         OGrupoDeEstudos.Study.broadcast_lesson(teacher, %{title: "Aula", content: "V1"}, [link.id])
 
       {:ok, lv, _} = live(log_in_user(conn, teacher), ~p"/study")
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
 
       html = render_click(lv, "edit_lesson", %{"id" => lesson.id})
       assert html =~ "Salvar alterações"
@@ -495,7 +495,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
         OGrupoDeEstudos.Study.broadcast_lesson(teacher, %{title: "Aula", content: "x"}, [link.id])
 
       {:ok, lv, _} = live(log_in_user(conn, teacher), ~p"/study")
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
 
       html = render_click(lv, "delete_lesson", %{"id" => lesson.id})
 
@@ -510,7 +510,7 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
       link = insert(:teacher_student_link, teacher: teacher, active: true)
 
       {:ok, lv, _} = live(log_in_user(conn, teacher), ~p"/study")
-      render_click(lv, "switch_study_tab", %{"tab" => "students"})
+      render_patch(lv, "/study?tab=students")
 
       html = render_click(lv, "nudge_student", %{"link-id" => link.id})
 

@@ -33,17 +33,21 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
      |> assign(:is_admin, Accounts.admin?(user))
      |> assign(:period, "upcoming")
      |> assign(:search, "")
-     |> assign(:can_create, Policy.authorized?(:create_workshop, user, nil))
-     |> load_feed()}
+     |> assign(:can_create, Policy.authorized?(:create_workshop, user, nil))}
   end
+
+  # The window of the agenda is in the address so it survives opening a workshop
+  # and coming back, which is a remount. The search term stays in the socket: it
+  # says how the agenda is being read, not which agenda it is.
+  @impl true
+  def handle_params(params, _uri, socket) do
+    {:noreply, socket |> assign(:period, requested_period(params["period"])) |> load_feed()}
+  end
+
+  defp requested_period(period) when period in @periods, do: period
+  defp requested_period(_upcoming), do: "upcoming"
 
   @impl true
-  def handle_event("filter_period", %{"period" => period}, socket) when period in @periods do
-    {:noreply, socket |> assign(:period, period) |> load_feed()}
-  end
-
-  def handle_event("filter_period", _params, socket), do: {:noreply, socket}
-
   def handle_event("search_workshops", %{"term" => term}, socket) do
     {:noreply, socket |> assign(:search, term) |> load_feed()}
   end
