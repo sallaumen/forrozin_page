@@ -362,25 +362,83 @@
               <div class="flex items-start gap-4 border-b border-ink-300/50 pb-5">
                 <.family_mark card={@active_section_card} />
                 <div class="min-w-0 max-w-2xl flex-1">
-                  <h2 class="brand-display is-title text-2xl leading-tight text-ink-900">
-                    {@active_section_card.title}
-                  </h2>
-                  <p class="mt-1 font-sans text-[12px] text-ink-500">
-                    <span :if={
-                      @active_section_card.category_label &&
-                        @active_section_card.category_label != @active_section_card.title
-                    }>
-                      {@active_section_card.category_label} ·
-                    </span>
-                    <span class="tabular-nums">{length(@active_section_card.steps)}</span>
-                    passos
-                  </p>
-                  <p
-                    :if={@active_section_card.description}
-                    class="mt-2.5 font-serif text-sm leading-6 text-ink-700"
+                  <.editable
+                    field={:title}
+                    label="nome da família"
+                    editing={@editing_field}
+                    can_edit={@edit_mode}
+                    value={@active_section_card.title}
+                    error={@edit_error}
                   >
-                    {@active_section_card.description}
-                  </p>
+                    <h2 class="brand-display is-title text-2xl leading-tight text-ink-900">
+                      {@active_section_card.title}
+                    </h2>
+                  </.editable>
+
+                  <%!-- Linha em div e não em p: o lápis abre um form aqui dentro,
+                       e o navegador fecha o parágrafo antes dele. --%>
+                  <div class="mt-1 flex flex-wrap items-center gap-x-1.5 font-sans text-[12px] text-ink-500">
+                    <.editable
+                      :if={@edit_mode or family_category_shown?(@active_section_card)}
+                      field={:category_id}
+                      label="categoria"
+                      type={:select}
+                      options={category_options(@categories)}
+                      editing={@editing_field}
+                      can_edit={@edit_mode}
+                      value={@active_section_card.category_id}
+                      error={@edit_error}
+                    >
+                      <span>{family_category_text(@active_section_card)}</span>
+                    </.editable>
+                    <span :if={@edit_mode or family_category_shown?(@active_section_card)}>
+                      ·
+                    </span>
+                    <span>
+                      <span class="tabular-nums">{length(@active_section_card.steps)}</span>
+                      passos
+                    </span>
+                  </div>
+
+                  <.editable
+                    :if={@edit_mode or @active_section_card.description}
+                    field={:description}
+                    label="descrição"
+                    type={:long_text}
+                    layout={:block}
+                    editing={@editing_field}
+                    can_edit={@edit_mode}
+                    value={@active_section_card.description}
+                    error={@edit_error}
+                  >
+                    <p class="mt-2.5 font-serif text-sm leading-6 text-ink-700">
+                      {family_description_text(@active_section_card)}
+                    </p>
+                  </.editable>
+
+                  <%!-- A nota é a armadilha da família: o que costuma dar errado
+                       nela. Oito das vinte e uma têm uma e ela só existia dentro
+                       de um painel que ninguém conseguia abrir. --%>
+                  <.editable
+                    :if={@edit_mode or @active_section_card.note}
+                    field={:note}
+                    label="nota da família"
+                    type={:long_text}
+                    layout={:block}
+                    editing={@editing_field}
+                    can_edit={@edit_mode}
+                    value={@active_section_card.note}
+                    error={@edit_error}
+                  >
+                    <div
+                      id="collection-family-note"
+                      class="mt-3 rounded-r-md border border-l-[3px] border-gold-500/25 border-l-gold-500 bg-gold-500/[0.08] px-4 py-3"
+                    >
+                      <p class="m-0 font-serif text-[13px] leading-relaxed text-ink-700">
+                        {family_note_text(@active_section_card)}
+                      </p>
+                    </div>
+                  </.editable>
                 </div>
               </div>
 
@@ -538,82 +596,6 @@
         connection_search={@connection_search}
         connection_suggestions={@connection_suggestions}
       />
-
-      <%!-- Section drawer --%>
-      <div :if={@drawer_type == :section and @drawer_item} class="px-5 py-6 md:px-7">
-        <div class="mb-4 pr-12">
-          <div class="text-[11px] text-ink-500 tracking-wide mb-1">
-            Seção {if @drawer_item.num, do: "##{@drawer_item.num}"}
-          </div>
-          <div class="text-2xl font-bold text-ink-900 leading-snug">
-            {@drawer_item.title}
-          </div>
-        </div>
-        <%= if @edit_mode do %>
-          <form phx-submit="update_section" class="flex flex-col gap-2">
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Título
-            </label>
-            <input
-              type="text"
-              name="section[title]"
-              value={@drawer_item.title}
-              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-base text-ink-900 box-border"
-            />
-            <input type="hidden" name="section[position]" value={@drawer_item.position} />
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Descrição
-            </label>
-            <textarea
-              name="section[description]"
-              rows="3"
-              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
-            ><%= @drawer_item.description %></textarea>
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Nota
-            </label>
-            <textarea
-              name="section[note]"
-              rows="2"
-              class="w-full py-2.5 px-3 border border-ink-300 rounded font-serif text-sm text-ink-900 box-border resize-y leading-relaxed"
-            ><%= @drawer_item.note %></textarea>
-            <label class="text-[11px] text-ink-700 uppercase tracking-widest font-semibold">
-              Categoria
-            </label>
-            <select
-              name="section[category_id]"
-              class="w-full py-1.5 px-2.5 border border-ink-300/80 rounded font-serif text-sm"
-            >
-              <option
-                :for={cat <- @categories}
-                value={cat.id}
-                selected={cat.id == @drawer_item.category_id}
-              >
-                {cat.label}
-              </option>
-            </select>
-            <button
-              type="submit"
-              class="py-2 px-4 bg-ink-900 text-ink-100 border-0 rounded cursor-pointer font-serif text-xs"
-            >
-              Salvar seção
-            </button>
-          </form>
-        <% else %>
-          <p
-            :if={@drawer_item.description}
-            class="text-sm text-ink-600 italic leading-relaxed mb-3"
-          >
-            {@drawer_item.description}
-          </p>
-          <div
-            :if={@drawer_item.note}
-            class="text-xs text-ink-700 italic leading-relaxed py-2.5 px-3.5 bg-gold-500/10 border-l-[3px] border-l-gold-500 rounded-r"
-          >
-            {@drawer_item.note}
-          </div>
-        <% end %>
-      </div>
     </div>
   </div>
 

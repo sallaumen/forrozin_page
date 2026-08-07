@@ -71,6 +71,8 @@ defmodule OGrupoDeEstudos.Encyclopedia.CollectionBrowser do
       title: section.title,
       code: section.code,
       description: section.description,
+      note: section.note,
+      category_id: section.category_id,
       category_name: section.category && section.category.name,
       category_label: section.category && section.category.label,
       category_color: section.category && section.category.color,

@@ -19,8 +19,13 @@ defmodule OGrupoDeEstudosWeb.UI.InlineEdit do
   attr :label, :string, required: true
   attr :editing, :atom, default: nil
   attr :can_edit, :boolean, default: false
-  attr :type, :atom, values: [:text, :long_text, :number, :money, :datetime], default: :text
+
+  attr :type, :atom,
+    values: [:text, :long_text, :number, :money, :datetime, :select],
+    default: :text
+
   attr :value, :any, default: nil
+  attr :options, :list, default: [], doc: "`{label, value}` pairs, for `type={:select}`"
   attr :hint, :string, default: nil
   attr :error, :string, default: nil
   attr :layout, :atom, values: [:inline, :block], default: :inline
@@ -69,8 +74,27 @@ defmodule OGrupoDeEstudosWeb.UI.InlineEdit do
           class={field_class()}
         >{@value}</textarea>
 
+        <%!-- Uma escolha entre poucas opções é lista, não campo de texto: digitar
+             o nome de uma categoria que não existe não é um erro que valha a pena
+             deixar acontecer. --%>
+        <select
+          :if={@type == :select}
+          id={"inline-#{@field}"}
+          name="value"
+          phx-mounted={JS.focus()}
+          class={field_class()}
+        >
+          <option
+            :for={{label, value} <- @options}
+            value={value}
+            selected={to_string(@value) == to_string(value)}
+          >
+            {label}
+          </option>
+        </select>
+
         <input
-          :if={@type != :long_text}
+          :if={@type not in [:long_text, :select]}
           id={"inline-#{@field}"}
           type={input_type(@type)}
           inputmode={inputmode(@type)}

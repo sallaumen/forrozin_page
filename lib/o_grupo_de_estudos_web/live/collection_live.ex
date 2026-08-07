@@ -11,7 +11,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Study, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser
-  alias OGrupoDeEstudosWeb.StepDrawer
+  alias OGrupoDeEstudosWeb.{ChangesetErrors, InlineEditParams, StepDrawer}
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
@@ -21,6 +21,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
   import OGrupoDeEstudosWeb.CollectionComponents
   import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
   import OGrupoDeEstudosWeb.StepDetail, only: [step_detail: 1]
+  import OGrupoDeEstudosWeb.UI.InlineEdit, only: [editable: 1]
   import OGrupoDeEstudosWeb.UI.PWAInstallBanner
   import OGrupoDeEstudosWeb.UI.SocialBubble
 
@@ -123,7 +124,9 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       active_section_id: nil,
       active_section_card: nil,
       filters_open?: false,
-      suggest_section_id: nil
+      suggest_section_id: nil,
+      editing_field: nil,
+      edit_error: nil
     ]
   end
 
@@ -288,21 +291,19 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
      |> put_flash(:info, "Link copiado")}
   end
 
-  def handle_event("open_section", %{"id" => id}, socket) do
-    case Encyclopedia.get_section_by(id: id, preload: [:category]) do
-      nil ->
-        {:noreply, socket}
+  # The pencil writes one field of the open family at a time. Which fields exist
+  # is a whitelist in InlineEditParams, never the name that arrived in the event.
+  def handle_event("edit_field", %{"field" => field}, socket) do
+    {:noreply, open_field(socket, InlineEditParams.section_field(field))}
+  end
 
-      section ->
-        {:noreply,
-         assign(socket,
-           drawer_open: true,
-           drawer_type: :section,
-           drawer_item: section,
-           drawer_connections_out: [],
-           drawer_connections_in: []
-         )}
-    end
+  def handle_event("cancel_edit", _params, socket), do: {:noreply, close_field(socket)}
+
+  def handle_event("save_field", _params, %{assigns: %{editing_field: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_event("save_field", params, socket) do
+    {:noreply, save_family_field(socket, socket.assigns.editing_field, params)}
   end
 
   def handle_event("toggle_connections", _params, socket) do
@@ -323,32 +324,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
         {:error, _changeset} ->
           {:noreply, put_flash(socket, :error, "Erro ao salvar passo")}
-      end
-    else
-      {:noreply, socket}
-    end
-  end
-
-  def handle_event("update_section", %{"section" => params}, socket) do
-    if Policy.authorized?(
-         :manage_section,
-         socket.assigns.current_user,
-         socket.assigns.drawer_item
-       ) do
-      section = socket.assigns.drawer_item
-
-      case Admin.update_section(section, params) do
-        {:ok, updated} ->
-          updated = Encyclopedia.get_section_by(id: updated.id, preload: [:category])
-
-          {:noreply,
-           socket
-           |> assign(drawer_item: updated)
-           |> reload_sections()
-           |> put_flash(:info, "Seção atualizada")}
-
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "Erro ao salvar seção")}
       end
     else
       {:noreply, socket}
@@ -766,5 +741,67 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       sub_total = Enum.reduce(s.subsections, 0, fn sub, n -> n + length(sub.steps) end)
       acc + length(s.steps) + sub_total
     end)
+  end
+
+  @doc """
+  Whether the category is worth saying out loud above the family.
+
+  A family called Caminhadas inside a category called Caminhadas says it twice,
+  so the line stays quiet unless the two names differ. Quiet is not the same as
+  absent: with the pencil out the category always reads, because that is the
+  value being changed.
+  """
+  def family_category_shown?(%{category_label: label, title: title}),
+    do: is_binary(label) and label != "" and label != title
+
+  @doc "The category the family belongs to, said plainly."
+  def family_category_text(%{category_label: label}) when is_binary(label) and label != "",
+    do: label
+
+  def family_category_text(_uncategorized), do: "sem categoria"
+
+  def family_description_text(%{description: text}) when is_binary(text) and text != "", do: text
+  def family_description_text(_blank), do: "Escreva a descrição desta família."
+
+  def family_note_text(%{note: text}) when is_binary(text) and text != "", do: text
+  def family_note_text(_blank), do: "Escreva a nota desta família."
+
+  @doc "The categories that exist, plus the option of belonging to none."
+  def category_options(categories) do
+    [{"Sem categoria", ""} | Enum.map(categories, &{&1.label, &1.id})]
+  end
+
+  defp open_field(socket, nil), do: socket
+
+  defp open_field(socket, field) do
+    if Policy.authorized?(:manage_section, socket.assigns.current_user, nil) do
+      socket |> assign(:editing_field, field) |> assign(:edit_error, nil)
+    else
+      socket
+    end
+  end
+
+  defp close_field(socket), do: socket |> assign(:editing_field, nil) |> assign(:edit_error, nil)
+
+  defp save_family_field(socket, field, params) do
+    card = socket.assigns.active_section_card
+    section = Encyclopedia.get_section_by(id: card.id)
+
+    case authorized_update(socket.assigns.current_user, section, field, params) do
+      {:ok, _updated} -> socket |> close_field() |> reload_sections()
+      {:error, %Ecto.Changeset{} = changeset} -> assign_edit_error(socket, changeset)
+      {:error, _unauthorized} -> close_field(socket)
+    end
+  end
+
+  defp authorized_update(user, section, field, params) do
+    case Policy.authorize(:manage_section, user, section) do
+      :ok -> Admin.update_section(section, InlineEditParams.attrs(section, field, params))
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp assign_edit_error(socket, changeset) do
+    assign(socket, :edit_error, ChangesetErrors.first_message(changeset))
   end
 end
