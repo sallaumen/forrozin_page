@@ -164,4 +164,98 @@ defmodule OGrupoDeEstudos.PackageConversionTest do
   end
 
   defp enrollment_id(workshop, user), do: Workshops.get_enrollment(workshop.id, user.id).id
+
+  # The state found in production on 2026-08-04: the package was bought while
+  # the program had no published workshop, so the membership covered nothing;
+  # the workshops came later and the person enrolled day by day, unlinked. The
+  # person then shows in the package list AND in the candidates at once.
+  defp orphan_membership(ctx) do
+    {:ok, empty_program} =
+      Workshops.create_program(ctx.owner, %{title: "Nasceu vazio", price_cents: 9000})
+
+    student = insert(:user)
+    {:ok, membership} = Workshops.enroll_in_package(empty_program, student)
+
+    late = insert(:workshop, organizer: ctx.owner, starts_at: at_day(12, 19), price_cents: 5000)
+    {:ok, _} = Workshops.attach_workshop(empty_program, ctx.owner, late.id)
+    {:ok, empty_program} = Workshops.publish_program(ctx.owner, empty_program)
+    {:ok, enrollment} = Workshops.enroll(late, student)
+
+    # `enroll` now links on its own, so the loose row is built directly: this is
+    # the legacy data as found, not a state the public API still produces.
+    enrollment
+    |> Ecto.Changeset.change(program_enrollment_id: nil)
+    |> OGrupoDeEstudos.Repo.update!()
+
+    %{program: empty_program, student: student, membership: membership, workshop: late}
+  end
+
+  describe "the membership that covers nothing, next to loose enrollments" do
+    test "the person shows as candidate, because their money is miscounted", ctx do
+      orphan = orphan_membership(ctx)
+
+      assert {:ok, [candidate]} = Workshops.list_package_candidates(orphan.program, ctx.owner)
+      assert candidate.user_id == orphan.student.id
+    end
+
+    test "converting adopts the loose enrollments into the membership that exists", ctx do
+      orphan = orphan_membership(ctx)
+
+      assert {:ok, adopted} =
+               Workshops.convert_to_package(orphan.program, ctx.owner, orphan.student.id)
+
+      assert adopted.id == orphan.membership.id
+
+      enrollment = Workshops.get_enrollment(orphan.workshop.id, orphan.student.id)
+      assert enrollment.program_enrollment_id == orphan.membership.id
+    end
+
+    test "adopting keeps the payment already recorded on the membership", ctx do
+      orphan = orphan_membership(ctx)
+
+      {:ok, _} =
+        Workshops.set_package_payment(orphan.program, ctx.owner, orphan.membership.id, :paid)
+
+      {:ok, adopted} = Workshops.convert_to_package(orphan.program, ctx.owner, orphan.student.id)
+
+      assert adopted.payment_status == :paid
+      assert {:ok, []} = Workshops.list_package_candidates(orphan.program, ctx.owner)
+    end
+  end
+
+  describe "enrolling while holding the package" do
+    test "a cancelled day re-enrolled comes back linked, not loose", ctx do
+      student = insert(:user)
+      {:ok, membership} = Workshops.enroll_in_package(ctx.program, student)
+      [first | _] = ctx.workshops
+
+      {:ok, _} = Workshops.cancel_enrollment(first, student)
+      {:ok, enrollment} = Workshops.enroll(first, student)
+
+      assert enrollment.program_enrollment_id == membership.id
+    end
+
+    test "a workshop attached after the purchase also links on enrollment", ctx do
+      student = insert(:user)
+      {:ok, membership} = Workshops.enroll_in_package(ctx.program, student)
+
+      late = insert(:workshop, organizer: ctx.owner, starts_at: at_day(10, 19), price_cents: 6000)
+      {:ok, _} = Workshops.attach_workshop(ctx.program, ctx.owner, late.id)
+      {:ok, enrollment} = Workshops.enroll(late, student)
+
+      assert enrollment.program_enrollment_id == membership.id
+
+      assert {:ok, []} = Workshops.list_package_candidates(ctx.program, ctx.owner)
+    end
+
+    test "a workshop outside any program enrolls loose, as always", ctx do
+      student = insert(:user)
+      {:ok, _} = Workshops.enroll_in_package(ctx.program, student)
+
+      solo = insert(:workshop, organizer: ctx.owner, starts_at: at_day(11, 19))
+      {:ok, enrollment} = Workshops.enroll(solo, student)
+
+      assert enrollment.program_enrollment_id == nil
+    end
+  end
 end
