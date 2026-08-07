@@ -10,7 +10,7 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
   import Ecto.Query
 
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Workshops.ProgramEnrollment
+  alias OGrupoDeEstudos.Workshops.{ProgramEnrollment, Workshop, WorkshopEnrollment}
 
   @doc "Who bought the package, with display data and payment state."
   @spec list_for_program(Ecto.UUID.t()) :: [map()]
@@ -31,6 +31,61 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
       }
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Whoever enrolled in every published workshop by hand, with no package behind.
+
+  The `is_nil` filter is what excludes package buyers: their enrollments point
+  at the membership, so none of their rows count here.
+  """
+  @spec list_candidates(Ecto.UUID.t()) :: [map()]
+  def list_candidates(program_id) do
+    case published_count(program_id) do
+      0 -> []
+      total -> Repo.all(candidates_query(program_id, total))
+    end
+  end
+
+  defp candidates_query(program_id, total) do
+    from(e in WorkshopEnrollment,
+      join: w in assoc(e, :workshop),
+      join: u in assoc(e, :user),
+      where: w.program_id == ^program_id and w.status != :draft,
+      where: is_nil(e.program_enrollment_id),
+      group_by: [u.id, u.name, u.username],
+      having: count(e.id) == ^total,
+      order_by: [asc: min(e.inserted_at)],
+      select: %{
+        user_id: u.id,
+        name: u.name,
+        username: u.username,
+        enrolled_at: min(e.inserted_at)
+      }
+    )
+  end
+
+  @doc "Whether the person holds an enrollment in every published workshop."
+  @spec fully_enrolled?(Ecto.UUID.t(), Ecto.UUID.t()) :: boolean()
+  def fully_enrolled?(program_id, user_id) do
+    case published_count(program_id) do
+      0 -> false
+      total -> enrolled_count(program_id, user_id) == total
+    end
+  end
+
+  defp published_count(program_id) do
+    from(w in Workshop, where: w.program_id == ^program_id and w.status != :draft)
+    |> Repo.aggregate(:count)
+  end
+
+  defp enrolled_count(program_id, user_id) do
+    from(e in WorkshopEnrollment,
+      join: w in assoc(e, :workshop),
+      where: w.program_id == ^program_id and w.status != :draft,
+      where: e.user_id == ^user_id
+    )
+    |> Repo.aggregate(:count)
   end
 
   @doc "Package membership of a person, or `nil`."
