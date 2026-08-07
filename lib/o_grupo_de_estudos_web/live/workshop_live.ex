@@ -16,7 +16,9 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
   use OGrupoDeEstudosWeb.Handlers.StepLearning
   use OGrupoDeEstudosWeb.Handlers.SequenceSheet
   use OGrupoDeEstudosWeb.NotificationHandlers
@@ -27,6 +29,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
 
   import OGrupoDeEstudosWeb.StudyComponents, only: [step_sheet: 1, sequence_sheet: 1]
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.UI.SocialBubble
   import OGrupoDeEstudosWeb.UI.InlineEdit
   import OGrupoDeEstudosWeb.UI.CommentThread
   import OGrupoDeEstudosWeb.UI.TopNav

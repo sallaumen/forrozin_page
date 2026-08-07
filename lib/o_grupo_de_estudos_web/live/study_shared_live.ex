@@ -6,14 +6,17 @@ defmodule OGrupoDeEstudosWeb.StudySharedLive do
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.UI.SocialBubble
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
   import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.StudyComponents
 
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
   use OGrupoDeEstudosWeb.Handlers.StepLearning
   use OGrupoDeEstudosWeb.NotificationHandlers
 

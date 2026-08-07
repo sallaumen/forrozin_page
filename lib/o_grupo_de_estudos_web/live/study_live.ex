@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
@@ -57,13 +58,6 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
      |> assign(:active_study_tab, "personal")
      |> assign(:teacher_search, "")
      |> assign(:teacher_search_results, [])
-     |> assign(:bubble_open, false)
-     |> assign(:bubble_tab, "following")
-     |> assign(:bubble_following_list, [])
-     |> assign(:bubble_followers_list, [])
-     |> assign(:bubble_search, "")
-     |> assign(:bubble_search_results, [])
-     |> assign(:suggested_users, [])
      |> assign(:following_user_ids, Engagement.following_ids(user.id))
      |> assign(:suggested_teachers, Study.suggest_teachers(user, limit: 5))
      |> assign(:personal_goals, Study.list_personal_goals(user.id))
