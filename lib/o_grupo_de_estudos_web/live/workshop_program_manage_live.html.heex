@@ -83,7 +83,11 @@
         <b class="font-semibold text-ink-900">{@package_summary.packages}</b>
         {if @package_summary.packages == 1, do: "pacote", else: "pacotes"},
         <b class="font-semibold text-ink-900">{@package_summary.paid}</b>
-        {if @package_summary.paid == 1, do: "pagou", else: "pagaram"},
+        {if @package_summary.paid == 1, do: "pagou", else: "pagaram"},<span :if={
+          @package_summary.waived > 0
+        }>
+          <b class="font-semibold text-ink-900">{@package_summary.waived}</b>
+          {if @package_summary.waived == 1, do: "isento", else: "isentos"},</span>
         <b class="font-semibold text-ink-900">{money_label(@package_summary.revenue_cents)}</b>
         recebido. Quem escolheu dias avulsos aparece no painel de cada workshop.
       </p>
@@ -150,7 +154,7 @@
             Marcar pago
           </button>
           <button
-            :if={linha.payment_status == :paid}
+            :if={linha.payment_status != :pending}
             type="button"
             phx-click="set_package_payment"
             phx-value-id={linha.id}
@@ -158,6 +162,16 @@
             class="min-h-11 shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600 sm:min-h-0"
           >
             Desfazer
+          </button>
+          <button
+            :if={linha.payment_status == :pending}
+            type="button"
+            phx-click="set_package_payment"
+            phx-value-id={linha.id}
+            phx-value-status="waived"
+            class="min-h-11 shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600 sm:min-h-0"
+          >
+            Isentar
           </button>
         </div>
       </div>
