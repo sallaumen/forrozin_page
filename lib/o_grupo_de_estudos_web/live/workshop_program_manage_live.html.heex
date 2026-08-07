@@ -145,7 +145,7 @@
             phx-click="set_package_payment"
             phx-value-id={linha.id}
             phx-value-status="paid"
-            class="shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50"
+            class="min-h-11 shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50 sm:min-h-0"
           >
             Marcar pago
           </button>
@@ -155,7 +155,7 @@
             phx-click="set_package_payment"
             phx-value-id={linha.id}
             phx-value-status="pending"
-            class="shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600"
+            class="min-h-11 shrink-0 cursor-pointer rounded-full border border-ink-300 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-600 sm:min-h-0"
           >
             Desfazer
           </button>
@@ -164,6 +164,47 @@
 
       <p :if={@pacotes == []} class="m-0 font-sans text-[13px] text-ink-500">
         Ninguém levou o pacote fechado ainda.
+      </p>
+    </div>
+
+    <%!-- Whoever enrolled in every workshop by hand built the package without the
+         discount showing in the books: three full daily prices where one package
+         was paid. One button moves them; the payment stays pending on purpose,
+         so the organizer records what was actually received. --%>
+    <div :if={@tem_pacote? and @package_candidates != []} class="mt-7">
+      <.section_heading>Inscritos por fora do pacote</.section_heading>
+
+      <div class="rounded-2xl border border-ink-200 bg-ink-50 px-4 py-1">
+        <div
+          :for={person <- @package_candidates}
+          id={"package-candidate-#{person.user_id}"}
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-ink-200 py-2.5 first:border-t-0"
+        >
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-serif text-[13.5px] font-bold text-ink-900">
+              {person.name}
+            </span>
+            <span class="block truncate font-sans text-[11.5px] text-ink-500">
+              @{person.username}
+            </span>
+          </span>
+
+          <button
+            type="button"
+            phx-click="convert_to_package"
+            phx-value-user-id={person.user_id}
+            phx-disable-with="Convertendo..."
+            class="min-h-11 shrink-0 cursor-pointer rounded-full border-0 bg-ink-900 px-3 py-1.5 font-serif text-[12px] font-semibold text-ink-50 sm:min-h-0"
+          >
+            Virar pacote
+          </button>
+        </div>
+      </div>
+
+      <p class="m-0 mt-2 font-sans text-[11.5px] leading-snug text-ink-500">
+        Essas pessoas se inscreveram dia a dia em todos os workshops, então a
+        contabilidade cobra as diárias cheias. Converter junta tudo num pacote,
+        com o pagamento pendente para você marcar o que recebeu de fato.
       </p>
     </div>
 

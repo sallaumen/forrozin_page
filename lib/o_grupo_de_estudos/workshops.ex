@@ -931,6 +931,55 @@ defmodule OGrupoDeEstudos.Workshops do
     end
   end
 
+  @doc "Whoever enrolled in every workshop by hand: the package they meant, not bought."
+  @spec list_package_candidates(WorkshopProgram.t(), User.t()) ::
+          {:ok, [map()]} | {:error, :unauthorized}
+  def list_package_candidates(%WorkshopProgram{} = program, %User{} = user) do
+    with :ok <- ensure_program_owner(program, user) do
+      {:ok, PackageQuery.list_candidates(program.id)}
+    end
+  end
+
+  @doc """
+  Turns a hand-made pile of daily enrollments into the package it meant to be.
+
+  Converting is bookkeeping, not enrolling: whoever is missing a workshop is
+  refused instead of silently enrolled, and capacity is never touched. The new
+  package starts pending so the organizer records what was actually received;
+  the old daily paid flags stop counting on their own (see `EnrollmentPayment`).
+  """
+  @spec convert_to_package(WorkshopProgram.t(), User.t(), Ecto.UUID.t()) ::
+          {:ok, ProgramEnrollment.t()}
+          | {:error,
+             :unauthorized
+             | :not_found
+             | :not_fully_enrolled
+             | :already_enrolled
+             | :no_package
+             | term()}
+  def convert_to_package(%WorkshopProgram{} = program, %User{} = actor, user_id) do
+    with :ok <- ensure_program_owner(program, actor),
+         {:ok, student} <- fetch_student(user_id),
+         :ok <- ensure_fully_enrolled(program, student) do
+      enroll_in_package(program, student)
+    end
+  end
+
+  defp fetch_student(user_id) do
+    case Accounts.get_user_by_id(user_id) do
+      nil -> {:error, :not_found}
+      user -> {:ok, user}
+    end
+  end
+
+  defp ensure_fully_enrolled(program, user) do
+    if PackageQuery.fully_enrolled?(program.id, user.id) do
+      :ok
+    else
+      {:error, :not_fully_enrolled}
+    end
+  end
+
   @doc "Resumo do pacote: quantos compraram, quantos pagaram, quanto entrou."
   @spec package_summary(WorkshopProgram.t(), User.t()) :: {:ok, map()} | {:error, :unauthorized}
   def package_summary(%WorkshopProgram{} = program, %User{} = user) do

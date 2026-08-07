@@ -59,9 +59,11 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramManageLive do
     {:ok, pacotes} = Workshops.list_package_enrollments(program, user)
     {:ok, package_summary} = Workshops.package_summary(program, user)
     {:ok, package_shares} = Workshops.package_shares(program, user)
+    {:ok, package_candidates} = Workshops.list_package_candidates(program, user)
 
     socket
     |> assign(:revenue, revenue)
+    |> assign(:package_candidates, package_candidates)
     |> assign(:pacotes, pacotes)
     |> assign(:package_summary, package_summary)
     |> assign(:package_shares, package_shares)
@@ -98,6 +100,27 @@ defmodule OGrupoDeEstudosWeb.WorkshopProgramManageLive do
   end
 
   def handle_event("set_package_payment", _params, socket), do: {:noreply, socket}
+
+  def handle_event("convert_to_package", %{"user-id" => user_id}, socket) do
+    program = socket.assigns.program
+
+    case Workshops.convert_to_package(program, socket.assigns.current_user, user_id) do
+      {:ok, _membership} ->
+        {:noreply,
+         socket
+         |> load_backstage()
+         |> put_flash(:info, "A inscrição virou pacote. Falta marcar o pagamento recebido.")}
+
+      {:error, :not_fully_enrolled} ->
+        {:noreply,
+         socket
+         |> load_backstage()
+         |> put_flash(:error, "Essa pessoa não está mais em todos os workshops.")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Não foi possível converter.")}
+    end
+  end
 
   def handle_event("attach_workshop", %{"id" => id}, socket) do
     program = socket.assigns.program
