@@ -224,8 +224,10 @@
             >
               Marcar pago
             </button>
+            <%!-- Waived also undoes: without this, unwaiving someone took the
+                 detour of marking them paid first. --%>
             <button
-              :if={enrollment.payment_status == :paid}
+              :if={enrollment.payment_status != :pending}
               type="button"
               phx-click="set_payment"
               phx-value-id={enrollment.id}
