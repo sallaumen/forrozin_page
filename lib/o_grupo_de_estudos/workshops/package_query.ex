@@ -88,6 +88,17 @@ defmodule OGrupoDeEstudos.Workshops.PackageQuery do
     |> Repo.aggregate(:count)
   end
 
+  @doc "The membership the person holds over this workshop's program, or nil."
+  @spec held_for_workshop(Ecto.UUID.t(), Ecto.UUID.t()) :: ProgramEnrollment.t() | nil
+  def held_for_workshop(workshop_id, user_id) do
+    from(pe in ProgramEnrollment,
+      join: w in Workshop,
+      on: w.program_id == pe.program_id,
+      where: w.id == ^workshop_id and pe.user_id == ^user_id
+    )
+    |> Repo.one()
+  end
+
   @doc "Package membership of a person, or `nil`."
   @spec get_for_user(Ecto.UUID.t(), Ecto.UUID.t()) :: ProgramEnrollment.t() | nil
   def get_for_user(program_id, user_id) do

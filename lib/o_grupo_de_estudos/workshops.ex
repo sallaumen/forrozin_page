@@ -961,7 +961,38 @@ defmodule OGrupoDeEstudos.Workshops do
     with :ok <- ensure_program_owner(program, actor),
          {:ok, student} <- fetch_student(user_id),
          :ok <- ensure_fully_enrolled(program, student) do
-      enroll_in_package(program, student)
+      join_or_adopt(program, student)
+    end
+  end
+
+  defp join_or_adopt(program, student) do
+    case PackageQuery.get_for_user(program.id, student.id) do
+      nil -> enroll_in_package(program, student)
+      membership -> adopt_loose_enrollments(program, student, membership)
+    end
+  end
+
+  # A membership can exist while the daily enrollments sit loose: a package
+  # bought while the program had no published workshop covered nothing, and the
+  # days enrolled afterwards never pointed at it. Adopting links them and keeps
+  # whatever payment the membership already recorded.
+  defp adopt_loose_enrollments(program, student, membership) do
+    linked =
+      program.id
+      |> ProgramQuery.list_workshops()
+      |> Enum.count(&link_loose(&1, student, membership))
+
+    if linked > 0, do: {:ok, membership}, else: {:error, :already_enrolled}
+  end
+
+  defp link_loose(workshop, student, membership) do
+    case EnrollmentQuery.get_for_user(workshop.id, student.id) do
+      %WorkshopEnrollment{program_enrollment_id: nil} = enrollment ->
+        {:ok, _} = link_enrollment(enrollment, membership)
+        true
+
+      _linked_or_absent ->
+        false
     end
   end
 
@@ -1494,9 +1525,37 @@ defmodule OGrupoDeEstudos.Workshops do
           | {:error, :organizer | :not_open | :full | :already_enrolled}
   def enroll(%Workshop{} = workshop, %User{} = user) do
     case admin?(workshop, user) do
-      true -> {:error, :organizer}
-      false -> workshop |> insert_enrollment_locked(user) |> notify_organizers(workshop, user)
+      true ->
+        {:error, :organizer}
+
+      false ->
+        workshop
+        |> insert_enrollment_locked(user)
+        |> link_to_held_package(workshop, user)
+        |> notify_organizers(workshop, user)
     end
+  end
+
+  # Whoever holds the package of this workshop's program enrolls already linked
+  # to it. A loose enrollment next to a membership miscounts the money (a full
+  # daily price beside the package) and put the same person on the package list
+  # and on the candidates at once. Found in production on 2026-08-04.
+  #
+  # The membership comes from the database and not from the struct in hand: the
+  # caller may hold a workshop loaded before it joined the program.
+  defp link_to_held_package({:ok, enrollment}, %Workshop{}, user) do
+    case PackageQuery.held_for_workshop(enrollment.workshop_id, user.id) do
+      nil -> {:ok, enrollment}
+      membership -> link_enrollment(enrollment, membership)
+    end
+  end
+
+  defp link_to_held_package(result, _workshop, _user), do: result
+
+  defp link_enrollment(enrollment, membership) do
+    enrollment
+    |> Ecto.Changeset.change(program_enrollment_id: membership.id)
+    |> Repo.update()
   end
 
   @doc """
