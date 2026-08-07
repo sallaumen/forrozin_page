@@ -46,6 +46,9 @@ defmodule OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers do
               bubble_tab: "following",
               following_count: following_count,
               followers_count: followers_count,
+              # Refreshed here and not only at mount: the panel decides "Seguir"
+              # or "Seguindo" from this, and a page open for a while had it stale.
+              following_user_ids: OGrupoDeEstudos.Engagement.following_ids(user.id),
               bubble_search: "",
               bubble_search_results: []
             )

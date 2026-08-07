@@ -137,6 +137,72 @@ defmodule OGrupoDeEstudosWeb.AppShellTest do
     end
   end
 
+  describe "the people bubble travels with the tab bar" do
+    defp bubble, do: ~s(data-ui="social-bubble")
+
+    # The rule is executable because the bubble had drifted off eight of the
+    # thirteen pages that carry the tab bar, one page at a time, without anyone
+    # deciding it should go. Whoever adds the shell to a new page now gets told.
+    test "no page carries the tab bar without it, except the map" do
+      sem_bolha =
+        "lib/o_grupo_de_estudos_web/live/*.html.heex"
+        |> Path.wildcard()
+        |> Enum.filter(fn path ->
+          html = File.read!(path)
+          html =~ "bottom_nav" and not (html =~ "social_bubble")
+        end)
+        |> Enum.map(&Path.basename/1)
+
+      assert sem_bolha == ["graph_visual_live.html.heex"],
+             "a bolha acompanha a barra de abas; o mapa é a exceção decidida"
+    end
+
+    test "the profile carries it, and was the page that gave this away", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.teacher), ~p"/users/#{ctx.teacher.username}")
+
+      assert html =~ bubble()
+    end
+
+    test "the workshop carries it", ctx do
+      {:ok, _lv, html} =
+        live(log_in_user(ctx.conn, ctx.teacher), ~p"/workshops/#{ctx.workshop.slug}")
+
+      assert html =~ bubble()
+    end
+
+    test "the agenda carries it", ctx do
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.teacher), ~p"/study/workshops")
+
+      assert html =~ bubble()
+    end
+
+    test "it opens and lists people from a page that never had it", ctx do
+      other = insert(:user, username: "outra")
+      {:ok, lv, _html} = live(log_in_user(ctx.conn, ctx.teacher), ~p"/study/workshops")
+
+      html = render_click(lv, "toggle_bubble", %{})
+
+      assert html =~ "Pessoas"
+      assert html =~ other.username
+    end
+
+    # The map already spends that corner: an orange pill at `right-4` and, on a
+    # wide screen, the sequence sheet at `md:right-4`. A second circle there
+    # lands on top of both.
+    test "the map keeps its corner to itself", ctx do
+      {:ok, _lv, html} = live(log_in_user(ctx.conn, ctx.teacher), ~p"/graph/visual")
+
+      refute html =~ bubble()
+    end
+
+    test "whoever opened the link with no account gets no bubble either", ctx do
+      {:ok, _lv, html} = live(ctx.conn, ~p"/workshops/#{ctx.workshop.slug}")
+
+      refute html =~ bubble()
+    end
+  end
+
   describe "the tab bar never sits on top of the content" do
     test "the agenda reserves room for it, and used to lose its last row", ctx do
       {:ok, _lv, html} =

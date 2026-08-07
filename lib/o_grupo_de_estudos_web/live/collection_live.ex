@@ -15,6 +15,7 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
@@ -104,13 +105,6 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
       can_edit_drawer: false,
       active_tab: "collection",
       my_steps: [],
-      bubble_open: false,
-      bubble_tab: "following",
-      suggested_users: [],
-      bubble_following_list: [],
-      bubble_followers_list: [],
-      bubble_search: "",
-      bubble_search_results: [],
       expanded_step: nil,
       expanded_comments: [],
       expanded_comment_likes: %{liked_ids: MapSet.new(), counts: %{}},

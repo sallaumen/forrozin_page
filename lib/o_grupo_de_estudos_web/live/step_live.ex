@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
   import OGrupoDeEstudosWeb.UI.BottomNav
   import OGrupoDeEstudosWeb.UI.TopNav
@@ -120,14 +121,7 @@ defmodule OGrupoDeEstudosWeb.StepLive do
            connection_suggest_search: "",
            connection_suggest_results: [],
            my_pending_suggestions: Suggestions.list_user_pending_for_step(user_id, step.id),
-           following_user_ids: Engagement.following_ids(user_id),
-           bubble_open: false,
-           bubble_tab: "following",
-           suggested_users: [],
-           bubble_following_list: [],
-           bubble_followers_list: [],
-           bubble_search: "",
-           bubble_search_results: []
+           following_user_ids: Engagement.following_ids(user_id)
          )}
 
       {:error, :not_found} ->

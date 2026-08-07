@@ -16,12 +16,15 @@ defmodule OGrupoDeEstudosWeb.UserProfileLive do
   alias OGrupoDeEstudosWeb.ErrorMessage
 
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.UI.SocialBubble
   import OGrupoDeEstudosWeb.CoreComponents, only: [flash: 1, icon: 1]
 
   use OGrupoDeEstudosWeb.NotificationHandlers
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
   use OGrupoDeEstudosWeb.Handlers.ActivityToastHandlers
 
   import OGrupoDeEstudosWeb.UI.ActivityToast

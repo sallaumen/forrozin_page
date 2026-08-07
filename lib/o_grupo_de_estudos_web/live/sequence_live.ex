@@ -14,6 +14,7 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
@@ -66,13 +67,6 @@ defmodule OGrupoDeEstudosWeb.SequenceLive do
        expanded_seq_replies_map: %{},
        expanded_seq_replying_to: nil,
        following_user_ids: Engagement.following_ids(current_user.id),
-       bubble_open: false,
-       bubble_tab: "following",
-       bubble_following_list: [],
-       bubble_followers_list: [],
-       bubble_search: "",
-       bubble_search_results: [],
-       suggested_users: [],
        following_count: 0,
        followers_count: 0
      )

@@ -7,8 +7,12 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
   - List of users you follow (quick-access to profiles)
   - Smart suggestions (friends-of-friends, then city/activity fallback)
 
-  Rendered on all authenticated pages. Mobile: above bottom nav.
-  Desktop: bottom-right corner.
+  Rendered wherever the tab bar is, which the `AppShellTest` enforces. The map is
+  the one exception: it already spends that corner on its own floating button.
+
+  The offsets come from `--bottom-nav-h`, the height the tab bar publishes, and
+  not from a number: on an iPhone the bar also carries the gesture inset, and a
+  fixed 80px put this button 12px inside it.
   """
 
   use Phoenix.Component
@@ -40,7 +44,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
       <%!-- Panel --%>
       <div
         :if={@bubble_open}
-        class="absolute bottom-[136px] md:bottom-[72px] right-3 z-50 bg-ink-50 rounded-2xl shadow-2xl border border-ink-300/40 w-72 flex flex-col overflow-hidden pointer-events-auto"
+        class="absolute bottom-[calc(var(--bottom-nav-h)+5rem)] md:bottom-[72px] right-3 z-50 bg-ink-50 rounded-2xl shadow-2xl border border-ink-300/40 w-72 flex flex-col overflow-hidden pointer-events-auto"
         style="animation: fadeSlideUp 0.15s ease-out; max-height: min(65vh, 420px);"
       >
         <%!-- Header --%>
@@ -210,7 +214,7 @@ defmodule OGrupoDeEstudosWeb.UI.SocialBubble do
       <button
         phx-click="toggle_bubble"
         class={[
-          "absolute bottom-20 md:bottom-6 right-4 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer border-0 shadow-lg transition-all pointer-events-auto",
+          "absolute bottom-[calc(var(--bottom-nav-h)+1.5rem)] md:bottom-6 right-4 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer border-0 shadow-lg transition-all pointer-events-auto",
           @bubble_open && "bg-ink-900 shadow-xl scale-95",
           !@bubble_open && "bg-ink-900 hover:bg-ink-800 shadow-ink-900/30"
         ]}

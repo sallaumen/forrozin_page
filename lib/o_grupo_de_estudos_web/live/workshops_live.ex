@@ -13,9 +13,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopsLive do
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :primary}
   on_mount {OGrupoDeEstudosWeb.Hooks.NotificationSubscriber, :default}
+  on_mount {OGrupoDeEstudosWeb.Hooks.SocialBubble, :default}
 
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.BottomNav
+  import OGrupoDeEstudosWeb.UI.SocialBubble
+
+  use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
   import OGrupoDeEstudosWeb.StudyComponents
   import OGrupoDeEstudosWeb.WorkshopComponents
 

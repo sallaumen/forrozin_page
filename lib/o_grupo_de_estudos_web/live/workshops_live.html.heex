@@ -154,6 +154,20 @@
     </section>
   </main>
 
+  <.social_bubble
+    current_user={@current_user}
+    suggested_users={@suggested_users}
+    following_user_ids={@following_user_ids}
+    bubble_open={@bubble_open}
+    bubble_tab={@bubble_tab}
+    bubble_following_list={@bubble_following_list}
+    bubble_followers_list={@bubble_followers_list}
+    bubble_search={@bubble_search}
+    bubble_search_results={@bubble_search_results}
+    following_count={@following_count}
+    followers_count={@followers_count}
+  />
+
   <.bottom_nav
     current_user={@current_user}
     current_path="/study"

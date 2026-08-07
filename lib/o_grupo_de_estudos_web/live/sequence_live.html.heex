@@ -284,8 +284,8 @@
     bubble_followers_list={@bubble_followers_list}
     bubble_search={@bubble_search}
     bubble_search_results={@bubble_search_results}
-    following_count={assigns[:following_count] || 0}
-    followers_count={assigns[:followers_count] || 0}
+    following_count={@following_count}
+    followers_count={@followers_count}
   />
   <.bottom_nav
     current_user={@current_user}
