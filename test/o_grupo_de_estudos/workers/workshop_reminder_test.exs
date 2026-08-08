@@ -9,9 +9,11 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
   alias OGrupoDeEstudos.Workers.WorkshopReminder
   alias OGrupoDeEstudos.Workshops.WorkshopEnrollment
 
-  defp tomorrow_at(hour) do
+  defp tomorrow_at(hour), do: day_at(1, hour)
+
+  defp day_at(days_ahead, hour) do
     Brazil.today()
-    |> Date.add(1)
+    |> Date.add(days_ahead)
     |> DateTime.new!(Time.new!(hour, 0, 0), "Etc/UTC")
     |> Brazil.to_utc()
     |> DateTime.truncate(:second)
@@ -47,7 +49,8 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
       assert :ok = rodar()
 
       assert_email_sent(fn email ->
-        assert email.subject == "Amanhã tem Pisada de amanhã"
+        assert String.downcase(email.subject) =~ "amanhã"
+        assert email.subject =~ "Pisada de amanhã"
         assert {_, endereco} = hd(email.to)
         assert endereco == ctx.student.email
         assert email.text_body =~ ctx.workshop.slug
@@ -136,6 +139,52 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
       {:ok, _} = Workshops.cancel_enrollment(workshop, student)
 
       assert :ok = rodar()
+    end
+  end
+
+  describe "same-day catch-up" do
+    setup %{owner: owner} do
+      workshop_today =
+        insert(:workshop, organizer: owner, title: "Pisada de hoje", starts_at: day_at(0, 23))
+
+      late_student = insert(:user)
+      {:ok, _} = Workshops.enroll(workshop_today, late_student)
+
+      %{workshop_today: workshop_today, late_student: late_student}
+    end
+
+    test "enrollment made after the day-before sweep is reminded today", ctx do
+      Repo.delete_all(Notification)
+
+      assert :ok = rodar()
+
+      avisos = Repo.all(from n in Notification, where: n.action == :workshop_today_reminder)
+      assert [aviso] = avisos
+      assert aviso.user_id == ctx.late_student.id
+      assert aviso.parent_id == ctx.workshop_today.id
+    end
+
+    test "the same-day email says today, with the link", ctx do
+      {:ok, _} = Workshops.cancel_enrollment(ctx.workshop, ctx.student)
+
+      assert :ok = rodar()
+
+      assert_email_sent(fn email ->
+        assert {_, endereco} = hd(email.to)
+        assert endereco == ctx.late_student.email
+        assert String.downcase(email.subject <> email.text_body) =~ "hoje"
+        assert email.text_body =~ ctx.workshop_today.slug
+      end)
+    end
+
+    test "running twice reminds the late enrollment only once", _ctx do
+      Repo.delete_all(Notification)
+
+      assert :ok = rodar()
+      assert :ok = rodar()
+
+      avisos = Repo.all(from n in Notification, where: n.action == :workshop_today_reminder)
+      assert length(avisos) == 1
     end
   end
 end

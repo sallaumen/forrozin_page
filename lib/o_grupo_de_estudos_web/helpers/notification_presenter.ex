@@ -59,6 +59,7 @@ defmodule OGrupoDeEstudosWeb.Helpers.NotificationPresenter do
   defp action_phrase(:receipt_sent, false), do: " mandou o comprovante"
   defp action_phrase(:receipt_sent, true), do: " mandaram o comprovante"
   defp action_phrase(:workshop_reminder, _), do: " tem workshop com você amanhã"
+  defp action_phrase(:workshop_today_reminder, _), do: " tem workshop com você hoje"
   defp action_phrase(:workshop_join_requested, _), do: " pediu para entrar no seu workshop"
   defp action_phrase(:workshop_join_approved, _), do: " aceitou seu pedido de entrada"
   defp action_phrase(:workshop_join_rejected, _), do: " respondeu seu pedido de entrada"

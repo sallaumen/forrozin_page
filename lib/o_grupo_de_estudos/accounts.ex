@@ -6,7 +6,7 @@ defmodule OGrupoDeEstudos.Accounts do
   alias OGrupoDeEstudos.Accounts.{AdminIdsCache, User, UserQuery}
   alias OGrupoDeEstudos.Metadata
   alias OGrupoDeEstudos.Repo
-  alias OGrupoDeEstudos.Workers.{SendConfirmationEmail, SendPasswordResetEmail}
+  alias OGrupoDeEstudos.Workers.{SendPasswordResetEmail, SendWelcomeEmail}
 
   @doc """
   Registers a new user and enqueues the welcome + confirmation email.
@@ -24,15 +24,18 @@ defmodule OGrupoDeEstudos.Accounts do
 
     case Repo.insert(changeset) do
       {:ok, user} ->
-        %{user_id: user.id}
-        |> SendConfirmationEmail.new()
-        |> Oban.insert()
-
+        enqueue_welcome_email(user)
         {:ok, user}
 
       error ->
         error
     end
+  end
+
+  defp enqueue_welcome_email(user) do
+    %{user_id: user.id}
+    |> SendWelcomeEmail.new()
+    |> Oban.insert()
   end
 
   @doc """
@@ -136,8 +139,12 @@ defmodule OGrupoDeEstudos.Accounts do
     }
 
     case %User{} |> User.google_registration_changeset(attrs) |> Repo.insert() do
-      {:ok, user} -> {:ok, user, :registered}
-      error -> error
+      {:ok, user} ->
+        enqueue_welcome_email(user)
+        {:ok, user, :registered}
+
+      error ->
+        error
     end
   end
 
@@ -233,6 +240,25 @@ defmodule OGrupoDeEstudos.Accounts do
   end
 
   def get_user_by_email(_), do: nil
+
+  @doc "Google-born accounts created before the cutoff (welcome backfill preview)."
+  defdelegate list_google_registered_before(cutoff), to: UserQuery
+
+  @doc """
+  Sends the welcome email to google-born accounts created before the cutoff.
+
+  Those accounts predate the welcome email for Google sign-ins, so nothing
+  ever reached them. The cutoff keeps accounts that already got the email at
+  registration out; pass the moment the welcome email shipped.
+
+  Returns `{count, emails_enqueued}`.
+  """
+  def backfill_welcome_emails(%DateTime{} = cutoff) do
+    users = UserQuery.list_google_registered_before(cutoff)
+
+    Enum.each(users, &enqueue_welcome_email/1)
+    {length(users), Enum.map(users, & &1.email)}
+  end
 
   @doc """
   Backfills stored emails to their lowercase, trimmed form.

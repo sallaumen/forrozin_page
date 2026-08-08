@@ -1,5 +1,10 @@
 defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
-  @moduledoc "Day-before email: there is a workshop tomorrow."
+  @moduledoc """
+  Workshop reminder in five rotating variations per flavor.
+
+  `:tomorrow` is the day-before notice; `:today` covers whoever enrolled
+  after the day-before sweep had already run.
+  """
 
   alias Swoosh.Email
 
@@ -8,21 +13,117 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
   import OGrupoDeEstudosWeb.WorkshopComponents, only: [schedule_label: 1]
 
   @sender {"O Grupo de Estudos", "noreply@ogrupodeestudos.com.br"}
+  @variation_count 5
 
-  @doc "Builds the day-before notice for one person and one workshop."
-  def new(user, workshop) do
+  @doc "Builds the reminder with a randomly picked variation."
+  def new(user, workshop, flavor),
+    do: new(user, workshop, flavor, Enum.random(0..(@variation_count - 1)))
+
+  @doc "Builds the reminder with a specific variation (tests, previews)."
+  def new(user, workshop, flavor, variation_index) do
     name = user.name || user.username
     link = url(~p"/workshops/#{workshop.slug}")
+    variation = variation(flavor, variation_index, workshop.title)
 
     Email.new()
     |> Email.to({name, user.email})
     |> Email.from(@sender)
-    |> Email.subject("Amanhã tem #{workshop.title}")
-    |> Email.html_body(html(name, workshop, link))
-    |> Email.text_body(text(name, workshop, link))
+    |> Email.subject(variation.subject)
+    |> Email.html_body(html(name, workshop, link, variation))
+    |> Email.text_body(text(name, workshop, link, variation))
   end
 
-  defp html(name, workshop, link) do
+  defp variation(:tomorrow, 0, title) do
+    %{
+      subject: "Amanhã tem #{title}",
+      opening: "Amanhã tem <strong>#{title}</strong>.",
+      opening_text: "Amanhã tem #{title}.",
+      closing: "Bom treino, e até amanhã."
+    }
+  end
+
+  defp variation(:tomorrow, 1, title) do
+    %{
+      subject: "É amanhã: #{title}",
+      opening: "Chegou a véspera: amanhã tem <strong>#{title}</strong>.",
+      opening_text: "Chegou a véspera: amanhã tem #{title}.",
+      closing: "Descansa hoje que amanhã tem dança."
+    }
+  end
+
+  defp variation(:tomorrow, 2, title) do
+    %{
+      subject: "Se prepara: amanhã tem #{title}",
+      opening: "Separa a roupa e o sapato: amanhã tem <strong>#{title}</strong>.",
+      opening_text: "Separa a roupa e o sapato: amanhã tem #{title}.",
+      closing: "Até lá!"
+    }
+  end
+
+  defp variation(:tomorrow, 3, title) do
+    %{
+      subject: "Amanhã a gente se vê: #{title}",
+      opening: "Passando só pra lembrar: amanhã tem <strong>#{title}</strong>.",
+      opening_text: "Passando só pra lembrar: amanhã tem #{title}.",
+      closing: "Boa pisada!"
+    }
+  end
+
+  defp variation(:tomorrow, 4, title) do
+    %{
+      subject: "Alonga aí, que amanhã tem #{title}",
+      opening: "Já pode ir aquecendo: <strong>#{title}</strong> é amanhã.",
+      opening_text: "Já pode ir aquecendo: #{title} é amanhã.",
+      closing: "Nos vemos na pista."
+    }
+  end
+
+  defp variation(:today, 0, title) do
+    %{
+      subject: "É hoje: #{title}",
+      opening: "Chegou o dia: hoje tem <strong>#{title}</strong>.",
+      opening_text: "Chegou o dia: hoje tem #{title}.",
+      closing: "Boa dança, até já!"
+    }
+  end
+
+  defp variation(:today, 1, title) do
+    %{
+      subject: "Hoje tem #{title}!",
+      opening: "Lembrete rapidinho: hoje tem <strong>#{title}</strong>.",
+      opening_text: "Lembrete rapidinho: hoje tem #{title}.",
+      closing: "Te esperamos lá."
+    }
+  end
+
+  defp variation(:today, 2, title) do
+    %{
+      subject: "#{title} é hoje",
+      opening: "O dia chegou: <strong>#{title}</strong> é hoje.",
+      opening_text: "O dia chegou: #{title} é hoje.",
+      closing: "Até daqui a pouco!"
+    }
+  end
+
+  defp variation(:today, 3, title) do
+    %{
+      subject: "Hoje tem dança: #{title}",
+      opening: "Bora: hoje tem <strong>#{title}</strong>.",
+      opening_text: "Bora: hoje tem #{title}.",
+      closing: "Boa aula!"
+    }
+  end
+
+  defp variation(:today, 4, title) do
+    %{
+      subject: "Sapato pronto? #{title} é hoje",
+      opening: "Hora de calçar o sapato: <strong>#{title}</strong> é hoje.",
+      opening_text: "Hora de calçar o sapato: #{title} é hoje.",
+      closing: "Nos vemos já já."
+    }
+  end
+
+  defp html(name, workshop, link, variation) do
     """
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -39,16 +140,16 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
             <tr><td style="background:#faf8f4;padding:28px;border-radius:0 0 12px 12px;">
               <p style="margin:0 0 12px;font-size:16px;color:#2b1c10;">Oi, #{name}!</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a3627;">
-                Amanhã tem <strong>#{workshop.title}</strong>.
+                #{variation.opening}
               </p>
               <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#6b5544;">
-                #{schedule_label(workshop)}#{local(workshop)}
+                #{schedule_label(workshop)}#{location(workshop)}
               </p>
               <a href="#{link}" style="display:inline-block;background:#c8763c;color:#fff;text-decoration:none;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:600;">
                 Ver o workshop
               </a>
               <p style="margin:20px 0 0;font-size:12px;color:#8a7462;">
-                Bom treino, e até amanhã.
+                #{variation.closing}
               </p>
             </td></tr>
           </table>
@@ -59,20 +160,20 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
     """
   end
 
-  defp text(name, workshop, link) do
+  defp text(name, workshop, link, variation) do
     """
     Oi, #{name}!
 
-    Amanhã tem #{workshop.title}.
-    #{schedule_label(workshop)}#{local(workshop)}
+    #{variation.opening_text}
+    #{schedule_label(workshop)}#{location(workshop)}
 
     #{link}
 
-    Bom treino, e até amanhã.
+    #{variation.closing}
     """
   end
 
-  defp local(%{location: nil}), do: ""
-  defp local(%{location: ""}), do: ""
-  defp local(%{location: location}), do: " · #{location}"
+  defp location(%{location: nil}), do: ""
+  defp location(%{location: ""}), do: ""
+  defp location(%{location: location}), do: " · #{location}"
 end

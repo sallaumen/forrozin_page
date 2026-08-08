@@ -216,14 +216,18 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
   The actor is the organizer: the notification requires actor_id, and
   "Tavano: amanhã tem workshop com você" reads naturally.
   """
-  @spec notify_workshop_reminder(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t()) :: :ok
-  def notify_workshop_reminder(organizer_id, user_id, workshop_id) do
+  @spec notify_workshop_reminder(Ecto.UUID.t(), Ecto.UUID.t(), Ecto.UUID.t(), :tomorrow | :today) ::
+          :ok
+  def notify_workshop_reminder(organizer_id, user_id, workshop_id, flavor \\ :tomorrow)
+
+  def notify_workshop_reminder(organizer_id, user_id, workshop_id, flavor)
+      when flavor in [:tomorrow, :today] do
     builder = fn destinatario ->
       %{
         id: Ecto.UUID.generate(),
         user_id: destinatario,
         actor_id: organizer_id,
-        action: :workshop_reminder,
+        action: reminder_action(flavor),
         group_key: "workshop_reminder:#{workshop_id}",
         target_type: "workshop",
         target_id: workshop_id,
@@ -235,6 +239,9 @@ defmodule OGrupoDeEstudos.Engagement.Notifications.Dispatcher do
 
     insert_and_broadcast([user_id], builder)
   end
+
+  defp reminder_action(:tomorrow), do: :workshop_reminder
+  defp reminder_action(:today), do: :workshop_today_reminder
 
   @doc """
   Dispatches notification when a like is created.

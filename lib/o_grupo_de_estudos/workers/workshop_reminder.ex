@@ -26,20 +26,29 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
   alias OGrupoDeEstudos.Engagement.SafeDispatch
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args}) do
-    args
-    |> target_day()
-    |> notify_for_day()
+  def perform(%Oban.Job{args: %{"dia" => iso}}) do
+    dia = Date.from_iso8601!(iso)
+    notify_for_day(dia, flavor_for(dia))
   end
 
-  # `dia` in the args serves the tests and a manual resend; without it, tomorrow.
-  defp target_day(%{"dia" => iso}), do: Date.from_iso8601!(iso)
-  defp target_day(_args), do: Date.add(Brazil.today(), 1)
+  # Two sweeps: tomorrow (the classic day-before notice) and today, which
+  # catches whoever enrolled after yesterday's sweep had already run. Without
+  # the second pass, a workshop announced the evening before reminds nobody.
+  def perform(%Oban.Job{}) do
+    today = Brazil.today()
 
-  defp notify_for_day(dia) do
+    notify_for_day(Date.add(today, 1), :tomorrow)
+    notify_for_day(today, :today)
+  end
+
+  defp flavor_for(dia) do
+    if Date.compare(dia, Brazil.today()) == :eq, do: :today, else: :tomorrow
+  end
+
+  defp notify_for_day(dia, flavor) do
     pendentes = Workshops.pending_reminders(Brazil.day_start_utc(dia), Brazil.day_end_utc(dia))
 
-    Enum.each(pendentes, &notify/1)
+    Enum.each(pendentes, &notify(&1, flavor))
     Workshops.mark_reminded(Enum.map(pendentes, fn {enrollment, _, _} -> enrollment.id end))
 
     Logger.info("[WorkshopReminder] #{length(pendentes)} avisos para #{Date.to_iso8601(dia)}")
@@ -48,15 +57,16 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
 
   # The actor is the organizer: the notification requires actor_id, and
   # "Tavano: tomorrow there is a workshop" reads naturally.
-  defp notify({_enrollment, workshop, user}) do
+  defp notify({_enrollment, workshop, user}, flavor) do
     SafeDispatch.run(fn ->
-      Dispatcher.notify_workshop_reminder(workshop.organizer_id, user.id, workshop.id)
+      Dispatcher.notify_workshop_reminder(workshop.organizer_id, user.id, workshop.id, flavor)
     end)
 
     Oban.insert(
       OGrupoDeEstudos.Workers.SendWorkshopReminderEmail.new(%{
         "user_id" => user.id,
-        "workshop_id" => workshop.id
+        "workshop_id" => workshop.id,
+        "flavor" => Atom.to_string(flavor)
       })
     )
   end

@@ -154,7 +154,10 @@ defmodule OGrupoDeEstudos.AgendaTest do
 
   describe "program summary" do
     test "counts the whole festival, not only the filtered period", %{owner: owner} do
-      this_week = insert(:workshop, organizer: owner, starts_at: at_day(2, 19))
+      # Today at 23h local: inside the current calendar week on any weekday.
+      # Two days ahead crosses into the next week when the suite runs on a
+      # saturday, and the whole test used to flake on weekends.
+      this_week = insert(:workshop, organizer: owner, starts_at: at_day(0, 23))
 
       later_one =
         for i <- 1..4, do: insert(:workshop, organizer: owner, starts_at: at_day(30 + i, 19))
