@@ -40,7 +40,7 @@ defmodule OGrupoDeEstudosWeb.ForgotPasswordLive do
             Uma wiki de forró construída pela comunidade.
           </h1>
           <p class="text-base leading-[1.9] text-ink-400 mb-0">
-            Mais de 150 passos documentados, conexões entre eles, sequências e diário de treino. Tudo aberto e gratuito.
+            Mais de cem passos documentados, conexões entre eles, sequências e diário de treino. Tudo aberto e gratuito.
           </p>
         </div>
 

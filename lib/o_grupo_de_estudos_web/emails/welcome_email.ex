@@ -69,7 +69,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WelcomeEmail do
       subject: "Bora estudar forró, #{name}?",
       title: "E aí, #{name}!",
       intro:
-        "Sua conta tá pronta. Comece pelo acervo, que tem mais de 150 passos documentados, " <>
+        "Sua conta tá pronta. Comece pelo acervo, que tem mais de cem passos documentados, " <>
           "e vá seguindo as conexões: um passo puxa o outro, igual numa boa noite de forró.",
       closing: "Bom estudo e boa pista!"
     }
@@ -162,7 +162,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WelcomeEmail do
               <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#1a0e05;">O que te espera:</p>
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
                 <tr><td style="padding:8px 0;font-size:13px;color:#5c3a1a;line-height:1.6;">
-                  <span style="color:#b47828;font-weight:700;">Acervo</span>: mais de 150 passos por categoria, com conexões e vídeos
+                  <span style="color:#b47828;font-weight:700;">Acervo</span>: mais de cem passos por categoria, com conexões e vídeos
                 </td></tr>
                 <tr><td style="padding:8px 0;font-size:13px;color:#5c3a1a;line-height:1.6;border-top:1px solid #f0ece4;">
                   <span style="color:#b47828;font-weight:700;">Mapa</span>: como os passos se conectam, visualmente
@@ -200,7 +200,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WelcomeEmail do
     #{variation.intro}
 
     O que te espera:
-    - Acervo: mais de 150 passos documentados, com conexões e vídeos
+    - Acervo: mais de cem passos documentados, com conexões e vídeos
     - Mapa: como os passos se conectam, visualmente
     - Diário: anote treinos, acompanhe evolução
     - Comunidade: siga pessoas, crie sequências, contribua

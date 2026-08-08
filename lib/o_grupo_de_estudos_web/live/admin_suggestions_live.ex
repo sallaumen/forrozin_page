@@ -12,6 +12,8 @@ defmodule OGrupoDeEstudosWeb.AdminSuggestionsLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.Helpers.Plural
+
   alias OGrupoDeEstudos.{Accounts, Suggestions}
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}

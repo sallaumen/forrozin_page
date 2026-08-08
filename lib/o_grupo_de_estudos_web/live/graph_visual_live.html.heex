@@ -93,7 +93,7 @@
             Modo manual ativo
           </div>
           <div class="truncate text-[12px] text-ink-700">
-            {length(@seq_manual_steps)} passo(s)
+            {plural(length(@seq_manual_steps), "passo", "passos")}
           </div>
         </div>
         <button
@@ -671,7 +671,11 @@
                 Opções geradas
               </div>
               <div class="text-[10px] text-ink-500 tracking-wide">
-                {length(@seq_results)} sequência(s) para comparar
+                {plural(
+                  length(@seq_results),
+                  "sequência para comparar",
+                  "sequências para comparar"
+                )}
               </div>
             </div>
 
@@ -1265,7 +1269,7 @@
                   Ordem da sequência
                 </div>
                 <div class="rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-bold text-ink-600">
-                  {length(@seq_manual_steps)} passo(s)
+                  {plural(length(@seq_manual_steps), "passo", "passos")}
                 </div>
               </div>
               <%= if @seq_manual_steps == [] do %>
