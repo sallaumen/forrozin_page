@@ -15,8 +15,13 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmailTest do
       slug: "pisada-e-conducao",
       location: "Espaço Cultural do Batel",
       starts_at: ~U[2026-08-20 22:00:00Z],
-      ends_at: nil
+      ends_at: nil,
+      flyer_path: nil
     }
+  end
+
+  defp fake_workshop_with_flyer do
+    %{fake_workshop() | flyer_path: "flyers/pisada.jpg"}
   end
 
   describe "tomorrow flavor" do
@@ -70,6 +75,23 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmailTest do
         end
 
       assert WorkshopReminderEmail.new(fake_user(), fake_workshop(), :today).subject in known_subjects
+    end
+  end
+
+  describe "event banner" do
+    test "every variation shows the flyer when the workshop has one" do
+      for index <- @variation_indexes, flavor <- [:tomorrow, :today] do
+        email = WorkshopReminderEmail.new(fake_user(), fake_workshop_with_flyer(), flavor, index)
+
+        assert email.html_body =~ "/workshops/pisada-e-conducao/og-image"
+      end
+    end
+
+    test "no banner and no broken image without a flyer" do
+      email = WorkshopReminderEmail.new(fake_user(), fake_workshop(), :tomorrow, 0)
+
+      refute email.html_body =~ "og-image"
+      refute email.html_body =~ "<img"
     end
   end
 

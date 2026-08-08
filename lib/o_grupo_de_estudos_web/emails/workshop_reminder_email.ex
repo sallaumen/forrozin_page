@@ -137,6 +137,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
                 O Grupo de Estudos
               </p>
             </td></tr>
+            #{banner(workshop, link)}
             <tr><td style="background:#faf8f4;padding:28px;border-radius:0 0 12px 12px;">
               <p style="margin:0 0 12px;font-size:16px;color:#2b1c10;">Oi, #{name}!</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a3627;">
@@ -176,4 +177,22 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
   defp location(%{location: nil}), do: ""
   defp location(%{location: ""}), do: ""
   defp location(%{location: location}), do: " · #{location}"
+
+  # The flyer the organizer uploaded, served by the public og-image route so
+  # email clients can fetch it. No flyer, no row: the icon fallback of that
+  # route would look broken as a banner.
+  defp banner(%{flyer_path: nil}, _link), do: ""
+
+  defp banner(workshop, link) do
+    flyer_url = url(~p"/workshops/#{workshop.slug}/og-image")
+
+    """
+    <tr><td style="background:#faf8f4;padding:24px 28px 0;" align="center">
+      <a href="#{link}" style="text-decoration:none;">
+        <img src="#{flyer_url}" width="260" alt="#{workshop.title}"
+             style="display:block;width:260px;max-width:100%;border-radius:12px;border:1px solid #e8e0d4;" />
+      </a>
+    </td></tr>
+    """
+  end
 end
