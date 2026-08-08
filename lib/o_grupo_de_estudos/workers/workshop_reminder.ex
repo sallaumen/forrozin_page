@@ -50,9 +50,44 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminder do
 
     Enum.each(pendentes, &notify(&1, flavor))
     Workshops.mark_reminded(Enum.map(pendentes, fn {enrollment, _, _} -> enrollment.id end))
+    remind_teachers(dia, flavor)
 
     Logger.info("[WorkshopReminder] #{length(pendentes)} avisos para #{Date.to_iso8601(dia)}")
     :ok
+  end
+
+  # Whoever teaches or organizes gets the class summary, once per workshop,
+  # even with zero enrollments: that number is information too.
+  defp remind_teachers(dia, flavor) do
+    pendentes =
+      Workshops.pending_teacher_reminders(Brazil.day_start_utc(dia), Brazil.day_end_utc(dia))
+
+    Enum.each(pendentes, &notify_teachers(&1, flavor))
+    Workshops.mark_teacher_reminded(Enum.map(pendentes, & &1.id))
+  end
+
+  defp notify_teachers(workshop, flavor) do
+    workshop
+    |> teacher_recipient_ids()
+    |> Enum.each(fn user_id ->
+      Oban.insert(
+        OGrupoDeEstudos.Workers.SendTeacherReminderEmail.new(%{
+          "user_id" => user_id,
+          "workshop_id" => workshop.id,
+          "flavor" => Atom.to_string(flavor)
+        })
+      )
+    end)
+  end
+
+  defp teacher_recipient_ids(workshop) do
+    teacher_ids =
+      workshop.id
+      |> Workshops.list_teachers()
+      |> Enum.map(& &1.user_id)
+      |> Enum.reject(&is_nil/1)
+
+    Enum.uniq([workshop.organizer_id | teacher_ids])
   end
 
   # The actor is the organizer: the notification requires actor_id, and

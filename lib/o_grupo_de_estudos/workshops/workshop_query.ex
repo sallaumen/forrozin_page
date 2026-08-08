@@ -117,6 +117,29 @@ defmodule OGrupoDeEstudos.Workshops.WorkshopQuery do
     |> Repo.all()
   end
 
+  @doc "Published workshops in the window whose teachers were not reminded yet."
+  @spec pending_teacher_reminders(DateTime.t(), DateTime.t()) :: [Workshop.t()]
+  def pending_teacher_reminders(de, ate) do
+    from(w in Workshop,
+      where: is_nil(w.teacher_reminded_at),
+      where: w.status == :published,
+      where: w.starts_at >= ^de and w.starts_at <= ^ate,
+      order_by: [asc: w.starts_at]
+    )
+    |> Repo.all()
+  end
+
+  @doc "Marks that the teacher summary went out, so a rerun does not repeat it."
+  @spec mark_teacher_reminded([Ecto.UUID.t()]) :: {non_neg_integer(), nil}
+  def mark_teacher_reminded([]), do: {0, nil}
+
+  def mark_teacher_reminded(workshop_ids) do
+    agora = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    from(w in Workshop, where: w.id in ^workshop_ids)
+    |> Repo.update_all(set: [teacher_reminded_at: agora])
+  end
+
   @doc """
   Filters by period, over whichever query carries the `:periodo` binding.
 

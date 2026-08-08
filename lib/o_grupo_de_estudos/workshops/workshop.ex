@@ -44,6 +44,7 @@ defmodule OGrupoDeEstudos.Workshops.Workshop do
     field :capacity, :integer
     field :status, Ecto.Enum, values: [:draft, :published, :cancelled], default: :draft
     field :flyer_path, :string
+    field :teacher_reminded_at, :utc_datetime
     # Who can see it. Separate from status, which is the life cycle.
     field :visibility, Ecto.Enum, values: [:public, :private], default: :public
 

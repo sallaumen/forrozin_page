@@ -142,6 +142,81 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
     end
   end
 
+  describe "teacher summary" do
+    defp collect_emails(count) do
+      for _ <- 1..count do
+        assert_received {:email, email}
+        email
+      end
+    end
+
+    setup %{owner: owner, workshop: workshop} do
+      teacher_user = insert(:user, name: "Profe Ana Lima")
+
+      {:ok, _} =
+        Workshops.set_teachers(workshop, owner, [
+          %{user_id: teacher_user.id},
+          %{display_name: "Convidado Sem Conta"}
+        ])
+
+      %{teacher_user: teacher_user}
+    end
+
+    test "organizer and account-linked teachers get the day-before summary", ctx do
+      {:ok, _} = Workshops.cancel_enrollment(ctx.workshop, ctx.student)
+
+      assert :ok = rodar()
+
+      emails = collect_emails(2)
+      recipients = Enum.map(emails, fn email -> elem(hd(email.to), 1) end)
+
+      assert Enum.sort(recipients) == Enum.sort([ctx.owner.email, ctx.teacher_user.email])
+      assert Enum.all?(emails, &(&1.subject =~ "Amanhã"))
+      assert Enum.all?(emails, &(&1.subject =~ "0 inscritos"))
+    end
+
+    test "the summary carries the roster and the manage link", ctx do
+      assert :ok = rodar()
+
+      emails = collect_emails(3)
+      summary = Enum.find(emails, &(&1.subject =~ "1 inscritos"))
+
+      assert summary.html_body =~ ctx.student.name
+      assert summary.text_body =~ "/workshops/#{ctx.workshop.slug}/manage"
+    end
+
+    test "running twice sends the summary only once", ctx do
+      {:ok, _} = Workshops.cancel_enrollment(ctx.workshop, ctx.student)
+
+      assert :ok = rodar()
+      collect_emails(2)
+
+      assert :ok = rodar()
+      assert_no_email_sent()
+    end
+
+    test "a workshop entering the window late gets the today summary", %{owner: owner} = ctx do
+      {:ok, _} = Workshops.cancel_enrollment(ctx.workshop, ctx.student)
+      second_teacher = insert(:user, name: "Profe Bento Reis")
+
+      workshop_today =
+        insert(:workshop, organizer: owner, title: "Aula de hoje", starts_at: day_at(0, 23))
+
+      {:ok, _} = Workshops.set_teachers(workshop_today, owner, [%{user_id: second_teacher.id}])
+
+      assert :ok = rodar()
+
+      emails = collect_emails(4)
+      today_summary = Enum.find(emails, &(&1.subject =~ "Aula de hoje"))
+
+      assert today_summary.subject =~ "Hoje"
+
+      assert Enum.any?(emails, fn email ->
+               elem(hd(email.to), 1) == second_teacher.email
+             end)
+    end
+  end
+
   describe "same-day catch-up" do
     setup %{owner: owner} do
       workshop_today =
@@ -169,12 +244,13 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
 
       assert :ok = rodar()
 
-      assert_email_sent(fn email ->
-        assert {_, endereco} = hd(email.to)
-        assert endereco == ctx.late_student.email
-        assert String.downcase(email.subject <> email.text_body) =~ "hoje"
-        assert email.text_body =~ ctx.workshop_today.slug
-      end)
+      emails = collect_emails(3)
+
+      student_email =
+        Enum.find(emails, fn email -> elem(hd(email.to), 1) == ctx.late_student.email end)
+
+      assert String.downcase(student_email.subject <> student_email.text_body) =~ "hoje"
+      assert student_email.text_body =~ ctx.workshop_today.slug
     end
 
     test "running twice reminds the late enrollment only once", _ctx do
