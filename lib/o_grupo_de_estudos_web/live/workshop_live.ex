@@ -32,6 +32,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   import OGrupoDeEstudosWeb.UI.SocialBubble
   import OGrupoDeEstudosWeb.UI.InlineEdit
   import OGrupoDeEstudosWeb.UI.CommentThread
+  import OGrupoDeEstudosWeb.UI.StepSearch
   import OGrupoDeEstudosWeb.UI.TopNav
   import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
   import OGrupoDeEstudosWeb.WorkshopComponents

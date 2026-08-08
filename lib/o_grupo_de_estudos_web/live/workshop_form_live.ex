@@ -132,7 +132,13 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
         attach_to_program(socket.assigns[:program], user, workshop)
         workshop = store_flyer(socket, workshop, user)
         store_teachers(workshop, user, params)
-        finish(socket, user, workshop, publish?)
+
+        # If publishing fails inside finish/4, the LiveView stays open: the
+        # retry must take the update path, or the click creates a duplicate
+        # while the first workshop lingers as an invisible draft.
+        socket
+        |> assign(:workshop, workshop)
+        |> finish(user, workshop, publish?)
 
       {:error, changeset} ->
         {:noreply, form_failed(socket, params, changeset)}

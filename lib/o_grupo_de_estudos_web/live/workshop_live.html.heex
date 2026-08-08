@@ -465,33 +465,14 @@
           <%!-- Only an admin builds the list: it is what the class offered, and
                whoever taught it knows what they offered.
           --%>
-          <div :if={@organizer?} class="relative mt-3 max-w-[22rem]">
-            <input
-              type="text"
-              name="term"
-              phx-change="search_workshop_step"
-              phx-debounce="200"
-              autocomplete="off"
+          <div :if={@organizer?} class="mt-3 max-w-[22rem]">
+            <.step_search
+              id="workshop-step-search"
+              suggestions={@step_search}
               placeholder="+ Vincular passo dado nesta aula"
-              class="w-full rounded-full border border-ink-300 bg-transparent px-4 py-2 font-serif text-[13px] text-ink-800 placeholder:text-ink-400"
+              search_event="search_workshop_step"
+              add_event="add_workshop_step"
             />
-            <div
-              :if={@step_search != []}
-              class="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-ink-200 bg-ink-50 shadow-md"
-            >
-              <button
-                :for={suggestion <- @step_search}
-                type="button"
-                phx-click="add_workshop_step"
-                phx-value-id={suggestion.id}
-                class="flex w-full cursor-pointer items-center gap-2 border-0 border-b border-ink-200 bg-transparent px-3 py-2 text-left text-[13px] last:border-b-0 hover:bg-ink-100"
-              >
-                <code class="font-sans text-[11.5px] font-bold text-ink-900">
-                  {suggestion.code}
-                </code>
-                <span class="text-ink-700">{suggestion.name}</span>
-              </button>
-            </div>
           </div>
         </section>
 

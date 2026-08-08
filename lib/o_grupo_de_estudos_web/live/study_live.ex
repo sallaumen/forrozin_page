@@ -18,6 +18,7 @@ defmodule OGrupoDeEstudosWeb.StudyLive do
   import OGrupoDeEstudosWeb.UI.UserAvatar
   import OGrupoDeEstudosWeb.UI.StepRanking
   import OGrupoDeEstudosWeb.UI.GoalsBoard
+  import OGrupoDeEstudosWeb.UI.StepSearch
   import OGrupoDeEstudosWeb.StudyComponents
 
   use OGrupoDeEstudosWeb.NotificationHandlers

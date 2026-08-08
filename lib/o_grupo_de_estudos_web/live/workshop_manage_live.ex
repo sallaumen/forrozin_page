@@ -23,6 +23,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
 
   use OGrupoDeEstudosWeb.Handlers.SocialBubbleHandlers
   import OGrupoDeEstudosWeb.UI.TopNav
+  import OGrupoDeEstudosWeb.UI.UserSearch
   import OGrupoDeEstudosWeb.UI.UserAvatar, only: [user_avatar: 1]
   import OGrupoDeEstudosWeb.WorkshopComponents
 
@@ -41,6 +42,7 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
        |> assign(:owner?, workshop.organizer_id == user.id)
        |> assign(:cobra?, !Workshop.free?(workshop))
        |> assign(:admin_form_error, nil)
+       |> assign(:admin_candidates, [])
        |> load_enrollments()
        |> load_co_admins()
        |> load_requests()
@@ -111,6 +113,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
     end
   end
 
+  def handle_event("search_admin_candidate", %{"username" => term}, socket) do
+    {:noreply, assign(socket, :admin_candidates, admin_candidates(socket, term))}
+  end
+
   def handle_event("add_admin", %{"username" => username}, socket) do
     case Accounts.get_user_by_username(String.trim(username)) do
       nil -> {:noreply, assign(socket, :admin_form_error, "Não encontrei esse usuário.")}
@@ -151,6 +157,18 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
      |> put_flash(:info, "Link copiado! Agora é só mandar para a turma.")}
   end
 
+  # Whoever already organizes stays out of the previews: suggesting them
+  # only leads to the "já organiza" error.
+  defp admin_candidates(socket, term) do
+    organizing = [
+      socket.assigns.workshop.organizer_id | Enum.map(socket.assigns.co_admins, & &1.user_id)
+    ]
+
+    term
+    |> Accounts.search_users()
+    |> Enum.reject(&(&1.id in organizing))
+  end
+
   defp promote(socket, user) do
     workshop = socket.assigns.workshop
 
@@ -159,9 +177,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopManageLive do
         {:noreply,
          socket
          |> assign(:admin_form_error, nil)
+         |> assign(:admin_candidates, [])
          |> load_co_admins()
          |> put_flash(:info, "#{user.name || user.username} agora organiza com você.")
-         |> push_event("form:clear", %{id: "add-admin-form"})}
+         |> push_event("form:clear", %{id: "admin-user-search-form"})}
 
       {:error, :already_admin} ->
         {:noreply, assign(socket, :admin_form_error, "Essa pessoa já organiza este workshop.")}
