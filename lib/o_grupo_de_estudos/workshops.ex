@@ -81,6 +81,8 @@ defmodule OGrupoDeEstudos.Workshops do
 
   defdelegate pending_reminders(de, ate), to: EnrollmentQuery
   defdelegate mark_reminded(enrollment_ids), to: EnrollmentQuery
+  defdelegate pending_teacher_reminders(de, ate), to: WorkshopQuery
+  defdelegate mark_teacher_reminded(workshop_ids), to: WorkshopQuery
 
   defdelegate get_enrollment(workshop_id, user_id), to: EnrollmentQuery, as: :get_for_user
 
