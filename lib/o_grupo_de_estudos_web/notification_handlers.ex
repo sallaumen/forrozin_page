@@ -24,6 +24,11 @@ defmodule OGrupoDeEstudosWeb.NotificationHandlers do
         {:noreply, assign(socket, :notification_count, 0)}
       end
 
+      # Test-only echo: with Oban inline, the Swoosh test adapter messages the
+      # process that ran the job, which in a LiveView event is the LiveView
+      # itself. In the browser this message never exists.
+      def handle_info({:email, _delivered}, socket), do: {:noreply, socket}
+
       @impl true
       def handle_event("toggle_notifications_dropdown", _params, socket) do
         if socket.assigns[:notification_dropdown_open] do

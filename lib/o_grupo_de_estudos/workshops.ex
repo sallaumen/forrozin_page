@@ -98,12 +98,37 @@ defmodule OGrupoDeEstudos.Workshops do
   @spec update_workshop(User.t(), Workshop.t(), map()) ::
           {:ok, Workshop.t()} | {:error, Ecto.Changeset.t() | :unauthorized}
   def update_workshop(%User{} = user, %Workshop{} = workshop, attrs) do
-    with :ok <- ensure_admin(workshop, user) do
-      workshop
-      |> Workshop.changeset(normalize(attrs))
-      |> Repo.update()
+    with :ok <- ensure_admin(workshop, user),
+         {:ok, updated} <- workshop |> Workshop.changeset(normalize(attrs)) |> Repo.update() do
+      drain_waitlist_for_new_seats(workshop, updated)
+      {:ok, updated}
     end
   end
+
+  # New seats call the waitlist in order until they run out (or the list does).
+  # Loosening means raising the number or removing the limit; anything else,
+  # including lowering it, moves nobody.
+  defp drain_waitlist_for_new_seats(%{capacity: old_cap}, %{capacity: new_cap} = updated)
+       when not is_nil(old_cap) and (is_nil(new_cap) or new_cap > old_cap) do
+    drain_waitlist(updated)
+  end
+
+  defp drain_waitlist_for_new_seats(_before_update, _updated), do: :ok
+
+  defp drain_waitlist(workshop) do
+    with true <- seat_free?(workshop),
+         %WaitlistEntry{} = entry <- WaitlistQuery.first_in_line(workshop.id),
+         :ok <- promote_entry(entry, workshop, :capacity_increased) do
+      drain_waitlist(workshop)
+    else
+      _no_seat_nobody_or_error -> :ok
+    end
+  end
+
+  defp seat_free?(%Workshop{capacity: nil}), do: true
+
+  defp seat_free?(%Workshop{} = workshop),
+    do: EnrollmentQuery.count(workshop.id) < workshop.capacity
 
   @doc "Publishes: from here on it shows on the agenda and accepts enrollment."
   @spec publish_workshop(User.t(), Workshop.t()) ::
@@ -833,9 +858,23 @@ defmodule OGrupoDeEstudos.Workshops do
   def enroll_in_package(%WorkshopProgram{} = program, %User{} = user) do
     with :ok <- ensure_package(program),
          :ok <- ensure_not_organizer(program, user),
-         {:ok, program_enrollment} <- create_membership(program, user) do
-      cover_workshops(program, user, program_enrollment)
+         {:ok, program_enrollment} <- create_membership(program, user),
+         {:ok, program_enrollment} <- cover_workshops(program, user, program_enrollment) do
+      email_program_confirmation(program, user, ProgramQuery.list_workshops(program.id))
+      {:ok, program_enrollment}
     end
+  end
+
+  defp email_program_confirmation(_program, _user, []), do: :ok
+
+  defp email_program_confirmation(program, user, workshops) do
+    %{
+      "user_id" => user.id,
+      "program_id" => program.id,
+      "workshop_ids" => Enum.map(workshops, & &1.id)
+    }
+    |> OGrupoDeEstudos.Workers.SendProgramEnrolledEmail.new()
+    |> Oban.insert()
   end
 
   defp ensure_package(program) do
@@ -1258,6 +1297,11 @@ defmodule OGrupoDeEstudos.Workshops do
 
   defdelegate get_program_by_slug(slug), to: ProgramQuery, as: :get_by_slug
   defdelegate get_program(id), to: ProgramQuery, as: :get
+
+  defdelegate list_program_workshops_scoped(program_id, workshop_ids),
+    to: ProgramQuery,
+    as: :workshops_scoped
+
   defdelegate list_programs_for_owner(owner_id), to: ProgramQuery, as: :list_for_owner
   defdelegate program_summaries(program_ids), to: ProgramQuery, as: :summaries_by_ids
   defdelegate program_slugs_by_ids(ids), to: ProgramQuery, as: :slugs_by_ids
@@ -1535,8 +1579,21 @@ defmodule OGrupoDeEstudos.Workshops do
         |> insert_enrollment_locked(user)
         |> link_to_held_package(workshop, user)
         |> notify_organizers(workshop, user)
+        |> email_enrollment_confirmation(workshop, user)
     end
   end
+
+  # Only the direct path confirms per workshop: the package and the multi-pick
+  # send one program email, and the waitlist promotion has its own good news.
+  defp email_enrollment_confirmation({:ok, _enrollment} = result, workshop, user) do
+    %{"user_id" => user.id, "workshop_id" => workshop.id}
+    |> OGrupoDeEstudos.Workers.SendWorkshopEnrolledEmail.new()
+    |> Oban.insert()
+
+    result
+  end
+
+  defp email_enrollment_confirmation(error, _workshop, _user), do: error
 
   # Whoever holds the package of this workshop's program enrolls already linked
   # to it. A loose enrollment next to a membership miscounts the money (a full
@@ -1575,8 +1632,13 @@ defmodule OGrupoDeEstudos.Workshops do
           | {:error, :none_selected}
   def enroll_many(%WorkshopProgram{} = program, %User{} = user, workshop_ids) do
     case ProgramQuery.workshops_scoped(program.id, workshop_ids) do
-      [] -> {:error, :none_selected}
-      workshops -> {:ok, enroll_batch(program, user, workshops)}
+      [] ->
+        {:error, :none_selected}
+
+      workshops ->
+        result = enroll_batch(program, user, workshops)
+        email_program_confirmation(program, user, result.enrolled)
+        {:ok, result}
     end
   end
 
@@ -1677,27 +1739,43 @@ defmodule OGrupoDeEstudos.Workshops do
   # moves one step, it does not drain.
   defp promote_from_waitlist({:ok, _apagada} = result, workshop) do
     case WaitlistQuery.first_in_line(workshop.id) do
-      nil -> result
-      entry -> promote(entry, workshop, result)
+      nil -> :ok
+      entry -> promote_entry(entry, workshop, :seat_freed)
     end
+
+    result
   end
 
   defp promote_from_waitlist(error, _workshop), do: error
 
-  defp promote(entry, workshop, result) do
+  defp promote_entry(entry, workshop, reason) do
     with %User{} = pessoa <- Accounts.get_user_by_id(entry.user_id),
          {:ok, _enrollment} <- enroll_overbooking(workshop, pessoa) do
       Repo.delete(entry)
       notify_promotion(workshop, pessoa)
+      email_promotion(workshop, pessoa, reason)
+      :ok
+    else
+      # Ghost entry, the account is gone: drop it so the line keeps moving.
+      nil -> Repo.delete(entry) && :ok
+      {:error, _enroll_error} -> :error
     end
-
-    result
   end
 
   defp notify_promotion(workshop, pessoa) do
     SafeDispatch.run(fn ->
       Dispatcher.notify_waitlist_promoted(workshop.organizer_id, pessoa.id, workshop.id)
     end)
+  end
+
+  defp email_promotion(workshop, pessoa, reason) do
+    %{
+      "user_id" => pessoa.id,
+      "workshop_id" => workshop.id,
+      "reason" => Atom.to_string(reason)
+    }
+    |> OGrupoDeEstudos.Workers.SendWaitlistPromotedEmail.new()
+    |> Oban.insert()
   end
 
   defdelegate list_waitlist(workshop_id), to: WaitlistQuery, as: :list_for_workshop

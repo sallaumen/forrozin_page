@@ -10,6 +10,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
 
   use OGrupoDeEstudosWeb, :verified_routes
 
+  import OGrupoDeEstudosWeb.Emails.WorkshopFlyerBanner, only: [banner_row: 2]
   import OGrupoDeEstudosWeb.WorkshopComponents, only: [schedule_label: 1]
 
   @sender {"O Grupo de Estudos", "noreply@ogrupodeestudos.com.br"}
@@ -137,7 +138,7 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
                 O Grupo de Estudos
               </p>
             </td></tr>
-            #{banner(workshop, link)}
+            #{banner_row(workshop, link)}
             <tr><td style="background:#faf8f4;padding:28px;border-radius:0 0 12px 12px;">
               <p style="margin:0 0 12px;font-size:16px;color:#2b1c10;">Oi, #{name}!</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4a3627;">
@@ -177,28 +178,4 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
   defp location(%{location: nil}), do: ""
   defp location(%{location: ""}), do: ""
   defp location(%{location: location}), do: " · #{location}"
-
-  # The flyer the organizer uploaded, exactly as the workshop page shows it.
-  # Never the og-image route: it only understands local upload keys, and for a
-  # flyer stored as a full R2 url it falls back to the app icon, which posed as
-  # a giant logo in the first batch of reminders. No flyer, no row.
-  defp banner(%{flyer_path: nil}, _link), do: ""
-
-  defp banner(workshop, link) do
-    flyer_url = absolute_flyer_url(workshop.flyer_path)
-
-    """
-    <tr><td style="background:#faf8f4;padding:24px 28px 0;" align="center">
-      <a href="#{link}" style="text-decoration:none;">
-        <img src="#{flyer_url}" width="260" alt="#{workshop.title}"
-             style="display:block;width:260px;max-width:100%;border-radius:12px;border:1px solid #e8e0d4;" />
-      </a>
-    </td></tr>
-    """
-  end
-
-  # An email client resolves nothing relative: a local upload path needs the
-  # app origin in front; a full url (R2 public bucket) goes as it is.
-  defp absolute_flyer_url("http" <> _rest = full_url), do: full_url
-  defp absolute_flyer_url(local_path), do: OGrupoDeEstudosWeb.Endpoint.url() <> local_path
 end
