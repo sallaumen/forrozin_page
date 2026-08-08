@@ -178,13 +178,14 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
   defp location(%{location: ""}), do: ""
   defp location(%{location: location}), do: " · #{location}"
 
-  # The flyer the organizer uploaded, served by the public og-image route so
-  # email clients can fetch it. No flyer, no row: the icon fallback of that
-  # route would look broken as a banner.
+  # The flyer the organizer uploaded, exactly as the workshop page shows it.
+  # Never the og-image route: it only understands local upload keys, and for a
+  # flyer stored as a full R2 url it falls back to the app icon, which posed as
+  # a giant logo in the first batch of reminders. No flyer, no row.
   defp banner(%{flyer_path: nil}, _link), do: ""
 
   defp banner(workshop, link) do
-    flyer_url = url(~p"/workshops/#{workshop.slug}/og-image")
+    flyer_url = absolute_flyer_url(workshop.flyer_path)
 
     """
     <tr><td style="background:#faf8f4;padding:24px 28px 0;" align="center">
@@ -195,4 +196,9 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail do
     </td></tr>
     """
   end
+
+  # An email client resolves nothing relative: a local upload path needs the
+  # app origin in front; a full url (R2 public bucket) goes as it is.
+  defp absolute_flyer_url("http" <> _rest = full_url), do: full_url
+  defp absolute_flyer_url(local_path), do: OGrupoDeEstudosWeb.Endpoint.url() <> local_path
 end
