@@ -35,7 +35,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLiveTest do
 
       assert html =~ "boom-alpha"
       assert html =~ "boom-beta"
-      assert html =~ "2 erro(s) carregados"
+      assert html =~ "2 erros carregados"
     end
 
     test "clear_all resets the stream and shows the empty state", %{conn: conn} do
@@ -45,7 +45,7 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLiveTest do
       html = render_click(lv, "clear_all", %{})
 
       assert html =~ "Nenhum erro registrado"
-      assert html =~ "0 erro(s) carregados"
+      assert html =~ "0 erros carregados"
       assert Repo.aggregate(ErrorLog, :count) == 0
     end
 
@@ -53,11 +53,11 @@ defmodule OGrupoDeEstudosWeb.AdminErrorsLiveTest do
       for i <- 1..51, do: log_error("err-#{i}")
 
       {:ok, lv, html} = live(conn, ~p"/admin/errors")
-      assert html =~ "50 erro(s) carregados"
+      assert html =~ "50 erros carregados"
       assert html =~ "Carregar mais"
 
       html = render_click(lv, "load_more", %{})
-      assert html =~ "51 erro(s) carregados"
+      assert html =~ "51 erros carregados"
       refute html =~ "Carregar mais"
     end
   end
