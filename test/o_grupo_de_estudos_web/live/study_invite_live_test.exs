@@ -24,6 +24,15 @@ defmodule OGrupoDeEstudosWeb.StudyInviteLiveTest do
       assert html =~ "Quero estudar com"
     end
 
+    test "the two-column grid uses a valid template, not the comma css drops", %{conn: conn} do
+      teacher = insert(:user, is_teacher: true, invite_slug: "prof-lia")
+
+      {:ok, _lv, html} = live(conn, ~p"/study/invite/#{teacher.invite_slug}")
+
+      refute html =~ "1.1fr,0.9fr"
+      assert html =~ "1.1fr_0.9fr"
+    end
+
     test "the sign-in link keeps the teacher invite", %{conn: conn} do
       teacher = insert(:user, is_teacher: true, invite_slug: "prof-lia")
 

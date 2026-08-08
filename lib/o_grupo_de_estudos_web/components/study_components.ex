@@ -753,6 +753,7 @@ defmodule OGrupoDeEstudosWeb.StudyComponents do
           rows={@rows}
           placeholder={@placeholder}
           disabled={@disabled}
+          phx-debounce="800"
           class="w-full resize-y rounded-xl border border-ink-200 bg-ink-100/40 px-4 py-3 font-serif text-sm leading-7 text-ink-900 outline-none transition-colors focus:border-accent-orange/40 focus:ring-1 focus:ring-accent-orange/20 disabled:opacity-70"
         >{@content}</textarea>
       </.form>
