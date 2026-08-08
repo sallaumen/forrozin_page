@@ -20,10 +20,6 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmailTest do
     }
   end
 
-  defp fake_workshop_with_flyer do
-    %{fake_workshop() | flyer_path: "flyers/pisada.jpg"}
-  end
-
   describe "tomorrow flavor" do
     test "every variation says tomorrow and carries title, link and location" do
       for index <- @variation_indexes do
@@ -79,12 +75,24 @@ defmodule OGrupoDeEstudosWeb.Emails.WorkshopReminderEmailTest do
   end
 
   describe "event banner" do
-    test "every variation shows the flyer when the workshop has one" do
-      for index <- @variation_indexes, flavor <- [:tomorrow, :today] do
-        email = WorkshopReminderEmail.new(fake_user(), fake_workshop_with_flyer(), flavor, index)
+    test "a flyer stored as a full url goes into the email as it is" do
+      workshop = %{fake_workshop() | flyer_path: "https://cdn.example.com/flyers/pisada.png"}
 
-        assert email.html_body =~ "/workshops/pisada-e-conducao/og-image"
+      for index <- @variation_indexes, flavor <- [:tomorrow, :today] do
+        email = WorkshopReminderEmail.new(fake_user(), workshop, flavor, index)
+
+        assert email.html_body =~ ~s(src="https://cdn.example.com/flyers/pisada.png")
       end
+    end
+
+    test "a flyer stored as a local path becomes an absolute app url" do
+      workshop = %{fake_workshop() | flyer_path: "/uploads/flyers/pisada.png"}
+
+      email = WorkshopReminderEmail.new(fake_user(), workshop, :tomorrow, 0)
+
+      expected = OGrupoDeEstudosWeb.Endpoint.url() <> "/uploads/flyers/pisada.png"
+      assert email.html_body =~ ~s(src="#{expected}")
+      refute email.html_body =~ ~s(src="/uploads/)
     end
 
     test "no banner and no broken image without a flyer" do
