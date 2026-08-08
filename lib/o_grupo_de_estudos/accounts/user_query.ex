@@ -75,6 +75,28 @@ defmodule OGrupoDeEstudos.Accounts.UserQuery do
     |> Repo.stream()
   end
 
+  @doc """
+  Accounts born through Google sign-in before the cutoff (welcome backfill).
+
+  A google-born account is confirmed in the same insert, so `confirmed_at`
+  sits within seconds of `inserted_at`; an account that linked Google later
+  was confirmed long after registering and stays out.
+  """
+  @spec list_google_registered_before(DateTime.t()) :: [User.t()]
+  def list_google_registered_before(%DateTime{} = cutoff) do
+    naive_cutoff = DateTime.to_naive(cutoff)
+
+    from(u in User,
+      where: not is_nil(u.google_id),
+      where: is_nil(u.confirmation_token),
+      where: u.confirmed_at >= datetime_add(u.inserted_at, -5, "second"),
+      where: u.confirmed_at <= datetime_add(u.inserted_at, 5, "second"),
+      where: u.inserted_at < ^naive_cutoff,
+      order_by: [asc: u.inserted_at]
+    )
+    |> Repo.all()
+  end
+
   defp base_search_query(term) do
     term_like = "%#{OGrupoDeEstudos.Search.escape_like(String.downcase(term))}%"
     where(User, [u], ilike(u.username, ^term_like) or ilike(u.name, ^term_like))

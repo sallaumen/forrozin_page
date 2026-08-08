@@ -15,10 +15,10 @@ defmodule OGrupoDeEstudos.Workers.SendWorkshopReminderEmail do
   alias OGrupoDeEstudosWeb.Emails.WorkshopReminderEmail
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"user_id" => user_id, "workshop_id" => workshop_id}}) do
+  def perform(%Oban.Job{args: %{"user_id" => user_id, "workshop_id" => workshop_id} = args}) do
     with %{} = user <- Accounts.get_user_by_id(user_id),
          %{} = workshop <- Workshops.get_workshop(workshop_id) do
-      entregar(user, workshop)
+      entregar(user, workshop, flavor(args))
     else
       nil ->
         Logger.debug("[WorkshopReminder] usuário ou workshop sumiu, nada a enviar")
@@ -26,8 +26,13 @@ defmodule OGrupoDeEstudos.Workers.SendWorkshopReminderEmail do
     end
   end
 
-  defp entregar(user, workshop) do
-    case user |> WorkshopReminderEmail.new(workshop) |> OGrupoDeEstudos.Mailer.deliver() do
+  defp flavor(%{"flavor" => "today"}), do: :today
+  defp flavor(_args), do: :tomorrow
+
+  defp entregar(user, workshop, flavor) do
+    case user
+         |> WorkshopReminderEmail.new(workshop, flavor)
+         |> OGrupoDeEstudos.Mailer.deliver() do
       {:ok, _} ->
         :ok
 

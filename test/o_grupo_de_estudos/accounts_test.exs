@@ -51,10 +51,14 @@ defmodule OGrupoDeEstudos.AccountsTest do
       assert is_binary(user.confirmation_token), "must generate a confirmation token"
     end
 
-    test "sends confirmation email after registration" do
-      assert {:ok, _user} = Accounts.register_user(@valid_attrs)
+    test "sends welcome email with confirmation link after registration" do
+      assert {:ok, user} = Accounts.register_user(@valid_attrs)
 
-      assert_email_sent(subject: "Salve! Confirma o email, pff?")
+      assert_email_sent(fn email ->
+        assert {_, address} = hd(email.to)
+        assert address == user.email
+        assert email.text_body =~ "/confirm/#{user.confirmation_token}"
+      end)
     end
 
     test "returns error with duplicate username" do
@@ -192,6 +196,26 @@ defmodule OGrupoDeEstudos.AccountsTest do
       assert user.password_hash != nil
     end
 
+    test "sends welcome email after google registration, without confirmation link" do
+      {:ok, user, :registered} = Accounts.login_or_register_google_user(@google_profile)
+
+      assert_email_sent(fn email ->
+        assert {_, address} = hd(email.to)
+        assert address == user.email
+        refute email.text_body =~ "/confirm/"
+        assert email.text_body =~ "Google"
+      end)
+    end
+
+    test "sends no email on a later login with the same google id" do
+      {:ok, _user, :registered} = Accounts.login_or_register_google_user(@google_profile)
+      assert_email_sent()
+
+      {:ok, _user, :existing} = Accounts.login_or_register_google_user(@google_profile)
+
+      assert_no_email_sent()
+    end
+
     test "returns the existing user on a later login with the same google id" do
       {:ok, registered, :registered} = Accounts.login_or_register_google_user(@google_profile)
 
@@ -223,6 +247,55 @@ defmodule OGrupoDeEstudos.AccountsTest do
 
       assert {:ok, user, :registered} = Accounts.login_or_register_google_user(profile)
       assert String.starts_with?(user.username, "forrozeiro")
+    end
+  end
+
+  describe "backfill_welcome_emails/1" do
+    test "enqueues the welcome email for google-born accounts" do
+      {:ok, user, :registered} = Accounts.login_or_register_google_user(@google_profile)
+      assert_email_sent()
+
+      cutoff = DateTime.add(DateTime.utc_now(), 60, :second)
+      assert {1, [enqueued]} = Accounts.backfill_welcome_emails(cutoff)
+      assert enqueued == user.email
+
+      assert_email_sent(fn email ->
+        assert {_, address} = hd(email.to)
+        assert address == user.email
+        refute email.text_body =~ "/confirm/"
+        assert email.text_body =~ "Google"
+      end)
+    end
+
+    test "leaves accounts that linked google later out of it" do
+      two_days_ago =
+        DateTime.utc_now() |> DateTime.add(-2, :day) |> DateTime.truncate(:second)
+
+      insert(:user,
+        google_id: "google-sub-linked",
+        inserted_at: DateTime.to_naive(two_days_ago)
+      )
+
+      cutoff = DateTime.add(DateTime.utc_now(), 60, :second)
+      assert {0, []} = Accounts.backfill_welcome_emails(cutoff)
+    end
+
+    test "leaves password accounts out of it" do
+      {:ok, _user} = Accounts.register_user(@valid_attrs)
+      assert_email_sent()
+
+      cutoff = DateTime.add(DateTime.utc_now(), 60, :second)
+      assert {0, []} = Accounts.backfill_welcome_emails(cutoff)
+      assert_no_email_sent()
+    end
+
+    test "leaves google accounts born after the cutoff out of it" do
+      {:ok, _user, :registered} = Accounts.login_or_register_google_user(@google_profile)
+      assert_email_sent()
+
+      cutoff = DateTime.add(DateTime.utc_now(), -3600, :second)
+      assert {0, []} = Accounts.backfill_welcome_emails(cutoff)
+      assert_no_email_sent()
     end
   end
 
