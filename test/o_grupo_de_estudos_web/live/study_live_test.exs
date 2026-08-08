@@ -233,6 +233,49 @@ defmodule OGrupoDeEstudosWeb.StudyLiveTest do
     end
   end
 
+  describe "goals board on touch and screen readers" do
+    setup %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, pending} =
+        OGrupoDeEstudos.Study.create_goal(%{owner_user_id: user.id, body: "Treinar sacada"})
+
+      {:ok, done} =
+        OGrupoDeEstudos.Study.create_goal(%{
+          owner_user_id: user.id,
+          body: "Alongar",
+          completed: true
+        })
+
+      %{conn: log_in_user(conn, user), user: user, pending: pending, done: done}
+    end
+
+    test "the complete toggle is a named checkbox, not a bare square", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      assert has_element?(lv, ~s(button[role="checkbox"][aria-checked="false"]))
+      assert has_element?(lv, ~s(button[aria-label="Concluir meta: Treinar sacada"]))
+    end
+
+    test "the delete button is visible on touch and carries a name", %{conn: conn} do
+      {:ok, lv, html} = live(conn, ~p"/study")
+
+      assert has_element?(lv, ~s(button[aria-label="Apagar meta: Treinar sacada"]))
+      refute html =~ ~s( opacity-0 group-hover:opacity-100)
+      assert html =~ "md:opacity-0"
+    end
+  end
+
+  describe "diary typing cost" do
+    test "the diary form debounces instead of saving every keystroke", %{conn: conn} do
+      conn = log_in_user(conn, insert(:user))
+
+      {:ok, lv, _html} = live(conn, ~p"/study")
+
+      assert has_element?(lv, ~s(#personal-diary textarea[phx-debounce]))
+    end
+  end
+
   describe "authorization (IDOR)" do
     test "save_teacher_note refuses a forged link-id from another teacher", %{conn: conn} do
       teacher_a = insert(:user, is_teacher: true)

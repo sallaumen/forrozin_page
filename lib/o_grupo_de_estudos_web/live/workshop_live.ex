@@ -740,6 +740,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopLive do
   defp enroll_error(:not_open), do: "Este workshop não está aberto para inscrição."
   defp enroll_error(:already_enrolled), do: "Você já está inscrito."
 
+  # The enroll pipeline can surface a raw changeset (package linking); a
+  # missing clause here would crash the LiveView mid-enrollment.
+  defp enroll_error(_other), do: "Não foi possível concluir a inscrição. Tente de novo."
+
   # Citing closes the sheet: the sheet asked one thing and the answer is on the
   # page now.
   defp cite(socket, sequence_id, message) do

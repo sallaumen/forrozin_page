@@ -42,16 +42,26 @@ defmodule OGrupoDeEstudosWeb.UI.GoalsBoard do
             <div class="flex items-start gap-2 group rounded-lg px-1.5 py-1 hover:bg-ink-50 transition-colors">
               <button
                 type="button"
+                role="checkbox"
+                aria-checked="false"
+                aria-label={"Concluir meta: #{goal.body}"}
                 phx-click={@toggle_event}
                 phx-value-id={goal.id}
-                class="mt-0.5 w-4 h-4 rounded border border-ink-300 bg-white cursor-pointer shrink-0 flex items-center justify-center hover:border-accent-orange transition-colors"
-              />
-              <p class="text-xs text-ink-800 m-0 flex-1 leading-relaxed">{goal.body}</p>
+                class="group/check flex min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 sm:mt-0.5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
+              >
+                <span class="w-4 h-4 rounded border border-ink-300 bg-ink-50 transition-colors group-hover/check:border-accent-orange">
+                </span>
+              </button>
+              <p class="text-xs text-ink-800 m-0 flex-1 self-center leading-relaxed">
+                {goal.body}
+              </p>
               <button
                 type="button"
+                aria-label={"Apagar meta: #{goal.body}"}
                 phx-click={@delete_event}
                 phx-value-id={goal.id}
-                class="opacity-0 group-hover:opacity-100 transition-opacity text-ink-400 hover:text-accent-red cursor-pointer bg-transparent border-0 p-0 shrink-0"
+                data-confirm="Apagar esta meta?"
+                class="flex min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-ink-400 transition-opacity hover:text-accent-red md:opacity-0 md:group-hover:opacity-100"
               >
                 <.icon name="hero-x-mark" class="w-3.5 h-3.5" />
               </button>
@@ -72,27 +82,34 @@ defmodule OGrupoDeEstudosWeb.UI.GoalsBoard do
       <%= if @completed != [] do %>
         <details class="mt-2">
           <summary class="text-[10px] text-ink-400 cursor-pointer font-semibold select-none">
-            {length(@completed)} {if length(@completed) == 1, do: "concluida", else: "concluidas"}
+            {length(@completed)} {if length(@completed) == 1, do: "concluída", else: "concluídas"}
           </summary>
           <div class="mt-1 space-y-1">
             <%= for goal <- @completed do %>
               <div class="flex items-start gap-2 group rounded-lg px-1.5 py-1 hover:bg-ink-50 transition-colors">
                 <button
                   type="button"
+                  role="checkbox"
+                  aria-checked="true"
+                  aria-label={"Reabrir meta: #{goal.body}"}
                   phx-click={@toggle_event}
                   phx-value-id={goal.id}
-                  class="mt-0.5 w-4 h-4 rounded border border-accent-green bg-accent-green cursor-pointer shrink-0 flex items-center justify-center"
+                  class="flex min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 sm:mt-0.5 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
                 >
-                  <.icon name="hero-check" class="w-3 h-3 text-white" />
+                  <span class="flex h-4 w-4 items-center justify-center rounded border border-accent-green bg-accent-green">
+                    <.icon name="hero-check" class="w-3 h-3 text-white" />
+                  </span>
                 </button>
-                <p class="text-xs text-ink-400 m-0 flex-1 leading-relaxed line-through">
+                <p class="text-xs text-ink-400 m-0 flex-1 self-center leading-relaxed line-through">
                   {goal.body}
                 </p>
                 <button
                   type="button"
+                  aria-label={"Apagar meta: #{goal.body}"}
                   phx-click={@delete_event}
                   phx-value-id={goal.id}
-                  class="opacity-0 group-hover:opacity-100 transition-opacity text-ink-400 hover:text-accent-red cursor-pointer bg-transparent border-0 p-0 shrink-0"
+                  data-confirm="Apagar esta meta?"
+                  class="flex min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-ink-400 transition-opacity hover:text-accent-red md:opacity-0 md:group-hover:opacity-100"
                 >
                   <.icon name="hero-x-mark" class="w-3.5 h-3.5" />
                 </button>
