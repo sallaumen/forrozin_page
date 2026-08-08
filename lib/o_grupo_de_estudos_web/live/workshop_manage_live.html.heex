@@ -411,28 +411,18 @@
         </div>
       </div>
 
-      <form
-        :if={@owner?}
-        id="add-admin-form"
-        phx-submit="add_admin"
-        class="mt-3 flex flex-wrap items-center gap-2"
-      >
-        <input
-          type="text"
-          name="username"
-          placeholder="Nome de usuário de quem vai organizar com você"
-          autocomplete="off"
-          required
-          class="min-w-0 flex-1 rounded-full border border-ink-300 bg-ink-50 px-4 py-2 font-serif text-[13px] text-ink-800 placeholder:text-ink-400"
+      <div :if={@owner?} class="mt-3">
+        <.user_search
+          id="admin-user-search"
+          suggestions={@admin_candidates}
+          placeholder="Nome ou usuário de quem vai organizar com você"
+          field_name="username"
+          search_event="search_admin_candidate"
+          pick_event="add_admin"
+          submit_event="add_admin"
+          submit_label="Adicionar"
         />
-        <button
-          type="submit"
-          phx-disable-with="Adicionando..."
-          class="cursor-pointer rounded-full border-0 bg-ink-900 px-4 py-2 font-serif text-[13px] font-semibold text-ink-50"
-        >
-          Adicionar
-        </button>
-      </form>
+      </div>
 
       <p :if={@admin_form_error} class="m-0 mt-2 text-[12.5px] font-semibold text-accent-red">
         {@admin_form_error}
