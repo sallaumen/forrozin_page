@@ -3,7 +3,12 @@ defmodule OGrupoDeEstudos.Workers.SendWorkshopEnrolledEmail do
   Emails the enrollment confirmation for a single workshop.
   """
 
-  use Oban.Worker, queue: :email, max_attempts: 3
+  # Unique per person and workshop for a day: whoever cancels and comes back
+  # keeps the seat without a second copy of the same confirmation.
+  use Oban.Worker,
+    queue: :email,
+    max_attempts: 3,
+    unique: [period: 86_400, keys: [:user_id, :workshop_id]]
 
   require Logger
 

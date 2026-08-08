@@ -57,6 +57,19 @@ defmodule OGrupoDeEstudos.EnrollmentConfirmationTest do
       assert email.text_body =~ "Pix: forro@exemplo.com"
     end
 
+    test "leaving and coming back on the same day does not repeat the confirmation", ctx do
+      workshop = insert(:workshop, organizer: ctx.owner, starts_at: at_day(7, 19))
+
+      Oban.Testing.with_testing_mode(:manual, fn ->
+        {:ok, _} = Workshops.enroll(workshop, ctx.student)
+        {:ok, _} = Workshops.cancel_enrollment(workshop, ctx.student)
+        {:ok, _} = Workshops.enroll(workshop, ctx.student)
+
+        assert [_only_one] =
+                 all_enqueued(worker: OGrupoDeEstudos.Workers.SendWorkshopEnrolledEmail)
+      end)
+    end
+
     test "a full class promoting from the waitlist sends the good news, not a second confirmation",
          ctx do
       workshop = insert(:workshop, organizer: ctx.owner, capacity: 1, starts_at: at_day(7, 19))

@@ -4,7 +4,12 @@ defmodule OGrupoDeEstudos.Workers.SendProgramEnrolledEmail do
   workshops (the whole package or the hand-picked subset).
   """
 
-  use Oban.Worker, queue: :email, max_attempts: 3
+  # Unique per person and program for a day, so a leave-and-return does not
+  # repeat the same confirmation.
+  use Oban.Worker,
+    queue: :email,
+    max_attempts: 3,
+    unique: [period: 86_400, keys: [:user_id, :program_id]]
 
   require Logger
 
