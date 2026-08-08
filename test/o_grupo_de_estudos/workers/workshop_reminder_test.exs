@@ -21,6 +21,16 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
 
   defp rodar, do: perform_job(WorkshopReminder, %{})
 
+  # Enrollment now confirms by email; the sweep tests care about the sweep
+  # emails only, so whatever the setup produced gets flushed.
+  defp drain_mailbox do
+    receive do
+      {:email, _email} -> drain_mailbox()
+    after
+      0 -> :ok
+    end
+  end
+
   setup do
     owner = insert(:user)
     student = insert(:user)
@@ -29,6 +39,7 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
       insert(:workshop, organizer: owner, title: "Pisada de amanhã", starts_at: tomorrow_at(20))
 
     {:ok, _} = Workshops.enroll(workshop, student)
+    drain_mailbox()
 
     %{owner: owner, student: student, workshop: workshop}
   end
@@ -224,6 +235,7 @@ defmodule OGrupoDeEstudos.Workers.WorkshopReminderTest do
 
       late_student = insert(:user)
       {:ok, _} = Workshops.enroll(workshop_today, late_student)
+      drain_mailbox()
 
       %{workshop_today: workshop_today, late_student: late_student}
     end

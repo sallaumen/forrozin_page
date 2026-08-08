@@ -141,11 +141,16 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
 
   defp submit(socket, workshop, params, publish?: publish?) do
     user = socket.assigns.current_user
+    waiting_before = Workshops.waitlist_count(workshop.id)
 
     case Workshops.update_workshop(user, workshop, to_attrs(params)) do
       {:ok, updated} ->
         store_teachers(updated, user, params)
-        finish(socket, user, store_flyer(socket, updated, user), publish?)
+        promoted = waiting_before - Workshops.waitlist_count(updated.id)
+
+        socket
+        |> assign(:promoted_note, promoted_note(promoted))
+        |> finish(user, store_flyer(socket, updated, user), publish?)
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, form_failed(socket, params, changeset)}
@@ -193,7 +198,10 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
       {:ok, published} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Workshop publicado! Agora é só compartilhar o link.")
+         |> put_flash(
+           :info,
+           "Workshop publicado! Agora é só compartilhar o link." <> promoted_suffix(socket)
+         )
          |> redirect(to: ~p"/workshops/#{published.slug}")}
 
       {:error, _} ->
@@ -204,9 +212,22 @@ defmodule OGrupoDeEstudosWeb.WorkshopFormLive do
   defp finish(socket, _user, workshop, false) do
     {:noreply,
      socket
-     |> put_flash(:info, "Rascunho salvo. Publique quando estiver pronto.")
+     |> put_flash(
+       :info,
+       "Rascunho salvo. Publique quando estiver pronto." <> promoted_suffix(socket)
+     )
      |> redirect(to: ~p"/workshops/#{workshop.slug}")}
   end
+
+  defp promoted_suffix(socket), do: socket.assigns[:promoted_note] || ""
+
+  defp promoted_note(1),
+    do: " 1 pessoa da lista de espera ganhou a vaga e foi avisada por email."
+
+  defp promoted_note(promoted) when promoted > 1,
+    do: " #{promoted} pessoas da lista de espera ganharam a vaga e foram avisadas por email."
+
+  defp promoted_note(_none_or_negative), do: ""
 
   defp form_failed(socket, params, changeset) do
     socket

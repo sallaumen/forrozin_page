@@ -8,6 +8,7 @@ defmodule OGrupoDeEstudos.WorkshopWaitlistTest do
   use OGrupoDeEstudos.DataCase, async: true
 
   import OGrupoDeEstudos.Factory
+  import Swoosh.TestAssertions
 
   alias OGrupoDeEstudos.Engagement.Notifications.Notification
   alias OGrupoDeEstudos.Workshops
@@ -161,6 +162,93 @@ defmodule OGrupoDeEstudos.WorkshopWaitlistTest do
 
       assert {:ok, _} = Workshops.cancel_enrollment(ctx.free_class, ctx.inscrita)
       assert Workshops.count_enrollments(ctx.free_class.id) == 0
+    end
+  end
+
+  describe "raising the capacity drains the waitlist" do
+    defp all_emails do
+      receive do
+        {:email, email} -> [email | all_emails()]
+      after
+        0 -> []
+      end
+    end
+
+    defp waiting_trio(workshop) do
+      trio = for _ <- 1..3, do: insert(:user)
+      for pessoa <- trio, do: {:ok, _} = Workshops.join_waitlist(workshop, pessoa)
+      trio
+    end
+
+    test "promotes whoever fits, in waiting order", ctx do
+      lotar(ctx.free_class)
+      [primeira, segunda, terceira] = waiting_trio(ctx.free_class)
+
+      {:ok, _} = Workshops.update_workshop(ctx.owner, ctx.free_class, %{capacity: 3})
+
+      enrolled_ids =
+        ctx.free_class.id |> Workshops.list_participants() |> Enum.map(& &1.user_id)
+
+      assert primeira.id in enrolled_ids
+      assert segunda.id in enrolled_ids
+      refute terceira.id in enrolled_ids
+      assert Workshops.waitlist_count(ctx.free_class.id) == 1
+    end
+
+    test "removing the limit promotes the whole waitlist", ctx do
+      lotar(ctx.free_class)
+      trio = waiting_trio(ctx.free_class)
+
+      {:ok, _} = Workshops.update_workshop(ctx.owner, ctx.free_class, %{capacity: nil})
+
+      enrolled_ids =
+        ctx.free_class.id |> Workshops.list_participants() |> Enum.map(& &1.user_id)
+
+      assert Enum.all?(trio, &(&1.id in enrolled_ids))
+      assert Workshops.waitlist_count(ctx.free_class.id) == 0
+    end
+
+    test "an update that does not loosen the capacity promotes nobody", ctx do
+      lotar(ctx.free_class)
+      waiting_trio(ctx.free_class)
+
+      {:ok, _} = Workshops.update_workshop(ctx.owner, ctx.free_class, %{title: "Novo nome"})
+
+      assert Workshops.waitlist_count(ctx.free_class.id) == 3
+    end
+
+    test "whoever gets the seat hears the good news by email and by bell", ctx do
+      lotar(ctx.free_class)
+      [primeira, _segunda, _terceira] = waiting_trio(ctx.free_class)
+
+      {:ok, _} = Workshops.update_workshop(ctx.owner, ctx.free_class, %{capacity: 2})
+
+      good_news =
+        Enum.find(all_emails(), fn email -> elem(hd(email.to), 1) == primeira.email end)
+
+      assert good_news.text_body =~ "vagas"
+      assert good_news.text_body =~ ctx.free_class.slug
+
+      assert [_] =
+               Repo.all(
+                 from n in Notification,
+                   where: n.action == :workshop_waitlist_promoted and n.user_id == ^primeira.id
+               )
+    end
+
+    test "the seat freed by a cancellation also emails the promoted person", ctx do
+      lotar(ctx.free_class)
+      [primeira, _segunda, _terceira] = waiting_trio(ctx.free_class)
+      [enrolled] = Workshops.list_participants(ctx.free_class.id)
+      desistente = OGrupoDeEstudos.Accounts.get_user_by_id(enrolled.user_id)
+
+      {:ok, _} = Workshops.cancel_enrollment(ctx.free_class, desistente)
+
+      good_news =
+        Enum.find(all_emails(), fn email -> elem(hd(email.to), 1) == primeira.email end)
+
+      assert good_news.text_body =~ "vaga"
+      assert good_news.text_body =~ ctx.free_class.slug
     end
   end
 
