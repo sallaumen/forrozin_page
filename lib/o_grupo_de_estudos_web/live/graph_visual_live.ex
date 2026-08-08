@@ -1,6 +1,8 @@
 defmodule OGrupoDeEstudosWeb.GraphVisualLive do
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.Helpers.Plural
+
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Sequences}
   alias OGrupoDeEstudos.Authorization.Policy
 

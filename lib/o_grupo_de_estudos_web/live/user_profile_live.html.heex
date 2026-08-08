@@ -174,7 +174,7 @@
           Contribuições
         </div>
         <div class="text-sm text-ink-900 font-semibold">
-          {length(@user_steps)} passo(s)
+          {plural(length(@user_steps), "passo", "passos")}
         </div>
       </div>
       <div>
@@ -540,7 +540,7 @@
                     {seq.name}
                   </div>
                   <div class="text-xs text-ink-500 mb-2">
-                    {length(seq.sequence_steps)} passo(s)
+                    {plural(length(seq.sequence_steps), "passo", "passos")}
                   </div>
                   <%= if seq.sequence_steps != [] do %>
                     <div class="flex flex-wrap gap-1">

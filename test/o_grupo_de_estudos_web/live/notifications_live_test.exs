@@ -81,6 +81,19 @@ defmodule OGrupoDeEstudosWeb.NotificationsLiveTest do
       assert html =~ "Nenhuma notificação"
     end
 
+    test "keeps the page shell background, instead of the bare dark root", %{conn: conn} do
+      {conn, _user} = logged_in_conn(conn)
+      {:ok, _view, html} = live(conn, ~p"/notifications")
+      assert html =~ "bg-ink-100"
+    end
+
+    test "the unconfirmed email banner reads accented portuguese", %{conn: conn} do
+      user = insert(:user, confirmed_at: nil)
+      {:ok, _view, html} = live(log_in_user(conn, user), ~p"/notifications")
+
+      assert html =~ "Confirme seu email para garantir a recuperação de senha."
+    end
+
     test "renders notifications when they exist", %{conn: conn} do
       {conn, user} = logged_in_conn(conn)
       step = insert(:step)

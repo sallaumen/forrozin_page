@@ -1,6 +1,8 @@
 defmodule OGrupoDeEstudosWeb.UserProfileLive do
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.Helpers.Plural
+
   alias OGrupoDeEstudos.{
     Accounts,
     Encyclopedia,

@@ -16,7 +16,9 @@
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-2xl font-bold text-ink-900">Erros do Sistema</h1>
-        <p class="text-xs text-ink-500 mt-1">{@loaded_count} erro(s) carregados</p>
+        <p class="text-xs text-ink-500 mt-1">
+          {plural(@loaded_count, "erro carregado", "erros carregados")}
+        </p>
       </div>
       <button
         :if={@loaded_count > 0}

@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.AdminLinksLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.Helpers.Plural
+
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia}
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}

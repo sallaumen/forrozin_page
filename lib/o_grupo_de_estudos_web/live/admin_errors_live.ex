@@ -1,6 +1,8 @@
 defmodule OGrupoDeEstudosWeb.AdminErrorsLive do
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.Helpers.Plural
+
   alias OGrupoDeEstudos.{Accounts, Admin}
 
   import OGrupoDeEstudosWeb.UI.TopNav

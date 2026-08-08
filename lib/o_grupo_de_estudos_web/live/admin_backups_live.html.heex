@@ -21,7 +21,7 @@
           Backups do Sistema
         </h1>
         <p class="text-xs text-ink-500">
-          {length(@backups)} backup(s) disponível(is)
+          {plural(length(@backups), "backup disponível", "backups disponíveis")}
         </p>
       </div>
 

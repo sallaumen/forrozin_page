@@ -278,7 +278,7 @@
           </div>
         <% else %>
           <p class="text-xs mb-4 font-semibold text-accent-purple">
-            {length(@my_steps)} passo(s) sugerido(s) por você
+            {plural(length(@my_steps), "passo sugerido por você", "passos sugeridos por você")}
           </p>
           <%= for step <- @my_steps do %>
             <.step_item
@@ -300,7 +300,7 @@
           <% else %>
             <div id="collection-search-results">
               <p class="text-xs text-ink-500 mb-4 font-mono">
-                {length(@search_results)} resultado(s)
+                {plural(length(@search_results), "resultado", "resultados")}
               </p>
               <%= for step <- @search_results do %>
                 <.step_item

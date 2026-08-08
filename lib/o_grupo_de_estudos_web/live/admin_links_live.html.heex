@@ -19,7 +19,11 @@
       Gerenciar Links
     </h1>
     <p class="text-sm text-ink-500 mb-10">
-      {length(@pending_links)} pendente(s) · {length(@approved_links)} aprovado(s)
+      {plural(length(@pending_links), "pendente", "pendentes")} · {plural(
+        length(@approved_links),
+        "aprovado",
+        "aprovados"
+      )}
     </p>
 
     <%!-- Pending section --%>

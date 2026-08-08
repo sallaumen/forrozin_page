@@ -8,6 +8,8 @@ defmodule OGrupoDeEstudosWeb.CollectionLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.Helpers.Plural
+
   alias OGrupoDeEstudos.{Accounts, Admin, Encyclopedia, Engagement, Study, Workshops}
   alias OGrupoDeEstudos.Authorization.Policy
   alias OGrupoDeEstudos.Encyclopedia.CollectionBrowser

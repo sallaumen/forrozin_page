@@ -3,6 +3,8 @@ defmodule OGrupoDeEstudosWeb.AdminBackupsLive do
 
   use OGrupoDeEstudosWeb, :live_view
 
+  import OGrupoDeEstudosWeb.Helpers.Plural
+
   alias OGrupoDeEstudos.Admin.Backup
 
   on_mount {OGrupoDeEstudosWeb.Navigation, :detail}
